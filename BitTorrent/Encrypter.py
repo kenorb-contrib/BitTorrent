@@ -6,6 +6,7 @@ from cStringIO import StringIO
 from binaryint import int_to_binary, binary_to_int
 from StreamEncrypter import make_encrypter
 import socket
+from traceback import print_exc
 true = 1
 false = 0
 
@@ -88,7 +89,10 @@ class EncryptedConnection:
 
     def read_message(self, s):
         m = self.decrypt(s)
-        self.encrypter.connecter.got_message(self, m)
+        try:
+            self.encrypter.connecter.got_message(self, m)
+        except:
+            print_exc()
         return 4, self.read_len
 
     def close(self):
