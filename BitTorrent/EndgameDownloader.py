@@ -221,7 +221,7 @@ class DummyDownloader:
         self.backlog = 5
         self.max_rate_period = 50
         self.numpieces = numpieces
-        self.total_down = []
+        self.total_down = [0]
         self.measurefunc = lambda x: None
         self.downloads = downloads
 
