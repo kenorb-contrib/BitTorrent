@@ -6,10 +6,11 @@
 import sys
 assert sys.version >= '2', "Install Python 2.0 or greater"
 from distutils.core import setup, Extension
+import BitTorrent
 
 setup(
     name = "BitTorrent",
-    version = "2.9",
+    version = BitTorrent.version,
     author = "Bram Cohen",
     author_email = "<bram@bitconjurer.org>",
     url = "http://www.bitconjurer.org/BitTorrent/",
