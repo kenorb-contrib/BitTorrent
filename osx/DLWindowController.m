@@ -8,6 +8,7 @@
     [super init];
     timeEst = [@"" retain];
     conn = nil;
+    done = 0;
     return self;
 }
 
@@ -18,7 +19,7 @@
 
 - (void)windowDidClose:(NSNotification *)aNotification
 {
-    [self dealloc];
+    [self autorelease];
 }
 - (IBAction)cancelDl:(id)sender
 {
@@ -87,7 +88,6 @@
 	}
     }
     [file setStringValue:[NSString stringWithFormat:@"%@ (%1.1f MB)", [fname lastPathComponent], size / 1048576.0]];
-    [downloadTo setStringValue:fname];
     [[self window] setTitleWithRepresentedFilename:fname];
     
     return fname;
@@ -119,36 +119,35 @@
     [dlRate setStringValue:[NSString localizedStringWithFormat:@"%2.1f K/s", [[dict objectForKey:@"downRate"] floatValue] / 1024]];
     [ulRate setStringValue:[NSString localizedStringWithFormat:@"%2.1f K/s", [[dict objectForKey:@"upRate"] floatValue] / 1024]];
     [progressBar setDoubleValue:frac];
-    [timeRemaining setStringValue:timeEst];
+    if(!done) {
+	[timeRemaining setStringValue:timeEst];
+    }
 }
 
-- (void)finished:(NSDictionary *)dict
+- (void)finished
 {
-    NSNumber *fin;
-    NSString *errmsg;
-    
-    fin = [dict objectForKey:@"fin"];
-    errmsg = [dict objectForKey:@"errmsg"];
-    
+    done = 1;
     [timeEst release];
-    if([fin intValue]) {
-	frac = 1.0;
-	timeEst = [@"Download Succeeded." retain];
-	[progressBar setDoubleValue:100.0];
-    }
-    else {
-	if([errmsg isEqualToString:@""])
-	    timeEst = [@"Download Failed!" retain];
-	else
-	    timeEst = [[NSString stringWithFormat:@"Download failed - %@", errmsg] retain];
-    }
+    timeEst = [@"Download Succeeded." retain];
+    [progressBar setDoubleValue:100.0];
     [timeRemaining setStringValue:timeEst];
     [percentCompleted setStringValue:[NSString localizedStringWithFormat:@"%2.1f%%", frac * 100]];
 }
 
+- (void)dlExited
+{
+    if(!done) {
+	[progressBar setDoubleValue:0.0];
+	[timeRemaining setStringValue:@"Download Failed!"];
+	[dlRate setStringValue:@""];
+	[ulRate setStringValue:@""];
+	[percentCompleted setStringValue:@""];
+    }
+}
+
 - (void)error:(NSString *)str
 {
-    
+    [lastError setStringValue:str];
 }
 - (void)dealloc
 {

@@ -1,13 +1,13 @@
 /* DLWindowController */
 
 #import <Cocoa/Cocoa.h>
-#import <python2.2/Python.h>
+#import <Python/Python.h>
 #import "BTCallbacks.h"
 
 @interface DLWindowController : NSWindowController <BTCallbacks>
 {
     IBOutlet id dlRate;
-    IBOutlet id downloadTo;
+    IBOutlet id lastError;
     IBOutlet id file;
     IBOutlet id percentCompleted;
     IBOutlet id progressBar;
@@ -18,13 +18,15 @@
     float frac;
     PyObject *flag;
     NSConnection *conn;
+    int done;
 }
 - (IBAction)cancelDl:(id)sender;
 - (id)init;
-- (void)finished:(NSDictionary *)dict;
+- (void)finished;
 - (void)error:(NSString *)str;
 - (void)display:(NSDictionary *)dict;
 - (NSString *)chooseFile:(NSString *)defaultFile size:(long)size isDirectory:(int)dir;
+- (void)dlExited;
 - (void)setFlag:(PyObject *)nflag;
 - (void)setConnection:(NSConnection *)nc;
 - (void)dealloc;

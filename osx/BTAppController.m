@@ -1,21 +1,17 @@
 #import "BTAppController.h"
 #import "DLWindowController.h"
+#import "pystructs.h"
 
 static PyThreadState *tstate;
 
-PyObject *bt_getProxy(NSPort *receivePort, NSPort *sendPort);
+bt_ProxyObject *bt_getProxy(NSPort *receivePort, NSPort *sendPort);
 
 @implementation BTAppController
-- init
-{
-    [super init];
-    PyRun_SimpleString("from threading import Event;from BitTorrent.download import download");
-    tstate = PyEval_SaveThread();
-    return self;
-}
 
 - (void)applicationDidFinishLaunching:(NSNotification *)note
 {
+    PyRun_SimpleString("from threading import Event;from BitTorrent.download import download");
+    tstate = PyEval_SaveThread();
 }
 
 - (PyThreadState *)tstate
@@ -104,7 +100,7 @@ PyObject *bt_getProxy(NSPort *receivePort, NSPort *sendPort);
 + (void)runWithDict:(NSDictionary *)dict
 {
     NSAutoreleasePool *pool;
-    PyObject *proxy;
+    bt_ProxyObject *proxy;
     NSString *str;
     PyObject *chooseFile, *finished, *display, *nerror, *mm, *md, *dl, *flag, *ret;
     PyThreadState *ts;
@@ -120,19 +116,20 @@ PyObject *bt_getProxy(NSPort *receivePort, NSPort *sendPort);
     dl = PyDict_GetItemString(md, "download");
     
     // create proxy, which creates our side of connection
-    proxy = (PyObject *)bt_getProxy([dict objectForKey:@"receive"], [dict objectForKey:@"send"]);
+    proxy = (bt_ProxyObject *)bt_getProxy([dict objectForKey:@"receive"], [dict objectForKey:@"send"]);
     
-    // get args
+    // get callbacks and other args
     str = [dict objectForKey:@"str"];
-    chooseFile = PyObject_GetAttrString(proxy, "chooseFile");
-    display = PyObject_GetAttrString(proxy, "display");
-    finished = PyObject_GetAttrString(proxy, "finished");
-    nerror = PyObject_GetAttrString(proxy, "nerror");
+    chooseFile = PyObject_GetAttrString((PyObject *)proxy, "chooseFile");
+    display = PyObject_GetAttrString((PyObject *)proxy, "display");
+    finished = PyObject_GetAttrString((PyObject *)proxy, "finished");
+    nerror = PyObject_GetAttrString((PyObject *)proxy, "nerror");
     [[dict objectForKey:@"flag"] getBytes:&flag];
 
     // do the download!
     ret = PyObject_CallFunction(dl, "[s]OOOOOi", [str cString], chooseFile, display, finished, nerror, flag, 80);
- 
+    [proxy->dlController dlExited];
+    
     // clean up
     Py_DECREF(mm);
     Py_DECREF(flag);
@@ -141,6 +138,10 @@ PyObject *bt_getProxy(NSPort *receivePort, NSPort *sendPort);
     ts = PyEval_SaveThread();
 }
 
+- (IBAction)openAbout:(id)sender
+{
+    [aboutWindow makeKeyAndOrderFront:self];
+}
 
 - (BOOL)application:(NSApplication *)theApplication openFile:(NSString *)filename
 {

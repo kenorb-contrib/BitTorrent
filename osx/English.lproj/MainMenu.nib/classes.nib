@@ -1,10 +1,16 @@
 {
     IBClasses = (
         {
-            ACTIONS = {cancelUrl = id; openTrackerResponse = id; openURL = id; takeUrl = id; }; 
+            ACTIONS = {
+                cancelUrl = id; 
+                openAbout = id; 
+                openTrackerResponse = id; 
+                openURL = id; 
+                takeUrl = id; 
+            }; 
             CLASS = BTAppController; 
             LANGUAGE = ObjC; 
-            OUTLETS = {url = NSTextField; urlWindow = NSWindow; }; 
+            OUTLETS = {aboutWindow = id; url = NSTextField; urlWindow = NSWindow; }; 
             SUPERCLASS = NSObject; 
         }, 
         {CLASS = FirstResponder; LANGUAGE = ObjC; SUPERCLASS = NSObject; }

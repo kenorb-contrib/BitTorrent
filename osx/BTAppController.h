@@ -1,17 +1,18 @@
 /* BTAppController */
 
 #import <Cocoa/Cocoa.h>
-#import <python2.2/Python.h>
+#import <Python/Python.h>
 
 @interface BTAppController : NSObject
 {
     IBOutlet NSTextField *url;
-    IBOutlet NSWindow *urlWindow;
+    IBOutlet NSWindow *urlWindow, *aboutWindow;
     NSMutableArray *dlControllers;
 }
 - (IBAction)cancelUrl:(id)sender;
 - (IBAction)openURL:(id)sender;
 - (IBAction)openTrackerResponse:(id)sender;
+- (IBAction)openAbout:(id)sender;
 - (IBAction)takeUrl:(id)sender;
 - (void)runWithStr:(NSString *)url controller:(id)controller;
 + (void)runWithDict:(NSDictionary *)dict;

@@ -8,17 +8,9 @@
 
 #import <Cocoa/Cocoa.h>
 
-#import <python2.2/Python.h>
+#import <Python/Python.h>
 #import "BTCallbacks.h"
-
-
-// this is the proxy object that has the callbacks for each DL
-// encapsulates a connection to the it's DL Window controller
-typedef struct {
-    PyObject_HEAD
-    id dlController;  // NSProxy connection
-} bt_ProxyObject;
-
+#import "pystructs.h"
 
 static PyObject *chooseFile(bt_ProxyObject *self, PyObject *args)
 {
@@ -73,21 +65,10 @@ static PyObject *display(bt_ProxyObject *self, PyObject *args, PyObject *keywds)
 
 static PyObject *finished(bt_ProxyObject *self, PyObject *args)
 {
-    int fin;
-    char *errmsg = NULL;
     NSAutoreleasePool *pool =[[NSAutoreleasePool alloc] init];
-    NSMutableDictionary *dict = [NSMutableDictionary dictionaryWithCapacity:2];
-
-    if(!PyArg_ParseTuple(args, "iz", &fin, &errmsg))
-	return NULL;
-    if(errmsg)
-	[dict setObject:[NSString stringWithCString:errmsg] forKey:@"errmsg"];
-    else
-	[dict setObject:@"" forKey:@"errmsg"];
-    [dict setObject:[NSNumber numberWithInt:fin] forKey:@"fin"];
 
     Py_BEGIN_ALLOW_THREADS
-    [self->dlController finished:dict];
+    [self->dlController finished];
     Py_END_ALLOW_THREADS
     [pool release];
     Py_INCREF(Py_None);
@@ -159,7 +140,7 @@ static PyTypeObject bt_ProxyType = {
 };
 
 // given two ports, create a new proxy object
-PyObject *bt_getProxy(NSPort *receivePort, NSPort *sendPort)
+bt_ProxyObject *bt_getProxy(NSPort *receivePort, NSPort *sendPort)
 {
     bt_ProxyObject *proxy;
     id foo;
@@ -171,5 +152,5 @@ PyObject *bt_getProxy(NSPort *receivePort, NSPort *sendPort)
     [foo setProtocolForProxy:@protocol(BTCallbacks)];
     [foo retain];
     proxy->dlController = foo;
-    return (PyObject *)proxy;
+    return (bt_ProxyObject *)proxy;
 }
