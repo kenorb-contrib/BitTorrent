@@ -5,11 +5,7 @@ from bisect import insort
 import socket
 from cStringIO import StringIO
 from traceback import print_exc
-from errno import EWOULDBLOCK
-try:
-    from errno import WSAENOBUFS
-except:
-    WSAENOBUFS = -1
+from errno import EWOULDBLOCK, ENOBUFS
 try:
     from select import poll, error, POLLIN, POLLOUT, POLLERR, POLLHUP
     timemult = 1000
@@ -231,8 +227,8 @@ class RawServer:
                     if self.doneflag.isSet():
                         return
                     code, msg, desc = error
-                    if code == WSAENOBUFS:
-                        self.errorfunc("Have to exit due to the Windows TCP stack flaking out")
+                    if code == ENOBUFS:
+                        self.errorfunc("Have to exit due to the TCP stack flaking out")
                         return
                 except KeyboardInterrupt:
                     print_exc()
