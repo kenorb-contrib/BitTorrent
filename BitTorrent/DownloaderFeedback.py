@@ -66,7 +66,10 @@ class DownloaderFeedback:
             return
         timeEst = self.remainingfunc()
 
-        fractionDone = (self.file_length - self.leftfunc()) / float(self.file_length)
+        if self.file_length > 0:
+            fractionDone = (self.file_length - self.leftfunc()) / float(self.file_length)
+        else:
+            fractionDone = 1
         status = {
             "fractionDone" : fractionDone, 
             "downRate" : self.downfunc(), 
