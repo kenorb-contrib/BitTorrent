@@ -30,19 +30,25 @@ def fmttime(n):
         return 'n/a'
     return 'finishing in %d:%02d:%02d' % (h, m, s)
 
-def fmtsize(n):
+def fmtsize(n, baseunit = 0, padded = 1):
     unit = [' B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB']
-    i = 0
-    if (n > 999):
-        i = 1
-        while i + 1 < len(unit) and (n >> 10) >= 999:
-            i += 1
-            n >>= 10
+    i = baseunit
+    while i + 1 < len(unit) and n >= 999:
+        i += 1
         n = float(n) / (1 << 10)
-    if i > 0:
-        size = '%.1f' % n + '%s' % unit[i]
+    size = ''
+    if padded:
+        if n < 10:
+            size = '  '
+        elif n < 100:
+            size = ' '
+    if i != 0:
+        size += '%.1f %s' % (n, unit[i])
     else:
-        size = '%.0f' % n + '%s' % unit[i]
+        if padded:
+            size += '%.0f   %s' % (n, unit[i])
+        else:
+            size += '%.0f %s' % (n, unit[i])
     return size
 
 def dummy(*args, **kwargs):
@@ -133,36 +139,50 @@ def display_thread(displaykiller, mainquitflag):
         winpos = 0
         totalup = 0
         totaldown = 0
+        totaluptotal = 0.0
+        totaldowntotal = 0.0
         for file, threadinfo in threads.items(): 
             uprate = threadinfo.get('uprate', 0)
             downrate = threadinfo.get('downrate', 0)
             uptxt = '%s/s' % fmtsize(uprate)
             downtxt = '%s/s' % fmtsize(downrate)
+            uptotal = threadinfo.get('uptotal', 0.0)
+            downtotal = threadinfo.get('downtotal', 0.0)
+            uptotaltxt = fmtsize(uptotal, baseunit = 2)
+            downtotaltxt = fmtsize(downtotal, baseunit = 2)
             filesize = threadinfo.get('filesize', 'N/A')
             mainwin.addnstr(winpos, 0, threadinfo.get('savefile', file), mainwinw - 28, curses.A_BOLD)
-            mainwin.addnstr(winpos, mainwinw - 28 + (8 - len(filesize)), filesize, 8)
-            mainwin.addnstr(winpos, mainwinw - 20 + (10 - len(downtxt)), downtxt, 10)
-            mainwin.addnstr(winpos, mainwinw - 10 + (10 - len(uptxt)), uptxt, 10)
+            mainwin.addnstr(winpos, mainwinw - 30, filesize, 8)
+            mainwin.addnstr(winpos, mainwinw - 21, downtxt, 10)
+            mainwin.addnstr(winpos, mainwinw - 10, uptxt, 10)
             winpos = winpos + 1
             mainwin.addnstr(winpos, 0, '^--- ', 5) 
             if threadinfo.get('timeout', 0) > 0:
-                mainwin.addnstr(winpos, 6, 'Try %d: died, retrying in %d' % (threadinfo.get('try', 1), threadinfo.get('timeout')), mainwinw - 5)
+                mainwin.addnstr(winpos, 6, 'Try %d: died, retrying in %d' % (threadinfo.get('try', 1), threadinfo.get('timeout')), mainwinw - 21)
             else:
-                mainwin.addnstr(winpos, 6, threadinfo.get('status',''), mainwinw - 5)
+                mainwin.addnstr(winpos, 6, threadinfo.get('status',''), mainwinw - 21)
+            mainwin.addnstr(winpos, mainwinw - 21, downtotaltxt, 8)
+            mainwin.addnstr(winpos, mainwinw - 10, uptotaltxt, 8)
             winpos = winpos + 1
             totalup += uprate
             totaldown += downrate
+            totaluptotal += uptotal
+            totaldowntotal += downtotal
         # display statusline
         statuswin.erase() 
         statuswin.addnstr(0, 0, status, mainwinw)
         # display totals line
         totaluptxt = '%s/s' % fmtsize(totalup)
         totaldowntxt = '%s/s' % fmtsize(totaldown)
+        totaluptotaltxt = fmtsize(totaluptotal, baseunit = 2)
+        totaldowntotaltxt = fmtsize(totaldowntotal, baseunit = 2)
         
         totalwin.erase()
-        totalwin.addnstr(0, mainwinw - 27, 'Totals:', 7);
-        totalwin.addnstr(0, mainwinw - 20 + (10 - len(totaldowntxt)), totaldowntxt, 10)
-        totalwin.addnstr(0, mainwinw - 10 + (10 - len(totaluptxt)), totaluptxt, 10)
+        totalwin.addnstr(0, mainwinw - 29, 'Totals:', 7);
+        totalwin.addnstr(0, mainwinw - 21, totaldowntxt, 10)
+        totalwin.addnstr(0, mainwinw - 10, totaluptxt, 10)
+        totalwin.addnstr(1, mainwinw - 21, totaldowntotaltxt, 8)
+        totalwin.addnstr(1, mainwinw - 10, totaluptotaltxt, 8)
         curses.panel.update_panels()
         curses.doupdate()
         sleep(interval)
@@ -220,8 +240,10 @@ class StatusUpdater:
     def display(self, dict = {}):
         fractionDone = dict.get('fractionDone', None)
         timeEst = dict.get('timeEst', None)
-        downRate = dict.get('downRate', None)
-        upRate = dict.get('upRate', None)
+        downRate = dict.get('downRate', 0)
+        upRate = dict.get('upRate', 0)
+        downTotal = dict.get('downTotal', 0.0)
+        upTotal = dict.get('upTotal', 0.0)
         activity = dict.get('activity', None) 
         global filecheck, status
         if activity is not None and not self.done: 
@@ -237,20 +259,18 @@ class StatusUpdater:
                 self.myinfo['checking'] = 0
         else:
             self.myinfo['status'] = self.activity
-        if downRate is None: 
-            downRate = 0
-        if upRate is None:
-            upRate = 0
-        self.myinfo['uprate'] = int(upRate)
-        self.myinfo['downrate'] = int(downRate)
+        self.myinfo['uprate'] = upRate
+        self.myinfo['downrate'] = downRate
+        self.myinfo['uptotal'] = upTotal
+        self.myinfo['downtotal'] = downTotal
 
 def prepare_display(): 
     global mainwinw, scrwin, headerwin, totalwin
     try:
         scrwin.border(ord('|'),ord('|'),ord('-'),ord('-'),ord(' '),ord(' '),ord(' '),ord(' '))
         headerwin.addnstr(0, 0, 'Filename', mainwinw - 25, curses.A_BOLD)
-        headerwin.addnstr(0, mainwinw - 24, 'Size', 4);
-        headerwin.addnstr(0, mainwinw - 18, 'Download', 8);
+        headerwin.addnstr(0, mainwinw - 26, 'Size', 4);
+        headerwin.addnstr(0, mainwinw - 19, 'Download', 8);
         headerwin.addnstr(0, mainwinw -  6, 'Upload', 6);
         totalwin.addnstr(0, mainwinw - 27, 'Totals:', 7);
     except curses.error:
@@ -286,7 +306,7 @@ def winch_handler(signum = SIGWINCH, stackframe = None):
     headerwin = curses.newwin(1, mainwinw+1, 1, mainwinx)
     headerpan = curses.panel.new_panel(headerwin)
 
-    totalwin = curses.newwin(1, mainwinw+1, scrh-3, mainwinx)
+    totalwin = curses.newwin(2, mainwinw+1, scrh-4, mainwinx)
     totalpan = curses.panel.new_panel(totalwin)
 
     statuswin = curses.newwin(1, mainwinw+1, scrh-2, mainwinx)
@@ -331,7 +351,7 @@ if __name__ == '__main__':
         headerwin = curses.newwin(1, mainwinw+1, 1, mainwinx)
         headerpan = curses.panel.new_panel(headerwin)
 
-        totalwin = curses.newwin(1, mainwinw+1, scrh-3, mainwinx)
+        totalwin = curses.newwin(2, mainwinw+1, scrh-4, mainwinx)
         totalpan = curses.panel.new_panel(totalwin)
 
         statuswin = curses.newwin(1, mainwinw+1, scrh-2, mainwinx)

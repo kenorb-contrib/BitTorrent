@@ -77,18 +77,34 @@ class DownloadInfoFrame:
         gridSizer.Add(wxStaticText(panel, -1, 'Download to:'))
         self.fileDestText = wxStaticText(panel, -1, '')
         gridSizer.Add(self.fileDestText, 0, wxEXPAND)
-
-        gridSizer.Add(wxStaticText(panel, -1, 'Download rate:'))
-        self.downRateText = wxStaticText(panel, -1, '')
-        gridSizer.Add(self.downRateText, 0, wxEXPAND)
-
-        gridSizer.Add(wxStaticText(panel, -1, 'Upload rate:'))
-        self.upRateText = wxStaticText(panel, -1, '')
-        gridSizer.Add(self.upRateText, 0, wxEXPAND)
+        
         gridSizer.AddGrowableCol(1)
 
-        colSizer.Add(gridSizer, 0, wxEXPAND)
+        rategridSizer = wxFlexGridSizer(cols = 4, vgap = 3, hgap = 8)
 
+        rategridSizer.Add(wxStaticText(panel, -1, 'Download rate:'))
+        self.downRateText = wxStaticText(panel, -1, '')
+        rategridSizer.Add(self.downRateText, 0, wxEXPAND)
+
+        rategridSizer.Add(wxStaticText(panel, -1, 'Downloaded:'))
+        self.downTotalText = wxStaticText(panel, -1, '')
+        rategridSizer.Add(self.downTotalText, 0, wxEXPAND)
+        
+        rategridSizer.Add(wxStaticText(panel, -1, 'Upload rate:'))
+        self.upRateText = wxStaticText(panel, -1, '')
+        rategridSizer.Add(self.upRateText, 0, wxEXPAND)
+        
+        
+        rategridSizer.Add(wxStaticText(panel, -1, 'Uploaded:'))
+        self.upTotalText = wxStaticText(panel, -1, '')
+        rategridSizer.Add(self.upTotalText, 0, wxEXPAND)
+       
+        rategridSizer.AddGrowableCol(1)
+        rategridSizer.AddGrowableCol(3)
+
+        
+        colSizer.Add(gridSizer, 0, wxEXPAND)
+        colSizer.Add(rategridSizer, 0, wxEXPAND)
         self.errorText = wxStaticText(panel, -1, '', style = wxALIGN_LEFT)
         self.errorText.SetForegroundColour('Red')
         colSizer.Add(self.errorText, 0, wxEXPAND)
@@ -123,24 +139,31 @@ class DownloadInfoFrame:
             wxPostEvent(self.frame, InvokeEvent(func, args, kwargs))
 
     def updateStatus(self, dict):
-        self.invokeLater(self.onUpdateStatus, [	dict.get('fractionDone', None),
-                                                dict.get('timeEst', None), 
-                                                dict.get('downRate', None), 
-                                                dict.get('upRate', None), 
-                                                dict.get('activity', None)])
+        self.invokeLater(self.onUpdateStatus, [dict])
 
-    def onUpdateStatus(self, fractionDone, timeEst, downRate, upRate, activity):
+    def onUpdateStatus(self, dict):
+        fractionDone = dict.get('fractionDone', None);
+        timeEst = dict.get('timeEst', None);
+        downRate = dict.get('downRate', None);
+        upRate = dict.get('upRate', None);
+        activity = dict.get('activity', None);
+        downTotal = dict.get('downTotal', None);
+        upTotal = dict.get('upTotal', None);
         if fractionDone is not None and not self.fin:
             self.gauge.SetValue(int(fractionDone * 1000))
             self.frame.SetTitle('%d%% %s - BitTorrent %s' % (int(fractionDone*100), self.filename, version))
         if timeEst is not None:
-            self.timeEstText.SetLabel(hours(timeEst))
+            self.timeEstText.SetLabel(hours(dict['timeEst']))
         if activity is not None and not self.fin:
             self.timeEstText.SetLabel(activity)
         if downRate is not None:
-            self.downRateText.SetLabel('%.0f kB/s' % (float(downRate) / (1 << 10)))
+            self.downRateText.SetLabel('%.0f KiB/s' % (float(downRate) / (1 << 10)))
         if upRate is not None:
-            self.upRateText.SetLabel('%.0f kB/s' % (float(upRate) / (1 << 10)))
+            self.upRateText.SetLabel('%.0f KiB/s' % (float(upRate) / (1 << 10)))
+        if downTotal is not None:
+            self.downTotalText.SetLabel('%.1f MiB/s' % (downTotal))
+        if upTotal is not None:
+            self.upTotalText.SetLabel('%.1f MiB/s' % (upTotal))
 
     def finished(self):
         self.fin = true

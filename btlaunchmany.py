@@ -29,20 +29,27 @@ def fmttime(n):
         return 'n/a'
     return '%d:%02d:%02d' % (h, m, s)
 
-def fmtsize(n):
+def fmtsize(n, baseunit = 0, padded = 1):
     unit = [' B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB']
-    i = 0
-    if (n > 999):
-        i = 1
-        while i + 1 < len(unit) and (n >> 10) >= 999:
-            i += 1
-            n >>= 10
+    i = baseunit
+    while i + 1 < len(unit) and n >= 999:
+        i += 1
         n = float(n) / (1 << 10)
-    if i > 0:
-        size = '%.1f' % n + '%s' % unit[i]
+    size = ''
+    if padded:
+        if n < 10:
+            size = '  '
+        elif n < 100:
+            size = ' '
+    if i != 0:
+        size += '%.1f %s' % (n, unit[i])
     else:
-        size = '%.0f' % n + '%s' % unit[i]
+        if padded:
+            size += '%.0f   %s' % (n, unit[i])
+        else:
+            size += '%.0f %s' % (n, unit[i])
     return size
+
 
 def dummy(*args, **kwargs):
     pass
@@ -114,11 +121,17 @@ def display_thread(displaykiller):
             break
         totalup = 0
         totaldown = 0
+        totaluptotal = 0.0
+        totaldowntotal = 0.0
         for file, threadinfo in threads.items(): 
             uprate = threadinfo.get('uprate', 0)
             downrate = threadinfo.get('downrate', 0)
-            uptxt = fmtsize(uprate)
-            downtxt = fmtsize(downrate)
+            uptxt = fmtsize(uprate, padded = 0)
+            downtxt = fmtsize(downrate, padded = 0)
+            uptotal = threadinfo.get('uptotal', 0.0)
+            downtotal = threadinfo.get('downtotal', 0.0)
+            uptotaltxt = fmtsize(uptotal, baseunit = 2, padded = 0)
+            downtotaltxt = fmtsize(downtotal, baseunit = 2, padded = 0)
             filename = threadinfo.get('savefile', file)
             if threadinfo.get('timeout', 0) > 0:
                 trys = threadinfo.get('try', 1)
@@ -126,13 +139,17 @@ def display_thread(displaykiller):
                 print '%s: try %d died, retry in %d' % (filename, trys, timeout)
             else:
                 status = threadinfo.get('status','')
-                print '%s: %s/%s [%s]' % (filename, uptxt, downtxt, status)
+                print '%s: Spd: %s/%s Tot: %s/%s [%s]' % (filename, uptxt, downtxt, uptotaltxt, downtotaltxt, status)
             totalup += uprate
             totaldown += downrate
+            totaluptotal += uptotal
+            totaldowntotal += downtotal
         # display totals line
-        totaluptxt = '%s/s' % fmtsize(totalup)
-        totaldowntxt = '%s/s' % fmtsize(totaldown)
-        print 'Total: %s up %s down' % (totaluptxt, totaldowntxt)
+        totaluptxt = fmtsize(totalup, padded = 0)
+        totaldowntxt = fmtsize(totaldown, padded = 0)
+        totaluptotaltxt = fmtsize(totaluptotal, baseunit = 2, padded = 0)
+        totaldowntotaltxt = fmtsize(totaldowntotal, baseunit = 2, padded = 0)
+        print 'All: Spd: %s/%s Tot: %s/%s' % (totaluptxt, totaldowntxt, totaluptotaltxt, totaldowntotaltxt)
         print
         stdout.flush()
         sleep(interval)
@@ -188,8 +205,10 @@ class StatusUpdater:
     def display(self, dict = {}):
         fractionDone = dict.get('fractionDone', None)
         timeEst = dict.get('timeEst', None)
-        downRate = dict.get('downRate', None)
-        upRate = dict.get('upRate', None)
+        downRate = dict.get('downRate', 0)
+        upRate = dict.get('upRate', 0)
+        downTotal = dict.get('downTotal', 0.0)
+        upTotal = dict.get('upTotal', 0.0)
         activity = dict.get('activity', None) 
         global status
         if activity is not None and not self.done: 
@@ -210,12 +229,10 @@ class StatusUpdater:
                 self.myinfo['checking'] = 0
         else:
             self.myinfo['status'] = self.activity
-        if downRate is None: 
-            downRate = 0
-        if upRate is None:
-            upRate = 0
-        self.myinfo['uprate'] = int(upRate)
-        self.myinfo['downrate'] = int(downRate)
+        self.myinfo['uprate'] = upRate
+        self.myinfo['downrate'] = downRate
+        self.myinfo['uptotal'] = upTotal
+        self.myinfo['downtotal'] = downTotal
 
 if __name__ == '__main__':
     if (len(argv) < 2):

@@ -23,22 +23,33 @@ def fmttime(n):
         return 'n/a'
     return 'finishing in %d:%02d:%02d' % (h, m, s)
 
+def commaize(n): 
+    s = str(n)
+    commad = s[-3:]
+    while len(s) > 3:
+        s = s[:-3]
+        commad = '%s,%s' % (s[-3:], commad)
+    return commad
+
 def fmtsize(n, baseunit = 0, padded = 1):
     unit = [' B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB']
     i = baseunit
     while i + 1 < len(unit) and n >= 999:
         i += 1
         n = float(n) / (1 << 10)
+    size = ''
     if padded:
-        if i != 0:
-            size = '% 5.1f %s' % (n, unit[i])
+        if n < 10:
+            size = '  '
+        elif n < 100:
+            size = ' '
+    if i != 0:
+        size += '%.1f %s' % (n, unit[i])
+    else:
+        if padded:
+            size += '%.0f   %s' % (n, unit[i])
         else: 
-            size = '% 5.0f %s' % (n, unit[i])
-    else: 
-        if i != 0:
-            size = '%.1f %s' % (n, unit[i])
-        else: 
-            size = '%.0f %s' % (n, unit[i])
+            size += '%.0f %s' % (n, unit[i])
     return size
 
 def winch_handler(signum, stackframe):
@@ -85,10 +96,12 @@ class CursesDisplayer:
         self.display({'fractionDone': 1})
 
     def failed(self):
-        self.done = 1
-        self.activity = 'download failed!'
-        self.downRate = '%s/s down' % (fmtsize(0))
-        self.display()
+        global mainkillflag
+        if not mainkillflag.isSet():
+            self.done = 1
+            self.activity = 'download failed!'
+            self.downRate = '%s/s down' % (fmtsize(0))
+            self.display()
 
     def error(self, errormsg):
         errtxt = strftime('[%H:%M:%S] ') + errormsg
@@ -139,8 +152,8 @@ class CursesDisplayer:
             if self.progress:
                 fieldwin.addnstr(3, 0, self.progress, fieldw, curses.A_BOLD)
             fieldwin.addnstr(4, 0, self.status, fieldw)
-            fieldwin.addnstr(5, 0, self.downRate + ' / ' + self.upRate, fieldw / 2)
-            fieldwin.addnstr(6, 0, self.downTotal + ' / ' + self.upTotal, fieldw / 2)
+            fieldwin.addnstr(5, 0, self.downRate + ' - ' + self.upRate, fieldw / 2)
+            fieldwin.addnstr(6, 0, self.downTotal + ' - ' + self.upTotal, fieldw / 2)
 
             if self.errors:
                 errsize = len(self.errors)
@@ -158,7 +171,7 @@ class CursesDisplayer:
 
     def chooseFile(self, default, size, saveas, dir):
         self.file = default
-        self.fileSize = '%d (%s)' % (size, fmtsize(size, padded = 0))
+        self.fileSize = '%s (%s)' % (commaize(size), fmtsize(size, padded = 0))
         if saveas == '':
             saveas = default
         self.downloadTo = abspath(saveas)

@@ -35,6 +35,8 @@ class HeadlessDisplayer:
         self.downloadTo = ''
         self.downRate = ''
         self.upRate = ''
+        self.downTotal = ''
+        self.upTotal = ''
         self.errors = []
 
     def finished(self):
@@ -63,18 +65,28 @@ class HeadlessDisplayer:
         if dict.has_key('activity') and not self.done:
             self.timeEst = dict['activity']
         if dict.has_key('downRate'):
-            self.downRate = '%.0f kB/s' % (float(dict['downRate']) / (1 << 10))
+            self.downRate = '%.2f kB/s' % (float(dict['downRate']) / (1 << 10))
         if dict.has_key('upRate'):
-            self.upRate = '%.0f kB/s' % (float(dict['upRate']) / (1 << 10))
-        print '\n\n\n\n'
+            self.upRate = '%.2f kB/s' % (float(dict['upRate']) / (1 << 10))
+        if dict.has_key('upTotal'):
+            self.upTotal = '%.1f MiB' % (dict['upTotal'])
+        if dict.has_key('downTotal'):
+            self.downTotal = '%.1f MiB' % (dict['downTotal'])
+        print '\n\n'
         for err in self.errors:
             print 'ERROR:\n' + err + '\n'
         print 'saving:        ', self.file
         print 'percent done:  ', self.percentDone
         print 'time left:     ', self.timeEst
         print 'download to:   ', self.downloadTo
-        print 'download rate: ', self.downRate
-        print 'upload rate:   ', self.upRate
+        if self.downRate != '':
+            print 'download rate: ', self.downRate
+        if self.upRate != '':
+            print 'upload rate:   ', self.upRate
+        if self.downTotal != '':
+            print 'download total:', self.downTotal
+        if self.upTotal != '':
+            print 'upload total:  ', self.upTotal
         stdout.flush()
 
     def chooseFile(self, default, size, saveas, dir):
