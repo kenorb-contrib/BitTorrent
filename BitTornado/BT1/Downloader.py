@@ -149,7 +149,6 @@ class SingleDownload:
         self.last = clock()
         self.measure.update_rate(length)
         self.downloader.measurefunc(length)
-        self.downloader.downmeasure.update_rate(length)
         if not self.downloader.storage.piece_came_in(index, begin, piece, self.guard):
             self.downloader.piece_flunked(index)
             return False
@@ -314,20 +313,19 @@ class SingleDownload:
 
 class Downloader:
     def __init__(self, storage, picker, backlog, max_rate_period,
-                 numpieces, chunksize, downmeasure, snub_time,
-                 kickbans_ok, kickfunc, banfunc, measurefunc = lambda x: None):
+                 numpieces, chunksize, measurefunc, snub_time,
+                 kickbans_ok, kickfunc, banfunc):
         self.storage = storage
         self.picker = picker
         self.backlog = backlog
         self.max_rate_period = max_rate_period
-        self.downmeasure = downmeasure
+        self.measurefunc = measurefunc
         self.totalmeasure = Measure(max_rate_period*storage.piece_length/storage.request_size)
         self.numpieces = numpieces
         self.chunksize = chunksize
         self.snub_time = snub_time
         self.kickfunc = kickfunc
         self.banfunc = banfunc
-        self.measurefunc = measurefunc
         self.disconnectedseeds = {}
         self.downloads = []
         self.perip = {}
@@ -479,7 +477,7 @@ class Downloader:
             self.requeue_piece_download()
         if self.picker.am_I_complete():
             assert not self.all_requests
-            self.endgamemode = False
+            assert not self.endgamemode
             for d in [i for i in self.downloads if i.have.complete()]:
                 d.connection.send_have(index)   # be nice, tell the other seed you completed
                 self.add_disconnected_seed(d.connection.get_readable_id())
@@ -543,7 +541,8 @@ class Downloader:
             else:
                 d._request_more()
 
-    def start_endgame(self):            
+    def start_endgame(self):
+        assert not self.endgamemode
         self.endgamemode = True
         assert not self.all_requests
         for d in self.downloads:

@@ -73,7 +73,7 @@ def fmtsize(n):
         s = s[:-3]
         size = '%s,%s' % (s[-3:], size)
     if n > 999:
-        unit = ['B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB']
+        unit = ['B', 'KiB', 'MiB', 'GiB', 'TiB', 'PiB', 'EiB', 'ZiB', 'YiB']
         i = 1
         while i + 1 < len(unit) and (n >> 10) >= 999:
             i += 1

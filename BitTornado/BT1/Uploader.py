@@ -22,6 +22,7 @@ class Upload:
         self.max_rate_period = max_rate_period
         self.buffer_reads = buffer_reads
         self.choked = True
+        self.cleared = True
         self.interested = False
         self.buffer = []
         self.measure = Measure(max_rate_period, fudge)
@@ -52,11 +53,12 @@ class Upload:
             self.choker.interested(self.connection)
 
     def get_upload_chunk(self):
-        if not self.buffer:
+        if self.choked or not self.buffer:
             return None
         index, begin, length = self.buffer.pop(0)
         if self.buffer_reads:
             if index != self.piecedl:
+                del self.piecebuf
                 self.piecedl = index
                 self.piecebuf = self.storage.get_piece(index, 0, -1)
             try:
@@ -78,9 +80,9 @@ class Upload:
                    or not self.interested or length > self.max_slice_length ):
             self.connection.close()
             return
-        if not self.choked:
+        if not self.cleared:
             self.buffer.append((index, begin, length))
-            if self.connection.next_upload is None:
+        if not self.choked and self.connection.next_upload is None:
                 self.ratelimiter.queue(self.connection)
 
 
@@ -93,14 +95,18 @@ class Upload:
     def choke(self):
         if not self.choked:
             self.choked = True
-            del self.buffer[:]
-            self.piecedl = None
-            self.piecebuf = None
             self.connection.send_choke()
+
+    def choke_sent(self):
+        del self.buffer[:]
+        self.cleared = True
+        self.piecedl = None
+        self.piecebuf = None
 
     def unchoke(self):
         if self.choked:
             self.choked = False
+            self.cleared = False
             self.connection.send_unchoke()
         
     def is_choked(self):
@@ -110,7 +116,7 @@ class Upload:
         return self.interested
 
     def has_queries(self):
-        return len(self.buffer) > 0
+        return not self.choked and len(self.buffer) > 0
 
     def get_rate(self):
         return self.measure.get_rate()

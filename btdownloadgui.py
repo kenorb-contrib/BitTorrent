@@ -1827,10 +1827,13 @@ class DownloadInfoFrame:
                     self.fileList.SetStringItem(i,1,"100%")
                 else:
                     self.fileList.SetItemImage(i,0,0)
-                    frac = int((len(statistics.filepieces2[i])-len(statistics.filepieces[i]))*100
-                            /len(statistics.filepieces2[i]))
+                    try:
+                        frac = int((len(statistics.filepieces2[i])-len(statistics.filepieces[i]))
+                                /len(statistics.filepieces2[i]))
+                    except:
+                        frac = 0
                     if frac:
-                        self.fileList.SetStringItem(i,1,'%d%%' % (frac))
+                        self.fileList.SetStringItem(i,1,'%d%%' % (frac*100))
                     else:
                         self.fileList.SetStringItem(i,1,'')
 

@@ -20,7 +20,7 @@ from threading import Event, Thread
 from BitTornado.bencode import bdecode
 import sys
 from os import getcwd
-from os.path import join
+from os.path import join, isdir
 try:
     from wxPython.wx import *
 except:

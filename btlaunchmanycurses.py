@@ -61,7 +61,7 @@ def fmttime(n):
 
 def fmtsize(n):
     n = long(n)
-    unit = [' B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB']
+    unit = [' B', 'KiB', 'MiB', 'GiB', 'TiB', 'PiB', 'EiB', 'ZiB', 'YiB']
     i = 0
     if (n > 999):
         i = 1

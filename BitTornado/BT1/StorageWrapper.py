@@ -715,6 +715,8 @@ class StorageWrapper:
                 self.failed('told file complete on start-up, but piece failed hash check')
                 return None
             self.waschecked[index] = True
+            if length == -1 and begin == 0:
+                return data     # optimization
         if length == -1:
             if begin > self._piecelen(index):
                 return None

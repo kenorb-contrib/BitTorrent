@@ -21,6 +21,7 @@ except:
 DEBUG = False
 
 MAXLOCKSIZE = 1000000000
+MAXLOCKRANGE = 3999999999   # only lock first 4 gig of file
 
 def dummy_status(fractionDone = None, activity = None):
     pass
@@ -102,14 +103,14 @@ class Storage:
     if os.name == 'nt':
         def _lock_file(self, name, f):
             import msvcrt
-            for p in range(0, self.sizes[name], MAXLOCKSIZE):
+            for p in range(0, min(self.sizes[name],MAXLOCKRANGE), MAXLOCKSIZE):
                 f.seek(p)
                 msvcrt.locking(f.fileno(), msvcrt.LK_LOCK,
                                min(MAXLOCKSIZE,self.sizes[name]-p))
 
         def _unlock_file(self, name, f):
             import msvcrt
-            for p in range(0, self.sizes[name], MAXLOCKSIZE):
+            for p in range(0, min(self.sizes[name],MAXLOCKRANGE), MAXLOCKSIZE):
                 f.seek(p)
                 msvcrt.locking(f.fileno(), msvcrt.LK_UNLCK,
                                min(MAXLOCKSIZE,self.sizes[name]-p))
@@ -178,7 +179,12 @@ class Storage:
                             +strftime('(%x %X)',localtime(self.mtimes[file]))
                             +strftime(' != (%x %X) ?',localtime(getmtime(file))) )
                 raise IOError('modified during download')
-        return open(file, mode)
+        try:
+            return open(file, mode)
+        except:
+            if DEBUG:
+                print_exc()
+            raise
 
 
     def _close(self, file):
@@ -215,6 +221,8 @@ class Storage:
                     self.whandles[file] = 1
                     self.lock_file(file, f)
                 except (IOError, OSError), e:
+                    if DEBUG:
+                        print_exc()
                     raise IOError('unable to reopen '+file+': '+str(e))
 
             if self.handlebuffer:
@@ -236,6 +244,8 @@ class Storage:
                     if self.lock_while_reading:
                         self.lock_file(file, f)
             except (IOError, OSError), e:
+                if DEBUG:
+                    print_exc()
                 raise IOError('unable to open '+file+': '+str(e))
             
             if self.handlebuffer is not None:

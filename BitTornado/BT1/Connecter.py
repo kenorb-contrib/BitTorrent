@@ -73,6 +73,7 @@ class Connection:
             self.send_choke_queued = True
         else:
             self._send_message(CHOKE)
+            self.upload.choke_sent()
 
     def send_unchoke(self):
         if self.send_choke_queued:
@@ -134,6 +135,7 @@ class Connection:
         if self.send_choke_queued:
             self.send_choke_queued = False
             self.outqueue.append(tobinary(1)+CHOKE)
+            self.upload.choke_sent()
         q.extend(self.outqueue)
         self.outqueue = []
         q = ''.join(q)

@@ -64,6 +64,7 @@ class SingleSocket:
                 pass
         print ''
         '''
+        assert self.socket
         self.connected = False
         sock = self.socket
         self.socket = None

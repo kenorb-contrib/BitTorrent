@@ -202,7 +202,7 @@ class LaunchMany:
             for hash in self.torrent_list:
                 self.Output.message('dropped "'+self.torrent_cache[hash]['path']+'"')
                 self.downloads[hash].shutdown()
-            rawserver.shutdown()
+            self.rawserver.shutdown()
 
         except:
             data = StringIO()

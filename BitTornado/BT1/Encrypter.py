@@ -153,6 +153,7 @@ class Connection:
             self.connection.write(message)
 
     def data_came_in(self, connection, s):
+        self.Encoder.measurefunc(len(s))
         while True:
             if self.closed:
                 return
@@ -187,7 +188,7 @@ class Connection:
 class Encoder:
     def __init__(self, connecter, raw_server, my_id, max_len,
             schedulefunc, keepalive_delay, download_id, 
-            config):
+            measurefunc, config):
         self.raw_server = raw_server
         self.connecter = connecter
         self.my_id = my_id
@@ -195,6 +196,7 @@ class Encoder:
         self.schedulefunc = schedulefunc
         self.keepalive_delay = keepalive_delay
         self.download_id = download_id
+        self.measurefunc = measurefunc
         self.config = config
         self.connections = {}
         self.banned = {}

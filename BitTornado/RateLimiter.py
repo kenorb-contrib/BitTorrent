@@ -61,3 +61,6 @@ class RateLimiter:
                 cur = cur.next_upload
         else:
             self.sched(self.try_send, self.bytes_sent / self.upload_rate)
+
+    def adjust_sent(self, bytes):
+        self.bytes_sent += bytes
