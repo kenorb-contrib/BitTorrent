@@ -1,7 +1,7 @@
 # Written by Bram Cohen
 # see LICENSE.txt for license information
 
-from bitfield import bitfield_to_booleans
+from bitfield import Bitfield
 from binascii import b2a_hex
 from CurrentRateMeasure import Measure
 
@@ -182,8 +182,9 @@ class Connecter:
                 return
             c.download.got_have(i)
         elif t == BITFIELD:
-            b = bitfield_to_booleans(message[1:], self.numpieces)
-            if b is None:
+            try:
+                b = Bitfield(self.numpieces, message[1:])
+            except ValueError:
                 connection.close()
                 return
             c.download.got_have_bitfield(b)
@@ -260,7 +261,7 @@ class DummyDownload:
         self.events.append(('have', i))
 
     def got_have_bitfield(self, bitfield):
-        self.events.append(('bitfield', bitfield))
+        self.events.append(('bitfield', bitfield.tostring()))
 
     def got_piece(self, index, begin, piece):
         self.events.append(('piece', index, begin, piece))
@@ -328,7 +329,7 @@ def test_operation():
     cc.send_piece(1, 2, 'abc')
     co.connection_lost(dc)
     x = ['made upload', 'made download', 'made', 
-        ('bitfield', [True, True, False]), 'choke', 'unchoke',
+        ('bitfield', chr(0xC0)), 'choke', 'unchoke',
         'interested', 'not interested', ('have', 2), 
         ('request', 1, 5, 6), ('cancel', 2, 3, 4),
         ('piece', 1, 0, 'abc'), ('piece', 1, 3, 'def'), 

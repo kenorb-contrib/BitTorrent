@@ -4,6 +4,7 @@
 from CurrentRateMeasure import Measure
 from random import shuffle
 from time import time
+from bitfield import Bitfield
 
 class SingleDownload:
     def __init__(self, downloader, connection):
@@ -13,10 +14,9 @@ class SingleDownload:
         self.interested = False
         self.active_requests = []
         self.measure = Measure(downloader.max_rate_period)
-        self.have = [False] * downloader.numpieces
+        self.have = Bitfield(downloader.numpieces)
         self.last = 0
         self.example_interest = None
-        self.unhave = downloader.numpieces
 
     def disconnected(self):
         self.downloader.downloads.remove(self)
@@ -107,7 +107,7 @@ class SingleDownload:
                         d.fix_download_endgame()
         self._request_more()
         if self.downloader.picker.am_I_complete():
-            for d in [i for i in self.downloader.downloads if i.unhave == 0]:
+            for d in [i for i in self.downloader.downloads if i.have.numfalse == 0]:
                 d.connection.close()
         return self.downloader.storage.do_I_have(index)
 
@@ -124,7 +124,7 @@ class SingleDownload:
         lost_interests = []
         while len(self.active_requests) < self.downloader.backlog:
             if indices is None:
-                interest = self.downloader.picker.next(self._want, self.unhave == 0)
+                interest = self.downloader.picker.next(self._want, self.have.numfalse == 0)
             else:
                 interest = None
                 for i in indices:
@@ -138,7 +138,7 @@ class SingleDownload:
                 self.connection.send_interested()
             self.example_interest = interest
             begin, length = self.downloader.storage.new_request(interest)
-            self.downloader.picker.requested(interest, self.unhave == 0)
+            self.downloader.picker.requested(interest, self.have.numfalse == 0)
             self.active_requests.append((interest, begin, length))
             self.connection.send_request(interest, begin, length)
             if not self.downloader.storage.do_I_have_requests(interest):
@@ -157,7 +157,7 @@ class SingleDownload:
                         break
                 else:
                     continue
-                interest = self.downloader.picker.next(d._want, d.unhave == 0)
+                interest = self.downloader.picker.next(d._want, d.have.numfalse == 0)
                 if interest is None:
                     d.interested = False
                     d.connection.send_not_interested()
@@ -191,9 +191,8 @@ class SingleDownload:
         if self.have[index]:
             return
         self.have[index] = True
-        self.unhave -= 1
         self.downloader.picker.got_have(index)
-        if self.downloader.picker.am_I_complete() and self.unhave == 0:
+        if self.downloader.picker.am_I_complete() and self.have.numfalse == 0:
             self.connection.close()
             return
         if self.downloader.storage.is_endgame():
@@ -208,11 +207,10 @@ class SingleDownload:
 
     def got_have_bitfield(self, have):
         self.have = have
-        for i in xrange(len(have)):
-            if have[i]:
-                self.unhave -= 1
+        for i in xrange(len(self.have)):
+            if self.have[i]:
                 self.downloader.picker.got_have(i)
-        if self.downloader.picker.am_I_complete() and self.unhave == 0:
+        if self.downloader.picker.am_I_complete() and self.have.numfalse == 0:
             self.connection.close()
             return
         if self.downloader.storage.is_endgame():
@@ -221,8 +219,8 @@ class SingleDownload:
                     self.interested = True
                     self.connection.send_interested()
                     return
-        for i in xrange(len(have)):
-            if have[i] and self.downloader.storage.do_I_have_requests(i):
+        for i in xrange(len(self.have)):
+            if self.have[i] and self.downloader.storage.do_I_have_requests(i):
                 self.interested = True
                 self.connection.send_interested()
                 return
@@ -342,7 +340,7 @@ def test_stops_at_backlog():
     assert events == []
     assert ds.remaining == [[(0, 2), (2, 2), (4, 2), (6, 2)]]
     assert ds.active == [[]]
-    sd.got_have_bitfield([True])
+    sd.got_have_bitfield(Bitfield(1, chr(0x80)))
     assert events == ['got have', 'interested']
     del events[:]
     assert ds.remaining == [[(0, 2), (2, 2), (4, 2), (6, 2)]]
