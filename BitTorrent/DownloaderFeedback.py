@@ -50,7 +50,10 @@ class DownloaderFeedback:
             timeEst = 'Unknown'
         else:
             timeEst = hours(r)
-        timeEst = "%s (%s MB of %s MB copied)" % (timeEst, mbfy(self.leftfunc()), mbfy(self.file_length))
+        downloadedSize = self.file_length - self.leftfunc()
+        timeEst = "%s (%s MB of %s MB copied)" % (timeEst, mbfy(downloadedSize), mbfy(self.file_length))
+        
+        percentDone = int((downloadedSize / float(self.file_length)) * 100)
         
         downRate = 0
         upRate = 0
@@ -87,5 +90,5 @@ class DownloaderFeedback:
             downRate = downRate + d.rate
         upRate = '%s kB/s' % kify(upRate)
         downRate = '%s kB/s' % kify(downRate)
-        self.statusfunc(timeEst = timeEst, downRate = downRate, upRate = upRate)
+        self.statusfunc(timeEst = timeEst, percentDone = percentDone, downRate = downRate, upRate = upRate)
         
