@@ -379,10 +379,10 @@ class Tracker:
         if rsize > 0:
             if params.get('no_peer_id', 0):
                 cache = self.cache2.setdefault(infohash, [])
-                b = becache2
+                b = self.becache2
             else:
                 cache = self.cache1.setdefault(infohash, [])
-                b = becache1
+                b = self.becache1
             if len(cache) < rsize:
                 del cache[:]
                 cache.extend(b.setdefault(infohash, {}).values())
