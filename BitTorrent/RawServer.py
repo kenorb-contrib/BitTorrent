@@ -1,0 +1,406 @@
+# Written by Bram Cohen
+# this file is public domain
+
+import socket
+from cStringIO import StringIO
+from traceback import print_exc
+from errno import EWOULDBLOCK, EINTR
+try:
+    from select import poll, error, POLLIN, POLLOUT, POLLERR, POLLHUP
+    timemult = 1
+except ImportError:
+    from selectpoll import poll, error, POLLIN, POLLOUT, POLLERR, POLLHUP
+    timemult = .001
+import threading
+import time
+import sys
+true = 1
+false = 0
+
+all = POLLIN | POLLOUT
+
+class SingleSocket:
+    def __init__(self, raw_server, sock):
+        self.raw_server = raw_server
+        self.socket = sock
+        self.buffer = []
+        
+    def get_ip(self):
+        try:
+            return self.socket.getpeername()[0]
+        except socket.error, e:
+            return 'no connection'
+        
+    def close(self):
+        sock = self.socket
+        self.socket = None
+        self.buffer = []
+        del self.raw_server.single_sockets[sock.fileno()]
+        self.raw_server.poll.unregister(sock)
+        sock.close()
+
+    def write(self, s):
+        assert self.socket is not None
+        self.buffer.append(s)
+        if len(self.buffer) == 1:
+            self.try_write()
+
+    def try_write(self):
+        try:
+            while self.buffer != []:
+                amount = self.socket.send(self.buffer[0])
+                if amount != len(self.buffer[0]):
+                    if amount != 0:
+                        self.buffer[0] = self.buffer[0][amount:]
+                    break
+                del self.buffer[0]
+        except socket.error, e:
+            code, msg = e
+            if code != EWOULDBLOCK:
+                self.raw_server.dead_from_write.append(self)
+        if self.buffer == []:
+            self.raw_server.poll.register(self.socket, POLLIN)
+        else:
+            self.raw_server.poll.register(self.socket, all)
+
+class RawServer:
+    def __init__(self, port, encrypter, lock, poll_period):
+        self.port = port
+        self.encrypter = encrypter
+        self.lock = lock
+        self.poll_period = poll_period * timemult
+        self.poll = poll()
+        # {socket: SingleSocket}
+        self.single_sockets = {}
+        self.dead_from_write = []
+        self.running = true
+
+    def shutdown(self):
+        self.running = false
+
+    def start_listening(self):
+        self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        self.server.setblocking(0)
+        self.server.bind(('', self.port))
+        self.server.listen(5)
+        self.poll.register(self.server, POLLIN)
+        threading.Thread(target = self.listen_forever).start()
+    
+    def start_connection(self, dns):
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.setblocking(0)
+        sock.connect_ex(dns)
+        self.poll.register(sock, all)
+        s = SingleSocket(self, sock)
+        self.single_sockets[sock.fileno()] = s
+        return s
+        
+    def handle_events(self, events):
+        for sock, event in events:
+            if sock == self.server.fileno():
+                if event & (POLLHUP | POLLERR) != 0:
+                    self.close_socket(s)
+                    self.poll.unregister(sef.socket)
+                    print "lost server socket"
+                else:
+                    newsock, addr = self.server.accept()
+                    newsock.setblocking(0)
+                    nss = SingleSocket(self, newsock)
+                    self.single_sockets[newsock.fileno()] = nss
+                    self.poll.register(newsock, POLLIN)
+                    self.encrypter.external_connection_made(nss)
+            else:
+                if sock == self.server.fileno():
+                    continue
+                s = self.single_sockets.get(sock)
+                if s is None:
+                    continue
+                if (event & (POLLHUP | POLLERR)) != 0:
+                    self.close_socket(s)
+                    continue
+                if (event & POLLIN) != 0:
+                    try:
+                        hit = false
+                        data = s.socket.recv(100000)
+                        if data == '':
+                            self.close_socket(s)
+                            hit = true
+                        else:
+                            self.encrypter.data_came_in(s, data)
+                    except socket.error, e:
+                        code, msg = e
+                        if code != EWOULDBLOCK:
+                            self.close_socket(s)
+                            continue
+                    if hit:
+                        continue
+                if (event & POLLOUT) != 0 and s.socket is not None:
+                    s.try_write()
+
+    def listen_forever(self):
+        while self.running:
+            try:
+                events = self.poll.poll(self.poll_period)
+                try:
+                    self.lock.acquire()
+                    self.close_dead()
+                    self.handle_events(events)
+                    self.close_dead()
+                finally:
+                    self.lock.release()
+            except error, e:
+                a, b = e
+                if a == EINTR:
+                    return
+                else:
+                    print_exc()
+            except KeyboardInterrupt:
+                return
+            except:
+                print_exc()
+        self.server.close()
+        for ss in self.single_sockets.values():
+            ss.close()
+
+    def close_dead(self):
+        while len(self.dead_from_write) > 0:
+            old = self.dead_from_write
+            self.dead_from_write = []
+            for s in old:
+                if self.single_sockets.has_key(s):
+                    self.close_socket(s)
+
+    def close_socket(self, s):
+        sock = s.socket.fileno()
+        s.socket.close()
+        self.poll.unregister(sock)
+        del self.single_sockets[sock]
+        s.socket = None
+        self.encrypter.connection_lost(s)
+
+# everything below is for testing
+
+class DummyEncrypter:
+    def __init__(self):
+        self.external_made = []
+        self.data_in = []
+        self.lost = []
+
+    def external_connection_made(self, s):
+        self.external_made.append(s)
+    
+    def data_came_in(self, s, data):
+        self.data_in.append((s, data))
+    
+    def connection_lost(self, s):
+        self.lost.append(s)
+
+def test_starting_side_close():
+    try:
+        lock = threading.Condition()
+        da = DummyEncrypter()
+        sa = RawServer(5000, da, lock, 100)
+        sa.start_listening()
+        db = DummyEncrypter()
+        sb = RawServer(5001, db, lock, 100)
+        sb.start_listening()
+
+        ca = sa.start_connection(('', 5001))
+        time.sleep(1)
+        
+        assert da.external_made == []
+        assert da.data_in == []
+        assert da.lost == []
+        assert len(db.external_made) == 1
+        cb = db.external_made[0]
+        del db.external_made[:]
+        assert db.data_in == []
+        assert db.lost == []
+
+        ca.write('aaa')
+        cb.write('bbb')
+        time.sleep(1)
+        
+        assert da.external_made == []
+        assert da.data_in == [(ca, 'bbb')]
+        del da.data_in[:]
+        assert da.lost == []
+        assert db.external_made == []
+        assert db.data_in == [(cb, 'aaa')]
+        del db.data_in[:]
+        assert db.lost == []
+
+        ca.write('ccc')
+        cb.write('ddd')
+        time.sleep(1)
+        
+        assert da.external_made == []
+        assert da.data_in == [(ca, 'ddd')]
+        del da.data_in[:]
+        assert da.lost == []
+        assert db.external_made == []
+        assert db.data_in == [(cb, 'ccc')]
+        del db.data_in[:]
+        assert db.lost == []
+
+        ca.close()
+        time.sleep(1)
+
+        assert da.external_made == []
+        assert da.data_in == []
+        assert da.lost == []
+        assert db.external_made == []
+        assert db.data_in == []
+        assert db.lost == [cb]
+        del db.lost[:]
+    finally:
+        sa.shutdown()
+        sb.shutdown()
+
+def test_receiving_side_close():
+    try:
+        lock = threading.Condition()
+        da = DummyEncrypter()
+        sa = RawServer(5002, da, lock, 100)
+        sa.start_listening()
+        db = DummyEncrypter()
+        sb = RawServer(5003, db, lock, 100)
+        sb.start_listening()
+        
+        ca = sa.start_connection(('', 5003))
+        time.sleep(1)
+        
+        assert da.external_made == []
+        assert da.data_in == []
+        assert da.lost == []
+        assert len(db.external_made) == 1
+        cb = db.external_made[0]
+        del db.external_made[:]
+        assert db.data_in == []
+        assert db.lost == []
+
+        ca.write('aaa')
+        cb.write('bbb')
+        time.sleep(1)
+        
+        assert da.external_made == []
+        assert da.data_in == [(ca, 'bbb')]
+        del da.data_in[:]
+        assert da.lost == []
+        assert db.external_made == []
+        assert db.data_in == [(cb, 'aaa')]
+        del db.data_in[:]
+        assert db.lost == []
+
+        ca.write('ccc')
+        cb.write('ddd')
+        time.sleep(1)
+        
+        assert da.external_made == []
+        assert da.data_in == [(ca, 'ddd')]
+        del da.data_in[:]
+        assert da.lost == []
+        assert db.external_made == []
+        assert db.data_in == [(cb, 'ccc')]
+        del db.data_in[:]
+        assert db.lost == []
+
+        cb.close()
+        time.sleep(1)
+
+        assert da.external_made == []
+        assert da.data_in == []
+        assert da.lost == [ca]
+        del da.lost[:]
+        assert db.external_made == []
+        assert db.data_in == []
+        assert db.lost == []
+    finally:
+        sa.shutdown()
+        sb.shutdown()
+
+def test_connection_refused():
+    try:
+        lock = threading.Condition()
+        da = DummyEncrypter()
+        sa = RawServer(5006, da, lock, 100)
+        sa.start_listening()
+        
+        ca = sa.start_connection(('', 5007))
+        time.sleep(1)
+        
+        assert da.external_made == []
+        assert da.data_in == []
+        assert da.lost == [ca]
+        del da.lost[:]
+    finally:
+        sa.shutdown()
+
+def test_both_close():
+    try:
+        lock = threading.Condition()
+        da = DummyEncrypter()
+        sa = RawServer(5004, da, lock, 100)
+        sa.start_listening()
+
+        time.sleep(1)
+        db = DummyEncrypter()
+        sb = RawServer(5005, db, lock, 100)
+        sb.start_listening()
+        
+        ca = sa.start_connection(('', 5005))
+        time.sleep(1)
+        
+        assert da.external_made == []
+        assert da.data_in == []
+        assert da.lost == []
+        assert len(db.external_made) == 1
+        cb = db.external_made[0]
+        del db.external_made[:]
+        assert db.data_in == []
+        assert db.lost == []
+
+        ca.write('aaa')
+        cb.write('bbb')
+        time.sleep(1)
+        
+        assert da.external_made == []
+        assert da.data_in == [(ca, 'bbb')]
+        del da.data_in[:]
+        assert da.lost == []
+        assert db.external_made == []
+        assert db.data_in == [(cb, 'aaa')]
+        del db.data_in[:]
+        assert db.lost == []
+
+        ca.write('ccc')
+        cb.write('ddd')
+        time.sleep(1)
+        
+        assert da.external_made == []
+        assert da.data_in == [(ca, 'ddd')]
+        del da.data_in[:]
+        assert da.lost == []
+        assert db.external_made == []
+        assert db.data_in == [(cb, 'ccc')]
+        del db.data_in[:]
+        assert db.lost == []
+
+        try:
+            lock.acquire()
+            ca.close()
+            cb.close()
+        finally:
+            lock.release()
+        time.sleep(1)
+
+        assert da.external_made == []
+        assert da.data_in == []
+        assert da.lost == []
+        assert db.external_made == []
+        assert db.data_in == []
+        assert db.lost == []
+    finally:
+        sa.shutdown()
+        sb.shutdown()

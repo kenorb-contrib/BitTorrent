@@ -1,0 +1,13 @@
+
+# include anything in here that is not automatically picked up by distutils
+include MANIFEST.in
+include credits.txt
+include README.txt
+include winsetup.py
+include bittorrent.nsi
+
+# include all top level scripts
+include bt-download.py
+include bt-download-prefetched.py
+include bt-publish.py
+include bt-publicize.py
