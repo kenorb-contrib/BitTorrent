@@ -79,13 +79,8 @@ class EncryptedConnection:
         return l, self.read_message
 
     def read_message(self, s):
-        try:
-            if s != '':
-                self.encrypter.connecter.got_message(self, s)
-        except KeyboardInterrupt:
-            raise
-        except:
-            print_exc()
+        if s != '':
+            self.encrypter.connecter.got_message(self, s)
         return 4, self.read_len
 
     def close(self):
