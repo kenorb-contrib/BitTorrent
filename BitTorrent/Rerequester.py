@@ -104,6 +104,8 @@ class Rerequester:
             if r.has_key('failure reason'):
                 self.errorfunc('rejected by tracker - ' + r['failure reason'])
             else:
+                if r.has_key('warning message'):
+                    self.errorfunc('warning from tracker - ' + r['warning message'])
                 self.announce_interval = r.get('interval', self.announce_interval)
                 self.interval = r.get('min interval', self.interval)
                 self.trackerid = r.get('tracker id', self.trackerid)
