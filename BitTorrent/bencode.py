@@ -202,7 +202,7 @@ def test_bdecode():
     except ValueError:
         pass
 
-class Bencached:
+class Bencached(object):
     __slots__ = ['bencoded']
 
     def __init__(self, s):
