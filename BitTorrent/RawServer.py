@@ -196,6 +196,7 @@ class RawServer:
                         try:
                             func()
                         except KeyboardInterrupt:
+                            print_exc()
                             return
                         except:
                             if self.noisy:
@@ -211,6 +212,7 @@ class RawServer:
                     else:
                         print_exc()
                 except KeyboardInterrupt:
+                    print_exc()
                     return
                 except:
                     print_exc()

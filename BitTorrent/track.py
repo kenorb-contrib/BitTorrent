@@ -85,13 +85,17 @@ class Tracker:
         rawserver.add_task(self.expire_downloaders, self.timeout_downloaders_interval)
 
     def get(self, connection, path, headers):
-        (scheme, netloc, path, pars, query, fragment) = urlparse(path)
-        path = unquote(path)[1:]
-        params = {}
-        for s in query.split('&'):
-            if s != '':
-                i = s.index('=')
-                params[unquote(s[:i])] = unquote(s[i+1:])
+        try:
+            (scheme, netloc, path, pars, query, fragment) = urlparse(path)
+            path = unquote(path)[1:]
+            params = {}
+            for s in query.split('&'):
+                if s != '':
+                    i = s.index('=')
+                    params[unquote(s[:i])] = unquote(s[i+1:])
+        except ValueError, e:
+            return (400, 'Bad Request', {'Content-Type': 'text/plain'}, 
+                    'you sent me garbage - ' + str(e))
         if path == '' or path == 'index.html':
             s = StringIO()
             s.write('<head><title>BitTorrent download info</title></head>BitTorrent download info<p>\n')
