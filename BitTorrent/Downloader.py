@@ -62,8 +62,8 @@ class SingleDownload:
         self.measure.update_rate(len(piece))
         self.downloader.measurefunc(len(piece))
         self.downloader.downmeasure.update_rate(len(piece))
-        self.downloader.picker.came_in(index)
         self.downloader.storage.piece_came_in(index, begin, piece)
+        self.downloader.picker.came_in(index)
         if self.downloader.storage.do_I_have(index):
             self.downloader.picker.complete(index)
         self.download_more()

@@ -20,7 +20,7 @@ from EndgameDownloader import EndgameDownloader
 from PiecePicker import PiecePicker
 from bencode import bencode, bdecode
 from sha import sha
-from os import getpid, path, makedirs
+from os import path, makedirs
 from parseargs import parseargs, formatDefinitions
 from socket import error as socketerror
 from random import seed
@@ -29,6 +29,11 @@ from threading import Thread, Event
 from time import time
 true = 1
 false = 0
+try:
+    from os import getpid
+except ImportError:
+    def getpid():
+        return 1
 
 defaults = [
     ('max_uploads', 4,
