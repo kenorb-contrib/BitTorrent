@@ -177,6 +177,9 @@ class DownloadInfoFrame:
             self.frame.Show(true)
         f.set()
 
+    def newpath(self, path):
+        fileDestText.SetLabel(path)
+
     def done(self, event):
         self.flag.set()
         self.frame.Destroy()
@@ -200,7 +203,7 @@ def run(params):
     app.MainLoop()
 
 def next(params, d, doneflag):
-    download(params, d.chooseFile, d.updateStatus, d.finished, d.error, doneflag, 100)
+    download(params, d.chooseFile, d.updateStatus, d.finished, d.error, doneflag, 100, d.newpath)
     if not d.fin:
         d.failed()
 
