@@ -13,7 +13,7 @@ python winsetup.py py2exe --windows
 change to the newly created subdirectory dist\btdownloadprefetched,
 copy bittorrent.nsi into that directory, and run nsis on it.
 
-cd dist\btdownloadprefetched
+cd dist\btdownloadgui
 copy ..\..\bittorrent.nsi bittorrent.nsi
 c:\progra~1\nsis\makensis.exe bittorrent.nsi
 
