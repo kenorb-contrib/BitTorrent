@@ -13,6 +13,8 @@
 #define APP "\pBitTorrent"
 #define MIMETYPE "\papplication/x-bittorrent"
 
+#define CREATOR 'BCBC'
+#define MFILETYPE 'BTMF'
 
 @implementation ICHelper
 
@@ -23,7 +25,7 @@
     ICAttr attr;
     ICMapEntry map;
     
-    err = ICStart(&ici, 'BTBC');
+    err = ICStart(&ici, CREATOR);
     if(!err) {
 	err = ICFindPrefHandle(ici, "\pMapping", &attr, handle);
 	err = ICMapEntriesFilename(ici, handle, "\pfoo.torrent", 
@@ -33,9 +35,9 @@
 	    map.totalLength = kICMapFixedLength + PLstrlen(EXTENSION) + PLstrlen(APP) * 3 + PLstrlen(MIMETYPE);
 	    map.fixedLength = kICMapFixedLength;
 	    map.version = 3;
-	    map.fileType = 'BTMF';
-	    map.fileCreator = 'BTBC';
-	    map.postCreator = 'BTBC';
+	    map.fileType = MFILETYPE;
+	    map.fileCreator = CREATOR;
+	    map.postCreator = CREATOR;
 	    map.flags = kICMapBinaryMask |  kICMapDataForkMask | kICMapPostMask;
 	    PLstrcpy(map.extension, EXTENSION);
 	    PLstrcpy(map.creatorAppName, APP);

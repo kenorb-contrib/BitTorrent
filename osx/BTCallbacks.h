@@ -7,3 +7,7 @@
 - (NSString *)chooseFile:(in NSString *)defaultFile size:(long)size isDirectory:(int)dir;
 - (oneway void)dlExited;
 @end
+
+@protocol MetaGenerateCallbacks
+- (oneway void)progress:(in NSString *)val;
+@end

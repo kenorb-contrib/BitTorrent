@@ -132,13 +132,13 @@
     else {
 	desc = fopen([f cString], "w");
 	fwrite(PyString_AsString(enc), sizeof(char), PyString_Size(enc), desc);
-	fclose(desc);	
+	fclose(desc);
+	if(enc) {
+	    Py_DECREF(enc);
+	}
     }	
     if(res) {
 	Py_DECREF(res);
-    }
-    if(enc) {
-	Py_DECREF(enc);
     }
     ts = PyEval_SaveThread();
     foo = (id)[[NSConnection connectionWithReceivePort:[dict objectForKey:@"receive"]
