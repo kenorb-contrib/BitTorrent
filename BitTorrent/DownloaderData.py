@@ -2,39 +2,36 @@ true = 1
 false = 0
 
 class DownloaderData:
-    def __init__(self, blobs, chunksize, uploader):
+    def __init__(self, blobs, chunksize):
         self.blobs = blobs
         self.chunksize = chunksize
-        self.uploader = uploader
         # blob, active, inactive
         # [(blob, [(begin, length)], [(begin, length)] )]
-        self.priority = []
+        self.priority_list = []
+        # blob: active, inactive
+        # {blob: ([(begin, length)], [(begin, length)])}
+        self.priority_dict = {}
         # download: active, have
         # {download: ([(blob, begin, length)],  {blob: 1})}
         self.downloads = {}
         
     def cleared(self, d):
         for blob, begin, length in self.downloads[d][0]:
-            for blob2, active, inactive in self.priority:
-                if blob2 == blob:
-                    active.remove((begin, length))
-                    inactive.append((begin, length))
-                    break
+            active, inactive = self.priority_dict[blob]
+            active.remove((begin, length))
+            inactive.append((begin, length))
         del self.downloads[d][0][:]
         return self.downloads.keys()
         
     def do_I_want_more(self, d):
         have = self.downloads[d][1]
-        if len(have) > len(self.priority):
+        if len(have) > len(self.priority_list):
             return true
-        for blob, active, inactive in self.priority:
+        for blob, active, inactive in self.priority_list:
             if len(inactive) > 0 and have.has_key(blob):
                 return true
         for b in have.keys():
-            for blob, active, inactive in self.priority:
-                if blob == b:
-                    break
-            else:
+            if not self.priority_dict.has_key(b):
                 return true
         return false
         
@@ -42,38 +39,39 @@ class DownloaderData:
         have = self.downloads[d][1]
         if len(have) == 0:
             return None
-        for blob, active, inactive in self.priority:
+        for blob, active, inactive in self.priority_list:
             if len(inactive) > 0 and have.has_key(blob):
                 begin, length = inactive[-1]
                 del inactive[-1]
                 active.append((begin, length))
                 self.downloads[d][0].append((blob, begin, length))
                 f = []
-                for d2, (a2, h2) in self.downloads.items():
-                    if d2 != d and h2.has_key(blob):
-                        f.append(d2)
+                if len(inactive) == 0:
+                    for d2, (a2, h2) in self.downloads.items():
+                        if h2.has_key(blob):
+                            f.append(d2)
                 return blob, begin, length, f
         for blob in self.blobs.get_list_of_files_I_want():
             if not have.has_key(blob):
                 continue
-            for b2, active, inactive in self.priority:
-                if b2 == blob:
-                    break
+            if self.priority_dict.has_key(blob):
+                continue
+            total = self.blobs.get_size(blob)
+            chunk = self.chunksize
+            begin = 0
+            inactive = []
+            while begin + chunk < total:
+                inactive.append((begin, chunk))
+                begin += chunk
+            length = total - begin
+            active = [(begin, length)]
+            self.downloads[d][0].append((blob, begin, length))
+            self.priority_list.append((blob, active, inactive))
+            self.priority_dict[blob] = (active, inactive)
+            if len(inactive) > 0:
+                return blob, begin, length, []
             else:
-                total = self.blobs.get_size(blob)
-                chunk = self.chunksize
-                begin = 0
-                inactive = []
-                while begin + chunk < total:
-                    inactive.append((begin, chunk))
-                length = total - begin
-                active = [(begin, length)]
-                self.downloads[d][0].append((blob, begin, length))
-                self.priority.append((blob, active, inactive))
-                if len(inactive) > 0:
-                    return blob, begin, length, []
-                else:
-                    return blob, begin, length, self.downloads.keys()
+                return blob, begin, length, self.downloads.keys()
         return None
         
     def num_current(self, d):
@@ -83,28 +81,34 @@ class DownloaderData:
         try:
             self.downloads[d][0].remove((blob, begin, len(slice)))
         except ValueError:
-            return []
-        for i in xrange(len(self.priority)):
-            blob2, active, inactive = self.priority[i]
+            return false, []
+        for i in xrange(len(self.priority_list)):
+            blob2, active, inactive = self.priority_list[i]
             if blob2 == blob:
-                active.remove((begin, len(slice)))
                 break
+        active.remove((begin, len(slice)))
         self.blobs.save_slice(blob, begin, slice)
         if len(active) == 0 and len(inactive) == 0:
-            del self.priority[i]
+            del self.priority_list[i]
+            del self.priority_dict[blob]
             if self.blobs.check_blob(blob):
                 for a, have in self.downloads.values():
                     if have.has_key(blob):
                         del have[blob]
-                self.uploader.received_file(blob)
+                return true, []
             else:
-                return self.downloads.keys()
-        return []
+                return false, self.downloads.keys()
+        return false, []
         
     def has_blobs(self, d, bs):
+        hit = false
+        have = self.downloads[d][1]
         for blob in bs:
-            if self.blobs.do_I_want(blob):
-                self.downloads[d][1][blob] = 1
+            if self.blobs.do_I_want(blob) and not have.has_key(blob):
+                have[blob] = 1
+                if len(self.priority_dict[blob][1]) != 0:
+                    hit = true
+        return hit
         
     def connected(self, d):
         self.downloads[d] = ([], {})

@@ -27,7 +27,7 @@ def make_indices(pieces, piece_length, file_length):
 
 class SingleBlob:
     def __init__(self, file, file_length, pieces, piece_length, 
-            callback, open, exists, getsize, displayfunc):
+            callback, open, exists, getsize):
         self.open = open
         self.callback = callback
         self.indices = make_indices(pieces, piece_length, file_length)
@@ -40,7 +40,6 @@ class SingleBlob:
         self.want_list = self.want.keys()
         shuffle(self.want_list)
         if exists(file):
-            displayfunc('scanning partial download...', 'Cancel')
             self.already_existed = true
             if getsize(file) != file_length:
                 raise ValueError, 'existing file is of incorrect length'
@@ -48,7 +47,6 @@ class SingleBlob:
             for blob in self.want.keys():
                 self.check_blob(blob)
         else:
-            displayfunc('allocating new file...', 'Cancel')
             self.already_existed = false
             self.h = self.open(file, 'wb+')
             self.h.seek(file_length - 1)
@@ -82,10 +80,10 @@ class SingleBlob:
     def do_I_want(self, blob):
         return self.want.has_key(blob)
 
-    def get_list_of_files_I_want(self):
+    def get_list_of_blobs_I_want(self):
         return self.want_list
 
-    def get_list_of_files_I_have(self):
+    def get_list_of_blobs_I_have(self):
         return self.complete.keys()
 
     def save_slice(self, blob, begin, slice):

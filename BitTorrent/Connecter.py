@@ -1,368 +1,92 @@
 # written by Bram Cohen
 # this file is public domain
 
+from bencode import bencode, bdecode
+from btemplate import compile_template
 true = 1
 false = 0
 
-class TransferConnection:
-    def __init__(self, connection, dict):
+message_template = compile_template({'type': ['choke', 'unchoke',
+    'slice', 'I have', 'send', 'interested', 'done']})
+
+class Connection:
+    def __init__(self, connection):
         self.connection = connection
-        self.dict = dict
-        self.id = connection.get_id()
-        self.is_local = connection.is_locally_initiated()
 
     def is_locally_initiated(self):
-        return self.is_local
+        return self.connection.is_locally_initiated()
 
     def get_ip(self):
         return self.connection.get_ip()
 
     def send_message(self, message):
-        self.connection.send_message(message)
+        self.connection.send_message(bencode(message))
 
-    def get_id(self):
-        return self.id
-        
-    def close(self):
-        connection = self.connection
-        del self.connection
-        del self.dict[self.id]
-        del self.dict
-        connection.close()
+    def get_upload(self):
+        return self.upload
+
+    def get_download(self):
+        return self.download
 
 class Connecter:
-    def __init__(self, uploader, downloader):
-        self.uploader = uploader
-        self.downloader = downloader
-        # {id: TransferConnection}
-        self.uploads = {}
-        # {id: TransferConnection}
-        self.downloads = {}
-        self.encrypter = None
-
-    def set_encrypter(self, encrypter):
-        self.encrypter = encrypter
-
-    def start_connecting(self, dnss):
-        for d in dnss:
-            self.encrypter.start_connection(d)
+    def __init__(self, make_upload, make_download, choker):
+        self.make_download = make_download
+        self.make_upload = make_upload
+        self.choker = choker
+        self.connections = {}
 
     def locally_initiated_connection_completed(self, connection):
-        k = connection.get_id()
-        if not self.downloads.has_key(k):
-            down = TransferConnection(connection, self.downloads)
-            self.downloads[k] = down
-            connection.send_message('download')
-            if not self.uploads.has_key(k):
-                self.encrypter.start_connection(connection.get_dns())
-            self.downloader.connection_made(down)
-        elif not self.uploads.has_key(k):
-            up = TransferConnection(connection, self.uploads)
-            self.uploads[k] = up
-            connection.send_message('upload')
-            self.uploader.connection_made(up)
-        else:
-            connection.close()
+        for c in self.connections.keys():
+            if c.get_id() == connection.get_id():
+                connection.close()
+                return
+        connection.send_message('transfer')
+        self._make_connection(connection)
+
+    def _make_connection(self, connection):
+        c = Connection(self)
+        upload = self.make_upload(c)
+        download = self.make_download(c)
+        c.upload = upload
+        c.download = download
+        self.connections[connection] = c
+        self.choker.connection_made(c)
 
     def connection_lost(self, connection):
-        k = connection.get_id()
-        up = self.uploads.get(k, None)
-        if up is not None and up.connection == connection:
-            del self.uploads[k]
-            del up.dict
-            del up.connection
-            self.uploader.connection_lost(up)
-            return
-        down = self.downloads.get(k, None)
-        if down is not None and down.connection == connection:
-            del self.downloads[k]
-            del down.dict
-            del down.connection
-            self.downloader.connection_lost(down)
-            return
+        c = self.connections[connection]
+        del self.connections[connection]
+        c.upload.disconnected()
+        c.download.disconnected()
+        del c.connection
+        self.choker.connection_lost(c)
 
     def got_message(self, connection, message):
-        k = connection.get_id()
-        up = self.uploads.get(k, None)
-        if up is not None and up.connection == connection:
-            self.uploader.got_message(up, message)
-            return
-        down = self.downloads.get(k, None)
-        if down is not None and down.connection == connection:
-            self.downloader.got_message(down, message)
-            return
-        if message == 'download':
-            if up is None:
-                up = TransferConnection(connection, self.uploads)
-                self.uploads[k] = up
-                self.uploader.connection_made(up)
+        if not self.connections.has_key(connection):
+            if message != 'transfer':
+                connection.close()
+                return
+            self._make_connection(connection)
+        c = self.connections[connection]
+        try:
+            m = bdecode(message)
+            message_template(m)
+            mtype = m['type']
+            if mtype == 'send':
+                c.upload.got_send(m)
+            elif mtype == 'interested':
+                c.upload.got_interested(m)
+            elif mtype == 'done':
+                c.upload.got_done(m)
+            elif mtype == 'choke':
+                c.download.got_choke(m)
+            elif mtype == 'unchoke':
+                c.download.got_unchoke(m)
+            elif mtype == 'I have':
+                c.download.got_I_have(m)
             else:
-                up.connection.close()
-                del up.dict
-                del up.connection
-                newup = TransferConnection(connection, self.uploads)
-                self.uploads[k] = newup
-                self.uploader.connection_lost(up)
-                self.uploader.connection_made(newup)
-        elif message == 'upload':
-            if down is None:
-                down = TransferConnection(connection, self.downloads)
-                self.downloads[k] = down
-                self.downloader.connection_made(down)
-            else:
-                down.connection.close()
-                del down.dict
-                del down.connection
-                newdown = TransferConnection(connection, self.downloads)
-                self.downloads[k] = newdown
-                self.downloader.connection_lost(down)
-                self.downloader.connection_made(newdown)
-        else:
-            connection.close()
-
-# everything below is for testing
-
-class DummyEncrypter:
-    def __init__(self):
-        self.c = []
-        
-    def start_connection(self, ip):
-        self.c.append(ip)
-
-class DummyConnection:
-    def __init__(self, mid, dns = None):
-        self.closed = false
-        self.m = []
-        self.mid = mid
-        self.dns = dns
-
-    def get_ip(self):
-        return 'fake.ip'
-
-    def close(self):
-        self.closed = true
-        
-    def send_message(self, message):
-        self.m.append(message)
-        
-    def get_id(self):
-        return self.mid
-        
-    def get_dns(self):
-        return self.dns
-        
-    def is_locally_initiated(self):
-        return self.dns != None
-
-class DummyTransfer:
-    def __init__(self):
-        self.cs_made = []
-        self.cs_lost = []
-        self.m = []
-        
-    def connection_made(self, connection):
-        self.cs_made.append(connection)
-        
-    def connection_lost(self, connection):
-        self.cs_lost.append(connection)
-        
-    def got_message(self, connection, message):
-        self.m.append((connection, message))
-
-def test_close_local_of_local_start():
-    up = DummyTransfer()
-    down = DummyTransfer()
-    c = Connecter(up, down)
-    e = DummyEncrypter()
-    c.set_encrypter(e)
-    c.start_connecting(['testcode.com'])
-    assert e.c == ['testcode.com']
-    del e.c[:]
-
-    dc = DummyConnection('a' * 20, 'testcode.com')
-    c.locally_initiated_connection_completed(dc)
-    assert len(down.cs_made) == 1 and down.cs_made[0].get_id() == 'a' * 20
-    assert len(up.cs_made) == 0
-    assert dc.m == ['download']
-    del dc.m[:]
-
-    down.cs_made[0].send_message('a')
-    assert dc.m == ['a']
-    
-    c.got_message(dc, 'b')
-    assert down.m == [(down.cs_made[0], 'b')]
-
-    assert not dc.closed
-    down.cs_made[0].close()
-    assert dc.closed
-
-def test_close_remote_of_local_start():
-    up = DummyTransfer()
-    down = DummyTransfer()
-    c = Connecter(up, down)
-    e = DummyEncrypter()
-    c.set_encrypter(e)
-    c.start_connecting(['testcode.com'])
-    assert e.c == ['testcode.com']
-    del e.c[:]
-    
-    dc = DummyConnection('a' * 20, 'testcode.com')
-    c.locally_initiated_connection_completed(dc)
-    assert len(down.cs_made) == 1 and down.cs_made[0].get_id() == 'a' * 20
-    assert len(up.cs_made) == 0
-    assert e.c == ['testcode.com']
-    del e.c[:]
-    assert dc.m == ['download']
-    del dc.m[:]
-
-    down.cs_made[0].send_message('a')
-    assert dc.m == ['a']
-    
-    c.got_message(dc, 'b')
-    assert down.m == [(down.cs_made[0], 'b')]
-
-    assert not dc.closed
-    c.connection_lost(dc)
-    assert down.cs_lost == down.cs_made
-
-def test_close_remote_of_remote_start():
-    up = DummyTransfer()
-    down = DummyTransfer()
-    c = Connecter(up, down)
-    e = DummyEncrypter()
-    c.set_encrypter(e)
-    
-    dc = DummyConnection('a' * 20)
-    c.got_message(dc, 'upload')
-    assert len(down.cs_made) == 1 and down.cs_made[0].get_id() == 'a' * 20
-
-    c.got_message(dc, 'booga')
-    assert down.m == [(down.cs_made[0], 'booga')]
-
-    down.cs_made[0].send_message('booga 2')
-    assert dc.m == ['booga 2']
-
-    c.connection_lost(dc)
-    assert down.cs_lost == down.cs_made
-    
-def test_close_local_of_remote_start():
-    up = DummyTransfer()
-    down = DummyTransfer()
-    c = Connecter(up, down)
-    e = DummyEncrypter()
-    c.set_encrypter(e)
-    
-    dc = DummyConnection('a' * 20)
-    c.got_message(dc, 'upload')
-    assert len(down.cs_made) == 1 and down.cs_made[0].get_id() == 'a' * 20
-
-    c.got_message(dc, 'booga')
-    assert down.m == [(down.cs_made[0], 'booga')]
-
-    down.cs_made[0].send_message('booga 2')
-    assert dc.m == ['booga 2']
-
-    down.cs_made[0].close()
-    assert down.cs_lost == []
-    assert dc.closed
-
-def test_remote_connect_down():
-    up = DummyTransfer()
-    down = DummyTransfer()
-    c = Connecter(up, down)
-    e = DummyEncrypter()
-    c.set_encrypter(e)
-    
-    dc = DummyConnection('a' * 20)
-    c.got_message(dc, 'upload')
-    assert len(down.cs_made) == 1 and down.cs_made[0].get_id() == 'a' * 20
-
-    c.got_message(dc, 'booga')
-    assert down.m == [(down.cs_made[0], 'booga')]
-    del down.m[:]
-
-    down.cs_made[0].send_message('booga 2')
-    assert dc.m == ['booga 2']
-
-    dc2 = DummyConnection('a' * 20)
-    c.got_message(dc2, 'upload')
-    assert len(down.cs_made) == 2 and down.cs_made[0].get_id() == 'a' * 20
-    assert len(down.cs_lost) == 1 and down.cs_lost[0] == down.cs_made[0]
-    assert dc.closed
-
-    c.got_message(dc2, 'booga 3')
-    assert down.m == [(down.cs_made[1], 'booga 3')]
-
-    down.cs_made[1].send_message('booga 4')
-    assert dc2.m == ['booga 4']
-    
-def test_remote_connect_up():
-    up = DummyTransfer()
-    down = DummyTransfer()
-    c = Connecter(up, down)
-    e = DummyEncrypter()
-    c.set_encrypter(e)
-    
-    dc = DummyConnection('a' * 20)
-    c.got_message(dc, 'download')
-    assert len(up.cs_made) == 1 and up.cs_made[0].get_id() == 'a' * 20
-
-    c.got_message(dc, 'booga')
-    assert up.m == [(up.cs_made[0], 'booga')]
-    del up.m[:]
-
-    up.cs_made[0].send_message('booga 2')
-    assert dc.m == ['booga 2']
-
-    dc2 = DummyConnection('a' * 20)
-    c.got_message(dc2, 'download')
-    assert len(up.cs_made) == 2 and up.cs_made[1].get_id() == 'a' * 20
-    assert len(up.cs_lost) == 1 and up.cs_lost[0] == up.cs_made[0]
-    assert dc.closed
-
-    c.got_message(dc2, 'booga 3')
-    assert up.m == [(up.cs_made[1], 'booga 3')]
-
-    up.cs_made[1].send_message('booga 4')
-    assert dc2.m == ['booga 4']
-    
-def test_local_connect():
-    up = DummyTransfer()
-    down = DummyTransfer()
-    c = Connecter(up, down)
-    e = DummyEncrypter()
-    c.set_encrypter(e)
-    c.start_connecting(['testcode.com'])
-    assert e.c == ['testcode.com']
-    del e.c[:]
-    
-    dc = DummyConnection('a' * 20, 'testcode.com')
-    c.locally_initiated_connection_completed(dc)
-    assert len(down.cs_made) == 1 and down.cs_made[0].get_id() == 'a' * 20
-    assert len(up.cs_made) == 0
-    assert e.c == ['testcode.com']
-    del e.c[:]
-    assert dc.m == ['download']
-    del dc.m[:]
-
-    down.cs_made[0].send_message('a')
-    assert dc.m == ['a']
-    
-    c.got_message(dc, 'b')
-    assert down.m == [(down.cs_made[0], 'b')]
-
-    dc2 = DummyConnection('a' * 20, 'testcode.com')
-    c.locally_initiated_connection_completed(dc2)
-    assert len(up.cs_made) == 1 and up.cs_made[0].get_id() == 'a' * 20
-    assert dc2.m == ['upload']
-    del dc2.m[:]
-
-    up.cs_made[0].send_message('c')
-    assert dc2.m == ['c']
-    
-    c.got_message(dc2, 'd')
-    assert up.m == [(up.cs_made[0], 'd')]
-
-    dc3 = DummyConnection('a' * 20, 'testcode.com')
-    c.locally_initiated_connection_completed(dc3)
-    assert dc3.closed
+                blob = c.download.got_slice(m)
+                if blob is not None:
+                    for c in self.connections.values():
+                        c.received_blob(blob)
+        except ValueError:
+            print_exc()

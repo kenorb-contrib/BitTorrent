@@ -2,54 +2,35 @@
 # this file is public domain
 
 from btemplate import compile_template, ListMarker, string_template, exact_length
-from bencode import bencode, bdecode
-from traceback import print_exc
 true = 1
 false = 0
 
-message_template = compile_template({'type': string_template})
-
 have_files_template = compile_template({'type': 'I have', 
-    'files': ListMarker(exact_length(20))})
+    'blobs': ListMarker(exact_length(20))})
 
 here_is_a_slice_template = compile_template({'type': 'slice', 
-    'file': exact_length(20), 'begin': 0, 'slice': string_template})
+    'blob': exact_length(20), 'begin': 0, 'slice': string_template})
 
-done_message = bencode({'type': 'done'})
+done_message = {'type': 'done'}
 
-interested_message = bencode({'type': 'interested'})
+interested_message = {'type': 'interested'}
 
-class SingleDownload:
-    def __init__(self, downloader, connection):
-        self.downloader = downloader
+class Download:
+    def __init__(self, connection, data, backlog):
         self.connection = connection
+        self.data = data
+        self.backlog = backlog
         self.choked = false
         self.interested = false
 
-    def got_message(self, message):
-        try:
-            m = bdecode(message)
-            message_template(m)
-            mtype = m.get('type')
-            if mtype == 'slice':
-                self.got_slice_message(m)
-            elif mtype == "choke":
-                self.got_choked_message(m)
-            elif mtype == "unchoke":
-                self.got_unchoked_message(m)
-            elif mtype == 'I have':
-                self.got_files_message(m)
-        except ValueError:
-            print_exc()
-
-    def got_choked_message(self, message):
+    def got_choke(self, message):
         if self.choked:
             return 
         self.choked = true
         for i in self.downloader.data.cleared(self):
             i.adjust()
 
-    def got_unchoked_message(self, message):
+    def got_unchoke(self, message):
         if not self.choked:
             return
         self.choked = false
@@ -67,55 +48,51 @@ class SingleDownload:
                     self.interested = true
                     self.connection.send_message(interested_message)
             return
+        f = {}
         while true:
             if data.num_current(self) >= self.downloader.backlog:
                 if self.interested:
                     self.interested = false
                     self.connection.send_message(done_message)
-                return
+                break
             s = data.get_next(self)
             if s is None:
-                return
+                if self.interested:
+                    self.interested = false
+                    self.connection.send_message(done_message)
+                break
             blob, begin, length, full = s
-            self.connection.send_message(bencode({'type': 'send slice', 
-                'file': blob, 'begin': begin, 'length': length}))
-            for f in full:
-                f.adjust()
+            self.connection.send_message({'type': 'send', 
+                'blob': blob, 'begin': begin, 'length': length})
+            for x in full:
+                f[x] = 1
+        for x in f.keys():
+            if x is not self:
+                x.adjust()
 
-    def got_slice_message(self, message):
+    def got_slice(self, message):
         here_is_a_slice_template(message)
-        check = self.downloader.data.came_in(self, message['blob'], 
-            message['begin'], message['slice'])
+        complete, check = self.downloader.data.came_in(self, 
+            message['blob'], message['begin'], message['slice'])
         self.adjust()
         for c in check:
             c.adjust()
+        if complete:
+            return message['blob']
+        return None
 
-    def got_files_message(self, message):
+    def got_I_have(self, message):
         have_files_template(message)
-        self.downloader.data.has_blobs(self, message['files'])
-        self.adjust()
+        if self.downloader.data.has_blobs(self, 
+                message['blobs']) and not self.interested:
+            self.adjust()
 
-class Downloader:
-    def __init__(self, data, backlog):
-        self.data = data
-        self.backlog = backlog
-        self.downloads = {}
-
-    def connection_made(self, connection):
-        down = SingleDownload(self, connection)
-        self.downloads[connection] = down
-        self.data.connected(down)
-
-    def connection_lost(self, connection):
-        down = self.downloads[connection]
-        del down.connection
-        del down.downloader
-        del self.downloads[connection]
-        for i in self.data.disconnected(down):
+    def disconnected(self):
+        for i in self.data.disconnected(self):
             i.adjust()
-
-    def got_message(self, connection, message):
-        self.downloads[connection].got_message(message)
+        del self.connection
+        del self.data
+        del self.choked
 
 # everything below is just for testing
 
