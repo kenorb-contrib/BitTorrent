@@ -4,6 +4,7 @@
 from time import time
 from PriorityBitField import PriorityBitField
 from random import shuffle
+from copy import copy
 true = 1
 false = 0
 
@@ -131,6 +132,11 @@ class Downloader:
         for i in xrange(numpieces):
             self.priority_to_index[self.index_to_priority[i]] = i
         self.downloads = []
+
+    def close_finished(self):
+        for d in copy(self.downloads):
+            if false not in d.have:
+                d.connection.close()
 
     def change_interest(self, index, before):
         assert before in [0, 1]

@@ -9,7 +9,7 @@ from traceback import print_exc
 
 class Rerequester:
     def __init__(self, url, interval, sched, howmany, 
-            minpeers, connect, externalsched):
+            minpeers, connect, externalsched, amount_left, clean):
         self.url = url
         self.interval = interval
         self.sched = sched
@@ -17,6 +17,8 @@ class Rerequester:
         self.minpeers = minpeers
         self.connect = connect
         self.externalsched = externalsched
+        self.amount_left = amount_left
+        self.clean = clean
         sched(self.c, interval)
 
     def rerequest(self):
@@ -38,5 +40,7 @@ class Rerequester:
 
     def c(self):
         self.sched(self.c, self.interval)
+        if self.amount_left() == 0:
+            self.clean()
         if self.howmany() < self.minpeers:
             Thread(target = self.rerequest).start()

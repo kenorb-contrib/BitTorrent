@@ -214,7 +214,8 @@ def download(params, filefunc, statusfunc, resultfunc, doneflag, cols):
         url = response['peer url']
     Rerequester(url, config['rerequest_interval'], rawserver.add_task,
         connecter.how_many_connections, config['min_peers'],
-        encrypter.start_connection, rawserver.external_add_task)
+        encrypter.start_connection, rawserver.external_add_task,
+        storagewrapper.get_amount_left, downloader.close_finished)
     DownloaderFeedback(choker, rawserver.add_task, ip, statusfunc, 
         config['max_rate_recalculate_interval'], ratemeasure.get_time_left, 
         ratemeasure.get_size_left, file_length, finflag,
