@@ -16,7 +16,9 @@ The name of the game is connecting to as many peers as possible.  If you are beh
 
 BitTorrent uses "tit for tat" for deciding which peer to upload to.  In general terms, the client uploads to the peers that it is downloading from the fastest.  This is why there can be a delay after connecting to peers before downloading begins;  you have nothing to upload to other peers.  The torrent typically bursts to life once your client gets a complete piece or two.  If there is excess bandwidth available, perhaps because many peers left their window open, then you can get good download rates without uploading much.  If you are on a very fast connection and think you could be downloading faster, try increasing the maximum number of uploads;  by uploading to more peers you may end up downloading from more peers.  Give the client a few minutes to "settle" after tweaking it.  The client uses one upload "slot" to cycle through peers looking for fast downloads and only changes this slot every 30 seconds.
 
-
+Release Notes Version 3.3a 2003/11/07
+----------
+Recompiled with XCode, works on Pathner
 
 Release Notes Version 3.3 2003/10/10
 ----------

@@ -9,6 +9,7 @@ from shutil import copy
 from compileall import compile_dir
 import sys
 
+sys.prefix='/usr/local'
 py_path = 'lib/python2.3'
 so_path = 'lib/python2.3/lib-dynload'
 
@@ -55,6 +56,7 @@ for module in py_modules:
 # c modules
 source = join(sys.prefix, so_path)
 for module in so_modules:
+    print join(source, module+".so")
     copy(join(source, module +".so"), dy)
 
 # bt modules

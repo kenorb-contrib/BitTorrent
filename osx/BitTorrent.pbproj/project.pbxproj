@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 38;
+	objectVersion = 39;
 	objects = {
 		080E96DCFE201CFB7F000001 = {
 			fileRef = 29B97318FDCFA39411CA2CEA;
@@ -28,6 +28,7 @@
 			isa = PBXGroup;
 			name = Classes;
 			refType = 4;
+			sourceTree = "<group>";
 		};
 		089C165CFE840E0CC02AAC07 = {
 			children = (
@@ -37,13 +38,16 @@
 			isa = PBXVariantGroup;
 			name = InfoPlist.strings;
 			refType = 4;
+			sourceTree = "<group>";
 		};
 		089C165DFE840E0CC02AAC07 = {
+			expectedFileType = text.plist.strings;
 			fileEncoding = 10;
 			isa = PBXFileReference;
 			name = English;
 			path = English.lproj/InfoPlist.strings;
 			refType = 4;
+			sourceTree = "<group>";
 		};
 //080
 //081
@@ -63,12 +67,16 @@
 			isa = PBXGroup;
 			name = "Linked Frameworks";
 			refType = 4;
+			sourceTree = "<group>";
 		};
 		1058C7A1FEA54F0111CA2CBB = {
+			expectedFileType = wrapper.framework;
+			fallbackIsa = PBXFileReference;
 			isa = PBXFrameworkReference;
 			name = Cocoa.framework;
 			path = /System/Library/Frameworks/Cocoa.framework;
 			refType = 0;
+			sourceTree = "<absolute>";
 		};
 		1058C7A2FEA54F0111CA2CBB = {
 			children = (
@@ -78,6 +86,7 @@
 			isa = PBXGroup;
 			name = "Other Frameworks";
 			refType = 4;
+			sourceTree = "<group>";
 		};
 //100
 //101
@@ -90,9 +99,12 @@
 //173
 //174
 		17587328FF379C6511CA2CBB = {
+			expectedFileType = wrapper.application;
+			fallbackIsa = PBXFileReference;
 			isa = PBXApplicationReference;
 			path = BitTorrent.app;
 			refType = 3;
+			sourceTree = BUILT_PRODUCTS_DIR;
 		};
 //170
 //171
@@ -111,6 +123,7 @@
 			isa = PBXGroup;
 			name = Products;
 			refType = 4;
+			sourceTree = "<group>";
 		};
 //190
 //191
@@ -123,6 +136,8 @@
 //293
 //294
 		29B97313FDCFA39411CA2CEA = {
+			buildSettings = {
+			};
 			buildStyles = (
 				4A9504CCFFE6A4B311CA0CBA,
 				4A9504CDFFE6A4B311CA0CBA,
@@ -159,6 +174,7 @@
 			name = BitTorrent;
 			path = "";
 			refType = 4;
+			sourceTree = "<group>";
 		};
 		29B97315FDCFA39411CA2CEA = {
 			children = (
@@ -172,12 +188,15 @@
 			name = "Other Sources";
 			path = "";
 			refType = 4;
+			sourceTree = "<group>";
 		};
 		29B97316FDCFA39411CA2CEA = {
+			expectedFileType = sourcecode.c.objc;
 			fileEncoding = 5;
 			isa = PBXFileReference;
 			path = main.m;
 			refType = 4;
+			sourceTree = "<group>";
 		};
 		29B97317FDCFA39411CA2CEA = {
 			children = (
@@ -192,6 +211,7 @@
 			name = Resources;
 			path = "";
 			refType = 4;
+			sourceTree = "<group>";
 		};
 		29B97318FDCFA39411CA2CEA = {
 			children = (
@@ -203,12 +223,15 @@
 			name = MainMenu.nib;
 			path = "";
 			refType = 4;
+			sourceTree = "<group>";
 		};
 		29B97319FDCFA39411CA2CEA = {
+			expectedFileType = wrapper.nib;
 			isa = PBXFileReference;
 			name = English;
 			path = English.lproj/MainMenu.nib;
 			refType = 4;
+			sourceTree = "<group>";
 		};
 		29B97323FDCFA39411CA2CEA = {
 			children = (
@@ -220,18 +243,25 @@
 			name = Frameworks;
 			path = "";
 			refType = 4;
+			sourceTree = "<group>";
 		};
 		29B97324FDCFA39411CA2CEA = {
+			expectedFileType = wrapper.framework;
+			fallbackIsa = PBXFileReference;
 			isa = PBXFrameworkReference;
 			name = AppKit.framework;
 			path = /System/Library/Frameworks/AppKit.framework;
 			refType = 0;
+			sourceTree = "<absolute>";
 		};
 		29B97325FDCFA39411CA2CEA = {
+			expectedFileType = wrapper.framework;
+			fallbackIsa = PBXFileReference;
 			isa = PBXFrameworkReference;
 			name = Foundation.framework;
 			path = /System/Library/Frameworks/Foundation.framework;
 			refType = 0;
+			sourceTree = "<absolute>";
 		};
 		29B97326FDCFA39411CA2CEA = {
 			buildPhases = (
@@ -306,7 +336,7 @@
 	<key>CFBundleSignature</key>
 	<string>BTBC</string>
 	<key>CFBundleVersion</key>
-	<string>3.2.2</string>
+	<string>3.3a</string>
 	<key>NSMainNibFile</key>
 	<string>MainMenu</string>
 	<key>NSPrincipalClass</key>
@@ -392,7 +422,12 @@
 			);
 			buildSettings = {
 				COPY_PHASE_STRIP = NO;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_ENABLE_FIX_AND_CONTINUE = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
 				OPTIMIZATION_CFLAGS = "-O0";
+				ZERO_LINK = YES;
 			};
 			isa = PBXBuildStyle;
 			name = Development;
@@ -402,7 +437,9 @@
 			);
 			buildSettings = {
 				COPY_PHASE_STRIP = YES;
+				GCC_ENABLE_FIX_AND_CONTINUE = NO;
 				OPTIMIZATION_CFLAGS = "-O2";
+				ZERO_LINK = NO;
 			};
 			isa = PBXBuildStyle;
 			name = Deployment;
@@ -418,9 +455,11 @@
 //733
 //734
 		73A43D3803C6C24900000124 = {
+			expectedFileType = image.icns;
 			isa = PBXFileReference;
 			path = torrent.icns;
 			refType = 4;
+			sourceTree = "<group>";
 		};
 		73A43D3903C6C24A00000124 = {
 			fileRef = 73A43D3803C6C24900000124;
@@ -429,10 +468,12 @@
 			};
 		};
 		73D8011003BE3B7900053DF6 = {
+			expectedFileType = sourcecode.c.h;
 			fileEncoding = 4;
 			isa = PBXFileReference;
 			path = callbacks.h;
 			refType = 4;
+			sourceTree = "<group>";
 		};
 		73D8011103BE3B7900053DF6 = {
 			fileRef = 73D8011003BE3B7900053DF6;
@@ -441,10 +482,12 @@
 			};
 		};
 		73DE3209052F4A3900949C8F = {
+			expectedFileType = archive.ar;
 			isa = PBXFileReference;
 			name = libpython2.3.a;
 			path = /usr/local/lib/python2.3/config/libpython2.3.a;
 			refType = 0;
+			sourceTree = "<absolute>";
 		};
 		73DE320A052F4A3900949C8F = {
 			fileRef = 73DE3209052F4A3900949C8F;
@@ -461,13 +504,16 @@
 			name = Localizable.strings;
 			path = "";
 			refType = 4;
+			sourceTree = "<group>";
 		};
 		73EB921C052A845700D326AE = {
+			expectedFileType = text.plist.strings;
 			fileEncoding = 30;
 			isa = PBXFileReference;
 			name = English;
 			path = English.lproj/Localizable.strings;
 			refType = 4;
+			sourceTree = "<group>";
 		};
 		73EB921D052A845700D326AE = {
 			fileRef = 73EB921B052A845700D326AE;
@@ -476,52 +522,68 @@
 			};
 		};
 		73EB921E052A916200D326AE = {
+			expectedFileType = wrapper.nib;
 			isa = PBXFileReference;
 			name = Dutch;
 			path = Dutch.lproj/MainMenu.nib;
 			refType = 4;
+			sourceTree = "<group>";
 		};
 		73EB921F052A929700D326AE = {
+			expectedFileType = wrapper.nib;
 			isa = PBXFileReference;
 			name = French;
 			path = French.lproj/MainMenu.nib;
 			refType = 4;
+			sourceTree = "<group>";
 		};
 		73EB9220052A92CE00D326AE = {
+			expectedFileType = wrapper.nib;
 			isa = PBXFileReference;
 			name = Dutch;
 			path = Dutch.lproj/DLWindow.nib;
 			refType = 4;
+			sourceTree = "<group>";
 		};
 		73EB9221052A92D300D326AE = {
+			expectedFileType = wrapper.nib;
 			isa = PBXFileReference;
 			name = French;
 			path = French.lproj/DLWindow.nib;
 			refType = 4;
+			sourceTree = "<group>";
 		};
 		73EB9222052A92DA00D326AE = {
+			expectedFileType = wrapper.nib;
 			isa = PBXFileReference;
 			name = Dutch;
 			path = Dutch.lproj/Metainfo.nib;
 			refType = 4;
+			sourceTree = "<group>";
 		};
 		73EB9223052A92E200D326AE = {
+			expectedFileType = wrapper.nib;
 			isa = PBXFileReference;
 			name = French;
 			path = French.lproj/Metainfo.nib;
 			refType = 4;
+			sourceTree = "<group>";
 		};
 		73EB9224052A92EB00D326AE = {
+			expectedFileType = file;
 			isa = PBXFileReference;
 			name = Dutch;
 			path = Dutch.lproj/InfoPlist.strings;
 			refType = 4;
+			sourceTree = "<group>";
 		};
 		73EB9225052A92F500D326AE = {
+			expectedFileType = text.plist.strings;
 			isa = PBXFileReference;
 			name = Dutch;
 			path = Dutch.lproj/Localizable.strings;
 			refType = 4;
+			sourceTree = "<group>";
 		};
 		73EF07FB03BA9D8100000104 = {
 			fileRef = F5D01D41027E7D9D01A845D2;
@@ -537,12 +599,15 @@
 			name = Preferences.nib;
 			path = "";
 			refType = 4;
+			sourceTree = "<group>";
 		};
 		73FFC7F60470806800010167 = {
+			expectedFileType = wrapper.nib;
 			isa = PBXFileReference;
 			name = English;
 			path = English.lproj/Preferences.nib;
 			refType = 4;
+			sourceTree = "<group>";
 		};
 		73FFC7F70470806900010167 = {
 			fileRef = 73FFC7F50470806800010167;
@@ -551,16 +616,20 @@
 			};
 		};
 		73FFC8050471552300010167 = {
+			expectedFileType = sourcecode.c.h;
 			fileEncoding = 4;
 			isa = PBXFileReference;
 			path = Preferences.h;
 			refType = 4;
+			sourceTree = "<group>";
 		};
 		73FFC8060471552300010167 = {
+			expectedFileType = sourcecode.c.objc;
 			fileEncoding = 4;
 			isa = PBXFileReference;
 			path = Preferences.m;
 			refType = 4;
+			sourceTree = "<group>";
 		};
 		73FFC8070471552300010167 = {
 			fileRef = 73FFC8050471552300010167;
@@ -585,10 +654,12 @@
 //F53
 //F54
 		F506F6C40287AE7901A845D2 = {
+			expectedFileType = sourcecode.c.h;
 			fileEncoding = 5;
 			isa = PBXFileReference;
 			path = BTCallbacks.h;
 			refType = 4;
+			sourceTree = "<group>";
 		};
 		F506F6C50287AE7901A845D2 = {
 			fileRef = F506F6C40287AE7901A845D2;
@@ -606,12 +677,15 @@
 			name = Metainfo.nib;
 			path = "";
 			refType = 4;
+			sourceTree = "<group>";
 		};
 		F542E1970308BE0301AA9403 = {
+			expectedFileType = wrapper.nib;
 			isa = PBXFileReference;
 			name = English;
 			path = English.lproj/Metainfo.nib;
 			refType = 4;
+			sourceTree = "<group>";
 		};
 		F542E1980308BE0401AA9403 = {
 			fileRef = F542E1960308BE0301AA9403;
@@ -620,25 +694,25 @@
 			};
 		};
 		F55ADF7802F292E001A845D2 = {
+			expectedFileType = image.icns;
 			isa = PBXFileReference;
 			path = waterfall.icns;
 			refType = 4;
+			sourceTree = "<group>";
 		};
 		F56F7C3602F3544601A845D2 = {
+			expectedFileType = text.script.python;
 			fileEncoding = 5;
 			isa = PBXFileReference;
 			path = freeze.py;
 			refType = 4;
+			sourceTree = "<group>";
 		};
 		F56F7C3B02F361FF01A845D2 = {
 			buildActionMask = 2147483647;
 			files = (
 			);
-			generatedFileNames = (
-			);
 			isa = PBXShellScriptBuildPhase;
-			neededFileNames = (
-			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = $SRCROOT/freeze.py;
@@ -656,22 +730,28 @@
 			};
 		};
 		F57B922402F27DF501A845D2 = {
+			expectedFileType = text;
 			fileEncoding = 5;
 			isa = PBXFileReference;
 			path = BUILD_INSTRUCTIONS;
 			refType = 2;
+			sourceTree = SOURCE_ROOT;
 		};
 		F5A3C5CA02F3CA7101A845D2 = {
+			expectedFileType = sourcecode.c.h;
 			fileEncoding = 5;
 			isa = PBXFileReference;
 			path = ICHelper.h;
 			refType = 4;
+			sourceTree = "<group>";
 		};
 		F5A3C5CB02F3CA7101A845D2 = {
+			expectedFileType = sourcecode.c.objc;
 			fileEncoding = 5;
 			isa = PBXFileReference;
 			path = ICHelper.m;
 			refType = 4;
+			sourceTree = "<group>";
 		};
 		F5A3C5CC02F3CA7101A845D2 = {
 			fileRef = F5A3C5CA02F3CA7101A845D2;
@@ -692,10 +772,13 @@
 			};
 		};
 		F5A3C5D002F3DA9B01A845D2 = {
+			expectedFileType = wrapper.framework;
+			fallbackIsa = PBXFileReference;
 			isa = PBXFrameworkReference;
 			name = Carbon.framework;
 			path = /System/Library/Frameworks/Carbon.framework;
 			refType = 0;
+			sourceTree = "<absolute>";
 		};
 		F5A3C5D102F3DA9B01A845D2 = {
 			fileRef = F5A3C5D002F3DA9B01A845D2;
@@ -710,22 +793,28 @@
 			};
 		};
 		F5A3C5DA02F6923301A845D2 = {
+			expectedFileType = text;
 			fileEncoding = 5;
 			isa = PBXFileReference;
 			path = README.txt;
 			refType = 2;
+			sourceTree = SOURCE_ROOT;
 		};
 		F5ACEF980308CD8E01538297 = {
+			expectedFileType = sourcecode.c.h;
 			fileEncoding = 5;
 			isa = PBXFileReference;
 			path = Generate.h;
 			refType = 4;
+			sourceTree = "<group>";
 		};
 		F5ACEF990308CD8E01538297 = {
+			expectedFileType = sourcecode.c.objc;
 			fileEncoding = 5;
 			isa = PBXFileReference;
 			path = Generate.m;
 			refType = 4;
+			sourceTree = "<group>";
 		};
 		F5ACEF9A0308CD8E01538297 = {
 			fileRef = F5ACEF980308CD8E01538297;
@@ -740,10 +829,12 @@
 			};
 		};
 		F5ACEF9D030B4FE301538297 = {
+			expectedFileType = sourcecode.c.h;
 			fileEncoding = 5;
 			isa = PBXFileReference;
 			path = Tstate.h;
 			refType = 4;
+			sourceTree = "<group>";
 		};
 		F5ACEF9E030B4FE301538297 = {
 			fileRef = F5ACEF9D030B4FE301538297;
@@ -761,12 +852,15 @@
 			name = DLWindow.nib;
 			path = "";
 			refType = 4;
+			sourceTree = "<group>";
 		};
 		F5D01D35027E0B0201A845D2 = {
+			expectedFileType = wrapper.nib;
 			isa = PBXFileReference;
 			name = English;
 			path = English.lproj/DLWindow.nib;
 			refType = 4;
+			sourceTree = "<group>";
 		};
 		F5D01D36027E0B0201A845D2 = {
 			fileRef = F5D01D34027E0B0201A845D2;
@@ -775,28 +869,36 @@
 			};
 		};
 		F5D01D37027E0FE201A845D2 = {
+			expectedFileType = sourcecode.c.h;
 			fileEncoding = 5;
 			isa = PBXFileReference;
 			path = DLWindowController.h;
 			refType = 4;
+			sourceTree = "<group>";
 		};
 		F5D01D38027E0FE201A845D2 = {
+			expectedFileType = sourcecode.c.objc;
 			fileEncoding = 5;
 			isa = PBXFileReference;
 			path = DLWindowController.m;
 			refType = 4;
+			sourceTree = "<group>";
 		};
 		F5D01D3D027E224601A845D2 = {
+			expectedFileType = sourcecode.c.h;
 			fileEncoding = 5;
 			isa = PBXFileReference;
 			path = BTAppController.h;
 			refType = 4;
+			sourceTree = "<group>";
 		};
 		F5D01D3E027E224601A845D2 = {
+			expectedFileType = sourcecode.c.objc;
 			fileEncoding = 5;
 			isa = PBXFileReference;
 			path = BTAppController.m;
 			refType = 4;
+			sourceTree = "<group>";
 		};
 		F5D01D3F027E224601A845D2 = {
 			fileRef = F5D01D3D027E224601A845D2;
@@ -811,16 +913,20 @@
 			};
 		};
 		F5D01D41027E7D9D01A845D2 = {
+			expectedFileType = sourcecode.c.objc;
 			fileEncoding = 5;
 			isa = PBXFileReference;
 			path = callbacks.m;
 			refType = 4;
+			sourceTree = "<group>";
 		};
 		F5F1BAA602F0842B01A845D2 = {
+			expectedFileType = sourcecode.c.h;
 			fileEncoding = 5;
 			isa = PBXFileReference;
 			path = pystructs.h;
 			refType = 4;
+			sourceTree = "<group>";
 		};
 		F5F1BAA702F0842B01A845D2 = {
 			fileRef = F5F1BAA602F0842B01A845D2;

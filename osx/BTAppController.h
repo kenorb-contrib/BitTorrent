@@ -1,7 +1,7 @@
 /* BTAppController */
 
 #import <Cocoa/Cocoa.h>
-#import <python2.2/Python.h>
+#import <python2.3/Python.h>
 
 @interface BTAppController : NSObject
 {

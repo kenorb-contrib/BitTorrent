@@ -1,7 +1,7 @@
 /* Generate */
 
 #import <Cocoa/Cocoa.h>
-#import <python2.2/Python.h>
+#import <python2.3/Python.h>
 #import "BTCallbacks.h"
 
 @interface Generate : NSObject <MetaGenerateCallbacks>
