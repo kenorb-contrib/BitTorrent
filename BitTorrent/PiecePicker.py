@@ -89,6 +89,9 @@ class PiecePicker:
                     return i
             return None
 
+    def am_I_complete(self):
+        return self.numgot == self.numpieces
+
 def test_requested():
     p = PiecePicker(9)
     p.complete(8)

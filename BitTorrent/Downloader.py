@@ -19,7 +19,7 @@ class SingleDownload:
         self.have = [false] * downloader.numpieces
         self.last = 0
         self.example_interest = None
-        self.partials = []
+        self.unhave = downloader.numpieces
 
     def disconnected(self):
         self.downloader.downloads.remove(self)
@@ -89,14 +89,15 @@ class SingleDownload:
         self.downloader.measurefunc(len(piece))
         self.downloader.downmeasure.update_rate(len(piece))
         if not self.downloader.storage.piece_came_in(index, begin, piece):
+            if self.downloader.storage.is_endgame():
+                while self.downloader.storage.do_I_have_requests(index):
+                    nb, nl = self.downloader.storage.new_request(index)
+                    self.downloader.all_requests.append((index, nb, nl))
             ds = [d for d in self.downloader.downloads if not d.choked]
             shuffle(ds)
             for d in ds:
                 d._request_more([index])
-            for d in self.downloader.downloads:
-                if d.choked and not d.interested and d.have[index] and self.downloader.storage.do_I_have_requests(index):
-                    d.interested = true
-                    d.connection.send_interested()
+            return false
         if self.downloader.storage.do_I_have(index):
             self.downloader.picker.complete(index)
         self._request_more()
@@ -115,18 +116,7 @@ class SingleDownload:
         lost_interests = []
         while len(self.active_requests) < self.downloader.backlog:
             if indices is None:
-                i = 0
-                while i < len(self.partials):
-                    next = self.partials[i]
-                    if self.downloader.storage.do_I_have(next):
-                        del self.partials[i]
-                        continue
-                    if self.downloader.storage.do_I_have_requests(next):
-                        interest = next
-                        break
-                    i += 1
-                else:
-                    interest = self.downloader.picker.next(self._want)
+                interest = self.downloader.picker.next(self._want)
             else:
                 interest = None
                 for i in indices:
@@ -139,8 +129,6 @@ class SingleDownload:
                 self.interested = true
                 self.connection.send_interested()
             self.example_interest = interest
-            if interest not in self.partials:
-                self.partials.append(interest)
             begin, length = self.downloader.storage.new_request(interest)
             self.downloader.picker.requested(interest)
             self.active_requests.append((interest, begin, length))
@@ -153,19 +141,6 @@ class SingleDownload:
         if lost_interests:
             for d in self.downloader.downloads:
                 if d.active_requests or not d.interested:
-                    continue
-                i = 0
-                hit = false
-                while i < len(d.partials):
-                    next = d.partials[i]
-                    if self.downloader.storage.do_I_have(next):
-                        del d.partials[i]
-                        continue
-                    if self.downloader.storage.do_I_have_requests(next):
-                        hit = true
-                        break
-                    i += 1
-                if hit:
                     continue
                 if d.example_interest is not None and self.downloader.storage.do_I_have_requests(d.example_interest):
                     continue
@@ -208,7 +183,11 @@ class SingleDownload:
         if self.have[index]:
             return
         self.have[index] = true
+        self.unhave -= 1
         self.downloader.picker.got_have(index)
+        if self.downloader.picker.am_I_complete() and self.unhave == 0:
+            self.connection.close()
+            return
         if self.downloader.storage.do_I_have_requests(index):
             if not self.choked:
                 self._request_more([index])
@@ -219,19 +198,24 @@ class SingleDownload:
 
     def got_have_bitfield(self, have):
         self.have = have
+        for i in xrange(len(have)):
+            if have[i]:
+                self.unhave -= 1
+                self.downloader.picker.got_have(i)
+        if self.downloader.picker.am_I_complete() and self.unhave == 0:
+            self.connection.close()
+            return
         if self.downloader.storage.is_endgame():
             for piece, begin, length in self.downloader.all_requests:
                 if self.have[piece]:
                     self.interested = true
                     self.connection.send_interested()
-                    break
-            return
+                    return
         for i in xrange(len(have)):
-            if have[i]:
-                self.downloader.picker.got_have(i)
-                if self.downloader.storage.do_I_have_requests(i) and not self.interested:
-                    self.interested = true
-                    self.connection.send_interested()
+            if have[i] and self.downloader.storage.do_I_have_requests(i):
+                self.interested = true
+                self.connection.send_interested()
+                return
 
     def get_rate(self):
         return self.measure.get_rate()
@@ -280,6 +264,9 @@ class DummyPicker:
     def complete(self, pos):
         self.stuff.remove(pos)
         self.r.append('complete')
+
+    def am_I_complete(self):
+        return false
 
 class DummyStorage:
     def __init__(self, remaining, have_endgame = false, numpieces = 1):
