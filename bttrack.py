@@ -33,6 +33,7 @@ checkfunc2 = compile_template({'type': 'announce', 'id': string_template,
 
 prefix = '/publish/'
 prefix2 = '/announce/'
+prefix3 = '/finish/'
 
 class TrackerHandler(BaseHTTPRequestHandler):
     def do_GET(self):
@@ -75,6 +76,11 @@ class TrackerHandler(BaseHTTPRequestHandler):
                 self.send_header('content-type', 'text/plain')
                 self.end_headers()
                 self.wfile.write('you sent me garbage - ' + str(e))
+        elif path[:len(prefix3)] == prefix3:
+            self.send_response(200)
+            self.send_header('content-type', 'text/plain')
+            self.end_headers()
+            self.wfile.write('Thank you for your feedback! Love, Nina')
         elif path[:len(prefix2)] == prefix2:
             try:
                 try:
@@ -125,7 +131,7 @@ class TrackerHandler(BaseHTTPRequestHandler):
                     self.server.ips.append(self.client_address[0])
                     requesters = publishers + requesters
                 response = {'hash': blob, 'pieces': pieces, 'piece length': piece_length, 
-                    'peers': requesters, 'type': 'success', 
+                    'peers': requesters, 'type': 'success', 'finish': prefix3,
                     'length': length, 'id': f, 'name': f, 'announce': prefix2,
                     'url': 'http://' + self.server.ip + ':' + str(self.server.port) + '/' + quote(f)}
                 self.wfile.write(bencode(response))

@@ -31,7 +31,8 @@ t = compile_template({'hash': len20, 'piece length': 1, 'pieces': ListMarker(len
     'peers': ListMarker({'ip': string_template, 'port': 1}), 'type': 'success',
     'length': 0, 'id': string_template, 'name': string_template, 
     'announce': string_template, 'postannounce': OptionMarker(string_template),
-    'url': string_template})
+    'url': string_template, 'finish': OptionMarker(string_template), 
+    'postfinish': OptionMarker(string_template)})
 
 t2 = compile_template([{'type': 'success', 'your ip': string_template}, 
     {'type': 'failure', 'reason': string_template}])
@@ -39,6 +40,7 @@ t2 = compile_template([{'type': 'success', 'your ip': string_template},
 def run(private_key, noncefunc, response, filefunc, displayfunc, doneflag, config):
     try:
         response = bdecode(response)
+        response1 = response
         t(response)
     except ValueError, e:
         displayfunc("got bad publication response - " + str(e), "Okay")
@@ -110,6 +112,21 @@ def run(private_key, noncefunc, response, filefunc, displayfunc, doneflag, confi
         rawserver.start_listening(encrypter, listen_port, false)
     except socket.error, e:
         displayfunc("Couldn't listen - " + str(e), 'Okay')
+        
+    if response1.has_key('finish'):
+        try:
+            a = {'type': 'finished', 'id': response1['id']}
+            if len(r) > 0:
+                a['result'] = 'success'
+            else:
+                a['result'] = 'failure'
+            url = urljoin(response1['url'], response1['finish'] + 
+                b2a_hex(bencode(a)) + response1.get('postfinish', ''))
+            h = urlopen(url)
+            h.read()
+            h.close()
+        except IOError, e:
+            pass
     return len(r) > 0
 
 def checkversion():
