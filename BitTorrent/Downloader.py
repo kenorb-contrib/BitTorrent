@@ -105,8 +105,7 @@ class SingleDownload:
                         d.fix_download_endgame()
                 except ValueError:
                     pass
-        else:
-            self._request_more()
+        self._request_more()
         if self.downloader.picker.am_I_complete():
             for d in [i for i in self.downloader.downloads if i.unhave == 0]:
                 d.connection.close()
