@@ -317,6 +317,8 @@ class Tracker:
         try:
             if not params.has_key('info_hash'):
                 raise ValueError, 'no info hash'
+            if params.has_key('ip') and not is_valid_ipv4(params['ip']):
+                raise ValueError('DNS name or invalid IP address given for IP')
             infohash = params['info_hash']
             if self.allowed != None:
                 if not self.allowed.has_key(infohash):
@@ -326,7 +328,7 @@ class Tracker:
             local_override = 0
             if params.has_key('ip'):
                 is_local = is_local_ip(ip)
-                if (not self.only_local_override_ip or is_local) and is_valid_ipv4(params['ip']):
+                if not self.only_local_override_ip or is_local:
                     ip = params['ip']
                     if is_local:
                         local_override = 1
@@ -446,11 +448,12 @@ class Tracker:
 
 def is_valid_ipv4(ip):
     try:
-        x = compact_peer_info(x, 0)
+        x = compact_peer_info(ip, 0)
         if len(x) != 6:
             return False
-    except ValueError:
+    except (ValueError, IndexError):
         return False
+    return True
 
 def is_local_ip(ip):
     try:
