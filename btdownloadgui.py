@@ -29,19 +29,17 @@ def EVT_UPDATE_STATUS(win, func):
     win.Connect(-1, -1, wxEVT_UPDATE_STATUS, func)
 
 class UpdateStatusEvent(wxPyEvent):
-    def __init__(self, fileName = None, percentDone = None, 
-        timeEst = None, fileDest = None, downRate = None, upRate = None,
-        cancelText = None):
+    def __init__(self, percentDone, timeEst, downRate, upRate,
+        cancelText, size):
         
         wxPyEvent.__init__(self)
         self.SetEventType(wxEVT_UPDATE_STATUS)
-        self.fileName = fileName
         self.percentDone = percentDone
         self.timeEst = timeEst
-        self.fileDest = fileDest
         self.downRate = downRate
         self.upRate = upRate
         self.cancelText = cancelText
+        self.size = size
 
 wxEVT_DOWNLOAD_ERROR = wxNewId()
 
@@ -61,6 +59,7 @@ class DownloadInfoFrame(wxFrame):
         self.errorDlgShown = Event()
         self.errorDlgShown.set()
         self.flag = flag
+        self.fileName = None
         self.drawGUI()
 
         EVT_CLOSE(self, self.done)
@@ -116,27 +115,24 @@ class DownloadInfoFrame(wxFrame):
         superSizer.Layout()
         superSizer.Fit(self)
         
-    def updateStatus(self, fileName = None, percentDone = None,
-        timeEst = None, fileDest = None, downRate = None, upRate = None,
-        cancelText = None):
-        
-        wxPostEvent(self, UpdateStatusEvent(fileName, percentDone, timeEst, fileDest, downRate, upRate, cancelText))
+    def updateStatus(self, percentDone = None,
+            timeEst = None, downRate = None, upRate = None,
+            cancelText = None, size=None):
+        wxPostEvent(self, UpdateStatusEvent(percentDone, timeEst, downRate, upRate, cancelText, size))
 
     def onUpdateStatus(self, event):
-        if event.fileName:
-            self.fileNameText.SetLabel(event.fileName)
         if event.percentDone:
             self.gauge.SetValue(event.percentDone)
         if event.timeEst:
             self.timeEstText.SetLabel(event.timeEst)
-        if event.fileDest:
-            self.fileDestText.SetLabel(event.fileDest)
         if event.downRate:
             self.downRateText.SetLabel(event.downRate)
         if event.upRate:
             self.upRateText.SetLabel(event.upRate)
         if event.cancelText:
             self.cancelButton.SetLabel(event.cancelText)
+        if event.size and self.fileName:
+            self.fileNameText.SetLabel(self.fileName + ' (' + event.size + ')')
 
     def downloadError(self, errorMsg):
         self.errorDlgShown.clear()
@@ -163,6 +159,7 @@ class DownloadInfoFrame(wxFrame):
             event.bucket.append('')
         else:
             event.bucket.append(dl.GetPath())
+        self.fileName = event.default
         self.fileNameText.SetLabel(event.default)
         self.timeEstText.SetLabel('Starting up...')
         self.fileDestText.SetLabel(dl.GetPath()) 
