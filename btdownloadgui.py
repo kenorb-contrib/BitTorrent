@@ -12,10 +12,35 @@ from threading import Event, Thread
 from wxPython.wx import *
 from threading import Thread
 
+wxEVT_UPDATE_FILE = 19238
+
+def EVT_UPDATE_FILE(win, func):
+    win.Connect(-1, -1, wxEVT_UPDATE_FILE, func)
+
+class UpdateFileEvent(wxPyEvent):
+    def __init__(self, default, bucket, flag):
+        wxPyEvent.__init__(self)
+        self.SetEventType(wxEVT_UPDATE_FILE)
+        self.default = default
+        self.bucket = bucket
+        self.flag = flag
+
+wxEVT_UPDATE_STATUS = 19239
+
+def EVT_UPDATE_STATUS(win, func):
+    win.Connect(-1, -1, wxEVT_UPDATE_STATUS, func)
+
+class UpdateStatusEvent(wxPyEvent):
+    def __init__(self, a, b):
+        wxPyEvent.__init__(self)
+        self.SetEventType(wxEVT_UPDATE_STATUS)
+        self.a = a
+        self.b = b
+
 class DisplayInfo(wxFrame):
     def __init__(self, flag):
         self.flag = flag
-        wxFrame.__init__(self, None, -1, 'BitTorrent download', size=(200, 200))
+        wxFrame.__init__(self, None, -1, 'BitTorrent download', size = wxSize(400, 300))
         self.SetAutoLayout(true)
         self.text = wxStaticText(self, -1, 'garbage', wxPoint(10, 10))
         self.text.SetPosition(wxPoint(10, 10))
@@ -26,19 +51,32 @@ class DisplayInfo(wxFrame):
         lc.centreX.SameAs(self, wxCentreX)
         lc.centreY.SameAs(self, wxBottom, -20)
         lc.height.AsIs()
+        #lc.width.AsIs()
         lc.width.PercentOf(self, wxWidth, 50)
         self.button.SetConstraints(lc);
 
+        self.displayed = 0
         EVT_CLOSE(self, self.done)
         EVT_BUTTON(self, 1010, self.done)
-        self.displayed = 0
+        EVT_UPDATE_FILE(self, self.onfile)
+        EVT_UPDATE_STATUS(self, self.onstatus)
 
     def set(self, a, b):
-        self.text.SetLabel(a)
-        self.button.SetLabel(' ' + b + ' ')
-        if not self.displayed:
-            self.displayed = 1
-            self.Show(1)
+        self.displayed = 1
+        wxPostEvent(self, UpdateStatusEvent(a, b))
+
+    def onstatus(self, event):
+        self.text.SetLabel(event.a)
+        self.button.SetLabel(' ' + event.b + ' ')
+        self.Show(1)
+
+    def onfile(self, event):
+        dl = wxFileDialog(self, 'choose file to save as, pick a partial download to resume', '.', event.default, '*.*', wxSAVE)
+        if dl.ShowModal() != wxID_OK:
+            event.bucket.append('')
+        else:
+            event.bucket.append(dl.GetPath())
+        event.flag.set()
 
     def done(self, event):
         self.flag.set()
@@ -57,15 +95,16 @@ def run(configDictionary, files, prefetched = None):
     doneflag = Event()
     d = DisplayInfo(doneflag)
     app = MyApp(0, d)
-    def getname(default, d = d):
-        dl = wxFileDialog(d, 'choose file to save as, pick a partial download to resume', '.', default, '*.*', wxSAVE)
-        if dl.ShowModal() != wxID_OK:
-            return ''
-        return dl.GetPath()
-    Thread(target = next, kwargs = {'files': files, 'prefetched': prefetched, 'getname': getname, 'd': d, 'doneflag': doneflag, 'configDictionary': configDictionary}).start()
+    Thread(target = next, kwargs = {'files': files, 'prefetched': prefetched, 'd': d, 'doneflag': doneflag, 'configDictionary': configDictionary}).start()
     app.MainLoop()
 
-def next(files, prefetched, getname, d, doneflag, configDictionary):
+def next(files, prefetched, d, doneflag, configDictionary):
+    def getname(default, d = d):
+        f = Event()
+        bucket = []
+        wxPostEvent(d, UpdateFileEvent(default, bucket, f))
+        f.wait()
+        return bucket[0]
     if prefetched is None:
         downloadurl(files[0], getname, d.set, doneflag, configDictionary)
     else:
