@@ -107,4 +107,4 @@ http://bitconjurer.org/BitTorrent/
 
 http://groups.yahoo.com/group/BitTorrent
 
-You can also often find me, Bram, in #bittorrent of irc.openprojects.net
+You can also often find me, Bram, in #bittorrent of irc.freenode.net
