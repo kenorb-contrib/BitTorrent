@@ -4,6 +4,7 @@
 from sha import sha
 from threading import Event
 from cStringIO import StringIO
+from time import time
 true = 1
 false = 0
 
@@ -42,8 +43,8 @@ class Storage:
                 self.handles[file] = open(file, 'wb+')
         if total > so_far:
             interval = max(2 ** 20, long(total / 100))
-            statusfunc(activity = 'allocating', 
-                fractionDone = float(so_far)/total)
+            tstart = time()
+            hit = false
             for file, length in files:
                 l = 0
                 if exists(file):
@@ -54,7 +55,11 @@ class Storage:
                 for i in range(l, length, interval)[1:] + [length-1]:
                     h.seek(i)
                     h.write(chr(1))
-                    statusfunc(fractionDone = float(so_far + i - l)/total)
+                    if time() - tstart > 7:
+                        if not hit:
+                            statusfunc(activity = 'allocating')
+                            hit = true
+                        statusfunc(fractionDone = float(so_far + i - l)/total)
                 so_far += length - l
             statusfunc(fractionDone = 1.0)
 

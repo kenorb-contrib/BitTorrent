@@ -5,7 +5,7 @@
 
 from BitTorrent import testtest
 import bttrack
-import btpublish
+import btmakemetafile
 import btdownloadheadless
 
 def run():
