@@ -213,7 +213,7 @@ class DownloadInfoFrame(wxFrame):
             caption = 'Download Error', style = wxOK | wxICON_ERROR)
         dlg.Fit()
         dlg.Center()
-        dlg.ShowModal()
+        dlg.Show(true)
 
     def chooseFile(self, default, size, saveas, dir):
         if self.flag.isSet():
