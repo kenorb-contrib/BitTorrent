@@ -1,0 +1,31 @@
+#!/usr/bin/make -f
+
+.PHONY: build binary binary-arch binary-indep clean
+
+build:
+	./setup.py install --prefix=debian/bittorrent/usr
+	chmod a-x debian/bittorrent/usr/bin/btdownloadlibrary.py
+
+binary: binary-arch binary-indep
+
+binary-arch:
+
+binary-indep: build
+	mkdir -p debian/bittorrent/DEBIAN debian/bittorrent/usr/share/doc/bittorrent debian/bittorrent/usr/share/man/man1 debian/bittorrent/usr/lib/mime/packages
+	cp FAQ.txt README.txt credits.txt todo.txt debian/bittorrent/usr/share/doc/bittorrent
+	cp debian/changelog debian/bittorrent/usr/share/doc/changelog.Debian
+	cp debian/postinst debian/postrm debian/bittorrent/DEBIAN
+	cp debian/mailcap debian/bittorrent/usr/lib/mime/packages/bittorrent
+	ln -s ../man7/undocumented.7.gz debian/bittorrent/usr/share/man/man1/btdownloadgui.py.gz
+	ln -s ../man7/undocumented.7.gz debian/bittorrent/usr/share/man/man1/btdownloadheadless.py.gz
+	ln -s ../man7/undocumented.7.gz debian/bittorrent/usr/share/man/man1/btdownloadprefetched.py.gz
+	ln -s ../man7/undocumented.7.gz debian/bittorrent/usr/share/man/man1/btmakemetafile.py.gz
+	ln -s ../man7/undocumented.7.gz debian/bittorrent/usr/share/man/man1/bttrack.py.gz
+	cp LICENSE.txt debian/bittorrent/usr/share/doc/bittorrent/copyright
+	cd debian/bittorrent/usr/share/doc ; gzip -9 changelog.Debian
+	cd debian/bittorrent ; find usr -type f -exec md5sum {} \; > DEBIAN/md5sums
+	dpkg-gencontrol -ldebian/changelog -isp -pbittorrent -Pdebian/bittorrent
+	dpkg --build debian/bittorrent ..
+
+clean:
+	-rm -fr build/ debian/bittorrent/ BitTorrent/__init__.pyc debian/files
