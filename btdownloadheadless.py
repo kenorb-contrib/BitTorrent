@@ -16,7 +16,7 @@ def hours(n):
         return '<unknown>'
     if n == 0:
         return 'complete!'
-    n = int(n)
+    n = long(n)
     h, r = divmod(n, 60 * 60)
     m, sec = divmod(r, 60)
     if h > 1000000:
