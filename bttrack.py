@@ -49,7 +49,7 @@ class TrackerHandler(BaseHTTPRequestHandler):
             try:
                 self.put()
             except IOError:
-                print_exc()
+                pass
         finally:
             self.server.lock.release()
 
@@ -119,7 +119,7 @@ class TrackerHandler(BaseHTTPRequestHandler):
             try:
                 self.get(false)
             except IOError:
-                print_exc()
+                pass
         finally:
             self.server.lock.release()
     
