@@ -12,41 +12,6 @@
 #import "BTCallbacks.h"
 
 
-//  python type, this one to hold the ports for connecting the worker thread to it's DL window manager
-staticforward PyTypeObject bt_CookieType;
-
-typedef struct {
-    PyObject_HEAD
-    NSPort *receivePort;
-    NSPort *sendPort;
-} bt_CookieObject;
-
-static void bt_cookie_dealloc(bt_CookieObject *this)
-{
-    [this->receivePort release];
-    [this->sendPort release];
-    PyObject_Del(this);
-}
-
-static PyTypeObject bt_CookieType = {
-    PyObject_HEAD_INIT(NULL)
-    0,
-    "BT Cookie",
-    sizeof(bt_CookieObject),
-    0,
-    (destructor) bt_cookie_dealloc, /*tp_dealloc*/
-    0,          /*tp_print*/
-    0,          /*tp_getattr*/
-    0,          /*tp_setattr*/
-    0,          /*tp_compare*/
-    0,          /*tp_repr*/
-    0,          /*tp_as_number*/
-    0,          /*tp_as_sequence*/
-    0,          /*tp_as_mapping*/
-    0,          /*tp_hash */
-};
-
-
 // this is the proxy object that has the callbacks for each DL
 // encapsulates a connection to the it's DL Window controller
 typedef struct {
@@ -147,7 +112,7 @@ static struct PyMethodDef reg_methods[] = {
 	{NULL,		NULL}		/* sentinel */
 };
 
-PyObject *proxy_getattr(PyObject *prox, char *name)
+static PyObject *proxy_getattr(PyObject *prox, char *name)
 {
 	return Py_FindMethod(reg_methods, prox, name);
 }
@@ -170,45 +135,18 @@ static PyTypeObject bt_ProxyType = {
     0,          /*tp_hash */
 };
 
-// connect up to the DL controller and return the proxy object
-// takes a "cookie" which has the send/receive ports...
-static PyObject *getProxy(PyObject *self, PyObject *args)
+// given two ports, create a new proxy object
+PyObject *bt_getProxy(NSPort *receivePort, NSPort *sendPort)
 {
-    NSAutoreleasePool *pool =[[NSAutoreleasePool alloc] init];
-    bt_CookieObject *cookie = nil;
-    bt_ProxyObject *proxy = nil;
+    bt_ProxyObject *proxy;
     id foo;
-    if (!PyArg_UnpackTuple(args, "getProxy", 1, 1, &cookie))
-	return NULL;
+    
     proxy = PyObject_New(bt_ProxyObject, &bt_ProxyType);
-    Py_BEGIN_ALLOW_THREADS
-    foo = (id)[[NSConnection connectionWithReceivePort:cookie->receivePort
-					sendPort:cookie->sendPort]
+    foo = (id)[[NSConnection connectionWithReceivePort:receivePort
+					sendPort:sendPort]
 			    rootProxy];
     [foo setProtocolForProxy:@protocol(BTCallbacks)];
     [foo retain];
     proxy->dlController = foo;
-    [pool release];
-    Py_END_ALLOW_THREADS
     return (PyObject *)proxy;
-}
-
-static PyMethodDef CallbackMethods[] = {
-     {"getProxy", getProxy, METH_VARARGS, "getProxy"},
-    {NULL, NULL, 0, NULL}
-};
-
-PyObject *getCookie(NSPort *receivePort, NSPort *sendPort)
-{
-    bt_CookieObject *cookie;
-    cookie = PyObject_New(bt_CookieObject, &bt_CookieType);
-    
-    cookie->receivePort = [receivePort retain];
-    cookie->sendPort = [sendPort retain];
-    return (PyObject *)cookie;
-}
-
-void init_callbacks()
-{
-    Py_InitModule("callbacks", CallbackMethods);
 }

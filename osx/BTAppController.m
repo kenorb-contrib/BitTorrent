@@ -3,13 +3,13 @@
 
 static PyThreadState *tstate;
 
-PyObject *getCookie(NSPort *receivePort, NSPort *sendPort);
+PyObject *bt_getProxy(NSPort *receivePort, NSPort *sendPort);
 
 @implementation BTAppController
 
 - (void)applicationDidFinishLaunching:(NSNotification *)note
 {
-    PyRun_SimpleString("import cocoa;from threading import Event");
+    PyRun_SimpleString("from threading import Event;from BitTorrent.download import download");
     tstate = PyEval_SaveThread();
 
 }
@@ -38,7 +38,7 @@ PyObject *getCookie(NSPort *receivePort, NSPort *sendPort);
     if([panel runModalForTypes:nil]) {
 	controller = [[DLWindowController alloc] init];
 	[NSBundle loadNibNamed:@"DLWindow" owner:controller];
-	[self runWithFile:[panel filename] controller:controller];
+	[self runWithStr:[NSString stringWithFormat:@"--responsefile=%@", [panel filename]] controller:controller];
     }
     
 }
@@ -49,76 +49,96 @@ PyObject *getCookie(NSPort *receivePort, NSPort *sendPort);
     [urlWindow orderOut:self];
     [NSBundle loadNibNamed:@"DLWindow" owner:controller];
     
-    [self runWithUrl:[url stringValue] controller:controller];
+    [self runWithStr:[NSString stringWithFormat:@"--url=%@", [url stringValue]] controller:controller];
 
 }
 
-- (void)runWithUrl:(NSString *)urlstr controller:(id)controller
+- (void)runWithStr:(NSString *)urlstr controller:(id)controller
 {
-    NSString *str;
-    PyObject *mm, *md, *dict;
-    PyObject *cookie, *flag, *event;
     NSPort *left, *right;
     NSConnection *conn;
-    
-    str = [NSString localizedStringWithFormat:@"cocoa.newDlWithUrl('%@', cookie, flag)", urlstr];
+    NSMutableDictionary *dict = [NSMutableDictionary dictionaryWithCapacity:4];
+    PyObject *flag;
+    PyObject *mm, *md, *event;    
     left = [NSPort port];
     right = [NSPort port];
+    
+    // create UI side of the connection
     conn = [[NSConnection alloc] initWithReceivePort:left sendPort:right];
+    // set the new DLWindowController to be the root
     [conn setRootObject:controller];
     [controller setConnection:conn];
 
     PyEval_RestoreThread(tstate);
+    
+    // get __main__
     mm = PyImport_ImportModule("__main__");
     md = PyModule_GetDict(mm);
+    
+    // create flag
     event = PyDict_GetItemString(md, "Event");
     flag = PyObject_CallObject(event, NULL);
-    PyMapping_SetItemString(md, "flag", flag);
-    [controller setFlag:flag];
-    cookie = getCookie(right, left);
-    PyMapping_SetItemString(md, "cookie", cookie);
-    PyRun_SimpleString([str cString]);
-    Py_DECREF(mm);
-    Py_DECREF(cookie);
-    tstate = PyEval_SaveThread();
-}
-
-- (void)runWithFile:(NSString *)filename controller:(id)controller
-{
-    NSString *str;
-    PyObject *mm;
-    PyObject *cookie;
-    PyObject *flag;
-    NSPort *left, *right;
-    NSConnection *conn;
+    [controller setFlag:flag]; // controller keeps this reference to flag
     
-    str = [NSString localizedStringWithFormat:@"cocoa.newDlWithFile('%@', cookie, flag)", filename];
-
-    left = [NSPort port];
-    right = [NSPort port];
-    conn = [[NSConnection alloc] initWithReceivePort:left sendPort:right];
-    [conn setRootObject:controller];
-    [controller setConnection:conn];
-
-    PyEval_RestoreThread(tstate);
-    PyRun_SimpleString("flag = Event()");
-    mm = PyModule_GetDict(PyImport_ImportModule("__main__"));
-    flag = PyDict_GetItemString(mm, "flag");
-    [controller setFlag:flag];
-    cookie = getCookie(right, left);
-    PyMapping_SetItemString(mm, "cookie", cookie);
-    PyRun_SimpleString([str cString]);
+    [dict setObject:right forKey:@"receive"];
+    [dict setObject:left forKey:@"send"];
+    [dict setObject:[NSData dataWithBytes:&flag length:sizeof(PyObject *)] forKey:@"flag"];
+    [dict setObject:urlstr forKey:@"str"];
     Py_DECREF(mm);
-    Py_DECREF(cookie);
     tstate = PyEval_SaveThread();
+    
+    // fire off new thread
+    [NSThread detachNewThreadSelector:@selector(runWithDict:) toTarget:[self class]  
+	withObject:dict];
 }
+
++ (void)runWithDict:(NSDictionary *)dict
+{
+    NSAutoreleasePool *pool;
+    PyObject *proxy;
+    NSString *str;
+    PyObject *chooseFile, *finished, *display, *mm, *md, *dl, *flag;
+    PyThreadState *ts;
+    
+    pool = [[NSAutoreleasePool alloc] init];
+    
+    ts = PyThreadState_New(tstate->interp);
+    PyEval_RestoreThread(ts);    
+
+    // create proxy, which create's BT's side of connection
+    proxy = (PyObject *)bt_getProxy([dict objectForKey:@"receive"], [dict objectForKey:@"send"]);
+    
+    // get the download function
+    mm = PyImport_ImportModule("__main__");
+    md = PyModule_GetDict(mm);
+    dl = PyDict_GetItemString(md, "download");
+    
+    // get args
+    str = [dict objectForKey:@"str"];
+    chooseFile = PyObject_GetAttrString(proxy, "chooseFile");
+    display = PyObject_GetAttrString(proxy, "display");
+    finished = PyObject_GetAttrString(proxy, "finished");
+    [[dict objectForKey:@"flag"] getBytes:&flag];
+
+    // do the download!
+    PyObject_CallFunction(dl, "[s]OOOOi", [str cString], chooseFile, display, finished, flag, 80);
+ 
+    // clean up
+    Py_DECREF(mm);
+    Py_DECREF(flag);
+    Py_DECREF(proxy);
+    [pool release];
+    ts = PyEval_SaveThread();
+}
+
+
 - (BOOL)application:(NSApplication *)theApplication openFile:(NSString *)filename
 {
     id controller = [[DLWindowController alloc] init];
     
     [NSBundle loadNibNamed:@"DLWindow" owner:controller];
     
-    [self runWithFile:filename controller:controller];
+    [self runWithStr:[NSString stringWithFormat:@"--responsefile=%@", filename] controller:controller];
     return TRUE;
 }
 

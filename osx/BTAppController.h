@@ -13,8 +13,8 @@
 - (IBAction)openURL:(id)sender;
 - (IBAction)openTrackerResponse:(id)sender;
 - (IBAction)takeUrl:(id)sender;
-- (void)runWithFile:(NSString *)filename controller:(id)controller;
-- (void)runWithUrl:(NSString *)url controller:(id)controller;
+- (void)runWithStr:(NSString *)url controller:(id)controller;
++ (void)runWithDict:(NSDictionary *)dict;
 // application delegate messages
 - (BOOL)application:(NSApplication *)theApplication openFile:(NSString *)filename;
 - (void)applicationDidFinishLaunching:(NSNotification *)note;

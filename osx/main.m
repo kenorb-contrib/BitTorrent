@@ -24,10 +24,7 @@ int main(int argc, const char *argv[])
 
     // add our resource path to sys.path so we can find the BT modules
     str = [NSString localizedStringWithFormat:@"import sys;sys.path.append('%@')", [[NSBundle mainBundle] resourcePath]];
-    PyRun_SimpleString([str cString]);
-     
-    // install our Python module containing the BT callbacks
-    init_callbacks();
+    PyRun_SimpleString((char *)[str cString]);
     [pool release];
     
     return NSApplicationMain(argc, argv);
