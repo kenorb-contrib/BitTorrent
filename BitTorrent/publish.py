@@ -38,7 +38,7 @@ defaults = [
         """ip to report you have to the publicist."""),
     ('location', 'location=', None, None,
         """The prefix url for announcing to the publicist."""),
-    ('postlocation', 'post-location', None, '',
+    ('postlocation', 'post-location=', None, '',
         """post url for announcing to the publicist."""),
     ]
 

@@ -17,6 +17,7 @@ from sys import argv
 from urllib import urlopen, quote, unquote
 from traceback import print_exc
 from time import sleep
+from os.path import exists
 true = 1
 false = 0
 
@@ -66,6 +67,9 @@ class TrackerHandler(BaseHTTPRequestHandler):
                         n = {'ip': ip, 'port': message['port']}
                         if n not in published[name][0]:
                             published[name][0].append(n)
+                h = open(self.server.file, 'wb')
+                h.write(bencode(published))
+                h.close()
                 self.send_response(200)
                 self.send_header('Content-Type', 'text/plain')
                 self.end_headers()
@@ -152,8 +156,14 @@ def track(config):
 
     port = config['port']
     s = HTTPServer(('', port), TrackerHandler)
-    s.port = port
     s.published = {}
+    s.file = config['file']
+    if exists(s.file):
+        h = open(s.file, 'rb')
+        r = h.read()
+        h.close()
+        s.published = bdecode(r)
+    s.port = port
     s.lock = Condition()
     s.ip = config['ip']
     s.ips = []
@@ -181,6 +191,7 @@ def track(config):
 configDefinitions = [
     ('port', 'port=', 'p:', 80, """Port to listen on."""),
     ('ip', 'ip=', 'i:', None, """ip to report you have to downloaders."""),
+    ('file', 'serialized-file=', 's:', None, 'file to store state in'),
     ]
 
 if __name__ == '__main__':
@@ -189,4 +200,4 @@ if __name__ == '__main__':
         track(config)
     except ValueError, e:
         print "usage: %s [options]" % argv[0]
-        print formatDefinitions(configDefinitions)
+        print formatDefinitions(configDefinitions, 80)
