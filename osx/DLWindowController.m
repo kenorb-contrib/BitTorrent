@@ -102,11 +102,18 @@
         [file setStringValue:[NSString stringWithFormat:NSLocalizedString(@"(%1.1f MB) %@ ", @"size and filename for dl window tite") , size / 1048576.0, [fname lastPathComponent]]];
         [[self window] setTitleWithRepresentedFilename:fname];
         [[NSUserDefaults standardUserDefaults] setObject:[panel directory] forKey:LASTDIR];
+        totalsize = size;
         return fname;
     }
     // user cancelled
     [[self window] performClose:self];
     return nil;
+}
+
+- (void)pathUpdated:(NSString *)newPath
+{
+    [file setStringValue:[NSString stringWithFormat:NSLocalizedString(@"(%1.1f MB) %@ ", @"size and filename for dl window tite") , totalsize / 1048576.0, newPath]];
+    [[self window] setTitleWithRepresentedFilename:newPath];
 }
 
 - (void)display:(NSDictionary *)dict

@@ -93,12 +93,28 @@ static PyObject *fnameprogress(bt_ProxyObject *self, PyObject *args)
         return NULL;
     Py_BEGIN_ALLOW_THREADS
         [self->dlController progressFname:[NSString stringWithCString:fname]];
-        [pool release];
+    [pool release];
     Py_END_ALLOW_THREADS
 
-    Py_INCREF(Py_None);
+        Py_INCREF(Py_None);
     return Py_None;
-    
+
+}
+
+static PyObject *pathUpdated(bt_ProxyObject *self, PyObject *args)
+{
+    NSAutoreleasePool *pool =[[NSAutoreleasePool alloc] init];
+    char *fname;
+    if (!PyArg_ParseTuple(args, "s", &fname))
+        return NULL;
+    Py_BEGIN_ALLOW_THREADS
+        [self->dlController pathUpdated:[NSString stringWithCString:fname]];
+    [pool release];
+    Py_END_ALLOW_THREADS
+
+        Py_INCREF(Py_None);
+    return Py_None;
+
 }
 static PyObject *finished(bt_ProxyObject *self, PyObject *args)
 {
@@ -147,7 +163,8 @@ static void bt_proxy_dealloc(bt_ProxyObject* self)
 
 static struct PyMethodDef reg_methods[] = {
 	{"display",	(PyCFunction)display, METH_VARARGS|METH_KEYWORDS},
-	{"chooseFile",	(PyCFunction)chooseFile, METH_VARARGS},
+    {"chooseFile",	(PyCFunction)chooseFile, METH_VARARGS},
+    {"pathUpdated",	(PyCFunction)pathUpdated, METH_VARARGS},
 	{"finished",	(PyCFunction)finished, METH_VARARGS},
 	{"nerror",	(PyCFunction)nerror, METH_VARARGS},
     {"metaprogress", (PyCFunction)metaprogress, METH_VARARGS},

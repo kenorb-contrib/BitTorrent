@@ -127,7 +127,7 @@ bt_ProxyObject *bt_getProxy(NSPort *receivePort, NSPort *sendPort);
     NSAutoreleasePool *pool;
     bt_ProxyObject *proxy;
     NSString *str;
-    PyObject *chooseFile, *finished, *display, *nerror, *mm, *md, *dl, *flag, *ret;
+    PyObject *chooseFile, *finished, *display, *nerror, *mm, *md, *dl, *flag, *ret, *pathUpdated;
     PyThreadState *ts;
     
     pool = [[NSAutoreleasePool alloc] init];
@@ -148,12 +148,13 @@ bt_ProxyObject *bt_getProxy(NSPort *receivePort, NSPort *sendPort);
     chooseFile = PyObject_GetAttrString((PyObject *)proxy, "chooseFile");
     display = PyObject_GetAttrString((PyObject *)proxy, "display");
     finished = PyObject_GetAttrString((PyObject *)proxy, "finished");
+    pathUpdated = PyObject_GetAttrString((PyObject *)proxy, "pathUpdated");
     nerror = PyObject_GetAttrString((PyObject *)proxy, "nerror");
     [[dict objectForKey:@"flag"] getBytes:&flag];
 
     // do the download!
-    ret = PyObject_CallFunction(dl, "[ss]OOOOOi", [str cString], "--display_interval=1.5", 
-				chooseFile, display, finished, nerror, flag, 80);
+    ret = PyObject_CallFunction(dl, "[ss]OOOOOiO", [str cString], "--display_interval=1.5", 
+				chooseFile, display, finished, nerror, flag, 80, pathUpdated);
     [proxy->dlController dlExited];
     
     // clean up
