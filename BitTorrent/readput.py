@@ -16,7 +16,6 @@ def readput(url, data):
         h = HTTPSConnection(host)
     else:
         raise ValueError, "can't handle protocol '" + protocol + "'"
-    h = HTTP(host)
     h.putrequest('PUT', path)
     h.putheader('content-length', str(len(data)))
     h.endheaders()
