@@ -13,7 +13,6 @@ MaxDepth
 # This file is licensed under the GNU Lesser General Public License v2.1.
 # originally written for Mojo Nation by Bram Cohen, based on an earlier 
 # version by Bryce Wilcox
-# all subsequent changes are by Bram Cohen and are public domain
 # The authors disclaim all liability for any damages resulting from
 # any use of this software.
 

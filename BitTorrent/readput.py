@@ -1,3 +1,6 @@
+# written by Bram Cohen
+# see LICENSE.txt for license information
+
 from httplib import HTTP
 from bencode import bencode, bdecode
 from urlparse import urlparse

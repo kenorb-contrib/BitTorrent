@@ -26,10 +26,7 @@
    gotten rid of the mutable globals, and made encrypt() put the 
    ciphertext in a different memory position than the plaintext.
    
-   All changes to this Mike Scott's version are public domain.
-   The authors disclaim all liability for any damages resulting from
-   any use of this software.
-
+   see LICENSE.txt for license information
 */
 
 #define BYTE unsigned char       /* 8 bits  */

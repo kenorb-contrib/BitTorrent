@@ -1,7 +1,5 @@
 # Written by Bram Cohen
-# This file is public domain
-# The authors disclaim all liability for any damages resulting from
-# any use of this software.
+# see LICENSE.txt for license information
 
 true = 1
 false = 0
