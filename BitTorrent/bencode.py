@@ -237,29 +237,25 @@ class Bencached(object):
 def encode_bencached(x,r):
     r.append(x.bencoded)
 
-def encode_int(x,r):
-    r.append('i%de' % x)
+def encode_int(x, r):
+    r.extend(('i', str(x), 'e'))
 
-def encode_string(x,r):
-    r.append('%d:%s' % (len(x), x))
+def encode_string(x, r):
+    r.extend((str(len(x)), ':', x))
 
-def encode_list(x,r):
+def encode_list(x, r):
     r.append('l')
-    for e in x:
-        encode_func[type(e)](e, r)
+    for i in x:
+        encode_func[type(i)](i, r)
     r.append('e')
 
 def encode_dict(x,r):
     r.append('d')
     ilist = x.items()
     ilist.sort()
-    for k,v in ilist:
-        assert type(k) is StringType
-        r.append('%d:%s' % (len(k), k))
-        if type(v) is str:
-            r.append('%d:%s' % (len(v), v))
-        else:
-            encode_func[type(v)](v, r)
+    for k, v in ilist:
+        r.extend((str(len(k)), ':', k))
+        encode_func[type(v)](v, r)
     r.append('e')
 
 encode_func = {}
@@ -271,8 +267,6 @@ encode_func[StringType] = encode_string
 encode_func[ListType] = encode_list
 encode_func[TupleType] = encode_list
 encode_func[DictType] = encode_dict
-
-from traceback import print_exc
 
 def bencode(x):
     r = []
@@ -295,7 +289,7 @@ def test_bencode():
     assert bencode({'spam.mp3': {'author': 'Alice', 'length': 100000}}) == 'd8:spam.mp3d6:author5:Alice6:lengthi100000eee'
     try:
         bencode({1: 'foo'})
-    except AssertionError:
+    except TypeError:
         return
     assert 0
 
