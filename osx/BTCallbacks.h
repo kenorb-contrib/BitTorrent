@@ -9,5 +9,6 @@
 @end
 
 @protocol MetaGenerateCallbacks
-- (oneway void)progress:(in NSString *)val;
+- (oneway void)progress:(in float)val;
+- (oneway void)progressFname:(in NSString *)fname;
 @end

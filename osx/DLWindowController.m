@@ -17,7 +17,7 @@
     
     defaults = [NSUserDefaults standardUserDefaults];
     appDefaults = [NSMutableDictionary
-	dictionaryWithObject:NSHomeDirectory() forKey:LASTDIR];
+    dictionaryWithObject:NSHomeDirectory() forKey:LASTDIR];
     [defaults registerDefaults:appDefaults];
 
     return self;
@@ -49,7 +49,7 @@
 {
     if(conn)
     {
-	[conn release];
+    [conn release];
     }
     conn = [nc retain];
 }
@@ -59,9 +59,9 @@
     long h, r, m, sec;
     
     if (n == -1)
-	return @"<unknown>";
+    return @"<unknown>";
     if (n == 0)
-	return @"Complete!";
+    return @"Complete!";
     h = n / (60 * 60);
     r = n % (60 * 60);
     
@@ -69,11 +69,11 @@
     sec = r % 60;
     
     if (h > 1000000)
-	return @"<unknown>";
+    return @"<unknown>";
     if (h > 0)
-	return [NSString stringWithFormat:@"%d hour(s) %2d min(s) %2d sec(s)", h, m, sec];
+    return [NSString stringWithFormat:@"%d hour(s) %2d min(s) %2d sec(s)", h, m, sec];
     else
-	return [NSString stringWithFormat:@"%2d min(s) %2d sec(s)", m, sec]; 
+    return [NSString stringWithFormat:@"%2d min(s) %2d sec(s)", m, sec]; 
 }
 
 - (NSString *)chooseFile:(NSString *)defaultFile size:(long)size isDirectory:(int)dir
@@ -82,27 +82,27 @@
     NSString *fname = nil;
     
     if(!dir) {
-	panel = [NSSavePanel savePanel];
-	[panel setTitle:NSLocalizedString(@"Save, choose an existing file to resume.", @"save instructions")];
-	if([panel runModalForDirectory:[[NSUserDefaults standardUserDefaults] objectForKey:LASTDIR] file:defaultFile]) {
-	    fname = [panel filename];
-	}
+        panel = [NSSavePanel savePanel];
+        [panel setTitle:NSLocalizedString(@"Save, choose an existing file to resume.", @"save instructions")];
+        if([panel runModalForDirectory:[[NSUserDefaults standardUserDefaults] objectForKey:LASTDIR] file:defaultFile]) {
+            fname = [panel filename];
+        }
     }
     else {
-	panel = [NSOpenPanel openPanel];
-	[panel setCanChooseFiles:YES];
-	[panel setCanChooseDirectories:YES];
-	[panel setTitle:NSLocalizedString(@"Choose directory, choose existing directory to resume.", @"save directory instructions")];
-	[panel setPrompt:NSLocalizedString(@"Save", @"save directory prompt")];
-	if([panel runModalForDirectory:[[NSUserDefaults standardUserDefaults] objectForKey:LASTDIR] file:defaultFile]) {
-	    fname = [panel filename];
-	}
+        panel = [NSOpenPanel openPanel];
+        [panel setCanChooseFiles:YES];
+        [panel setCanChooseDirectories:YES];
+        [panel setTitle:NSLocalizedString(@"Choose directory, choose existing directory to resume.", @"save directory instructions")];
+        [panel setPrompt:NSLocalizedString(@"Save", @"save directory prompt")];
+        if([panel runModalForDirectory:[[NSUserDefaults standardUserDefaults] objectForKey:LASTDIR] file:defaultFile]) {
+            fname = [panel filename];
+        }
     }
     if(fname) {
-	[file setStringValue:[NSString stringWithFormat:NSLocalizedString(@"%@ (%1.1f MB)", @"filename and size for dl window tite"),[fname lastPathComponent], size / 1048576.0]];
-	[[self window] setTitleWithRepresentedFilename:fname];
-	[[NSUserDefaults standardUserDefaults] setObject:[panel directory] forKey:LASTDIR];
-	return fname;
+        [file setStringValue:[NSString stringWithFormat:NSLocalizedString(@"(%1.1f MB) %@ ", @"size and filename for dl window tite") , size / 1048576.0, [fname lastPathComponent]]];
+        [[self window] setTitleWithRepresentedFilename:fname];
+        [[NSUserDefaults standardUserDefaults] setObject:[panel directory] forKey:LASTDIR];
+        return fname;
     }
     // user cancelled
     [[self window] performClose:self];
@@ -113,28 +113,28 @@
 {
     NSString *str, *activity;
     long est;
- 
-    if(!done) {   
-	activity = [dict objectForKey:@"activity"];
-	if ([[dict objectForKey:@"fractionDone"] floatValue] != 0.0) {
-	    frac = [[dict objectForKey:@"fractionDone"] floatValue];
-	}
-    
-	// format dict timeEst here and put in ivar timeEst
-	est = [[dict objectForKey:@"timeEst"] longValue];
-	if(est > 0) {
-	    [timeEst release];
-	    timeEst = [[self hours:est] retain];
-	}
-	if(![activity isEqualToString:@""]) {
-	    [timeEst release];
-	    timeEst = [activity retain];
-	}
-	str = [NSString stringWithFormat:NSLocalizedString(@"%2.1f%%", @"percent dl completed"), frac * 100];
 
-	[percentCompleted setStringValue:str];
-	[progressBar setDoubleValue:frac];
-	[timeRemaining setStringValue:timeEst];
+    if(!done) {   
+        activity = [dict objectForKey:@"activity"];
+        if ([[dict objectForKey:@"fractionDone"] floatValue] != 0.0) {
+            frac = [[dict objectForKey:@"fractionDone"] floatValue];
+        }
+        
+        // format dict timeEst here and put in ivar timeEst
+        est = [[dict objectForKey:@"timeEst"] longValue];
+        if(est > 0) {
+            [timeEst release];
+            timeEst = [[self hours:est] retain];
+        }
+        if(![activity isEqualToString:@""]) {
+            [timeEst release];
+            timeEst = [activity retain];
+        }
+        str = [NSString stringWithFormat:NSLocalizedString(@"%2.1f%%", @"percent dl completed"), frac * 100];
+    
+        [percentCompleted setStringValue:str];
+        [progressBar setDoubleValue:frac];
+        [timeRemaining setStringValue:timeEst];
     }
     [dlRate setStringValue:[NSString stringWithFormat:NSLocalizedString(@"%2.1f K/s",@"transfer rate"), [[dict objectForKey:@"downRate"] floatValue] / 1024]];
     [ulRate setStringValue:[NSString stringWithFormat:NSLocalizedString(@"%2.1f K/s", @"transfer rate"), [[dict objectForKey:@"upRate"] floatValue] / 1024]];
@@ -153,11 +153,11 @@
 - (void)dlExited
 {
     if(!done) {
-	[progressBar setDoubleValue:0.0];
-	[timeRemaining setStringValue:NSLocalizedString(@"Download Failed!", @"download failed")];
-	[dlRate setStringValue:@""];
-	[ulRate setStringValue:@""];
-	[percentCompleted setStringValue:@""];
+        [progressBar setDoubleValue:0.0];
+        [timeRemaining setStringValue:NSLocalizedString(@"Download Failed!", @"download failed")];
+        [dlRate setStringValue:@""];
+        [ulRate setStringValue:@""];
+        [percentCompleted setStringValue:@""];
     }
 }
 

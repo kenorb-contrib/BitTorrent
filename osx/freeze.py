@@ -65,6 +65,8 @@ for f in listdir(source):
 
 #copy btmakemetafile.py
 copy(join(environ['SRCROOT'], "../btmakemetafile.py"), res)
+#copy btcompletedir.py
+copy(join(environ['SRCROOT'], "../btcompletedir.py"), res)
 
 
 # compile and remove sources

@@ -31,7 +31,7 @@
 	err = ICMapEntriesFilename(ici, handle, "\pfoo.torrent", 
                                 &map);
 	if (err == icPrefNotFoundErr) {
-	    NSRunAlertPanel(NSLocalizedString(@"Helper Registration", @"explanation of helper registration"), NSLocalizedString(@"Internet Explorer must NOT be running for BitTorrent to register as a helper application.  This only needs to be done once.  Please quit Internet Explorer before continuing.", @"shut down internet explorer request"), nil, nil, nil);
+	    NSRunAlertPanel(NSLocalizedString(@"Quit Internet Explorer", @"explanation of helper registration"), NSLocalizedString(@"BitTorrent cannot register as a helper application while Internet Explorer is running.  This only needs to be done once.  Please quit Internet Explorer before clicking OK.", @"shut down internet explorer request"), nil, nil, nil);
 	    map.totalLength = kICMapFixedLength + PLstrlen(EXTENSION) + PLstrlen(APP) * 3 + PLstrlen(MIMETYPE);
 	    map.fixedLength = kICMapFixedLength;
 	    map.version = 3;

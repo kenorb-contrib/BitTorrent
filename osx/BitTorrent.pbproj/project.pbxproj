@@ -125,6 +125,7 @@
 				4A9504CCFFE6A4B311CA0CBA,
 				4A9504CDFFE6A4B311CA0CBA,
 			);
+			hasScannedForEncodings = 1;
 			isa = PBXProject;
 			mainGroup = 29B97314FDCFA39411CA2CEA;
 			projectDirPath = "";
@@ -143,7 +144,6 @@
 				19C28FACFE9D520D11CA2CBB,
 				F55ADF7802F292E001A845D2,
 				F56F7C3602F3544601A845D2,
-				F5D3B4A10384277E01FE7BA2,
 			);
 			isa = PBXGroup;
 			name = BitTorrent;
@@ -154,6 +154,7 @@
 			children = (
 				29B97316FDCFA39411CA2CEA,
 				F506F6C40287AE7901A845D2,
+				73D8011003BE3B7900053DF6,
 				F5D01D41027E7D9D01A845D2,
 				F5F1BAA602F0842B01A845D2,
 			);
@@ -163,6 +164,7 @@
 			refType = 4;
 		};
 		29B97316FDCFA39411CA2CEA = {
+			fileEncoding = 5;
 			isa = PBXFileReference;
 			path = main.m;
 			refType = 4;
@@ -173,7 +175,7 @@
 				F5D01D34027E0B0201A845D2,
 				F542E1960308BE0301AA9403,
 				089C165CFE840E0CC02AAC07,
-				F51C7E100310E7F301A845D2,
+				7325C8A403BE3FCB004B4E79,
 			);
 			isa = PBXGroup;
 			name = Resources;
@@ -290,7 +292,6 @@
 </dict>
 </plist>
 ";
-			shouldUseHeadermap = 1;
 		};
 		29B97327FDCFA39411CA2CEA = {
 			buildActionMask = 2147483647;
@@ -302,6 +303,7 @@
 				F5A3C5CD02F3CA7101A845D2,
 				F5ACEF9A0308CD8E01538297,
 				F5ACEF9E030B4FE301538297,
+				73D8011103BE3B7900053DF6,
 			);
 			isa = PBXHeadersBuildPhase;
 			runOnlyForDeploymentPostprocessing = 0;
@@ -313,8 +315,7 @@
 				F5D01D36027E0B0201A845D2,
 				F56F7C3E02F3731501A845D2,
 				F542E1980308BE0401AA9403,
-				F51C7E110310E7F301A845D2,
-				F5D3B4A20384277E01FE7BA2,
+				7325C8A503BE3FCB004B4E79,
 			);
 			isa = PBXResourcesBuildPhase;
 			runOnlyForDeploymentPostprocessing = 0;
@@ -324,10 +325,10 @@
 			files = (
 				29B9732CFDCFA39411CA2CEA,
 				F5D01D40027E224601A845D2,
-				F5D01D42027E7D9D01A845D2,
 				F5A3C5CE02F3CA7101A845D2,
 				F5A3C5D302F6385901A845D2,
 				F5ACEF9B0308CD8E01538297,
+				73EF07FB03BA9D8100000104,
 			);
 			isa = PBXSourcesBuildPhase;
 			runOnlyForDeploymentPostprocessing = 0;
@@ -385,38 +386,60 @@
 //4A2
 //4A3
 //4A4
+//730
+//731
+//732
+//733
+//734
+		7325C8A403BE3FCB004B4E79 = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			name = Localizable.strings;
+			path = English.lproj/Localizable.strings;
+			refType = 2;
+		};
+		7325C8A503BE3FCB004B4E79 = {
+			fileRef = 7325C8A403BE3FCB004B4E79;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		73D8011003BE3B7900053DF6 = {
+			fileEncoding = 4;
+			isa = PBXFileReference;
+			path = callbacks.h;
+			refType = 4;
+		};
+		73D8011103BE3B7900053DF6 = {
+			fileRef = 73D8011003BE3B7900053DF6;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		73EF07FB03BA9D8100000104 = {
+			fileRef = F5D01D41027E7D9D01A845D2;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+//730
+//731
+//732
+//733
+//734
 //F50
 //F51
 //F52
 //F53
 //F54
 		F506F6C40287AE7901A845D2 = {
+			fileEncoding = 5;
 			isa = PBXFileReference;
 			path = BTCallbacks.h;
 			refType = 4;
 		};
 		F506F6C50287AE7901A845D2 = {
 			fileRef = F506F6C40287AE7901A845D2;
-			isa = PBXBuildFile;
-			settings = {
-			};
-		};
-		F51C7E0E0310E35601A845D2 = {
-			isa = PBXFileReference;
-			name = English;
-			path = English.lproj/Localizable.strings;
-			refType = 4;
-		};
-		F51C7E100310E7F301A845D2 = {
-			children = (
-				F51C7E0E0310E35601A845D2,
-			);
-			isa = PBXVariantGroup;
-			name = Localizable.strings;
-			refType = 4;
-		};
-		F51C7E110310E7F301A845D2 = {
-			fileRef = F51C7E100310E7F301A845D2;
 			isa = PBXBuildFile;
 			settings = {
 			};
@@ -454,6 +477,7 @@
 			refType = 0;
 		};
 		F56F7C3602F3544601A845D2 = {
+			fileEncoding = 5;
 			isa = PBXFileReference;
 			path = freeze.py;
 			refType = 4;
@@ -490,16 +514,19 @@
 			};
 		};
 		F57B922402F27DF501A845D2 = {
+			fileEncoding = 5;
 			isa = PBXFileReference;
 			path = BUILD_INSTRUCTIONS;
 			refType = 2;
 		};
 		F5A3C5CA02F3CA7101A845D2 = {
+			fileEncoding = 5;
 			isa = PBXFileReference;
 			path = ICHelper.h;
 			refType = 4;
 		};
 		F5A3C5CB02F3CA7101A845D2 = {
+			fileEncoding = 5;
 			isa = PBXFileReference;
 			path = ICHelper.m;
 			refType = 4;
@@ -541,16 +568,19 @@
 			};
 		};
 		F5A3C5DA02F6923301A845D2 = {
+			fileEncoding = 5;
 			isa = PBXFileReference;
 			path = README.txt;
 			refType = 2;
 		};
 		F5ACEF980308CD8E01538297 = {
+			fileEncoding = 5;
 			isa = PBXFileReference;
 			path = Generate.h;
 			refType = 4;
 		};
 		F5ACEF990308CD8E01538297 = {
+			fileEncoding = 5;
 			isa = PBXFileReference;
 			path = Generate.m;
 			refType = 4;
@@ -568,6 +598,7 @@
 			};
 		};
 		F5ACEF9D030B4FE301538297 = {
+			fileEncoding = 5;
 			isa = PBXFileReference;
 			path = Tstate.h;
 			refType = 4;
@@ -600,21 +631,25 @@
 			};
 		};
 		F5D01D37027E0FE201A845D2 = {
+			fileEncoding = 5;
 			isa = PBXFileReference;
 			path = DLWindowController.h;
 			refType = 4;
 		};
 		F5D01D38027E0FE201A845D2 = {
+			fileEncoding = 5;
 			isa = PBXFileReference;
 			path = DLWindowController.m;
 			refType = 4;
 		};
 		F5D01D3D027E224601A845D2 = {
+			fileEncoding = 5;
 			isa = PBXFileReference;
 			path = BTAppController.h;
 			refType = 4;
 		};
 		F5D01D3E027E224601A845D2 = {
+			fileEncoding = 5;
 			isa = PBXFileReference;
 			path = BTAppController.m;
 			refType = 4;
@@ -632,29 +667,13 @@
 			};
 		};
 		F5D01D41027E7D9D01A845D2 = {
+			fileEncoding = 5;
 			isa = PBXFileReference;
 			path = callbacks.m;
 			refType = 4;
 		};
-		F5D01D42027E7D9D01A845D2 = {
-			fileRef = F5D01D41027E7D9D01A845D2;
-			isa = PBXBuildFile;
-			settings = {
-			};
-		};
-		F5D3B4A10384277E01FE7BA2 = {
-			isa = PBXFileReference;
-			name = mmp;
-			path = /Volumes/space/Users/burris/bin/mmp;
-			refType = 0;
-		};
-		F5D3B4A20384277E01FE7BA2 = {
-			fileRef = F5D3B4A10384277E01FE7BA2;
-			isa = PBXBuildFile;
-			settings = {
-			};
-		};
 		F5F1BAA602F0842B01A845D2 = {
+			fileEncoding = 5;
 			isa = PBXFileReference;
 			path = pystructs.h;
 			refType = 4;
