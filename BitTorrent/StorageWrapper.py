@@ -181,7 +181,7 @@ class StorageWrapper:
                 if self.amount_left == 0:
                     self.finished()
             else:
-                self.data_flunked(self._piecelen(index))
+                self.data_flunked(self._piecelen(index) - len(piece))
                 self._make_inactive(index)
                 return false
         return true
