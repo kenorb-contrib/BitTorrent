@@ -1,12 +1,15 @@
-# The contents of this file are subject to the BitTorrent Open Source License
-# Version 1.0 (the License).  You may not copy or use this file, in either
-# source code or executable form, except in compliance with the License.  You
-# may obtain a copy of the License at http://www.bittorrent.com/license/.
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-# Software distributed under the License is distributed on an AS IS basis,
-# WITHOUT WARRANTY OF ANY KIND, either express or implied.  See the License
-# for the specific language governing rights and limitations under the
-# License.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 # Written by Bram Cohen
 
@@ -15,11 +18,12 @@ from BitTorrent.CurrentRateMeasure import Measure
 
 class Upload(object):
 
-    def __init__(self, connection, ratelimiter, totalup, choker, storage,
-            max_slice_length, max_rate_period, fudge):
+    def __init__(self, connection, ratelimiter, totalup, totalup2, choker,
+                 storage, max_slice_length, max_rate_period):
         self.connection = connection
         self.ratelimiter = ratelimiter
         self.totalup = totalup
+        self.totalup2 = totalup2
         self.choker = choker
         self.storage = storage
         self.max_slice_length = max_slice_length
@@ -28,7 +32,7 @@ class Upload(object):
         self.unchoke_time = None
         self.interested = False
         self.buffer = []
-        self.measure = Measure(max_rate_period, fudge)
+        self.measure = Measure(max_rate_period)
         if storage.do_I_have_anything():
             connection.send_bitfield(storage.get_have_list())
 
@@ -53,6 +57,7 @@ class Upload(object):
             return None
         self.measure.update_rate(len(piece))
         self.totalup.update_rate(len(piece))
+        self.totalup2.update_rate(len(piece))
         return (index, begin, piece)
 
     def got_request(self, index, begin, length):

@@ -1,22 +1,107 @@
-# The contents of this file are subject to the BitTorrent Open Source License
-# Version 1.0 (the License).  You may not copy or use this file, in either
-# source code or executable form, except in compliance with the License.  You
-# may obtain a copy of the License at http://www.bittorrent.com/license/.
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-# Software distributed under the License is distributed on an AS IS basis,
-# WITHOUT WARRANTY OF ANY KIND, either express or implied.  See the License
-# for the specific language governing rights and limitations under the
-# License.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 # Written by Bram Cohen and Matt Chisholm
 
-!define VERSION "3.9.1-Beta"
+!define VERSION "4.0.0"
 !define APPNAME "BitTorrent"
 Outfile ${APPNAME}-${VERSION}.exe
 Name "${APPNAME}"
 SilentInstall silent
 SetCompressor lzma
 InstallDir "$PROGRAMFILES\${APPNAME}\"
+
+; This function ensures that you have administrator privileges
+; it is copied from:
+;http://nsis.sourceforge.net/archive/viewpage.php?pageid=275
+Function IsUserAdmin
+Push $R0
+Push $R1
+Push $R2
+
+ClearErrors
+UserInfo::GetName
+IfErrors Win9x
+Pop $R1
+UserInfo::GetAccountType
+Pop $R2
+
+StrCmp $R2 "Admin" 0 Continue
+StrCpy $R0 "true"
+Goto Done
+
+Continue:
+StrCmp $R2 "" Win9x
+StrCpy $R0 "false"
+Goto Done
+
+Win9x:
+StrCpy $R0 "true"
+
+Done:
+
+Pop $R2
+Pop $R1
+Exch $R0
+FunctionEnd
+
+Function QuitIt
+  checkforit:
+    Processes::FindProcess "btdownloadgui.exe"
+    StrCmp $R0 "1" foundit didntfindit
+
+  foundit:
+    MessageBox MB_OK "You must quit ${APPNAME} before installing this version.$\r$\nPlease quit it and press OK to continue."
+    Sleep 2000
+    Goto checkforit
+  didntfindit:
+
+  checkforit2:
+    Processes::FindProcess "btmaketorrentgui.exe"
+    StrCmp $R0 "1" foundit2 didntfindit2
+
+  foundit2:
+    MessageBox MB_OK "You must quit ${APPNAME} metafile creator before installing this version.$\r$\nPlease quit it and press OK to continue."
+    Sleep 2000
+    Goto checkforit2
+  didntfindit2:
+
+FunctionEnd
+
+; This function is a copy of QuitIt because NSIS enforces weird namespace crap
+Function un.QuitIt
+  checkforit:
+    Processes::FindProcess "btdownloadgui.exe"
+    StrCmp $R0 "1" foundit didntfindit
+
+  foundit:
+    MessageBox MB_OK "You must quit ${APPNAME} before installing this version.$\r$\nPlease quit it and press OK to continue."
+    Sleep 2000
+    Goto checkforit
+  didntfindit:
+
+  checkforit2:
+    Processes::FindProcess "btmaketorrentgui.exe"
+    StrCmp $R0 "1" foundit2 didntfindit2
+
+  foundit2:
+    MessageBox MB_OK "You must quit ${APPNAME} Make Torrent before installing this version.$\r$\nPlease quit it and press OK to continue."
+    Sleep 2000
+    Goto checkforit2
+  didntfindit2:
+
+FunctionEnd
+
 
 ; This function automatically uninstalls older versions.
 ; It is largely copied from: 
@@ -37,6 +122,8 @@ Function .onInit
   
 ;Run the uninstaller
 uninst:
+  Call QuitIt
+
   ClearErrors
   ExecWait '$R0 _?=$INSTDIR' ;Do not copy the uninstaller to a temp file
 
@@ -48,6 +135,16 @@ done:
 FunctionEnd
 
 Section "Install"
+  Call IsUserAdmin
+  Pop $R0
+  StrCmp $R0 "false" abortinstall continueinstall
+
+  abortinstall:
+  MessageBox MB_OK "You must have Administrator privileges to install ${APPNAME}." 
+  Goto endofinstall
+
+  continueinstall:
+
   SetOutPath $INSTDIR
   WriteUninstaller "$INSTDIR\uninstall.exe"
   File dist\*.exe
@@ -84,9 +181,11 @@ Section "Install"
   Sleep 2000
   MessageBox MB_OK "${APPNAME} has been successfully installed!$\r$\n$\r$\nTo use ${APPNAME}, visit a web site which uses it and click on a link."
   BringToFront
+  endofinstall:
 SectionEnd
 
 Section "Uninstall"
+  Call un.QuitIt
   DeleteRegKey HKCR .torrent
   DeleteRegKey HKCR "MIME\Database\Content Type\application/x-bittorrent"
   DeleteRegKey HKCR bittorrent

@@ -1,12 +1,15 @@
-# The contents of this file are subject to the BitTorrent Open Source License
-# Version 1.0 (the License).  You may not copy or use this file, in either
-# source code or executable form, except in compliance with the License.  You
-# may obtain a copy of the License at http://www.bittorrent.com/license/.
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-# Software distributed under the License is distributed on an AS IS basis,
-# WITHOUT WARRANTY OF ANY KIND, either express or implied.  See the License
-# for the specific language governing rights and limitations under the
-# License.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 # Written by Bram Cohen
 
@@ -17,7 +20,7 @@ from time import time
 
 class DownloaderFeedback(object):
 
-    def __init__(self, choker, upfunc, downfunc, uptotal, downtotal,
+    def __init__(self, choker, upfunc, upfunc2, downfunc, uptotal, downtotal,
                  remainingfunc, leftfunc, file_length, finflag, downloader,
                  files):
         self.downloader = downloader
@@ -25,6 +28,7 @@ class DownloaderFeedback(object):
         self.storage = downloader.storage
         self.choker = choker
         self.upfunc = upfunc
+        self.upfunc2 = upfunc2
         self.downfunc = downfunc
         self.uptotal = uptotal
         self.downtotal = downtotal
@@ -80,6 +84,7 @@ class DownloaderFeedback(object):
         status['numSeeds'] = numSeeds
         status['numPeers'] = numPeers
         status['upRate'] = self.upfunc()
+        status['upRate2'] = self.upfunc2()
         status['upTotal'] = self.uptotal()
         missingPieces = 0
         numCopyList = []

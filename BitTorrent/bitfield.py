@@ -1,76 +1,80 @@
-# The contents of this file are subject to the BitTorrent Open Source License
-# Version 1.0 (the License).  You may not copy or use this file, in either
-# source code or executable form, except in compliance with the License.  You
-# may obtain a copy of the License at http://www.bittorrent.com/license/.
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-# Software distributed under the License is distributed on an AS IS basis,
-# WITHOUT WARRANTY OF ANY KIND, either express or implied.  See the License
-# for the specific language governing rights and limitations under the
-# License.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 # Written by Bram Cohen, Uoti Urpala, and John Hoffman
 
-try:
-    sum([1])
-    negsum = lambda a: len(a)-sum(a)
-except:
-    negsum = lambda a: reduce(lambda x,y: x+(not y), a, 0)
-    
-def _int_to_booleans(x):
-    r = []
-    for i in range(8):
-        r.append(bool(x & 0x80))
-        x <<= 1
-    return tuple(r)
+from array import array
 
-lookup_table = [_int_to_booleans(i) for i in range(256)]
+from BitTorrent.obsoletepythonsupport import *
 
-reverse_lookup_table = {}
-for i in xrange(256):
-    reverse_lookup_table[lookup_table[i]] = chr(i)
+counts = [chr(sum([(i >> j) & 1 for j in xrange(8)])) for i in xrange(256)]
+counts = ''.join(counts)
 
 
-class Bitfield(object):
+class Bitfield:
 
-    def __init__(self, length, bitstring = None):
+    def __init__(self, length, bitstring=None):
         self.length = length
-        if bitstring is not None:
-            extra = len(bitstring) * 8 - length
-            if extra < 0 or extra >= 8:
-                raise ValueError
-            t = lookup_table
-            r = []
-            for c in bitstring:
-                r.extend(t[ord(c)])
-            if extra > 0:
-                if r[-extra:] != [0] * extra:
-                    raise ValueError
-                del r[-extra:]
-            self.array = r
-            self.numfalse = negsum(r)
-        else:
-            self.array = [False] * length
+        rlen, extra = divmod(length, 8)
+        if bitstring is None:
             self.numfalse = length
+            if extra:
+                self.bits = array('B', chr(0) * (rlen + 1))
+            else:
+                self.bits = array('B', chr(0) * rlen)
+        else:
+            if extra:
+                if len(bitstring) != rlen + 1:
+                    raise ValueError
+                if (ord(bitstring[-1]) << extra) & 0xFF != 0:
+                    raise ValueError
+            else:
+                if len(bitstring) != rlen:
+                    raise ValueError
+            c = counts
+            self.numfalse = length - sum(array('B',
+                                               bitstring.translate(counts)))
+            if self.numfalse != 0:
+                self.bits = array('B', bitstring)
+            else:
+                self.bits = None
 
     def __setitem__(self, index, val):
-        val = bool(val)
-        self.numfalse += self.array[index]-val
-        self.array[index] = val
+        assert val
+        pos = index >> 3
+        mask = 128 >> (index & 7)
+        if self.bits[pos] & mask:
+            return
+        self.bits[pos] |= mask
+        self.numfalse -= 1
+        if self.numfalse == 0:
+            self.bits = None
 
     def __getitem__(self, index):
-        return self.array[index]
+        bits = self.bits
+        if bits is None:
+            return 1
+        return bits[index >> 3] & 128 >> (index & 7)
 
     def __len__(self):
         return self.length
 
     def tostring(self):
-        booleans = self.array
-        t = reverse_lookup_table
-        s = len(booleans) % 8
-        r = [ t[tuple(booleans[x:x+8])] for x in xrange(0, len(booleans)-s, 8) ]
-        if s:
-            r += t[tuple(booleans[-s:] + ([0] * (8-s)))]
-        return ''.join(r)
-
-    def complete(self):
-        return not self.numfalse
+        if self.bits is None:
+            rlen, extra = divmod(self.length, 8)
+            r = chr(0xFF) * rlen
+            if extra:
+                r += chr((0xFF << (8 - extra)) & 0xFF)
+            return r
+        else:
+            return self.bits.tostring()

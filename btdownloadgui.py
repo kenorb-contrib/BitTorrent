@@ -1,14 +1,17 @@
 #!/usr/bin/env python
 
-# The contents of this file are subject to the BitTorrent Open Source License
-# Version 1.0 (the License).  You may not copy or use this file, in either
-# source code or executable form, except in compliance with the License.  You
-# may obtain a copy of the License at http://www.bittorrent.com/license/.
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-# Software distributed under the License is distributed on an AS IS basis,
-# WITHOUT WARRANTY OF ANY KIND, either express or implied.  See the License
-# for the specific language governing rights and limitations under the
-# License.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 # Written by Uoti Urpala and Matt Chisholm
 
@@ -32,6 +35,8 @@ import webbrowser
 from urllib import quote, url2pathname
 
 from BitTorrent import configfile
+from BitTorrent import HELP_URL, DONATE_URL
+from BitTorrent import is_frozen_exe
 from BitTorrent.parseargs import parseargs, makeHelp
 from BitTorrent import version, doc_root
 from BitTorrent.defaultargs import get_defaults
@@ -49,10 +54,7 @@ defaults.extend((('donated', '', ''),
                  ))
 
 NAG_FREQUENCY = 3
-URL = 'http://www.bittorrent.com/'
-DONATE_URL = URL + 'donate.html'
-FAQ_URL = URL + 'FAQ.html'
-HELP_URL = URL + 'documentation.html'
+PORT_RANGE = 5
 
 defconfig = dict([(name, value) for (name, value, doc) in defaults])
 del name, value, doc
@@ -60,11 +62,11 @@ del name, value, doc
 ui_options = 'max_upload_rate minport maxport '\
              'next_torrent_time next_torrent_ratio '\
              'last_torrent_ratio '\
-             'ask_for_save save_in ip '\
+             'ask_for_save save_in ip dnd_behavior '\
              'min_uploads max_uploads max_initiate '\
              'max_allow_in max_files_open display_interval '\
-             'donated'.split()
-advanced_ui_options_index = 9
+             'donated pause'.split()
+advanced_ui_options_index = 10
 
 
 main_torrent_dnd_tip = 'drag to reorder'
@@ -200,7 +202,7 @@ class PortValidator(Validator):
     def set_value(self, value):
         self.set_text(str(value))
         self.setfunc(self.option_name, value)
-        self.setfunc(self.end_option_name, value+200)
+        self.setfunc(self.end_option_name, value+PORT_RANGE)
 
 
 class PercentValidator(Validator):
@@ -294,20 +296,25 @@ class StopStartButton(gtk.Button):
         self.start_image.set_from_stock('bt-play', gtk.ICON_SIZE_BUTTON)
         self.start_image.show()
 
-        self.add(self.stop_image)
-        self.main.tooltips.set_tip(self, self.stop_tip)
+        self.has_image = False
 
     def toggle(self, widget):
-        if not self.main.torrents_stopped:
-            self.remove(self.stop_image)
+        self.set_paused(not self.main.config['pause'])
+
+    def set_paused(self, paused):
+        if paused:
+            if self.has_image:
+                self.remove(self.stop_image)
             self.add(self.start_image)
             self.main.tooltips.set_tip(self, self.start_tip)
             self.main.stop_queue()
         else:
-            self.remove(self.start_image)
+            if self.has_image:
+                self.remove(self.start_image)
             self.add(self.stop_image)
             self.main.tooltips.set_tip(self, self.stop_tip )
             self.main.restart_queue()
+        self.has_image = True
 
 
 class VersionWindow(Window):
@@ -405,47 +412,6 @@ class AboutWindow(object):
 
     def close(self, widget):
         self.win.destroy()    
-
-
-class HelpWindow(Window):
-    def __init__(self, main):
-        Window.__init__(self)
-        self.set_title('%s Help'%app_name)
-        self.main = main
-        self.set_border_width(SPACING)
-
-        self.vbox = gtk.VBox(spacing=SPACING)
-        
-        self.faq_box = gtk.HBox(spacing=SPACING)
-        self.faq_box.pack_start(gtk.Label("Frequently Asked Questions:"), expand=False, fill=False)
-        self.faq_url = gtk.Entry()
-        self.faq_url.set_text(FAQ_URL)
-        self.faq_url.set_editable(False)
-        self.faq_box.pack_start(self.faq_url, expand=True, fill=True)
-        self.faq_button = gtk.Button('Go')
-        self.faq_button.connect('clicked', lambda w: self.main.visit_url(FAQ_URL) )
-        self.faq_box.pack_start(self.faq_button, expand=False, fill=False)
-        self.vbox.pack_start(self.faq_box, expand=False, fill=False)
-
-        self.cmdline_args = gtk.Label(makeHelp('btdownloadgui', defaults))
-
-        self.cmdline_sw = ScrolledWindow()
-        self.cmdline_sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_ALWAYS)
-        self.cmdline_sw.add_with_viewport(self.cmdline_args)
-
-        self.cmdline_sw.set_size_request(self.cmdline_args.size_request()[0]+SCROLLBAR_WIDTH, 200)
-
-        self.vbox.pack_start(self.cmdline_sw)
-        
-        self.add(self.vbox)
-
-        self.show_all()
-
-        self.connect('destroy', lambda w: self.main.window_closed('help'))
-
-
-    def close(self, widget=None):
-        self.destroy()    
 
 
 class LogWindow(object):
@@ -597,6 +563,41 @@ class SettingsWindow(object):
 
         self.vbox = gtk.VBox(spacing=SPACING)
 
+        self.dnd_frame = gtk.Frame('Starting additional torrents manually:')
+        self.dnd_box = gtk.VBox(spacing=SPACING, homogeneous=gtk.TRUE)
+        self.dnd_box.set_border_width(SPACING)
+
+        self.dnd_states = ['replace','add','ask']
+        self.dnd_original_state = self.config['dnd_behavior']
+        
+        self.always_replace_radio = gtk.RadioButton(
+            group=None,
+            label="Always stops the _last running torrent")
+        self.dnd_box.pack_start(self.always_replace_radio)
+        self.always_replace_radio.state_name = self.dnd_states[0]
+        
+        self.always_add_radio = gtk.RadioButton(
+            group=self.always_replace_radio,
+            label="Always starts the torrent in _parallel")
+        self.dnd_box.pack_start(self.always_add_radio)
+        self.always_add_radio.state_name = self.dnd_states[1]
+
+        self.always_ask_radio = gtk.RadioButton(
+            group=self.always_replace_radio,
+            label="_Asks each time"
+            )
+        self.dnd_box.pack_start(self.always_ask_radio)
+        self.always_ask_radio.state_name = self.dnd_states[2]
+
+        self.dnd_group = self.always_replace_radio.get_group()
+        for r in self.dnd_group:
+            r.connect('toggled', self.dnd_behavior_changed)
+
+        self.set_dnd_behavior(self.config['dnd_behavior'])
+        
+        self.dnd_frame.add(self.dnd_box)
+        self.vbox.pack_start(self.dnd_frame, expand=gtk.FALSE, fill=gtk.FALSE)
+
         self.next_torrent_frame = gtk.Frame('Seed completed torrents:')
         self.next_torrent_box   = gtk.VBox(spacing=SPACING, homogeneous=True)
         self.next_torrent_box.set_border_width(SPACING) 
@@ -696,7 +697,7 @@ class SettingsWindow(object):
         self.ip_box.set_border_width(SPACING)
         self.ip_field = IPValidator('ip', self.config, self.setfunc)
         self.main.tooltips.set_tip(self.ip_field,
-                                   'Not needed unless you are on the\nsame local network as the tracker')
+                                   'Has no effect unless you are on the\nsame local network as the tracker')
         self.ip_box.pack_start(self.ip_field, expand=False, fill=False)
         #self.ip_box.pack_start(lalign(gtk.Label('()')), expand=False, fill=False)
         self.ip_frame.add(self.ip_box)
@@ -754,6 +755,22 @@ class SettingsWindow(object):
             self.dl_save_in.set_text(self.config['save_in'])
             self.setfunc('save_in', self.config['save_in'])
 
+
+    def set_dnd_behavior(self, state_name):
+        if state_name in self.dnd_states:
+            for r in self.dnd_group:
+                if r.state_name == state_name:
+                    r.set_active(gtk.TRUE)
+                else:
+                    r.set_active(gtk.FALSE)
+        else:
+            self.always_replace_radio.set_active(gtk.TRUE)        
+        
+
+    def dnd_behavior_changed(self, radiobutton):
+        if radiobutton.get_active():
+            self.setfunc('dnd_behavior', radiobutton.state_name)
+
     def store_value_edited(self, cell, row, new_text):
         it = self.store.get_iter_from_string(row)
         option = ui_options[int(row)+advanced_ui_options_index]
@@ -779,6 +796,7 @@ class SettingsWindow(object):
             foo.revert()
         self.dl_ask_checkbutton.set_active(self.dl_ask_checkbutton.original_value)
         self.set_save_in(self.dl_save_in.original_value)
+        self.set_dnd_behavior(self.dnd_original_state)
         #self.win.destroy() #BUG? should we do this?
 
     def close(self, widget):
@@ -888,9 +906,9 @@ class FileListWindow(object):
         icon.set_from_stock(stockicon, gtk.ICON_SIZE_SMALL_TOOLBAR)
         self.toolbar.prepend_item(label, None, None, icon, method, user_data=arg)
 
-    if gtk.pygtk_version[1] == 4:
+    if gtk.pygtk_version >= (2, 4):
         make_tool_item = make_tool_item_24
-    elif gtk.pygtk_version[1] == 2:
+    else:
         make_tool_item = make_tool_item_22
         
     def set_priorities(self, widget):
@@ -1086,7 +1104,7 @@ class PeerListWindow(object):
             for l in (dl, ul):
                 rate = l[1]
                 if rate > 100:
-                    field.append(rate//(2**10)) 
+                    field.append(int(round(rate/(2**10)))) 
                 else:
                     field.append(0)
                 if advanced_ui:
@@ -1210,8 +1228,9 @@ class TorrentInfoWindow(object):
         filename = ''
         if not self.torrent_box.is_batch:
             path,filename = os.path.split(self.torrent_box.dlpath)
-        
-        add_item('Save in:', path+os.sep, y)
+        if path[-1] != os.sep:
+            path += os.sep
+        add_item('Save in:', path, y)
         y+=1
 
         if not self.torrent_box.is_batch:
@@ -1258,31 +1277,6 @@ class TorrentInfoWindow(object):
         self.win.destroy()
 
 
-class DroppableSeparator(gtk.VBox):
-
-    def __init__(self, main, dropfunc=None, spacing=0):
-        gtk.VBox.__init__(self)
-        self.main = main
-        self.sep = gtk.HSeparator()
-        self.pack_start(self.sep, expand=False, fill=False, padding=spacing)
-        self.dropfunc = dropfunc
-        self.drag_dest_set(gtk.DEST_DEFAULT_MOTION|gtk.DEST_DEFAULT_DROP,
-                           [BT_TARGET],
-                           gtk.gdk.ACTION_MOVE )
-
-        self.connect('drag_data_received', self.drag_data_received)
-
-    def drag_highlight(self):
-        self.sep.drag_highlight()
-
-    def drag_unhighlight(self):
-        self.sep.drag_unhighlight()
-
-    def drag_data_received(self, widget, context, x, y, selection, targetType, time):
-        
-        self.dropfunc(selection.data)
-
-
 class TorrentBox(gtk.EventBox):
     
     def __init__(self, infohash, metainfo, dlpath, completion, main):
@@ -1303,6 +1297,7 @@ class TorrentBox(gtk.EventBox):
         self.infowindow = None
         self.filelistwindow = None
         self.is_batch = metainfo.is_batch
+        self.menu = None
         self.menu_handler = None
 
         self.vbox = gtk.VBox(homogeneous=False, spacing=SPACING)
@@ -1317,7 +1312,7 @@ class TorrentBox(gtk.EventBox):
         self.icon.set_size_request(-1, 29)
 
         self.iconbox = gtk.VBox()
-        self.iconevbox = gtk.EventBox()
+        self.iconevbox = gtk.EventBox()        
         self.iconevbox.add(self.icon)
         self.iconbox.pack_start(self.iconevbox, expand=False, fill=False)
         self.hbox.pack_start(self.iconbox, expand=False, fill=False)
@@ -1328,6 +1323,15 @@ class TorrentBox(gtk.EventBox):
 
         self.progressbarbox = gtk.HBox(homogeneous=False, spacing=SPACING)
         self.progressbar = gtk.ProgressBar()
+
+        if is_frozen_exe:
+            # Hack around broken GTK-Wimp theme:
+            # make progress bar text always black
+            # see task #694
+            style = self.progressbar.get_style().copy()
+            black = style.black
+            self.progressbar.modify_fg(gtk.STATE_PRELIGHT, black)
+        
         if self.completion is not None:
             self.progressbar.set_fraction(self.completion)
             if self.completion >= 1:
@@ -1340,7 +1344,8 @@ class TorrentBox(gtk.EventBox):
             
         self.progressbarbox.pack_start(self.progressbar,
                                        expand=True, fill=True)
-        
+
+        self.buttonevbox = gtk.EventBox()
         self.buttonbox = gtk.HBox(homogeneous=True, spacing=SPACING)
 
         self.infobutton = gtk.Button()
@@ -1362,15 +1367,16 @@ class TorrentBox(gtk.EventBox):
         else:
             self.cancelimage.set_from_stock(gtk.STOCK_CANCEL, gtk.ICON_SIZE_BUTTON)
             self.main.tooltips.set_tip(self.cancelbutton,
-                                       'Cancel torrent')
+                                       'Abort torrent')
             
         self.cancelbutton.add(self.cancelimage)
         self.cancelbutton.connect('clicked', self.confirm_remove)
         
         self.buttonbox.pack_start(self.cancelbutton, expand=True, fill=False)
+        self.buttonevbox.add(self.buttonbox)
 
         vbuttonbox = gtk.VBox(homogeneous=False)
-        vbuttonbox.pack_start(self.buttonbox, expand=False, fill=False)
+        vbuttonbox.pack_start(self.buttonevbox, expand=False, fill=False)
         self.hbox.pack_end(vbuttonbox, expand=False, fill=False)
 
         self.infobox.pack_start(self.progressbarbox, expand=False, fill=False)
@@ -1385,13 +1391,20 @@ class TorrentBox(gtk.EventBox):
 
         self.connect('drag_begin' , self.drag_begin )
         self.connect('drag_end'   , self.drag_end   )
+        self.cursor_handler_id = self.connect('enter_notify_event', self.change_cursors)
+
+    def change_cursors(self, *args):
+        # BUG: this is in a handler that is disconnected because the
+        # window attributes are None until after show_all() is called
+        self.window.set_cursor(gtk.gdk.Cursor(gtk.gdk.HAND2))
+        self.buttonevbox.window.set_cursor(gtk.gdk.Cursor(gtk.gdk.LEFT_PTR))
+        self.disconnect(self.cursor_handler_id)
         
 
     def drag_data_get(self, widget, context, selection, targetType, eventTime):
         selection.set(selection.target, 8, self.infohash)
 
     def drag_begin(self, *args):
-        #self.drag_source_set_icon_stock(gtk.STOCK_CONVERT)
         pass
 
     def drag_end(self, *args):
@@ -1401,12 +1414,15 @@ class TorrentBox(gtk.EventBox):
         s = ''
         if statistics and statistics['timeEst'] is not None:
             s = ', will seed for %s' % Duration(statistics['timeEst'])
+        elif statistics:
+            s = ', will seed indefinitely.'
+
         if self.up_down_ratio is not None:
             done_label = 'Done, share ratio: %d%%' % \
                          (self.up_down_ratio*100) + s
         elif statistics is not None:
             done_label = 'Done, %s uploaded' % \
-                         Size(statistics['upTotal'])
+                         Size(statistics['upTotal']) + s
         else:
             done_label = 'Done'
 
@@ -1467,12 +1483,17 @@ class TorrentBox(gtk.EventBox):
         self.close_info()
         self.close_filelist()
 
+    def destroy(self):
+        if self.menu is not None:
+            self.menu.destroy()
+        self.menu = None
+        gtk.EventBox.destroy(self)
+
     def show_menu(self, widget, event):
         if event.type == gtk.gdk.BUTTON_PRESS and event.button == 3:
             widget.popup(None, None, None, event.button, event.time)
             return gtk.TRUE
         return gtk.FALSE
-
 
     def _short_path(self, dlpath):
         path_length = 40
@@ -1494,7 +1515,7 @@ class TorrentBox(gtk.EventBox):
         
     def open_dir(self, widget):
         OpenPath.opendir(self.get_path_to_open())
-            
+
 
     def confirm_remove(self, widget):
         message = 'Are you sure you want to remove "%s"?' % self.metainfo.name
@@ -1528,7 +1549,7 @@ class KnownTorrentBox(TorrentBox):
             known_torrent_dnd_tip = 'drag into list to seed'
         else:
             self.icon.set_from_stock('bt-broken', gtk.ICON_SIZE_LARGE_TOOLBAR)
-            status_tip = 'Aborted'
+            status_tip = 'Failed'
             known_torrent_dnd_tip = 'drag into list to resume'
 
         self.main.tooltips.set_tip(self.iconevbox,
@@ -1537,7 +1558,8 @@ class KnownTorrentBox(TorrentBox):
                                                          torrent_menu_tip))
 
         self.menu_items = [('----', None),
-                           ('Move to _end', self.start),
+                           #('Move to _start', self.move_to_start),
+                           ('Re_start'  , self.move_to_end  ),
                            ('_Remove' , self.confirm_remove),
                            ]
 
@@ -1546,53 +1568,21 @@ class KnownTorrentBox(TorrentBox):
 
         self.show_all()
 
-    def start(self, widget):
-        self.main.torrentqueue.start_torrent(self.infohash)
+    def move_to_end(self, widget):
+        self.main.change_torrent_state(self.infohash, QUEUED)
+        
 
-
-
-class QueuedTorrentBox(TorrentBox):
+class DroppableTorrentBox(TorrentBox):
 
     def __init__(self, infohash, metainfo, dlpath, completion, main):
         TorrentBox.__init__(self, infohash, metainfo, dlpath, completion, main)
-
-        self.main.tooltips.set_tip(self.iconevbox,
-                                   torrent_tip_format % ('Queued',
-                                                         main_torrent_dnd_tip,
-                                                         torrent_menu_tip))
-
-        self.hsep = gtk.HSeparator()
-        self.vbox.pack_end(self.hsep,
-                             expand=False, fill=False)
-
-        self.icon.set_from_stock('bt-queued', gtk.ICON_SIZE_LARGE_TOOLBAR)
-        self.menu_items = [#('----', None),
-                           #("Change _location" , None),
-                           #("Start hash check", None),
-                           ("----"            , None),
-                           ]
-
-
-        if self.completion is not None and self.completion >= 1:
-            self.menu_items += [('_Finish', self.finish),]
-            self.menu_items += [('_Remove', self.confirm_remove),]
-        else:
-            self.menu_items += [('_Cancel', self.confirm_remove),]
-        
-            
-        self.make_menu()
-
-        self.show_all()
-
-        self.index = None
-
-
         self.drag_dest_set(gtk.DEST_DEFAULT_DROP,
                            [BT_TARGET,],
                            gtk.gdk.ACTION_MOVE)
 
         self.connect('drag_data_received', self.drag_data_received)
         self.connect('drag_motion', self.drag_motion)
+        self.index = None
 
     def drag_data_received(self, widget, context, x, y, selection, targetType, time):
         half_height = self.size_request()[1] // 2
@@ -1603,35 +1593,100 @@ class QueuedTorrentBox(TorrentBox):
     def drag_motion(self, widget, context, x, y, time):
         self.get_current_index()
         half_height = self.size_request()[1] // 2
-        if y < half_height:
-            self.parent.highlight_child(self.index-1)
+        if y < half_height: 
+            self.parent.highlight_before_index(self.index)
         else:
-            self.parent.highlight_child(self.index  )
-        #print 'QueuedTorrentBox.drag_motion()'
+            self.parent.highlight_after_index(self.index)
         return gtk.FALSE
 
     def drag_end(self, *args):
         self.parent.highlight_child()
         TorrentBox.drag_end(self, *args)
 
-    def drag_highlight(self):
-        self.hsep.drag_highlight()
-
-    def drag_unhighlight(self):
-        self.hsep.drag_unhighlight()
-
     def get_current_index(self):
         self.index = self.parent.get_index_from_child(self)
 
-    def finish(self, widget):
-        self.main.torrentqueue.unqueue_torrent(self.infohash)
 
+class QueuedTorrentBox(DroppableTorrentBox):
 
-
-class RunningTorrentBox(TorrentBox):
+    icon_name = 'bt-queued'
+    state_name = 'Waiting'
 
     def __init__(self, infohash, metainfo, dlpath, completion, main):
-        TorrentBox.__init__(self, infohash, metainfo, dlpath, completion, main)
+        DroppableTorrentBox.__init__(self, infohash, metainfo, dlpath, completion, main)
+
+        self.main.tooltips.set_tip(self.iconevbox,
+                                   torrent_tip_format % (self.state_name,
+                                                         main_torrent_dnd_tip,
+                                                         torrent_menu_tip))
+
+        self.icon.set_from_stock(self.icon_name, gtk.ICON_SIZE_LARGE_TOOLBAR)
+        self.menu_items = [#('----', None),
+                           #("Change _location" , None),
+                           #("Start hash check", None),
+                           ("----"            , None),
+                           ('Download _now', self.start),
+                           ]
+
+
+        if self.completion is not None and self.completion >= 1:
+            self.menu_items += [('_Finish', self.finish),]
+            self.menu_items += [('_Remove', self.confirm_remove),]
+        else:
+            self.menu_items += [('_Abort', self.confirm_remove),]
+            
+        self.make_menu()
+
+        self.show_all()
+
+    def start(self, widget):
+        self.main.runbox.put_infohash_last(self.infohash)
+
+    def finish(self, widget):
+        self.main.change_torrent_state(self.infohash, KNOWN)
+
+
+class PausedTorrentBox(DroppableTorrentBox):
+    icon_name = 'bt-paused'
+    state_name = 'Paused'
+
+    def __init__(self, infohash, metainfo, dlpath, completion, main):
+        DroppableTorrentBox.__init__(self, infohash, metainfo, dlpath, completion, main)
+
+        self.main.tooltips.set_tip(self.iconevbox,
+                                   torrent_tip_format % (self.state_name,
+                                                         main_torrent_dnd_tip,
+                                                         torrent_menu_tip))
+
+        self.icon.set_from_stock(self.icon_name, gtk.ICON_SIZE_LARGE_TOOLBAR)
+
+        
+        menu_items = [("Download _later", self.move_to_end   ),
+                      ("_Abort"        , self.confirm_remove),
+                      ]
+
+        if self.completion >= 1:
+            menu_items = [("_Finish", self.finish),
+                          ("_Remove", self.confirm_remove),
+                          ]
+
+        self.menu_items = [("----", None), ] + menu_items
+
+        self.make_menu()
+
+        self.show_all()
+
+    def move_to_end(self, widget):
+        self.main.change_torrent_state(self.infohash, QUEUED)
+
+    def finish(self, widget):
+        self.main.change_torrent_state(self.infohash, KNOWN)
+
+
+class RunningTorrentBox(DroppableTorrentBox):
+
+    def __init__(self, infohash, metainfo, dlpath, completion, main):
+        DroppableTorrentBox.__init__(self, infohash, metainfo, dlpath, completion, main)
 
         self.main.tooltips.set_tip(self.iconevbox,
                                    torrent_tip_format % ('Running',
@@ -1698,8 +1753,8 @@ class RunningTorrentBox(TorrentBox):
         self.make_menu()
 
     def make_menu(self):
-        menu_items = [("Move to _end", self.pause),
-                      ("_Cancel"     , self.confirm_remove),
+        menu_items = [("Download _later", self.move_to_end),
+                      ("_Abort"  , self.confirm_remove),
                       ]
 
         if self.completion >= 1:
@@ -1716,14 +1771,11 @@ class RunningTorrentBox(TorrentBox):
             
         TorrentBox.make_menu(self)
 
-    def stop(self, widget):
-        self.main.torrentqueue.stop_torrent(self.infohash)
-
-    def pause(self, widget):
-        self.main.torrentqueue.requeue_running_torrent(self.infohash)
+    def move_to_end(self, widget):
+        self.main.change_torrent_state(self.infohash, QUEUED)
 
     def finish(self, widget):
-        self.main.torrentqueue.stop_torrent(self.infohash)
+        self.main.change_torrent_state(self.infohash, KNOWN)
 
     def close_child_windows(self):
         TorrentBox.close_child_windows(self)
@@ -1833,12 +1885,39 @@ class RunningTorrentBox(TorrentBox):
                                            statistics['files_allocated'])
 
 
+class DroppableHSeparator(PaddedHSeparator):
+
+    def __init__(self, main, spacing=SPACING):
+        PaddedHSeparator.__init__(self, spacing)
+        self.main = main
+        self.drag_dest_set(#gtk.DEST_DEFAULT_MOTION| # uncommenting this breaks downward scrolling
+            gtk.DEST_DEFAULT_DROP,
+            [BT_TARGET],
+            gtk.gdk.ACTION_MOVE )
+
+        self.connect('drag_data_received', self.drag_data_received)
+        self.connect('drag_motion'       , self.drag_motion       )
+
+    def drag_highlight(self):
+        self.sep.drag_highlight()
+        self.main.main.add_unhighlight_handle()
+
+    def drag_unhighlight(self):
+        self.sep.drag_unhighlight()
+
+    def drag_data_received(self, widget, context, x, y, selection, targetType, time):
+        self.main.drop_on_separator(self, selection.data)
+
+    def drag_motion(self, *args):
+        self.drag_highlight()
+        return gtk.FALSE
+
+
 class DroppableBox(HSeparatedBox):
     def __init__(self, main, spacing=0):
         HSeparatedBox.__init__(self, spacing=spacing)
         self.main = main
-        self.drag_dest_set(gtk.DEST_DEFAULT_MOTION |
-                           gtk.DEST_DEFAULT_DROP,
+        self.drag_dest_set(gtk.DEST_DEFAULT_DROP,
                            [BT_TARGET],
                            gtk.gdk.ACTION_MOVE)
         self.connect('drag_data_received', self.drag_data_received)
@@ -1852,6 +1931,13 @@ class DroppableBox(HSeparatedBox):
 
 
 class KnownBox(DroppableBox):
+
+    def __init__(self, main, spacing=0):
+        DroppableBox.__init__(self, main, spacing=spacing)
+        self.drag_dest_set(gtk.DEST_DEFAULT_MOTION |
+                           gtk.DEST_DEFAULT_DROP,
+                           [BT_TARGET],
+                           gtk.gdk.ACTION_MOVE)
 
     def pack_start(self, widget, *args, **kwargs):
         old_len = len(self.get_children())
@@ -1875,63 +1961,49 @@ class KnownBox(DroppableBox):
     
     def drag_highlight(self):
         self.main.knownscroll.drag_highlight()
+        self.main.add_unhighlight_handle()
 
     def drag_unhighlight(self):
         self.main.knownscroll.drag_unhighlight()
 
 
-class RunningBox(DroppableBox):
+class RunningAndQueueBox(gtk.VBox):
 
-    def where(self, y):
-        quarter_height = self.size_request()[1] // 4
-        if y < quarter_height*3:
-            return 0
-        else:
-            return AFTER
+    def __init__(self, main, **kwargs):
+        gtk.VBox.__init__(self, **kwargs)
+        self.main = main
 
-    def drag_data_received(self, widget, context, x, y, selection, targetType, time):
-        infohash = selection.data
-        w = self.where(y)
-        if w == BEFORE:
-            self.main.finish(infohash)
-        elif w == 0:
-            self.main.confirm_replace_running_torrent(infohash)
-        elif w == AFTER:
-            self.main.enqueue_and_reorder(infohash, 0)
-        else:
-            raise ValueError, w
+    def drop_on_separator(self, sep, infohash):
+        self.main.change_torrent_state(infohash, QUEUED, 0)
 
-    def drag_motion(self, widget, context, x, y, time):
-        self.main.drag_highlight(widget=None)
-        w = self.where(y)
-        if w == BEFORE:
-            self.main.knownscroll.drag_highlight()
-        elif w == 0:
-            self.drag_highlight()
-        elif w == AFTER:
-            self.main.queuebox.highlight_child(0)
-        else:
-            raise ValueError, w
+    def highlight_between(self):
+        self.drag_highlight()
 
     def drag_highlight(self):
-        pass
+        self.get_children()[1].drag_highlight()
 
     def drag_unhighlight(self):
-        self.main.knownscroll.drag_unhighlight()
-        self.main.queuebox.highlight_child(None)
+        self.get_children()[1].drag_unhighlight()
+        
 
+class SpacerBox(DroppableBox):
+    
+    def drag_data_received(self, widget, context, x, y, selection, targetType, time):
+        infohash = selection.data
+        self.main.queuebox.put_infohash_last(infohash)
 
 BEFORE = -1
 AFTER  =  1
 
-class ReorderableBox(gtk.VBox):
+class ReorderableBox(DroppableBox):
+
+    def new_separator(self):
+        return DroppableHSeparator(self)
 
     def __init__(self, main):
-        gtk.VBox.__init__(self, spacing=SPACING)
+        DroppableBox.__init__(self, main)
         self.main = main
-        self.initial_separator = DroppableSeparator(main, dropfunc=self.put_infohash_first)
-        self.pack_start(self.initial_separator, expand=False, fill=False)
-        self.drag_dest_set(#gtk.DEST_DEFAULT_MOTION |
+        self.drag_dest_set(#gtk.DEST_DEFAULT_MOTION | # connecting this breaks downward scrolling
                            gtk.DEST_DEFAULT_DROP |
                            0,
                            [BT_TARGET],
@@ -1940,11 +2012,6 @@ class ReorderableBox(gtk.VBox):
         self.connect('drag_data_received', self.drag_data_received)
         self.connect('drag_motion'       , self.drag_motion)
 
-    def _reorder_child(self, child, index):
-        gtk.VBox.reorder_child(self, child, index)
-
-    def reorder_child(self, child, index):
-        self._reorder_child(child, index+1)
 
     def drag_data_received(self, widget, context, x, y, selection, targetType, time):
         if targetType == BT_TARGET_TYPE:
@@ -1964,38 +2031,59 @@ class ReorderableBox(gtk.VBox):
     def drag_highlight(self):
         final = self.get_children()[-1]
         final.drag_highlight()
+        self.main.add_unhighlight_handle()
 
-    def drag_unhighlight(self):
+    def drag_unhighlight(self): 
         self.highlight_child(index=None)
+        self.parent.drag_unhighlight()
+
+    def highlight_before_index(self, index):
+        self.drag_unhighlight()
+        children = self._get_children()
+        if index > 0:
+            children[index*2 - 1].drag_highlight()
+        else:
+            self.highlight_at_top()
+
+    def highlight_after_index(self, index):
+        self.drag_unhighlight()
+        children = self._get_children()
+        if index*2 < len(children)-1:
+            children[index*2 + 1].drag_highlight()
+        else:
+            self.highlight_at_bottom()
 
     def highlight_child(self, index=None):
-        for i, child in enumerate(self.get_children()):
-            if i == index:
+        for i, child in enumerate(self._get_children()):
+            if index is not None and i == index*2:
                 child.drag_highlight()
             else:
                 child.drag_unhighlight()
 
+
+    def drop_on_separator(self, sep, infohash):
+        children = self._get_children()
+        for i, child in enumerate(children):
+            if child == sep:
+                reference_child = children[i-1]
+                self.put_infohash_at_child(infohash, reference_child, AFTER)
+                break
+
+
     def get_queue(self):
         queue = []
         c = self.get_children()
-        for t in c[1:]:
+        for t in c:
             queue.append(t.infohash)
         return queue
-
-
-    def put_infohash_at_index(self, infohash, target_index):
-        self.main.enqueue_and_reorder(infohash, target_index-1)
-
 
     def put_infohash_first(self, infohash):
         self.highlight_child()
         children = self.get_children()
-        end = len(children)
-        if len(children) > 1 and infohash == children[1].infohash:
+        if len(children) > 1 and infohash == children[0].infohash:
             return
         
-        self.put_infohash_at_index(infohash, 1)
-
+        self.put_infohash_at_index(infohash, 0)
 
     def put_infohash_last(self, infohash):
         self.highlight_child()
@@ -2003,28 +2091,18 @@ class ReorderableBox(gtk.VBox):
         end = len(children)
         if len(children) > 1 and infohash == children[end-1].infohash:
             return
-            
-        self.put_infohash_at_index(infohash, end-1)
 
+        self.put_infohash_at_index(infohash, end)
 
     def put_infohash_at_child(self, infohash, reference_child, where):
         self.highlight_child()
         if infohash == reference_child.infohash:
             return
         
-        index = self.get_index_from_infohash(infohash)
-
-        reference_index = self.get_index_from_child(reference_child)
-        target_index = reference_index
-            
-        if where == BEFORE and 0 <= index <= reference_index:
-            target_index -= 1
-
-        elif where == AFTER and (index >= reference_index or index == -1):
+        target_index = self.get_index_from_child(reference_child)
+        if where == AFTER:
             target_index += 1
-
         self.put_infohash_at_index(infohash, target_index)
-
 
     def get_index_from_child(self, child):
         c = self.get_children()
@@ -2036,14 +2114,39 @@ class ReorderableBox(gtk.VBox):
         return ret
 
 
-    def get_index_from_infohash(self, infohash):
-        children = self.get_children()
-        ret = -1
-        for i in range(1, len(children)):
-            if children[i].infohash == infohash:
-                ret = i
-                break
-        return ret
+class RunningBox(ReorderableBox):
+
+    def put_infohash_at_index(self, infohash, target_index):
+        #print 'RunningBox.put_infohash_at_index', infohash.encode('hex')[:8], target_index
+
+        l = self.get_queue()
+        replaced = None
+        if l:
+            replaced = l[-1]
+        self.main.confirm_replace_running_torrent(infohash, replaced,
+                                                  target_index)
+
+    def highlight_at_top(self):
+        pass
+        # BUG: Don't know how I will indicate in the UI that the top of the list is highlighted
+
+    def highlight_at_bottom(self):
+        self.parent.highlight_between()
+
+
+class QueuedBox(ReorderableBox):
+
+    def put_infohash_at_index(self, infohash, target_index):
+        #print 'want to put', infohash.encode('hex'), 'at', target_index
+        self.main.change_torrent_state(infohash, QUEUED, target_index)
+
+    def highlight_at_top(self):
+        self.parent.highlight_between()
+
+    def highlight_at_bottom(self):
+        pass
+        # BUG: Don't know how I will indicate in the UI that the bottom of the list is highlighted
+
 
 
 class Struct(object):
@@ -2060,8 +2163,10 @@ class DownloadInfoFrame(object):
         self.torrentqueue = torrentqueue
         self.torrents = {}
         self.running_torrents = {}
-        gtk.threads_enter()
+        self.lists = {}
         self.update_handle = None
+        self.unhighlight_handle = None
+        gtk.threads_enter()
         self.mainwindow = Window(gtk.WINDOW_TOPLEVEL)
         self.mainwindow.set_border_width(0)
 
@@ -2097,7 +2202,6 @@ class DownloadInfoFrame(object):
         self.menubar = gtk.MenuBar()
         self.box1.pack_start(self.menubar, expand=False, fill=False)
 
-        self.torrents_stopped = False
         self.ssbutton = StopStartButton(self)
 
         file_menu_items = (('_Open torrent file', self.select_torrent_to_open),
@@ -2117,7 +2221,7 @@ class DownloadInfoFrame(object):
                            #'Change download behavior and network settings',
                            )
         help_menu_items = (('_Help'         , self.open_help),
-                           #('_Help'         , lambda w: self.open_window('help')),
+                           #('_Help Window'         , lambda w: self.open_window('help')),
                            ('_About'        , lambda w: self.open_window('about')),
                            ('_Donate'       , lambda w: self.donate()),
                            #('_Raise'        , lambda w: self.raiseerror()), 
@@ -2170,7 +2274,7 @@ class DownloadInfoFrame(object):
         self.knownscroll.set_shadow_type(gtk.SHADOW_NONE)
         self.knownscroll.set_size_request(-1, SPACING)
 
-        self.knownbox = KnownBox(self, spacing=SPACING)
+        self.knownbox = KnownBox(self)
         self.knownbox.set_border_width(SPACING)
 
         self.knownscroll.add_with_viewport(self.knownbox)
@@ -2182,14 +2286,18 @@ class DownloadInfoFrame(object):
         self.mainscroll.set_shadow_type(gtk.SHADOW_NONE)
         self.mainscroll.set_size_request(-1, SPACING)
 
-        self.scrollbox = gtk.VBox(homogeneous=False)
+        self.scrollbox = RunningAndQueueBox(self, homogeneous=False)
         self.scrollbox.set_border_width(SPACING)
         
-        self.runbox = RunningBox(self, spacing=SPACING)
+        self.runbox = RunningBox(self)
         self.scrollbox.pack_start(self.runbox, expand=False, fill=False)
 
-        self.queuebox = ReorderableBox(self)
-        self.scrollbox.pack_start(self.queuebox, expand=True, fill=True)
+        self.scrollbox.pack_start(DroppableHSeparator(self.scrollbox), expand=False, fill=False)
+
+        self.queuebox = QueuedBox(self)
+        self.scrollbox.pack_start(self.queuebox, expand=False, fill=False)
+
+        self.scrollbox.pack_start(SpacerBox(self), expand=True, fill=True) 
 
         self.mainscroll.add_with_viewport(self.scrollbox)
 
@@ -2216,6 +2324,7 @@ class DownloadInfoFrame(object):
     def main(self):
         gtk.threads_enter()
 
+        self.ssbutton.set_paused(self.config['pause'])
         self.rate_slider_box.start()
         
         self.init_updates()
@@ -2251,6 +2360,7 @@ class DownloadInfoFrame(object):
         for w in widgets:
             if w == widget:
                 w.drag_highlight()
+                self.add_unhighlight_handle()
 
     def drag_end(self):
         self.drag_highlight(widget=None)
@@ -2261,7 +2371,7 @@ class DownloadInfoFrame(object):
         trunc = '...'
         sep = ': '
 
-        if self.torrents_stopped:
+        if self.config['pause']:
             title += sep+'(stopped)'
         elif len(self.running_torrents) == 1 and torrentName and \
                fractionDone is not None:
@@ -2280,7 +2390,9 @@ class DownloadInfoFrame(object):
 
     def set_size(self):
         paned_height = self.scrollbox.size_request()[1]
+        paned_height += self.paned.style_get_property('handle-size')
         paned_height += self.paned.get_position()
+        paned_height += 4 # fudge factor, probably from scrolled window beveling ?
         paned_height = max(paned_height, MIN_MULTI_PANE_HEIGHT)
 
         new_height = self.menubar.size_request()[1] + \
@@ -2322,7 +2434,7 @@ class DownloadInfoFrame(object):
         elif window_name == 'about'   :
             self.child_windows[window_name] = AboutWindow(self, lambda w: self.donate())
         elif window_name == 'help'    :
-            self.child_windows[window_name] = HelpWindow(self)
+            self.child_windows[window_name] = HelpWindow(self, makeHelp('btdownloadgui', defaults))
         elif window_name == 'settings':
             self.child_windows[window_name] = SettingsWindow(self, self.config, self.set_config)
         elif window_name == 'version' :
@@ -2435,7 +2547,9 @@ class DownloadInfoFrame(object):
         gtk.main_quit()
 
 
-    def make_statusrequest(self): 
+    def make_statusrequest(self):
+        if self.config['pause']:
+            return True
         for infohash, t in self.running_torrents.iteritems():
             self.torrentqueue.request_status(infohash, t.widget.peerlistwindow
                              is not None, t.widget.filelistwindow is not None)
@@ -2467,6 +2581,12 @@ class DownloadInfoFrame(object):
 
     def save_location(self, infohash, metainfo):
         name = metainfo.name_fs
+
+        if self.config['save_as']:
+            path = self.config['save_as']
+            self.got_location(infohash, path)
+            self.config['save_as'] = ''
+            return
 
         path = smart_dir(self.config['save_in'])
 
@@ -2502,10 +2622,26 @@ class DownloadInfoFrame(object):
     def got_location(self, infohash, fullpath):
         self.window_closed('savefile')
         self.torrents[infohash].widget = None
-        self.set_config('save_in',  os.path.split(fullpath)[0]+os.sep)        
+        save_in = os.path.split(fullpath)[0]
+        if save_in[-1] != os.sep:
+            save_in += os.sep
+        self.set_config('save_in', save_in)        
         self.torrents[infohash].dlpath = fullpath
         self.torrentqueue.set_save_location(infohash, fullpath)
-        self.nag()
+
+    def add_unhighlight_handle(self):
+        if self.unhighlight_handle is not None:
+            gobject.source_remove(self.unhighlight_handle)
+            
+        self.unhighlight_handle = gobject.timeout_add(2000,
+                                                      self.unhighlight_after_a_while,
+                                                      priority=gobject.PRIORITY_LOW)
+
+    def unhighlight_after_a_while(self):
+        self.drag_highlight()
+        gobject.source_remove(self.unhighlight_handle)
+        self.unhighlight_handle = None
+        return gtk.FALSE
 
     def init_updates(self):
         if self.update_handle is not None:
@@ -2516,6 +2652,7 @@ class DownloadInfoFrame(object):
 
     def remove_torrent_widget(self, infohash):
         t = self.torrents[infohash]
+        self.lists[t.state].remove(infohash)
         if t.state == RUNNING:
             del self.running_torrents[infohash]
             self.set_title()
@@ -2540,23 +2677,35 @@ class DownloadInfoFrame(object):
 
     def create_torrent_widget(self, infohash, queuepos=None):
         t = self.torrents[infohash]
+        l = self.lists.setdefault(t.state, [])
+        if queuepos is None:
+            l.append(infohash)
+        else:
+            l.insert(queuepos, infohash)
         if t.state == ASKING_LOCATION:
             self.save_location(infohash, t.metainfo)
+            self.nag()
+            return
         elif t.state == RUNNING:
             self.running_torrents[infohash] = t
-            t.widget = RunningTorrentBox(infohash, t.metainfo, t.dlpath,
-                                         t.completion, self)
-            self.runbox.pack_start(t.widget, expand=gtk.FALSE, fill=gtk.FALSE, padding=SPACING)
+            if not self.config['pause']:
+                t.widget = RunningTorrentBox(infohash, t.metainfo, t.dlpath,
+                                             t.completion, self)
+            else:
+                t.widget = PausedTorrentBox(infohash, t.metainfo, t.dlpath,
+                                             t.completion, self)
+            box = self.runbox
         elif t.state == QUEUED:
             t.widget = QueuedTorrentBox(infohash, t.metainfo, t.dlpath,
                                         t.completion, self)
-            self.queuebox.pack_start(t.widget, expand=gtk.FALSE, fill=gtk.FALSE)
-            if queuepos is not None:
-                self.queuebox.reorder_child(t.widget, queuepos)
+            box = self.queuebox
         elif t.state == KNOWN:
             t.widget = KnownTorrentBox(infohash, t.metainfo, t.dlpath,
                                        t.completion, self)
-            self.knownbox.pack_start(t.widget, expand=gtk.FALSE, fill=gtk.FALSE)
+            box = self.knownbox
+        box.pack_start(t.widget, expand=gtk.FALSE, fill=gtk.FALSE)
+        if queuepos is not None:
+            box.reorder_child(t.widget, queuepos)
 
         self.set_size()
 
@@ -2609,15 +2758,25 @@ class DownloadInfoFrame(object):
         self.errordialog = None
 
     def stop_queue(self):
-        self.torrents_stopped = True
-        self.torrentqueue.set_zero_running_torrents()
+        self.set_config('pause', 1)
         self.set_title()
+        q = list(self.runbox.get_queue())
+        for infohash in q:
+            t = self.torrents[infohash]
+            self.remove_torrent_widget(infohash)
+            self.create_torrent_widget(infohash)
 
     def restart_queue(self):
-        self.torrents_stopped = False
-        self.torrentqueue.unset_zero_running_torrents()
+        self.set_config('pause', 0)
+        q = list(self.runbox.get_queue())
+        for infohash in q:
+            t = self.torrents[infohash]
+            self.remove_torrent_widget(infohash)
+            self.create_torrent_widget(infohash)
 
     def update_status(self, torrent, statistics):
+        if self.config['pause']:
+            return
         self.running_torrents[torrent].widget.update_status(statistics)
 
     def new_displayed_torrent(self, infohash, metainfo, dlpath, state,
@@ -2642,66 +2801,66 @@ class DownloadInfoFrame(object):
         t.downtotal = downtotal
         self.create_torrent_widget(infohash, queuepos)
 
+    def reorder_torrent(self, infohash, queuepos):
+        self.remove_torrent_widget(infohash)
+        self.create_torrent_widget(infohash, queuepos)
+
     def update_completion(self, infohash, completion, files_left=None,
                           files_allocated=None):
         t = self.torrents[infohash]
         if files_left is not None and t.widget.filelistwindow is not None:
             t.widget.filelistwindow.update(files_left, files_allocated)
 
-    def update_queue(self, queue):
-        for i, infohash in enumerate(queue):
-            self.queuebox.reorder_child(self.torrents[infohash].widget, i)
-
     def removed_torrent(self, infohash):
         self.remove_torrent_widget(infohash)
         del self.torrents[infohash]
 
-    def enqueue_and_reorder(self, infohash, index):
-        # BUG: perhaps this function should be implemented in TorrentQueue
+    def change_torrent_state(self, infohash, newstate, index=None,
+                             replaced=None, force_running=False):
         t = self.torrents[infohash]
-        if t is None:
-            return
-        elif t.state == KNOWN:
-            self.torrentqueue.start_torrent(infohash)
-        elif t.state == RUNNING:
-            if index == 0:
-                return
-            self.torrentqueue.requeue_running_torrent(infohash)
-        neworder = []
-        order = self.queuebox.get_queue()
-        for i in order:
-            if i == infohash:
-                pass
-            else:
-                neworder.append(i)
-        neworder[index:index] = [infohash]
-        self.torrentqueue.reorder_queue(neworder)
+        pred = succ = None
+        if index is not None:
+            l = self.lists.setdefault(newstate, [])
+            if index > 0:
+                pred = l[index - 1]
+            if index < len(l):
+                succ = l[index]
+        self.torrentqueue.change_torrent_state(infohash, t.state, newstate,
+                                         pred, succ, replaced, force_running)
 
     def finish(self, infohash):
         t = self.torrents[infohash]
         if t is None or t.state == KNOWN:
             return
-        elif t.state == RUNNING:
-            self.torrentqueue.stop_torrent(infohash)
-        elif t.state == QUEUED:
-            self.torrentqueue.unqueue_torrent(infohash)
+        self.change_torrent_state(infohash, KNOWN)
 
-    def confirm_replace_running_torrent(self, infohash):
-        yesfunc = lambda *args: self.replace_running_torrent(infohash)
-        t = self.torrents[infohash]
-        if t.state == RUNNING:
+    def confirm_replace_running_torrent(self, infohash, replaced, index):
+        replace_func = lambda *args: self.change_torrent_state(infohash,
+                                RUNNING, index, replaced)
+        add_func     = lambda *args: self.change_torrent_state(infohash,
+                                RUNNING, index, force_running=True)
+        moved_torrent = self.torrents[infohash]
+
+        if moved_torrent.state == RUNNING:
+            self.change_torrent_state(infohash, RUNNING, index)
             return
-        new_torrent_name = t.metainfo.name
+
+        if self.config['dnd_behavior'] == 'replace':
+            replace_func()
+            return
+        elif self.config['dnd_behavior'] == 'add':
+            add_func()
+            return
+        
+        moved_torrent_name = moved_torrent.metainfo.name
         confirm = MessageDialog(self.mainwindow,
-                                'Change running torrent?',
-                                'Start "%s"?'%new_torrent_name,
+                                'Stop running torrent?',
+                                'You are about to start "%s". Do you want to stop the last running torrent as well?'%(moved_torrent_name),
                                 type=gtk.MESSAGE_QUESTION,
                                 buttons=gtk.BUTTONS_YES_NO,
-                                yesfunc=yesfunc)
-
-
-    def replace_running_torrent(self, infohash):
-        self.torrentqueue.replace_running_torrent(infohash)
+                                yesfunc=replace_func,
+                                nofunc=add_func,
+                                default=gtk.RESPONSE_YES)
 
     def nag(self):
         if ((self.config['donated'] != version) and
@@ -2747,7 +2906,7 @@ if __name__ == '__main__':
     except BTFailure, e:
         print str(e)
         sys.exit(1)
-    
+
     advanced_ui = config['advanced']
 
     if config['responsefile']:
@@ -2758,6 +2917,18 @@ if __name__ == '__main__':
     else:
         newtorrents = args
     controlsocket = ControlSocket(config)
+
+    got_control_socket = True
+    try:
+        controlsocket.create_socket()
+    except BTFailure:
+        got_control_socket = False
+        try:
+            controlsocket.send_command('no-op')
+        except BTFailure:
+            # XXX: this should pop up an error message for the user
+            raise
+
     datas = []
     errors = []
     if newtorrents:
@@ -2773,28 +2944,19 @@ if __name__ == '__main__':
                 errors.append('Could not read %s: %s' % (filename, str(e)))
             else:
                 datas.append(data)
-        try:
-            controlsocket.send_command('no-op')
-        except BTFailure:
-            pass
-        else:
-            # Not sure if anything really useful could be done if
-            # these send_command calls fail
+
+        # Not sure if anything really useful could be done if
+        # these send_command calls fail
+        if not got_control_socket:
             for data in datas:
                 controlsocket.send_command('start_torrent', data)
             for error in errors:
                 controlsocket.send_command('show_error', error)
             sys.exit(0)
-    else:
-        try:
-            controlsocket.send_command('show_error',
-                                       '%s already running'%app_name)
-        except BTFailure:
-            pass
-        else:
-            sys.exit(1)
+    elif not got_control_socket:
+        controlsocket.send_command('show_error', '%s already running'%app_name)
+        sys.exit(1)
 
-    controlsocket.create_socket()
     gtk.threads_init()
 
     torrentqueue = TorrentQueue.TorrentQueue(config, ui_options, controlsocket)

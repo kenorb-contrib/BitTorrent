@@ -1,12 +1,15 @@
-# The contents of this file are subject to the BitTorrent Open Source License
-# Version 1.0 (the License).  You may not copy or use this file, in either
-# source code or executable form, except in compliance with the License.  You
-# may obtain a copy of the License at http://www.bittorrent.com/license/.
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-# Software distributed under the License is distributed on an AS IS basis,
-# WITHOUT WARRANTY OF ANY KIND, either express or implied.  See the License
-# for the specific language governing rights and limitations under the
-# License.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 # Written by Bram Cohen
 
@@ -280,13 +283,13 @@ class SingleDownload(object):
                     self.connection.send_interested()
 
     def got_have_bitfield(self, have):
+        if self.downloader.picker.am_I_complete() and have.numfalse == 0:
+            self.connection.close()
+            return
         self.have = have
         for i in xrange(len(self.have)):
             if self.have[i]:
                 self.downloader.picker.got_have(i)
-        if self.downloader.picker.am_I_complete() and self.have.numfalse == 0:
-            self.connection.close()
-            return
         if self.downloader.storage.endgame:
             for piece, begin, length in self.downloader.all_requests:
                 if self.have[piece]:

@@ -1,12 +1,15 @@
-# The contents of this file are subject to the BitTorrent Open Source License
-# Version 1.0 (the License).  You may not copy or use this file, in either
-# source code or executable form, except in compliance with the License.  You
-# may obtain a copy of the License at http://www.bittorrent.com/license/.
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-# Software distributed under the License is distributed on an AS IS basis,
-# WITHOUT WARRANTY OF ANY KIND, either express or implied.  See the License
-# for the specific language governing rights and limitations under the
-# License.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 # Written by Bram Cohen
 
@@ -111,11 +114,47 @@ class Encoder(object):
 
 class SingleportListener(object):
 
-    def __init__(self, port):
-        self.port = port
+    def __init__(self, rawserver):
+        self.rawserver = rawserver
+        self.port = 0
+        self.ports = {}
         self.torrents = {}
         self.connections = {}
         self.download_id = None
+
+    def _check_close(self, port):
+        if not port or self.port == port or self.ports[port][1] > 0:
+            return
+        serversocket = self.ports[port][0]
+        self.rawserver.stop_listening(serversocket)
+        serversocket.close()
+        del self.ports[port]
+
+    def open_port(self, port, config):
+        if port in self.ports:
+            self.port = port
+            return
+        serversocket = self.rawserver.create_serversocket(
+            port, config['bind'], reuse=True, tos=config['peer_socket_tos'])
+        self.rawserver.start_listening(serversocket, self)
+        oldport = self.port
+        self.port = port
+        self.ports[port] = [serversocket, 0]
+        self._check_close(oldport)
+
+    def get_port(self):
+        if self.port:
+            self.ports[self.port][1] += 1
+        return self.port
+
+    def release_port(self, port):
+        self.ports[port][1] -= 1
+        self._check_close(port)
+
+    def close_sockets(self):
+        for serversocket, _ in self.ports.itervalues():
+            self.rawserver.stop_listening(serversocket)
+            serversocket.close()
 
     def add_torrent(self, infohash, encoder):
         if infohash in self.torrents:

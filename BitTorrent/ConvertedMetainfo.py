@@ -1,12 +1,15 @@
-# The contents of this file are subject to the BitTorrent Open Source License
-# Version 1.0 (the License).  You may not copy or use this file, in either
-# source code or executable form, except in compliance with the License.  You
-# may obtain a copy of the License at http://www.bittorrent.com/license/.
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-# Software distributed under the License is distributed on an AS IS basis,
-# WITHOUT WARRANTY OF ANY KIND, either express or implied.  See the License
-# for the specific language governing rights and limitations under the
-# License.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 # Written by Uoti Urpala
 
@@ -29,6 +32,15 @@ windows_translate = [chr(i) for i in range(256)]
 for x in WINDOWS_UNSUPPORTED_CHARS:
     windows_translate[ord(x)] = '-'
 windows_translate = ''.join(windows_translate)
+
+noncharacter_translate = {}
+for i in range(0xD800, 0xE000):
+    noncharacter_translate[i] = ord('-')
+for i in range(0xFDD0, 0xFDF0):
+    noncharacter_translate[i] = ord('-')
+for i in (0xFFFE, 0xFFFF):
+    noncharacter_translate[i] = ord('-')
+
 del x, i
 
 def set_filesystem_encoding(encoding, errorfunc):
@@ -73,8 +85,10 @@ class ConvertedMetainfo(object):
     def __init__(self, metainfo):
         self.bad_torrent_wrongfield = False
         self.bad_torrent_unsolvable = False
+        self.bad_torrent_noncharacter = False
         self.bad_conversion = False
         self.bad_windows = False
+        self.bad_path = False
         self.reported_errors = False
         self.is_batch = False
         self.orig_files = None
@@ -82,7 +96,7 @@ class ConvertedMetainfo(object):
         self.total_bytes = 0
         self.sizes = []
 
-        btformats.check_message(metainfo)
+        btformats.check_message(metainfo, check_paths=False)
         info = metainfo['info']
         if info.has_key('length'):
             self.total_bytes = info['length']
@@ -92,14 +106,25 @@ class ConvertedMetainfo(object):
             r = []
             self.orig_files = []
             self.sizes = []
-            for i, f in enumerate(info['files']):
+            i = 0
+            for f in info['files']:
                 l = f['length']
                 self.total_bytes += l
                 self.sizes.append(l)
                 path = self._get_attr_utf8(f, 'path')
-                path = [(self._enforce_utf8(x), x) for x in path]
-                self.orig_files.append('/'.join([x[0] for x in path]))
-                r.append(([(self._to_fs_2(u), u, o) for u, o in path], i))
+                for x in path:
+                    if not btformats.allowed_path_re.match(x):
+                        if l > 0:
+                            raise BTFailure("Bad file path component: "+x)
+                        # BitComet makes bad .torrent files with empty
+                        # filename part
+                        self.bad_path = True
+                        break
+                else:
+                    path = [(self._enforce_utf8(x), x) for x in path]
+                    self.orig_files.append('/'.join([x[0] for x in path]))
+                    r.append(([(self._to_fs_2(u), u, o) for u, o in path], i))
+                    i += 1
             # If two or more file/subdirectory names in the same directory
             # would map to the same name after encoding conversions + Windows
             # workarounds, change them. Files are changed as
@@ -146,12 +171,16 @@ class ConvertedMetainfo(object):
         self.reported_errors = True
         if self.bad_torrent_unsolvable:
             errorfunc(ERROR, "This .torrent file has been created with a broken tool and has incorrectly encoded filenames. Some or all of the filenames may appear different from what the creator of the .torrent file intended.")
+        elif self.bad_torrent_noncharacter:
+            errorfunc(ERROR, "This .torrent file has been created with a broken tool and has bad character values that do not correspond to any real character. Some or all of the filenames may appear different from what the creator of the .torrent file intended.")
         elif self.bad_torrent_wrongfield:
             errorfunc(ERROR, "This .torrent file has been created with a broken tool and has incorrectly encoded filenames. The names used may still be correct.")
         elif self.bad_conversion:
             errorfunc(WARNING, 'The character set used on the local filesystem ("'+filesystem_encoding+'") cannot represent all characters used in the filename(s) of this torrent. Filenames have been changed from the original.')
         elif self.bad_windows:
             errorfunc(WARNING, 'The Windows filesystem cannot handle some characters used in the filename(s) of this torrent. Filenames have been changed from the original.')
+        elif self.bad_path:
+            errorfunc(WARNING, "This .torrent file has been created with a broken tool and has at least 1 file with an invalid file or directory name. However since all such files were marked as having length 0 those files are just ignored.")
 
     # At least BitComet seems to make bad .torrent files that have
     # fields in an arbitrary encoding but separate 'field.utf-8' attributes
@@ -166,11 +195,14 @@ class ConvertedMetainfo(object):
 
     def _enforce_utf8(self, s):
         try:
-            s.decode('utf-8')
+            s = s.decode('utf-8')
         except:
             self.bad_torrent_unsolvable = True
-            s = s.decode('utf-8', 'replace').encode('utf-8')
-        return s
+            s = s.decode('utf-8', 'replace')
+        t = s.translate(noncharacter_translate)
+        if t != s:
+            self.bad_torrent_noncharacter = True
+        return t.encode('utf-8')
 
     def _get_field_utf8(self, d, attrib):
         r = self._get_attr_utf8(d, attrib)

@@ -1,16 +1,19 @@
-# The contents of this file are subject to the BitTorrent Open Source License
-# Version 1.0 (the License).  You may not copy or use this file, in either
-# source code or executable form, except in compliance with the License.  You
-# may obtain a copy of the License at http://www.bittorrent.com/license/.
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-# Software distributed under the License is distributed on an AS IS basis,
-# WITHOUT WARRANTY OF ANY KIND, either express or implied.  See the License
-# for the specific language governing rights and limitations under the
-# License.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 common_options = [
     ('ip', '',
-        "ip to report you have to the tracker."),
+        "ip to report to the tracker (has no effect unless you are on the same local network as the tracker)"),
     ('forwarded_port', 0,
         "world-visible port number if it's different from the one the client "
         "listens on locally"),
@@ -19,9 +22,9 @@ common_options = [
     ('bind', '',
         'ip to bind to locally'),
     ('display_interval', .5,
-        'time between updates of displayed information'),
+        'seconds between updates of displayed information'),
     ('rerequest_interval', 5 * 60,
-        'time to wait between requesting more peers'),
+        'minutes to wait between requesting more peers'),
     ('min_peers', 20,
         'minimum number of peers to not do rerequesting'),
     ('max_initiate', 40,
@@ -47,21 +50,21 @@ rare_options = [
     ('keepalive_interval', 120.0,
         'number of seconds to pause between sending keepalives'),
     ('download_slice_size', 2 ** 14,
-        "How many bytes to query for per request."),
+        "how many bytes to query for per request."),
     ('max_message_length', 2 ** 23,
         "maximum length prefix encoding you'll accept over the wire - larger values get the connection dropped."),
     ('timeout', 300.0,
-        'time to wait between closing sockets which nothing has been received on'),
+        'seconds to wait between closing sockets which nothing has been received on'),
     ('timeout_check_interval', 60.0,
-        'time to wait between checking if any connections have timed out'),
+        'seconds to wait between checking if any connections have timed out'),
     ('max_slice_length', 16384,
         "maximum length slice to send to peers, close connection if a larger request is received"),
     ('max_rate_period', 20.0,
         "maximum amount of time to guess the current rate estimate represents"),
-    ('upload_rate_fudge', 5.0,
-        'time equivalent of writing to kernel-level TCP buffer, for rate adjustment'),
-    ('http_timeout', 60,
-        'number of seconds to wait before assuming that an http connection has timed out'),
+    ('max_rate_period_seedtime', 100.0,
+        "maximum amount of time to guess the current rate estimate represents"),
+    ('max_announce_retry_interval', 1800,
+        'maximum time to wait between retrying announces if they keep failing'),
     ('snub_time', 30.0,
         "seconds to wait for data to come in over a connection before assuming it's semi-permanently choked"),
     ('rarest_first_cutoff', 4,
@@ -79,6 +82,8 @@ rare_options = [
      "character encoding used on the local filesystem. If left empty, autodetected. Autodetection doesn't work under python versions older than 2.3"),
     ('enable_bad_libc_workaround', 0,
      'enable workaround for a bug in BSD libc that makes file reads very slow.'),
+    ('tracker_proxy', '',
+     'address of HTTP proxy to use for tracker connections'),
     ]
 
 def get_defaults(ui):
@@ -94,11 +99,15 @@ def get_defaults(ui):
             ('advanced', 0,
              "display advanced user interface"),
             ('next_torrent_time', 300,
-             'the maximum number of minutes to seed a completed torrent before moving to the next torrent in the queue'),
+             'the maximum number of minutes to seed a completed torrent before stopping seeding'),
             ('next_torrent_ratio', 80,
-             'the minimum upload/download ratio, in percent, to achieve while seeding a completed torrent, before moving to the next torrent in the queue'),
+             'the minimum upload/download ratio, in percent, to achieve before stopping seeding. 0 means no limit.'),
             ('last_torrent_ratio', 0,
-             'if nonzero, stop seeding when this upload/download ratio is achieved even when there is no queue'),
+             'the minimum upload/download ratio, in percent, to achieve before stopping seeding the last torrent. 0 means no limit.'),
+            ('pause', 0,
+             'start downloader in paused state'),
+            ('dnd_behavior', 'replace',
+             ''),
             ])
 
     if ui in ('btdownloadcurses', 'btdownloadheadless'):
@@ -148,7 +157,7 @@ def get_defaults(ui):
     if ui == 'btmaketorrentgui':
         r.extend([
             ('piece_size_pow2', 18,
-             "which power of 2 to set the piece size to"),
+             "which power of two to set the piece size to"),
             ('tracker_name', 'http://my.tracker:6969/announce',
              "default tracker name"),
             ])

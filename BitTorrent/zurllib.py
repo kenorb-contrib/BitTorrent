@@ -12,9 +12,9 @@ from urllib import *
 from urllib2 import *
 from gzip import GzipFile
 from StringIO import StringIO
-from __init__ import version
 import pprint
 
+from BitTorrent import version
 
 DEBUG=0
 

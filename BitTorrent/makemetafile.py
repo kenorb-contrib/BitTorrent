@@ -1,14 +1,17 @@
 #!/usr/bin/env python
 
-# The contents of this file are subject to the BitTorrent Open Source License
-# Version 1.0 (the License).  You may not copy or use this file, in either
-# source code or executable form, except in compliance with the License.  You
-# may obtain a copy of the License at http://www.bittorrent.com/license/.
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-# Software distributed under the License is distributed on an AS IS basis,
-# WITHOUT WARRANTY OF ANY KIND, either express or implied.  See the License
-# for the specific language governing rights and limitations under the
-# License.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 # Written by Bram Cohen
 
@@ -27,6 +30,16 @@ from BitTorrent.obsoletepythonsupport import *
 from BitTorrent import BTFailure
 
 ignore = ['core', 'CVS', 'Thumbs.db']
+
+noncharacter_translate = {}
+for i in range(0xD800, 0xE000):
+    noncharacter_translate[i] = None
+for i in range(0xFDD0, 0xFDF0):
+    noncharacter_translate[i] = None
+for i in (0xFFFE, 0xFFFF):
+    noncharacter_translate[i] = None
+
+del i
 
 def dummy(v):
     pass
@@ -110,13 +123,17 @@ def calcsize(path):
 def makeinfo(path, piece_length, flag, progress, encoding):
     def to_utf8(name):
         try:
-            name = name.decode(encoding)
+            u = name.decode(encoding)
         except Exception, e:
             raise BTFailure('Could not convert file/directory name "'+name+
                             '" to utf-8 ('+str(e)+'). Either the assumed '
                             'filesystem encoding "'+encoding+'" is wrong or '
                             'the filename contains illegal bytes.')
-        return name.encode('utf-8')
+        if u.translate(noncharacter_translate) != u:
+            raise BTFailure('File/directory name "'+name+'" contains reserved '
+                            'unicode values that do not correspond to '
+                            'characters.')
+        return u.encode('utf-8')
     path = os.path.abspath(path)
     if os.path.isdir(path):
         subs = subfiles(path)

@@ -1,14 +1,17 @@
 #!/usr/bin/env python
 
-# The contents of this file are subject to the BitTorrent Open Source License
-# Version 1.0 (the License).  You may not copy or use this file, in either
-# source code or executable form, except in compliance with the License.  You
-# may obtain a copy of the License at http://www.bittorrent.com/license/.
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-# Software distributed under the License is distributed on an AS IS basis,
-# WITHOUT WARRANTY OF ANY KIND, either express or implied.  See the License
-# for the specific language governing rights and limitations under the
-# License.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 # Written by Matt Chisholm
 
@@ -30,6 +33,7 @@ from BitTorrent import version
 from BitTorrent import configfile
 from BitTorrent.defaultargs import get_defaults
 from BitTorrent.makemetafile import make_meta_files
+from BitTorrent.parseargs import makeHelp
 
 defaults = get_defaults('btmaketorrentgui')
 defconfig = dict([(name, value) for (name, value, doc) in defaults])
@@ -40,6 +44,7 @@ class MainWindow(Window):
 
     def __init__(self, config):
         Window.__init__(self)
+        self.mainwindow = self # temp hack to make modal win32 file choosers work
         self.connect('destroy', self.quit)
         self.set_title('%s metafile creator %s'%(app_name, version))
         self.set_border_width(SPACING)
@@ -144,6 +149,9 @@ class MainWindow(Window):
         sel.connect('changed', self.check_buttons)
 
         self.add(self.box)
+
+#        HelpWindow(None, makeHelp('btmaketorrentgui', defaults))
+        
         self.show_all()
 
     def remove_selection(self,widget):
@@ -162,17 +170,19 @@ class MainWindow(Window):
         if self.config['torrent_dir']:
             fn = self.config['torrent_dir']
         else:
-            fn = Desktop.desktop
+            fn = Desktop.desktop 
 
-        selector = OpenFileSelection("Open torrent:",
-                                fn,
+        selector = OpenFileSelection(self, title="Open torrent:",
+                                fullname=fn,
                                 got_multiple_location_func=self.add_files)
     
     def add_files(self, names):
-        print 'add_files:', names
         for name in names:
             self.file_store.append((name,))
-        self.config['torrent_dir'] = os.path.split(name)[0] + os.sep
+        torrent_dir = os.path.split(name)[0]
+        if torrent_dir[-1] != os.sep:
+            torrent_dir += os.sep
+        self.config['torrent_dir'] = torrent_dir
 
     def get_piece_size_exponent(self):
         i = self.piece_size.get_active()

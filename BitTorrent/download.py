@@ -1,12 +1,15 @@
-# The contents of this file are subject to the BitTorrent Open Source License
-# Version 1.0 (the License).  You may not copy or use this file, in either
-# source code or executable form, except in compliance with the License.  You
-# may obtain a copy of the License at http://www.bittorrent.com/license/.
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-# Software distributed under the License is distributed on an AS IS basis,
-# WITHOUT WARRANTY OF ANY KIND, either express or implied.  See the License
-# for the specific language governing rights and limitations under the
-# License.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 # Written by Bram Cohen and Uoti Urpala
 
@@ -17,6 +20,7 @@ from __future__ import generators
 import os
 import sys
 import threading
+import gc
 from sha import sha
 from socket import error as socketerror
 from random import seed
@@ -44,9 +48,9 @@ from BitTorrent.DownloaderFeedback import DownloaderFeedback
 from BitTorrent.RateMeasure import RateMeasure
 from BitTorrent.CurrentRateMeasure import Measure
 from BitTorrent.PiecePicker import PiecePicker
-from BitTorrent.ConvertedMetainfo import ConvertedMetainfo, set_filesystem_encoding
+from BitTorrent.ConvertedMetainfo import set_filesystem_encoding
 from BitTorrent import version
-from BitTorrent import BTFailure, INFO, WARNING, ERROR, CRITICAL
+from BitTorrent import BTFailure, BTShutdown, INFO, WARNING, ERROR, CRITICAL
 
 
 class Feedback(object):
@@ -54,7 +58,7 @@ class Feedback(object):
     def finished(self, torrent):
         pass
 
-    def failed(self, torrent):
+    def failed(self, torrent, is_external):
         pass
 
     def error(self, torrent, level, text):
@@ -71,40 +75,37 @@ class Multitorrent(object):
 
     def __init__(self, config, doneflag, errorfunc, listen_fail_ok=False):
         self.config = dict(config)
+        self.errorfunc = errorfunc
         self.rawserver = RawServer(doneflag, config['timeout_check_interval'],
                                    config['timeout'], errorfunc=errorfunc,
                                    bindaddr=config['bind'])
+        self.singleport_listener = SingleportListener(self.rawserver)
+        self._find_port(listen_fail_ok)
+        self.filepool = FilePool(config['max_files_open'])
+        self.ratelimiter = RateLimiter(self.rawserver.add_task)
+        self.ratelimiter.set_parameters(config['max_upload_rate'],
+                                        config['upload_unit_size'])
+        set_filesystem_encoding(config['filesystem_encoding'],
+                                                 errorfunc)
+
+    def _find_port(self, listen_fail_ok=True):
         e = 'maxport less than minport - no ports to check'
-        self.serversocket = None
-        for listen_port in xrange(config['minport'], config['maxport'] + 1):
+        if self.config['minport'] <= 0:
+            self.config['minport'] = 1
+        for port in xrange(self.config['minport'], self.config['maxport'] + 1):
             try:
-                self.serversocket = self.rawserver.create_serversocket(
-                    listen_port, config['bind'], reuse=True,
-                    tos=config['peer_socket_tos'])
+                self.singleport_listener.open_port(port, self.config)
                 break
             except socketerror, e:
                 pass
         else:
             if not listen_fail_ok:
                 raise BTFailure, "Couldn't open a listening port: " + str(e)
-            errorfunc(CRITICAL, "Could not open a listening port: " + str(e) +\
-                      ". Check your port range settings.")
-            listen_port = 0
-        self.filepool = FilePool(config['max_files_open'])
-        self.ratelimiter = RateLimiter(self.rawserver.add_task)
-        self.ratelimiter.set_parameters(config['max_upload_rate'],
-                                        config['upload_unit_size'])
-        self.singleport_listener = SingleportListener(listen_port)
-        set_filesystem_encoding(config['filesystem_encoding'],
-                                                 errorfunc)
-        if self.serversocket is not None:
-            self.rawserver.start_listening(self.serversocket,
-                                           self.singleport_listener)
+            self.errorfunc(CRITICAL, "Could not open a listening port: " +
+                           str(e) + ". Check your port range settings.")
 
     def close_listening_socket(self):
-        if self.serversocket is not None:
-            self.rawserver.stop_listening(self.serversocket)
-            self.serversocket.close()
+        self.singleport_listener.close_sockets()
 
     def start_torrent(self, metainfo, config, feedback, filename):
         torrent = _SingleTorrent(self.rawserver, self.singleport_listener,
@@ -119,7 +120,7 @@ class Multitorrent(object):
         if option not in self.config or self.config[option] == value:
             return
         if option not in 'max_upload_rate upload_unit_size '\
-               'max_files_open'.split():
+               'max_files_open minport maxport'.split():
             return
         self.config[option] = value
         if option == 'max_files_open':
@@ -130,6 +131,10 @@ class Multitorrent(object):
         elif option == 'upload_unit_size':
             self.ratelimiter.set_parameters(self.config['max_upload_rate'],
                                             value)
+        elif option == 'maxport':
+            if not self.config['minport'] <= self.singleport_listener.port <= \
+                   self.config['maxport']:
+                self._find_port()
 
     def get_completion(self, config, metainfo, save_path, filelist=False):
         if not config['data_dir']:
@@ -188,6 +193,8 @@ class _SingleTorrent(object):
         self._statuscollecter = None
         self._announced = False
         self._listening = False
+        self.reserved_ports = []
+        self.reported_port = None
         self._myfiles = None
         self.started = False
         self.is_seed = False
@@ -224,9 +231,7 @@ class _SingleTorrent(object):
         if not metainfo.reported_errors:
             metainfo.show_encoding_errors(self._error)
 
-        myid = 'M' + version.split()[0].replace('.', '-')
-        myid = myid + ('-' * (8-len(myid)))+sha(repr(time())+ ' ' +
-                                     str(getpid())).digest()[-6:].encode('hex')
+        myid = self._make_id()
         seed(myid)
         def schedfunc(func, delay):
             self._rawserver.add_task(func, delay, self)
@@ -293,19 +298,11 @@ class _SingleTorrent(object):
         if self._storagewrapper.amount_left == 0:
             self._finished()
         choker = Choker(config, schedfunc, self.finflag.isSet)
-        upmeasure = Measure(config['max_rate_period'],
-            config['upload_rate_fudge'])
+        upmeasure = Measure(config['max_rate_period'])
+        upmeasure_seedtime = Measure(config['max_rate_period_seedtime'])
         downmeasure = Measure(config['max_rate_period'])
         self._upmeasure = upmeasure
         self._downmeasure = downmeasure
-        def make_upload(connection, ratelimiter = self._ratelimiter,
-                totalup = upmeasure, choker = choker,
-                storagewrapper = self._storagewrapper,
-                max_slice_length = config['max_slice_length'],
-                max_rate_period = config['max_rate_period'],
-                fudge = config['upload_rate_fudge']):
-            return Upload(connection, ratelimiter, totalup, choker,
-                storagewrapper, max_slice_length, max_rate_period, fudge)
         self._ratemeasure = RateMeasure(self._storagewrapper.
                                         amount_left_with_partials)
         picker = PiecePicker(len(metainfo.hashes), config)
@@ -323,26 +320,32 @@ class _SingleTorrent(object):
         downloader = Downloader(config, self._storagewrapper, picker,
             len(metainfo.hashes), downmeasure, self._ratemeasure.data_came_in,
                                 kickpeer, banpeer)
+        def make_upload(connection):
+            return Upload(connection, self._ratelimiter, upmeasure,
+                        upmeasure_seedtime, choker, self._storagewrapper,
+                        config['max_slice_length'], config['max_rate_period'])
         self._encoder = Encoder(make_upload, downloader, choker,
                      len(metainfo.hashes), self._ratelimiter, self._rawserver,
                      config, myid, schedfunc, self.infohash, self)
-        reported_port = self.config['forwarded_port']
-        if not reported_port:
-            reported_port = self._singleport_listener.port
+        self.reported_port = self.config['forwarded_port']
+        if not self.reported_port:
+            self.reported_port = self._singleport_listener.get_port()
+            self.reserved_ports.append(self.reported_port)
+        self._singleport_listener.add_torrent(self.infohash, self._encoder)
+        self._listening = True
         self._rerequest = Rerequester(metainfo.announce, config,
             schedfunc, self._encoder.how_many_connections,
             self._encoder.start_connection, externalsched,
             self._storagewrapper.get_amount_left, upmeasure.get_total,
-            downmeasure.get_total, reported_port, myid,
+            downmeasure.get_total, self.reported_port, myid,
             self.infohash, self._error, self.finflag, upmeasure.get_rate,
-            downmeasure.get_rate, self._encoder.ever_got_incoming)
+            downmeasure.get_rate, self._encoder.ever_got_incoming,
+            self.internal_shutdown, self._announce_done)
         self._statuscollecter = DownloaderFeedback(choker, upmeasure.get_rate,
-            downmeasure.get_rate, upmeasure.get_total, downmeasure.get_total,
+            upmeasure_seedtime.get_rate, downmeasure.get_rate,
+            upmeasure.get_total, downmeasure.get_total,
             self._ratemeasure.get_time_left, self._ratemeasure.get_size_left,
             self.total_bytes, self.finflag, downloader, self._myfiles)
-
-        self._singleport_listener.add_torrent(self.infohash, self._encoder)
-        self._listening = True
 
         self._announced = True
         self._rerequest.begin()
@@ -352,7 +355,11 @@ class _SingleTorrent(object):
         self.feedback.started(self)
 
     def got_exception(self, e):
-        if isinstance(e, BTFailure):
+        is_external = False
+        if isinstance(e, BTShutdown):
+            self._error(ERROR, str(e))
+            is_external = True
+        elif isinstance(e, BTFailure):
             self._error(CRITICAL, str(e))
             self._activity = ('download failed: ' + str(e), 0)
         elif isinstance(e, IOError):
@@ -371,6 +378,9 @@ class _SingleTorrent(object):
         except Exception, e:
             self._error(ERROR, 'Additional error when closing down due to '
                         'error: ' + str(e))
+        if is_external:
+            self.feedback.failed(self, True)
+            return
         if self.config['data_dir'] and self._storage is not None:
             filename = os.path.join(self.config['data_dir'], 'resume',
                                     self.infohash.encode('hex'))
@@ -380,7 +390,7 @@ class _SingleTorrent(object):
                 except Exception, e:
                     self._error(WARNING, 'Could not remove fastresume file '
                                 'after failure:' + str(e))
-        self.feedback.failed(self)
+        self.feedback.failed(self, False)
 
     def _finished(self):
         self.finflag.set()
@@ -393,11 +403,11 @@ class _SingleTorrent(object):
         # tell the tracker about seed status.
         self.is_seed = True
         if self._announced:
-            self._rerequest.announce(1)
+            self._rerequest.announce_finish()
         self._activity = ('seeding', 1)
-        self.feedback.finished(self)
         if self.config['check_hashes']:
             self._save_fastresume(True)
+        self.feedback.finished(self)
 
     def _save_fastresume(self, on_finish=False):
         if not on_finish and (self.finflag.isSet() or not self.started):
@@ -431,6 +441,14 @@ class _SingleTorrent(object):
         except Exception, e:
             self.got_exception(e)
 
+    def internal_shutdown(self, level, text):
+        # This is only called when announce fails with no peers,
+        # don't try to announce again telling we're leaving the torrent
+        self._announced = False
+        self._error(level, text)
+        self.shutdown()
+        self.feedback.failed(self, True)
+
     def _close(self):
         if self.closed:
             return
@@ -438,17 +456,22 @@ class _SingleTorrent(object):
         self._rawserver.remove_context(self)
         self._doneflag.set()
         if self._announced:
-            self._rerequest.announce(2)
+            self._rerequest.announce_stop()
+            self._rerequest.cleanup()
         if self._hashcheck_thread is not None:
             self._hashcheck_thread.join() # should die soon after doneflag set
         if self._myfiles is not None:
             self._filepool.remove_files(self._myfiles)
         if self._listening:
             self._singleport_listener.remove_torrent(self.infohash)
+        for port in self.reserved_ports:
+            self._singleport_listener.release_port(port)
         if self._encoder is not None:
             self._encoder.close_connections()
         if self._storage is not None:
             self._storage.close()
+        self._ratelimiter.clean_closed()
+        self._rawserver.add_task(gc.collect, 0, None)
 
     def get_status(self, spew = False, fileinfo=False):
         if self.started and not self.closed:
@@ -474,6 +497,37 @@ class _SingleTorrent(object):
         # max_upload_rate doesn't affect upload rate here, just auto uploads
         self.config[option] = value
         self._set_auto_uploads()
+
+    def change_port(self):
+        if not self._listening:
+            return
+        r = self.config['forwarded_port']
+        if r:
+            for port in self.reserved_ports:
+                self._singleport_listener.release_port(port)
+            del self.reserved_ports[:]
+            if self.reported_port == r:
+                return
+        elif self._singleport_listener.port != self.reported_port:
+            r = self._singleport_listener.get_port()
+            self.reserved_ports.append(r)
+        else:
+            return
+        self.reported_port = r
+        myid = self._make_id()
+        self._encoder.my_id = myid
+        self._rerequest.change_port(myid, r)
+
+    def _announce_done(self):
+        for port in self.reserved_ports[:-1]:
+            self._singleport_listener.release_port(port)
+        del self.reserved_ports[:-1]
+
+    def _make_id(self):
+        myid = 'M' + version.split()[0].replace('.', '-')
+        myid = myid + ('-' * (8-len(myid)))+sha(repr(time())+ ' ' +
+                                     str(getpid())).digest()[-6:].encode('hex')
+        return myid
 
     def _set_auto_uploads(self):
         uploads = self.config['max_uploads']

@@ -1,12 +1,15 @@
-# The contents of this file are subject to the BitTorrent Open Source License
-# Version 1.0 (the License).  You may not copy or use this file, in either
-# source code or executable form, except in compliance with the License.  You
-# may obtain a copy of the License at http://www.bittorrent.com/license/.
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-# Software distributed under the License is distributed on an AS IS basis,
-# WITHOUT WARRANTY OF ANY KIND, either express or implied.  See the License
-# for the specific language governing rights and limitations under the
-# License.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 # Written by Uoti Urpala
 
@@ -22,7 +25,7 @@ from BitTorrent.download import Feedback, Multitorrent
 from BitTorrent.controlsocket import ControlSocket
 from BitTorrent.bencode import bdecode
 from BitTorrent.ConvertedMetainfo import ConvertedMetainfo
-from BitTorrent import BTFailure, INFO, WARNING, ERROR, CRITICAL
+from BitTorrent import BTFailure, BTShutdown, INFO, WARNING, ERROR, CRITICAL
 from BitTorrent import configfile
 import BitTorrent
 
@@ -42,9 +45,10 @@ except:
         pass
 
 RUNNING = 0
-QUEUED = 1
-KNOWN = 2
-ASKING_LOCATION = 3
+RUN_QUEUED = 1
+QUEUED = 2
+KNOWN = 3
+ASKING_LOCATION = 4
 
 
 class TorrentInfo(object):
@@ -62,14 +66,36 @@ class TorrentInfo(object):
         self.downtotal_old = 0
 
 
+def decode_position(l, pred, succ, default=None):
+    if default is None:
+        default = len(l)
+    if pred is None and succ is None:
+        return default
+    if pred is None:
+        return 0
+    if succ is None:
+        return len(l)
+    try:
+        if l[0] == succ and pred not in l:
+            return 0
+        if l[-1] == pred and succ not in l:
+            return len(l)
+        i = l.index(pred)
+        if l[i+1] == succ:
+            return i+1
+    except (ValueError, IndexError):
+        pass
+    return default
+
+
 class TorrentQueue(Feedback):
 
     def __init__(self, config, ui_options, controlsocket):
         self.config = dict(config)
         self.ui_options = ui_options
         self.controlsocket = controlsocket
-        self.config['max_running_torrents'] = 1 # !@# XXX
-        self.saved_max_torrents = None
+        self.config['def_running_torrents'] = 1 # !@# XXX
+        self.config['max_running_torrents'] = 3 # !@# XXX
         self.doneflag = threading.Event()
         self.torrents = {}
         self.starting_torrent = None
@@ -95,15 +121,19 @@ class TorrentQueue(Feedback):
             self.torrents = {}
             self.global_error(ERROR, "Could not load saved state: "+str(e))
         else:
-            for infohash in self.queue + self.other_torrents:
+            for infohash in self.running_torrents + self.queue + \
+                    self.other_torrents:
                 t = self.torrents[infohash]
                 if t.dlpath is not None:
                     t.completion = self.multitorrent.get_completion(
                         self.config, t.metainfo, t.dlpath)
+                state = t.state
+                if state == RUN_QUEUED:
+                    state = RUNNING
                 self.run_ui_task(self.ui.new_displayed_torrent, infohash,
-                                 t.metainfo, t.dlpath, t.state, t.completion,
+                                 t.metainfo, t.dlpath, state, t.completion,
                                  t.uptotal, t.downtotal)
-            self._check_queue()
+        self._check_queue()
         startflag.set()
         self._queue_loop()
         self._check_version()
@@ -112,6 +142,8 @@ class TorrentQueue(Feedback):
         self.controlsocket.close_socket()
         for infohash in list(self.running_torrents):
             t = self.torrents[infohash]
+            if t.state == RUN_QUEUED:
+                continue
             t.dl.shutdown()
             if t.dl is not None:  # possibly set to none by failed()
                 totals = t.dl.get_total_transfer()
@@ -134,6 +166,8 @@ class TorrentQueue(Feedback):
             def f():
                 self.global_error(level, text)
             self.rawserver.external_add_task(f, 0)
+        def splitversion(text):
+            return [int(t) for t in text.split('.')]
         try:
             try:
                 a = dns.resolver.query('version.bittorrent.com', 'TXT')
@@ -146,12 +180,28 @@ class TorrentQueue(Feedback):
             value = iter(a).next() # the object doesn't support a[0]
             if len(value.strings) != 1:
                 raise BTFailure('number of strings in reply is not 1?')
-            if value.strings[0] != BitTorrent.version:
-                download_url = 'http://bittorrent.com/download.html'
-                if hasattr(self.ui, 'new_version'):
-                    self.run_ui_task(self.ui.new_version, value.strings[0], download_url)
-                else:
-                    error(ERROR, "A newer version of BitTorrent is available.\nYou can always get the latest version from \n%s." % download_url)
+            s = value.strings[0].split(None, 2)
+            myversion = splitversion(BitTorrent.version)
+            if myversion[1] % 2 and len(s) > 1:
+                s = s[1]
+            else:
+                s = s[0]
+            try:
+                latest = splitversion(s)
+            except ValueError:
+                raise BTFailure("Could not parse new version string")
+            for my, new in zip(myversion, latest):
+                if my > new:
+                    break
+                if my < new:
+                    download_url = 'http://bittorrent.com/download.html'
+                    if hasattr(self.ui, 'new_version'):
+                        self.run_ui_task(self.ui.new_version, s,
+                                         download_url)
+                    else:
+                        error(ERROR, "A newer version of BitTorrent is "
+                              "available.\nYou can always get the latest "
+                              "version from\n%s." % download_url)
         except Exception, e:
             error(WARNING, "Version check failed: " + str(e))
 
@@ -169,10 +219,11 @@ class TorrentQueue(Feedback):
             else:
                 r.append(infohash.encode('hex') + ' ' + str(t.uptotal) + ' ' +
                     str(t.downtotal)+' '+t.dlpath.encode('string_escape')+'\n')
-        r.append('BitTorrent UI state file, version 2\n')
-        r.append('Running/queued torrents\n')
+        r.append('BitTorrent UI state file, version 3\n')
+        r.append('Running torrents\n')
         for infohash in self.running_torrents:
             write_entry(infohash, self.torrents[infohash])
+        r.append('Queued torrents\n')
         for infohash in self.queue:
             write_entry(infohash, self.torrents[infohash])
         r.append('Known torrents\n')
@@ -263,11 +314,27 @@ class TorrentQueue(Feedback):
                 version = int(version[len(txt):-1])
             except:
                 raise BTFailure('Bad UI state file version')
-            if version > 2:
+            if version > 3:
                 raise BTFailure('Unsupported UI state file version (from '
                                 'newer client version?')
-            if i.next() != "Running/queued torrents\n":
-                raise BTFailure("Invalid state file contents")
+            if version < 3:
+                if i.next() != "Running/queued torrents\n":
+                    raise BTFailure("Invalid state file contents")
+            else:
+                if i.next() != "Running torrents\n":
+                    raise BTFailure("Invalid state file contents")
+                while True:
+                    line = i.next()
+                    if line == 'Queued torrents\n':
+                        break
+                    t = decode_line(line)
+                    if t is None:
+                        continue
+                    infohash, t = t
+                    if t.dlpath is None:
+                        raise BTFailure("Invalid state file contents")
+                    t.state = RUN_QUEUED
+                    self.running_torrents.append(infohash)
             while True:
                 line = i.next()
                 if line == 'Known torrents\n':
@@ -303,14 +370,16 @@ class TorrentQueue(Feedback):
         now = time()
         if self.queue and self.starting_torrent is None:
             mintime = now - self.config['next_torrent_time'] * 60
-            minratio = self.config['next_torrent_ratio']
+            minratio = self.config['next_torrent_ratio'] / 100
         else:
             mintime = 0
-            minratio = self.config['last_torrent_ratio']
+            minratio = self.config['last_torrent_ratio'] / 100
             if not minratio:
                 return
         for infohash in self.running_torrents:
             t = self.torrents[infohash]
+            if t.state == RUN_QUEUED:
+                continue
             totals = t.dl.get_total_transfer()
             # not updated for remaining torrents if one is stopped, who cares
             t.uptotal = t.uptotal_old + totals[0]
@@ -318,24 +387,29 @@ class TorrentQueue(Feedback):
             if t.finishtime is None or t.finishtime > now - 120:
                 continue
             if t.finishtime > mintime:
-                ratio = t.uptotal / (t.downtotal + 1)
-                if ratio < minratio / 100:
+                if t.uptotal < t.downtotal * minratio:
                     continue
-            self.stop_torrent(infohash)
+            self.change_torrent_state(infohash, RUNNING, KNOWN)
             break
         if self.running_torrents and self.last_save_time < now - 300:
             self._dump_state()
 
     def _check_queue(self):
-        if self.starting_torrent is not None or not self.queue:
+        if self.starting_torrent is not None or self.config['pause']:
             return
-        if len(self.running_torrents) >= self.config['max_running_torrents']:
+        for infohash in self.running_torrents:
+            if self.torrents[infohash].state == RUN_QUEUED:
+                self.starting_torrent = infohash
+                t = self.torrents[infohash]
+                t.state = RUNNING
+                t.finishtime = None
+                t.dl = self.multitorrent.start_torrent(t.metainfo, self.config,
+                                                       self, t.dlpath)
+                return
+        if not self.queue or len(self.running_torrents) >= \
+               self.config['def_running_torrents']:
             return
-        new = self.queue.pop(0)
-        self._start_torrent(new)
-
-    def _start_torrent(self, infohash):
-        assert self.starting_torrent is None
+        infohash = self.queue.pop(0)
         self.starting_torrent = infohash
         t = self.torrents[infohash]
         assert t.state == QUEUED
@@ -346,25 +420,45 @@ class TorrentQueue(Feedback):
                                                t.dlpath)
         self._send_state(infohash)
 
-    def _send_state(self, infohash, queuepos=None):
+    def _send_state(self, infohash):
         t = self.torrents[infohash]
-        self.run_ui_task(self.ui.torrent_state_changed, infohash, t.state,
-                        t.completion, t.uptotal_old, t.downtotal_old, queuepos)
+        state = t.state
+        if state == RUN_QUEUED:
+            state = RUNNING
+        pos = None
+        if state in (KNOWN, RUNNING, QUEUED):
+            l = self._get_list(state)
+            if l[-1] != infohash:
+                pos = l.index(infohash)
+        self.run_ui_task(self.ui.torrent_state_changed, infohash, state,
+                        t.completion, t.uptotal_old, t.downtotal_old, pos)
 
-    def start_torrent(self, infohash):
-        self._check_version()
-        torrent = self.torrents.get(infohash)
-        if torrent is None:
-            return
-        if torrent.state != KNOWN:
-            return
-        self.other_torrents.remove(infohash)
-        torrent.state = QUEUED
-        self.queue.append(infohash)
-        self._check_queue()
-        self._dump_state()
-        if torrent.state == QUEUED:  # if RUNNING, sent already
-            self._send_state(infohash)
+    def _stop_running(self, infohash):
+        t = self.torrents[infohash]
+        if t.state == RUN_QUEUED:
+            self.running_torrents.remove(infohash)
+            t.state = KNOWN
+            return True
+        assert t.state == RUNNING
+        t.dl.shutdown()
+        if infohash == self.starting_torrent:
+            self.starting_torrent = None
+        try:
+            self.running_torrents.remove(infohash)
+        except ValueError:
+            self.other_torrents.remove(infohash)
+            return False
+        else:
+            t.state = KNOWN
+            totals = t.dl.get_total_transfer()
+            t.uptotal_old += totals[0]
+            t.uptotal = t.uptotal_old
+            t.downtotal_old += totals[1]
+            t.downtotal = t.downtotal_old
+            t.dl = None
+            t.completion = self.multitorrent.get_completion(self.config,
+                                               t.metainfo, t.dlpath)
+            return True
 
     def external_command(self, action, data):
         if action == 'start_torrent':
@@ -380,9 +474,8 @@ class TorrentQueue(Feedback):
         state = self.torrents[infohash].state
         if state == QUEUED:
             self.queue.remove(infohash)
-        elif state == RUNNING:
+        elif state in (RUNNING, RUN_QUEUED):
             self._stop_running(infohash)
-            self.other_torrents.remove(infohash)
             self._check_queue()
         else:
             self.other_torrents.remove(infohash)
@@ -406,10 +499,10 @@ class TorrentQueue(Feedback):
                                                    torrent.metainfo, dlpath)
         if torrent.state == ASKING_LOCATION:
             torrent.state = KNOWN
-            self.start_torrent(infohash)
+            self.change_torrent_state(infohash, KNOWN, QUEUED)
         else:
             self._send_state(infohash)
-        self._dump_state()
+            self._dump_state()
 
     def start_new_torrent(self, data):
         t = TorrentInfo()
@@ -449,10 +542,23 @@ class TorrentQueue(Feedback):
         t.metainfo.show_encoding_errors(show_error)
 
     def set_config(self, option, value):
+        if option not in self.config:
+            return
+        oldvalue = self.config[option]
         self.config[option] = value
-        self.multitorrent.set_option(option, value)
-        for infohash in list(self.running_torrents):
-            self.torrents[infohash].dl.set_option(option, value)
+        if option == 'pause':
+            if value and not oldvalue:
+                self.set_zero_running_torrents()
+            elif not value and oldvalue:
+                self._check_queue()
+        else:
+            self.multitorrent.set_option(option, value)
+            for infohash in list(self.running_torrents):
+                torrent = self.torrents[infohash]
+                if torrent.state == RUNNING:
+                    torrent.dl.set_option(option, value)
+                    if option in ('forwarded_port', 'maxport'):
+                        torrent.dl.change_port()
         self._dump_config()
 
     def request_status(self, infohash, want_spew, want_fileinfo):
@@ -464,7 +570,7 @@ class TorrentQueue(Feedback):
             now = time()
             uptotal = status['upTotal'] + torrent.uptotal_old
             downtotal = status['downTotal'] + torrent.downtotal_old
-            ulspeed = status['upRate']
+            ulspeed = status['upRate2']
             if self.queue:
                 ratio = self.config['next_torrent_ratio'] / 100
             else:
@@ -484,120 +590,92 @@ class TorrentQueue(Feedback):
             status['timeEst'] = rem
         self.run_ui_task(self.ui.update_status, infohash, status)
 
-    def unqueue_torrent(self, infohash):
+    def _get_list(self, state):
+        if state == KNOWN:
+            return self.other_torrents
+        elif state == QUEUED:
+            return self.queue
+        elif state in (RUNNING, RUN_QUEUED):
+            return self.running_torrents
+        assert False
+
+    def change_torrent_state(self, infohash, oldstate, newstate=None,
+                     pred=None, succ=None, replaced=None, force_running=False):
+        self._check_version()
         t = self.torrents.get(infohash)
-        if t is None or t.state != QUEUED:
+        if t is None or (t.state != oldstate and not (t.state == RUN_QUEUED and
+                                                      oldstate == RUNNING)):
             return
-        t.state = KNOWN
-        self.queue.remove(infohash)
-        self.other_torrents.append(infohash)
-        self._dump_state()
-        self._send_state(infohash)
-
-    def _stop_running(self, infohash):
-        t = self.torrents[infohash]
-        assert t.state == RUNNING
-        t.dl.shutdown()
-        if infohash == self.starting_torrent:
-            self.starting_torrent = None
-        try:
-            self.running_torrents.remove(infohash)
-        except ValueError:
-            return False
-        else:
-            t.state = KNOWN
-            totals = t.dl.get_total_transfer()
-            t.uptotal_old += totals[0]
-            t.uptotal = t.uptotal_old
-            t.downtotal_old += totals[1]
-            t.downtotal = t.downtotal_old
-            t.dl = None
-            t.completion = self.multitorrent.get_completion(self.config,
-                                               t.metainfo, t.dlpath)
-            self.other_torrents.append(infohash)
-            return True
-
-    def requeue_running_torrent(self, infohash):
-        # the > test only matters if max_running_torrents changes
-        if not (self.queue or len(self.running_torrents) >
-                self.config['max_running_torrents']):
-            return
-        t = self.torrents.get(infohash)
-        if t is None or t.state != RUNNING:
-            return
-        # if the torrent failed during shutdown, don't requeue now
-        if self._stop_running(infohash):
-            self.start_torrent(infohash)
-
-    def replace_running_torrent(self, infohash):
-        if len(self.running_torrents) < self.config['max_running_torrents']:
-            self.start_torrent(infohash)
-            return
-        if self.config['max_running_torrents'] != 1 or \
-               len(self.running_torrents) != 1:
-            return
-        torrent = self.torrents.get(infohash)
-        if torrent is None:
-            return
-        if torrent.state == KNOWN:
-            self.other_torrents.remove(infohash)
-        elif torrent.state == QUEUED:
-            self.queue.remove(infohash)
-        else:
-            return
-        self.queue.insert(0, infohash)
-        torrent.state = QUEUED
-        old = self.running_torrents[0]
-        if self._stop_running(old):
-            self._check_queue()
-            self.other_torrents.remove(old)
-            self.queue.insert(0, old)
-            self.torrents[old].state = QUEUED
-            self._send_state(old, 0)
+        if newstate is None:
+            newstate = oldstate
+        assert oldstate in (KNOWN, QUEUED, RUNNING)
+        assert newstate in (KNOWN, QUEUED, RUNNING)
+        pos = None
+        if oldstate != RUNNING and newstate == RUNNING and replaced is None:
+            if len(self.running_torrents) >= (force_running and self.config[
+               'max_running_torrents'] or self.config['def_running_torrents']):
+                newstate = QUEUED
+                pos = 0
+        l = self._get_list(newstate)
+        if newstate == oldstate:
+            origpos = l.index(infohash)
+            del l[origpos]
+            if pos is None:
+                pos = decode_position(l, pred, succ, -1)
+            if pos == -1 or l == origpos:
+                l.insert(origpos, infohash)
+                return
+            l.insert(pos, infohash)
             self._dump_state()
-
-    def stop_torrent(self, infohash):
-        t = self.torrents.get(infohash)
-        if t is None or t.state != RUNNING:
+            self.run_ui_task(self.ui.reorder_torrent, infohash, pos)
             return
-        if self._stop_running(infohash):
+        if pos is None:
+            pos = decode_position(l, pred, succ)
+        if newstate == RUNNING:
+            newstate = RUN_QUEUED
+            if replaced and len(self.running_torrents) >= \
+               self.config['def_running_torrents']:
+                t2 = self.torrents.get(replaced)
+                if t2 is None or t2.state not in (RUNNING, RUN_QUEUED):
+                    return
+                if self.running_torrents.index(replaced) < pos:
+                    pos -= 1
+                if self._stop_running(replaced):
+                    t2.state = QUEUED
+                    self.queue.insert(0, replaced)
+                    self._send_state(replaced)
+                else:
+                    self.other_torrents.append(replaced)
+        if oldstate == RUNNING:
+            if newstate == QUEUED and len(self.running_torrents) <= \
+                   self.config['def_running_torrents'] and pos == 0:
+                return
+            if not self._stop_running(infohash):
+                if newstate == KNOWN:
+                    self.other_torrents.insert(pos, infohash)
+                    self.run_ui_task(self.ui.reorder_torrent, infohash, pos)
+                else:
+                    self.other_torrents.append(infohash)
+                return
+        else:
+            self._get_list(oldstate).remove(infohash)
+        t.state = newstate
+        l.insert(pos, infohash)
+        self._check_queue()  # sends state if it starts the torrent from queue
+        if t.state != RUNNING or newstate == RUN_QUEUED:
             self._send_state(infohash)
-            self._check_queue()
-            self._dump_state()
-
-    def reorder_queue(self, neworder):
-        newqueue = []
-        for infohash in neworder:
-            t = self.torrents.get(infohash)
-            if t is None or t.state != QUEUED:
-                continue
-            newqueue.append(infohash)
-        for infohash in self.queue:
-            if infohash not in newqueue:
-                newqueue.append(infohash)
-        self.queue = newqueue
         self._dump_state()
-        self.run_ui_task(self.ui.update_queue, self.queue)
 
     def set_zero_running_torrents(self):
-        if self.saved_max_torrents is not None:
-            return
-        self.saved_max_torrents = self.config['max_running_torrents']
-        self.config['max_running_torrents'] = 0
+        newrun = []
         for infohash in list(self.running_torrents):
             t = self.torrents[infohash]
             if self._stop_running(infohash):
-                self.other_torrents.remove(infohash)
-                t.state = QUEUED
-                self.queue.insert(0, infohash)
-                self._send_state(infohash, 0)
-
-    def unset_zero_running_torrents(self):
-        if self.saved_max_torrents is None:
-            return
-        self.config['max_running_torrents'] = self.saved_max_torrents
-        self.saved_max_torrents = None
-        self._check_queue()
+                newrun.append(infohash)
+                t.state = RUN_QUEUED
+            else:
+                self.other_torrents.append(infohash)
+        self.running_torrents = newrun
 
     def check_completion(self, infohash, filelist=False):
         t = self.torrents.get(infohash)
@@ -615,14 +693,18 @@ class TorrentQueue(Feedback):
 
     # callbacks from torrent instances
 
-    def failed(self, torrent):
+    def failed(self, torrent, is_external):
         infohash = torrent.infohash
         if infohash == self.starting_torrent:
             self.starting_torrent = None
         self.running_torrents.remove(infohash)
         t = self.torrents[infohash]
         t.state = KNOWN
-        t.completion = None
+        if is_external:
+            t.completion = self.multitorrent.get_completion(
+                self.config, t.metainfo, t.dlpath)
+        else:
+            t.completion = None
         totals = t.dl.get_total_transfer()
         t.uptotal_old += totals[0]
         t.uptotal = t.uptotal_old
@@ -636,6 +718,16 @@ class TorrentQueue(Feedback):
             self._dump_state()
 
     def finished(self, torrent):
+        infohash = torrent.infohash
+        if infohash == self.starting_torrent:
+            t = self.torrents[infohash]
+            if self.queue:
+                ratio = self.config['next_torrent_ratio'] / 100
+            else:
+                ratio = self.config['last_torrent_ratio'] / 100
+            if ratio and t.uptotal >= t.downtotal * ratio:
+                raise BTShutdown("Not starting torrent as it already meets "
+                               "the current settings for when to stop seeding")
         self.torrents[torrent.infohash].finishtime = time()
 
     def started(self, torrent):
@@ -667,6 +759,6 @@ def _makemethod(methodname):
         self.wrapped.rawserver.external_add_task(f, 0)
     return wrapper
 
-for methodname in "request_status set_config start_torrent start_new_torrent stop_torrent unqueue_torrent remove_torrent set_save_location requeue_running_torrent replace_running_torrent reorder_queue set_zero_running_torrents unset_zero_running_torrents check_completion".split():
+for methodname in "request_status set_config start_new_torrent remove_torrent set_save_location change_torrent_state check_completion".split():
     setattr(ThreadWrappedQueue, methodname, _makemethod(methodname))
 del _makemethod, methodname

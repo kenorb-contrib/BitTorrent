@@ -1,12 +1,15 @@
-# The contents of this file are subject to the BitTorrent Open Source License
-# Version 1.0 (the License).  You may not copy or use this file, in either
-# source code or executable form, except in compliance with the License.  You
-# may obtain a copy of the License at http://www.bittorrent.com/license/.
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-# Software distributed under the License is distributed on an AS IS basis,
-# WITHOUT WARRANTY OF ANY KIND, either express or implied.  See the License
-# for the specific language governing rights and limitations under the
-# License.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 # Written by Bram Cohen
 
@@ -18,7 +21,7 @@ from cStringIO import StringIO
 from traceback import print_exc
 from errno import EWOULDBLOCK, ENOBUFS
 from time import time, sleep
-from BitTorrent import CRITICAL
+from BitTorrent import CRITICAL, FAQ_URL
 
 try:
     from select import poll, error, POLLIN, POLLOUT, POLLERR, POLLHUP
@@ -33,7 +36,7 @@ all = POLLIN | POLLOUT
 
 class SingleSocket(object):
 
-    def __init__(self, raw_server, sock, handler, context, ip = None):
+    def __init__(self, raw_server, sock, handler, context, ip=None):
         self.raw_server = raw_server
         self.socket = sock
         self.handler = handler
@@ -62,6 +65,7 @@ class SingleSocket(object):
         self.buffer = []
         del self.raw_server.single_sockets[self.fileno]
         self.raw_server.poll.unregister(sock)
+        self.handler = None
         sock.close()
 
     def shutdown(self, val):
@@ -102,8 +106,8 @@ def default_error_handler(x, y):
 
 class RawServer(object):
 
-    def __init__(self, doneflag, timeout_check_interval, timeout, noisy = True,
-            errorfunc = default_error_handler, bindaddr = '', tos = 0):
+    def __init__(self, doneflag, timeout_check_interval, timeout, noisy=True,
+            errorfunc=default_error_handler, bindaddr='', tos=0):
         self.timeout_check_interval = timeout_check_interval
         self.timeout = timeout
         self.bindaddr = bindaddr
@@ -139,11 +143,11 @@ class RawServer(object):
         del self.live_contexts[context]
         self.funcs = [x for x in self.funcs if x[2] != context]
 
-    def add_task(self, func, delay, context = None):
+    def add_task(self, func, delay, context=None):
         if context in self.live_contexts:
             insort(self.funcs, (time() + delay, func, context))
 
-    def external_add_task(self, func, delay, context = None):
+    def external_add_task(self, func, delay, context=None):
         self.externally_added_tasks.append((func, delay, context))
         # Wake up the RawServer thread in case it's sleeping in poll()
         if self.wakeupfds[1] is not None:
@@ -162,7 +166,7 @@ class RawServer(object):
 
     def create_serversocket(port, bind='', reuse=False, tos=0):
         server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        if reuse:
+        if reuse and os.name != 'nt':
             server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         server.setblocking(0)
         if tos != 0:
@@ -175,7 +179,7 @@ class RawServer(object):
         return server
     create_serversocket = staticmethod(create_serversocket)
 
-    def start_listening(self, serversocket, handler, context = None):
+    def start_listening(self, serversocket, handler, context=None):
         self.listening_handlers[serversocket.fileno()] = (handler, context)
         self.serversockets[serversocket.fileno()] = serversocket
         self.poll.register(serversocket, POLLIN)
@@ -185,8 +189,7 @@ class RawServer(object):
         del self.serversockets[serversocket.fileno()]
         self.poll.unregister(serversocket)
 
-    def start_connection(self, dns, handler = None, context = None,
-                         do_bind = True):
+    def start_connection(self, dns, handler=None, context=None, do_bind=True):
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.setblocking(0)
         if do_bind and self.bindaddr:
@@ -209,7 +212,7 @@ class RawServer(object):
         self.single_sockets[sock.fileno()] = s
         return s
 
-    def wrap_socket(self, sock, handler, context = None, ip = None):
+    def wrap_socket(self, sock, handler, context=None, ip=None):
         sock.setblocking(0)
         self.poll.register(sock, POLLIN)
         s = SingleSocket(self, sock, handler, context, ip)
@@ -233,7 +236,7 @@ class RawServer(object):
                         self.single_sockets[newsock.fileno()] = nss
                         self.poll.register(newsock, POLLIN)
                         self._make_wrapped_call(handler. \
-                           external_connection_made, (nss,), context = context)
+                           external_connection_made, (nss,), context=context)
                     except socket.error:
                         sleep(1)
             else:
@@ -288,7 +291,7 @@ class RawServer(object):
                     return
                 while len(self.funcs) > 0 and self.funcs[0][0] <= time():
                     garbage, func, context = self.funcs.pop(0)
-                    self._make_wrapped_call(func, (), context = context)
+                    self._make_wrapped_call(func, (), context=context)
                 self._close_dead()
                 self._handle_events(events)
                 if self.doneflag.isSet():
@@ -309,17 +312,18 @@ class RawServer(object):
                         code = ENOBUFS
                 if code == ENOBUFS:
                     self.errorfunc(CRITICAL, "Have to exit due to the TCP "
-                                   "stack flaking out")
+                                   "stack flaking out. "
+                                   "Please see the FAQ at %s"%FAQ_URL)
                     return
             except KeyboardInterrupt:
                 print_exc()
                 return
             except:
                 data = StringIO()
-                print_exc(file = data)
+                print_exc(file=data)
                 self.errorfunc(CRITICAL, data.getvalue())
 
-    def _make_wrapped_call(self, function, args, socket = None, context=None):
+    def _make_wrapped_call(self, function, args, socket=None, context=None):
         try:
             function(*args)
         except KeyboardInterrupt:
@@ -333,7 +337,7 @@ class RawServer(object):
                 context = socket.context
             if self.noisy and context is None:
                 data = StringIO()
-                print_exc(file = data)
+                print_exc(file=data)
                 self.errorfunc(CRITICAL, data.getvalue())
             if context is not None:
                 context.got_exception(e)
@@ -353,3 +357,4 @@ class RawServer(object):
         del self.single_sockets[sock]
         s.socket = None
         self._make_wrapped_call(s.handler.connection_lost, (s,), s)
+        s.handler = None

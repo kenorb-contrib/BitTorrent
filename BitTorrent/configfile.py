@@ -1,12 +1,15 @@
-# The contents of this file are subject to the BitTorrent Open Source License
-# Version 1.0 (the License).  You may not copy or use this file, in either
-# source code or executable form, except in compliance with the License.  You
-# may obtain a copy of the License at http://www.bittorrent.com/license/.
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-# Software distributed under the License is distributed on an AS IS basis,
-# WITHOUT WARRANTY OF ANY KIND, either express or implied.  See the License
-# for the specific language governing rights and limitations under the
-# License.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 # Written by Uoti Urpala
 
@@ -21,22 +24,10 @@ except ImportError:
 from BitTorrent import parseargs
 from BitTorrent import ERROR
 from BitTorrent import version
+from __init__ import get_config_dir
 
 def get_config(defaults, section):
-    def check_sysvars(x):
-        y = os.path.expandvars(x)
-        if y != x and os.path.isdir(y):
-            return y
-        return None
-
-    for d in ['${APPDATA}', '${HOME}', '${HOMEPATH}', '${USERPROFILE}']:
-        dir_root = check_sysvars(d)
-        if dir_root is not None:
-            break
-    else:
-        dir_root = os.path.expanduser('~')
-        if dir_root == '~' or not os.path.isdir(dir_root):
-            dir_root = None
+    dir_root = get_config_dir()
 
     if dir_root is None:
         return {}

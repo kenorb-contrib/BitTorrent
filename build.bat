@@ -1,11 +1,15 @@
-rem The contents of this file are subject to the BitTorrent Open Source Licenserem Version 1.0 (the License).  You may not copy or use this file, in either
-rem source code or executable form, except in compliance with the License.  You
-rem may obtain a copy of the License at http://www.bittorrent.com/license/.
+rem This program is free software: you can redistribute it and/or modify
+rem it under the terms of the GNU General Public License as published by
+rem the Free Software Foundation, either version 3 of the License, or
+rem (at your option) any later version.
 rem
-rem Software distributed under the License is distributed on an AS IS basis,
-rem WITHOUT WARRANTY OF ANY KIND, either express or implied.  See the License
-rem for the specific language governing rights and limitations under the
-rem License.
+rem This program is distributed in the hope that it will be useful,
+rem but WITHOUT ANY WARRANTY; without even the implied warranty of
+rem MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+rem GNU General Public License for more details.
+rem
+rem You should have received a copy of the GNU General Public License
+rem along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
 del /F /S /Q build dist 

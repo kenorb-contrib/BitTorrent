@@ -1,12 +1,15 @@
-# The contents of this file are subject to the BitTorrent Open Source License
-# Version 1.0 (the License).  You may not copy or use this file, in either
-# source code or executable form, except in compliance with the License.  You
-# may obtain a copy of the License at http://www.bittorrent.com/license/.
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-# Software distributed under the License is distributed on an AS IS basis,
-# WITHOUT WARRANTY OF ANY KIND, either express or implied.  See the License
-# for the specific language governing rights and limitations under the
-# License.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 # Written by Bram Cohen
 
@@ -14,11 +17,11 @@ import re
 
 from BitTorrent import BTFailure
 
-reg = re.compile(r'^[^/\\.~][^/\\]*$')
+allowed_path_re = re.compile(r'^[^/\\.~][^/\\]*$')
 
 ints = (long, int)
 
-def check_info(info):
+def check_info(info, check_paths=True):
     if type(info) != dict:
         raise BTFailure, 'bad metainfo - not a dictionary'
     pieces = info.get('pieces')
@@ -30,7 +33,7 @@ def check_info(info):
     name = info.get('name')
     if type(name) != str:
         raise BTFailure, 'bad metainfo - bad name'
-    if not reg.match(name):
+    if not allowed_path_re.match(name):
         raise BTFailure, 'name %s disallowed for security reasons' % name
     if info.has_key('files') == info.has_key('length'):
         raise BTFailure, 'single/multiple file mix'
@@ -54,7 +57,7 @@ def check_info(info):
             for p in path:
                 if type(p) != str:
                     raise BTFailure, 'bad metainfo - bad path dir'
-                if not reg.match(p):
+                if check_paths and not allowed_path_re.match(p):
                     raise BTFailure, 'path %s disallowed for security reasons' % p
         f = ['/'.join(x['path']) for x in files]
         f.sort()
@@ -73,10 +76,10 @@ def check_info(info):
         except StopIteration:
             pass
 
-def check_message(message):
+def check_message(message, check_paths=True):
     if type(message) != dict:
         raise BTFailure, 'bad metainfo - wrong object type'
-    check_info(message.get('info'))
+    check_info(message.get('info'), check_paths)
     if type(message.get('announce')) != str:
         raise BTFailure, 'bad metainfo - no announce URL string'
 
