@@ -168,7 +168,9 @@ class Encrypter:
         self.connections[connection] = EncryptedConnection(self, connection, None)
 
     def connection_flushed(self, connection):
-        self.connecter.connection_flushed(self.connections[connection])
+        c = self.connections[connection]
+        if c.complete:
+            self.connecter.connection_flushed(c)
 
     def connection_lost(self, connection):
         ec = self.connections[connection]
