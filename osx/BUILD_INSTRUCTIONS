@@ -17,19 +17,7 @@ Build Instructions For OSX
 ----------------
 HACKING GUIDE
 
-The thing that makes BT-OSX not so straightforward is on the Mac
-you don't create a whole new instance of the app for each download.
-That means each download runs in it's own thread.  BT uses callbacks
-for display updating, which is all well and good, but you con't
-reliably draw from any thread but the main thread in Cocoa or your
-app will crash.  So what we do is use NSConnection so messages sent
-from a DL thread to it's DL window are posted on the main thread
-on the next turn of the main event loop.  This complicates setting up
-the DL but once things are setup communication between the python
-threads and the DL window controller is a simple ObjC message send
-(transparently packed up, sent over a Mach port, unpacked, dispatched
-on the main event loop, and value returned in the originating thread
-if necesary.)
+The thing that makes BT-OSX not so straightforward is on the Mac you don't create a whole new instance of the app for each download (DL).  That means each DL runs in it's own thread.  BT uses callbacks for display updates but in Cocoa you con't reliably draw from any thread but the main thread or your app will crash.  So what we do is use an  NSConnection so messages sent from a DL thread to it's DL window are posted in the main thread on the next turn of the main event loop.  This complicates setting up the DL but once things are setup communication between the python threads and the DL window controller is a simple ObjC message send.  Basically, a pair of mach ports is created and the DL window is registered in the main thread's connection.  Then the ports are passed into the DL thread and the DL thread gets a proxy to the DL window.  When the DL thread messages it's window, NSConnection transparently packs up, send over a Mach port, unpacks, and dispatches the message on the main event loop with the return value sent to the originating thread if necesary.
 
 components:
 
