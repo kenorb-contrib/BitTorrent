@@ -64,7 +64,7 @@ class DownloadInfoFrame:
         self.aboutText = wxStaticText(panel, -1, 'about', style = wxALIGN_RIGHT)
         self.aboutText.SetForegroundColour('Blue')
         self.aboutText.SetFont(wxFont(14, wxNORMAL, wxNORMAL, wxNORMAL, true))
-        fnsizer.Add(self.aboutText, 1, wxEXPAND)
+        fnsizer.Add(self.aboutText, 0, wxEXPAND)
         colSizer.Add(fnsizer, 0, wxEXPAND)
 
         self.gauge = wxGauge(panel, -1, range = 1000, style = wxGA_SMOOTH)
