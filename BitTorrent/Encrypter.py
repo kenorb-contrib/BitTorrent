@@ -49,58 +49,102 @@ class EncryptedConnection:
 
     def read_header_len(self, s):
         if ord(s) != len(protocol_name):
-            return None, None
+            return None
         return len(protocol_name), self.read_header
 
     def read_header(self, s):
         if s != protocol_name:
-            return None, None
-        return 8, self.read_reserved
-
-    def read_reserved(self, s):
-        return 276, self.read_crypto
+            return None
+        return 284, self.read_crypto
 
     def read_crypto(self, s):
+        otherres = s[:8]
+        self.otherres = otherres
+        s = s[8:]
         otherpk = binary_to_int(s[:256])
         if otherpk >= p - 1 or otherpk <= 1:
-            return None, None
+            return None
         if s[:256] == self.encrypter.public_key:
-            return None, None
+            return None
         self.id = sha(s[:256]).digest()
         shared_key = int_to_binary(pow(otherpk, self.encrypter.private_key, p), 256)
+        self.shared_key = shared_key
         othernonce = s[256:]
+        self.othernonce = othernonce
         if othernonce == self.nonce:
-            return None, None
-        self.encrypt = make_encrypter(sha(self.nonce + othernonce + shared_key).digest()[:16])
-        self.decrypt = make_encrypter(sha(othernonce + self.nonce + shared_key).digest()[:16])
-        self.connection.write(self.encrypt(chr(0) * 16))
-        return 16, self.read_auth
+            return None
+        self.encrypt = make_encrypter(sha(chr(len(protocol_name)) + 
+            protocol_name + chr(0) * 8 + otherres + self.nonce + 
+            othernonce + shared_key).digest()[:16])
+        self.decrypt = make_encrypter(sha(chr(len(protocol_name)) + 
+            protocol_name + otherres + chr(0) * 8 + othernonce + 
+            self.nonce + shared_key).digest()[:16])
+        self.connection.write(self.encrypt(chr(0) * 18))
+        return 10, self.read_auth
 
     def read_auth(self, s):
-        if self.decrypt(s) != chr(0) * 16:
-            return None, None
+        if self.decrypt(s) != chr(0) * 10:
+            return None
+        return 8, self.read_reserved2
+
+    def read_reserved2(self, s):
+        reserved2 = self.decrypt(s)
+        self.hashout = sha()
+        self.hashin = sha()
+        self.hashout.update(chr(len(protocol_name)) + protocol_name + 
+            chr(0) * 8 + self.otherres + chr(0) * 8 + reserved2 + 
+            self.encrypter.download_id + self.nonce + self.othernonce + 
+            self.shared_key)
+        self.hashin.update(chr(len(protocol_name)) + protocol_name + 
+            self.otherres + chr(0) * 8 + reserved2 + chr(0) * 8 +
+            self.encrypter.download_id + self.othernonce + self.nonce + 
+            self.shared_key)
+        self.connection.write(self.encrypt(self.hashout.digest()[:10]))
+        return 10, self.read_first_hash
+
+    def read_first_hash(self, s):
+        if self.decrypt(s) != self.hashin.digest()[:10]:
+            return None
+        self.hashout.update(chr(0) * 8)
+        self.connection.write(self.encrypt(chr(0) * 8))
+        self.connection.write(self.encrypt(self.hashout.digest()[:10]))
+        return 18, self.read_reserved3
+
+    def read_reserved3(self, s):
+        s = self.decrypt(s)
+        self.hashin.update(s[:8])
+        if self.hashin.digest()[:10] != s[8:]:
+            return None
         self.complete = true
         if self.dns is not None:
             self.encrypter.connecter.locally_initiated_connection_completed(self)
-        return 4, self.read_len
+        return 14, self.read_len
 
     def read_len(self, s):
-        l = binary_to_int(self.decrypt(s))
+        s = self.decrypt(s)
+        l = binary_to_int(s[:4])
         if l > self.encrypter.max_len:
-            return None, None
+            return None
+        self.hashin.update(s[:4])
+        if self.hashin.digest()[:10] != s[4:]:
+            return None
         if l == 0:
-            return 4, self.read_len
-        return l, self.read_message
+            return 14, self.read_len
+        return l + 10, self.read_message
 
     def read_message(self, s):
-        m = self.decrypt(s)
+        s = self.decrypt(s)
+        m = s[:-10]
+        self.hashin.update(m)
+        if self.hashin.digest()[:10] != s[-10:]:
+            return None
         try:
             self.encrypter.connecter.got_message(self, m)
         except KeyboardInterrupt:
             raise
         except:
             print_exc()
-        return 4, self.read_len
+        return 14, self.read_len
 
     def close(self):
         self.closed = true
@@ -121,23 +165,29 @@ class EncryptedConnection:
         return self.dns != None
 
     def send_message(self, message):
-        self.connection.write(self.encrypt(int_to_binary(len(message), 4)))
+        l = int_to_binary(len(message), 4)
+        self.hashout.update(l)
+        self.connection.write(self.encrypt(l + self.hashout.digest()[:10]))
+        self.hashout.update(message)
         self.connection.write(self.encrypt(message))
-        
+        self.connection.write(self.encrypt(self.hashout.digest()[:10]))
+
     def data_came_in(self, s):
         i = self.next_len - self.buffer.tell()
         if i > len(s):
             self.buffer.write(s)
             return 1
         self.buffer.write(s[:i])
-        self.next_len, self.next_func = self.next_func(self.buffer.getvalue())
-        if self.next_func is None or self.closed:
+        x = self.next_func(self.buffer.getvalue())
+        if x is None or self.closed:
             return 0
+        self.next_len, self.next_func = x
         while self.next_len + i <= len(s):
             n = i + self.next_len
-            self.next_len, self.next_func = self.next_func(s[i:n])
-            if self.next_func is None or self.closed:
+            x = self.next_func(s[i:n])
+            if x is None or self.closed:
                 return 0
+            self.next_len, self.next_func = x
             i = n
         self.buffer.reset()
         self.buffer.truncate()
@@ -146,13 +196,14 @@ class EncryptedConnection:
 
 class Encrypter:
     def __init__(self, connecter, raw_server, noncefunc, private_key, max_len,
-            schedulefunc, keepalive_delay):
+            schedulefunc, keepalive_delay, download_id = chr(0) * 20):
         self.raw_server = raw_server
         self.connecter = connecter
         self.noncefunc = noncefunc
         self.max_len = max_len
         self.schedulefunc = schedulefunc
         self.keepalive_delay = keepalive_delay
+        self.download_id = download_id
         self.connections = {}
         assert len(private_key) == 20
         self.private_key = binary_to_int(private_key)

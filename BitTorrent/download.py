@@ -18,6 +18,7 @@ from entropy import entropy
 from readput import putqueue
 from bencode import bencode, bdecode
 from btemplate import compile_template, string_template, ListMarker, OptionMarker, exact_length
+from sha import sha
 from os import path, makedirs
 from parseargs import parseargs, formatDefinitions
 from socket import error as socketerror
@@ -187,7 +188,7 @@ def download(params, filefunc, statusfunc, resultfunc, doneflag, cols):
     seed(entropy(20))
     encrypter = Encrypter(connecter, rawserver, lambda e = entropy: e(20),
         entropy(20), config['max_message_length'], rawserver.add_task, 
-        config['keepalive_interval'])
+        config['keepalive_interval'], sha(bencode(info)).digest())
     DownloaderFeedback(choker, rawserver.add_task, 
         response['your ip'], statusfunc, 
         config['max_rate_recalculate_interval'], ratemeasure.get_time_left, 
