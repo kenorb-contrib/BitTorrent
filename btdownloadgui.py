@@ -57,15 +57,32 @@ PORT_RANGE = 5
 defconfig = dict([(name, value) for (name, value, doc) in defaults])
 del name, value, doc
 
-ui_options = 'max_upload_rate minport maxport '\
-             'next_torrent_time next_torrent_ratio '\
-             'last_torrent_ratio '\
-             'ask_for_save save_in ip start_torrent_behavior '\
-             'close_with_rst '\
-             'min_uploads max_uploads max_initiate '\
-             'max_allow_in max_files_open display_interval '\
-             'pause donated notified'.split()
-advanced_ui_options_index = 11
+ui_options = [
+    'max_upload_rate'       ,
+    'minport'               ,
+    'maxport'               ,
+    'next_torrent_time'     ,
+    'next_torrent_ratio'    ,
+    'last_torrent_ratio'    ,
+    'ask_for_save'          ,
+    'save_in'               ,
+    'ip'                    ,
+    'start_torrent_behavior',
+    'chop_max_allow_in'     ,
+    ]
+advanced_ui_options_index = len(ui_options)
+ui_options.extend([
+    'min_uploads'     ,
+    'max_uploads'     ,
+    'max_initiate'    ,
+    'max_allow_in'    ,
+    'max_files_open'  ,
+    'display_interval',
+    'pause'           ,
+    'donated'         ,
+    'notified'        ,
+    ])
+
 
 if is_frozen_exe:
     ui_options.append('progressbar_hack')
@@ -695,8 +712,9 @@ class SettingsWindow(object):
         self.downloading_box.pack_start(self.next_torrent_frame, expand=False, fill=False)
 
         self.last_torrent_frame = gtk.Frame('Seed last completed torrent:')
+        self.last_torrent_vbox = gtk.VBox(spacing=SPACING)
+        self.last_torrent_vbox.set_border_width(SPACING)
         self.last_torrent_box = gtk.HBox()
-        self.last_torrent_box.set_border_width(SPACING)
         self.last_torrent_box.pack_start(gtk.Label('until share ratio reaches '),
                                          expand=False, fill=False)
         self.last_torrent_ratio_field = PercentValidator('last_torrent_ratio',
@@ -705,8 +723,12 @@ class SettingsWindow(object):
                                          fill=False, expand=False)
         self.last_torrent_box.pack_start(gtk.Label(' percent.'),
                                          fill=False, expand=False)
-        self.last_torrent_frame.add(self.last_torrent_box)
+        self.last_torrent_vbox.pack_start(self.last_torrent_box)
+        
+        self.last_torrent_frame.add(self.last_torrent_vbox)
         self.downloading_box.pack_start(self.last_torrent_frame, expand=False, fill=False)
+        self.downloading_box.pack_start(lalign(gtk.Label('"0 percent" means seed forever.')))
+
         # end Downloading tab
         
 
@@ -743,12 +765,12 @@ class SettingsWindow(object):
 
         if is_frozen_exe: 
             self.reset_checkbox = gtk.CheckButton("Potential Windows TCP stack fix")
-            self.reset_checkbox.set_active( bool(self.config['close_with_rst']) )
+            self.reset_checkbox.set_active( bool(self.config['chop_max_allow_in']) )
             self.network_box.pack_start(self.reset_checkbox, expand=False, fill=False)
 
             def toggle_reset(w):
-                self.config['close_with_rst'] = int(not self.config['close_with_rst'])
-                self.setfunc('close_with_rst', self.config['close_with_rst'])
+                self.config['chop_max_allow_in'] = int(not self.config['chop_max_allow_in'])
+                self.setfunc('chop_max_allow_in', self.config['chop_max_allow_in'])
             self.reset_checkbox.connect('toggled', toggle_reset)
         
         # end Network tab        
@@ -2486,10 +2508,6 @@ class DownloadInfoFrame(object):
             pane_position = min(MAX_WINDOW_HEIGHT//2, pane_position)
             self.paned.set_position(pane_position)
 
-    def show_known(self):
-        if self.paned.get_position() == 0:
-            self.split_pane()
-
     def toggle_known(self, widget=None):
         self.split_pane()
 
@@ -2796,9 +2814,6 @@ class DownloadInfoFrame(object):
         name = self.torrents[infohash].metainfo.name
         err_str = '"%s" : %s'%(name,text)
         err_str = err_str.decode('utf-8', 'replace').encode('utf-8')
-        if self.torrents[infohash].state == KNOWN:
-            err_str += ' (Check the list of known torrents.)'
-            self.show_known()            
         if severity >= ERROR:
             self.error_modal(err_str)
         self.log_text(err_str, severity)

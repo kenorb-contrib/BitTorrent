@@ -511,9 +511,23 @@ class TorrentQueue(Feedback):
             return
         infohash = t.metainfo.infohash
         if infohash in self.torrents:
-            self.error(t.metainfo, ERROR, "A torrent with the same contents "
-                       "(infohash) is already open. Cannot start another.")
+            real_state = self.torrents[infohash].state
+            if real_state in (RUNNING, RUN_QUEUED):
+                self.error(t.metainfo, ERROR,
+                           "This torrent (or one with the same contents) is "
+                           "already running.")
+            elif real_state == QUEUED:
+                self.error(t.metainfo, ERROR,
+                           "This torrent (or one with the same contents) is "
+                           "already waiting to run.")
+            elif real_state == ASKING_LOCATION:
+                pass
+            elif real_state == KNOWN:
+                self.change_torrent_state(infohash, KNOWN, newstate=QUEUED)
+            else:
+                raise BTFailure("Torrent in unknown state %d" % real_state)
             return
+
         path = os.path.join(self.config['data_dir'], 'metainfo',
                             infohash.encode('hex'))
         try:
@@ -727,11 +741,16 @@ class TorrentQueue(Feedback):
             t = self.torrents[infohash]
             if self.queue:
                 ratio = self.config['next_torrent_ratio'] / 100
+                msg = "Not starting torrent as there are other torrents "\
+                      "waiting to run, and this one already meets the "\
+                      "settings for when to stop seeding."
             else:
                 ratio = self.config['last_torrent_ratio'] / 100
+                msg = "Not starting torrent as it already meets the settings "\
+                      "for when to stop seeding the last completed torrent."
+
             if ratio and t.uptotal >= t.downtotal * ratio:
-                raise BTShutdown("Not starting torrent as it already meets "
-                               "the current settings for when to stop seeding")
+                raise BTShutdown(msg)
         self.torrents[torrent.infohash].finishtime = bttime()
 
     def started(self, torrent):

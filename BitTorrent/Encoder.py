@@ -13,7 +13,7 @@
 from socket import error as socketerror
 
 from BitTorrent.Connecter import Connection
-from BitTorrent import BTFailure
+from BitTorrent import BTFailure, is_frozen_exe
 
 
 # header, reserved, download id, my id, [length, message]
@@ -98,6 +98,12 @@ class Encoder(object):
         if con.ip in self.banned:
             return
         m = self.config['max_allow_in']
+        if is_frozen_exe:
+            # chop max_allow_in to 55 to maybe prevent TCP stack flaking
+            m = min(m, 55)
+            if self.config['chop_max_allow_in']:
+                # chop max_allow_in to 30 to more aggressively prevent TCP stack flaking
+                m = min(m, 30)
         if m and len(self.connections) >= m:
             return
         self.connections[con.connection] = con

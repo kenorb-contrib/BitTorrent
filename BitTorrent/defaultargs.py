@@ -82,7 +82,9 @@ rare_options = [
     ('tracker_proxy', '',
      'address of HTTP proxy to use for tracker connections'),
     ('close_with_rst', 0,
-     'close connections with RST and avoid the TCP TIME_WAIT state'),
+     'close connections with RST and avoid the TCP TIME_WAIT state (attempt to fix TCP stack problems under Win32)'),
+    ('chop_max_allow_in', 0,
+     'force max_allow_in to stay below 30 on Win32'),
     ]
 
 def get_defaults(ui):

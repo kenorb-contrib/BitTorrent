@@ -10,7 +10,7 @@
 
 # Written by Bram Cohen and Matt Chisholm
 
-!define VERSION "4.0.1"
+!define VERSION "4.0.2"
 !define APPNAME "BitTorrent"
 Outfile ${APPNAME}-${VERSION}.exe
 Name "${APPNAME}"
@@ -190,6 +190,7 @@ Section "Install"
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APPNAME}" "UninstallString" '"$INSTDIR\uninstall.exe"'
 
   ; Add items to start menu
+  SetShellVarContext all
   CreateDirectory "$SMPROGRAMS\${APPNAME}"
   CreateShortCut "$SMPROGRAMS\${APPNAME}\Downloader.lnk"   "$INSTDIR\btdownloadgui.exe"
   CreateShortCut "$SMPROGRAMS\${APPNAME}\Make Torrent.lnk" "$INSTDIR\btmaketorrentgui.exe"
@@ -209,5 +210,6 @@ Section "Uninstall"
   DeleteRegKey HKCR bittorrent
   DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APPNAME}"
   RMDir /r "$INSTDIR"
+  SetShellVarContext all
   RMDir /r "$SMPROGRAMS\${APPNAME}"
 SectionEnd

@@ -1,4 +1,4 @@
-Before installing BitTorrent 4.0.1, remove any older versions of the
+Before installing BitTorrent 4.0.2, remove any older versions of the
 BitTorrent client that may be installed.
 
 Most of the following instructions require root privileges.
@@ -49,15 +49,15 @@ apt-get remove bittorrent bittorrent-gui
 
 python setup.py bdist_dumb
 cd dist/
-alien BitTorrent-4.0.1.linux-i686.tar.gz
+alien BitTorrent-4.0.2.linux-i686.tar.gz
 
-you should now have a .deb package in: bittorrent-4.0.1.linux_i686-2_all.deb
+you should now have a .deb package in: bittorrent-4.0.2.linux_i686-2_all.deb
 
 then install the .deb
-dpkg -i bittorrent-4.0.1.linux_i686-2_all.deb
+dpkg -i bittorrent-4.0.2.linux_i686-2_all.deb
 
 
 How to build an .rpm format package and install it:
 ----------------------------------------
 python setup.py bdist_rpm
-rpm -i dist/BitTorrent-4.0.1-1.noarch.rpm 
+rpm -i dist/BitTorrent-4.0.2-1.noarch.rpm 

@@ -418,6 +418,18 @@ else:
                                                  fill=False)
                 self.convert_button_box.show_all()
                 self.set_extra_widget(self.convert_button_box)
+            elif action == gtk.FILE_CHOOSER_ACTION_OPEN:
+                self.all_filter = gtk.FileFilter()
+                self.all_filter.add_pattern('*')
+                self.all_filter.set_name('All Files')
+                self.add_filter(self.all_filter)
+                self.torrent_filter = gtk.FileFilter()
+                self.torrent_filter.add_pattern('*.torrent')
+                self.torrent_filter.add_mime_type('application/x-bittorrent')
+                self.torrent_filter.set_name('Torrents')
+                self.add_filter(self.torrent_filter)
+                self.set_filter(self.torrent_filter)
+
             self.main = main
             self.set_modal(gtk.TRUE)
             self.set_destroy_with_parent(gtk.TRUE)
@@ -525,6 +537,7 @@ else:
             self.convert_button_box.show_all()
             self.set_extra_widget(self.convert_button_box)
             self.reset_by_action()
+            self.set_filter(self.all_filter)
 
 
         def change_action(self, widget):

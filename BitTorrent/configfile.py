@@ -18,10 +18,50 @@ try:
 except ImportError:
     from ConfigParser import ConfigParser as RawConfigParser
 
+from ConfigParser import MissingSectionHeaderError, ParsingError
+
 from BitTorrent import parseargs
 from BitTorrent import ERROR
 from BitTorrent import version
 from __init__ import get_config_dir
+
+
+def _read_config(filename):
+    # check for bad config files (Windows corrupts them all the time)
+    p = RawConfigParser()
+    fp = None
+    try:
+        fp = open(filename)
+    except IOError:
+        pass
+
+    if fp is not None:
+        try:
+            p.readfp(fp, filename=filename)
+        except MissingSectionHeaderError:
+            fp.close()
+            del fp
+            bad_config(filename)
+        except ParsingError:
+            fp.close()
+            del fp
+            bad_config(filename)
+        else:
+            fp.close()
+    return p
+
+
+def bad_config(filename):
+    base_bad_filename = filename + '.broken'
+    bad_filename = base_bad_filename
+    i = 0
+    while os.access(bad_filename, os.F_OK):
+        bad_filename = base_bad_filename + str(i)
+        i+=1
+    os.rename(filename, bad_filename)
+    sys.stderr.write(("Error reading config file. "
+                      "Old config file stored in \"%s\"") % bad_filename)
+
 
 def get_config(defaults, section):
     dir_root = get_config_dir()
@@ -40,8 +80,7 @@ def get_config(defaults, section):
         except:
             pass
 
-    p = RawConfigParser()
-    p.read(os.path.join(configdir, 'config'))
+    p = _read_config(os.path.join(configdir, 'config'))
     values = {}
     if p.has_section(section):
         for name, value in p.items(section):
@@ -60,9 +99,8 @@ def get_config(defaults, section):
 
 
 def save_ui_config(defaults, section, save_options, error_callback):
-    p = RawConfigParser()
     filename = os.path.join(defaults['data_dir'], 'ui_config')
-    p.read(filename)
+    p = _read_config(filename)
     p.remove_section(section)
     p.add_section(section)
     for name in save_options:
@@ -97,9 +135,8 @@ def parse_configuration_and_args(defaults, uiname, arglist=[], minargs=0,
     datadir = config['data_dir']
     if datadir:
         if uiname in ('btdownloadgui', 'btmaketorrentgui'):
-            p = RawConfigParser()
             values = {}
-            p.read(os.path.join(datadir, 'ui_config'))
+            p = _read_config(os.path.join(datadir, 'ui_config'))
             if p.has_section(uiname):
                 for name, value in p.items(uiname):
                     if name in defconfig:
