@@ -58,7 +58,6 @@
 		1058C7A0FEA54F0111CA2CBB = {
 			children = (
 				1058C7A1FEA54F0111CA2CBB,
-				F55ADF7A02F3401201A845D2,
 				F5A3C5D002F3DA9B01A845D2,
 			);
 			isa = PBXGroup;
@@ -214,6 +213,7 @@
 		29B97323FDCFA39411CA2CEA = {
 			children = (
 				1058C7A0FEA54F0111CA2CBB,
+				73DE3209052F4A3900949C8F,
 				1058C7A2FEA54F0111CA2CBB,
 			);
 			isa = PBXGroup;
@@ -244,7 +244,7 @@
 			buildSettings = {
 				FRAMEWORK_SEARCH_PATHS = "";
 				HEADER_SEARCH_PATHS = /usr/local/include/;
-				LIBRARY_SEARCH_PATHS = /usr/local/lib/python2.2/config;
+				LIBRARY_SEARCH_PATHS = /usr/local/lib/python2.3/config;
 				OPTIMIZATION_CFLAGS = "-O0";
 				OTHER_CFLAGS = "-Wall -g";
 				PRODUCT_NAME = BitTorrent;
@@ -371,8 +371,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				F56F7C3C02F372C401A845D2,
-				F56F7C3D02F372C401A845D2,
 				F5A3C5D102F3DA9B01A845D2,
+				73DE320A052F4A3900949C8F,
 			);
 			isa = PBXFrameworksBuildPhase;
 			runOnlyForDeploymentPostprocessing = 0;
@@ -436,6 +436,18 @@
 		};
 		73D8011103BE3B7900053DF6 = {
 			fileRef = 73D8011003BE3B7900053DF6;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		73DE3209052F4A3900949C8F = {
+			isa = PBXFileReference;
+			name = libpython2.3.a;
+			path = /usr/local/lib/python2.3/config/libpython2.3.a;
+			refType = 0;
+		};
+		73DE320A052F4A3900949C8F = {
+			fileRef = 73DE3209052F4A3900949C8F;
 			isa = PBXBuildFile;
 			settings = {
 			};
@@ -612,12 +624,6 @@
 			path = waterfall.icns;
 			refType = 4;
 		};
-		F55ADF7A02F3401201A845D2 = {
-			isa = PBXFileReference;
-			name = libpython2.2.a;
-			path = /usr/local/lib/python2.2/config/libpython2.2.a;
-			refType = 0;
-		};
 		F56F7C3602F3544601A845D2 = {
 			fileEncoding = 5;
 			isa = PBXFileReference;
@@ -639,12 +645,6 @@
 		};
 		F56F7C3C02F372C401A845D2 = {
 			fileRef = 1058C7A1FEA54F0111CA2CBB;
-			isa = PBXBuildFile;
-			settings = {
-			};
-		};
-		F56F7C3D02F372C401A845D2 = {
-			fileRef = F55ADF7A02F3401201A845D2;
 			isa = PBXBuildFile;
 			settings = {
 			};

@@ -18,6 +18,24 @@ BitTorrent uses "tit for tat" for deciding which peer to upload to.  In general 
 
 
 
+Release Notes Version 3.3 2003/10/10
+----------
+Latest BitTorrent:
+  more hard drive friendly file allocation
+  less CPU consumption
+  many tweaks
+Internationalization:
+  Better handling of extended characters in filenames.
+  Dutch translation contributed by Martijn Dekker
+  Partial French translation contributed by ToShyO
+Fixed Bugs:
+  opened file descriptor limit
+  removed illegal characters from Rendezvous advertisements, not compatible with 3.2!
+
+Release Notes Version 3.2.2a 2003/05/31
+----------
+somehow a typo snuck in unnoticed
+
 Release Notes Version 3.2.2  2003/05/30
 ----------
 Latest BitTorrent

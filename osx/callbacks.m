@@ -19,11 +19,11 @@ static PyObject *chooseFile(bt_ProxyObject *self, PyObject *args)
     PyObject *obj, *mm;
     PyObject *megabyte;
     char *saveas = NULL;
-    int dir;
+    int dir, len;
     PyObject *res;
     NSString *str;
 
-    if (!PyArg_ParseTuple(args, "sOsi", &def, &obj, &saveas, &dir))
+    if (!PyArg_ParseTuple(args, "s#Osi", &def, &len, &obj, &saveas, &dir))
         return NULL;
 
     megabyte  = Py_BuildValue("f", 1048576.0);
@@ -31,8 +31,14 @@ static PyObject *chooseFile(bt_ProxyObject *self, PyObject *args)
     
     mm = PyImport_ImportModule("__main__");
 
+    str = [NSString stringWithUTF8String:def];
+    if (!str) {
+        str = [NSString stringWithCString:def length:len];
+        if (!str) { return NULL;}
+    }
+    
     Py_BEGIN_ALLOW_THREADS
-        [self->dlController chooseFile:[NSString stringWithUTF8String:def] size:PyFloat_AsDouble(obj) isDirectory:dir];
+        [self->dlController chooseFile:str size:PyFloat_AsDouble(obj) isDirectory:dir];
     Py_END_ALLOW_THREADS
   
     PyObject_CallMethod(self->chooseFlag, "wait", NULL);  
@@ -93,7 +99,6 @@ static PyObject *metaprogress(bt_ProxyObject *self, PyObject *args)
     Py_INCREF(Py_None);
     return Py_None;
 }
-
 
 static PyObject *fnameprogress(bt_ProxyObject *self, PyObject *args)
 {
