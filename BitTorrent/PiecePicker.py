@@ -85,8 +85,6 @@ class PiecePicker:
                 for j in self.interests[i]:
                     if havefunc(j):
                         return j
-                if self.interests[i] and bests:
-                    break
             if bests:
                 return choice(bests)
             return None
