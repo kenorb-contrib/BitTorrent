@@ -99,6 +99,7 @@ class TrackerHandler(BaseHTTPRequestHandler):
                     self.answer({'type': 'success', 'your ip': ip})
             elif path == '/finish/':
                 self.answer('Thank you for your feedback! Love, Kerensa')
+                print 'finished - ' + `message`
             else:
                 self.answerno('no put!')
         except ValueError, e:
@@ -163,7 +164,7 @@ class TrackerHandler(BaseHTTPRequestHandler):
 
 def track(config):
     try:
-        h = urlopen('http://bitconjurer.org/BitTorrent/status-tracker-02-06.txt')
+        h = urlopen('http://bitconjurer.org/BitTorrent/status-tracker-02-06-01.txt')
         status = h.read().strip()
         h.close()
         if status != 'current':
