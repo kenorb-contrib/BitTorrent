@@ -87,23 +87,6 @@ def download(params, filefunc, statusfunc, resultfunc, doneflag, cols):
         resultfunc(false, 'error: ' + str(e) + '\nrun with no args for parameter explanations')
         return
     
-    if config['responsefile'] != '':
-        try:
-            h = open(config['responsefile'], 'rb')
-            response = h.read()
-            h.close()
-        except IOError, e:
-            resultfunc(false, 'IO problem reading response file - ' + str(e))
-            return
-    else:
-        try:
-            h = urlopen(config['url'])
-            response = h.read()
-            h.close()
-        except IOError, e:
-            resultfunc(false, 'IO problem in initial http request - ' + str(e))
-            return false
-
     try:
         h = urlopen('http://bitconjurer.org/BitTorrent/status-downloader-02-07-01.txt')
         status = h.read().strip()
@@ -113,6 +96,17 @@ def download(params, filefunc, statusfunc, resultfunc, doneflag, cols):
             return
     except IOError, e:
         print "Couldn't check version number - " + str(e)
+
+    try:
+        if config['responsefile'] != '':
+            h = open(config['responsefile'], 'rb')
+        else:
+            h = urlopen(config['url'])
+        response = h.read()
+        h.close()
+    except IOError, e:
+        resultfunc(false, 'problem getting response info - ' + str(e))
+        return
 
     try:
         response = bdecode(response)
@@ -173,7 +167,6 @@ def download(params, filefunc, statusfunc, resultfunc, doneflag, cols):
         path.getsize, doneflag, statusfunc, make)
     if doneflag.isSet():
         return
-    left = blobs.get_amount_left()
     rawserver = RawServer(config['max_poll_period'], doneflag,
         config['timeout'])
     def preference(c, finflag = finflag):
@@ -190,7 +183,7 @@ def download(params, filefunc, statusfunc, resultfunc, doneflag, cols):
             total_up = total_up):
         return Upload(connection, choker, blobs, max_slice_length,
             max_rate_period, total_up = total_up)
-    ratemeasure = RateMeasure(left)
+    ratemeasure = RateMeasure(blobs.get_amount_left())
     dd = DownloaderData(blobs, config['download_slice_size'], ratemeasure.data_came_in)
     def make_download(connection, data = dd, 
             backlog = config['request_backlog'],
@@ -221,23 +214,15 @@ def download(params, filefunc, statusfunc, resultfunc, doneflag, cols):
 
     if not finflag.isSet():
         statusfunc(activity = 'connecting to peers')
-    q = putqueue(response['announce'])
-    a = {'type': 'announce', 'id': response['id'], 'myid': myid,
-            'contact': {'ip': response['your ip'], 'port': listen_port}}
-    if config['permanent']:
-        a['permanent'] = None
-    if config['ip'] != '':
-        a['contact']['ip'] = config['ip']
-    if blobs.was_preexisting():
-        a['left'] = left
-    q.addrequest(bencode(a))
+    def announce(status, q = putqueue(response['announce']), 
+            id = response['id'], myid = myid, 
+            ip = response['your ip'], port = listen_port, 
+            up = total_up, down = total_down, blobs = blobs):
+        q.addrequest(bencode({'ip': ip, 'port': port, 'id': id,
+            'uploaded': up[0], 'downloaded': down[0], 'myid': myid,
+            'left': blobs.get_amount_left(), 'status': status}))
 
+    announce('started')
     rawserver.listen_forever(encrypter)
-
-    a = {'type': 'finished', 'myid': myid, 
-        'uploaded': total_up[0], 'downloaded': total_down[0]}
-    if r[0]:
-        a['result'] = 'success'
-    else:
-        a['result'] = 'failure'
-    q.addrequest(bencode(a))
+    announce('stopped')
+    return r[0]
