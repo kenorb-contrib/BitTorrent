@@ -13,7 +13,7 @@ if len(argv) < 3:
 
 for f in argv[2:]:
     h = open(f, 'rb')
-    metainfo = bdecode(metainfo_file.read())
+    metainfo = bdecode(h.read())
     h.close()
     print 'old announce for %s: %s' % (f, metainfo['announce'])
     metainfo['announce'] = argv[1]
