@@ -98,8 +98,7 @@ class EncryptedConnection:
             self.encrypter.connecter.connection_lost(self)
 
     def send_message(self, message):
-        self.connection.write(tobinary(len(message)))
-        self.connection.write(message)
+        self.connection.write(tobinary(len(message)) + message)
 
     def data_came_in(self, s):
         while true:

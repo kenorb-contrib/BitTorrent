@@ -50,7 +50,7 @@ defaults = [
         'url to get file from, alternative to response and responsefile'),
     ('saveas', None, '',
         'local file name to save the file as, null indicates query user'),
-    ('timeout', None, 45.0,
+    ('timeout', None, 300.0,
         'time to wait between closing sockets which nothing has been received on'),
     ('max_slice_length', None, 2 ** 17,
         "maximum length slice to send to peers, larger requests are ignored"),
