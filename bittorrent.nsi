@@ -1,7 +1,8 @@
 # Written by Bram Cohen
 # see LICENSE.txt for license information
 
-Outfile bittorrent.exe
+!define VERSION "3.4.1"
+Outfile BitTorrent-${VERSION}.exe
 Name BitTorrent
 SilentInstall silent
 SetCompressor lzma
@@ -23,7 +24,7 @@ Section "Install"
   WriteRegBin HKCR bittorrent EditFlags 00000100
   WriteRegStr HKCR "bittorrent\shell" "" open
   WriteRegStr HKCR "bittorrent\shell\open\command" "" `"$INSTDIR\btdownloadgui.exe" --responsefile "%1"`
-  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\BitTorrent" "DisplayName" "BitTorrent 3.4.1"
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\BitTorrent" "DisplayName" "BitTorrent ${VERSION}"
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\BitTorrent" "UninstallString" '"$INSTDIR\uninstall.exe"'
   ExecShell open "$INSTDIR\redirdonate.html"
   Sleep 2000

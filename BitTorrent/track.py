@@ -216,7 +216,7 @@ class Tracker:
                 '<ul>\n'
                 '<li><strong>tracker version:</strong> %s</li>\n' \
                 '<li><strong>server time:</strong> %s</li>\n' \
-                '</ul>\n' % (__init__.version, isotime()))
+                '</ul>\n' % (version, isotime()))
             names = self.downloads.keys()
             if names:
                 names.sort()
