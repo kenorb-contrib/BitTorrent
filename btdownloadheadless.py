@@ -20,15 +20,15 @@ from BitTornado.bencode import bencode
 from BitTornado.natpunch import UPnP_test
 from threading import Event
 from os.path import abspath
-from sys import argv, version, stdout
+from sys import argv, stdout
 import sys
 from sha import sha
 from time import strftime
 from BitTornado.clock import clock
-from BitTornado import createPeerID
+from BitTornado import createPeerID, version
 from BitTornado.ConfigDir import ConfigDir
 
-assert version >= '2', "Install Python 2.0 or greater"
+assert sys.version >= '2', "Install Python 2.0 or greater"
 try:
     True
 except:
@@ -85,7 +85,7 @@ class HeadlessDisplayer:
         self.errors.append(errormsg)
         self.display()
 
-    def display(self, fractionDone = None, timeEst = None, 
+    def display(self, dpflag = Event(), fractionDone = None, timeEst = None, 
             downRate = None, upRate = None, activity = None,
             statistics = None,  **kws):
         if self.last_update_time + 0.1 > clock() and fractionDone not in (0.0, 1.0) and activity is not None:
@@ -124,6 +124,7 @@ class HeadlessDisplayer:
         print 'seed status:   ', self.seedStatus
         print 'peer status:   ', self.peerStatus
         stdout.flush()
+        dpflag.set()        
 
     def chooseFile(self, default, size, saveas, dir):
         self.file = '%s (%.1f MB)' % (default, float(size) / (1 << 20))

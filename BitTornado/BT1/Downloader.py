@@ -61,6 +61,7 @@ class SingleDownload:
         self.peermeasure = Measure(downloader.max_rate_period)
         self.have = Bitfield(downloader.numpieces)
         self.last = -1000
+        self.last2 = -1000
         self.example_interest = None
         self.backlog = 2
         self.ip = connection.get_ip()
@@ -70,6 +71,8 @@ class SingleDownload:
         self.backlog = min(
             2+int(4*self.measure.get_rate()/self.downloader.chunksize),
             (2*just_unchoked)+self.downloader.queue_limit() )
+        if self.backlog > 50:
+            self.backlog = max(50, self.backlog * 0.075)
         return self.backlog
     
     def disconnected(self):
@@ -120,6 +123,7 @@ class SingleDownload:
             self.choked = False
             if self.interested:
                 self._request_more(new_unchoke = True)
+            self.last2 = clock()
 
     def is_choked(self):
         return self.choked
@@ -147,6 +151,7 @@ class SingleDownload:
         if self.downloader.endgamemode:
             self.downloader.all_requests.remove((index, begin, length))
         self.last = clock()
+        self.last2 = clock()
         self.measure.update_rate(length)
         self.downloader.measurefunc(length)
         if not self.downloader.storage.piece_came_in(index, begin, piece, self.guard):
@@ -308,6 +313,10 @@ class SingleDownload:
         return self.measure.get_rate()
 
     def is_snubbed(self):
+        if not self.choked and clock() - self.last2 > self.downloader.snub_time:
+            for index, begin, length in self.active_requests:
+                self.connection.send_cancel(index, begin, length)
+            self.got_choke()    # treat it just like a choke
         return clock() - self.last > self.downloader.snub_time
 
 

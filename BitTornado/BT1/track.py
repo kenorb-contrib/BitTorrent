@@ -329,6 +329,13 @@ class Tracker:
                 self.aggregate_forward = send
                 self.aggregate_password = None
 
+        self.cachetime = 0
+        self.cachetimeupdate()
+
+    def cachetimeupdate(self):
+        self.cachetime += 1     # raw clock, but more efficient for cache
+        self.rawserver.add_task(self.cachetimeupdate,1)
+
     def allow_local_override(self, ip, given_ip):
         return is_valid_ip(given_ip) and (
             not self.only_local_override_ip or local_IPs.includes(ip) )
@@ -362,7 +369,7 @@ class Tracker:
             s = StringIO()
             s.write('<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">\n' \
                 '<html><head><title>BitTorrent download info</title>\n')
-            if self.favicon != None:
+            if self.favicon is not None:
                 s.write('<link rel="shortcut icon" href="/favicon.ico">\n')
             s.write('</head>\n<body>\n' \
                 '<h3>BitTorrent download info</h3>\n'\
@@ -370,9 +377,13 @@ class Tracker:
                 '<li><strong>tracker version:</strong> %s</li>\n' \
                 '<li><strong>server time:</strong> %s</li>\n' \
                 '</ul>\n' % (version, isotime()))
-            if self.allowed != None and self.show_names:
-                names = [ (self.allowed[hash]['name'],hash)
-                          for hash in self.downloads.keys() ]
+            if self.allowed is not None:
+                if self.show_names:
+                    names = [ (self.allowed[hash]['name'],hash)
+                              for hash in self.allowed.keys() ]
+                else:
+                    names = [ (none,hash)
+                              for hash in self.allowed.keys() ]
             else:
                 names = [ (None,hash) for hash in self.downloads.keys() ]
             if not names:
@@ -385,7 +396,7 @@ class Tracker:
                 tt = 0  # Total transferred
                 ts = 0  # Total size
                 nf = 0  # Number of files displayed
-                if self.allowed != None and self.show_names:
+                if self.allowed is not None and self.show_names:
                     s.write('<table summary="files" border="1">\n' \
                         '<tr><th>info hash</th><th>torrent name</th><th align="right">size</th><th align="right">complete</th><th align="right">downloading</th><th align="right">downloaded</th><th align="right">transferred</th></tr>\n')
                 else:
@@ -399,7 +410,7 @@ class Tracker:
                     tc = tc + c
                     d = len(l) - c
                     td = td + d
-                    if self.allowed != None and self.show_names:
+                    if self.allowed is not None and self.show_names:
                         if self.allowed.has_key(hash):
                             nf = nf + 1
                             sz = self.allowed[hash]['length']  # size
@@ -418,7 +429,7 @@ class Tracker:
                 ttn = 0
                 for i in self.completed.values():
                     ttn = ttn + i
-                if self.allowed != None and self.show_names:
+                if self.allowed is not None and self.show_names:
                     s.write('<tr><td align="right" colspan="2">%i files</td><td align="right">%s</td><td align="right">%i</td><td align="right">%i</td><td align="right">%i/%i</td><td align="right">%s</td></tr>\n'
                             % (nf, size_format(ts), tc, td, tn, ttn, size_format(tt)))
                 else:
@@ -447,8 +458,7 @@ class Tracker:
         c = self.seedcount[hash]
         d = len(l) - c
         f = {'complete': c, 'incomplete': d, 'downloaded': n}
-        if ( return_name and self.show_names
-             and self.allowed is not None and self.allowed.has_key(hash) ):
+        if return_name and self.show_names and self.allowed is not None:
             f['name'] = self.allowed[hash]['name']
         return (f)
 
@@ -460,15 +470,19 @@ class Tracker:
                     bencode({'failure reason':
                     'specific scrape function is not available with this tracker.'}))
             for hash in paramslist['info_hash']:
-                if self.downloads.has_key(hash):
+                if ( (self.allowed is not None and self.allowed.has_key(hash))
+                         or self.downloads.has_key(hash) ):
                     fs[hash] = self.scrapedata(hash)
         else:
             if self.config['scrape_allowed'] != 'full':
                 return (400, 'Not Authorized', {'Content-Type': 'text/plain', 'Pragma': 'no-cache'},
                     bencode({'failure reason':
                     'full scrape function is not available with this tracker.'}))
-            hashes = self.downloads.keys()
-            for hash in hashes:
+            if self.allowed is not None:
+                keys = self.allowed.keys()
+            else:
+                keys = self.downloads.keys()
+            for hash in keys:
                 fs[hash] = self.scrapedata(hash)
 
         return (200, 'OK', {'Content-Type': 'text/plain'}, bencode({'files': fs}))
@@ -512,7 +526,7 @@ class Tracker:
                     bencode({'failure reason': 'disallowed'}))
             
             if ( self.config['multitracker_allowed'] == 'autodetect'
-                        and not self.allowed[infohash].has_key('multitracker') ):
+                        and not self.allowed[infohash].has_key('announce-list') ):
                 return (200, 'Not Authorized', {'Content-Type': 'text/plain', 'Pragma': 'no-cache'},
                     bencode({'failure reason':
                     'Requested download is not authorized for multitracker use.'}))
@@ -679,13 +693,11 @@ class Tracker:
             return data
         l_get_size = int(float(rsize)*(len_l)/(len_l+len_s))
         cache = self.cached.setdefault(infohash,[None,None,None])[return_type]
-        if cache:
-            if cache[0] + self.config['min_time_between_cache_refreshes'] < clock():
-                cache = None
-            else:
-                if ( (is_seed and len(cache[1]) < rsize)
-                     or len(cache[1]) < l_get_size or not cache[1] ):
-                        cache = None
+        if cache and ( not cache[1]
+                       or (is_seed and len(cache[1]) < rsize)
+                       or len(cache[1]) < l_get_size
+                       or cache[0]+self.config['min_time_between_cache_refreshes'] < self.cachetime ):
+            cache = None
         if not cache:
             peers = self.downloads[infohash]
             vv = [[],[],[]]
@@ -693,8 +705,8 @@ class Tracker:
                 if not peers.has_key(key):
                     vv[0].append({'ip': ip, 'port': port, 'peer id': key})
                     vv[1].append({'ip': ip, 'port': port})
-                    vv[2].append(compact_peer_info(y['ip'], y['port']))
-            cache = [ clock(),
+                    vv[2].append(compact_peer_info(ip, port))
+            cache = [ self.cachetime,
                       bc[return_type][0].values()+vv[return_type],
                       bc[return_type][1].values() ]
             shuffle(cache[1])
@@ -732,8 +744,9 @@ class Tracker:
         ip = connection.get_ip()
         try:
             ip = to_ipv4(ip)
+            ipv4 = True
         except ValueError:
-            pass
+            ipv4 = False
 
         if self.allowed_IPs and not self.allowed_IPs.includes(ip):
             return (400, 'Not Authorized', {'Content-Type': 'text/plain', 'Pragma': 'no-cache'},
@@ -745,8 +758,9 @@ class Tracker:
             ip = nip
             try:
                 ip = to_ipv4(ip)
+                ipv4 = True
             except ValueError:
-                pass
+                ipv4 = False
 
         paramslist = {}
         def params(key, default = None, l = paramslist):
@@ -773,7 +787,7 @@ class Tracker:
                 return self.get_scrape(paramslist)
             if (path == 'file'):
                 return self.get_file(params('info_hash'))
-            if path == 'favicon.ico' and self.favicon != None:
+            if path == 'favicon.ico' and self.favicon is not None:
                 return (200, 'OK', {'Content-Type' : 'image/x-icon'}, self.favicon)
             if path != 'announce':
                 return (404, 'Not Found', {'Content-Type': 'text/plain', 'Pragma': 'no-cache'}, alas)
@@ -802,7 +816,7 @@ class Tracker:
             return (200, 'OK', {'Content-Type': 'text/plain', 'Pragma': 'no-cache'},
                     bencode({'response': 'OK'}))
 
-        if params('compact'):
+        if params('compact') and ipv4:
             return_type = 2
         elif params('no_peer_id'):
             return_type = 1
@@ -871,7 +885,12 @@ class Tracker:
         r = parsedir(self.allowed_dir, self.allowed, self.allowed_dir_files,
                      self.allowed_dir_blocked, [".torrent"])
         ( self.allowed, self.allowed_dir_files, self.allowed_dir_blocked,
-            garbage1, garbage2 ) = r
+            added, garbage2 ) = r
+        
+        for infohash in added.keys():
+            self.downloads.setdefault(infohash, {})
+            self.completed.setdefault(infohash, 0)
+            self.seedcount.setdefault(infohash, 0)
 
         self.state['allowed'] = self.allowed
         self.state['allowed_dir_files'] = self.allowed_dir_files
@@ -900,7 +919,8 @@ class Tracker:
         self.prevtime = clock()
         if (self.keep_dead != 1):
             for key, value in self.downloads.items():
-                if len(value) == 0:
+                if len(value) == 0 and (
+                        self.allowed is None or not self.allowed.has_key(key) ):
                     del self.times[key]
                     del self.downloads[key]
                     del self.seedcount[key]

@@ -152,17 +152,15 @@ class Storage:
         # may raise IOError or OSError
         for file in self.whandles.keys():
             self._sync(file)
-        self.whandles = {}
 
 
     def set_readonly(self, f=None):
         if f is None:
             self.sync()
             return
-        file = self.files[f]
+        file = self.files[f][0]
         if self.whandles.has_key(file):
             self._sync(file)
-            del self.whandles[file]
             
 
     def get_total_length(self):

@@ -1,10 +1,8 @@
 product_name = 'BitTornado'
+version_short = 'T-0.3.9'
 
-version = "T-0.3.8 (BitTornado)"
-
-version_short = version.split(' ')[0]
-
-report_email = version_short+"@degreez.net"
+version = version_short+' ('+product_name+')'
+report_email = version_short+'@degreez.net'
 
 from types import StringType
 from sha import sha
@@ -17,7 +15,15 @@ except ImportError:
 
 mapbase64 = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz.-'
 
-__root__ = [None]
+_idprefix = version_short[0]
+for subver in version_short[2:].split('.'):
+    try:
+        subver = int(subver)
+    except:
+        subver = 0
+    _idprefix += mapbase64[subver]
+_idprefix += ('-' * (6-len(_idprefix)))
+_idrandom = [None]
 
 def resetPeerIDs():
     try:
@@ -43,25 +49,15 @@ def resetPeerIDs():
     x += ( repr(time()) + '/' + str(time()) + '/'
            + str(l1) + '/' + str(l2) + '/' + str(l3) + '/'
            + str(getpid()) )
-        
-    root = ''
+
+    s = ''
     for i in sha(x).digest()[-11:]:
-        root += mapbase64[ord(i) & 0x3F]
-    __root__[0] = root
+        s += mapbase64[ord(i) & 0x3F]
+    _idrandom[0] = s
         
 resetPeerIDs()
 
 def createPeerID(ins = '---'):
     assert type(ins) is StringType
     assert len(ins) == 3
-    myid = version_short[0]
-    for subver in version_short[2:].split('.'):
-        try:
-            subver = int(subver)
-        except:
-            subver = 0
-        myid += mapbase64[subver]
-    myid += ('-' * (6-len(myid)))
-    myid += ins + __root__[0]
-
-    return myid
+    return _idprefix + ins + _idrandom[0]

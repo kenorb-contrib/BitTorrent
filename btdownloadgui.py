@@ -13,14 +13,14 @@ if PSYCO.psyco:
     except:
         pass
 
-from sys import argv, version
+from sys import argv, version, exit
 assert version >= '2', "Install Python 2.0 or greater"
 
 try:
     from wxPython.wx import *
 except:
     print 'wxPython is either not installed or has not been installed properly.'
-    sys.exit(1)
+    exit(1)
 from BitTornado.download_bt1 import BT1Download, defaults, parse_params, get_usage, get_response
 from BitTornado.RawServer import RawServer, UPnP_ERROR
 from random import seed
@@ -156,7 +156,6 @@ class DownloadInfoFrame:
             self.shuttingdown = False
             self.ispaused = False
             self.bgalloc_periods = 0
-            self.gui_lastupdate = clock()
             self.gui_fractiondone = None
             self.fileList = None
             self.lastexternalannounce = ''
@@ -1543,22 +1542,19 @@ class DownloadInfoFrame:
             self.exception()
 
 
-    def updateStatus(self, fractionDone = None,
+    def updateStatus(self, dpflag = Event(), fractionDone = None,
             timeEst = None, downRate = None, upRate = None,
             activity = None, statistics = None, spew = None, sizeDone = None,
             **kws):
         if activity is not None:
             self.activity = activity
         self.gui_fractiondone = fractionDone
-        if self.gui_lastupdate + 0.05 > clock():   # refreshing too fast, skip it
-            return
         if not self.ispaused:
             self.invokeLater(self.onUpdateStatus,
-                     [timeEst, downRate, upRate, statistics, spew, sizeDone])
+                 [dpflag, timeEst, downRate, upRate, statistics, spew, sizeDone])
 
-    def onUpdateStatus(self, timeEst, downRate, upRate, statistics, spew, sizeDone):
-        if self.gui_lastupdate + 0.05 > clock():   # refreshing too fast, skip it
-            return
+    def onUpdateStatus(self, dpflag, timeEst, downRate, upRate,
+                             statistics, spew, sizeDone):
         if self.firstupdate:
             if not self.old_ratesettings:
                 self.old_ratesettings = {}
@@ -1851,9 +1847,7 @@ class DownloadInfoFrame:
                                             comma_format(int(statistics.discarded/1024)) ) )
 
         if ( self.fileList is not None and statistics is not None
-                and (statistics.filelistupdated or self.refresh_details) ):
-            self.refresh_details = False
-            statistics.filelistupdated = False
+                and (statistics.filelistupdated.isSet() or self.refresh_details) ):
             for i in range(len(statistics.filecomplete)):
                 if self.dow.fileselector[i] == -1:
                     self.fileList.SetItemImage(i,0,0)
@@ -1866,15 +1860,14 @@ class DownloadInfoFrame:
                     self.fileList.SetStringItem(i,1,"100%")
                 else:
                     self.fileList.SetItemImage(i,0,0)
-                    try:
-                        frac = ( (len(statistics.filepieces2[i])-len(statistics.filepieces[i]))
-                                 /float(len(statistics.filepieces2[i])) )
-                    except:
-                        frac = 0
+                    frac = statistics.fileamtdone[i]
                     if frac:
                         self.fileList.SetStringItem(i,1,'%d%%' % (frac*100))
                     else:
                         self.fileList.SetStringItem(i,1,'')
+
+            statistics.filelistupdated.clear()
+            self.refresh_details = False
 
         if self.configfile.configReset():     # whoopee!  Set everything invisible! :-)
 
@@ -1918,8 +1911,8 @@ class DownloadInfoFrame:
         self.frame.Layout()
         self.frame.Refresh()
 
-        self.gui_lastupdate = clock()
         self.gui_fractiondone = None
+        dpflag.set()
 
 
     def finished(self):
@@ -2346,12 +2339,12 @@ def _next(params, d, doneflag, configfile):
     if not d.fin:
         d.failed()
     if err:
-        sleep(10e10)    # this will make the app stick in the task manager,
-                        # but so be it
+        sleep(3600*24*30)   # this will make the app stick in the task manager,
+                            # but so be it
 
 
 if __name__ == '__main__':
     if argv[1:] == ['--version']:
         print version
-        sys.exit(0)
+        exit(0)
     run(argv[1:])

@@ -200,7 +200,7 @@ class _UPnP:    # master holding class
             local_ips = IP_List()
             local_ips.set_intranet_addresses()
             try:
-                for info in socket.getaddrinfo(socket.gethostname(),0):
+                for info in socket.getaddrinfo(socket.gethostname(),0,socket.AF_INET):
                             # exception if socket library isn't recent
                     self.local_ip = info[4][0]
                     if local_ips.includes(self.local_ip):

@@ -85,20 +85,27 @@ class Rerequester:
         self.never_succeeded = True
         self.errorcodes = {}
         self.lock = SuccessLock()
-        self.started = False
         self.special = None
+        self.stopped = False
+
+    def start(self):
+        self.sched(self.c, self.interval/2)
+        self.d(0)
 
     def c(self):
+        if self.stopped:
+            return
         if self.howmany() < self.minpeers:
             self.announce(3, self._c)
+        else:
+            self._c()
 
-    def _c(self):            
+    def _c(self):
         self.sched(self.c, self.interval)
 
     def d(self, event = 3):
-        if not self.started:
-            self.started = True
-            self.sched(self.c, self.interval/2)
+        if self.stopped:
+            return
         self.announce(event, self._d)
 
     def _d(self):
@@ -135,7 +142,8 @@ class Rerequester:
             s += '&no_peer_id=1&compact=1'
         if event != 3:
             s += '&event=' + ['started', 'completed', 'stopped'][event]
-            
+        if event == 2:
+            self.stopped = True
         self.rerequest(s, callback)
 
 

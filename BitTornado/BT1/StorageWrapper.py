@@ -63,10 +63,10 @@ class StorageWrapper:
             data_flunked = lambda x: None, backfunc = None,
             config = {}, unpauseflag = None):
         self.storage = storage
-        self.request_size = request_size
+        self.request_size = long(request_size)
         self.hashes = hashes
-        self.piece_size = piece_size
-        self.piece_length = piece_size
+        self.piece_size = long(piece_size)
+        self.piece_length = long(piece_size)
         self.finished = finished
         self.failed = failed
         self.statusfunc = statusfunc
@@ -86,9 +86,9 @@ class StorageWrapper:
         self.bgalloc_active = False
         self.total_length = storage.get_total_length()
         self.amount_left = self.total_length
-        if self.total_length <= piece_size * (len(hashes) - 1):
+        if self.total_length <= self.piece_size * (len(hashes) - 1):
             raise ValueError, 'bad data in responsefile - total too small'
-        if self.total_length > piece_size * len(hashes):
+        if self.total_length > self.piece_size * len(hashes):
             raise ValueError, 'bad data in responsefile - total too big'
         self.numactive = [0] * len(hashes)
         self.inactive_requests = [1] * len(hashes)
@@ -127,8 +127,7 @@ class StorageWrapper:
 
     def _bgsync(self):
         if self.config['auto_flush']:
-            # self.sync()
-            self.storage.sync()
+            self.sync()
         self.backfunc(self._bgsync,max(self.config['auto_flush']*60,60))
 
 
@@ -524,6 +523,12 @@ class StorageWrapper:
                 self._flush_buffer(spots[i])
             except:
                 pass
+        try:
+            self.storage.sync()
+        except IOError, e:
+            self.failed('IO Error: ' + str(e))
+        except OSError, e:
+            self.failed('OS Error: ' + str(e))
 
 
     def _move_piece(self, index, newpos):
@@ -738,6 +743,8 @@ class StorageWrapper:
             data.release()
             return s
         data = self.read_raw(self.places[index], begin, length)
+        if data is None:
+            return None
         s = data.getarray()
         data.release()
         return s
@@ -749,6 +756,15 @@ class StorageWrapper:
         except IOError, e:
             self.failed('IO Error: ' + str(e))
             return None
+
+
+    def set_file_readonly(self, n):
+        try:
+            self.storage.set_readonly(n)
+        except IOError, e:
+            self.failed('IO Error: ' + str(e))
+        except OSError, e:
+            self.failed('OS Error: ' + str(e))
 
 
     def has_data(self, index):

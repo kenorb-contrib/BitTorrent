@@ -16,8 +16,9 @@ except:
 
 DEBUG = True
 
-def dummy_howmany():
-    return 0
+
+def excfunc(x):
+    print x
 
 class T2TConnection:
     def __init__(self, myid, tracker, hash, interval, peers, timeout,
@@ -38,9 +39,10 @@ class T2TConnection:
         self.peerlists = []
 
         self.rerequester = Rerequester([[tracker]], interval,
-            rawserver.add_task, dummy_howmany, peers, self.addtolist, 
-            rawserver.external_add_task, 1, 0, 0, 0, '',
-            myid, hash, timeout, self.errorfunc, peers, Event())
+            rawserver.add_task, lambda: 0, peers, self.addtolist, 
+            rawserver.external_add_task, lambda: 1, 0, 0, 0, '',
+            myid, hash, timeout, self.errorfunc, excfunc, peers, Event(),
+            lambda: 0, lambda: 0)
 
         if self.isactive():
             rawserver.add_task(self.refresh, randrange(int(self.interval/10), self.interval))
@@ -80,9 +82,9 @@ class T2TConnection:
         if self.isactive():
             self.rawserver.add_task(self.refresh, self.operatinginterval)
 
-    def addtolist(self, ipport, peerid):
-        ip, port = ipport
-        self.newpeerdata += [(peerid, ip, port)]
+    def addtolist(self, peers):
+        for peer in peers:
+            self.newpeerdata.append((peer[1],peer[0][0],peer[0][1]))
         
     def errorfunc(self, r):
         self.lastsuccessful = False

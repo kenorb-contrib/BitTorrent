@@ -95,9 +95,9 @@ def CreateIcon(icon, savedir):
     try:
         f = open(join(savedir,icon),"wb")
         f.write(decompress(a2b_base64(icons[icon])))
-        success = True
+        success = 1
     except:
-        success = False
+        success = 0
     try:
         f.close()
     except:

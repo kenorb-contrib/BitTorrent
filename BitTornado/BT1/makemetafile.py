@@ -12,14 +12,25 @@ from btformats import check_info
 from threading import Event
 from time import time
 from traceback import print_exc
+try:
+    from sys import getfilesystemencoding
+    ENCODING = getfilesystemencoding()
+except:
+    from sys import getdefaultencoding
+    ENCODING = getdefaultencoding()
 
 defaults = [
     ('announce_list', '',
         'a list of announce URLs - explained below'),
+    ('httpseeds', '',
+        'a list of http seed URLs - explained below'),
     ('piece_size_pow2', 0,
         "which power of 2 to set the piece size to (0 = automatic)"),
     ('comment', '',
         "optional human-readable comment to put in .torrent"),
+    ('filesystem_encoding', '',
+        "optional specification for filesystem encoding " +
+        "(set automatically in recent Python versions)"),
     ('target', '',
         "optional target file for the torrent")
     ]
@@ -43,7 +54,10 @@ def print_announcelist_details():
     print ('                     (tries trackers 1-3 in a randomly selected order)')
     print ('                http://tracker1.com|http://backup1.com,http://backup2.com')
     print ('                     (tries tracker 1 first, then tries between the 2 backups randomly)')
-
+    print ('')
+    print ('    httpseeds = optional list of http-seed URLs, in the format:')
+    print ('            url[|url...]')
+    
 def make_meta_file(file, url, params = {}, flag = Event(),
                    progress = lambda x: None, progress_percent = 1):
     if params.has_key('piece_size_pow2'):
@@ -76,25 +90,36 @@ def make_meta_file(file, url, params = {}, flag = Event(),
         else:                           # < 4M =
             piece_len_exp = 15          #   32K pieces
     piece_length = 2 ** piece_len_exp
+
+    if params.has_key('filesystem_encoding'):
+        encoding = params['filesystem_encoding']
+    if not encoding:
+        encoding = ENCODING
+    if not encoding:
+        encoding = 'ascii'
     
-    info = makeinfo(file, piece_length, flag, progress, progress_percent)
+    info = makeinfo(file, piece_length, encoding, flag, progress, progress_percent)
     if flag.isSet():
         return
     check_info(info)
     h = open(f, 'wb')
     data = {'info': info, 'announce': strip(url), 'creation date': long(time())}
-    if params.has_key('comment') and params['comment'] != '':
+    
+    if params.has_key('comment') and params['comment']:
         data['comment'] = params['comment']
+        
     if params.has_key('real_announce_list'):    # shortcut for progs calling in from outside
         data['announce-list'] = params['real_announce_list']
-    elif params.has_key('announce_list') and params['announce_list'] != '':
-        list = []
+    elif params.has_key('announce_list') and params['announce_list']:
+        l = []
         for tier in params['announce_list'].split('|'):
-            sublist = []
-            for tracker in tier.split(','):
-                sublist += [tracker]
-            list += [sublist]
-        data['announce-list'] = list
+            l.append(tier.split(','))
+        data['announce-list'] = l
+        
+    if params.has_key('real_httpseeds'):    # shortcut for progs calling in from outside
+        data['httpseeds'] = params['real_httpseeds']
+    elif params.has_key('httpseeds') and params['httpseeds']:
+        data['httpseeds'] = params['httpseeds'].split('|')
         
     h.write(bencode(data))
     h.close()
@@ -107,7 +132,24 @@ def calcsize(file):
         total += getsize(s[1])
     return total
 
-def makeinfo(file, piece_length, flag, progress, progress_percent=1):
+
+def uniconvertl(l, e):
+    r = []
+    try:
+        for s in l:
+            r.append(uniconvert(s, e))
+    except UnicodeError:
+        raise UnicodeError('bad filename: '+join(l))
+    return r
+
+def uniconvert(s, e):
+    try:
+        s = unicode(s,e)
+    except UnicodeError:
+        raise UnicodeError('bad filename: '+s)
+    return s.encode('utf-8')
+
+def makeinfo(file, piece_length, encoding, flag, progress, progress_percent=1):
     file = abspath(file)
     if isdir(file):
         subs = subfiles(file)
@@ -124,7 +166,7 @@ def makeinfo(file, piece_length, flag, progress, progress_percent=1):
         for p, f in subs:
             pos = 0L
             size = getsize(f)
-            fs.append({'length': size, 'path': p})
+            fs.append({'length': size, 'path': uniconvertl(p, encoding)})
             h = open(f, 'rb')
             while pos < size:
                 a = min(size - pos, piece_length - done)
@@ -148,7 +190,7 @@ def makeinfo(file, piece_length, flag, progress, progress_percent=1):
             pieces.append(sh.digest())
         return {'pieces': ''.join(pieces),
             'piece length': piece_length, 'files': fs, 
-            'name': split(file)[1]}
+            'name': uniconvert(split(file)[1], encoding) }
     else:
         size = getsize(file)
         pieces = []
@@ -169,7 +211,7 @@ def makeinfo(file, piece_length, flag, progress, progress_percent=1):
         h.close()
         return {'pieces': ''.join(pieces), 
             'piece length': piece_length, 'length': size, 
-            'name': split(file)[1]}
+            'name': uniconvert(split(file)[1], encoding) }
 
 def subfiles(d):
     r = []

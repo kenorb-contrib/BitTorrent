@@ -12,6 +12,7 @@ except:
 class Choker:
     def __init__(self, config, schedule, picker, done = lambda: False):
         self.config = config
+        self.round_robin_period = config['round_robin_period']
         self.schedule = schedule
         self.picker = picker
         self.connections = []
@@ -20,6 +21,9 @@ class Choker:
         self.done = done
         self.super_seed = False
         schedule(self._round_robin, 5)
+
+    def set_round_robin_period(self, x):
+        self.round_robin_period = x
 
     def _round_robin(self):
         self.schedule(self._round_robin, 5)
@@ -40,7 +44,7 @@ class Choker:
                 count -= 1
             for c in to_close:
                 c.close()
-        if self.last_round_robin + self.config['round_robin_period'] < clock():
+        if self.last_round_robin + self.round_robin_period < clock():
             self.last_round_robin = clock()
             for i in xrange(1, len(self.connections)):
                 c = self.connections[i]
@@ -52,8 +56,8 @@ class Choker:
 
     def _rechoke(self):
         preferred = []
-        maxuploads = self.config['max_uploads']-1
-        if maxuploads:
+        maxuploads = self.config['max_uploads']
+        if maxuploads > 1:
             for c in self.connections:
                 u = c.get_upload()
                 if not u.is_interested():
@@ -68,7 +72,7 @@ class Choker:
                 preferred.append((-r, c))
             self.last_preferred = len(preferred)
             preferred.sort()
-            del preferred[maxuploads:]
+            del preferred[maxuploads-1:]
             preferred = [x[1] for x in preferred]
         count = len(preferred)
         hit = False

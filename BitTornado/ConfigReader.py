@@ -59,12 +59,6 @@ configFileDefaults = [
          "what rate setting controls to display; options are 'none', 'basic', and 'full'"),
     ('gui_forcegreenonfirewall', 0,
          "forces the status icon to be green even if the client seems to be firewalled"),
-    ('gui_checkingcolor', None, # set later
-         "progress bar checking color"),
-    ('gui_downloadcolor', None, # set later
-         "progress bar downloading color"),
-    ('gui_seedingcolor', '00 FF 00',
-         "progress bar seeding color"),
     ('gui_default_savedir', '',
          "default save directory"),
     ('last_saved', '',       # hidden; not set in config
@@ -74,6 +68,19 @@ configFileDefaults = [
     ('gui_saveas_ask', -1,
          "whether to ask where to download to (0 = never, 1 = always, -1 = automatic resume"),
 ]
+
+def setwxconfigfiledefaults():
+    CHECKINGCOLOR = ColorToHex(wxSystemSettings_GetColour(wxSYS_COLOUR_3DSHADOW)) 	 
+    DOWNLOADCOLOR = ColorToHex(wxSystemSettings_GetColour(wxSYS_COLOUR_ACTIVECAPTION))
+    
+    configFileDefaults.extend([
+        ('gui_checkingcolor', CHECKINGCOLOR,
+            "progress bar checking color"),
+        ('gui_downloadcolor', DOWNLOADCOLOR,
+            "progress bar downloading color"),
+        ('gui_seedingcolor', '00 FF 00',
+            "progress bar seeding color"),
+    ])
 
 defaultsToIgnore = ['responsefile', 'url', 'priority']
 
@@ -86,13 +93,10 @@ class configReader:
         self.advancedMenuBox = None
         self._configReset = True         # run reset for the first time
 
+        setwxconfigfiledefaults()
+
         defaults.extend(configFileDefaults)
         self.defaults = defaultargs(defaults)
-
-        self.defaults['gui_checkingcolor'] = ColorToHex(
-            wxSystemSettings_GetColour(wxSYS_COLOUR_3DSHADOW))
-        self.defaults['gui_downloadcolor'] = ColorToHex(
-            wxSystemSettings_GetColour(wxSYS_COLOUR_ACTIVECAPTION))
 
         self.configDir = ConfigDir('gui')
         self.configDir.setDefaults(defaults,defaultsToIgnore)

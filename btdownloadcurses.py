@@ -28,7 +28,7 @@ from sys import argv, exit
 import sys
 from time import time, strftime
 from BitTornado.clock import clock
-from BitTornado import createPeerID
+from BitTornado import createPeerID, version
 from BitTornado.ConfigDir import ConfigDir
 
 try:
@@ -174,7 +174,7 @@ class CursesDisplayer:
         self.errlist.append(newerrmsg)
         self.display()
 
-    def display(self, fractionDone = None, timeEst = None,
+    def display(self, dpflag = Event(), fractionDone = None, timeEst = None,
             downRate = None, upRate = None, activity = None,
             statistics = None, spew = None, **kws):
 
@@ -293,6 +293,7 @@ class CursesDisplayer:
 
         curses.panel.update_panels()
         curses.doupdate()
+        dpflag.set()
 
     def chooseFile(self, default, size, saveas, dir):
         self.file = default

@@ -343,6 +343,11 @@ class BT1Download:
         self.checking = False
         self.started = False
 
+        self.picker = PiecePicker(self.len_pieces, config['rarest_first_cutoff'],
+                             config['rarest_first_priority_cutoff'])
+        self.choker = Choker(config, rawserver.add_task,
+                             self.picker, self.finflag.isSet)
+
 
     def checkSaveLocation(self, loc):
         if self.info.has_key('length'):
@@ -433,9 +438,10 @@ class BT1Download:
             self.errorfunc('trouble setting readonly at end - ' + str(e))
         if self.superseedflag.isSet():
             self._set_super_seed()
-        self.config['round_robin_period'] = max( self.config['round_robin_period'],
-            long( self.config['round_robin_period']
-                  * self.info['piece length']/200000) )
+        self.choker.set_round_robin_period(
+            max( self.config['round_robin_period'],
+                 self.config['round_robin_period'] *
+                                     self.info['piece length'] / 200000 ) )
         self.rerequest_complete()
         self.finfunc()
 
@@ -568,13 +574,9 @@ class BT1Download:
 
         self.checking = False
 
-        self.picker = PiecePicker(self.len_pieces, self.config['rarest_first_cutoff'],
-                             self.config['rarest_first_priority_cutoff'])
         for i in xrange(self.len_pieces):
             if self.storagewrapper.do_I_have(i):
                 self.picker.complete(i)
-        self.choker = Choker(self.config, self.rawserver.add_task,
-                             self.picker, self.finflag.isSet)
         self.upmeasure = Measure(self.config['max_rate_period'],
                             self.config['upload_rate_fudge'])
         self.downmeasure = Measure(self.config['max_rate_period'])
@@ -651,7 +653,7 @@ class BT1Download:
             self.errorfunc, self.excfunc, self.config['max_initiate'],
             self.doneflag, self.upmeasure.get_rate, self.downmeasure.get_rate)
 
-        self.rerequest.d(0)
+        self.rerequest.start()
 
 
     def _init_stats(self):

@@ -71,21 +71,9 @@ class HTTPConnection:
         data = data.strip()
         if data == '':
             self.donereading = True
-            # check for Accept-Encoding: header, pick a 
-            if self.headers.has_key('accept-encoding'):
-                ae = self.headers['accept-encoding']
-                if DEBUG:
-                    print "Got Accept-Encoding: " + ae + "\n"
-            else:
-                #identity assumed if no header
-                ae = 'identity'
-            # this eventually needs to support multple acceptable types
-            # q-values and all that fancy HTTP crap
-            # for now assume we're only communicating with our own client
-            if ae.find('gzip') != -1:
+            if self.headers.get('accept-encoding','').find('gzip') > -1:
                 self.encoding = 'gzip'
             else:
-                #default to identity. 
                 self.encoding = 'identity'
             r = self.handler.getfunc(self, self.path, self.headers)
             if r is not None:
@@ -104,15 +92,11 @@ class HTTPConnection:
         if self.closed:
             return
         if self.encoding == 'gzip':
-            #transform data using gzip compression
-            #this is nasty but i'm unsure of a better way at the moment
             compressed = StringIO()
             gz = GzipFile(fileobj = compressed, mode = 'wb', compresslevel = 9)
             gz.write(data)
             gz.close()
-            compressed.seek(0,0) 
-            cdata = compressed.read()
-            compressed.close()
+            cdata = compressed.getvalue()
             if len(cdata) >= len(data):
                 self.encoding = 'identity'
             else:
@@ -126,18 +110,10 @@ class HTTPConnection:
             ident = '-'
         else:
             ident = self.encoding
-        username = '-'
-        referer = self.headers.get('referer','-')
-        useragent = self.headers.get('user-agent','-')
-        year, month, day, hour, minute, second, a, b, c = time.localtime(time.time())
-        print '%s %s %s [%02d/%3s/%04d:%02d:%02d:%02d] "%s" %i %i "%s" "%s"' % (
-            self.connection.get_ip(), ident, username, day, months[month], year, hour,
-            minute, second, self.header, responsecode, len(data), referer, useragent)
-        t = clock()
-        if t - self.handler.lastflush > self.handler.minflush:
-            self.handler.lastflush = t
-            stdout.flush()
-
+        self.handler.log( self.connection.get_ip(), ident, '-',
+                          self.header, responsecode, len(data),
+                          self.headers.get('referer','-'),
+                          self.headers.get('user-agent','-') )
         self.done = True
         r = StringIO()
         r.write('HTTP/1.0 ' + str(responsecode) + ' ' + 
@@ -179,3 +155,13 @@ class HTTPHandler:
         if not c.data_came_in(data) and not c.closed:
             c.connection.shutdown(1)
 
+    def log(self, ip, ident, username, header,
+            responsecode, length, referrer, useragent):
+        year, month, day, hour, minute, second, a, b, c = time.localtime(time.time())
+        print '%s %s %s [%02d/%3s/%04d:%02d:%02d:%02d] "%s" %i %i "%s" "%s"' % (
+            ip, ident, username, day, months[month], year, hour,
+            minute, second, header, responsecode, length, referrer, useragent)
+        t = clock()
+        if t - self.lastflush > self.minflush:
+            self.lastflush = t
+            stdout.flush()

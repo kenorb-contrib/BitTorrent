@@ -3,6 +3,7 @@
 
 from cStringIO import StringIO
 from urllib import quote
+from threading import Event
 
 try:
     True
@@ -27,10 +28,11 @@ class DownloaderFeedback:
         self.statistics = statistics
         self.lastids = []
         self.spewdata = None
+        self.doneprocessing = Event()
+        self.doneprocessing.set()
         if statusfunc:
             self.autodisplay(statusfunc, interval)
         
-#        self.display()
 
     def _rotate(self):
         cs = self.choker.connections
@@ -69,8 +71,8 @@ class DownloaderFeedback:
             else:
                 a['completed'] = 1.0
             a['speed'] = d.connection.download.peermeasure.get_rate()
-                                               
-            l = l + [a]
+
+            l.append(a)                                               
 
         for dl in self.httpdl.get_downloads():
             if dl.goodseed:
@@ -91,14 +93,13 @@ class DownloaderFeedback:
                 a['completed'] = 1.0
                 a['speed'] = None
 
-                l = l + [a]
+                l.append(a)
 
         return l
 
 
     def gather(self, displayfunc = None):
-        self.statistics.update()
-        s = {'stats': self.statistics}
+        s = {'stats': self.statistics.update()}
         if self.sp.isSet():
             s['spew'] = self.spews()
         else:
@@ -123,17 +124,23 @@ class DownloaderFeedback:
 
 
     def display(self, displayfunc):
+        if not self.doneprocessing.isSet():
+            return
+        self.doneprocessing.clear()
         stats = self.gather()
         if self.finflag.isSet():
-            displayfunc(upRate = stats['up'],
+            displayfunc(dpflag = self.doneprocessing,
+                upRate = stats['up'],
                 statistics = stats['stats'], spew = stats['spew'])
         elif stats['time'] is not None:
-            displayfunc(fractionDone = stats['frac'], sizeDone = stats['done'],
+            displayfunc(dpflag = self.doneprocessing,
+                fractionDone = stats['frac'], sizeDone = stats['done'],
                 downRate = stats['down'], upRate = stats['up'],
                 statistics = stats['stats'], spew = stats['spew'],
                 timeEst = stats['time'])
         else:
-            displayfunc(fractionDone = stats['frac'], sizeDone = stats['done'],
+            displayfunc(dpflag = self.doneprocessing,
+                fractionDone = stats['frac'], sizeDone = stats['done'],
                 downRate = stats['down'], upRate = stats['up'],
                 statistics = stats['stats'], spew = stats['spew'])
 

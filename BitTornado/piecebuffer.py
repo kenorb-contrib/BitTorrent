@@ -4,7 +4,12 @@
 from array import array
 from sys import maxint
 # import inspect
-
+try:
+    True
+except:
+    True = 1
+    False = 0
+    
 DEBUG = False
 
 class SingleBuffer:

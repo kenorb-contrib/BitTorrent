@@ -8,6 +8,7 @@ try:
 except:
     True = 1
     False = 0
+    bool = lambda x: not not x
 
 hexbinmap = {
     '0': '0000',
