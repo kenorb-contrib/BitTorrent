@@ -23,6 +23,14 @@ def string_template(thing, verbose):
 
 st = string_template
 
+def exact_length(l):
+    def func(s, verbose, l = l):
+        if type(s) != StringType:
+            raise ValueError, 'should have been string'
+        if len(s) != l:
+            raise ValueError, 'wrong length, should have been ' + str(l) + ' was ' + str(len(s))
+    return func
+
 class MaxDepth:
     def __init__(self, max_depth, template = None):
         assert max_depth >= 0
