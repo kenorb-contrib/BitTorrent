@@ -7,7 +7,7 @@ from BitTornado.HTTPHandler import HTTPHandler, months, weekdays
 from BitTornado.parsedir import parsedir
 from NatCheck import NatCheck
 from T2T import T2TList
-from BitTornado.subnetparse import IP_List, to_ipv4, is_valid_ip
+from BitTornado.subnetparse import IP_List, ipv6_to_ipv4, to_ipv4, is_valid_ip, is_ipv4
 from threading import Event, Thread
 from BitTornado.bencode import bencode, bdecode, Bencached
 from BitTornado.zurllib import urlopen, quote, unquote
@@ -179,7 +179,8 @@ def compact_peer_info(ip, port):
     try:
         s = ( ''.join([chr(int(i)) for i in ip.split('.')])
               + chr((port & 0xFF00) >> 8) + chr(port & 0xFF) )
-        assert len(s) == 6
+        if len(s) != 6:
+            raise ValueError
     except:
         s = ''  # not a valid IP, must be a domain name
     return s
@@ -742,11 +743,14 @@ class Tracker:
 
     def get(self, connection, path, headers):
         ip = connection.get_ip()
-        try:
-            ip = to_ipv4(ip)
+        if is_ipv4(ip):
             ipv4 = True
-        except ValueError:
-            ipv4 = False
+        else:
+            try:
+                ip = ipv6_to_ipv4(ip)
+                ipv4 = True
+            except ValueError:
+                ipv4 = False
 
         if self.allowed_IPs and not self.allowed_IPs.includes(ip):
             return (400, 'Not Authorized', {'Content-Type': 'text/plain', 'Pragma': 'no-cache'},

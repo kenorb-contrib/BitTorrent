@@ -44,10 +44,13 @@ for n in xrange(256):
 
 
 def to_bitfield_ipv4(ip):
-    b = ''
-    for n in ip.split('.'):
-        b += chrbinmap[int(n)]
-    return b
+    ip = ip.split('.')
+    if len(ip) != 4:
+        raise ValueError, "bad address"
+    b = []
+    for i in ip:
+        b.append(chrbinmap[int(i)])
+    return ''.join(b)
 
 def to_bitfield_ipv6(ip):
     b = ''
@@ -175,9 +178,7 @@ class IP_List:
     def set_ipv4_addresses(self):
         self.append('::ffff:0:0',96)
 
-def to_ipv4(ip):
-    if ip.find(':') < 0:
-        raise ValueError, "not an IPv6 address"
+def ipv6_to_ipv4(ip):
     ip = to_bitfield_ipv6(ip)
     if not ip.startswith(ipv4addrmask):
         raise ValueError, "not convertible to IPv4"
@@ -190,18 +191,28 @@ def to_ipv4(ip):
         ip = ip[8:]
     return x
 
+def to_ipv4(ip):
+    if is_ipv4(ip):
+        _valid_ipv4(ip)
+        return ip
+    return ipv6_to_ipv4(ip)
+
 def is_ipv4(ip):
     return ip.find(':') < 0
+
+def _valid_ipv4(ip):
+    ip = ip.split('.')
+    if len(ip) != 4:
+        raise ValueError
+    for i in ip:
+        chr(int(i))
 
 def is_valid_ip(ip):
     try:
         if is_ipv4(ip):
-            a = ip.split('.')
-            assert len(a) == 4
-            for i in a:
-                chr(int(i))
+            _valid_ipv4(ip)
             return True
         to_bitfield_ipv6(ip)
         return True
-    except:
+    except ValueError:
         return False
