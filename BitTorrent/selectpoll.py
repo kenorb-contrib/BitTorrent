@@ -1,5 +1,14 @@
+# The contents of this file are subject to the BitTorrent Open Source License
+# Version 1.0 (the License).  You may not copy or use this file, in either
+# source code or executable form, except in compliance with the License.  You
+# may obtain a copy of the License at http://www.bittorrent.com/license/.
+#
+# Software distributed under the License is distributed on an AS IS basis,
+# WITHOUT WARRANTY OF ANY KIND, either express or implied.  See the License
+# for the specific language governing rights and limitations under the
+# License.
+
 # Written by Bram Cohen
-# see LICENSE.txt for license information
 
 from select import select, error
 from time import sleep
@@ -10,7 +19,9 @@ POLLOUT = 2
 POLLERR = 8
 POLLHUP = 16
 
-class poll:
+
+class poll(object):
+
     def __init__(self):
         self.rlist = []
         self.wlist = []
@@ -55,52 +66,3 @@ def insert(list, item):
     i = bisect(list, item)
     if i == 0 or list[i-1] != item:
         list.insert(i, item)
-
-def test_remove():
-    x = [2, 4, 6]
-    remove(x, 2)
-    assert x == [4, 6]
-    x = [2, 4, 6]
-    remove(x, 4)
-    assert x == [2, 6]
-    x = [2, 4, 6]
-    remove(x, 6)
-    assert x == [2, 4]
-    x = [2, 4, 6]
-    remove(x, 5)
-    assert x == [2, 4, 6]
-    x = [2, 4, 6]
-    remove(x, 1)
-    assert x == [2, 4, 6]
-    x = [2, 4, 6]
-    remove(x, 7)
-    assert x == [2, 4, 6]
-    x = [2, 4, 6]
-    remove(x, 5)
-    assert x == [2, 4, 6]
-    x = []
-    remove(x, 3)
-    assert x == []
-
-def test_insert():
-    x = [2, 4]
-    insert(x, 1)
-    assert x == [1, 2, 4]
-    x = [2, 4]
-    insert(x, 3)
-    assert x == [2, 3, 4]
-    x = [2, 4]
-    insert(x, 5)
-    assert x == [2, 4, 5]
-    x = [2, 4]
-    insert(x, 2)
-    assert x == [2, 4]
-    x = [2, 4]
-    insert(x, 4)
-    assert x == [2, 4]
-    x = [2, 3, 4]
-    insert(x, 3)
-    assert x == [2, 3, 4]
-    x = []
-    insert(x, 3)
-    assert x == [3]

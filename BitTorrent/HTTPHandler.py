@@ -1,5 +1,14 @@
+# The contents of this file are subject to the BitTorrent Open Source License
+# Version 1.0 (the License).  You may not copy or use this file, in either
+# source code or executable form, except in compliance with the License.  You
+# may obtain a copy of the License at http://www.bittorrent.com/license/.
+#
+# Software distributed under the License is distributed on an AS IS basis,
+# WITHOUT WARRANTY OF ANY KIND, either express or implied.  See the License
+# for the specific language governing rights and limitations under the
+# License.
+
 # Written by Bram Cohen
-# see LICENSE.txt for license information
 
 from cStringIO import StringIO
 from sys import stdout
@@ -13,7 +22,9 @@ weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 months = [None, 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
     'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
-class HTTPConnection:
+
+class HTTPConnection(object):
+
     def __init__(self, handler, connection):
         self.handler = handler
         self.connection = connection
@@ -24,7 +35,7 @@ class HTTPConnection:
         self.next_func = self.read_type
 
     def get_ip(self):
-        return self.connection.get_ip()
+        return self.connection.ip
 
     def data_came_in(self, data):
         if self.donereading or self.next_func is None:
@@ -125,7 +136,7 @@ class HTTPConnection:
         useragent = self.headers.get('user-agent','-')
         year, month, day, hour, minute, second, a, b, c = time.localtime(time.time())
         print '%s %s %s [%02d/%3s/%04d:%02d:%02d:%02d] "%s" %i %i "%s" "%s"' % (
-            self.connection.get_ip(), ident, username, day, months[month], year, hour,
+            self.connection.ip, ident, username, day, months[month], year, hour,
             minute, second, self.header, responsecode, len(data), referer, useragent)
         t = time.time()
         if t - self.handler.lastflush > self.handler.minflush:
@@ -147,7 +158,9 @@ class HTTPConnection:
         if self.connection.is_flushed():
             self.connection.shutdown(1)
 
-class HTTPHandler:
+
+class HTTPHandler(object):
+
     def __init__(self, getfunc, minflush):
         self.connections = {}
         self.getfunc = getfunc
@@ -172,4 +185,3 @@ class HTTPHandler:
         c = self.connections[connection]
         if not c.data_came_in(data) and not c.closed:
             c.connection.shutdown(1)
-

@@ -1,34 +1,106 @@
-# Written by Bram Cohen
-# see LICENSE.txt for license information
+# The contents of this file are subject to the BitTorrent Open Source License
+# Version 1.0 (the License).  You may not copy or use this file, in either
+# source code or executable form, except in compliance with the License.  You
+# may obtain a copy of the License at http://www.bittorrent.com/license/.
+#
+# Software distributed under the License is distributed on an AS IS basis,
+# WITHOUT WARRANTY OF ANY KIND, either express or implied.  See the License
+# for the specific language governing rights and limitations under the
+# License.
 
-from CurrentRateMeasure import Measure
+# Written by Bram Cohen
+
 from random import shuffle
 from time import time
-from bitfield import Bitfield
 
-class SingleDownload:
+from BitTorrent.CurrentRateMeasure import Measure
+from BitTorrent.bitfield import Bitfield
+
+
+class PerIPStats(object):
+
+    def __init__(self):
+        self.numgood = 0
+        self.bad = {}
+        self.numconnections = 0
+        self.lastdownload = None
+        self.peerid = None
+
+
+class BadDataGuard(object):
+
+    def __init__(self, download):
+        self.download = download
+        self.ip = download.connection.ip
+        self.downloader = download.downloader
+        self.stats = self.downloader.perip[self.ip]
+        self.lastindex = None
+
+    def bad(self, index, bump = False):
+        self.stats.bad.setdefault(index, 0)
+        self.stats.bad[index] += 1
+        if self.ip not in self.downloader.bad_peers:
+            self.downloader.bad_peers[self.ip] = (False, self.stats)
+        if self.download is not None:
+            self.downloader.kick(self.download)
+            self.download = None
+        elif len(self.stats.bad) > 1 and self.stats.numconnections == 1 and \
+             self.stats.lastdownload is not None:
+            # kick new connection from same IP if previous one sent bad data,
+            # mainly to give the algorithm time to find other bad pieces
+            # in case the peer is sending a lot of bad data
+            self.downloader.kick(self.stats.lastdownload)
+        if len(self.stats.bad) >= 3 and len(self.stats.bad) > \
+           self.stats.numgood // 30:
+            self.downloader.ban(self.ip)
+        elif bump:
+            self.downloader.picker.bump(index)
+
+    def good(self, index):
+        # lastindex is a hack to only increase numgood for by one for each good
+        # piece, however many chunks came from the connection(s) from this IP
+        if index != self.lastindex:
+            self.stats.numgood += 1
+            self.lastindex = index
+
+
+class SingleDownload(object):
+
     def __init__(self, downloader, connection):
         self.downloader = downloader
         self.connection = connection
         self.choked = True
         self.interested = False
         self.active_requests = []
-        self.measure = Measure(downloader.max_rate_period)
+        self.measure = Measure(downloader.config['max_rate_period'])
+        self.peermeasure = Measure(max(downloader.storage.piece_size / 10000,
+                                       20))
         self.have = Bitfield(downloader.numpieces)
         self.last = 0
         self.example_interest = None
+        self.backlog = 2
+        self.guard = BadDataGuard(self)
+
+    def _backlog(self):
+        backlog = 2 + int(4 * self.measure.get_rate() /
+                          self.downloader.chunksize)
+        if backlog > 50:
+            backlog = max(50, int(.075 * backlog))
+        self.backlog = backlog
+        return backlog
 
     def disconnected(self):
-        self.downloader.downloads.remove(self)
+        self.downloader.lost_peer(self)
         for i in xrange(len(self.have)):
             if self.have[i]:
                 self.downloader.picker.lost_have(i)
         self._letgo()
+        self.guard.download = None
 
     def _letgo(self):
         if not self.active_requests:
             return
-        if self.downloader.storage.is_endgame():
+        if self.downloader.storage.endgame:
             self.active_requests = []
             return
         lost = []
@@ -60,32 +132,27 @@ class SingleDownload:
             if self.interested:
                 self._request_more()
 
-    def is_choked(self):
-        return self.choked
-
-    def is_interested(self):
-        return self.interested
-
     def got_piece(self, index, begin, piece):
         try:
             self.active_requests.remove((index, begin, len(piece)))
         except ValueError:
+            self.downloader.discarded_bytes += len(piece)
             return False
-        if self.downloader.storage.is_endgame():
+        if self.downloader.storage.endgame:
             self.downloader.all_requests.remove((index, begin, len(piece)))
         self.last = time()
         self.measure.update_rate(len(piece))
         self.downloader.measurefunc(len(piece))
         self.downloader.downmeasure.update_rate(len(piece))
-        if not self.downloader.storage.piece_came_in(index, begin, piece):
-            if self.downloader.storage.is_endgame():
+        if not self.downloader.storage.piece_came_in(index, begin, piece,
+                                                     self.guard):
+            if self.downloader.storage.endgame:
                 while self.downloader.storage.do_I_have_requests(index):
                     nb, nl = self.downloader.storage.new_request(index)
                     self.downloader.all_requests.append((index, nb, nl))
                 for d in self.downloader.downloads:
                     d.fix_download_endgame()
                 return False
-            self.downloader.picker.bump(index)
             ds = [d for d in self.downloader.downloads if not d.choked]
             shuffle(ds)
             for d in ds:
@@ -93,7 +160,7 @@ class SingleDownload:
             return False
         if self.downloader.storage.do_I_have(index):
             self.downloader.picker.complete(index)
-        if self.downloader.storage.is_endgame():
+        if self.downloader.storage.endgame:
             for d in self.downloader.downloads:
                 if d is not self and d.interested:
                     if d.choked:
@@ -116,13 +183,13 @@ class SingleDownload:
 
     def _request_more(self, indices = None):
         assert not self.choked
-        if len(self.active_requests) == self.downloader.backlog:
+        if len(self.active_requests) >= self._backlog():
             return
-        if self.downloader.storage.is_endgame():
+        if self.downloader.storage.endgame:
             self.fix_download_endgame()
             return
         lost_interests = []
-        while len(self.active_requests) < self.downloader.backlog:
+        while len(self.active_requests) < self.backlog:
             if indices is None:
                 interest = self.downloader.picker.next(self._want, self.have.numfalse == 0)
             else:
@@ -137,12 +204,14 @@ class SingleDownload:
                 self.interested = True
                 self.connection.send_interested()
             self.example_interest = interest
-            begin, length = self.downloader.storage.new_request(interest)
             self.downloader.picker.requested(interest, self.have.numfalse == 0)
-            self.active_requests.append((interest, begin, length))
-            self.connection.send_request(interest, begin, length)
-            if not self.downloader.storage.do_I_have_requests(interest):
-                lost_interests.append(interest)
+            while len(self.active_requests) < self.backlog * 2:
+                begin, length = self.downloader.storage.new_request(interest)
+                self.active_requests.append((interest, begin, length))
+                self.connection.send_request(interest, begin, length)
+                if not self.downloader.storage.do_I_have_requests(interest):
+                    lost_interests.append(interest)
+                    break
         if not self.active_requests and self.interested:
             self.interested = False
             self.connection.send_not_interested()
@@ -163,7 +232,7 @@ class SingleDownload:
                     d.connection.send_not_interested()
                 else:
                     d.example_interest = interest
-        if self.downloader.storage.is_endgame():
+        if self.downloader.storage.endgame:
             self.downloader.all_requests = []
             for d in self.downloader.downloads:
                 self.downloader.all_requests.extend(d.active_requests)
@@ -179,10 +248,10 @@ class SingleDownload:
         if not self.interested and want:
             self.interested = True
             self.connection.send_interested()
-        if self.choked:
+        if self.choked or len(self.active_requests) >= self._backlog():
             return
         shuffle(want)
-        del want[self.downloader.backlog - len(self.active_requests):]
+        del want[self.backlog - len(self.active_requests):]
         self.active_requests.extend(want)
         for piece, begin, length in want:
             self.connection.send_request(piece, begin, length)
@@ -190,12 +259,17 @@ class SingleDownload:
     def got_have(self, index):
         if self.have[index]:
             return
+        if index == self.downloader.numpieces-1:
+            self.peermeasure.update_rate(self.downloader.storage.total_length-
+              (self.downloader.numpieces-1)*self.downloader.storage.piece_size)
+        else:
+            self.peermeasure.update_rate(self.downloader.storage.piece_size)
         self.have[index] = True
         self.downloader.picker.got_have(index)
         if self.downloader.picker.am_I_complete() and self.have.numfalse == 0:
             self.connection.close()
             return
-        if self.downloader.storage.is_endgame():
+        if self.downloader.storage.endgame:
             self.fix_download_endgame()
         elif self.downloader.storage.do_I_have_requests(index):
             if not self.choked:
@@ -213,7 +287,7 @@ class SingleDownload:
         if self.downloader.picker.am_I_complete() and self.have.numfalse == 0:
             self.connection.close()
             return
-        if self.downloader.storage.is_endgame():
+        if self.downloader.storage.endgame:
             for piece, begin, length in self.downloader.all_requests:
                 if self.have[piece]:
                     self.interested = True
@@ -231,275 +305,59 @@ class SingleDownload:
     def is_snubbed(self):
         return time() - self.last > self.downloader.snub_time
 
-class Downloader:
-    def __init__(self, storage, picker, backlog, max_rate_period, numpieces, 
-            downmeasure, snub_time, measurefunc = lambda x: None):
+
+class Downloader(object):
+
+    def __init__(self, config, storage, picker, numpieces, downmeasure,
+                 measurefunc, kickfunc, banfunc):
+        self.config = config
         self.storage = storage
         self.picker = picker
-        self.backlog = backlog
-        self.max_rate_period = max_rate_period
+        self.chunksize = config['download_slice_size']
         self.downmeasure = downmeasure
         self.numpieces = numpieces
-        self.snub_time = snub_time
+        self.snub_time = config['snub_time']
         self.measurefunc = measurefunc
+        self.kickfunc = kickfunc
+        self.banfunc = banfunc
         self.downloads = []
+        self.perip = {}
+        self.bad_peers = {}
+        self.discarded_bytes = 0
 
     def make_download(self, connection):
-        self.downloads.append(SingleDownload(self, connection))
-        return self.downloads[-1]
+        ip = connection.ip
+        perip = self.perip.get(ip)
+        if perip is None:
+            perip = PerIPStats()
+            self.perip[ip] = perip
+        perip.numconnections += 1
+        d = SingleDownload(self, connection)
+        perip.lastdownload = d
+        perip.peerid = connection.id
+        self.downloads.append(d)
+        return d
 
-class DummyPicker:
-    def __init__(self, num, r):
-        self.stuff = range(num)
-        self.r = r
+    def lost_peer(self, download):
+        self.downloads.remove(download)
+        ip = download.connection.ip
+        self.perip[ip].numconnections -= 1
+        if self.perip[ip].lastdownload == download:
+            self.perip[ip].lastdownload = None
 
-    def next(self, wantfunc, seed):
-        for i in self.stuff:
-            if wantfunc(i):
-                return i
-        return None
+    def kick(self, download):
+        if not self.config['retaliate_to_garbled_data']:
+            return
+        ip = download.connection.ip
+        peerid = download.connection.id
+        # kickfunc will schedule connection.close() to be executed later; we
+        # might now be inside RawServer event loop with events from that
+        # connection already queued, and trying to handle them after doing
+        # close() now could cause problems.
+        self.kickfunc(download.connection)
 
-    def lost_have(self, pos):
-        self.r.append('lost have')
-
-    def got_have(self, pos):
-        self.r.append('got have')
-
-    def requested(self, pos, seed):
-        self.r.append('requested')
-
-    def complete(self, pos):
-        self.stuff.remove(pos)
-        self.r.append('complete')
-
-    def am_I_complete(self):
-        return False
-
-    def bump(self, i):
-        pass
-
-class DummyStorage:
-    def __init__(self, remaining, have_endgame = False, numpieces = 1):
-        self.remaining = remaining
-        self.active = [[] for i in xrange(numpieces)]
-        self.endgame = False
-        self.have_endgame = have_endgame
-
-    def do_I_have_requests(self, index):
-        return self.remaining[index] != []
-        
-    def request_lost(self, index, begin, length):
-        x = (begin, length)
-        self.active[index].remove(x)
-        self.remaining[index].append(x)
-        self.remaining[index].sort()
-        
-    def piece_came_in(self, index, begin, piece):
-        self.active[index].remove((begin, len(piece)))
-        return True
-        
-    def do_I_have(self, index):
-        return (self.remaining[index] == [] and 
-            self.active[index] == [])
-        
-    def new_request(self, index):
-        x = self.remaining[index].pop()
-        for i in self.remaining:
-            if i:
-                break
-        else:
-            self.endgame = True
-        self.active[index].append(x)
-        self.active[index].sort()
-        return x
-
-    def is_endgame(self):
-        return self.have_endgame and self.endgame
-
-class DummyConnection:
-    def __init__(self, events):
-        self.events = events
-
-    def send_interested(self):
-        self.events.append('interested')
-        
-    def send_not_interested(self):
-        self.events.append('not interested')
-        
-    def send_request(self, index, begin, length):
-        self.events.append(('request', index, begin, length))
-
-    def send_cancel(self, index, begin, length):
-        self.events.append(('cancel', index, begin, length))
-
-def test_stops_at_backlog():
-    ds = DummyStorage([[(0, 2), (2, 2), (4, 2), (6, 2)]])
-    events = []
-    d = Downloader(ds, DummyPicker(len(ds.remaining), events), 2, 15, 1, Measure(15), 10)
-    sd = d.make_download(DummyConnection(events))
-    assert events == []
-    assert ds.remaining == [[(0, 2), (2, 2), (4, 2), (6, 2)]]
-    assert ds.active == [[]]
-    sd.got_have_bitfield(Bitfield(1, chr(0x80)))
-    assert events == ['got have', 'interested']
-    del events[:]
-    assert ds.remaining == [[(0, 2), (2, 2), (4, 2), (6, 2)]]
-    assert ds.active == [[]]
-    sd.got_unchoke()
-    assert events == ['requested', ('request', 0, 6, 2), 'requested', ('request', 0, 4, 2)]
-    del events[:]
-    assert ds.remaining == [[(0, 2), (2, 2)]]
-    assert ds.active == [[(4, 2), (6, 2)]]
-    sd.got_piece(0, 4, 'ab')
-    assert events == ['requested', ('request', 0, 2, 2)]
-    del events[:]
-    assert ds.remaining == [[(0, 2)]]
-    assert ds.active == [[(2, 2), (6, 2)]]
-
-def test_got_have_single():
-    ds = DummyStorage([[(0, 2)]])
-    events = []
-    d = Downloader(ds, DummyPicker(len(ds.remaining), events), 2, 15, 1, Measure(15), 10)
-    sd = d.make_download(DummyConnection(events))
-    assert events == []
-    assert ds.remaining == [[(0, 2)]]
-    assert ds.active == [[]]
-    sd.got_unchoke()
-    assert events == []
-    assert ds.remaining == [[(0, 2)]]
-    assert ds.active == [[]]
-    sd.got_have(0)
-    assert events == ['got have', 'interested', 'requested', ('request', 0, 0, 2)]
-    del events[:]
-    assert ds.remaining == [[]]
-    assert ds.active == [[(0, 2)]]
-    sd.disconnected()
-    assert events == ['lost have']
-
-def test_choke_clears_active():
-    ds = DummyStorage([[(0, 2)]])
-    events = []
-    d = Downloader(ds, DummyPicker(len(ds.remaining), events), 2, 15, 1, Measure(15), 10)
-    sd1 = d.make_download(DummyConnection(events))
-    sd2 = d.make_download(DummyConnection(events))
-    assert events == []
-    assert ds.remaining == [[(0, 2)]]
-    assert ds.active == [[]]
-    sd1.got_unchoke()
-    sd1.got_have(0)
-    assert events == ['got have', 'interested', 'requested', ('request', 0, 0, 2)]
-    del events[:]
-    assert ds.remaining == [[]]
-    assert ds.active == [[(0, 2)]]
-    sd2.got_unchoke()
-    sd2.got_have(0)
-    assert events == ['got have']
-    del events[:]
-    assert ds.remaining == [[]]
-    assert ds.active == [[(0, 2)]]
-    sd1.got_choke()
-    assert events == ['interested', 'requested', ('request', 0, 0, 2), 'not interested']
-    del events[:]
-    assert ds.remaining == [[]]
-    assert ds.active == [[(0, 2)]]
-    sd2.got_piece(0, 0, 'ab')
-    assert events == ['complete', 'not interested']
-    del events[:]
-    assert ds.remaining == [[]]
-    assert ds.active == [[]]
-
-def test_endgame():
-    ds = DummyStorage([[(0, 2)], [(0, 2)], [(0, 2)]], True, 3)
-    events = []
-    d = Downloader(ds, DummyPicker(len(ds.remaining), events), 10, 15, 3, Measure(15), 10)
-    ev1 = []
-    ev2 = []
-    ev3 = []
-    ev4 = []
-    sd1 = d.make_download(DummyConnection(ev1))
-    sd2 = d.make_download(DummyConnection(ev2))
-    sd3 = d.make_download(DummyConnection(ev3))
-    sd1.got_unchoke()
-    sd1.got_have(0)
-    assert ev1 == ['interested', ('request', 0, 0, 2)]
-    del ev1[:]
-    
-    sd2.got_unchoke()
-    sd2.got_have(0)
-    sd2.got_have(1)
-    assert ev2 == ['interested', ('request', 1, 0, 2)]
-    del ev2[:]
-    
-    sd3.got_unchoke()
-    sd3.got_have(0)
-    sd3.got_have(1)
-    sd3.got_have(2)
-    assert (ev3 == ['interested', ('request', 2, 0, 2), ('request', 0, 0, 2), ('request', 1, 0, 2)] or 
-        ev3 == ['interested', ('request', 2, 0, 2), ('request', 1, 0, 2), ('request', 0, 0, 2)])
-    del ev3[:]
-    assert ev2 == [('request', 0, 0, 2)]
-    del ev2[:]
-
-    sd2.got_piece(0, 0, 'ab')
-    assert ev1 == [('cancel', 0, 0, 2), 'not interested']
-    del ev1[:]
-    assert ev2 == []
-    assert ev3 == [('cancel', 0, 0, 2)]
-    del ev3[:]
-
-    sd3.got_choke()
-    assert ev1 == []
-    assert ev2 == []
-    assert ev3 == []
-
-    sd3.got_unchoke()
-    assert (ev3 == [('request', 2, 0, 2), ('request', 1, 0, 2)] or 
-        ev3 == [('request', 1, 0, 2), ('request', 2, 0, 2)])
-    del ev3[:]
-    assert ev1 == []
-    assert ev2 == []
-
-    sd4 = d.make_download(DummyConnection(ev4))
-    sd4.got_have_bitfield([True, True, True])
-    assert ev4 == ['interested']
-    del ev4[:]
-    sd4.got_unchoke()
-    assert (ev4 == [('request', 2, 0, 2), ('request', 1, 0, 2)] or 
-        ev4 == [('request', 1, 0, 2), ('request', 2, 0, 2)])
-    assert ev1 == []
-    assert ev2 == []
-    assert ev3 == []
-
-def test_stops_at_backlog_endgame():
-    ds = DummyStorage([[(2, 2), (0, 2)], [(2, 2), (0, 2)], [(0, 2)]], True, 3)
-    events = []
-    d = Downloader(ds, DummyPicker(len(ds.remaining), events), 3, 15, 3, Measure(15), 10)
-    ev1 = []
-    ev2 = []
-    ev3 = []
-    sd1 = d.make_download(DummyConnection(ev1))
-    sd2 = d.make_download(DummyConnection(ev2))
-    sd3 = d.make_download(DummyConnection(ev3))
-
-    sd1.got_unchoke()
-    sd1.got_have(0)
-    assert ev1 == ['interested', ('request', 0, 0, 2), ('request', 0, 2, 2)]
-    del ev1[:]
-
-    sd2.got_unchoke()
-    sd2.got_have(0)
-    assert ev2 == []
-    sd2.got_have(1)
-    assert ev2 == ['interested', ('request', 1, 0, 2), ('request', 1, 2, 2)]
-    del ev2[:]
-
-    sd3.got_unchoke()
-    sd3.got_have(2)
-    assert (ev2 == [('request', 0, 0, 2)] or 
-        ev2 == [('request', 0, 2, 2)])
-    n = ev2[0][2]
-    del ev2[:]
-
-    sd1.got_piece(0, n, 'ab')
-    assert ev1 == []
-    assert ev2 == [('cancel', 0, n, 2), ('request', 0, 2-n, 2)]
+    def ban(self, ip):
+        if not self.config['retaliate_to_garbled_data']:
+            return
+        self.banfunc(ip)
+        self.bad_peers[ip] = (True, self.perip[ip])

@@ -1,8 +1,37 @@
-# Written by Bill Bumgarner and Bram Cohen
-# see LICENSE.txt for license information
+# The contents of this file are subject to the BitTorrent Open Source License
+# Version 1.0 (the License).  You may not copy or use this file, in either
+# source code or executable form, except in compliance with the License.  You
+# may obtain a copy of the License at http://www.bittorrent.com/license/.
+#
+# Software distributed under the License is distributed on an AS IS basis,
+# WITHOUT WARRANTY OF ANY KIND, either express or implied.  See the License
+# for the specific language governing rights and limitations under the
+# License.
 
+# Written by Bill Bumgarner and Bram Cohen
+
+import sys
 from types import *
 from cStringIO import StringIO
+
+from BitTorrent.obsoletepythonsupport import *
+
+from BitTorrent import BTFailure
+
+def printHelp(uiname, defaults):
+    print "Usage: %s" % uiname,
+    if uiname.startswith('btlaunchmany'):
+        print "[OPTIONS] [TORRENTDIRECTORY]\n"
+        print "If a non-option argument is present it's taken as the value\n"\
+              "of the torrent_dir option."
+    elif uiname == 'btdownloadgui':
+        print "[OPTIONS] [TORRENTFILES]"
+    elif uiname.startswith('btdownload'):
+        print "[OPTIONS] [TORRENTFILE]"
+    elif uiname == 'btmaketorrent':
+        print "[OPTION] TRACKER_URL FILE [FILE]"
+    print ''
+    print 'arguments are -\n' + formatDefinitions(defaults, 80)
 
 def formatDefinitions(options, COLS):
     s = StringIO()
@@ -14,6 +43,8 @@ def formatDefinitions(options, COLS):
         indent = " "
 
     for (longname, default, doc) in options:
+        if doc == '':
+            continue
         s.write('--' + longname + ' <arg>\n')
         if default is not None:
             doc += ' (defaults to ' + repr(default) + ')'
@@ -32,83 +63,74 @@ def formatDefinitions(options, COLS):
     return s.getvalue()
 
 def usage(str):
-    raise ValueError(str)
+    raise BTFailure(str)
 
-def parseargs(argv, options, minargs = None, maxargs = None):
+def format_key(key):
+    if len(key) == 1:
+        return '-%s'%key
+    else:
+        return '--%s'%key
+
+def parseargs(argv, options, minargs = None, maxargs = None, presets = None):
     config = {}
-    longkeyed = {}
     for option in options:
         longname, default, doc = option
-        longkeyed[longname] = option
         config[longname] = default
-    options = []
     args = []
     pos = 0
+    if presets is None:
+        presets = {}
+    else:
+        presets = presets.copy()
     while pos < len(argv):
-        if argv[pos][:2] != '--':
+        if argv[pos][:1] != '-':             # not a cmdline option
             args.append(argv[pos])
             pos += 1
         else:
-            if pos == len(argv) - 1:
-                usage('parameter passed in at end with no value')
-            key, value = argv[pos][2:], argv[pos+1]
-            pos += 2
-            if not longkeyed.has_key(key):
-                usage('unknown key --' + key)
-            longname, default, doc = longkeyed[key]
-            try:
-                t = type(config[longname])
-                if t is NoneType or t is StringType:
-                    config[longname] = value
-                elif t in (IntType, LongType):
-                    config[longname] = long(value)
-                elif t is FloatType:
-                    config[longname] = float(value)
-                else:
-                    assert 0
-            except ValueError, e:
-                usage('wrong format of --%s - %s' % (key, str(e)))
+            key, value = None, None
+            if argv[pos][:2] == '--':        # --aaa 1
+                if pos == len(argv) - 1:
+                    usage('parameter passed in at end with no value')
+                key, value = argv[pos][2:], argv[pos+1]
+                pos += 2
+            elif argv[pos][:1] == '-':
+                key = argv[pos][1:2]
+                if len(argv[pos]) > 2:       # -a1
+                    value = argv[pos][2:]
+                    pos += 1
+                else:                        # -a 1
+                    if pos == len(argv) - 1:
+                        usage('parameter passed in at end with no value')
+                    value = argv[pos+1]
+                    pos += 2
+            else:
+                raise BTFailure('command line parsing failed at '+argv[pos])
+
+            presets[key] = value
+    parse_options(config, presets)
+    config.update(presets)
     for key, value in config.items():
         if value is None:
-            usage("Option --%s is required." % key)
+            usage("Option %s is required." % format_key(key))
     if minargs is not None and len(args) < minargs:
         usage("Must supply at least %d args." % minargs)
     if maxargs is not None and len(args) > maxargs:
         usage("Too many args - %d max." % maxargs)
     return (config, args)
 
-def test_parseargs():
-    assert parseargs(('d', '--a', 'pq', 'e', '--b', '3', '--c', '4.5', 'f'), (('a', 'x', ''), ('b', 1, ''), ('c', 2.3, ''))) == ({'a': 'pq', 'b': 3, 'c': 4.5}, ['d', 'e', 'f'])
-    assert parseargs([], [('a', 'x', '')]) == ({'a': 'x'}, [])
-    assert parseargs(['--a', 'x', '--a', 'y'], [('a', '', '')]) == ({'a': 'y'}, [])
-    try:
-        parseargs([], [('a', 'x', '')])
-    except ValueError:
-        pass
-    try:
-        parseargs(['--a', 'x'], [])
-    except ValueError:
-        pass
-    try:
-        parseargs(['--a'], [('a', 'x', '')])
-    except ValueError:
-        pass
-    try:
-        parseargs([], [], 1, 2)
-    except ValueError:
-        pass
-    assert parseargs(['x'], [], 1, 2) == ({}, ['x'])
-    assert parseargs(['x', 'y'], [], 1, 2) == ({}, ['x', 'y'])
-    try:
-        parseargs(['x', 'y', 'z'], [], 1, 2)
-    except ValueError:
-        pass
-    try:
-        parseargs(['--a', '2.0'], [('a', 3, '')])
-    except ValueError:
-        pass
-    try:
-        parseargs(['--a', 'z'], [('a', 2.1, '')])
-    except ValueError:
-        pass
-
+def parse_options(defaults, newvalues):
+    for key, value in newvalues.iteritems():
+        if not defaults.has_key(key):
+            raise BTFailure('unknown key ' + format_key(key))
+        try:
+            t = type(defaults[key])
+            if t is NoneType or t is StringType:
+                newvalues[key] = value
+            elif t in (IntType, LongType):
+                newvalues[key] = int(value)
+            elif t is FloatType:
+                newvalues[key] = float(value)
+            else:
+                assert False
+        except ValueError, e:
+            raise BTFailure('wrong format of %s - %s' % (format_key(key), str(e)))

@@ -8,11 +8,20 @@ a test fails if it raises an exception, otherwise it passes
 functions are try_all and try_single
 """
 
+# The contents of this file are subject to the BitTorrent Open Source License
+# Version 1.0 (the License).  You may not copy or use this file, in either
+# source code or executable form, except in compliance with the License.  You
+# may obtain a copy of the License at http://www.bittorrent.com/license/.
+#
+# Software distributed under the License is distributed on an AS IS basis,
+# WITHOUT WARRANTY OF ANY KIND, either express or implied.  See the License
+# for the specific language governing rights and limitations under the
+# License.
+
 # Written by Bram Cohen
-# see LICENSE.txt for license information
 
 from traceback import print_exc
-from sys import modules
+import sys
 
 def try_all(excludes = [], excluded_paths=[]):
     """
@@ -22,14 +31,28 @@ def try_all(excludes = [], excluded_paths=[]):
     modules from files under under any of excluded_paths are also skipped.
     """
     failed = []
-    for modulename, module in modules.items():
+    ms = sys.modules.items()
+    ms.sort()
+    for modulename, module in ms:
         # skip builtins
         if not hasattr(module, '__file__'):
+            continue
+        if not modulename.startswith('BitTorrent'):
             continue
         # skip modules under any of excluded_paths
         if [p for p in excluded_paths if module.__file__.startswith(p)]:
             continue
         if modulename not in excludes and module not in excludes:
+            modulename = "BitTorrent.tests" + modulename[len('BitTorrent'):] +\
+                         "Tests"
+            try:
+                __import__(modulename)
+                module = sys.modules[modulename]
+            except ImportError:
+                continue
+            except:
+                print_exc()
+                continue
             try_module(module, modulename, failed)
     print_failed(failed)
 

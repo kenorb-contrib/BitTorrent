@@ -1,26 +1,39 @@
-# Written by Bram Cohen
-# see LICENSE.txt for license information
+# The contents of this file are subject to the BitTorrent Open Source License
+# Version 1.0 (the License).  You may not copy or use this file, in either
+# source code or executable form, except in compliance with the License.  You
+# may obtain a copy of the License at http://www.bittorrent.com/license/.
+#
+# Software distributed under the License is distributed on an AS IS basis,
+# WITHOUT WARRANTY OF ANY KIND, either express or implied.  See the License
+# for the specific language governing rights and limitations under the
+# License.
 
+# Written by Bram Cohen
+
+import os
+import sys
 from bisect import insort
 import socket
 from cStringIO import StringIO
 from traceback import print_exc
 from errno import EWOULDBLOCK, ENOBUFS
+from time import time, sleep
+from BitTorrent import CRITICAL
+
 try:
     from select import poll, error, POLLIN, POLLOUT, POLLERR, POLLHUP
     timemult = 1000
 except ImportError:
-    from selectpoll import poll, error, POLLIN, POLLOUT, POLLERR, POLLHUP
+    from BitTorrent.selectpoll import poll, error, POLLIN, POLLOUT, POLLERR, POLLHUP
     timemult = 1
-from threading import Thread, Event
-from time import time, sleep
-import sys
-from random import randrange
+
 
 all = POLLIN | POLLOUT
 
-class SingleSocket:
-    def __init__(self, raw_server, sock, handler):
+
+class SingleSocket(object):
+
+    def __init__(self, raw_server, sock, handler, context, ip = None):
         self.raw_server = raw_server
         self.socket = sock
         self.handler = handler
@@ -28,13 +41,21 @@ class SingleSocket:
         self.last_hit = time()
         self.fileno = sock.fileno()
         self.connected = False
-        
-    def get_ip(self):
-        try:
-            return self.socket.getpeername()[0]
-        except socket.error:
-            return 'no connection'
-        
+        self.context = context
+        if ip is not None:
+            self.ip = ip
+        else:
+            try:
+                peername = self.socket.getpeername()
+            except socket.error:
+                self.ip = 'unknown'
+            else:
+                try:
+                    self.ip = peername[0]
+                except:
+                    assert isinstance(peername, basestring)
+                    self.ip = peername # UNIX socket, not really ip
+
     def close(self):
         sock = self.socket
         self.socket = None
@@ -75,14 +96,18 @@ class SingleSocket:
         else:
             self.raw_server.poll.register(self.socket, all)
 
-def default_error_handler(x):
+def default_error_handler(x, y):
     print x
 
-class RawServer:
+
+class RawServer(object):
+
     def __init__(self, doneflag, timeout_check_interval, timeout, noisy = True,
-            errorfunc = default_error_handler, maxconnects = 55):
+            errorfunc = default_error_handler, bindaddr = '', tos = 0):
         self.timeout_check_interval = timeout_check_interval
         self.timeout = timeout
+        self.bindaddr = bindaddr
+        self.tos = tos
         self.poll = poll()
         # {socket: SingleSocket}
         self.single_sockets = {}
@@ -90,13 +115,39 @@ class RawServer:
         self.doneflag = doneflag
         self.noisy = noisy
         self.errorfunc = errorfunc
-        self.maxconnects = maxconnects
         self.funcs = []
-        self.unscheduled_tasks = []
+        self.externally_added_tasks = []
+        self.listening_handlers = {}
+        self.serversockets = {}
+        self.live_contexts = {None : True}
         self.add_task(self.scan_for_timeouts, timeout_check_interval)
+        if sys.platform != 'win32':
+            self.wakeupfds = os.pipe()
+            self.poll.register(self.wakeupfds[0], POLLIN)
+        else:
+            # Windows doesn't support pipes with select(). Just prevent sleeps
+            # longer than a second instead of proper wakeup for now.
+            self.wakeupfds = (None, None)
+            def wakeup():
+                self.add_task(wakeup, 1)
+            wakeup()
 
-    def add_task(self, func, delay):
-        self.unscheduled_tasks.append((func, delay))
+    def add_context(self, context):
+        self.live_contexts[context] = True
+
+    def remove_context(self, context):
+        del self.live_contexts[context]
+        self.funcs = [x for x in self.funcs if x[2] != context]
+
+    def add_task(self, func, delay, context = None):
+        if context in self.live_contexts:
+            insort(self.funcs, (time() + delay, func, context))
+
+    def external_add_task(self, func, delay, context = None):
+        self.externally_added_tasks.append((func, delay, context))
+        # Wake up the RawServer thread in case it's sleeping in poll()
+        if self.wakeupfds[1] is not None:
+            os.write(self.wakeupfds[1], 'X')
 
     def scan_for_timeouts(self):
         self.add_task(self.scan_for_timeouts, self.timeout_check_interval)
@@ -109,151 +160,182 @@ class RawServer:
             if k.socket is not None:
                 self._close_socket(k)
 
-    def bind(self, port, bind = '', reuse = False):
-        self.bindaddr = bind
+    def create_serversocket(self, port, bind = '', reuse = False):
         server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         if reuse:
             server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         server.setblocking(0)
-        try:
-            server.setsockopt(socket.IPPROTO_IP, socket.IP_TOS, 32)
-        except:
-            pass
+        if self.tos != 0:
+            try:
+                server.setsockopt(socket.IPPROTO_IP, socket.IP_TOS, self.tos)
+            except:
+                pass
         server.bind((bind, port))
         server.listen(5)
-        self.poll.register(server, POLLIN)
-        self.server = server
+        return server
 
-    def start_connection(self, dns, handler = None):
-        if handler is None:
-            handler = self.handler
+    def start_listening(self, serversocket, handler, context = None):
+        self.listening_handlers[serversocket.fileno()] = (handler, context)
+        self.serversockets[serversocket.fileno()] = serversocket
+        self.poll.register(serversocket, POLLIN)
+
+    def stop_listening(self, serversocket):
+        del self.listening_handlers[serversocket.fileno()]
+        del self.serversockets[serversocket.fileno()]
+        self.poll.unregister(serversocket)
+
+    def start_connection(self, dns, handler = None, context = None,
+                         do_bind = True):
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.setblocking(0)
-        sock.bind((self.bindaddr, 0))
+        if do_bind and self.bindaddr:
+            sock.bind((self.bindaddr, 0))
+        if self.tos != 0:
+            try:
+                sock.setsockopt(socket.IPPROTO_IP, socket.IP_TOS, self.tos)
+            except:
+                pass
         try:
             sock.connect_ex(dns)
         except socket.error:
+            sock.close()
             raise
         except Exception, e:
+            sock.close()
             raise socket.error(str(e))
         self.poll.register(sock, POLLIN)
-        s = SingleSocket(self, sock, handler)
+        s = SingleSocket(self, sock, handler, context, dns[0])
         self.single_sockets[sock.fileno()] = s
         return s
-        
-    def handle_events(self, events):
+
+    def wrap_socket(self, sock, handler, context = None, ip = None):
+        sock.setblocking(0)
+        self.poll.register(sock, POLLIN)
+        s = SingleSocket(self, sock, handler, context, ip)
+        self.single_sockets[sock.fileno()] = s
+        return s
+
+    def _handle_events(self, events):
         for sock, event in events:
-            if sock == self.server.fileno():
+            if sock in self.serversockets:
+                s = self.serversockets[sock]
                 if event & (POLLHUP | POLLERR) != 0:
-                    self.poll.unregister(self.server)
-                    self.server.close()
-                    self.errorfunc('lost server socket')
+                    self.poll.unregister(s)
+                    s.close()
+                    self.errorfunc(CRITICAL, 'lost server socket')
                 else:
                     try:
-                        newsock, addr = self.server.accept()
+                        handler, context = self.listening_handlers[sock]
+                        newsock, addr = s.accept()
                         newsock.setblocking(0)
-                        if len(self.single_sockets) >= self.maxconnects:
-                            newsock.close()
-                            continue
-                        nss = SingleSocket(self, newsock, self.handler)
+                        nss = SingleSocket(self, newsock, handler, context)
                         self.single_sockets[newsock.fileno()] = nss
                         self.poll.register(newsock, POLLIN)
-                        self.handler.external_connection_made(nss)
+                        self._make_wrapped_call(handler. \
+                           external_connection_made, (nss,), context = context)
                     except socket.error:
                         sleep(1)
             else:
                 s = self.single_sockets.get(sock)
                 if s is None:
+                    if sock == self.wakeupfds[0]:
+                        # Another thread wrote this just to wake us up.
+                        os.read(sock, 1)
                     continue
                 s.connected = True
-                if (event & (POLLHUP | POLLERR)) != 0:
+                if event & POLLERR:
                     self._close_socket(s)
                     continue
-                if (event & POLLIN) != 0:
+                if event & (POLLIN | POLLHUP):
+                    s.last_hit = time()
                     try:
-                        s.last_hit = time()
                         data = s.socket.recv(100000)
-                        if data == '':
-                            self._close_socket(s)
-                        else:
-                            s.handler.data_came_in(s, data)
                     except socket.error, e:
                         code, msg = e
                         if code != EWOULDBLOCK:
                             self._close_socket(s)
-                            continue
-                if (event & POLLOUT) != 0 and s.socket is not None and not s.is_flushed():
+                        continue
+                    if data == '':
+                        self._close_socket(s)
+                    else:
+                        self._make_wrapped_call(s.handler.data_came_in,
+                                                (s, data), s)
+                # data_came_in could have closed the socket (s.socket = None)
+                if event & POLLOUT and s.socket is not None:
                     s.try_write()
                     if s.is_flushed():
-                        s.handler.connection_flushed(s)
+                        self._make_wrapped_call(s.handler.connection_flushed,
+                                                (s,), s)
 
-    def pop_unscheduled(self):
-        try:
-            while True:
-                (func, delay) = self.unscheduled_tasks.pop()
-                insort(self.funcs, (time() + delay, func))
-        except IndexError:
-            pass
+    def _pop_externally_added(self):
+        while self.externally_added_tasks:
+            task = self.externally_added_tasks.pop(0)
+            self.add_task(*task)
 
-    def listen_forever(self, handler):
-        self.handler = handler
-        try:
-            while not self.doneflag.isSet():
-                try:
-                    self.pop_unscheduled()
-                    if len(self.funcs) == 0:
-                        period = 2 ** 30
-                    else:
-                        period = self.funcs[0][0] - time()
-                    if period < 0:
-                        period = 0
-                    events = self.poll.poll(period * timemult)
-                    if self.doneflag.isSet():
-                        return
-                    while len(self.funcs) > 0 and self.funcs[0][0] <= time():
-                        garbage, func = self.funcs[0]
-                        del self.funcs[0]
-                        try:
-                            func()
-                        except KeyboardInterrupt:
-                            print_exc()
-                            return
-                        except:
-                            if self.noisy:
-                                data = StringIO()
-                                print_exc(file = data)
-                                self.errorfunc(data.getvalue())
-                    self._close_dead()
-                    self.handle_events(events)
-                    if self.doneflag.isSet():
-                        return
-                    self._close_dead()
-                except error, e:
-                    if self.doneflag.isSet():
-                        return
-                    # I can't find a coherent explanation for what the behavior should be here,
-                    # and people report conflicting behavior, so I'll just try all the possibilities
-                    try:
-                        code, msg, desc = e
-                    except:
-                        try:
-                            code, msg = e
-                        except:
-                            code = ENOBUFS
-                    if code == ENOBUFS:
-                        self.errorfunc("Have to exit due to the TCP stack flaking out")
-                        return
-                except KeyboardInterrupt:
-                    print_exc()
+    def listen_forever(self):
+        while not self.doneflag.isSet():
+            try:
+                self._pop_externally_added()
+                if len(self.funcs) == 0:
+                    period = 1e9
+                else:
+                    period = self.funcs[0][0] - time()
+                if period < 0:
+                    period = 0
+                events = self.poll.poll(period * timemult)
+                if self.doneflag.isSet():
                     return
+                while len(self.funcs) > 0 and self.funcs[0][0] <= time():
+                    garbage, func, context = self.funcs.pop(0)
+                    self._make_wrapped_call(func, (), context = context)
+                self._close_dead()
+                self._handle_events(events)
+                if self.doneflag.isSet():
+                    return
+                self._close_dead()
+            except error, e:
+                if self.doneflag.isSet():
+                    return
+                # I can't find a coherent explanation for what the behavior
+                # should be here, and people report conflicting behavior,
+                # so I'll just try all the possibilities
+                try:
+                    code, msg, desc = e
                 except:
-                    data = StringIO()
-                    print_exc(file = data)
-                    self.errorfunc(data.getvalue())
-        finally:
-            for ss in self.single_sockets.values():
-                ss.close()
-            self.server.close()
+                    try:
+                        code, msg = e
+                    except:
+                        code = ENOBUFS
+                if code == ENOBUFS:
+                    self.errorfunc(CRITICAL, "Have to exit due to the TCP "
+                                   "stack flaking out")
+                    return
+            except KeyboardInterrupt:
+                print_exc()
+                return
+            except:
+                data = StringIO()
+                print_exc(file = data)
+                self.errorfunc(CRITICAL, data.getvalue())
+
+    def _make_wrapped_call(self, function, args, socket = None, context=None):
+        try:
+            function(*args)
+        except KeyboardInterrupt:
+            raise
+        except Exception, e:         # hopefully nothing raises strings
+            # Incoming sockets can be assigned to a particular torrent during
+            # a data_came_in call, and it's possible (though not likely) that
+            # there could be a torrent-specific exception during the same call.
+            # Therefore read the context after the call.
+            if socket is not None:
+                context = socket.context
+            if self.noisy and context is None:
+                data = StringIO()
+                print_exc(file = data)
+                self.errorfunc(CRITICAL, data.getvalue())
+            if context is not None:
+                context.got_exception(e)
 
     def _close_dead(self):
         while len(self.dead_from_write) > 0:
@@ -269,355 +351,4 @@ class RawServer:
         self.poll.unregister(sock)
         del self.single_sockets[sock]
         s.socket = None
-        s.handler.connection_lost(s)
-
-# everything below is for testing
-
-class DummyHandler:
-    def __init__(self):
-        self.external_made = []
-        self.data_in = []
-        self.lost = []
-
-    def external_connection_made(self, s):
-        self.external_made.append(s)
-    
-    def data_came_in(self, s, data):
-        self.data_in.append((s, data))
-    
-    def connection_lost(self, s):
-        self.lost.append(s)
-
-    def connection_flushed(self, s):
-        pass
-
-def sl(rs, handler, port):
-    rs.bind(port)
-    Thread(target = rs.listen_forever, args = [handler]).start()
-
-def loop(rs):
-    x = []
-    def r(rs = rs, x = x):
-        rs.add_task(x[0], .1)
-    x.append(r)
-    rs.add_task(r, .1)
-
-beginport = 5000 + randrange(10000)
-
-def test_starting_side_close():
-    try:
-        fa = Event()
-        fb = Event()
-        da = DummyHandler()
-        sa = RawServer(fa, 100, 100)
-        loop(sa)
-        sl(sa, da, beginport)
-        db = DummyHandler()
-        sb = RawServer(fb, 100, 100)
-        loop(sb)
-        sl(sb, db, beginport + 1)
-
-        sleep(.5)
-        ca = sa.start_connection(('127.0.0.1', beginport + 1))
-        sleep(1)
-        
-        assert da.external_made == []
-        assert da.data_in == []
-        assert da.lost == []
-        assert len(db.external_made) == 1
-        cb = db.external_made[0]
-        del db.external_made[:]
-        assert db.data_in == []
-        assert db.lost == []
-
-        ca.write('aaa')
-        cb.write('bbb')
-        sleep(1)
-        
-        assert da.external_made == []
-        assert da.data_in == [(ca, 'bbb')]
-        del da.data_in[:]
-        assert da.lost == []
-        assert db.external_made == []
-        assert db.data_in == [(cb, 'aaa')]
-        del db.data_in[:]
-        assert db.lost == []
-
-        ca.write('ccc')
-        cb.write('ddd')
-        sleep(1)
-        
-        assert da.external_made == []
-        assert da.data_in == [(ca, 'ddd')]
-        del da.data_in[:]
-        assert da.lost == []
-        assert db.external_made == []
-        assert db.data_in == [(cb, 'ccc')]
-        del db.data_in[:]
-        assert db.lost == []
-
-        ca.close()
-        sleep(1)
-
-        assert da.external_made == []
-        assert da.data_in == []
-        assert da.lost == []
-        assert db.external_made == []
-        assert db.data_in == []
-        assert db.lost == [cb]
-        del db.lost[:]
-    finally:
-        fa.set()
-        fb.set()
-
-def test_receiving_side_close():
-    try:
-        da = DummyHandler()
-        fa = Event()
-        sa = RawServer(fa, 100, 100)
-        loop(sa)
-        sl(sa, da, beginport + 2)
-        db = DummyHandler()
-        fb = Event()
-        sb = RawServer(fb, 100, 100)
-        loop(sb)
-        sl(sb, db, beginport + 3)
-        
-        sleep(.5)
-        ca = sa.start_connection(('127.0.0.1', beginport + 3))
-        sleep(1)
-        
-        assert da.external_made == []
-        assert da.data_in == []
-        assert da.lost == []
-        assert len(db.external_made) == 1
-        cb = db.external_made[0]
-        del db.external_made[:]
-        assert db.data_in == []
-        assert db.lost == []
-
-        ca.write('aaa')
-        cb.write('bbb')
-        sleep(1)
-        
-        assert da.external_made == []
-        assert da.data_in == [(ca, 'bbb')]
-        del da.data_in[:]
-        assert da.lost == []
-        assert db.external_made == []
-        assert db.data_in == [(cb, 'aaa')]
-        del db.data_in[:]
-        assert db.lost == []
-
-        ca.write('ccc')
-        cb.write('ddd')
-        sleep(1)
-        
-        assert da.external_made == []
-        assert da.data_in == [(ca, 'ddd')]
-        del da.data_in[:]
-        assert da.lost == []
-        assert db.external_made == []
-        assert db.data_in == [(cb, 'ccc')]
-        del db.data_in[:]
-        assert db.lost == []
-
-        cb.close()
-        sleep(1)
-
-        assert da.external_made == []
-        assert da.data_in == []
-        assert da.lost == [ca]
-        del da.lost[:]
-        assert db.external_made == []
-        assert db.data_in == []
-        assert db.lost == []
-    finally:
-        fa.set()
-        fb.set()
-
-def test_connection_refused():
-    try:
-        da = DummyHandler()
-        fa = Event()
-        sa = RawServer(fa, 100, 100)
-        loop(sa)
-        sl(sa, da, beginport + 6)
-
-        sleep(.5)
-        ca = sa.start_connection(('127.0.0.1', beginport + 15))
-        sleep(1)
-        
-        assert da.external_made == []
-        assert da.data_in == []
-        assert da.lost == [ca]
-        del da.lost[:]
-    finally:
-        fa.set()
-
-def test_both_close():
-    try:
-        da = DummyHandler()
-        fa = Event()
-        sa = RawServer(fa, 100, 100)
-        loop(sa)
-        sl(sa, da, beginport + 4)
-
-        sleep(1)
-        db = DummyHandler()
-        fb = Event()
-        sb = RawServer(fb, 100, 100)
-        loop(sb)
-        sl(sb, db, beginport + 5)
-
-        sleep(.5)
-        ca = sa.start_connection(('127.0.0.1', beginport + 5))
-        sleep(1)
-        
-        assert da.external_made == []
-        assert da.data_in == []
-        assert da.lost == []
-        assert len(db.external_made) == 1
-        cb = db.external_made[0]
-        del db.external_made[:]
-        assert db.data_in == []
-        assert db.lost == []
-
-        ca.write('aaa')
-        cb.write('bbb')
-        sleep(1)
-        
-        assert da.external_made == []
-        assert da.data_in == [(ca, 'bbb')]
-        del da.data_in[:]
-        assert da.lost == []
-        assert db.external_made == []
-        assert db.data_in == [(cb, 'aaa')]
-        del db.data_in[:]
-        assert db.lost == []
-
-        ca.write('ccc')
-        cb.write('ddd')
-        sleep(1)
-        
-        assert da.external_made == []
-        assert da.data_in == [(ca, 'ddd')]
-        del da.data_in[:]
-        assert da.lost == []
-        assert db.external_made == []
-        assert db.data_in == [(cb, 'ccc')]
-        del db.data_in[:]
-        assert db.lost == []
-
-        ca.close()
-        cb.close()
-        sleep(1)
-
-        assert da.external_made == []
-        assert da.data_in == []
-        assert da.lost == []
-        assert db.external_made == []
-        assert db.data_in == []
-        assert db.lost == []
-    finally:
-        fa.set()
-        fb.set()
-
-def test_normal():
-    l = []
-    f = Event()
-    s = RawServer(f, 100, 100)
-    loop(s)
-    sl(s, DummyHandler(), beginport + 7)
-    s.add_task(lambda l = l: l.append('b'), 2)
-    s.add_task(lambda l = l: l.append('a'), 1)
-    s.add_task(lambda l = l: l.append('d'), 4)
-    sleep(1.5)
-    s.add_task(lambda l = l: l.append('c'), 1.5)
-    sleep(3)
-    assert l == ['a', 'b', 'c', 'd']
-    f.set()
-
-def test_catch_exception():
-    l = []
-    f = Event()
-    s = RawServer(f, 100, 100, False)
-    loop(s)
-    sl(s, DummyHandler(), beginport + 9)
-    s.add_task(lambda l = l: l.append('b'), 2)
-    s.add_task(lambda: 4/0, 1)
-    sleep(3)
-    assert l == ['b']
-    f.set()
-
-def test_closes_if_not_hit():
-    try:
-        da = DummyHandler()
-        fa = Event()
-        sa = RawServer(fa, 2, 2)
-        loop(sa)
-        sl(sa, da, beginport + 14)
-
-        sleep(1)
-        db = DummyHandler()
-        fb = Event()
-        sb = RawServer(fb, 100, 100)
-        loop(sb)
-        sl(sb, db, beginport + 13)
-        
-        sleep(.5)
-        sa.start_connection(('127.0.0.1', beginport + 13))
-        sleep(1)
-        
-        assert da.external_made == []
-        assert da.data_in == []
-        assert da.lost == []
-        assert len(db.external_made) == 1
-        del db.external_made[:]
-        assert db.data_in == []
-        assert db.lost == []
-
-        sleep(3.1)
-        
-        assert len(da.lost) == 1
-        assert len(db.lost) == 1
-    finally:
-        fa.set()
-        fb.set()
-
-def test_does_not_close_if_hit():
-    try:
-        fa = Event()
-        fb = Event()
-        da = DummyHandler()
-        sa = RawServer(fa, 2, 2)
-        loop(sa)
-        sl(sa, da, beginport + 12)
-
-        sleep(1)
-        db = DummyHandler()
-        sb = RawServer(fb, 100, 100)
-        loop(sb)
-        sl(sb, db, beginport + 13)
-        
-        sleep(.5)
-        sa.start_connection(('127.0.0.1', beginport + 13))
-        sleep(1)
-        
-        assert da.external_made == []
-        assert da.data_in == []
-        assert da.lost == []
-        assert len(db.external_made) == 1
-        cb = db.external_made[0]
-        del db.external_made[:]
-        assert db.data_in == []
-        assert db.lost == []
-
-        cb.write('bbb')
-        sleep(.5)
-        
-        assert da.lost == []
-        assert db.lost == []
-    finally:
-        fa.set()
-        fb.set()
+        self._make_wrapped_call(s.handler.connection_lost, (s,), s)

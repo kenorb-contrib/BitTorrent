@@ -1,15 +1,28 @@
-# Written by Bram Cohen
-# see LICENSE.txt for license information
+# The contents of this file are subject to the BitTorrent Open Source License
+# Version 1.0 (the License).  You may not copy or use this file, in either
+# source code or executable form, except in compliance with the License.  You
+# may obtain a copy of the License at http://www.bittorrent.com/license/.
+#
+# Software distributed under the License is distributed on an AS IS basis,
+# WITHOUT WARRANTY OF ANY KIND, either express or implied.  See the License
+# for the specific language governing rights and limitations under the
+# License.
 
-from bitfield import Bitfield
+# Originally written by Bram Cohen, heavily modified by Uoti Urpala
+
+# required for python 2.2
+from __future__ import generators
+
 from binascii import b2a_hex
-from CurrentRateMeasure import Measure
+
+from BitTorrent.bitfield import Bitfield
+from BitTorrent.obsoletepythonsupport import *
 
 def toint(s):
-    return long(b2a_hex(s), 16)
+    return int(b2a_hex(s), 16)
 
 def tobinary(i):
-    return (chr(i >> 24) + chr((i >> 16) & 0xFF) + 
+    return (chr(i >> 24) + chr((i >> 16) & 0xFF) +
         chr((i >> 8) & 0xFF) + chr(i & 0xFF))
 
 CHOKE = chr(0)
@@ -27,321 +40,275 @@ PIECE = chr(7)
 # index, begin, piece
 CANCEL = chr(8)
 
-class Connection:
-    def __init__(self, connection, connecter):
+protocol_name = 'BitTorrent protocol'
+
+
+class Connection(object):
+
+    def __init__(self, encoder, connection, id, is_local):
+        self.encoder = encoder
         self.connection = connection
-        self.connecter = connecter
+        self.id = id
+        self.ip = connection.ip
+        self.locally_initiated = is_local
+        self.complete = False
+        self.closed = False
         self.got_anything = False
-
-    def get_ip(self):
-        return self.connection.get_ip()
-
-    def get_id(self):
-        return self.connection.get_id()
+        self.next_upload = None
+        self.upload = None
+        self.download = None
+        self._buffer = []
+        self._buffer_len = 0
+        self._reader = self._read_messages()
+        self._next_len = self._reader.next()
+        self._partial_message = None
+        self._outqueue = []
+        self.choke_sent = True
+        if self.locally_initiated:
+            connection.write(chr(len(protocol_name)) + protocol_name +
+                (chr(0) * 8) + self.encoder.download_id)
+            if self.id is not None:
+                connection.write(self.encoder.my_id)
 
     def close(self):
-        self.connection.close()
-
-    def is_flushed(self):
-        if self.connecter.rate_capped:
-            return False
-        return self.connection.is_flushed()
-
-    def is_locally_initiated(self):
-        return self.connection.is_locally_initiated()
+        if not self.closed:
+            self.connection.close()
+            self._sever()
 
     def send_interested(self):
-        self.connection.send_message(INTERESTED)
+        self._send_message(INTERESTED)
 
     def send_not_interested(self):
-        self.connection.send_message(NOT_INTERESTED)
+        self._send_message(NOT_INTERESTED)
 
     def send_choke(self):
-        self.connection.send_message(CHOKE)
+        if self._partial_message is None:
+            self._send_message(CHOKE)
+            self.choke_sent = True
+            self.upload.sent_choke()
 
     def send_unchoke(self):
-        self.connection.send_message(UNCHOKE)
+        if self._partial_message is None:
+            self._send_message(UNCHOKE)
+            self.choke_sent = False
 
     def send_request(self, index, begin, length):
-        self.connection.send_message(REQUEST + tobinary(index) + 
+        self._send_message(REQUEST + tobinary(index) +
             tobinary(begin) + tobinary(length))
 
     def send_cancel(self, index, begin, length):
-        self.connection.send_message(CANCEL + tobinary(index) + 
+        self._send_message(CANCEL + tobinary(index) +
             tobinary(begin) + tobinary(length))
 
-    def send_piece(self, index, begin, piece):
-        assert not self.connecter.rate_capped
-        self.connecter._update_upload_rate(len(piece))
-        self.connection.send_message(PIECE + tobinary(index) + 
-            tobinary(begin) + piece)
-
     def send_bitfield(self, bitfield):
-        self.connection.send_message(BITFIELD + bitfield)
+        self._send_message(BITFIELD + bitfield)
 
     def send_have(self, index):
-        self.connection.send_message(HAVE + tobinary(index))
+        self._send_message(HAVE + tobinary(index))
 
-    def get_upload(self):
-        return self.upload
+    def send_keepalive(self):
+        self._send_message('')
 
-    def get_download(self):
-        return self.download
+    def send_partial(self, bytes):
+        if self.closed:
+            return 0
+        if self._partial_message is None:
+            s = self.upload.get_upload_chunk()
+            if s is None:
+                return 0
+            index, begin, piece = s
+            self._partial_message = ''.join((tobinary(len(piece) + 9), PIECE,
+                                    tobinary(index), tobinary(begin), piece))
+        if bytes < len(self._partial_message):
+            self.connection.write(buffer(self._partial_message, 0, bytes))
+            self._partial_message = buffer(self._partial_message, bytes)
+            return bytes
 
-class Connecter:
-    def __init__(self, make_upload, downloader, choker, numpieces,
-            totalup, max_upload_rate = 0, sched = None):
-        self.downloader = downloader
-        self.make_upload = make_upload
-        self.choker = choker
-        self.numpieces = numpieces
-        self.max_upload_rate = max_upload_rate
-        self.sched = sched
-        self.totalup = totalup
-        self.rate_capped = False
-        self.connections = {}
+        queue = [str(self._partial_message)]
+        self._partial_message = None
+        if self.choke_sent != self.upload.choked:
+            if self.upload.choked:
+                self._outqueue.append(tobinary(1) + CHOKE)
+                self.upload.sent_choke()
+            else:
+                self._outqueue.append(tobinary(1) + UNCHOKE)
+            self.choke_sent = self.upload.choked
+        queue.extend(self._outqueue)
+        self._outqueue = []
+        queue = ''.join(queue)
+        self.connection.write(queue)
+        return len(queue)
 
-    def _update_upload_rate(self, amount):
-        self.totalup.update_rate(amount)
-        if self.max_upload_rate > 0 and self.totalup.get_rate_noupdate() > self.max_upload_rate:
-            self.rate_capped = True
-            self.sched(self._uncap, self.totalup.time_until_rate(self.max_upload_rate))
-
-    def _uncap(self):
-        self.rate_capped = False
-        while not self.rate_capped:
-            up = None
-            minrate = None
-            for i in self.connections.values():
-                if not i.upload.is_choked() and i.upload.has_queries() and i.connection.is_flushed():
-                    rate = i.upload.get_rate()
-                    if up is None or rate < minrate:
-                        up = i.upload
-                        minrate = rate
-            if up is None:
-                break
-            up.flushed()
-            if self.totalup.get_rate_noupdate() > self.max_upload_rate:
-                break
-
-    def change_max_upload_rate(self, newval):
-        def foo(self=self, newval=newval):
-            self._change_max_upload_rate(newval)
-        self.sched(foo, 0);
-        
-    def _change_max_upload_rate(self, newval):
-        self.max_upload_rate = newval
-        self._uncap()
-        
-    def how_many_connections(self):
-        return len(self.connections)
-
-    def connection_made(self, connection):
-        c = Connection(connection, self)
-        self.connections[connection] = c
-        c.upload = self.make_upload(c)
-        c.download = self.downloader.make_download(c)
-        self.choker.connection_made(c)
-
-    def connection_lost(self, connection):
-        c = self.connections[connection]
-        d = c.download
-        del self.connections[connection]
-        d.disconnected()
-        self.choker.connection_lost(c)
-
-    def connection_flushed(self, connection):
-        self.connections[connection].upload.flushed()
-
-    def got_message(self, connection, message):
-        c = self.connections[connection]
-        t = message[0]
-        if t == BITFIELD and c.got_anything:
-            connection.close()
+    # yields the number of bytes it wants next, gets those in self._message
+    def _read_messages(self):
+        yield 1   # header length
+        if ord(self._message) != len(protocol_name):
             return
-        c.got_anything = True
-        if (t in [CHOKE, UNCHOKE, INTERESTED, NOT_INTERESTED] and 
+
+        yield len(protocol_name)
+        if self._message != protocol_name:
+            return
+
+        yield 8  # reserved
+
+        yield 20 # download id
+        if self.encoder.download_id is None:  # incoming connection
+            # modifies self.encoder if successful
+            self.encoder.select_torrent(self, self._message)
+            if self.encoder.download_id is None:
+                return
+        elif self._message != self.encoder.download_id:
+            return
+        if not self.locally_initiated:
+            self.connection.write(chr(len(protocol_name)) + protocol_name +
+                (chr(0) * 8) + self.encoder.download_id + self.encoder.my_id)
+
+        yield 20  # peer id
+        if not self.id:
+            self.id = self._message
+            if self.id == self.encoder.my_id:
+                return
+            for v in self.encoder.connections.itervalues():
+                if v is not self:
+                    if v.id == self.id:
+                        return
+                    if self.encoder.config['one_connection_per_ip'] and \
+                           v.ip == self.ip:
+                        return
+            if self.locally_initiated:
+                self.connection.write(self.encoder.my_id)
+            else:
+                self.encoder.everinc = True
+        else:
+            if self._message != self.id:
+                return
+        self.complete = True
+        self.encoder.connection_completed(self)
+
+        while True:
+            yield 4   # message length
+            l = toint(self._message)
+            if l > self.encoder.config['max_message_length']:
+                return
+            if l > 0:
+                yield l
+                self._got_message(self._message)
+
+    def _got_message(self, message):
+        t = message[0]
+        if t == BITFIELD and self.got_anything:
+            self.close()
+            return
+        self.got_anything = True
+        if (t in [CHOKE, UNCHOKE, INTERESTED, NOT_INTERESTED] and
                 len(message) != 1):
-            connection.close()
+            self.close()
             return
         if t == CHOKE:
-            c.download.got_choke()
+            self.download.got_choke()
         elif t == UNCHOKE:
-            c.download.got_unchoke()
+            self.download.got_unchoke()
         elif t == INTERESTED:
-            c.upload.got_interested()
+            self.upload.got_interested()
         elif t == NOT_INTERESTED:
-            c.upload.got_not_interested()
+            self.upload.got_not_interested()
         elif t == HAVE:
             if len(message) != 5:
-                connection.close()
+                self.close()
                 return
             i = toint(message[1:])
-            if i >= self.numpieces:
-                connection.close()
+            if i >= self.encoder.numpieces:
+                self.close()
                 return
-            c.download.got_have(i)
+            self.download.got_have(i)
         elif t == BITFIELD:
             try:
-                b = Bitfield(self.numpieces, message[1:])
+                b = Bitfield(self.encoder.numpieces, message[1:])
             except ValueError:
-                connection.close()
+                self.close()
                 return
-            c.download.got_have_bitfield(b)
+            self.download.got_have_bitfield(b)
         elif t == REQUEST:
             if len(message) != 13:
-                connection.close()
+                self.close()
                 return
             i = toint(message[1:5])
-            if i >= self.numpieces:
-                connection.close()
+            if i >= self.encoder.numpieces:
+                self.close()
                 return
-            c.upload.got_request(i, toint(message[5:9]), 
+            self.upload.got_request(i, toint(message[5:9]),
                 toint(message[9:]))
         elif t == CANCEL:
             if len(message) != 13:
-                connection.close()
+                self.close()
                 return
             i = toint(message[1:5])
-            if i >= self.numpieces:
-                connection.close()
+            if i >= self.encoder.numpieces:
+                self.close()
                 return
-            c.upload.got_cancel(i, toint(message[5:9]), 
+            self.upload.got_cancel(i, toint(message[5:9]),
                 toint(message[9:]))
         elif t == PIECE:
             if len(message) <= 9:
-                connection.close()
+                self.close()
                 return
             i = toint(message[1:5])
-            if i >= self.numpieces:
-                connection.close()
+            if i >= self.encoder.numpieces:
+                self.close()
                 return
-            if c.download.got_piece(i, toint(message[5:9]), message[9:]):
-                for co in self.connections.values():
+            if self.download.got_piece(i, toint(message[5:9]), message[9:]):
+                for co in self.encoder.complete_connections:
                     co.send_have(i)
         else:
-            connection.close()
+            self.close()
 
-class DummyUpload:
-    def __init__(self, events):
-        self.events = events
-        events.append('made upload')
+    def _sever(self):
+        self.closed = True
+        self._reader = None
+        del self.encoder.connections[self.connection]
+        self.encoder.replace_connection()
+        if self.complete:
+            del self.encoder.complete_connections[self]
+            self.download.disconnected()
+            self.encoder.choker.connection_lost(self)
+            self.upload = self.download = None
 
-    def flushed(self):
-        self.events.append('flushed')
+    def _send_message(self, message):
+        s = tobinary(len(message)) + message
+        if self._partial_message is not None:
+            self._outqueue.append(s)
+        else:
+            self.connection.write(s)
 
-    def got_interested(self):
-        self.events.append('interested')
-        
-    def got_not_interested(self):
-        self.events.append('not interested')
+    def data_came_in(self, conn, s):
+        while True:
+            if self.closed:
+                return
+            i = self._next_len - self._buffer_len
+            if i > len(s):
+                self._buffer.append(s)
+                self._buffer_len += len(s)
+                return
+            m = s[:i]
+            if self._buffer_len > 0:
+                self._buffer.append(m)
+                m = ''.join(self._buffer)
+                self._buffer = []
+                self._buffer_len = 0
+            s = s[i:]
+            self._message = m
+            try:
+                self._next_len = self._reader.next()
+            except StopIteration:
+                self.close()
+                return
 
-    def got_request(self, index, begin, length):
-        self.events.append(('request', index, begin, length))
+    def connection_lost(self, conn):
+        assert conn is self.connection
+        self._sever()
 
-    def got_cancel(self, index, begin, length):
-        self.events.append(('cancel', index, begin, length))
-
-class DummyDownload:
-    def __init__(self, events):
-        self.events = events
-        events.append('made download')
-        self.hit = 0
-
-    def disconnected(self):
-        self.events.append('disconnected')
-
-    def got_choke(self):
-        self.events.append('choke')
-
-    def got_unchoke(self):
-        self.events.append('unchoke')
-
-    def got_have(self, i):
-        self.events.append(('have', i))
-
-    def got_have_bitfield(self, bitfield):
-        self.events.append(('bitfield', bitfield.tostring()))
-
-    def got_piece(self, index, begin, piece):
-        self.events.append(('piece', index, begin, piece))
-        self.hit += 1
-        return self.hit > 1
-
-class DummyDownloader:
-    def __init__(self, events):
-        self.events = events
-
-    def make_download(self, connection):
-        return DummyDownload(self.events)
-
-class DummyConnection:
-    def __init__(self, events):
-        self.events = events
-
-    def send_message(self, message):
-        self.events.append(('m', message))
-
-class DummyChoker:
-    def __init__(self, events, cs):
-        self.events = events
-        self.cs = cs
-
-    def connection_made(self, c):
-        self.events.append('made')
-        self.cs.append(c)
-
-    def connection_lost(self, c):
-        self.events.append('lost')
-
-def test_operation():
-    events = []
-    cs = []
-    co = Connecter(lambda c, events = events: DummyUpload(events), 
-        DummyDownloader(events), DummyChoker(events, cs), 3, 
-        Measure(10))
-    assert events == []
-    assert cs == []
-    
-    dc = DummyConnection(events)
-    co.connection_made(dc)
-    assert len(cs) == 1
-    cc = cs[0]
-    co.got_message(dc, BITFIELD + chr(0xc0))
-    co.got_message(dc, CHOKE)
-    co.got_message(dc, UNCHOKE)
-    co.got_message(dc, INTERESTED)
-    co.got_message(dc, NOT_INTERESTED)
-    co.got_message(dc, HAVE + tobinary(2))
-    co.got_message(dc, REQUEST + tobinary(1) + tobinary(5) + tobinary(6))
-    co.got_message(dc, CANCEL + tobinary(2) + tobinary(3) + tobinary(4))
-    co.got_message(dc, PIECE + tobinary(1) + tobinary(0) + 'abc')
-    co.got_message(dc, PIECE + tobinary(1) + tobinary(3) + 'def')
-    co.connection_flushed(dc)
-    cc.send_bitfield(chr(0x60))
-    cc.send_interested()
-    cc.send_not_interested()
-    cc.send_choke()
-    cc.send_unchoke()
-    cc.send_have(4)
-    cc.send_request(0, 2, 1)
-    cc.send_cancel(1, 2, 3)
-    cc.send_piece(1, 2, 'abc')
-    co.connection_lost(dc)
-    x = ['made upload', 'made download', 'made', 
-        ('bitfield', chr(0xC0)), 'choke', 'unchoke',
-        'interested', 'not interested', ('have', 2), 
-        ('request', 1, 5, 6), ('cancel', 2, 3, 4),
-        ('piece', 1, 0, 'abc'), ('piece', 1, 3, 'def'), 
-        ('m', HAVE + tobinary(1)),
-        'flushed', ('m', BITFIELD + chr(0x60)), ('m', INTERESTED), 
-        ('m', NOT_INTERESTED), ('m', CHOKE), ('m', UNCHOKE), 
-        ('m', HAVE + tobinary(4)), ('m', REQUEST + tobinary(0) + 
-        tobinary(2) + tobinary(1)), ('m', CANCEL + tobinary(1) + 
-        tobinary(2) + tobinary(3)), ('m', PIECE + tobinary(1) + 
-        tobinary(2) + 'abc'), 'disconnected', 'lost']
-    for a, b in zip (events, x):
-        assert a == b, repr((a, b))
-
-def test_conversion():
-    assert toint(tobinary(50000)) == 50000
+    def connection_flushed(self, connection):
+        if self.complete:
+            if self.next_upload is None and (self._partial_message is not None
+                                             or self.upload.buffer):
+                self.encoder.ratelimiter.queue(self)

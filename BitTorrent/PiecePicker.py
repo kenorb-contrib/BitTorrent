@@ -1,15 +1,28 @@
+# The contents of this file are subject to the BitTorrent Open Source License
+# Version 1.0 (the License).  You may not copy or use this file, in either
+# source code or executable form, except in compliance with the License.  You
+# may obtain a copy of the License at http://www.bittorrent.com/license/.
+#
+# Software distributed under the License is distributed on an AS IS basis,
+# WITHOUT WARRANTY OF ANY KIND, either express or implied.  See the License
+# for the specific language governing rights and limitations under the
+# License.
+
 # Written by Bram Cohen
-# see LICENSE.txt for license information
 
 from random import randrange, shuffle, choice
 
-class PiecePicker:
-    def __init__(self, numpieces, rarest_first_cutoff = 1):
-        self.rarest_first_cutoff = rarest_first_cutoff
+
+class PiecePicker(object):
+
+    def __init__(self, numpieces, config):
+        self.config = config
         self.numpieces = numpieces
         self.interests = [range(numpieces)]
         self.pos_in_interests = range(numpieces)
         self.numinterests = [0] * numpieces
+        self.have = [False] * numpieces
+        self.crosscount = [numpieces]
         self.started = []
         self.seedstarted = []
         self.numgot = 0
@@ -17,19 +30,26 @@ class PiecePicker:
         shuffle(self.scrambled)
 
     def got_have(self, piece):
-        if self.numinterests[piece] is None:
-            return
         numint = self.numinterests[piece]
+        self.crosscount[numint + self.have[piece]] -= 1
+        self.numinterests[piece] += 1
+        try:
+            self.crosscount[numint + 1 + self.have[piece]] += 1
+        except IndexError:
+            self.crosscount.append(1)
+        if self.have[piece]:
+            return
         if numint == len(self.interests) - 1:
             self.interests.append([])
-        self.numinterests[piece] += 1
         self._shift_over(piece, self.interests[numint], self.interests[numint + 1])
 
     def lost_have(self, piece):
-        if self.numinterests[piece] is None:
-            return
         numint = self.numinterests[piece]
+        self.crosscount[numint + self.have[piece]] -= 1
         self.numinterests[piece] -= 1
+        self.crosscount[numint - 1 + self.have[piece]] += 1
+        if self.have[piece]:
+            return
         self._shift_over(piece, self.interests[numint], self.interests[numint - 1])
 
     def _shift_over(self, piece, l1, l2):
@@ -55,14 +75,19 @@ class PiecePicker:
             self.seedstarted.append(piece)
 
     def complete(self, piece):
-        assert self.numinterests[piece] is not None
+        assert not self.have[piece]
+        self.have[piece] = True
+        self.crosscount[self.numinterests[piece]] -= 1
+        try:
+            self.crosscount[self.numinterests[piece] + 1] += 1
+        except IndexError:
+            self.crosscount.append(1)
         self.numgot += 1
         l = self.interests[self.numinterests[piece]]
         p = self.pos_in_interests[piece]
         l[p] = l[-1]
         self.pos_in_interests[l[-1]] = p
         del l[-1]
-        self.numinterests[piece] = None
         try:
             self.started.remove(piece)
             self.seedstarted.remove(piece)
@@ -85,7 +110,7 @@ class PiecePicker:
                     bests.append(i)
         if bests:
             return choice(bests)
-        if self.numgot < self.rarest_first_cutoff:
+        if self.numgot < self.config['rarest_first_cutoff']:
             for i in self.scrambled:
                 if havefunc(i):
                     return i
@@ -106,76 +131,8 @@ class PiecePicker:
         l.append(piece)
         for i in range(pos,len(l)):
             self.pos_in_interests[l[i]] = i
-
-def test_requested():
-    p = PiecePicker(9)
-    p.complete(8)
-    p.got_have(0)
-    p.got_have(2)
-    p.got_have(4)
-    p.got_have(6)
-    p.requested(1)
-    p.requested(1)
-    p.requested(3)
-    p.requested(0)
-    p.requested(6)
-    v = _pull(p)
-    assert v[:2] == [1, 3] or v[:2] == [3, 1]
-    assert v[2:4] == [0, 6] or v[2:4] == [6, 0]
-    assert v[4:] == [2, 4] or v[4:] == [4, 2]
-
-def test_change_interest():
-    p = PiecePicker(9)
-    p.complete(8)
-    p.got_have(0)
-    p.got_have(2)
-    p.got_have(4)
-    p.got_have(6)
-    p.lost_have(2)
-    p.lost_have(6)
-    v = _pull(p)
-    assert v == [0, 4] or v == [4, 0]
-
-def test_change_interest2():
-    p = PiecePicker(9)
-    p.complete(8)
-    p.got_have(0)
-    p.got_have(2)
-    p.got_have(4)
-    p.got_have(6)
-    p.lost_have(2)
-    p.lost_have(6)
-    v = _pull(p)
-    assert v == [0, 4] or v == [4, 0]
-
-def test_complete():
-    p = PiecePicker(1)
-    p.got_have(0)
-    p.complete(0)
-    assert _pull(p) == []
-    p.got_have(0)
-    p.lost_have(0)
-
-def test_rarer_in_started_takes_priority():
-    p = PiecePicker(3)
-    p.complete(2)
-    p.requested(0)
-    p.requested(1)
-    p.got_have(1)
-    p.got_have(0)
-    p.got_have(0)
-    assert _pull(p) == [1, 0]
-
-def test_zero():
-    assert _pull(PiecePicker(0)) == []
-
-def _pull(pp):
-    r = []
-    def want(p, r = r):
-        return p not in r
-    while True:
-        n = pp.next(want)
-        if n is None:
-            break
-        r.append(n)
-    return r
+        try:
+            self.started.remove(piece)
+            self.seedstarted.remove(piece)
+        except ValueError:
+            pass

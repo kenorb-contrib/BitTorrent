@@ -1,147 +1,70 @@
+# The contents of this file are subject to the BitTorrent Open Source License
+# Version 1.0 (the License).  You may not copy or use this file, in either
+# source code or executable form, except in compliance with the License.  You
+# may obtain a copy of the License at http://www.bittorrent.com/license/.
 #
-# zurllib.py
-#
-# This is (hopefully) a drop-in for urllib which will request gzip/deflate
-# compression and then decompress the output if a compressed response is
-# received while maintaining the API.
-#
-# by Robert Stone 2/22/2003 
-#
+# Software distributed under the License is distributed on an AS IS basis,
+# WITHOUT WARRANTY OF ANY KIND, either express or implied.  See the License
+# for the specific language governing rights and limitations under the
+# License.
 
-from urllib import *
-from urllib2 import *
+# Written by John Hoffman
+
+from httplib import HTTPConnection
+from urlparse import urlparse
+import socket
 from gzip import GzipFile
 from StringIO import StringIO
-from __init__ import version
-import pprint
+from urllib import quote, unquote
+from BitTorrent import version
 
+MAX_REDIRECTS = 10
 
-DEBUG=0
+class urlopen:
+    def __init__(self, url):
+        self.tries = 0
+        self._open(url)
 
+    def _open(self, url):
+        self.tries += 1
+        if self.tries > MAX_REDIRECTS:
+            raise IOError, ('http error', 500,
+                            "Internal Server Error: Redirect Recursion")
+        (scheme, netloc, path, pars, query, fragment) = urlparse(url)
+        if scheme != 'http':
+            raise IOError, ('url error', 'unknown url type', scheme, url)
+        url = path
+        if pars:
+            url += ';'+pars
+        if query:
+            url += '?'+query
+#        if fragment:
+        self.connection = HTTPConnection(netloc)
+        self.connection.request('GET', url, None,
+                                { 'User-Agent': 'BitTorrent/' + version,
+                                  'Accept-Encoding': 'gzip' } )
+        self.response = self.connection.getresponse()
+        status = self.response.status
+        if status in (301,302):
+            try:
+                self.connection.close()
+            except:
+                pass
+            self._open(self.response.getheader('Location'))
+            return
+        if status != 200:
+            raise IOError, ('http error', status, self.response.reason)
 
-class HTTPContentEncodingHandler(HTTPHandler):
-    """Inherit and add gzip/deflate/etc support to HTTP gets."""
-    def http_open(self, req):
-        # add the Accept-Encoding header to the request
-        # support gzip encoding (identity is assumed)
-        req.add_header("Accept-Encoding","gzip")
-        req.add_header('User-Agent', 'BitTorrent/' + version)
-        if DEBUG: 
-            print "Sending:" 
-            print req.headers
-            print "\n"
-        fp = HTTPHandler.http_open(self,req)
-        headers = fp.headers
-        if DEBUG: 
-             pprint.pprint(headers.dict)
-        url = fp.url
-        return addinfourldecompress(fp, headers, url)
-
-
-class addinfourldecompress(addinfourl):
-    """Do gzip decompression if necessary. Do addinfourl stuff too."""
-    def __init__(self, fp, headers, url):
-        # we need to do something more sophisticated here to deal with
-        # multiple values?  What about other weird crap like q-values?
-        # basically this only works for the most simplistic case and will
-        # break in some other cases, but for now we only care about making
-        # this work with the BT tracker so....
-        if headers.has_key('content-encoding') and headers['content-encoding'] == 'gzip':
-            if DEBUG:
-                print "Contents of Content-encoding: " + headers['Content-encoding'] + "\n"
-            self.gzip = 1
-            self.rawfp = fp
-            fp = GzipStream(fp)
-        else:
-            self.gzip = 0
-        return addinfourl.__init__(self, fp, headers, url)
-
-    def close(self):
-        self.fp.close()
-        if self.gzip:
-            self.rawfp.close()
-
-    def iscompressed(self):
-        return self.gzip
-
-class GzipStream(StringIO):
-    """Magically decompress a file object.
-
-       This is not the most efficient way to do this but GzipFile() wants
-       to seek, etc, which won't work for a stream such as that from a socket.
-       So we copy the whole shebang info a StringIO object, decompress that
-       then let people access the decompressed output as a StringIO object.
-
-       The disadvantage is memory use and the advantage is random access.
-
-       Will mess with fixing this later.
-    """
-
-    def __init__(self,fp):
-        self.fp = fp
-
-        # this is nasty and needs to be fixed at some point
-        # copy everything into a StringIO (compressed)
-        compressed = StringIO()
-        r = fp.read()
-        while r:
-            compressed.write(r)
-            r = fp.read()
-        # now, unzip (gz) the StringIO to a string
-        compressed.seek(0,0)
-        gz = GzipFile(fileobj = compressed)
-        str = ''
-        r = gz.read()
-        while r:
-            str += r
-            r = gz.read()
-        # close our utility files
-        compressed.close()
-        gz.close()
-        # init our stringio selves with the string 
-        StringIO.__init__(self, str)
-        del str
+    def read(self):
+        data = self.response.read()
+        if self.response.getheader('Content-Encoding','').find('gzip') >= 0:
+            try:
+                compressed = StringIO(data)
+                f = GzipFile(fileobj = compressed)
+                data = f.read()
+            except:
+                raise IOError, ('http error', 'got corrupt response')
+        return data
 
     def close(self):
-        self.fp.close()
-        return StringIO.close(self)
-
-
-def test():
-    """Test this module.
-
-       At the moment this is lame.
-    """
-
-    print "Running unit tests.\n"
-
-    def printcomp(fp):
-        try:
-            if fp.iscompressed():
-                print "GET was compressed.\n"
-            else:
-                print "GET was uncompressed.\n"
-        except:
-            print "no iscompressed function!  this shouldn't happen"
-
-    print "Trying to GET a compressed document...\n"
-    fp = urlopen('http://a.scarywater.net/hng/index.shtml')
-    print fp.read()
-    printcomp(fp)
-    fp.close()
-
-    print "Trying to GET an unknown document...\n"
-    fp = urlopen('http://www.otaku.org/')
-    print fp.read()
-    printcomp(fp)
-    fp.close()
-
-
-#
-# Install the HTTPContentEncodingHandler that we've defined above.
-#
-install_opener(build_opener(HTTPContentEncodingHandler))
-
-if __name__ == '__main__':
-    test()
-
+        self.connection.close()
