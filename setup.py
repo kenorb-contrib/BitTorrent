@@ -15,12 +15,6 @@ setup(
     url = "http://www.bitconjurer.org/BitTorrent/",
     license = "MIT",
     
-    ext_modules = [
-    Extension(name    = "_StreamEncrypter",
-              sources = ["_StreamEncrypter.c"]
-              )
-    ],
-
     packages = ["BitTorrent"],
 
     scripts = ["btdownloadgui.py", "btdownloadheadless.py", "btdownloadlibrary.py", 

@@ -23,6 +23,7 @@ from socket import error as socketerror
 from random import seed
 from traceback import print_exc
 from threading import Event
+from time import time
 true = 1
 false = 0
 
@@ -165,7 +166,7 @@ def download(params, filefunc, statusfunc, resultfunc, doneflag, cols):
             makedirs(path.split(f)[0])
         except OSError:
             pass
-    myid = sha(str(time) + ' ' + response['your ip']).digest()
+    myid = sha(str(time()) + ' ' + response['your ip']).digest()
     seed(myid)
     blobs = SingleBlob(files, info['pieces'], 
         info['piece length'], finished, open, path.exists, 
@@ -183,7 +184,7 @@ def download(params, filefunc, statusfunc, resultfunc, doneflag, cols):
         preference)
     total_up = [0l]
     total_down = [0l]
-    def upload(connection, choker = choker, blobs = blobs, 
+    def make_upload(connection, choker = choker, blobs = blobs, 
             max_slice_length = config['max_slice_length'],
             max_rate_period = config['max_rate_period'],
             total_up = total_up):
