@@ -83,7 +83,7 @@ class StorageWrapper:
             try:
                 if not self.hasdata[x]:
                     low = self.piece_length * x
-                    if low + piece_length > self.total_length:
+                    if low + self.piece_length > self.total_length:
                         piece = chr(0xFF) * (self.total_length - low)
                     self.storage.write(low, piece)
             finally:
