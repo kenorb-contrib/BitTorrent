@@ -447,7 +447,7 @@ def test_both_close():
 def test_normal():
     l = []
     f = Event()
-    s = RawServer(5, f, 100)
+    s = RawServer(.5, f, 100)
     s.start_listening(DummyHandler(), 5007)
     s.add_task(lambda l = l: l.append('b'), 2)
     s.add_task(lambda l = l: l.append('a'), 1)
@@ -461,7 +461,7 @@ def test_normal():
 def test_catch_exception():
     l = []
     f = Event()
-    s = RawServer(5, f, 100, false)
+    s = RawServer(.5, f, 100, false)
     s.start_listening(DummyHandler(), 5009)
     s.add_task(lambda l = l: l.append('b'), 2)
     s.add_task(lambda: 4/0, 1)
