@@ -125,7 +125,7 @@ class DummyDownload:
     def got_choke(self, message):
         pass
     
-    def got_unchoke(self, message):
+    def got_unchoke(self):
         pass
     
     def got_slice(self, message):

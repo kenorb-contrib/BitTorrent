@@ -101,6 +101,7 @@ class TrackerHandler(BaseHTTPRequestHandler):
             elif path == '/finish/':
                 self.answer('Thank you for your feedback! Love, Kerensa')
                 print 'finished - ' + `message`
+                sys.stdout.flush()
             else:
                 self.answerno('no put!')
         except ValueError, e:
