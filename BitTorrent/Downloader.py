@@ -9,12 +9,13 @@ true = 1
 false = 0
 
 class Download:
-    def __init__(self, connection, data, backlog):
+    def __init__(self, connection, data, backlog, max_rate_period):
         self.connection = connection
         self.data = data
         self.backlog = backlog
         self.choked = false
         self.interested = false
+        self.max_rate_period = max_rate_period
         self.ratesince = time()
         self.lastin = self.ratesince
         self.rate = 0
@@ -78,8 +79,8 @@ class Download:
         self.rate = (self.rate * (self.lastin - self.ratesince) + 
             amount) / (t - self.ratesince)
         self.lastin = t
-        if self.ratesince < t - 20:
-            self.ratesince = t - 20
+        if self.ratesince < t - self.max_rate_period:
+            self.ratesince = t - self.max_rate_period
 
     def got_slice(self, message):
         complete, check = self.data.came_in(self, 

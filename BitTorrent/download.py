@@ -58,6 +58,10 @@ defaults = [
         "number of seconds to pause between changing who's choked"),
     ('max_slice_length', None, 2 ** 17,
         "maximum length slice to send to peers, larger requests are ignored"),
+    ('max_rate_recalculate_interval', None, 15.0,
+        "maximum amount of time to let a connection pause before reducing it's rate"),
+    ('max_rate_period', None, 20.0,
+        "maximum amount of time to guess the current rate estimate represents"),
     ]
 
 t = compile_template({'piece length': 1, 
@@ -152,11 +156,16 @@ def download(params, filefunc, displayfunc, doneflag, cols):
         config['timeout'])
     choker = Choker(config['max_uploads'], rawserver.add_task, config['choke_interval'],
         lambda c: c.get_download().rate)
-    def make_upload(connection, choker = choker, blobs = blobs, max_slice_length = config['max_slice_length']):
-        return Upload(connection, choker, blobs, max_slice_length)
+    def make_upload(connection, choker = choker, blobs = blobs, 
+            max_slice_length = config['max_slice_length'],
+            max_rate_period = config['max_rate_period']):
+        return Upload(connection, choker, blobs, max_slice_length,
+            max_rate_period)
     dd = DownloaderData(blobs, config['download_slice_size'])
-    def make_download(connection, data = dd, backlog = config['request_backlog']):
-        return Download(connection, data, backlog)
+    def make_download(connection, data = dd, 
+            backlog = config['request_backlog'],
+            max_rate_period = config['max_rate_period']):
+        return Download(connection, data, backlog, max_rate_period)
     connecter = Connecter(make_upload, make_download, choker)
     seed(entropy(20))
     encrypter = Encrypter(connecter, rawserver, lambda e = entropy: e(20),
@@ -188,7 +197,8 @@ def download(params, filefunc, displayfunc, doneflag, cols):
             displayfunc("Couldn't announce - " + response['reason'], 'Okay')
             return false
         DownloaderFeedback(choker, rawserver.add_task, 
-            listen_port, response['your ip'], displayfunc)
+            listen_port, response['your ip'], displayfunc, 
+            config['max_rate_recalculate_interval'])
     except IOError, e:
         displayfunc("Couldn't announce - " + str(e), 'Okay')
         return false

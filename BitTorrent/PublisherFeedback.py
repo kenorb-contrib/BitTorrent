@@ -13,11 +13,12 @@ def kify(n):
     return str(long((n / (2 ** 10)) * 10) / 10.0)
 
 class PublisherFeedback:
-    def __init__(self, choker, add_task, port, ip):
+    def __init__(self, choker, add_task, port, ip, max_pause):
         self.choker = choker
         self.add_task = add_task
         self.port = port
         self.ip = ip
+        self.max_pause = max_pause
         self.start = time()
         self.add_task(self.display, 1)
 
@@ -28,7 +29,7 @@ class PublisherFeedback:
         s.write('\n\n\n\n')
         for c in self.choker.connections:
             u = c.get_upload()
-            if u.lastout < t - 15:
+            if u.lastout < t - self.max_pause:
                 u.update_rate(0)
             s.write(c.get_ip())
             s.write(' ')

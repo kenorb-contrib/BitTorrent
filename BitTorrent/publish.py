@@ -48,6 +48,10 @@ defaults = [
         "number of seconds to pause between changing who's choked"),
     ('max_slice_length', None, 2 ** 17,
         "maximum length slice to send to peers, larger requests are ignored"),
+    ('max_rate_recalculate_interval', None, 15.0,
+        "maximum amount of time to let a connection pause before reducing it's rate"),
+    ('max_rate_period', None, 20.0,
+        "maximum amount of time to guess the current rate estimate represents"),
     ]
 
 def publish(params, cols):
@@ -79,8 +83,11 @@ def publish(params, cols):
     piece_length = config['piece_size']
     blobs = MultiBlob(files, piece_length, open, getsize, exists, 
         split, getmtime, time, isfile)
-    def make_upload(connection, choker = choker, blobs = blobs, max_slice_length = config['max_slice_length']):
-        return Upload(connection, choker, blobs, max_slice_length)
+    def make_upload(connection, choker = choker, blobs = blobs, 
+            max_slice_length = config['max_slice_length'],
+            max_rate_period = config['max_rate_period']):
+        return Upload(connection, choker, blobs, max_slice_length,
+            max_rate_period)
     connecter = Connecter(make_upload, DummyDownload, choker)
     encrypter = Encrypter(connecter, rawserver, noncefunc, private_key, 
         config['max_message_length'], rawserver.add_task, 
@@ -111,7 +118,8 @@ def publish(params, cols):
     except ValueError, e:
         print "got bad publication response - " + str(e)
         return
-    PublisherFeedback(choker, rawserver.add_task, listen_port, response['your ip'])
+    PublisherFeedback(choker, rawserver.add_task, listen_port, 
+        response['your ip'], config['max_rate_recalculate_interval'])
     rawserver.start_listening(encrypter, listen_port, false)
 
 class DummyDownload:

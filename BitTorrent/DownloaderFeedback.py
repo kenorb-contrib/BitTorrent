@@ -26,12 +26,13 @@ def hours(n):
         return str(m) + ':' + ex(sec)
 
 class DownloaderFeedback:
-    def __init__(self, choker, add_task, port, ip, displayfunc):
+    def __init__(self, choker, add_task, port, ip, displayfunc, max_pause):
         self.choker = choker
         self.add_task = add_task
         self.port = port
         self.ip = ip
         self.displayfunc = displayfunc
+        self.max_pause = max_pause
         self.add_task(self.display, 1)
 
     def display(self):
@@ -43,7 +44,7 @@ class DownloaderFeedback:
         for c in self.choker.connections:
             s.write(c.get_ip() + ' ')
             u = c.get_upload()
-            if u.lastout < t - 15:
+            if u.lastout < t - self.max_pause:
                 u.update_rate(0)
             if c.is_locally_initiated():
                 s.write('l ')
@@ -60,7 +61,7 @@ class DownloaderFeedback:
             s.write(' %6s up ' % kify(u.rate) + '    ')
 
             d = c.get_download()
-            if d.lastin < t - 15:
+            if d.lastin < t - self.max_pause:
                 d.update_rate(0)
             if d.is_choked():
                 s.write('c')
