@@ -160,7 +160,9 @@ def download(params, filefunc, displayfunc, doneflag, cols):
     connecter.start_connecting([(x['ip'], x['port']) for x in response['peers']])
 
     try:
-        a = {'type': 'announce', 'id': response['id'], 'port': listen_port}
+        myid = entropy(20)
+        a = {'type': 'announce', 'id': response['id'], 'port': listen_port,
+            'myid': myid}
         if config['ip'] != '':
             a['ip'] = config['ip']
         if blobs.already_existed:
@@ -197,7 +199,8 @@ def download(params, filefunc, displayfunc, doneflag, cols):
             else:
                 a['result'] = 'failure'
             url = urljoin(response1['url'], response1['finish'] + 
-                b2a_hex(bencode(a)) + response1.get('postfinish', ''))
+                b2a_hex(bencode(a)) + response1.get('postfinish', ''), 
+                'myid': myid)
             h = urlopen(url)
             h.read()
             h.close()
