@@ -10,18 +10,40 @@ from BitTorrent.download import download
 from threading import Event, Thread
 from wxPython.wx import *
 
+def kify(n):
+    return str(long((float(n) / (2 ** 10)) * 10) / 10.0)
+
+def mbfy(n):
+    return str(long((float(n) / (2 ** 20)) * 10) / 10.0)
+
+def ex(n):
+    if n >= 10:
+        return str(n)
+    else:
+        return '0' + str(n)
+
+def hours(n):
+    n = int(n)
+    h, r = divmod(n, 60 * 60)
+    m, sec = divmod(r, 60)
+    if h > 0:
+        return str(h) + ' hour ' + ex(m) + ' min ' + ex(sec) + ' sec'
+    else:
+        return str(m) + ' min ' + ex(sec) + ' sec'
+
 wxEVT_CHOOSE_FILE = wxNewId()
 
 def EVT_CHOOSE_FILE(win, func):
     win.Connect(-1, -1, wxEVT_CHOOSE_FILE, func)
 
 class ChooseFileEvent(wxPyEvent):
-    def __init__(self, default, bucket, flag):
+    def __init__(self, default, bucket, flag, size):
         wxPyEvent.__init__(self)
         self.SetEventType(wxEVT_CHOOSE_FILE)
         self.default = default
         self.bucket = bucket
         self.flag = flag
+        self.size = size
 
 wxEVT_UPDATE_STATUS = wxNewId()
 
@@ -29,44 +51,42 @@ def EVT_UPDATE_STATUS(win, func):
     win.Connect(-1, -1, wxEVT_UPDATE_STATUS, func)
 
 class UpdateStatusEvent(wxPyEvent):
-    def __init__(self, percentDone, timeEst, downRate, upRate,
-        cancelText, size):
+    def __init__(self, fractionDone, timeEst, downRate, upRate,
+            activity):
         
         wxPyEvent.__init__(self)
         self.SetEventType(wxEVT_UPDATE_STATUS)
-        self.percentDone = percentDone
+        self.fractionDone = fractionDone
         self.timeEst = timeEst
         self.downRate = downRate
         self.upRate = upRate
-        self.cancelText = cancelText
-        self.size = size
+        self.activity = activity
 
-wxEVT_DOWNLOAD_ERROR = wxNewId()
+wxEVT_FINISH_STATUS = wxNewId()
 
-def EVT_DOWNLOAD_ERROR(win, func):
-    win.Connect(-1, -1, wxEVT_DOWNLOAD_ERROR, func)
+def EVT_FINISH_STATUS(win, func):
+    win.Connect(-1, -1, wxEVT_FINISH_STATUS, func)
 
-class DownloadErrorEvent(wxPyEvent):
-    def __init__(self, errorMsg):
+class FinishEvent(wxPyEvent):
+    def __init__(self, finished, errormsg):
         wxPyEvent.__init__(self)
-        self.SetEventType(wxEVT_DOWNLOAD_ERROR)
-        self.errorMsg = errorMsg
+        self.SetEventType(wxEVT_FINISH_STATUS)
+        self.finished = finished
+        self.errormsg = errormsg
 
 class DownloadInfoFrame(wxFrame):
     def __init__(self, flag):
         wxFrame.__init__(self, None, -1, 'BitTorrent download', size = wxSize(375, 260), 
             style = wxDEFAULT_FRAME_STYLE | wxMAXIMIZE_BOX)
-        self.errorDlgShown = Event()
-        self.errorDlgShown.set()
         self.flag = flag
-        self.fileName = None
+        self.fin = false
         self.drawGUI()
 
         EVT_CLOSE(self, self.done)
         EVT_BUTTON(self, self.cancelButton.GetId(), self.done)
         EVT_CHOOSE_FILE(self, self.onChooseFile)
         EVT_UPDATE_STATUS(self, self.onUpdateStatus)
-        EVT_DOWNLOAD_ERROR(self, self.onDownloadError)
+        EVT_FINISH_STATUS(self, self.onFinishEvent)
         
     def drawGUI(self):
         superSizer = wxBoxSizer(wxVERTICAL)
@@ -115,41 +135,47 @@ class DownloadInfoFrame(wxFrame):
         superSizer.Layout()
         superSizer.Fit(self)
         
-    def updateStatus(self, percentDone = None,
+    def updateStatus(self, fractionDone = None,
             timeEst = None, downRate = None, upRate = None,
-            cancelText = None, size=None):
-        wxPostEvent(self, UpdateStatusEvent(percentDone, timeEst, downRate, upRate, cancelText, size))
+            activity=None):
+        wxPostEvent(self, UpdateStatusEvent(fractionDone, timeEst, downRate, upRate, activity))
 
     def onUpdateStatus(self, event):
-        if event.percentDone:
-            self.gauge.SetValue(event.percentDone)
-        if event.timeEst:
-            self.timeEstText.SetLabel(event.timeEst)
-        if event.downRate:
-            self.downRateText.SetLabel(event.downRate)
-        if event.upRate:
-            self.upRateText.SetLabel(event.upRate)
-        if event.cancelText:
-            self.cancelButton.SetLabel(event.cancelText)
-        if event.size and self.fileName:
-            self.fileNameText.SetLabel(self.fileName + ' (' + event.size + ')')
+        if event.fractionDone is not None:
+            self.gauge.SetValue(int(event.fractionDone * 100))
+        if event.timeEst is not None:
+            self.timeEstText.SetLabel(hours(event.timeEst))
+        if event.activity is not None and not self.fin:
+            self.timeEstText.SetLabel(event.activity)
+        if event.downRate is not None:
+            self.downRateText.SetLabel('%s kB/s' % kify(event.downRate))
+        if event.upRate is not None:
+            self.upRateText.SetLabel('%s kB/s' % kify(event.upRate))
 
-    def downloadError(self, errorMsg):
-        self.errorDlgShown.clear()
-        wxPostEvent(self, DownloadErrorEvent(errorMsg))
+    def finished(self, finished, errormsg = None):
+        self.fin = true
+        wxPostEvent(self, FinishEvent(finished, errormsg))
 
-    def onDownloadError(self, event):
-        dlg = wxMessageDialog(self, message = event.errorMsg, 
-            caption = 'Download Error', style = wxOK | wxICON_ERROR)
-        dlg.Fit()
-        dlg.Center()
-        dlg.ShowModal()
-        self.errorDlgShown.set()
+    def onFinishEvent(self, event):
+        if event.finished:
+            self.timeEstText.SetLabel('Download Succeeded!')
+            self.cancelButton.SetLabel('Finish')
+            self.gauge.SetValue(100)
+        else:
+            self.timeEstText.SetLabel('Download Failed!')
+            self.cancelButton.SetLabel('Close')
+        self.downRateText.SetLabel('')
+        if event.errormsg:
+            dlg = wxMessageDialog(self, message = event.errormsg, 
+                caption = 'Download Error', style = wxOK | wxICON_ERROR)
+            dlg.Fit()
+            dlg.Center()
+            dlg.ShowModal()
 
-    def chooseFile(self, default):
+    def chooseFile(self, default, size):
         f = Event()
         bucket = [None]
-        wxPostEvent(self, ChooseFileEvent(default, bucket, f))
+        wxPostEvent(self, ChooseFileEvent(default, bucket, f, size))
         f.wait()
         return bucket[0]
     
@@ -159,15 +185,13 @@ class DownloadInfoFrame(wxFrame):
             self.done(None)
         else:
             event.bucket[0] = dl.GetPath()
-            self.fileName = event.default
-            self.fileNameText.SetLabel(event.default)
+            self.fileNameText.SetLabel(event.default + ' (' + mbfy(event.size) + ' MB)')
             self.timeEstText.SetLabel('Starting up...')
             self.fileDestText.SetLabel(dl.GetPath()) 
             self.Show(true)
         event.flag.set()
 
     def done(self, event):
-        self.errorDlgShown.wait()
         self.flag.set()
         self.Destroy()
 
@@ -191,7 +215,7 @@ def run(params):
     app.MainLoop()
 
 def next(params, d, doneflag):
-    download(params, d.chooseFile, d.updateStatus, d.downloadError, doneflag, 100)
+    download(params, d.chooseFile, d.updateStatus, d.finished, doneflag, 100)
 
 if __name__ == '__main__':
     run(argv[1:])

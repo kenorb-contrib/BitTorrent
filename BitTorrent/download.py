@@ -23,6 +23,7 @@ from parseargs import parseargs, formatDefinitions
 import socket
 from random import randrange, seed
 from traceback import print_exc
+from threading import Event
 true = 1
 false = 0
 
@@ -73,15 +74,14 @@ t = compile_template({'piece length': 1,
 t2 = compile_template([{'type': 'success', 'your ip': string_template}, 
     {'type': 'failure', 'reason': string_template}])
 
-def download(params, filefunc, statusfunc, errorfunc, doneflag, cols,
-        close_at_end = false):
+def download(params, filefunc, statusfunc, resultfunc, doneflag, cols):
     try:
         config, garbage = parseargs(params, defaults, 0, 0)
         if config['response'] == '' and config['responsefile'] == '' and config['url'] == '':
             raise ValueError('need response, responsefile, or url')
     except ValueError, e:
-        errorfunc('error: ' + str(e) + '\n\n' + formatDefinitions(defaults, cols))
-        return false
+        resultfunc(false, 'error: ' + str(e) + '\n\n' + formatDefinitions(defaults, cols))
+        return
     
     if config['response'] != '':
         response = config['response']
@@ -92,8 +92,8 @@ def download(params, filefunc, statusfunc, errorfunc, doneflag, cols,
             h.close()
         except IOError, e:
             print_exc()
-            errorfunc('IO problem reading file - ' + str(e))
-            return false
+            resultfunc(false, 'IO problem reading file - ' + str(e))
+            return
     else:
         try:
             print 'url', config['url']
@@ -102,7 +102,7 @@ def download(params, filefunc, statusfunc, errorfunc, doneflag, cols,
             h.close()
         except IOError, e:
             print_exc()
-            errorfunc('IO problem reading file - ' + str(e))
+            resultfunc(false, 'IO problem reading file - ' + str(e))
             return false
 
     try:
@@ -110,8 +110,8 @@ def download(params, filefunc, statusfunc, errorfunc, doneflag, cols,
         status = h.read().strip()
         h.close()
         if status != 'current':
-            errorfunc('No longer the latest version - see http://bitconjurer.org/BitTorrent/download.html')
-            return false
+            resultfunc(false, 'No longer the latest version - see http://bitconjurer.org/BitTorrent/download.html')
+            return
     except IOError, e:
         print "Couldn't check version number - " + str(e)
 
@@ -121,46 +121,37 @@ def download(params, filefunc, statusfunc, errorfunc, doneflag, cols,
         t(response)
     except ValueError, e:
         print_exc()
-        errorfunc("got bad publication response - " + str(e))
-        return false
+        resultfunc(false, "got bad publication response - " + str(e))
+        return
     file = config['saveas']
+    file_length = response['length']
     if file == '':
-        file = filefunc(response['name'])
+        file = filefunc(response['name'], file_length)
     if file is None:
-        return false
+        return
     try:
-        file_length = response['length']
         if path.exists(file):
-            statusfunc(timeEst = 'checking existing file...')
+            statusfunc(activity = 'checking existing file...')
             resuming = true
         else:
-            statusfunc(timeEst = 'allocating new file...')
+            statusfunc(activity = 'allocating new file...')
             resuming = false
         r = [0]
-        def finished(result, statusfunc = statusfunc, 
-                errorfunc = errorfunc, doneflag = doneflag, 
-                r = r, close_at_end = close_at_end):
-            if result:
-                r[0] = 1
-                statusfunc(timeEst = 'Download Succeeded!', percentDone = 100,
-                    cancelText='Finish')
-            else:
-                statusfunc(timeEst = 'Download Failed', cancelText='Close')
-            if close_at_end:
-                doneflag.set()
+        finflag = Event()
+        def finished(result, resultfunc = resultfunc, finflag = finflag):
+            finflag.set()
+            resultfunc(result)
         blobs = SingleBlob(file, file_length, response['pieces'], 
             response['piece length'], finished, open, path.exists, path.getsize)
-        if len(blobs.get_list_of_blobs_I_want()) == 0:
-            return true
         left = blobs.get_amount_left()
     except ValueError, e:
         print_exc()
-        errorfunc('bad data for making blob store - ' + str(e))
-        return false
+        resultfunc(false, 'bad data for making blob store - ' + str(e))
+        return
     except IOError, e:
         print_exc()
-        errorfunc('disk access error - ' + str(e))
-        return false
+        resultfunc(false, 'disk access error - ' + str(e))
+        return
     rawserver = RawServer(config['max_poll_period'], doneflag,
         config['timeout'])
     choker = Choker(config['max_uploads'], rawserver.add_task, config['choke_interval'],
@@ -199,27 +190,27 @@ def download(params, filefunc, statusfunc, errorfunc, doneflag, cols,
         response = readput(url, a)
         t2(response)
         if response['type'] == 'failure':
-            errorfunc("Couldn't announce - " + response['reason'])
-            return false
+            resultfunc(false, "Couldn't announce - " + response['reason'])
+            return
         DownloaderFeedback(choker, rawserver.add_task, 
             listen_port, response['your ip'], statusfunc, 
             config['max_rate_recalculate_interval'], ratemeasure.get_time_left, 
-            ratemeasure.get_size_left, file_length)
+            ratemeasure.get_size_left, file_length, finflag)
     except IOError, e:
         print_exc()
-        errorfunc("Couldn't announce - " + str(e))
-        return false
+        resultfunc(false, "Couldn't announce - " + str(e))
+        return
     except ValueError, e:
         print_exc()
-        errorfunc("got bad announcement response - " + str(e))
-        return false
+        resultfunc(false, "got bad announcement response - " + str(e))
+        return
     try:
-        statusfunc(timeEst = 'connecting to peers...')
+        statusfunc(activity = 'connecting to peers...')
         rawserver.start_listening(encrypter, listen_port, false)
     except socket.error, e:
         print_exc()
-        errorfunc("Couldn't listen - " + str(e))
-        return false
+        resultfunc(false, "Couldn't listen - " + str(e))
+        return
         
     if response1.has_key('finish'):
         try:
