@@ -37,7 +37,7 @@ defaults = [
         'number of seconds to pause between sending keepalives'),
     ('download_slice_size', None, 2 ** 14,
         "How many bytes to query for per request."),
-    ('request_backlog', None, 5,
+    ('request_backlog', None, 10,
         "how many requests to keep in a single pipe at once."),
     ('max_message_length', None, 2 ** 23,
         "maximum length prefix encoding you'll accept over the wire - larger values get the connection dropped."),

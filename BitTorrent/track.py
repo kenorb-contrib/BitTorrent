@@ -224,7 +224,7 @@ class Tracker:
                 del ts[myid]
         data = {'interval': self.reannounce_interval}
         cache = self.cached.setdefault(infohash, [])
-        if len(cache) < self.rsize:
+        if len(cache) < rsize:
             for key, value in self.downloads.setdefault(
                     infohash, {}).items():
                 if not value.get('nat'):
