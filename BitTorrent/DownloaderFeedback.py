@@ -9,6 +9,9 @@ false = 0
 def kify(n):
     return str(long((n / (2 ** 10)) * 10) / 10.0)
 
+def mbfy(n):
+    return str(long((n / (2 ** 20)) * 10) / 10.0)
+
 def ex(n):
     if n >= 10:
         return str(n)
@@ -20,19 +23,21 @@ def hours(n):
     h, r = divmod(n, 60 * 60)
     m, sec = divmod(r, 60)
     if h > 0:
-        return str(h) + ':' + ex(m) + ':' + ex(sec)
+        return str(h) + ' hour ' + ex(m) + ' min ' + ex(sec) + ' sec'
     else:
-        return str(m) + ':' + ex(sec)
+        return str(m) + ' min ' + ex(sec) + ' sec'
 
 class DownloaderFeedback:
-    def __init__(self, choker, add_task, port, ip, displayfunc, max_pause, remainingfunc):
+    def __init__(self, choker, add_task, port, ip, statusfunc, max_pause, remainingfunc, leftfunc, file_length):
         self.choker = choker
         self.add_task = add_task
         self.port = port
         self.ip = ip
-        self.displayfunc = displayfunc
+        self.statusfunc = statusfunc
         self.max_pause = max_pause
         self.remainingfunc = remainingfunc
+        self.leftfunc = leftfunc
+        self.file_length = file_length
         self.add_task(self.display, 1)
 
     def display(self):
@@ -42,10 +47,13 @@ class DownloaderFeedback:
         s.write('listening on ' + self.ip + ':' + str(self.port) + '\n')
         r = self.remainingfunc()
         if r is None:
-            s.write('time left: ---\n')
+            timeEst = 'Unknown'
         else:
-            s.write('time left: ' + hours(r) + '\n')
-
+            timeEst = hours(r)
+        timeEst = "%s (%s MB of %s MB copied)" % (timeEst, mbfy(self.leftfunc()), mbfy(self.file_length))
+        
+        downRate = 0
+        upRate = 0
         for c in self.choker.connections:
             s.write(c.get_ip() + ' ')
             u = c.get_upload()
@@ -63,7 +71,7 @@ class DownloaderFeedback:
                 s.write('i')
             else:
                 s.write(' ')
-            s.write(' %6s up ' % kify(u.rate) + '    ')
+            upRate = upRate + u.rate
 
             d = c.get_download()
             if d.lastin < t - self.max_pause:
@@ -76,5 +84,8 @@ class DownloaderFeedback:
                 s.write('i')
             else:
                 s.write(' ')
-            s.write(' %6s down\n' % kify(d.rate))
-        self.displayfunc(s.getvalue(), 'Cancel')
+            downRate = downRate + d.rate
+        upRate = '%s kB/s' % kify(upRate)
+        downRate = '%s kB/s' % kify(downRate)
+        self.statusfunc(timeEst = timeEst, downRate = downRate, upRate = upRate)
+        

@@ -23,6 +23,9 @@ class RateMeasure:
             self.update(t, 0)
         return self.remaining
 
+    def get_size_left(self):
+        return self.left
+        
     def update(self, t, amount):
         self.left -= amount
         self.rate = ((self.rate * (self.last - self.start)) + amount) / (t - self.start)
