@@ -61,8 +61,8 @@ class Storage:
     def set_readonly(self):
         # may raise IOError or OSError
         for file, old in self.handles.items():
-            old.close()
             self.handles[file] = open(file, 'rb')
+            old.close()
 
     def get_total_length(self):
         return self.total_length

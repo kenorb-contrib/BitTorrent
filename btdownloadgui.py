@@ -94,7 +94,7 @@ class FailEvent(wxPyEvent):
 wxEVT_ERROR_STATUS = wxNewId()
 
 def EVT_ERROR_STATUS(win, func):
-    win.Connect(-1, -1, wxEVT_FINISH_STATUS, func)
+    win.Connect(-1, -1, wxEVT_ERROR_STATUS, func)
 
 class ErrorEvent(wxPyEvent):
     def __init__(self, errormsg):
@@ -204,6 +204,7 @@ class DownloadInfoFrame(wxFrame):
         self.downRateText.SetLabel('')
 
     def onErrorEvent(self, event):
+        print 'onErrorEvent'
         if not self.shown:
             self.Show(true)
         dlg = wxMessageDialog(self, message = event.errormsg, 
