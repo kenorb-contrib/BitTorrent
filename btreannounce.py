@@ -15,8 +15,9 @@ for f in argv[2:]:
     h = open(f, 'rb')
     metainfo = bdecode(h.read())
     h.close()
-    print 'old announce for %s: %s' % (f, metainfo['announce'])
-    metainfo['announce'] = argv[1]
-    h = open(argv[1], 'wb')
-    h.write(bencode(metainfo))
-    h.close()
+    if metainfo['announce'] != argv[1]:
+        print 'old announce for %s: %s' % (f, metainfo['announce'])
+        metainfo['announce'] = argv[1]
+        h = open(f, 'wb')
+        h.write(bencode(metainfo))
+        h.close()
