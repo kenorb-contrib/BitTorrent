@@ -366,8 +366,11 @@ class Tracker:
         else:
             if peers.has_key(myid) and peers[myid]['ip'] == ip:
                 if not peers[myid].get('nat',1):
-                    del self.becache1[infohash][myid]
-                    del self.becache2[infohash][myid]
+                    try:
+                        del self.becache1[infohash][myid]
+                        del self.becache2[infohash][myid]
+                    except KeyError:
+                        pass
                 del peers[myid]
                 del ts[myid]
         data = {'interval': self.reannounce_interval}
