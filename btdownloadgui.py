@@ -108,13 +108,9 @@ class DownloadInfoFrame:
         self.invokeLater(self.onUpdateStatus, [fractionDone, timeEst, downRate, upRate, activity])
 
     def onUpdateStatus(self, fractionDone, timeEst, downRate, upRate, activity):
-        if fractionDone is not None:
+        if fractionDone is not None and not self.fin:
             self.gauge.SetValue(int(fractionDone * 1000))
-            newpercent = int(fractionDone*100)
-            if newpercent == 100:
-                self.frame.SetTitle('%s - Upload - BitTorrent' % (self.filename))
-            else:
-                self.frame.SetTitle('%d%% %s - BitTorrent' % (newpercent, self.filename))
+            self.frame.SetTitle('%d%% %s - BitTorrent' % (int(fractionDone*100), self.filename))
         if timeEst is not None:
             self.timeEstText.SetLabel(hours(timeEst))
         if activity is not None and not self.fin:
@@ -139,6 +135,7 @@ class DownloadInfoFrame:
         self.timeEstText.SetLabel('Download Succeeded!')
         self.cancelButton.SetLabel('Finish')
         self.gauge.SetValue(1000)
+        self.frame.SetTitle('%s - Upload - BitTorrent' % (self.filename))
         self.downRateText.SetLabel('')
 
     def onFailEvent(self):
