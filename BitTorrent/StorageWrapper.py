@@ -12,7 +12,8 @@ def dummy_status(fractionDone = None, activity = None):
 class StorageWrapper:
     def __init__(self, storage, request_size, hashes, 
             piece_length, finished, failed, 
-            statusfunc = dummy_status, flag = Event()):
+            statusfunc = dummy_status, flag = Event(), check_hashes = true):
+        self.check_hashes = check_hashes
         self.storage = storage
         self.request_size = request_size
         self.hashes = hashes
@@ -56,7 +57,7 @@ class StorageWrapper:
         if index == len(self.hashes) - 1:
             high = self.total_length
         length = high - low
-        if check and sha(self.storage.read(low, length)).digest() == self.hashes[index]:
+        if check and (not self.check_hashes or sha(self.storage.read(low, length)).digest() == self.hashes[index]):
             self.have[index] = true
             self.amount_left -= length
             if self.amount_left == 0:

@@ -74,6 +74,8 @@ defaults = [
         'number of seconds to wait before assuming that an http connection has timed out'),
     ('max_initiate', None, 40,
         'number of peers at which to stop initiating new connections'),
+    ('check_hashes', None, 0,
+        'a signal to not check hashes on disk'),
     ]
 
 def download(params, filefunc, statusfunc, finfunc, errorfunc, doneflag, cols):
@@ -165,7 +167,7 @@ def download(params, filefunc, statusfunc, finfunc, errorfunc, doneflag, cols):
         storagewrapper = StorageWrapper(storage, 
             config['download_slice_size'], pieces, 
             info['piece length'], finished, failed, 
-            statusfunc, doneflag)
+            statusfunc, doneflag, config['check_hashes'])
     except ValueError, e:
         failed('bad data - ' + str(e))
     except IOError, e:
