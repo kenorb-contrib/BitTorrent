@@ -404,6 +404,7 @@ class Tracker:
                     del cache[:]
                     cache.extend(self.becache2.setdefault(infohash, {}).values())
                     shuffle(cache)
+                    del self.cache1.get(infohash, [])[:]
                 data['peers'] = ''.join(cache[-rsize:])
                 del cache[-rsize:]
         else:
@@ -415,6 +416,7 @@ class Tracker:
                     del cache[:]
                     cache.extend(self.becache1.setdefault(infohash, {}).values())
                     shuffle(cache)
+                    del self.cache2.get(infohash, [])[:]
                 data['peers'] = cache[-rsize:]
                 del cache[-rsize:]
         connection.answer((200, 'OK', {'Content-Type': 'text/plain', 'Pragma': 'no-cache'}, bencode(data)))
