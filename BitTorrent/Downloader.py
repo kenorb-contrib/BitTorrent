@@ -25,17 +25,13 @@ class SingleDownload:
         self._letgo()
 
     def _letgo(self):
-        hits = []
+        if not self.active_requests:
+            return
         for index, begin, length in self.active_requests:
-            before = self.downloader.storage.do_I_have_requests(index)
             self.downloader.storage.request_lost(index, begin, length)
-            if not before:
-                hits.append(index)
         self.active_requests = []
-        if len(hits) > 0:
-            for d in self.downloader.downloads:
-                d._check_interest(hits)
-                d.download_more(hits)
+        for d in self.downloader.downloads:
+            d.fix_download()
 
     def got_choke(self):
         if not self.choked:
@@ -45,7 +41,7 @@ class SingleDownload:
     def got_unchoke(self):
         if self.choked:
             self.choked = false
-            self.download_more()
+            self.fix_download()
 
     def is_choked(self):
         return self.choked
@@ -63,76 +59,58 @@ class SingleDownload:
         self.downloader.measurefunc(len(piece))
         self.downloader.downmeasure.update_rate(len(piece))
         self.downloader.storage.piece_came_in(index, begin, piece)
-        self.downloader.picker.came_in(index)
         if self.downloader.storage.do_I_have(index):
             self.downloader.picker.complete(index)
-        self.download_more()
-        if len(self.active_requests) == 0:
-            self.interested = false
-            self.connection.send_not_interested()
+        self.fix_download()
         return self.downloader.storage.do_I_have(index)
 
-    def download_more(self, pieces = None):
-        if self.choked or len(self.active_requests) == self.downloader.backlog:
-            return
-        if pieces is None:
-            pieces = self.downloader.picker
-        hit = []
-        self._d(pieces, hit)
-        if len(hit) > 0:
-            for d in self.downloader.downloads:
-                d._lost_interest(hit)
+    def _want(self, piece):
+        return self.have[piece] and self.downloader.storage.do_I_have_requests(piece)
 
-    def _d(self, pieces, hit):
-        for piece in pieces:
-            if self.have[piece]:
-                while self.downloader.storage.do_I_have_requests(piece):
+    def fix_download(self):
+        if len(self.active_requests) == self.downloader.backlog:
+            return
+        piece = self.downloader.picker.next(self._want)
+        if piece is None:
+            if self.interested and len(self.active_requests) == 0:
+                self.interested = false
+                self.connection.send_not_interested()
+        else:
+            if not self.interested:
+                self.interested = true
+                self.connection.send_interested()
+            if self.choked:
+                return
+            hit = false
+            while piece is not None:
+                while len(self.active_requests) < self.downloader.backlog:
                     begin, length = self.downloader.storage.new_request(piece)
+                    self.downloader.picker.requested(piece)
                     self.active_requests.append((piece, begin, length))
                     self.connection.send_request(piece, begin, length)
                     if not self.downloader.storage.do_I_have_requests(piece):
-                        hit.append(piece)
-                    if len(self.active_requests) == self.downloader.backlog:
-                        return
-
-    def _lost_interest(self, pieces):
-        if not self.interested or len(self.active_requests) > 0:
-            return
-        for piece in pieces:
-            if self.have[piece]:
-                break
-        else:
-            return
-        for i in xrange(len(self.have)):
-            if self.have[i] and self.downloader.storage.do_I_have_requests(i):
-                return
-        self.interested = false
-        self.connection.send_not_interested()
-
-    def _check_interest(self, pieces):
-        if self.interested:
-            return
-        for i in pieces:
-            if self.have[i] and self.downloader.storage.do_I_have_requests(i):
-                self.interested = true
-                self.connection.send_interested()
-                return
+                        hit = true
+                        break
+                if len(self.active_requests) == self.downloader.backlog:
+                    break
+                piece = self.downloader.picker.next(self._want)
+            if hit:
+                for d in self.downloader.downloads:
+                    d.fix_download()
 
     def got_have(self, index):
         if self.have[index]:
             return
         self.have[index] = true
         self.downloader.picker.got_have(index)
-        self._check_interest([index])
-        self.download_more([index])
+        self.fix_download()
 
     def got_have_bitfield(self, have):
         self.have = have
         for i in xrange(len(have)):
             if have[i]:
                 self.downloader.picker.got_have(i)
-        self._check_interest([i for i in xrange(len(have)) if have[i]])
-        self.download_more()
+        self.fix_download()
 
     def get_rate(self):
         return self.measure.get_rate()
@@ -154,19 +132,19 @@ class Downloader:
         self.downloads = []
 
     def make_download(self, connection):
-        self.downloads.insert(0, SingleDownload(self, connection))
-        return self.downloads[0]
+        self.downloads.append(SingleDownload(self, connection))
+        return self.downloads[-1]
 
 class DummyPicker:
     def __init__(self, num, r):
         self.stuff = range(num)
         self.r = r
 
-    def __getitem__(self, key):
-        return self.stuff[key]
-
-    def __iter__(self):
-        return iter(self.stuff)
+    def next(self, wantfunc):
+        for i in self.stuff:
+            if wantfunc(i):
+                return i
+        return None
 
     def lost_have(self, pos):
         self.r.append('lost have')
@@ -174,8 +152,8 @@ class DummyPicker:
     def got_have(self, pos):
         self.r.append('got have')
 
-    def came_in(self, pos):
-        self.r.append('came in')
+    def requested(self, pos):
+        self.r.append('requested')
 
     def complete(self, pos):
         self.stuff.remove(pos)
@@ -235,12 +213,12 @@ def test_stops_at_backlog():
     assert ds.remaining == [[(0, 2), (2, 2), (4, 2), (6, 2)]]
     assert ds.active == [[]]
     sd.got_unchoke()
-    assert events == [('request', 0, 6, 2), ('request', 0, 4, 2)]
+    assert events == ['requested', ('request', 0, 6, 2), 'requested', ('request', 0, 4, 2)]
     del events[:]
     assert ds.remaining == [[(0, 2), (2, 2)]]
     assert ds.active == [[(4, 2), (6, 2)]]
     sd.got_piece(0, 4, 'ab')
-    assert events == ['came in', ('request', 0, 2, 2)]
+    assert events == ['requested', ('request', 0, 2, 2)]
     del events[:]
     assert ds.remaining == [[(0, 2)]]
     assert ds.active == [[(2, 2), (6, 2)]]
@@ -258,7 +236,7 @@ def test_got_have_single():
     assert ds.remaining == [[(0, 2)]]
     assert ds.active == [[]]
     sd.got_have(0)
-    assert events == ['got have', 'interested', ('request', 0, 0, 2)]
+    assert events == ['got have', 'interested', 'requested', ('request', 0, 0, 2)]
     del events[:]
     assert ds.remaining == [[]]
     assert ds.active == [[(0, 2)]]
@@ -276,7 +254,7 @@ def test_choke_clears_active():
     assert ds.active == [[]]
     sd1.got_unchoke()
     sd1.got_have(0)
-    assert events == ['got have', 'interested', ('request', 0, 0, 2)]
+    assert events == ['got have', 'interested', 'requested', ('request', 0, 0, 2)]
     del events[:]
     assert ds.remaining == [[]]
     assert ds.active == [[(0, 2)]]
@@ -287,12 +265,12 @@ def test_choke_clears_active():
     assert ds.remaining == [[]]
     assert ds.active == [[(0, 2)]]
     sd1.got_choke()
-    assert events == ['interested', ('request', 0, 0, 2), 'not interested']
+    assert events == ['interested', 'requested', ('request', 0, 0, 2), 'not interested']
     del events[:]
     assert ds.remaining == [[]]
     assert ds.active == [[(0, 2)]]
     sd2.got_piece(0, 0, 'ab')
-    assert events == ['came in', 'complete', 'not interested']
+    assert events == ['complete', 'not interested']
     del events[:]
     assert ds.remaining == [[]]
     assert ds.active == [[]]
