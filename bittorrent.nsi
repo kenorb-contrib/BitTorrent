@@ -15,7 +15,6 @@ Section "Install"
   File dist\*.dll
   File dist\library.zip
   File redirdonate.html
-  File bittorrent.ico
   File LICENSE.txt
   WriteRegStr HKCR .torrent "" bittorrent
   WriteRegStr HKCR .torrent "Content Type" application/x-bittorrent

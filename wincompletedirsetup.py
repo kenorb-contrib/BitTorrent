@@ -6,4 +6,4 @@
 from distutils.core import setup
 import py2exe
 
-setup(windows=['btcompletedirgui.py'])
+setup(windows=[{'script': 'btcompletedirgui.py', "icon_resources": [(1, "bittorrent.ico")]}])
