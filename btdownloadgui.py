@@ -136,7 +136,8 @@ class DownloadInfoFrame:
     def invokeLater(self, func, args = [], kwargs = {}):
         if not self.uiflag.isSet():
             self.funclist.append((func, args, kwargs))
-            wxPostEvent(self.frame, self.event)
+            if len(self.funclist) == 1:
+                wxPostEvent(self.frame, self.event)
 
     def updateStatus(self, d):
         if (self.last_update_time + 0.1 < time() and not self.showing_error) or d.get('fractionDone') in (0.0, 1.0) or d.has_key('activity'):
