@@ -111,7 +111,6 @@ class SingleDownload:
     def got_slice_message(self, message):
         here_is_a_slice_template(message)
         if len(self.active_requests) == 0:
-            print 'ack! unexpected!'
             self.connection.send_message(done_message)
             return
         slice = message['slice']

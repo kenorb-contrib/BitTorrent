@@ -38,14 +38,10 @@ prefix2 = '/announce/'
 class PublicistHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         try:
-            print 'c1'
             self.server.lock.acquire()
-            print 'c2'
             self.get()
         finally:
-            print 'c3'
             self.server.lock.release()
-            print 'c4'
     
     def get(self):
         # {filename: ([{'ip': ip, 'port': port}], [{'ip': ip, 'port': port}], hash, length, pieces, piece_length)}
@@ -166,14 +162,10 @@ def publicize(config):
         while true:
             sleep(600)
             try:
-                print 'b1'
                 s.lock.acquire()
-                print 'b2'
                 del s.ips[:]
             finally:
-                print 'b3'
                 s.lock.release()
-                print 'b4'
     Thread(target = reduce_level).start()
     Thread(target = clear_ips).start()
     Thread(target = s.serve_forever).start()
