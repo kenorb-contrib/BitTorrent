@@ -18,8 +18,7 @@ py_modules = ['StringIO', 'UserDict', '__future__', 'atexit', 'base64', 'bisect'
 
 so_modules = ['_socket', 'sha', 'time', 'binascii', 'cStringIO', 'errno', 'macfs', 'math', 'pcre', 'pwd', 'select', 'strop']
 
-
-res = join(environ['SYMROOT'], '%s.%s/Contents/Resources' % (environ['TARGET_NAME'], environ['WRAPPER_EXTENSION']))
+res = join(environ['SYMROOT'], '%s.%s/Contents/Resources' % (environ['PRODUCT_NAME'], environ['WRAPPER_EXTENSION']))
 py = join(res, 'lib/python2.2')
 dy = join(py, 'lib-dynload')
 bt = join(res, 'BitTorrent')
