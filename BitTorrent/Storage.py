@@ -30,7 +30,7 @@ class Storage:
         self.total_length = total
         self.handles = {}
         self.whandles = {}
-        self.preexisting = true
+        self.tops = {}
         for file, length in files:
             if exists(file):
                 l = getsize(file)
@@ -38,17 +38,21 @@ class Storage:
                     self.handles[file] = open(file, 'rb+')
                     self.whandles[file] = 1
                     self.handles[file].truncate(length)
-                    self.preexisting = false
                 elif l < length:
                     self.handles[file] = open(file, 'rb+')
                     self.whandles[file] = 1
-                    self.preexisting = false
                 else:
                     self.handles[file] = open(file, 'rb')
+                self.tops[file] = l
             else:
                 self.handles[file] = open(file, 'wb+')
                 self.whandles[file] = 1
-                self.preexisting = false
+
+    def was_preallocated(self, pos, length):
+        for file, begin, end in self._intervals(pos, length):
+            if self.tops.get(file, 0) < end:
+                return false
+        return true
 
     def set_readonly(self):
         # may raise IOError or OSError
@@ -60,9 +64,6 @@ class Storage:
 
     def get_total_length(self):
         return self.total_length
-
-    def was_preexisting(self):
-        return self.preexisting
 
     def _intervals(self, pos, amount):
         r = []

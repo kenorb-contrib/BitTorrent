@@ -17,7 +17,6 @@ class StorageWrapper:
             piece_size, finished, failed, 
             statusfunc = dummy_status, flag = Event(), check_hashes = true,
             data_flunked = dummy_data_flunked):
-        self.check_hashes = check_hashes
         self.storage = storage
         self.request_size = request_size
         self.hashes = hashes
@@ -37,49 +36,71 @@ class StorageWrapper:
         self.endgame = false
         self.have = [false] * len(hashes)
         self.waschecked = [check_hashes] * len(hashes)
-        self.doneflag = flag
+        self.places = {}
+        self.holes = []
         if len(hashes) == 0:
             finished()
             return
-        self.done_checking = false
-        if storage.was_preexisting():
+        targets = {}
+        total = len(hashes)
+        for i in xrange(len(hashes)):
+            if not self._waspre(i):
+                targets.setdefault(hashes[i], []).append(i)
+                total -= 1
+        numchecked = 0.0
+        if total and check_hashes:
             statusfunc({"activity" : 'checking existing file', 
                 "fractionDone" : 0})
-            self.places = {}
-            for i in xrange(len(hashes)):
-                self.places[i] = i
-            self.alloclimit = len(hashes)
-            for i in xrange(len(hashes)):
-                self._check_single(i)
+        def markgot(piece, pos, self = self, check_hashes = check_hashes):
+            self.places[piece] = pos
+            self.have[piece] = true
+            self.amount_left -= self._piecelen(piece)
+            self.waschecked[piece] = check_hashes
+        lastlen = self._piecelen(len(hashes) - 1)
+        for i in [len(hashes) - 1] + range(len(hashes) - 1):
+            if not self._waspre(i):
+                self.holes.append(i)
+            elif not check_hashes:
+                markgot(i, i)
+            else:
+                v = self.storage.read(piece_size * i, self._piecelen(i))
+                sh = sha(v[:lastlen])
+                sp = sh.digest()
+                sh.update(v[lastlen:])
+                s = sh.digest()
+                if s == hashes[i]:
+                    markgot(i, i)
+                elif targets.get(s) and len(v) == piece_size:
+                    markgot(targets[sh].pop(), i)
+                elif not self.have[-1] and sp == hashes[-1]:
+                    markgot(len(hashes) - 1, i)
+                else:
+                    self.holes.append(i)
                 if flag.isSet():
                     return
-                statusfunc({"fractionDone" : float(i+1)/len(hashes)})
-        else:
-            for i in xrange(len(hashes)):
+                numchecked += 1
+                statusfunc({'fractionDone': numchecked / total})
+        self.holes.sort()
+        for i in xrange(len(hashes)):
+            if not self.have[i]:
                 self._make_inactive(i)
-            self.alloclimit = 0
-            self.places = {}
+        if self.amount_left == 0:
+            finished()
+
+    def _waspre(self, piece):
+        return self.storage.was_preallocated(piece * self.piece_size, self._piecelen(piece))
+
+    def _piecelen(self, piece):
+        if piece < len(self.hashes) - 1:
+            return self.piece_size
+        else:
+            return self.total_length - piece * self.piece_size
 
     def get_amount_left(self):
         return self.amount_left
 
     def do_I_have_anything(self):
         return self.amount_left < self.total_length
-
-    def _check_single(self, index):
-        low = self.piece_size * self.places[index]
-        length = min(self.piece_size, self.total_length - low)
-        self.waschecked[index] = true
-        if not self.check_hashes or sha(self.storage.read(low, length)).digest() == self.hashes[index]:
-            self.have[index] = true
-            self.amount_left -= length
-            if self.amount_left == 0:
-                self.finished()
-            return
-        else:
-            if self.done_checking:
-                self.data_flunked(length)
-        self._make_inactive(index)
 
     def _make_inactive(self, index):
         length = min(self.piece_size, self.total_length - self.piece_size * index)
@@ -123,13 +144,13 @@ class StorageWrapper:
 
     def _piece_came_in(self, index, begin, piece):
         if not self.places.has_key(index):
-            l = min(self.piece_size, self.total_length - self.piece_size * self.alloclimit)
-            if self.places.has_key(self.alloclimit):
-                oldpos = self.places[self.alloclimit]
-                old = self.storage.read(self.piece_size * oldpos, l)
-                self.storage.write(self.piece_size * self.alloclimit, old)
-                self.places[self.alloclimit] = self.alloclimit
-                if index == oldpos or index > self.alloclimit:
+            n = self.holes.pop(0)
+            if self.places.has_key(n):
+                oldpos = self.places[n]
+                old = self.storage.read(self.piece_size * oldpos, self._piecelen(n))
+                self.storage.write(self.piece_size * n, old)
+                self.places[n] = n
+                if index == oldpos or index in self.holes:
                     self.places[index] = oldpos
                 else:
                     for p, v in self.places.items():
@@ -139,24 +160,30 @@ class StorageWrapper:
                     self.places[p] = oldpos
                     old = self.storage.read(self.piece_size * index, self.piece_size)
                     self.storage.write(self.piece_size * oldpos, old)
+            elif index in self.holes or index == n:
+                if not self._waspre(n):
+                    self.storage.write(self.piece_size * n, self._piecelen(n) * chr(0xFF))
+                self.places[index] = n
             else:
-                if index >= self.alloclimit:
-                    self.storage.write(self.piece_size * self.alloclimit, l * chr(0xFF))
-                    self.places[index] = self.alloclimit
-                else:
-                    for p, v in self.places.items():
-                        if v == index:
-                            break
-                    self.places[index] = index
-                    self.places[p] = self.alloclimit
-                    old = self.storage.read(self.piece_size * index, l)
-                    self.storage.write(self.piece_size * self.alloclimit, old)
-            self.alloclimit += 1
+                for p, v in self.places.items():
+                    if v == index:
+                        break
+                self.places[index] = index
+                self.places[p] = n
+                old = self.storage.read(self.piece_size * index, self._piecelen(n))
+                self.storage.write(self.piece_size * n, old)
         self.storage.write(self.places[index] * self.piece_size + begin, piece)
         self.numactive[index] -= 1
-        if (self.inactive_requests[index] == [] and 
-                self.numactive[index] == 0):
-            self._check_single(index)
+        if (self.inactive_requests[index] == [] and self.numactive[index] == 0):
+            if sha(self.storage.read(self.piece_size * self.places[index], self._piecelen(index))).digest() == self.hashes[index]:
+                self.have[index] = true
+                self.waschecked[index] = true
+                self.amount_left -= self._piecelen(index)
+                if self.amount_left == 0:
+                    self.finished()
+            else:
+                self.data_flunked(self._piecelen(index))
+                self._make_inactive(index)
 
     def request_lost(self, index, begin, length):
         self.inactive_requests[index].append((begin, length))
@@ -171,30 +198,32 @@ class StorageWrapper:
             return None
 
     def _get_piece(self, index, begin, length):
+        if not self.have[index]:
+            return None
         if not self.waschecked[index]:
-            low = self.piece_size * index
-            high = min(low + self.piece_size, self.total_length)
-            if sha(self.storage.read(low, high - low)).digest() != self.hashes[index]:
+            if sha(self.storage.read(self.piece_size * self.places[index], self._piecelen(index))).digest() != self.hashes[index]:
                 self.failed('told file complete on start-up, but piece failed hash check')
                 return None
             self.waschecked[index] = true
-        if not self.have[index]:
+        if begin + length > self._piecelen(index):
             return None
-        index = self.places[index]
-        low = self.piece_size * index + begin
-        if low + length > min(self.total_length, 
-                self.piece_size * (index + 1)):
-            return None
-        return self.storage.read(low, length)
+        return self.storage.read(self.piece_size * self.places[index] + begin, length)
 
 class DummyStorage:
-    def __init__(self, total, pre = false):
+    def __init__(self, total, pre = false, ranges = []):
         self.pre = pre
+        self.ranges = ranges
         self.s = chr(0xFF) * total
         self.done = false
 
     def was_preexisting(self):
         return self.pre
+
+    def was_preallocated(self, begin, length):
+        for b, l in self.ranges:
+            if begin >= b and begin + length <= b + l:
+                return true
+        return false
 
     def get_total_length(self):
         return len(self.s)
@@ -312,7 +341,7 @@ def test_hash_fail():
     assert not sw.do_I_have_requests(0)
 
 def test_lazy_hashing():
-    ds = DummyStorage(4)
+    ds = DummyStorage(4, ranges = [(0, 4)])
     flag = Event()
     sw = StorageWrapper(ds, 4, [sha('abcd').digest()], 4, ds.finished, lambda x, flag = flag: flag.set(), check_hashes = false)
     assert sw.get_piece(0, 0, 2) is None
@@ -326,7 +355,7 @@ def test_lazy_hashing_pass():
     assert not flag.isSet()
 
 def test_preexisting():
-    ds = DummyStorage(4, true)
+    ds = DummyStorage(4, true, [(0, 4)])
     sw = StorageWrapper(ds, 2, [sha(chr(0xFF) * 2).digest(), 
         sha('ab').digest()], 2, ds.finished, None)
     assert sw.get_amount_left() == 2
@@ -368,7 +397,7 @@ def test_end_above_total_length():
     assert sw.get_piece(0, 0, 4) == None
 
 def test_end_past_piece_end():
-    ds = DummyStorage(4, true)
+    ds = DummyStorage(4, true, ranges = [(0, 4)])
     sw = StorageWrapper(ds, 4, [sha(chr(0xFF) * 2).digest(), 
         sha(chr(0xFF) * 2).digest()], 2, ds.finished, None)
     assert ds.done
