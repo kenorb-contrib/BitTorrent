@@ -226,7 +226,15 @@ class RawServer:
                 except error:
                     if self.doneflag.isSet():
                         return
-                    code, msg, desc = error
+                    # I can't find a coherent explanation for what the behavior should be here,
+                    # and people report conflicting behavior, so I'll just try all the possibilities
+                    try:
+                        code, msg, desc = error
+                    except:
+                        try:
+                            code, msg = error
+                        except:
+                            code = ENOBUFS
                     if code == ENOBUFS:
                         self.errorfunc("Have to exit due to the TCP stack flaking out")
                         return
