@@ -12,7 +12,10 @@
 #define EXTENSION "\ptorrent"
 #define APP "\pBitTorrent"
 #define MIMETYPE "\papplication/x-bittorrent"
+
+
 @implementation ICHelper
+
 - (void) installICHandler:sender
 {
     OSStatus err;
@@ -25,7 +28,6 @@
 	err = ICFindPrefHandle(ici, "\pMapping", &attr, handle);
 	err = ICMapEntriesFilename(ici, handle, "\pfoo.torrent", 
                                 &map);
-	fflush(stdout);
 	if (err == icPrefNotFoundErr) {
 	    map.totalLength = kICMapFixedLength + PLstrlen(EXTENSION) + PLstrlen(APP) * 3 + PLstrlen(MIMETYPE);
 	    map.fixedLength = kICMapFixedLength;
