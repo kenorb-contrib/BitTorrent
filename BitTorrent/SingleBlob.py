@@ -4,6 +4,7 @@
 from sha import sha
 from random import shuffle
 from threading import Event
+from suck import suck
 true = 1
 false = 0
 
@@ -69,7 +70,8 @@ class SingleBlob:
             if size < file_length:
                 statusfunc(activity = 'finishing file allocation', 
                     fractionDone = float(size)/file_length)
-                for l in range(size,file_length,file_length/100+1)[1:]:
+                for l in range(size, file_length, 
+                        max(file_length/100, 1024))[1:]:
                     self.h.seek(l)
                     self.h.write(chr(1))
                     self.h.flush()
@@ -99,7 +101,7 @@ class SingleBlob:
                 return
             statusfunc(fractionDone = 0,
                        activity = 'allocating new file')
-            for l in range(0,file_length,file_length/100+1)[1:]:
+            for l in range(0, file_length, max(file_length/100, 1024))[1:]:
                 self.h.seek(l)
                 self.h.write(chr(1))
                 self.h.flush()
@@ -139,7 +141,7 @@ class SingleBlob:
         if myend > endindex:
             return None
         self.h.seek(mybegin)
-        return self.h.read(myend - mybegin)
+        return suck(self.h, myend - mybegin)
 
     def do_I_want(self, blob):
         return self.want.has_key(blob)
@@ -171,7 +173,7 @@ class SingleBlob:
     def _check_blob(self, blob):
         beginindex, endindex = self.indices[blob][0]
         self.h.seek(beginindex)
-        x = self.h.read(endindex - beginindex)
+        x = suck(self.h, endindex - beginindex)
         if sha(x).digest() != blob:
             return false
         else:

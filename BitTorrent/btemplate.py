@@ -86,6 +86,33 @@ def compile_list_template(template):
                 template(i, 0)
     return func
 
+class ValuesMarker:
+    def __init__(self, template):
+        self.template = template
+        
+    def get_real_template(self):
+        return compile_values_template(self.template)
+
+    def __repr__(self):
+        return 'ValuesMarker(' + `self.template` + ')'
+
+def compile_values_template(template):
+    def func(thing, verbose, template = compile_inner(template)):
+        if type(thing) != types.DictType:
+            raise ValueError, 'not a dict'
+        if verbose:
+            try:
+                for key, val in thing.items():
+                    template(val, 1)
+            except ValueError, e:
+                if not verbose:
+                    raise
+                raise ValueError, 'mismatch in key ' + `key` + ': ' + str(e)
+        else:
+            for val in thing.values():
+                template(val, 0)
+    return func
+
 compilers = {}
 
 def compile_string_template(template):
@@ -225,7 +252,10 @@ def compile_inner(template):
     return compilers[type(template)](template)
 
 def compile_template(template):
-    def func(thing, t = compile_inner(template), s = `template`):
+    def func(thing, verbose = None, t = compile_inner(template), s = `template`):
+        if verbose is not None:
+            t(thing, verbose)
+            return
         try:
             t(thing, 0)
         except ValueError:
@@ -233,7 +263,7 @@ def compile_template(template):
                 t(thing, 1)
                 assert 0
             except ValueError, reason:
-                raise ValueError, 'failed template check because: (' + str(reason) + ') target was:(' + `thing` + ') template was: (' + s + ')'
+                raise ValueError, 'failed template check because: (' + str(reason) + ') target was: (' + `thing` + ') template was: (' + s + ')'
     return func
 
 def test_slice():
@@ -350,8 +380,23 @@ def test_generic_string():
     except ValueError:
         pass
 
+def test_values():
+    vt = compile_template(ValuesMarker('a'))
+    vt({})
+    vt({'x': 'a'})
+    try:
+        vt(3)
+        assert 0
+    except ValueError:
+        pass
+    try:
+        vt({'x': 'b'})
+        assert 0
+    except ValueError:
+        pass
+
 def test_list():
-    f = compile_template(ListMarker(['a']))
+    f = compile_template(ListMarker('a'))
     f(['a'])
     f(('a', 'a'))
     try:
@@ -470,7 +515,7 @@ def test_max_depth():
     except ValueError:
         pass
 
-
-
-
-
+def test_use_compiled():
+    x = compile_template('a')
+    y = compile_template(ListMarker(x))
+    y(['a'])

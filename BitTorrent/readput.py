@@ -2,11 +2,13 @@
 # see LICENSE.txt for license information
 
 from httplib import HTTP
-from bencode import bencode, bdecode
 from urlparse import urlparse
+from threading import Thread, Lock
+from traceback import print_exc
+true = 1
+false = 0
 
 def readput(url, data):
-    data = bencode(data)
     protocol, host, path, g1, g2, g3 = urlparse(url)
     if protocol != 'http':
         raise ValueError, "can't handle protocol '" + protocol + "'"
@@ -21,5 +23,42 @@ def readput(url, data):
     f = h.getfile()
     r = f.read(int(headers.getheader('content-length')))
     f.close()
-    return bdecode(r)
+    return r
+
+class putqueue:
+    def __init__(self, url):
+        self.running = false
+        self.url = url
+        self.requests = []
+        self.lock = Lock()
+
+    def addrequest(self, data):
+        try:
+            self.lock.acquire()
+            if len(self.requests) == 0 and not self.running:
+                Thread(target = self.requestall).start()
+                self.running = true
+            self.requests.append(data)
+        finally:
+            self.lock.release()
+
+    def requestall(self):
+        while true:
+            try:
+                self.lock.acquire()
+                if len(self.requests) == 0:
+                    self.running = false
+                    return
+                data = self.requests[0]
+                del self.requests[0]
+            finally:
+                self.lock.release()
+            try:
+                readput(self.url, data)
+            except:
+                print_exc()
+
+
+
+
 

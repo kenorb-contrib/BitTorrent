@@ -7,41 +7,56 @@ import sys
 assert sys.version >= '2', "Install Python 2.0 or greater"
 
 from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler
-from types import StringType
-from threading import Thread, Condition
-from BitTorrent.btemplate import compile_template, ListMarker, string_template, OptionMarker, exact_length
+from threading import Thread, Lock
+from BitTorrent.btemplate import compile_template, ListMarker, string_template, OptionMarker, exact_length, ValuesMarker
 from BitTorrent.bencode import bencode, bdecode
 from BitTorrent.parseargs import parseargs, formatDefinitions
 from sys import argv
 from urllib import urlopen, quote, unquote
 from traceback import print_exc
-from time import sleep
 from os.path import exists
+from cStringIO import StringIO
 true = 1
 false = 0
 
-checkfunc = compile_template({'type': 'publish', 'files': ListMarker({
-    'pieces': ListMarker(exact_length(20)), 'piece length': 1, 'name': string_template, 
-    'length': 0}), 'ip': OptionMarker(string_template), 'port': 1})
+infotemplate = compile_template([{'type': 'single', 
+    'pieces': ListMarker(exact_length(20)),
+    'piece length': 1, 'length': 0, 'name': string_template}, 
+    {'type': 'multiple', 'pieces': ListMarker(exact_length(20)), 
+    'piece length': 1, 'files': ListMarker({'name': string_template, 
+    'length': 0})}])
 
-checkfunc2 = compile_template({'type': 'announce', 'id': string_template,
-    'ip': OptionMarker(string_template), 'port': 1})
+contact = {'ip': string_template, 
+    'port': 1}
+
+infofiletemplate = compile_template(ValuesMarker(infotemplate))
+
+peerlist = ListMarker({'myid': string_template, 'contact': contact})
+
+downloaderfiletemplate = compile_template(ValuesMarker(
+    {'permanent': peerlist, 'temporary': peerlist}))
+
+announcetemplate = compile_template([
+    {'type': 'announce', 'id': string_template,
+    'myid': string_template, 'permanent': 0, 
+    'contact': contact, 'left': OptionMarker(0)},
+    {'type': 'finished', 'myid': string_template, 
+    'uploaded': 0, 'downloaded': 0, 
+    'result': ['success', 'failure']}])
+
+alas = 'your file may exist elsewhere in the universe\n\nbut alas, not here'
 
 class TrackerHandler(BaseHTTPRequestHandler):
-    def answer(self, response):
-        self.send_response(200)
-        self.send_header('Content-Type', 'binary')
-        response = bencode(response)
+    def answer(self, response, head = false, code = 200, type = 'text/plain', 
+            headers = {}):
+        self.send_response(code)
+        self.send_header('Content-Type', type)
         self.send_header('Content-Length', len(response))
+        for key, value in headers.items():
+            self.send_header(key, value)
         self.end_headers()
-        self.wfile.write(response)
-
-    def answerno(self, response):
-        self.send_response(400)
-        self.send_header('Content-Type', 'text/plain')
-        self.send_header('Content-Length', len(response))
-        self.end_headers()
-        self.wfile.write(response)
+        if not head:
+            self.wfile.write(response)
 
     def do_PUT(self):
         try:
@@ -50,127 +65,133 @@ class TrackerHandler(BaseHTTPRequestHandler):
                 self.put()
             except IOError:
                 pass
+            except ValueError, e:
+                print_exc()
+                self.answerno('you sent me garbage - ' + str(e))
         finally:
             self.server.lock.release()
 
     def put(self):
-        # {filename: ([{'ip': ip, 'port': port}], length, pieces, piece_length)}
-        published = self.server.published
-        path = unquote(self.path)
-        try:
-            l = self.headers.getheader('content-length')
-            if l is None:
-                self.answerno('need content-length header for put')
-                return
-            message = bdecode(self.rfile.read(int(l)))
-            if path == '/publish/':
-                checkfunc(message)
-                ip = message.get('ip', self.client_address[0])
-                for file in message['files']:
-                    name = file['name']
-                    if published.has_key(name) and [file['length'],
-                            file['pieces'], file['piece length']] != published[name][1:]:
-                        self.answer({'type': 'failure', 
-                            'reason': 'mismatching data for ' + name})
-                        print published[name][1:]
-                        print (file['length'], file['pieces'], file['piece length'])
-                        return
-                changed = false
-                for file in message['files']:
-                    name = file['name']
-                    if not published.has_key(name):
-                        published[name] = [[], file['length'], 
-                            file['pieces'], file['piece length']]
-                    n = {'ip': ip, 'port': message['port']}
-                    if n not in published[name][0]:
-                        published[name][0].append(n)
-                        changed = true
-                if changed:
-                    h = open(self.server.file, 'wb')
-                    h.write(bencode(published))
-                    h.flush()
-                    h.close()
-                self.answer({'type': 'success', 'your ip': ip})
-            elif path == '/announce/':
-                checkfunc2(message)
-                f = message['id']
-                if not published.has_key(f):
-                    self.answer({'type': 'failure', 'reason': 'no such file'})
+        path = unquote(self.path)[1:]
+        l = self.headers.getheader('content-length')
+        if l is None:
+            self.answer('need content-length header for put', code = 400)
+            return
+        message = bdecode(self.rfile.read(int(l)))
+        self.server.loghandle.write(str(message) + '\n')
+        if path == 'announce/':
+            announcetemplate(message)
+            downloaders = self.server.downloaders
+            myid = message['myid']
+            if message['type'] == 'announce':
+                id = message['id']
+                contact = message['contact']
+                peers = downloaders.setdefault(id, 
+                    {'permanent': [], 'temporary': []})
+                perm = peers['permanent']
+                temp = peers['temporary']
+                for i in xrange(len(perm)):
+                    if perm[i]['contact'] == contact:
+                        del self.server.myid_to_id[perm[i]['myid']]
+                        del perm[i]
+                        break
                 else:
-                    publishers, length, pieces, piece_length = published[f]
-                    requesters = self.server.downloads.setdefault(f, [])
-                    ip = message.get('ip', self.client_address[0])
-                    requesters.append({'ip': ip, 'port': message['port']})
-                    del requesters[:-25]
-                    self.answer({'type': 'success', 'your ip': ip})
-            elif path == '/finish/':
-                self.answer('Thank you for your feedback! Love, Kerensa')
-                print 'finished - ' + `message`
-                sys.stdout.flush()
+                    for i in xrange(len(temp)):
+                        if temp[i]['contact'] == contact:
+                            del self.server.myid_to_id[temp[i]['myid']]
+                            del temp[i]
+                            break
+                if message['permanent'] == 0:
+                    temp.append({'myid': myid, 'contact': contact})
+                    if len(temp) > 25:
+                        del temp[0]
+                else:
+                    perm.append({'myid': myid, 'contact': contact})
+                self.server.myid_to_id[myid] = id
             else:
-                self.answerno('no put!')
-        except ValueError, e:
-            print_exc()
-            self.answerno('you sent me garbage - ' + str(e))
+                if self.server.myid_to_id.has_key(myid):
+                    id = self.server.myid_to_id[myid]
+                    del self.server.myid_to_id[myid]
+                    peers = downloaders.setdefault(id, 
+                        {'permanent': [], 'temporary': []})
+                    perm = peers['permanent']
+                    temp = peers['temporary']
+                    for i in xrange(len(perm)):
+                        if perm[i]['myid'] == myid:
+                            del perm[i]
+                            break
+                    else:
+                        for i in xrange(len(temp)):
+                            if temp[i]['myid'] == myid:
+                                del temp[i]
+                                break
+                    if perm == [] and temp == []:
+                        del downloaders[id]
+            h = open(self.server.dfile, 'wb')
+            h.write(bencode(downloaders))
+            h.close()
+        else:
+            if self.headers.getheader('content-type') != 'application/x-bittorrent':
+                self.answer('only accepting puts of content-type application/x-bittorrent', code = 400)
+                return
+            infotemplate(message)
+            published = self.server.published
+            if published.has_key(path):
+                for key, value in published[path].items():
+                    if message.has_key(key) and message.get(key) != value:
+                        self.answer('incompatible data for key ' + key,
+                            code = 400)
+                        return
+            published[path] = message
+            h = open(self.server.file, 'wb')
+            h.write(bencode(published))
+            h.close()
+        self.answer('Thanks! Love, Kerensa.')
 
-    def do_GET(self):
+    def do_GET(self, head = false):
         try:
             self.server.lock.acquire()
             try:
-                self.get(false)
+                self.get(head)
             except IOError:
                 pass
+            except ValueError, e:
+                print_exc()
+                self.answer('you sent me garbage - ' + str(e), head, 400)
         finally:
             self.server.lock.release()
     
     def do_HEAD(self):
-        try:
-            self.server.lock.acquire()
-            self.get(true)
-        finally:
-            self.server.lock.release()
+        self.do_GET(true)
     
     def get(self, head):
-        # {filename: ([{'ip': ip, 'port': port}], length, pieces, piece_length)}
         published = self.server.published
-        path = unquote(self.path)
-        if path == '/' or path == '/index.html':
-            self.send_response(200)
-            self.end_headers()
-            if head:
-                return
-            self.wfile.write('<head><title>Published BitTorrent files</title></head>\n')
+        path = unquote(self.path)[1:]
+        if path == '' or path == 'index.html':
+            s = StringIO()
+            s.write('<head><title>Published BitTorrent files</title></head>Published BitTorrent files<p>\n')
             names = published.keys()
+            if names == []:
+                s.write('(no files published yet)')
             names.sort()
             for name in names:
-                self.wfile.write('<a href="' + name + '">' + name + '</a><p>\n\n')
+                s.write('<a href="' + name + '">' + name + '</a><p>\n\n')
+            self.answer(s.getvalue(), head, 200, 'text/html')
+            return
+        if not published.has_key(path):
+            self.answer(alas, head, 404)
+            return
+        p = self.server.downloaders.get(path)
+        if p is None:
+            peers = []
         else:
-            f = path[1:]
-            if not published.has_key(f):
-                self.send_response(404)
-                self.send_header('Content-Type', 'text/plain')
-                self.end_headers()
-                if head:
-                    return
-                self.wfile.write('your file may exist elsewhere in the universe\n\n')
-                self.wfile.write('but alas, not here')
-            else:
-                self.send_response(200)
-                self.send_header('Content-Type', 'application/x-bittorrent')
-                publishers, length, pieces, piece_length = published[f]
-                requesters = self.server.downloads.get(f, [])
-                requesters = publishers + requesters
-                response = {'pieces': pieces, 'piece length': piece_length, 
-                    'peers': requesters, 'type': 'success', 'finish': '/finish/',
-                    'length': length, 'id': f, 'name': f, 'announce': '/announce/',
-                    'url': 'http://' + self.server.ip + ':' + str(self.server.port) + '/' + quote(f)}
-                r = bencode(response)
-                self.send_header('Content-Length', str(len(r)))
-                self.send_header('Pragma', 'no-cache')
-                self.end_headers()
-                if head:
-                    return
-                self.wfile.write(r)
+            peers = [x['contact'] for x in (p['permanent'] + p['temporary'])]
+        self.answer(bencode({'info': published[path], 'id': path, 
+            'url': self.server.urlprefix + self.path,
+            'announce': self.server.urlprefix + '/announce/',
+            'your ip': self.client_address[0], 'peers': peers}),
+            head, 200, 'application/x-bittorrent', 
+            {'Pragma': 'no-cache'})
 
 def track(config):
     try:
@@ -192,37 +213,32 @@ def track(config):
         r = h.read()
         h.close()
         s.published = bdecode(r)
-    s.downloads = {}
-    s.port = port
-    s.lock = Condition()
-    s.ip = config['ip']
+        infofiletemplate(s.published)
+    s.lock = Lock()
+    s.urlprefix = 'http://' + config['ip'] + ':' + str(port)
+    s.logfile = config['logfile']
+    s.loghandle = open(s.logfile, 'ab')
+    s.downloaders = {}
+    s.myid_to_id = {}
     d = config['dfile']
-    if d != '':
-        if exists(d):
-            h = open(d, 'rb')
-            ds = h.read()
-            h.close()
-            s.downloads = bdecode(ds)
-        
-        def store_downloads(s = s, d = d):
-            while true:
-                sleep(600)
-                try:
-                    s.lock.acquire()
-                    h = open(d, 'wb')
-                    h.write(bencode(s.downloads))
-                    h.flush()
-                    h.close()
-                finally:
-                    s.lock.release()
-        Thread(target = store_downloads).start()
-    Thread(target = s.serve_forever).start()
+    s.dfile = d
+    if exists(d):
+        h = open(d, 'rb')
+        ds = h.read()
+        h.close()
+        s.downloads = bdecode(ds)
+        downloaderfiletemplate(s.downloads)
+        for key, value in s.downloads.items():
+            for j in value['permanent'] + value['temporary']:
+                s.myid_to_id[j['myid']] = id
+    s.serve_forever()
 
 defaults = [
     ('port', 'p', 80, "Port to listen on."),
     ('ip', 'i', None, "ip to report you have to downloaders."),
     ('file', 's', None, 'file to store state in'),
-    ('dfile', 'd', '', 'file to store recent downloader info in'),
+    ('dfile', 'd', None, 'file to store recent downloader info in'),
+    ('logfile', None, None, 'file to write BitTorrent announcements to'),
     ]
 
 def run(args):

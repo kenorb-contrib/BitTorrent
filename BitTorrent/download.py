@@ -15,12 +15,12 @@ from RawServer import RawServer
 from DownloaderFeedback import DownloaderFeedback
 from RateMeasure import RateMeasure
 from entropy import entropy
-from readput import readput
-from bencode import bdecode
+from readput import putqueue
+from bencode import bencode, bdecode
 from btemplate import compile_template, string_template, ListMarker, OptionMarker, exact_length
 from os import path
 from parseargs import parseargs, formatDefinitions
-import socket
+from socket import error as socketerror
 from random import randrange, seed
 from traceback import print_exc
 from threading import Event
@@ -40,12 +40,9 @@ defaults = [
         "maximum length prefix encoding you'll accept over the wire - larger values get the connection dropped."),
     ('max_poll_period', None, 2.0,
         "Maximum number of seconds to block in calls to select()"),
-    ('port', 'p', 0,
-        "Port to listen on, zero means choose randomly"),
     ('ip', 'i', '',
-        "ip to report you have to the publicist."),
-    ('response', None, '',
-        'response which came back from server, alternative to responsesfile and url'),
+        "ip to report you have to the tracker."),
+    ('port', None, 0, 'port to listen on, 0 means scan up from 6881'),
     ('responsefile', None, '',
         'file the server response was stored in, alternative to response and url'),
     ('url', None, '',
@@ -60,17 +57,18 @@ defaults = [
         "maximum amount of time to let a connection pause before reducing it's rate"),
     ('max_rate_period', None, 20.0,
         "maximum amount of time to guess the current rate estimate represents"),
+    ('permanent', None, 0,
+        "whether this peer will stop uploading once it's done downloading"),
     ]
 
-t = compile_template({'piece length': 1, 
+t = compile_template({'info': [{'type': 'single', 
     'pieces': ListMarker(exact_length(20)),
-    'peers': ListMarker({'ip': string_template, 'port': 1}), 'type': 'success',
-    'length': 0, 'id': string_template, 'name': string_template, 
-    'announce': string_template, 
-    'url': string_template, 'finish': OptionMarker(string_template)})
-
-t2 = compile_template([{'type': 'success', 'your ip': string_template}, 
-    {'type': 'failure', 'reason': string_template}])
+    'piece length': 1, 'length': 0, 'name': string_template}, 
+    {'type': 'multiple', 'pieces': ListMarker(exact_length(20)), 
+    'piece length': 1, 'files': ListMarker({'name': string_template, 
+    'length': 0})}], 'peers': ListMarker({'ip': string_template, 'port': 1}), 
+    'id': string_template, 'announce': string_template, 
+    'url': string_template, 'your ip': string_template})
 
 def download(params, filefunc, statusfunc, resultfunc, doneflag, cols):
     if len(params) == 0:
@@ -78,32 +76,29 @@ def download(params, filefunc, statusfunc, resultfunc, doneflag, cols):
         return
     try:
         config, garbage = parseargs(params, defaults, 0, 0)
-        if config['response'] == '' and config['responsefile'] == '' and config['url'] == '':
-            raise ValueError('need response, responsefile, or url')
+        if config['responsefile'] == '' and config['url'] == '':
+            raise ValueError('need responsefile, or url')
     except ValueError, e:
         resultfunc(false, 'error: ' + str(e) + '\nrun with no args for parameter explanations')
         return
     
-    if config['response'] != '':
-        response = config['response']
-    elif config['responsefile'] != '':
+    if config['responsefile'] != '':
         try:
             h = open(config['responsefile'], 'rb')
             response = h.read()
             h.close()
         except IOError, e:
             print_exc()
-            resultfunc(false, 'IO problem reading file - ' + str(e))
+            resultfunc(false, 'IO problem reading response file - ' + str(e))
             return
     else:
         try:
-            print 'url', config['url']
             h = urlopen(config['url'])
             response = h.read()
             h.close()
         except IOError, e:
             print_exc()
-            resultfunc(false, 'IO problem reading file - ' + str(e))
+            resultfunc(false, 'IO problem in initial http request - ' + str(e))
             return false
 
     try:
@@ -118,16 +113,13 @@ def download(params, filefunc, statusfunc, resultfunc, doneflag, cols):
 
     try:
         response = bdecode(response)
-        response1 = response
         t(response)
     except ValueError, e:
-        print_exc()
         resultfunc(false, "got bad publication response - " + str(e))
         return
-    file = config['saveas']
-    file_length = response['length']
-    if file == '':
-        file = filefunc(response['name'], file_length)
+    info = response['info']
+    file_length = info['length']
+    file = filefunc(info['name'], file_length, config['saveas'])
     if file is None:
         return
     if path.exists(file):
@@ -146,8 +138,8 @@ def download(params, filefunc, statusfunc, resultfunc, doneflag, cols):
         if fatal:
             doneflag.set()
         resultfunc(result, errormsg)
-    blobs = SingleBlob(file, file_length, response['pieces'], 
-        response['piece length'], finished, open, path.exists, 
+    blobs = SingleBlob(file, file_length, info['pieces'], 
+        info['piece length'], finished, open, path.exists, 
         path.getsize, doneflag, statusfunc)
     if doneflag.isSet():
         return
@@ -181,57 +173,46 @@ def download(params, filefunc, statusfunc, resultfunc, doneflag, cols):
     encrypter = Encrypter(connecter, rawserver, lambda e = entropy: e(20),
         entropy(20), config['max_message_length'], rawserver.add_task, 
         config['keepalive_interval'])
-    listen_port = config['port']
-    if listen_port == 0:
-        listen_port = randrange(5000, 10000)
+    DownloaderFeedback(choker, rawserver.add_task, 
+        response['your ip'], statusfunc, 
+        config['max_rate_recalculate_interval'], ratemeasure.get_time_left, 
+        ratemeasure.get_size_left, file_length, finflag)
+
+    if config['port'] == 0:
+        r = xrange(6881, 6888)
+    else:
+        r = [config['port']]
+    for listen_port in r:
+        try:
+            rawserver.bind(listen_port)
+            break
+        except socketerror, e:
+            pass
+    else:
+        resultfunc(false, "Couldn't listen - " + str(e))
+        return
     for x in response['peers']:
         encrypter.start_connection((x['ip'], x['port']))
 
-    try:
-        myid = entropy(20)
-        a = {'type': 'announce', 'id': response['id'], 'port': listen_port,
-            'myid': myid}
-        if config['ip'] != '':
-            a['ip'] = config['ip']
-        if resuming:
-            a['remaining'] = left
-        url = urljoin(response['url'], response['announce'])
-        response = readput(url, a)
-        t2(response)
-        if response['type'] == 'failure':
-            resultfunc(false, "Couldn't announce - " + response['reason'])
-            return
-        DownloaderFeedback(choker, rawserver.add_task, 
-            listen_port, response['your ip'], statusfunc, 
-            config['max_rate_recalculate_interval'], ratemeasure.get_time_left, 
-            ratemeasure.get_size_left, file_length, finflag)
-    except IOError, e:
-        print_exc()
-        resultfunc(false, "Couldn't announce - " + str(e))
-        return
-    except ValueError, e:
-        print_exc()
-        resultfunc(false, "got bad announcement response - " + str(e))
-        return
-    try:
-        if not finflag.isSet():
-            statusfunc(activity = 'connecting to peers...', fractionDone = 0)
-        rawserver.start_listening(encrypter, listen_port, false)
-    except socket.error, e:
-        print_exc()
-        resultfunc(false, "Couldn't listen - " + str(e))
-        return
-        
-    if response1.has_key('finish'):
-        try:
-            a = {'type': 'finished', 'id': response1['id'], 'myid': myid, 
-                'uploaded': total_up[0], 'downloaded': total_down[0]}
-            if r[0]:
-                a['result'] = 'success'
-            else:
-                a['result'] = 'failure'
-            url = urljoin(response1['url'], response1['finish'])
-            readput(url, a)
-        except IOError, e:
-            print_exc()
-    return r[0]
+    if not finflag.isSet():
+        statusfunc(activity = 'connecting to peers')
+    q = putqueue(response['announce'])
+    myid = entropy(20)
+    a = {'type': 'announce', 'id': response['id'], 
+            'myid': myid, 'permanent': config['permanent'], 
+            'contact': {'ip': response['your ip'], 'port': listen_port}}
+    if config['ip'] != '':
+        a['contact']['ip'] = config['ip']
+    if resuming:
+        a['left'] = left
+    q.addrequest(bencode(a))
+
+    rawserver.listen_forever(encrypter)
+
+    a = {'type': 'finished', 'myid': myid, 
+        'uploaded': total_up[0], 'downloaded': total_down[0]}
+    if r[0]:
+        a['result'] = 'success'
+    else:
+        a['result'] = 'failure'
+    q.addrequest(bencode(a))

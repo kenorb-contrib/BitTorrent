@@ -5,6 +5,7 @@
 
 from BitTorrent.download import download
 from threading import Event
+from os.path import abspath
 from sys import argv, version, stdout
 assert version >= '2', "Install Python 2.0 or greater"
 true = 1
@@ -23,9 +24,15 @@ def ex(n):
         return '0' + str(n)
 
 def hours(n):
+    if n == -1:
+        return '<unknown>'
+    if n == 0:
+        return 'complete!'
     n = int(n)
     h, r = divmod(n, 60 * 60)
     m, sec = divmod(r, 60)
+    if h > 1000000:
+        return '<unknown>'
     if h > 0:
         return str(h) + ' hour ' + ex(m) + ' min ' + ex(sec) + ' sec'
     else:
@@ -37,6 +44,7 @@ class HeadlessDisplayer:
         self.file = ''
         self.percentDone = ''
         self.timeEst = ''
+        self.downloadTo = ''
         self.downRate = ''
         self.upRate = ''
 
@@ -70,12 +78,16 @@ class HeadlessDisplayer:
         print 'saving:        ', self.file
         print 'percent done:  ', self.percentDone
         print 'time left:     ', self.timeEst
+        print 'download to:   ', self.downloadTo
         print 'download rate: ', self.downRate
         print 'upload rate:   ', self.upRate
         stdout.flush()
 
-    def chooseFile(self, default, size):
+    def chooseFile(self, default, size, saveas):
         self.file = default + ' (' + mbfy(size) + ' MB)'
+        if saveas != '':
+            default = saveas
+        self.downloadTo = abspath(default)
         return default
 
 def run(params):

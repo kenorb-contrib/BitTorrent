@@ -4,11 +4,10 @@
 from time import time
 
 class DownloaderFeedback:
-    def __init__(self, choker, add_task, port, ip, statusfunc, 
+    def __init__(self, choker, add_task, ip, statusfunc, 
             max_pause, remainingfunc, leftfunc, file_length, finflag):
         self.choker = choker
         self.add_task = add_task
-        self.port = port
         self.ip = ip
         self.statusfunc = statusfunc
         self.max_pause = max_pause

@@ -98,18 +98,14 @@ class RawServer:
             if k.socket is not None:
                 self._close_socket(k)
 
-    def start_listening(self, handler, port, ret = true):
-        self.handler = handler
-        self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.server.setblocking(0)
-        self.server.bind(('', port))
-        self.server.listen(5)
-        self.poll.register(self.server, POLLIN)
-        if ret:
-            Thread(target = self.listen_forever).start()
-        else:
-            self.listen_forever()
-    
+    def bind(self, port):
+        server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        server.setblocking(0)
+        server.bind(('', port))
+        server.listen(5)
+        self.poll.register(server, POLLIN)
+        self.server = server
+
     def start_connection(self, dns):
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.setblocking(0)
@@ -159,7 +155,8 @@ class RawServer:
                     if s.is_flushed():
                         self.handler.connection_flushed(s)
 
-    def listen_forever(self):
+    def listen_forever(self, handler):
+        self.handler = handler
         try:
             while not self.doneflag.isSet():
                 try:
@@ -180,7 +177,7 @@ class RawServer:
                         try:
                             func()
                         except KeyboardInterrupt:
-                            raise
+                            return
                         except:
                             if self.noisy:
                                 print_exc()
@@ -195,7 +192,7 @@ class RawServer:
                     else:
                         print_exc()
                 except KeyboardInterrupt:
-                    raise
+                    return
                 except:
                     print_exc()
         finally:
@@ -239,16 +236,20 @@ class DummyHandler:
     def connection_flushed(self, s):
         pass
 
+def sl(rs, handler, port):
+    rs.bind(port)
+    Thread(target = rs.listen_forever, args = [handler]).start()
+    
 def test_starting_side_close():
     try:
         da = DummyHandler()
         fa = Event()
         sa = RawServer(.1, fa, 100)
-        sa.start_listening(da, 5000)
+        sl(sa, da, 5000)
         db = DummyHandler()
         fb = Event()
         sb = RawServer(.1, fb, 100)
-        sb.start_listening(db, 5001)
+        sl(sb, db, 5001)
 
         ca = sa.start_connection(('', 5001))
         sleep(1)
@@ -307,11 +308,11 @@ def test_receiving_side_close():
         da = DummyHandler()
         fa = Event()
         sa = RawServer(.1, fa, 100)
-        sa.start_listening(da, 5002)
+        sl(sa, da, 5002)
         db = DummyHandler()
         fb = Event()
         sb = RawServer(.1, fb, 100)
-        sb.start_listening(db, 5003)
+        sl(sb, db, 5003)
         
         ca = sa.start_connection(('', 5003))
         sleep(1)
@@ -370,7 +371,7 @@ def test_connection_refused():
         da = DummyHandler()
         fa = Event()
         sa = RawServer(.1, fa, 100)
-        sa.start_listening(da, 5006)
+        sl(sa, da, 5006)
         
         ca = sa.start_connection(('', 5007))
         sleep(1)
@@ -387,13 +388,13 @@ def test_both_close():
         da = DummyHandler()
         fa = Event()
         sa = RawServer(.1, fa, 100)
-        sa.start_listening(da, 5004)
+        sl(sa, da, 5004)
 
         sleep(1)
         db = DummyHandler()
         fb = Event()
         sb = RawServer(.1, fb, 100)
-        sb.start_listening(db, 5005)
+        sl(sb, db, 5005)
         
         ca = sa.start_connection(('', 5005))
         sleep(1)
@@ -451,7 +452,7 @@ def test_normal():
     l = []
     f = Event()
     s = RawServer(.5, f, 100)
-    s.start_listening(DummyHandler(), 5007)
+    sl(s, DummyHandler(), 5007)
     s.add_task(lambda l = l: l.append('b'), 2)
     s.add_task(lambda l = l: l.append('a'), 1)
     s.add_task(lambda l = l: l.append('d'), 4)
@@ -465,7 +466,7 @@ def test_catch_exception():
     l = []
     f = Event()
     s = RawServer(.5, f, 100, false)
-    s.start_listening(DummyHandler(), 5009)
+    sl(s, DummyHandler(), 5009)
     s.add_task(lambda l = l: l.append('b'), 2)
     s.add_task(lambda: 4/0, 1)
     sleep(3)
@@ -477,13 +478,13 @@ def test_closes_if_not_hit():
         da = DummyHandler()
         fa = Event()
         sa = RawServer(.1, fa, 2)
-        sa.start_listening(da, 5012)
+        sl(sa, da, 5012)
 
         sleep(1)
         db = DummyHandler()
         fb = Event()
         sb = RawServer(.1, fb, 100)
-        sb.start_listening(db, 5013)
+        sl(sb, db, 5013)
         
         ca = sa.start_connection(('', 5013))
         sleep(1)
@@ -510,13 +511,13 @@ def test_does_not_close_if_hit():
         da = DummyHandler()
         fa = Event()
         sa = RawServer(.1, fa, 2)
-        sa.start_listening(da, 5012)
+        sl(sa, da, 5012)
 
         sleep(1)
         db = DummyHandler()
         fb = Event()
         sb = RawServer(.1, fb, 100)
-        sb.start_listening(db, 5013)
+        sl(sb, db, 5013)
         
         ca = sa.start_connection(('', 5013))
         sleep(1)

@@ -23,9 +23,15 @@ def ex(n):
         return '0' + str(n)
 
 def hours(n):
+    if n == -1:
+        return '<unknown>'
+    if n == 0:
+        return 'complete!'
     n = int(n)
     h, r = divmod(n, 60 * 60)
     m, sec = divmod(r, 60)
+    if h > 1000000:
+        return '<unknown>'
     if h > 0:
         return str(h) + ' hour ' + ex(m) + ' min ' + ex(sec) + ' sec'
     else:
@@ -172,7 +178,7 @@ class DownloadInfoFrame(wxFrame):
             dlg.Center()
             dlg.ShowModal()
 
-    def chooseFile(self, default, size):
+    def chooseFile(self, default, size, saveas):
         f = Event()
         bucket = [None]
         wxPostEvent(self, ChooseFileEvent(default, bucket, f, size))
