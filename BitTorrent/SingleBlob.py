@@ -46,8 +46,6 @@ class SingleBlob:
                     self.complete[ph] = 1
                     self.amount_have[ph] = amount
                     self.want_list.remove(ph)
-            if len(self.want_list) == 0:
-                raise ValueError, 'download already complete'
         else:
             self.h = open(file, 'wb+')
             c = chr(0) * csize

@@ -45,8 +45,6 @@ def run(configDictionary, files):
     root.title('BitTorrent')
     def getname(default, root = root):
         result = asksaveasfilename(initialfile = default)
-        if result == '':
-            root.destroy()
         return result
     l = Label(root, text = "You shouldn't see this")
     l.pack()
@@ -64,6 +62,7 @@ def run(configDictionary, files):
     Thread(target = root.mainloop).start()
     configDictionary['prefetched'] = prefetched
     downloadurl(files[0], getname, displayfunc, doneflag, configDictionary)
+    root.destroy()
 
 if __name__ == '__main__':
     usageHeading = "usage: %s [options] <url>" % argv[0]

@@ -40,17 +40,19 @@ def run(private_key, noncefunc, response, filefunc, displayfunc, doneflag, confi
         t(response)
     except ValueError, e:
         displayfunc("got bad publication response - " + str(e), "Okay")
-        return
+        return false
     file = filefunc(response['name'])
     if file == '':
-        return
+        return false
     try:
         file_length = response['length']
         blobs = SingleBlob(file, response['hash'], file_length, response['pieces'], 
             response['piece length'], None)
+        if len(blobs.get_list_of_files_I_want()) == 0:
+            return true
     except ValueError, e:
         displayfunc('bad data for making blob store - ' + str(e), 'Okay')
-        return
+        return false
     throttler = Throttler(long(config.get('rethrottle_diff', str(2 ** 20))), 
         long(config.get('unthrottle_diff', str(2 ** 23))), 
         int(config.get('max_uploads', '2')), 
@@ -67,12 +69,13 @@ def run(private_key, noncefunc, response, filefunc, displayfunc, doneflag, confi
         long(config.get('max_message_length', str(2 ** 20))))
     connecter.set_encrypter(encrypter)
     listen_port = long(config.get('port', '6880'))
-    
-    def finished(result, displayfunc = displayfunc, doneflag = doneflag):
+    r = []
+    def finished(result, displayfunc = displayfunc, doneflag = doneflag, r = r):
         if result:
             displayfunc('download succeeded', 'Okay')
         else:
             displayfunc('download failed', 'Okay')
+        r.append(1)
         doneflag.set()
     blobs.callback = finished
 
@@ -91,19 +94,20 @@ def run(private_key, noncefunc, response, filefunc, displayfunc, doneflag, confi
         t2(response)
         if response['type'] == 'failure':
             displayfunc("Couldn't announce - " + response['reason'], 'Okay')
-            return
+            return false
         DownloaderFeedback(uploader, downloader, throttler, rawserver.add_task, 
             listen_port, response['your ip'], file_length, displayfunc)
     except IOError, e:
         displayfunc("Couldn't announce - " + str(e), 'Okay')
-        return
+        return false
     except ValueError, e:
         displayfunc("got bad announcement response - " + str(e), 'Okay')
-        return
+        return false
     try:
         rawserver.start_listening(encrypter, listen_port, false)
     except socket.error, e:
         displayfunc("Couldn't listen - " + str(e), 'Okay')
+    return len(r) > 0
 
 def checkversion():
     try:
@@ -119,21 +123,20 @@ def checkversion():
 def download(response, filefunc, displayfunc, doneflag, config):
     if not checkversion():
         displayfunc('No longer the latest version - see http://bitconjurer.org/BitTorrent/download.html', 'Okay')
-        return
+        return false
     private_key = entropy(20)
     noncefunc = lambda e = entropy: e(20)
-    run(private_key, noncefunc, response, filefunc, displayfunc, doneflag, config)
+    return run(private_key, noncefunc, response, filefunc, displayfunc, doneflag, config)
 
 def downloadurl(url, filefunc, displayfunc, doneflag, config):
-    if not checkversion():
-        return
     try:
         response = config.get('prefetched')
         if response is None:
             h = urlopen(url)
             response = h.read()
             h.close()
-        download(response, filefunc, displayfunc, doneflag, config)
+        return download(response, filefunc, displayfunc, doneflag, config)
     except IOError, e:
         displayfunc('IO problem reading file - ' + str(e), 'Okay')
+        return false
 
