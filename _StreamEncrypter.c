@@ -23,7 +23,7 @@
    The originators of Rijndael put no conditions on its use.
    
    I've hard-coded the block and key sizes, removed the decryption code, 
-   gotten rid of the mutable globals, and made encrypt() put the 
+   gotten rid of the mutable globals, and made aes_encrypt() put the 
    ciphertext in a different memory position than the plaintext.
    
    see LICENSE.txt for license information
@@ -182,7 +182,7 @@ void gkey(BYTE *key, WORD *fkey)
  * Instead of just one ftable[], there could be 4, the other     *
  * 3 pre-rotated to save the ROTL8, ROTL16 and ROTL24 overhead */ 
 
-void __inline encrypt(BYTE *source, BYTE *buff, WORD *fkey)
+void __inline aes_encrypt(BYTE *source, BYTE *buff, WORD *fkey)
 {
     int i,j,k,m;
     WORD a[8],b[8],*x,*y,*t;
@@ -317,7 +317,7 @@ CounterMode__call__(PyObject *py_self, PyObject *py_args)
         while (++a0[index] == 0) {
             index--;
         }
-        encrypt(a0, pseudoBits, self->fkey);
+        aes_encrypt(a0, pseudoBits, self->fkey);
         if (s_len > 16) {
             xor(s, pseudoBits, dest, 16);
             dest += 16; s += 16; s_len -= 16;
