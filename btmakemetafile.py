@@ -4,7 +4,7 @@
 # multitracker extensions by John Hoffman
 # see LICENSE.txt for license information
 
-from BitTorrent import PSYCO
+from BitTornado import PSYCO
 if PSYCO.psyco:
     try:
         import psyco
@@ -20,9 +20,9 @@ from os import listdir
 from sha import sha
 from copy import copy
 from string import strip
-from BitTorrent.bencode import bencode
-from BitTorrent.btformats import check_info
-from BitTorrent.parseargs import parseargs, formatDefinitions
+from BitTornado.bencode import bencode
+from BitTornado.BT1.btformats import check_info
+from BitTornado.parseargs import parseargs, formatDefinitions
 from threading import Event
 from time import time
 

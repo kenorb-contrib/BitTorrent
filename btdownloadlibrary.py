@@ -1,7 +1,7 @@
 # Written by Bram Cohen
 # see LICENSE.txt for license information
 
-from BitTorrent import PSYCO
+from BitTornado import PSYCO
 if PSYCO.psyco:
     try:
         import psyco
@@ -10,7 +10,7 @@ if PSYCO.psyco:
     except:
         pass
 
-import BitTorrent.download
+import BitTornado.BT1.download
 from threading import Event
 
 def dummychoose(default, size, saveas, dir):
@@ -27,5 +27,5 @@ def download(url, file):
     ev = Event()
     def fin(ev = ev):
         ev.set()
-    BitTorrent.download.download(['--url', url, '--saveas', file], 
+    BitTornado.BT1.download.download(['--url', url, '--saveas', file], 
         dummychoose, dummydisplay, fin, dummyerror, ev, 80)

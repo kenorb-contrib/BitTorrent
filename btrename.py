@@ -6,7 +6,7 @@
 from sys import *
 from os.path import *
 from sha import *
-from BitTorrent.bencode import *
+from BitTornado.bencode import *
 
 NAME, EXT = splitext(basename(argv[0]))
 VERSION = '20021119'

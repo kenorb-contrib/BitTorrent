@@ -3,9 +3,9 @@
 # Written by Henry 'Pi' James
 # see LICENSE.txt for license information
 
-SPEW_SCROLL_RATE = 3
+SPEW_SCROLL_RATE = 1
 
-from BitTorrent import PSYCO
+from BitTornado import PSYCO
 if PSYCO.psyco:
     try:
         import psyco
@@ -14,14 +14,42 @@ if PSYCO.psyco:
     except:
         pass
 
-from BitTorrent.download import Download
+from BitTornado.download_bt1 import BT1Download, defaults, parse_params, get_usage, get_response
+from BitTornado.RawServer import RawServer
+from random import seed
+from socket import error as socketerror
+from BitTornado.bencode import bencode
 from threading import Event
 from os.path import abspath
 from signal import signal, SIGWINCH
-from sys import argv, version, stdout
+from sha import sha
+from sys import argv, exit
 import sys
 from time import time, strftime
-assert version >= '2', "Install Python 2.0 or greater"
+from BitTornado import createPeerID
+
+try:
+    import curses
+    import curses.panel
+    from curses.wrapper import wrapper as curses_wrapper
+    from signal import signal, SIGWINCH 
+except:
+    print 'Textmode GUI initialization failed, cannot proceed.'
+    print
+    print 'This download interface requires the standard Python module ' \
+       '"curses", which is unfortunately not available for the native ' \
+       'Windows port of Python. It is however available for the Cygwin ' \
+       'port of Python, running on all Win32 systems (www.cygwin.com).'
+    print
+    print 'You may still use "btdownloadheadless.py" to download.'
+    sys.exit(1)
+
+assert sys.version >= '2', "Install Python 2.0 or greater"
+try:
+    True
+except:
+    True = 1
+    False = 0
 
 def fmttime(n):
     if n == -1:
@@ -51,35 +79,16 @@ def fmtsize(n):
         size = '%s (%.0f %s)' % (size, n, unit[i])
     return size
 
-def winch_handler(signum, stackframe):
-    global scrwin, scrpan, labelwin, labelpan
-    global fieldh, fieldw, fieldy, fieldx, fieldwin, fieldpan
-    global spewwin, spewpan, spewh, speww, spewy, spewx
-    # SIGWINCH. Remake the frames!
-    ## Curses Trickery
-    try:
-        curses.endwin()
-    except:
-        pass
-    # delete scrwin somehow?
-    scrwin.refresh()
-    scrwin = curses.newwin(0, 0, 0, 0) 
-    scrh, scrw = scrwin.getmaxyx()
-    scrpan = curses.panel.new_panel(scrwin)
-    labelh, labelw, labely, labelx = 11, 9, 1, 2
-    labelwin = curses.newwin(labelh, labelw, labely, labelx)
-    labelpan = curses.panel.new_panel(labelwin)
-    fieldh, fieldw, fieldy, fieldx = labelh, scrw - 2 - labelw - 3, 1, labelw + 3
-    fieldwin = curses.newwin(fieldh, fieldw, fieldy, fieldx)
-    fieldpan = curses.panel.new_panel(fieldwin)
-    spewh, speww, spewy, spewx = scrh - labelh - 2, scrw - 3, 1 + labelh, 2
-    spewwin = curses.newwin(spewh, speww, spewy, spewx)
-    spewpan = curses.panel.new_panel(spewwin)
-    prepare_display()
-
 
 class CursesDisplayer:
-    def __init__(self, mainerrlist):
+    def __init__(self, scrwin, errlist, doneflag):
+        self.scrwin = scrwin
+        self.errlist = errlist
+        self.doneflag = doneflag
+        
+        signal(SIGWINCH, self.winch_handler)
+        self.changeflag = Event()
+
         self.done = 0
         self.file = ''
         self.fileSize = ''
@@ -93,10 +102,56 @@ class CursesDisplayer:
         self.seedStatus = ''
         self.peerStatus = ''
         self.errors = []
-        self.globalerrlist = mainerrlist
         self.last_update_time = 0
         self.spew_scroll_time = 0
         self.spew_scroll_pos = 0
+
+        self._remake_window()
+
+    def winch_handler(self, signum, stackframe):
+        self.changeflag.set()
+        curses.endwin()
+        self.scrwin.refresh()
+        self.scrwin = curses.newwin(0, 0, 0, 0)
+        self._remake_window()
+
+    def _remake_window(self):
+        self.scrh, self.scrw = self.scrwin.getmaxyx()
+        self.scrpan = curses.panel.new_panel(self.scrwin)
+        self.labelh, self.labelw, self.labely, self.labelx = 11, 9, 1, 2
+        self.labelwin = curses.newwin(self.labelh, self.labelw,
+                                      self.labely, self.labelx)
+        self.labelpan = curses.panel.new_panel(self.labelwin)
+        self.fieldh, self.fieldw, self.fieldy, self.fieldx = (
+                            self.labelh, self.scrw-2 - self.labelw-3,
+                            1, self.labelw+3)
+        self.fieldwin = curses.newwin(self.fieldh, self.fieldw,
+                                      self.fieldy, self.fieldx)
+        self.fieldwin.nodelay(1)
+        self.fieldpan = curses.panel.new_panel(self.fieldwin)
+        self.spewh, self.speww, self.spewy, self.spewx = (
+            self.scrh - self.labelh - 2, self.scrw - 3, 1 + self.labelh, 2)
+        self.spewwin = curses.newwin(self.spewh, self.speww,
+                                     self.spewy, self.spewx)
+        self.spewpan = curses.panel.new_panel(self.spewwin)
+        try:
+            self.scrwin.border(ord('|'),ord('|'),ord('-'),ord('-'),ord(' '),ord(' '),ord(' '),ord(' '))
+        except:
+            pass
+        self.labelwin.addstr(0, 0, 'file:')
+        self.labelwin.addstr(1, 0, 'size:')
+        self.labelwin.addstr(2, 0, 'dest:')
+        self.labelwin.addstr(3, 0, 'progress:')
+        self.labelwin.addstr(4, 0, 'status:')
+        self.labelwin.addstr(5, 0, 'dl speed:')
+        self.labelwin.addstr(6, 0, 'ul speed:')
+        self.labelwin.addstr(7, 0, 'sharing:')
+        self.labelwin.addstr(8, 0, 'seeds:')
+        self.labelwin.addstr(9, 0, 'peers:')
+        curses.panel.update_panels()
+        curses.doupdate()
+        self.changeflag.clear()
+
 
     def finished(self):
         self.done = 1
@@ -113,22 +168,31 @@ class CursesDisplayer:
     def error(self, errormsg):
         newerrmsg = strftime('[%H:%M:%S] ') + errormsg
         self.errors.append(newerrmsg)
-        self.globalerrlist.append(newerrmsg)
+        self.errlist.append(newerrmsg)
         self.display()
 
     def display(self, fractionDone = None, timeEst = None,
             downRate = None, upRate = None, activity = None,
             statistics = None, spew = None, **kws):
-        if self.last_update_time + 0.1 > time() and fractionDone not in (0.0, 1.0) and activity is not None:
-            return
-        self.last_update_time = time()
+
+        inchar = self.fieldwin.getch()
+        if inchar == 12: # ^L
+            self._remake_window()
+        elif inchar in (ord('q'),ord('Q')):
+            self.doneflag.set()
+
         if activity is not None and not self.done:
             self.activity = activity
         elif timeEst is not None:
             self.activity = fmttime(timeEst)
+        if self.changeflag.isSet():
+            return
+        if self.last_update_time + 0.1 > time() and fractionDone not in (0.0, 1.0) and activity is not None:
+            return
+        self.last_update_time = time()
         if fractionDone is not None:
-            blocknum = int(fieldw * fractionDone)
-            self.progress = blocknum * '#' + (fieldw - blocknum) * '_'
+            blocknum = int(self.fieldw * fractionDone)
+            self.progress = blocknum * '#' + (self.fieldw - blocknum) * '_'
             self.status = '%s (%.1f%%)' % (self.activity, fractionDone * 100)
         else:
             self.status = self.activity
@@ -142,47 +206,47 @@ class CursesDisplayer:
            else:
                self.shareRating = '%.3f  (%.1f MB up / %.1f MB down)' % (statistics.shareRating, float(statistics.upTotal) / (1<<20), float(statistics.downTotal) / (1<<20))
            if not self.done:
-              self.seedStatus = '%d seen now, plus %.3f distributed copies' % (statistics.numSeeds,0.001*int(1000*statistics.numCopies))
+              self.seedStatus = '%d seen now, plus %.3f distributed copies' % (statistics.numSeeds,0.001*int(1000*statistics.numCopies2))
            else:
               self.seedStatus = '%d seen recently, plus %.3f distributed copies' % (statistics.numOldSeeds,0.001*int(1000*statistics.numCopies))
            self.peerStatus = '%d seen now, %.1f%% done at %.1f kB/s' % (statistics.numPeers,statistics.percentDone,float(statistics.torrentRate) / (1 << 10))
 
-        fieldwin.erase()
-        fieldwin.addnstr(0, 0, self.file, fieldw, curses.A_BOLD)
-        fieldwin.addnstr(1, 0, self.fileSize, fieldw)
-        fieldwin.addnstr(2, 0, self.downloadTo, fieldw)
+        self.fieldwin.erase()
+        self.fieldwin.addnstr(0, 0, self.file, self.fieldw, curses.A_BOLD)
+        self.fieldwin.addnstr(1, 0, self.fileSize, self.fieldw)
+        self.fieldwin.addnstr(2, 0, self.downloadTo, self.fieldw)
         if self.progress:
-          fieldwin.addnstr(3, 0, self.progress, fieldw, curses.A_BOLD)
-        fieldwin.addnstr(4, 0, self.status, fieldw)
-        fieldwin.addnstr(5, 0, self.downRate, fieldw)
-        fieldwin.addnstr(6, 0, self.upRate, fieldw)
-        fieldwin.addnstr(7, 0, self.shareRating, fieldw)
-        fieldwin.addnstr(8, 0, self.seedStatus, fieldw)
-        fieldwin.addnstr(9, 0, self.peerStatus, fieldw)
+            self.fieldwin.addnstr(3, 0, self.progress, self.fieldw, curses.A_BOLD)
+        self.fieldwin.addnstr(4, 0, self.status, self.fieldw)
+        self.fieldwin.addnstr(5, 0, self.downRate, self.fieldw)
+        self.fieldwin.addnstr(6, 0, self.upRate, self.fieldw)
+        self.fieldwin.addnstr(7, 0, self.shareRating, self.fieldw)
+        self.fieldwin.addnstr(8, 0, self.seedStatus, self.fieldw)
+        self.fieldwin.addnstr(9, 0, self.peerStatus, self.fieldw)
 
-        spewwin.erase()
+        self.spewwin.erase()
 
         if not spew:
-            errsize = spewh
+            errsize = self.spewh
             if self.errors:
-                spewwin.addnstr(0, 0, "error(s):", speww, curses.A_BOLD)
+                self.spewwin.addnstr(0, 0, "error(s):", self.speww, curses.A_BOLD)
                 errsize = len(self.errors)
-                displaysize = min(errsize, spewh)
+                displaysize = min(errsize, self.spewh)
                 displaytop = errsize - displaysize
                 for i in range(displaysize):
-                    spewwin.addnstr(i, labelw, self.errors[displaytop + i],
-                                 speww-labelw-1, curses.A_BOLD)
+                    self.spewwin.addnstr(i, self.labelw, self.errors[displaytop + i],
+                                 self.speww-self.labelw-1, curses.A_BOLD)
         else:
             if self.errors:
-                spewwin.addnstr(0, 0, "error:", speww, curses.A_BOLD)
-                spewwin.addnstr(0, labelw, self.errors[-1],
-                                 speww-labelw-1, curses.A_BOLD)
-            spewwin.addnstr(2, 0, " #      IP                 Upload           Download     Completed  Speed", speww, curses.A_BOLD)
+                self.spewwin.addnstr(0, 0, "error:", self.speww, curses.A_BOLD)
+                self.spewwin.addnstr(0, self.labelw, self.errors[-1],
+                                 self.speww-self.labelw-1, curses.A_BOLD)
+            self.spewwin.addnstr(2, 0, "  #     IP                 Upload           Download     Completed  Speed", self.speww, curses.A_BOLD)
 
 
             if self.spew_scroll_time + SPEW_SCROLL_RATE < time():
                 self.spew_scroll_time = time()
-                if len(spew) > spewh-5 or self.spew_scroll_pos > 0:
+                if len(spew) > self.spewh-5 or self.spew_scroll_pos > 0:
                     self.spew_scroll_pos += 1
             if self.spew_scroll_pos > len(spew):
                 self.spew_scroll_pos = 0
@@ -192,37 +256,37 @@ class CursesDisplayer:
             spew.append({'lineno': None})
             spew = spew[self.spew_scroll_pos:] + spew[:self.spew_scroll_pos]                
             
-            for i in range(min(spewh - 5, len(spew))):
+            for i in range(min(self.spewh - 5, len(spew))):
                 if not spew[i]['lineno']:
                     continue
-                spewwin.addnstr(i+3, 0, '%3d' % spew[i]['lineno'], 3)
-                spewwin.addnstr(i+3, 4, spew[i]['ip'], 15)
+                self.spewwin.addnstr(i+3, 0, '%3d' % spew[i]['lineno'], 3)
+                self.spewwin.addnstr(i+3, 4, spew[i]['ip'], 15)
                 if spew[i]['uprate'] > 100:
-                    spewwin.addnstr(i+3, 20, '%6.0f KB/s' % (float(spew[i]['uprate']) / 1000), 11)
-                spewwin.addnstr(i+3, 32, '-----', 5)
+                    self.spewwin.addnstr(i+3, 20, '%6.0f KB/s' % (float(spew[i]['uprate']) / 1000), 11)
+                self.spewwin.addnstr(i+3, 32, '-----', 5)
                 if spew[i]['uinterested'] == 1:
-                    spewwin.addnstr(i+3, 33, 'I', 1)
+                    self.spewwin.addnstr(i+3, 33, 'I', 1)
                 if spew[i]['uchoked'] == 1:
-                    spewwin.addnstr(i+3, 35, 'C', 1)
+                    self.spewwin.addnstr(i+3, 35, 'C', 1)
                 if spew[i]['downrate'] > 100:
-                    spewwin.addnstr(i+3, 38, '%6.0f KB/s' % (float(spew[i]['downrate']) / 1000), 11)
-                spewwin.addnstr(i+3, 50, '-------', 7)
+                    self.spewwin.addnstr(i+3, 38, '%6.0f KB/s' % (float(spew[i]['downrate']) / 1000), 11)
+                self.spewwin.addnstr(i+3, 50, '-------', 7)
                 if spew[i]['dinterested'] == 1:
-                    spewwin.addnstr(i+3, 51, 'I', 1)
+                    self.spewwin.addnstr(i+3, 51, 'I', 1)
                 if spew[i]['dchoked'] == 1:
-                    spewwin.addnstr(i+3, 53, 'C', 1)
+                    self.spewwin.addnstr(i+3, 53, 'C', 1)
                 if spew[i]['snubbed'] == 1:
-                    spewwin.addnstr(i+3, 55, 'S', 1)
-                spewwin.addnstr(i+3, 58, '%5.1f%%' % (float(int(spew[i]['completed']*1000))/10), 6)
+                    self.spewwin.addnstr(i+3, 55, 'S', 1)
+                self.spewwin.addnstr(i+3, 58, '%5.1f%%' % (float(int(spew[i]['completed']*1000))/10), 6)
                 if spew[i]['speed'] is not None:
-                    spewwin.addnstr(i+3, 64, '%5.0f KB/s' % (float(spew[i]['speed'])/1000), 10)
+                    self.spewwin.addnstr(i+3, 64, '%5.0f KB/s' % (float(spew[i]['speed'])/1000), 10)
 
             if statistics is not None:
-                spewwin.addnstr(spewh-1, 0,
+                self.spewwin.addnstr(self.spewh-1, 0,
                         'downloading %d pieces, have %d fragments, %d of %d pieces completed'
                         % ( statistics.storage_active, statistics.storage_dirty,
                             statistics.storage_numcomplete,
-                            statistics.storage_totalpieces ), speww-1 )
+                            statistics.storage_totalpieces ), self.speww-1 )
 
         curses.panel.update_panels()
         curses.doupdate()
@@ -235,93 +299,80 @@ class CursesDisplayer:
         self.downloadTo = abspath(saveas)
         return saveas
 
-def run(mainerrlist, params):
-    d = CursesDisplayer(mainerrlist)
-    dow = Download()
-    d.dow = dow
+def run(scrwin, errlist, params):
+    doneflag = Event()
+    d = CursesDisplayer(scrwin, errlist, doneflag)
     try:
-        dow.download(params, d.chooseFile, d.display, d.finished, d.error, Event(), fieldw)
+        while 1:
+            try:
+                config = parse_params(params)
+            except ValueError, e:
+                d.error('error: ' + str(e) + '\nrun with no args for parameter explanations')
+                break
+            if not config:
+                d.error(get_usage(cols=fieldw))
+                break
+
+            myid = createPeerID()
+            seed(myid)
+
+            rawserver = RawServer(doneflag, config['timeout_check_interval'],
+                                  config['timeout'], ipv6_enable = config['ipv6_enabled'],
+                                  failfunc = d.failed, errorfunc = d.error)
+
+            try:
+                listen_port = rawserver.find_and_bind(config['minport'], config['maxport'],
+                                config['bind'], ipv6_socket_style = config['ipv6_binds_v4'],
+                                upnp = config['upnp_nat_access'])
+            except socketerror, e:
+                d.error("Couldn't listen - " + str(e))
+                break
+
+            response = get_response(config['responsefile'], config['url'], d.error)
+            if not response:
+                break
+
+            infohash = sha(bencode(response['info'])).digest()
+            
+            dow = BT1Download(d.display, d.finished, d.error, d.error, doneflag,
+                            config, response, infohash, myid, rawserver, listen_port)
+            
+            if not dow.saveAs(d.chooseFile):
+                break
+
+            if not dow.initFiles(old_style = True):
+                break
+            if not dow.startEngine():
+                break
+            dow.startRerequester()
+            dow.autoStats()
+
+            d.display(activity = 'connecting to peers')
+            rawserver.listen_forever(dow.getPortHandler())
+            d.display(activity = 'shutting down')
+            dow.shutdown()
+            break
+
     except KeyboardInterrupt:
         # ^C to exit.. 
         pass 
     if not d.done:
         d.failed()
 
-def prepare_display():
-    scrwin.border(ord('|'),ord('|'),ord('-'),ord('-'),ord(' '),ord(' '),ord(' '),ord(' '))
-    labelwin.addstr(0, 0, 'file:')
-    labelwin.addstr(1, 0, 'size:')
-    labelwin.addstr(2, 0, 'dest:')
-    labelwin.addstr(3, 0, 'progress:')
-    labelwin.addstr(4, 0, 'status:')
-    labelwin.addstr(5, 0, 'dl speed:')
-    labelwin.addstr(6, 0, 'ul speed:')
-    labelwin.addstr(7, 0, 'sharing:')
-    labelwin.addstr(8, 0, 'seeds:')
-    labelwin.addstr(9, 0, 'peers:')
-#    labelwin.addstr(10, 0, '')
-#    labelwin.addstr(11, 0, 'error(s):')
-    curses.panel.update_panels()
-    curses.doupdate()
-
-try:
-    import curses
-    import curses.panel
-
-    scrwin = curses.initscr()
-    curses.noecho()
-    curses.cbreak()
-
-except:
-    print 'Textmode GUI initialization failed, cannot proceed.'
-    print
-    print 'This download interface requires the standard Python module ' \
-       '"curses", which is unfortunately not available for the native ' \
-       'Windows port of Python. It is however available for the Cygwin ' \
-       'port of Python, running on all Win32 systems (www.cygwin.com).'
-    print
-    print 'You may still use "btdownloadheadless.py" to download.'
-    sys.exit(1)
-
-scrh, scrw = scrwin.getmaxyx()
-scrpan = curses.panel.new_panel(scrwin)
-labelh, labelw, labely, labelx = 11, 9, 1, 2
-labelwin = curses.newwin(labelh, labelw, labely, labelx)
-labelpan = curses.panel.new_panel(labelwin)
-fieldh, fieldw, fieldy, fieldx = labelh, scrw - 2 - labelw - 3, 1, labelw + 3
-fieldwin = curses.newwin(fieldh, fieldw, fieldy, fieldx)
-fieldpan = curses.panel.new_panel(fieldwin)
-spewh, speww, spewy, spewx = scrh - labelh - 2, scrw - 3, 1 + labelh, 2
-spewwin = curses.newwin(spewh, speww, spewy, spewx)
-spewpan = curses.panel.new_panel(spewwin)
-prepare_display()
-
-signal(SIGWINCH, winch_handler)
 
 if __name__ == '__main__':
     if argv[1:] == ['--version']:
         print version
-        sys.exit(0)
-    mainerrlist = []
-    try:
-        try:
-            run(mainerrlist, argv[1:])
-        finally:
-            try:
-                curses.nocbreak()
-            except:
-                pass
-            try:
-                curses.echo()
-            except:
-                pass
-            try:
-                curses.endwin()
-            except:
-                pass
-    except KeyboardInterrupt:
-        pass
-    if len(mainerrlist) != 0:
+        exit(0)
+    if len(argv) <= 1:
+        print "Usage: btdownloadcurses.py <global options>\n"
+        print get_usage(defaults)
+        exit(1)
+
+    errlist = []
+    curses_wrapper(run, errlist, argv[1:])
+
+    if errlist:
        print "These errors occurred during execution:"
-       for error in mainerrlist:
+       for error in errlist:
           print error

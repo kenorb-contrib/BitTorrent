@@ -1,11 +1,11 @@
-OutFile "BitTorrent-experimental-S-5.8.11-w32install.exe"
-Name "BitTorrent S-5.8.11 (SHAD0W's Experimental)"
-SetCompressor bzip2
-InstallDir "$PROGRAMFILES\BitTorrent"
+OutFile "BitTornado-0.2.0-w32install.exe"
+Name "BitTornado 0.2.0"
+SetCompressor lzma
+InstallDir "$PROGRAMFILES\BitTornado"
 Icon "icon_bt.ico"
 UninstallIcon "icon_done.ico"
 InstallDirRegKey  HKLM "Software\Microsoft\Windows\CurrentVersion\App Paths\btdownloadgui.exe" ""
-DirText "Setup will install BitTorrent S-5.8.11 (SHAD0W's Experimental) in the following folder.$\r$\n$\r$\nTo install in a different folder, click Browse and select another folder."
+DirText "Setup will install BitTornado 0.2.0 in the following folder.$\r$\n$\r$\nTo install in a different folder, click Browse and select another folder."
 ShowInstDetails show
 ShowUnInstDetails show
 
@@ -20,10 +20,10 @@ Section "MainGroup" SEC01
   File "library.zip"
   File "icon_bt.ico"
   File "icon_done.ico"
-  CreateDirectory "$SMPROGRAMS\BitTorrent (SHAD0W's Experimental)"
-  CreateShortCut "$SMPROGRAMS\BitTorrent (SHAD0W's Experimental)\BitTorrent (SHAD0W's Experimental).lnk" "$INSTDIR\btdownloadgui.exe"
-#  CreateShortCut "$DESKTOP\BitTorrent (SHAD0W's Experimental).lnk" "$INSTDIR\btdownloadgui.exe"
-  CreateShortCut "$SMPROGRAMS\BitTorrent (SHAD0W's Experimental)\Uninstall.lnk" "$INSTDIR\uninst.exe"
+  CreateDirectory "$SMPROGRAMS\BitTornado"
+  CreateShortCut "$SMPROGRAMS\BitTornado\BitTornado.lnk" "$INSTDIR\btdownloadgui.exe"
+#  CreateShortCut "$DESKTOP\BitTornado.lnk" "$INSTDIR\btdownloadgui.exe"
+  CreateShortCut "$SMPROGRAMS\BitTornado\Uninstall.lnk" "$INSTDIR\uninst.exe"
   SetOverwrite off
   File "white.ico"
   File "black.ico"
@@ -39,7 +39,7 @@ SectionEnd
 
 Section -Post
   WriteRegStr HKCR .torrent "" bittorrent
-  WriteRegStr HKCR .torrent "Content Type" application/x-bittorrent
+  DeleteRegKey HKCR ".torrent\Content Type"
   WriteRegStr HKCR "MIME\Database\Content Type\application/x-bittorrent" Extension .torrent
   WriteRegStr HKCR bittorrent "" "TORRENT File"
   WriteRegBin HKCR bittorrent EditFlags 00000100
@@ -48,31 +48,31 @@ Section -Post
 
   WriteUninstaller "$INSTDIR\uninst.exe"
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\App Paths\btdownloadgui.exe" "" "$INSTDIR\btdownloadgui.exe"
-  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\BitTorrent (SHAD0W's Experimental)" "DisplayName" "BitTorrent S-5.8.11 (SHAD0W's Experimental)"
-  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\BitTorrent (SHAD0W's Experimental)" "UninstallString" "$INSTDIR\uninst.exe"
-  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\BitTorrent (SHAD0W's Experimental)" "DisplayIcon" "$INSTDIR\btdownloadgui.exe"
-  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\BitTorrent (SHAD0W's Experimental)" "DisplayVersion" "S-5.8.11"
-  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\BitTorrent (SHAD0W's Experimental)" "URLInfoAbout" "http://bt.degreez.net/"
-  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\BitTorrent (SHAD0W's Experimental)" "Publisher" "John Hoffman"
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\BitTornado" "DisplayName" "BitTornado 0.2.0"
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\BitTornado" "UninstallString" "$INSTDIR\uninst.exe"
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\BitTornado" "DisplayIcon" "$INSTDIR\btdownloadgui.exe"
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\BitTornado" "DisplayVersion" "0.2.0"
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\BitTornado" "URLInfoAbout" "http://www.bittornado.com/"
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\BitTornado" "Publisher" "John Hoffman"
 SectionEnd
 
 
 Function un.onUninstSuccess
   HideWindow
-  MessageBox MB_ICONINFORMATION|MB_OK "BitTorrent S-5.8.11 (SHAD0W's Experimental) was successfully removed from your computer."
+  MessageBox MB_ICONINFORMATION|MB_OK "BitTornado 0.2.0 was successfully removed from your computer."
 FunctionEnd
 
 Function un.onInit
-  MessageBox MB_ICONQUESTION|MB_YESNO|MB_DEFBUTTON2 "Are you sure you want to completely remove BitTorrent S-5.8.11 (SHAD0W's Experimental) and all of its components?" IDYES +2
+  MessageBox MB_ICONQUESTION|MB_YESNO|MB_DEFBUTTON2 "Are you sure you want to completely remove BitTornado 0.2.0 and all of its components?" IDYES +2
   Abort
 FunctionEnd
 
 Section Uninstall
-  Delete "$SMPROGRAMS\BitTorrent (SHAD0W's Experimental)\BitTorrent (SHAD0W's Experimental).lnk"
-#  Delete "$DESKTOP\BitTorrent (SHAD0W's Experimental).lnk"
-  Delete "$SMPROGRAMS\BitTorrent (SHAD0W's Experimental)\Uninstall.lnk"
-  RMDir "$SMPROGRAMS\BitTorrent (SHAD0W's Experimental)"
-  DeleteRegKey HKCU software\bittorrent
+  Delete "$SMPROGRAMS\BitTornado\BitTornado.lnk"
+#  Delete "$DESKTOP\BitTornado.lnk"
+  Delete "$SMPROGRAMS\BitTornado\Uninstall.lnk"
+  RMDir "$SMPROGRAMS\BitTornado"
+#  DeleteRegKey HKCR software\bittorrent
 
   push $1
   ReadRegStr $1 HKCR "bittorrent\shell\open\command" ""
@@ -88,7 +88,7 @@ Section Uninstall
   pop $1
   RMDir /r "$INSTDIR"
 
-  DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\BitTorrent (SHAD0W's Experimental)"
+  DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\BitTornado"
   DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\App Paths\btdownloadgui.exe"
   SetAutoClose true
 SectionEnd

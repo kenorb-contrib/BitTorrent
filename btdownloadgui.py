@@ -4,7 +4,7 @@
 # Modifications by various people
 # see LICENSE.txt for license information
 
-from BitTorrent import PSYCO
+from BitTornado import PSYCO
 if PSYCO.psyco:
     try:
         import psyco
@@ -16,14 +16,16 @@ if PSYCO.psyco:
 from sys import argv, version
 assert version >= '2', "Install Python 2.0 or greater"
 
-from BitTorrent.download import Download
-from BitTorrent.ConnChoice import *
-from BitTorrent.ConfigReader import configReader
-from BitTorrent.bencode import bencode
+from BitTornado.download_bt1 import BT1Download, defaults, parse_params, get_usage, get_response
+from BitTornado.RawServer import RawServer
+from random import seed
+from socket import error as socketerror
+from BitTornado.ConnChoice import *
+from BitTornado.ConfigReader import configReader
+from BitTornado.bencode import bencode
 from threading import Event, Thread
 from os.path import *
 from os import getcwd
-from wxPython.wx import *
 from time import strftime, time, localtime
 from webbrowser import open_new
 from traceback import print_exc
@@ -31,14 +33,22 @@ from StringIO import StringIO
 from sha import sha
 import re
 import sys, os
-from BitTorrent import version
+from BitTornado import version, createPeerID, report_email
+try:
+    from wxPython.wx import *
+except:
+    print 'wxPython is either not installed or has not been installed properly.'
+    sys.exit(1)
 
-true = 1
-false = 0
+try:
+    True
+except:
+    True = 1
+    False = 0
 
-PROFILER = false
+PROFILER = False
 
-basepath=os.path.abspath(os.path.dirname(sys.argv[0]))
+basepath=os.path.abspath(os.path.dirname(os.path.realpath(sys.argv[0])))
 
 def hours(n):
     if n == -1:
@@ -95,12 +105,13 @@ class DownloadInfoFrame:
     def __init__(self, flag, configfile):
         try:
             self.FONT = configfile.configfileargs['gui_font']
-            self.default_font = wxFont(self.FONT, wxDEFAULT, wxNORMAL, wxNORMAL, false)
+            self.default_font = wxFont(self.FONT, wxDEFAULT, wxNORMAL, wxNORMAL, False)
             frame = wxFrame(None, -1, 'BitTorrent ' + version + ' download')
-            self.aaa = 0
             self.flag = flag
+            self.configfile = configfile
+            self.configfileargs = configfile.configfileargs
             self.uiflag = Event()
-            self.fin = false
+            self.fin = False
             self.aboutBox = None
             self.detailBox = None
             self.advBox = None
@@ -116,20 +127,22 @@ class DownloadInfoFrame:
             self.updateSliderFlag = 0
             self.statusIconValue = ' '
             self.iconized = 0
+            self.taskbaricon = False
             self.checking = None
             self.activity = 'Starting up...'
-            self.firstupdate = true
-            self.shuttingdown = false
-            self.ispaused = false
+            self.firstupdate = True
+            self.shuttingdown = False
+            self.ispaused = False
             self.bgalloc_periods = 0
             self.gui_lastupdate = time()
             self.gui_fractiondone = None
             self.fileList = None
             self.lastexternalannounce = ''
-            self.refresh_details = false
+            self.refresh_details = False
             self._errorwindow = None
             self.lastuploadsettings = 0
             self.filename = None
+            self.dow = None
             if sys.platform == 'win32':
                 self.invokeLaterEvent = InvokeEvent()
                 self.invokeLaterList = []
@@ -161,7 +174,7 @@ class DownloadInfoFrame:
 
             panel = wxPanel(frame, -1)
 
-            def StaticText(text, font = self.FONT, underline = false, color = None, panel = panel):
+            def StaticText(text, font = self.FONT, underline = False, color = None, panel = panel):
                 x = wxStaticText(panel, -1, text, style = wxALIGN_LEFT)
                 x.SetFont(wxFont(font, wxDEFAULT, wxNORMAL, wxNORMAL, underline))
                 if color is not None:
@@ -173,7 +186,7 @@ class DownloadInfoFrame:
             border = wxBoxSizer(wxHORIZONTAL)
             border.Add(colSizer, 1, wxEXPAND | wxALL, 4)
             panel.SetSizer(border)
-            panel.SetAutoLayout(true)
+            panel.SetAutoLayout(True)
 
             topboxsizer = wxFlexGridSizer(cols = 3, vgap = 0)
             topboxsizer.AddGrowableCol (0)
@@ -193,20 +206,20 @@ class DownloadInfoFrame:
             fnsizer2.Add(fileSizeText, 1, wxALIGN_BOTTOM|wxEXPAND)
             self.fileSizeText = fileSizeText
 
-            fileDetails = StaticText('Details', self.FONT, true, 'Blue')
+            fileDetails = StaticText('Details', self.FONT, True, 'Blue')
             fnsizer2.Add(fileDetails, 0, wxALIGN_BOTTOM)                                     
 
             fnsizer2.Add(StaticText('  '))
 
-            advText = StaticText('Advanced', self.FONT, true, 'Blue')
+            advText = StaticText('Advanced', self.FONT, True, 'Blue')
             fnsizer2.Add(advText, 0, wxALIGN_BOTTOM)
             fnsizer2.Add(StaticText('  '))
 
-            prefsText = StaticText('Prefs', self.FONT, true, 'Blue')
+            prefsText = StaticText('Prefs', self.FONT, True, 'Blue')
             fnsizer2.Add(prefsText, 0, wxALIGN_BOTTOM)
             fnsizer2.Add(StaticText('  '))
 
-            aboutText = StaticText('About', self.FONT, true, 'Blue')
+            aboutText = StaticText('About', self.FONT, True, 'Blue')
             fnsizer2.Add(aboutText, 0, wxALIGN_BOTTOM)
 
             fnsizer2.Add(StaticText('  '))
@@ -218,7 +231,7 @@ class DownloadInfoFrame:
             statidata = wxMemoryDC()
             statidata.SelectObject(self.statusIcon)
             statidata.SetPen(wxTRANSPARENT_PEN)
-            statidata.SetBrush(wxBrush(wx.wxSystemSettings_GetColour(wxSYS_COLOUR_MENU),wxSOLID))
+            statidata.SetBrush(wxBrush(wxSystemSettings_GetColour(wxSYS_COLOUR_MENU),wxSOLID))
             statidata.DrawRectangle(0,0,32,32)
             self.statusIconPtr = wxStaticBitmap(panel, -1, self.statusIcon)
             topboxsizer.Add(self.statusIconPtr)
@@ -230,7 +243,7 @@ class DownloadInfoFrame:
 
             self.gauge = wxGauge(panel, -1, range = 1000, style = wxGA_SMOOTH)
             colSizer.Add(self.gauge, 0, wxEXPAND)
-#        self.gauge.SetForegroundColour(wx.wxSystemSettings_GetColour(wxSYS_COLOUR_3DSHADOW))
+#        self.gauge.SetForegroundColour(wxSystemSettings_GetColour(wxSYS_COLOUR_3DSHADOW))
 
             timeSizer = wxFlexGridSizer(cols = 2)
             timeSizer.Add(StaticText('Time elapsed / estimated : '))
@@ -292,7 +305,7 @@ class DownloadInfoFrame:
             self.torrentSizer = torrentSizer
 
             self.errorTextSizer = wxFlexGridSizer(cols = 1)
-            self.errorText = StaticText('', self.FONT, false, 'Red')
+            self.errorText = StaticText('', self.FONT, False, 'Red')
             self.errorTextSizer.Add(self.errorText, 0, wxEXPAND)
             colSizer.Add(self.errorTextSizer, 0, wxEXPAND)
 
@@ -340,7 +353,7 @@ class DownloadInfoFrame:
 
             slideSizer.Add(StaticText(''), 0, wxALIGN_LEFT)
 
-            self.bgallocText = StaticText('', self.FONT+2, false, 'Red')
+            self.bgallocText = StaticText('', self.FONT+2, False, 'Red')
             slideSizer.Add(self.bgallocText, 0, wxALIGN_LEFT)
 
             # max uploads
@@ -381,8 +394,12 @@ class DownloadInfoFrame:
             EVT_SPINCTRL(self.connSpinner, -1, self.onConnSpinner)
             EVT_SPINCTRL(self.rateSpinner, -1, self.onRateSpinner)
             if (sys.platform == 'win32'):
+                self.frame.tbicon = wxTaskBarIcon()
                 EVT_ICONIZE(self.frame, self.onIconify)
-
+                EVT_TASKBAR_LEFT_DCLICK(self.frame.tbicon, self.onTaskBarActivate)
+                EVT_TASKBAR_RIGHT_UP(self.frame.tbicon, self.onTaskBarMenu)
+                EVT_MENU(self.frame.tbicon, self.TBMENU_RESTORE, self.onTaskBarActivate)
+                EVT_MENU(self.frame.tbicon, self.TBMENU_CLOSE, self.done)
             colSizer.AddGrowableCol (0)
             colSizer.AddGrowableRow (6)
             self.frame.Show()
@@ -449,7 +466,7 @@ class DownloadInfoFrame:
         bbdata = wxMemoryDC()
         bbdata.SelectObject(iconbuffer)
         bbdata.SetPen(wxTRANSPARENT_PEN)
-        bbdata.SetBrush(wxBrush(wx.wxSystemSettings_GetColour(wxSYS_COLOUR_MENU),wxSOLID))
+        bbdata.SetBrush(wxBrush(wxSystemSettings_GetColour(wxSYS_COLOUR_MENU),wxSOLID))
         bbdata.DrawRectangle(0,0,32,32)
         bbdata.DrawIcon(self.statusIcons[name],0,0)
         return iconbuffer
@@ -458,23 +475,17 @@ class DownloadInfoFrame:
     def onIconify(self, evt):
         try:
             if self.configfile.configfileargs['win32_taskbar_icon']:
-                if not hasattr(self.frame, "tbicon"):
-                    self.frame.tbicon = wxTaskBarIcon()
-                    self.frame.tbicon.SetIcon(self.icon, "BitTorrent")
-                    # setup a taskbar icon, and catch some events from it
-                    EVT_TASKBAR_LEFT_DCLICK(self.frame.tbicon, self.onTaskBarActivate)
-                    EVT_TASKBAR_RIGHT_UP(self.frame.tbicon, self.onTaskBarMenu)
-                    EVT_MENU(self.frame.tbicon, self.TBMENU_RESTORE, self.onTaskBarActivate)
-                    EVT_MENU(self.frame.tbicon, self.TBMENU_CLOSE, self.done)
+                self.frame.tbicon.SetIcon(self.icon, "BitTorrent")
                 self.frame.Hide()
+                self.taskbaricon = True
             else:
                 EVT_ICONIZE(self.frame, self.onIconifyDummy)
                 if self.iconized:
-                    self.frame.Iconize(false)
-                    self.iconized = false
+                    self.frame.Iconize(False)
+                    self.iconized = False
                 else:
-                    self.frame.Iconize(true)
-                    self.iconized = true
+                    self.frame.Iconize(True)
+                    self.iconized = True
                 EVT_ICONIZE(self.frame, self.onIconify)
                 # rant here -- why in god's name can't a function called by an event
                 # trigger the event without calling itself?
@@ -488,12 +499,12 @@ class DownloadInfoFrame:
     def onTaskBarActivate(self, evt):
         try:
             if self.frame.IsIconized():
-                self.frame.Iconize(false)
+                self.frame.Iconize(False)
             if not self.frame.IsShown():
-                self.frame.Show(true)
+                self.frame.Show(True)
                 self.frame.Raise()
-            if hasattr(self.frame, "tbicon"):
-                del self.frame.tbicon
+            self.frame.tbicon.RemoveIcon()
+            self.taskbaricon = False
         except:
             self.exception()
 
@@ -510,7 +521,10 @@ class DownloadInfoFrame:
 
     def _try_get_config(self):
         if self.config is None:
-            self.config = self.dow.getConfig()
+            try:
+                self.config = self.dow.getConfig()
+            except:
+                pass
         return self.config != None
 
 
@@ -521,7 +535,7 @@ class DownloadInfoFrame:
                 if not self._try_get_config():
                     return
                 self.updateSpinnerFlag = 1
-                self.dow.setUploadRate(self.rateslider.GetValue() * 1000
+                self.dow.setUploadRate(self.rateslider.GetValue()
                             * connChoices[self.connChoice.GetSelection()]['rate'].get('div',1))
                 self.scrollock = 0
         except:
@@ -545,7 +559,7 @@ class DownloadInfoFrame:
                 spinnerValue = self.rateSpinner.GetValue()
                 div = connChoices[self.connChoice.GetSelection()]['rate'].get('div',1)
                 if div > 1:
-                    if spinnerValue > (self.config['max_upload_rate']/1000):
+                    if spinnerValue > (self.config['max_upload_rate']):
                         round_up = div - 1
                     else:
                         round_up = 0
@@ -554,7 +568,7 @@ class DownloadInfoFrame:
                         self.rateSpinner.SetValue(newValue)
                 else:
                     newValue = spinnerValue
-                self.dow.setUploadRate(newValue * 1000)
+                self.dow.setUploadRate(newValue)
                 self.updateSliderFlag = 1
                 self.spinlock = 0
         except:
@@ -619,7 +633,7 @@ class DownloadInfoFrame:
 
             panel = wxPanel(self.aboutBox, -1)
 
-            def StaticText(text, font = self.FONT, underline = false, color = None, panel = panel):
+            def StaticText(text, font = self.FONT, underline = False, color = None, panel = panel):
                 x = wxStaticText(panel, -1, text, style = wxALIGN_LEFT)
                 x.SetFont(wxFont(font, wxDEFAULT, wxNORMAL, wxNORMAL, underline))
                 if color is not None:
@@ -631,14 +645,14 @@ class DownloadInfoFrame:
             titleSizer = wxBoxSizer(wxHORIZONTAL)
             aboutTitle = StaticText('BitTorrent ' + version + '  ', self.FONT+4)
             titleSizer.Add (aboutTitle)
-            linkDonate = StaticText('Donate to Bram', self.FONT, true, 'Blue')
+            linkDonate = StaticText('Donate to Bram', self.FONT, True, 'Blue')
             titleSizer.Add (linkDonate, 1, wxALIGN_BOTTOM&wxEXPAND)
             colSizer.Add(titleSizer, 0, wxEXPAND)
 
             colSizer.Add(StaticText('created by Bram Cohen, Copyright 2001-2003,'))
             colSizer.Add(StaticText('experimental version maintained by John Hoffman 2003'))
             colSizer.Add(StaticText('modified from experimental version by Eike Frost 2003'))
-            credits = StaticText('full credits\n', self.FONT, true, 'Blue')
+            credits = StaticText('full credits\n', self.FONT, True, 'Blue')
             colSizer.Add(credits);
 
             si = ( 'exact Version String: ' + version + '\n' +
@@ -653,10 +667,10 @@ class DownloadInfoFrame:
             babble1 = StaticText(
              'This is an experimental, unofficial build of BitTorrent.\n' +
              'It is Free Software under an MIT-Style license.')
-            babble2 = StaticText('BitTorrent Homepage (link)', self.FONT, true, 'Blue')
-            babble3 = StaticText("TheSHAD0W's Client Homepage (link)", self.FONT, true, 'Blue')
-            babble4 = StaticText("Eike Frost's Client Homepage (link)", self.FONT, true, 'Blue')
-            babble6 = StaticText('License Terms (link)', self.FONT, true, 'Blue')
+            babble2 = StaticText('BitTorrent Homepage (link)', self.FONT, True, 'Blue')
+            babble3 = StaticText("TheSHAD0W's Client Homepage (link)", self.FONT, True, 'Blue')
+            babble4 = StaticText("Eike Frost's Client Homepage (link)", self.FONT, True, 'Blue')
+            babble6 = StaticText('License Terms (link)', self.FONT, True, 'Blue')
             colSizer.Add (babble1)
             colSizer.Add (babble2)
             colSizer.Add (babble3)
@@ -671,7 +685,7 @@ class DownloadInfoFrame:
             border = wxBoxSizer(wxHORIZONTAL)
             border.Add(colSizer, 1, wxEXPAND | wxALL, 4)
             panel.SetSizer(border)
-            panel.SetAutoLayout(true)
+            panel.SetAutoLayout(True)
 
             def donatelink(self):
                 Thread(target = open_new('https://www.paypal.com/cgi-bin/webscr?cmd=_xclick&business=bram@bitconjurer.org&item_name=BitTorrent&amount=5.00&submit=donate')).start()
@@ -680,7 +694,7 @@ class DownloadInfoFrame:
                 Thread(target = open_new('http://bitconjurer.org/BitTorrent/')).start()
             EVT_LEFT_DOWN(babble2, aboutlink)
             def shadlink(self):
-                Thread(target = open_new('http://bt.degreez.net/')).start()
+                Thread(target = open_new('http://www.bittornado.com/')).start()
             EVT_LEFT_DOWN(babble3, shadlink)
             def explink(self):
                 Thread(target = open_new('http://ei.kefro.st/projects/btclient/')).start()
@@ -707,6 +721,8 @@ class DownloadInfoFrame:
 
     def details(self, event):
         try:
+            if not self.dow:
+                return
             metainfo = self.dow.getResponse()
             if metainfo is None:
                 return
@@ -734,7 +750,7 @@ class DownloadInfoFrame:
 
             panel = wxPanel(self.detailBox, -1, size = wxSize (400,220))
 
-            def StaticText(text, font = self.FONT, underline = false, color = None, panel = panel):
+            def StaticText(text, font = self.FONT, underline = False, color = None, panel = panel):
                 x = wxStaticText(panel, -1, text, style = wxALIGN_CENTER_VERTICAL)
                 x.SetFont(wxFont(font, wxDEFAULT, wxNORMAL, wxNORMAL, underline))
                 if color is not None:
@@ -781,7 +797,7 @@ class DownloadInfoFrame:
                 self.fileList = fileList
                 fileList.SetImageList(self.filestatusIcons, wxIMAGE_LIST_SMALL)
 
-                fileList.SetAutoLayout (true)
+                fileList.SetAutoLayout (True)
                 fileList.InsertColumn(0, "file")
                 fileList.InsertColumn(1, "", format=wxLIST_FORMAT_RIGHT, width=55)
                 fileList.InsertColumn(2, "")
@@ -828,7 +844,7 @@ class DownloadInfoFrame:
             else:
                 detailSizer.Add(StaticText(''))
                 trackerList = wxListCtrl(panel, -1, wxPoint(-1,-1), (325,75), wxLC_REPORT)
-                trackerList.SetAutoLayout (true)
+                trackerList.SetAutoLayout (True)
                 trackerList.InsertColumn(0, "")
                 trackerList.InsertColumn(1, "announce urls")
 
@@ -863,7 +879,7 @@ class DownloadInfoFrame:
                 detailSizer.Add(StaticText('likely tracker :'))
                 p = re.compile( '(.*/)[^/]+')
                 turl = p.sub (r'\1', announce)
-                trackerUrl = StaticText(turl, self.FONT, true, 'Blue')
+                trackerUrl = StaticText(turl, self.FONT, True, 'Blue')
                 detailSizer.Add(trackerUrl)
             if metainfo.has_key('comment'):
                 detailSizer.Add(StaticText('comment :'))
@@ -890,12 +906,12 @@ class DownloadInfoFrame:
             if not self.configfile.configfileargs['gui_stretchwindow']:
                 aboutTitle.SetSize((400,-1))
             else:
-                panel.SetAutoLayout(true)
+                panel.SetAutoLayout(True)
 
             border = wxBoxSizer(wxHORIZONTAL)
             border.Add(colSizer, 1, wxEXPAND | wxALL, 4)
             panel.SetSizer(border)
-            panel.SetAutoLayout(true)
+            panel.SetAutoLayout(True)
 
             def closeDetail(self, frame = self):
                 frame.detailBox.Close ()
@@ -916,7 +932,7 @@ class DownloadInfoFrame:
             border.Fit(panel)
             self.detailBox.Fit()
 
-            self.refresh_details = true
+            self.refresh_details = True
             self.dow.filedatflag.set()
         except:
             self.exception()
@@ -936,7 +952,7 @@ class DownloadInfoFrame:
 
             panel = wxPanel(self.creditsBox, -1)        
 
-            def StaticText(text, font = self.FONT, underline = false, color = None, panel = panel):
+            def StaticText(text, font = self.FONT, underline = False, color = None, panel = panel):
                 x = wxStaticText(panel, -1, text, style = wxALIGN_LEFT)
                 x.SetFont(wxFont(font, wxDEFAULT, wxNORMAL, wxNORMAL, underline))
                 if color is not None:
@@ -998,7 +1014,7 @@ class DownloadInfoFrame:
             border = wxBoxSizer(wxHORIZONTAL)
             border.Add(colSizer, 1, wxEXPAND | wxALL, 4)
             panel.SetSizer(border)
-            panel.SetAutoLayout(true)
+            panel.SetAutoLayout(True)
 
             def closeCredits(self, frame = self):
                 frame.creditsBox.Close ()
@@ -1029,7 +1045,7 @@ class DownloadInfoFrame:
 
             panel = wxPanel(self.statusIconHelpBox, -1)
 
-            def StaticText(text, font = self.FONT, underline = false, color = None, panel = panel):
+            def StaticText(text, font = self.FONT, underline = False, color = None, panel = panel):
                 x = wxStaticText(panel, -1, text, style = wxALIGN_LEFT)
                 x.SetFont(wxFont(font, wxDEFAULT, wxNORMAL, wxNORMAL, underline))
                 if color is not None:
@@ -1100,7 +1116,7 @@ class DownloadInfoFrame:
             border.Add(fullsizer, 1, wxEXPAND | wxALL, 4)
 
             panel.SetSizer(border)
-            panel.SetAutoLayout(true)
+            panel.SetAutoLayout(True)
 
 
             def closeHelp(self, frame = self):
@@ -1137,7 +1153,7 @@ class DownloadInfoFrame:
 
             panel = wxPanel(self.advBox, -1, size = wxSize (200,200))
 
-            def StaticText(text, font = self.FONT, underline = false, color = None, panel = panel):
+            def StaticText(text, font = self.FONT, underline = False, color = None, panel = panel):
                 x = wxStaticText(panel, -1, text, style = wxALIGN_LEFT)
                 x.SetFont(wxFont(font, wxDEFAULT, wxNORMAL, wxNORMAL, underline))
                 if color is not None:
@@ -1154,7 +1170,7 @@ class DownloadInfoFrame:
 
             spewList = wxListCtrl(panel, -1, wxPoint(-1,-1), (fw*66,350), wxLC_REPORT|wxLC_HRULES|wxLC_VRULES)
             self.spewList = spewList
-            spewList.SetAutoLayout (true)
+            spewList.SetAutoLayout (True)
 
             colSizer.Add(spewList, -1, wxEXPAND)
 
@@ -1191,7 +1207,7 @@ class DownloadInfoFrame:
             colSizer.AddGrowableRow(1)
 
             panel.SetSizer(colSizer)
-            panel.SetAutoLayout(true)
+            panel.SetAutoLayout(True)
 
             spewList.InsertColumn(0, "Optimistic Unchoke", format=wxLIST_FORMAT_CENTER, width=fw*2)
             spewList.InsertColumn(1, "Peer ID", width=0)
@@ -1256,7 +1272,7 @@ class DownloadInfoFrame:
                 border.Add(fullsizer, 1, wxEXPAND | wxALL, 4)
 
                 panel.SetSizer(border)
-                panel.SetAutoLayout(true)
+                panel.SetAutoLayout(True)
 
                 def ok(self, frame = frame):
                     special = frame.advexturl.GetValue()
@@ -1306,48 +1322,44 @@ class DownloadInfoFrame:
             self.advBox.Show ()
             colSizer.Fit(panel)
             self.advBox.Fit()
-            self.dow.spewflag.set()
+            if self.dow:
+                self.dow.spewflag.set()
         except:
             self.exception()
 
 
     def displayUsage(self, text):
+        self.invokeLater(self.onDisplayUsage, [text])
+
+    def onDisplayUsage(self, text):        
         try:
-            start = self.dow.getUsageText()
-            if text[:len(start)] != start:
-                return false
-
             self.done(None)
-            self.usageBox = wxFrame(None, -1, 'Usage', size = (480,400))
-            if (sys.platform == 'win32'):
-                self.usageBox.SetIcon(self.icon)
-
-            panel = wxScrolledWindow(self.usageBox, -1)
-            colSizer = wxFlexGridSizer(cols = 1)
-
-            colSizer.Add (wxStaticText(panel, -1, text))
+            w = wxFrame(None, -1, 'BITTORRENT USAGE')
+            panel = wxPanel(w, -1)
+            sizer = wxFlexGridSizer(cols = 1)
+            sizer.Add(wxTextCtrl(panel, -1, text,
+                        size = (500,300), style = wxTE_READONLY|wxTE_MULTILINE))
             okButton = wxButton(panel, -1, 'Ok')
-#        okButton.SetFont(self.default_font)
-            colSizer.Add(okButton, 0, wxALIGN_RIGHT)
-            colSizer.AddGrowableCol(0)
-
 
             def closeUsage(self, frame = self):
                 frame.usageBox.Close()
-            EVT_BUTTON(self.usageBox, okButton.GetId(), closeUsage)
+            EVT_BUTTON(w, okButton.GetId(), closeUsage)
             def kill(self, frame = self):
                 frame.usageBox.Destroy()
                 frame.usageBox = None
-            EVT_CLOSE(self.usageBox, kill)
+            EVT_CLOSE(w, kill)
 
-            self.usageBox.Show ()
-            panel.FitInside()
-            panel.SetSizer(colSizer)
-            panel.SetAutoLayout(true)
-            panel.SetScrollRate(0,1)
-            self.usageBox.Fit()
+            sizer.Add(okButton, 0, wxALIGN_RIGHT)
+            border = wxBoxSizer(wxHORIZONTAL)
+            border.Add(sizer, 1, wxEXPAND | wxALL, 4)
 
-            return true        
+            panel.SetSizer(border)
+            panel.SetAutoLayout(True)
+
+            border.Fit(panel)
+            w.Fit()
+            w.Show()
+            self.usageBox = w
         except:
             self.exception()
 
@@ -1374,7 +1386,9 @@ class DownloadInfoFrame:
             self.connChoice.SetStringSelection(self.configfile.configfileargs['gui_ratesettingsdefault'])
             self.onConnChoice(0)         # force config selection for default value
             self.gauge.SetForegroundColour(self.configfile.checkingcolor)
-            self.firstupdate = false
+            self.firstupdate = False
+            if self.advBox:
+                self.dow.spewflag.set()
 
         if statistics is None:
             self.setStatusIcon('startup')
@@ -1435,7 +1449,7 @@ class DownloadInfoFrame:
             self.downRateText.SetLabel('%.0f kB/s' % (float(downRate) / 1000))
         if upRate is not None:
             self.upRateText.SetLabel('%.0f kB/s' % (float(upRate) / 1000))
-        if hasattr(self.frame, "tbicon"):
+        if self.taskbaricon:
             icontext='BitTorrent '
             if self.gui_fractiondone is not None and not self.fin:
                 if statistics is not None and statistics.downTotal is not None:
@@ -1447,7 +1461,10 @@ class DownloadInfoFrame:
             if downRate is not None:
                 icontext=icontext+' d:%.0f kB/s' % (float(downRate) / 1000)
             icontext+=' %s' % self.filename
-            self.frame.tbicon.SetIcon(self.icon,icontext)
+            try:
+                self.frame.tbicon.SetIcon(self.icon,icontext)
+            except:
+                pass
         if statistics is not None:
             if self.configfile.configfileargs['gui_displaymiscstats']:
                 self.downText.SetLabel('%.2f MiB' % (float(statistics.downTotal) / (1 << 20)))
@@ -1617,16 +1634,17 @@ class DownloadInfoFrame:
                                             statistics.storage_new,
                                             statistics.storage_dirty ) )
                     self.storagestats2.SetLabel(
-                        '          %d of %d pieces complete (%d just downloaded), %d failed hash check'
+                        '          %d of %d pieces complete (%d just downloaded), %d failed hash check, %s redundant data discarded'
                                         % ( statistics.storage_numcomplete,
                                             statistics.storage_totalpieces,
                                             statistics.storage_justdownloaded,
-                                            statistics.storage_numflunked ) )
+                                            statistics.storage_numflunked,
+                                            size_format(statistics.discarded) ) )
 
         if ( self.fileList is not None and statistics is not None
                 and (statistics.filelistupdated or self.refresh_details) ):
-            self.refresh_details = false
-            statistics.filelistupdated = false
+            self.refresh_details = False
+            statistics.filelistupdated = False
             for i in range(len(statistics.filecomplete)):
                 if statistics.fileinplace[i]:
                     self.fileList.SetItemImage(i,2,2)
@@ -1641,7 +1659,7 @@ class DownloadInfoFrame:
                         self.fileList.SetStringItem(i,1,'%d%%' % (frac))
 
         if self.configfile.configReset:     # whoopee!  Set everything invisible! :-)
-            self.configfile.configReset = false
+            self.configfile.configReset = False
 
             self.dow.config['security'] = self.configfile.configfileargs['security']
 
@@ -1658,12 +1676,12 @@ class DownloadInfoFrame:
             self.peerStatusText.SetLabel('')
 
             ratesettingsmode = self.configfile.configfileargs['gui_ratesettingsmode']
-            ratesettingsflag1 = true    #\ settings
-            ratesettingsflag2 = false   #/ for 'basic'
+            ratesettingsflag1 = True    #\ settings
+            ratesettingsflag2 = False   #/ for 'basic'
             if ratesettingsmode == 'none':
-                ratesettingsflag1 = false
+                ratesettingsflag1 = False
             elif ratesettingsmode == 'full':
-                ratesettingsflag2 = true
+                ratesettingsflag2 = True
             self.connChoiceLabel.Show(ratesettingsflag1)
             self.connChoice.Show(ratesettingsflag1)
             self.rateSpinnerLabel.Show(ratesettingsflag2)
@@ -1680,13 +1698,13 @@ class DownloadInfoFrame:
 
             if statistics is None or statistics.downTotal is None:
                 self.gauge.SetForegroundColour(self.configfile.checkingcolor)
-                self.gauge.SetBackgroundColour(wx.wxSystemSettings_GetColour(wxSYS_COLOUR_MENU))
+                self.gauge.SetBackgroundColour(wxSystemSettings_GetColour(wxSYS_COLOUR_MENU))
             elif self.fin:
                 self.gauge.SetForegroundColour(self.configfile.seedingcolor)
                 self.gauge.SetBackgroundColour(self.configfile.downloadcolor)
             else:
                 self.gauge.SetForegroundColour(self.configfile.downloadcolor)
-                self.gauge.SetBackgroundColour(wx.wxSystemSettings_GetColour(wxSYS_COLOUR_MENU))
+                self.gauge.SetBackgroundColour(wxSystemSettings_GetColour(wxSYS_COLOUR_MENU))
 
         self.frame.Layout()
         self.frame.Refresh()
@@ -1696,11 +1714,11 @@ class DownloadInfoFrame:
 
 
     def finished(self):
-        self.fin = true
+        self.fin = True
         self.invokeLater(self.onFinishEvent)
 
     def failed(self):
-        self.fin = true
+        self.fin = True
         self.invokeLater(self.onFailEvent)
 
     def error(self, errormsg):
@@ -1716,7 +1734,7 @@ class DownloadInfoFrame:
         if (sys.platform == 'win32'):
             self.icon = wxIcon(os.path.join(basepath,'icon_done.ico'), wxBITMAP_TYPE_ICO)
             self.frame.SetIcon(self.icon)
-        if hasattr(self.frame, "tbicon"):
+        if self.taskbaricon:
             self.frame.tbicon.SetIcon(self.icon, "BitTorrent - Finished")
         self.downRateText.SetLabel('')
 
@@ -1730,13 +1748,12 @@ class DownloadInfoFrame:
             self.setStatusIcon('startup')
 
     def onErrorEvent(self, errormsg):
-        if not self.displayUsage(errormsg):
-            if errormsg[:2] == '  ':    # indent at least 2 spaces means a warning message
-                self.errorText.SetLabel(errormsg)
-                self.lastError = time ()
-            else:
-                self.errorText.SetLabel(strftime('ERROR (%I:%M %p) -\n') + errormsg)
-                self.lastError = time ()
+        if errormsg[:2] == '  ':    # indent at least 2 spaces means a warning message
+            self.errorText.SetLabel(errormsg)
+            self.lastError = time ()
+        else:
+            self.errorText.SetLabel(strftime('ERROR (%I:%M %p) -\n') + errormsg)
+            self.lastError = time ()
 
 
     def chooseFile(self, default, size, saveas, dir):
@@ -1755,6 +1772,7 @@ class DownloadInfoFrame:
             if not isdir(start_dir):    # if it's not set properly
                 start_dir = '/'    # yes, this hack does work in Windows
             if dir:
+                start_dir1 = start_dir
                 if isdir(join(start_dir,default)):
                     start_dir = join(start_dir,default)
                 dl = wxDirDialog(self.frame,
@@ -1772,6 +1790,8 @@ class DownloadInfoFrame:
                 return
 
             d = dl.GetPath()
+            if d == start_dir:
+                d = start_dir1
             bucket[0] = d
             d1,d2 = split(d)
             if d2 == default:
@@ -1820,13 +1840,15 @@ class DownloadInfoFrame:
         self.invokeLater(self.onPause)
 
     def onPause(self):
+        if not self.dow:
+            return
         if self.ispaused:
-            self.ispaused = false
+            self.ispaused = False
             self.pauseButton.SetLabel('Pause')
             self.dow.Unpause()
         else:
             if self.dow.Pause():
-                self.ispaused = true
+                self.ispaused = True
                 self.pauseButton.SetLabel('Resume')
                 self.downRateText.SetLabel(' ')
                 self.upRateText.SetLabel(' ')
@@ -1837,10 +1859,9 @@ class DownloadInfoFrame:
     def done(self, event):
         self.uiflag.set()
         self.flag.set()
-        self.shuttingdown = true
-        if hasattr(self.frame, "tbicon"):
-            self.frame.tbicon.Destroy()
-            del self.frame.tbicon
+        self.shuttingdown = True
+        if self.taskbaricon:
+            self.frame.tbicon.RemoveIcon()
         if self.ispaused:
             self.dow.Unpause()
         if (self.detailBox is not None):
@@ -1908,14 +1929,23 @@ class DownloadInfoFrame:
                                 size = (500,300), style = wxTE_READONLY|wxTE_MULTILINE))
 
             sizer.Add(wxStaticText(panel, -1,
-                    '\nHelp us iron out the bugs in the engine!' +
-                    '\nPlease report this error to info@degreez.net'))
+                    '\nHelp us iron out the bugs in the engine!'))
+            linkMail = wxStaticText(panel, -1,
+                'Please report this error to '+report_email)
+            linkMail.SetFont(wxFont(self.FONT, wxDEFAULT, wxNORMAL, wxNORMAL, True))
+            linkMail.SetForegroundColour('Blue')
+            sizer.Add(linkMail)
+
+            def maillink(self):
+                Thread(target = open_new("mailto:" + report_email
+                                         + "?subject=autobugreport")).start()
+            EVT_LEFT_DOWN(linkMail, maillink)
 
             border = wxBoxSizer(wxHORIZONTAL)
             border.Add(sizer, 1, wxEXPAND | wxALL, 4)
 
             panel.SetSizer(border)
-            panel.SetAutoLayout(true)
+            panel.SetAutoLayout(True)
 
             w.Show()
             border.Fit(panel)
@@ -1926,7 +1956,7 @@ class DownloadInfoFrame:
 class btWxApp(wxApp):
     def __init__(self, x, params):
         self.params = params
-        self.configfile = configReader()
+        self.configfile = configReader(defaults)
         wxApp.__init__(self, x)
 
     def OnInit(self):
@@ -1942,7 +1972,7 @@ class btWxApp(wxApp):
                 self.params.append (b.GetPath())
 
         thread = Thread(target = next, args = [self.params, d, doneflag, self.configfile])
-        thread.setDaemon(false)
+        thread.setDaemon(False)
         thread.start()
         return 1
 
@@ -1965,14 +1995,56 @@ def next(params, d, doneflag, configfile):
         _next(params, d, doneflag, configfile)
 
 def _next(params, d, doneflag, configfile):
-    dow = Download()
-    d.dow = dow
-    configfile.setDownloadDefaults(dow.getDefaults())
-    d.configfile = configfile
-    d.configfileargs = d.configfile.configfileargs
     try:
-        dow.download(params, d.chooseFile, d.updateStatus, d.finished, d.error, doneflag, 100,
-                     d.newpath, d.configfileargs, d.errorwindow)
+        while 1:
+            try:            
+                config = parse_params(params, configfile.configfileargs)
+            except ValueError, e:
+                d.error('error: ' + str(e) + '\nrun with no args for parameter explanations')
+                break
+            if not config:
+                d.displayUsage(get_usage())
+                break
+
+            myid = createPeerID()
+            seed(myid)
+            
+            rawserver = RawServer(doneflag, config['timeout_check_interval'],
+                                  config['timeout'], ipv6_enable = config['ipv6_enabled'],
+                                  failfunc = d.error, errorfunc = d.errorwindow)
+
+            try:
+                listen_port = rawserver.find_and_bind(config['minport'], config['maxport'],
+                                config['bind'], ipv6_socket_style = config['ipv6_binds_v4'],
+                                upnp = config['upnp_nat_access'])
+            except socketerror, e:
+                d.error("Couldn't listen - " + str(e))
+                break
+
+            response = get_response(config['responsefile'], config['url'], d.error)
+            if not response:
+                break
+
+            infohash = sha(bencode(response['info'])).digest()
+            
+            dow = BT1Download(d.updateStatus, d.finished, d.error, d.errorwindow, doneflag,
+                            config, response, infohash, myid, rawserver, listen_port)
+            d.dow = dow
+            
+            if not dow.saveAs(d.chooseFile, d.newpath):
+                break
+
+            if not dow.initFiles(old_style = True):
+                break
+            if not dow.startEngine():
+                break
+            dow.startRerequester()
+            dow.autoStats()
+
+            d.updateStatus(activity = 'connecting to peers')
+            rawserver.listen_forever(dow.getPortHandler())
+            dow.shutdown()
+            break
     except:
         data = StringIO()
         print_exc(file = data)

@@ -4,7 +4,7 @@
 # modified for multitracker by John Hoffman
 # see LICENSE.txt for license information
 
-from BitTorrent import PSYCO
+from BitTornado import PSYCO
 if PSYCO.psyco:
     try:
         import psyco
@@ -17,14 +17,22 @@ from sys import argv, platform
 
 from btmakemetafile import make_meta_file
 from threading import Event, Thread, Lock
-from BitTorrent.bencode import bencode,bdecode
+from BitTornado.bencode import bencode,bdecode
 import sys, os, shutil
-from os.path import join, isdir
 from os import getcwd, listdir
-from wxPython.wx import *
+from os.path import join, isdir
 from traceback import print_exc
-true = 1
-false = 0
+try:
+    from wxPython.wx import *
+except:
+    print 'wxPython is either not installed or has not been installed properly.'
+    sys.exit(1)
+
+try:
+    True
+except:
+    True = 1
+    False = 0
 
 basepath=os.path.abspath(os.path.dirname(sys.argv[0]))
 
@@ -56,7 +64,7 @@ class BasicDownloadInfo:
         self.uiflag = Event()
         self.cancelflag = Event()
         self.switchlock = Lock()
-        self.working = false
+        self.working = False
         self.queue = []
         wxInitAllImageHandlers()
         self.thostselection = self.calls['getCurrentTHost']()
@@ -87,7 +95,7 @@ class BasicDownloadInfo:
         groupSizer.Add(self.dropTargetPtr,0,wxALIGN_CENTER)        
         lowerSizer1 = wxGridSizer(cols = 6)
         dirlink = wxStaticText(panel, -1, 'dir')
-        dirlink.SetFont(wxFont(7, wxDEFAULT, wxNORMAL, wxNORMAL, true))
+        dirlink.SetFont(wxFont(7, wxDEFAULT, wxNORMAL, wxNORMAL, True))
         dirlink.SetForegroundColour('blue')
         EVT_LEFT_UP(dirlink,self.selectdir)
         lowerSizer1.Add(dirlink, -1, wxALIGN_LEFT)
@@ -96,7 +104,7 @@ class BasicDownloadInfo:
         lowerSizer1.Add(wxStaticText(panel, -1, ''), -1, wxALIGN_CENTER)
         lowerSizer1.Add(wxStaticText(panel, -1, ''), -1, wxALIGN_CENTER)
         filelink = wxStaticText(panel, -1, 'file')
-        filelink.SetFont(wxFont(7, wxDEFAULT, wxNORMAL, wxNORMAL, true))
+        filelink.SetFont(wxFont(7, wxDEFAULT, wxNORMAL, wxNORMAL, True))
         filelink.SetForegroundColour('blue')
         EVT_LEFT_UP(filelink,self.selectfile)
         lowerSizer1.Add(filelink, -1, wxALIGN_RIGHT)
@@ -108,20 +116,20 @@ class BasicDownloadInfo:
         groupSizer.Add(self.gauge, 0, wxEXPAND)
         self.statustext = wxStaticText(panel, -1, 'ready',
                             style = wxALIGN_CENTER|wxST_NO_AUTORESIZE)
-        self.statustext.SetFont(wxFont(7, wxDEFAULT, wxNORMAL, wxBOLD, false))
+        self.statustext.SetFont(wxFont(7, wxDEFAULT, wxNORMAL, wxBOLD, False))
         groupSizer.Add(self.statustext, -1, wxEXPAND)
         self.choices = wxChoice(panel, -1, (-1, -1), (self.dropTargetWidth, -1),
                                     choices = [])
-        self.choices.SetFont(wxFont(7, wxDEFAULT, wxNORMAL, wxNORMAL, false))
+        self.choices.SetFont(wxFont(7, wxDEFAULT, wxNORMAL, wxNORMAL, False))
         EVT_CHOICE(self.choices, -1, self.set_thost)
         groupSizer.Add(self.choices, 0, wxEXPAND)
         cancellink = wxStaticText(panel, -1, 'cancel')
-        cancellink.SetFont(wxFont(7, wxDEFAULT, wxNORMAL, wxNORMAL, true))
+        cancellink.SetFont(wxFont(7, wxDEFAULT, wxNORMAL, wxNORMAL, True))
         cancellink.SetForegroundColour('red')
         EVT_LEFT_UP(cancellink,self.cancel)
         groupSizer.Add(cancellink, -1, wxALIGN_CENTER)
         advlink = wxStaticText(panel, -1, 'advanced')
-        advlink.SetFont(wxFont(7, wxDEFAULT, wxNORMAL, wxNORMAL, true))
+        advlink.SetFont(wxFont(7, wxDEFAULT, wxNORMAL, wxNORMAL, True))
         advlink.SetForegroundColour('blue')
         EVT_LEFT_UP(advlink,self.calls['switchToAdvanced'])
         groupSizer.Add(advlink, -1, wxALIGN_CENTER)
@@ -131,17 +139,17 @@ class BasicDownloadInfo:
         self._set_thost()
 
         if platform == 'win32':
-            self.dropTargetPtr.DragAcceptFiles(true)
+            self.dropTargetPtr.DragAcceptFiles(True)
             EVT_DROP_FILES(self.dropTargetPtr, self.selectdrop)
  
 #        border = wxBoxSizer(wxHORIZONTAL)
 #        border.Add(mainSizer, 1, wxEXPAND | wxALL, 0)
         panel.SetSizer(mainSizer)
-        panel.SetAutoLayout(true)
+        panel.SetAutoLayout(True)
 #        border.Fit(panel)
         mainSizer.Fit(panel)
         frame.Fit()
-        frame.Show(true)
+        frame.Show(True)
 
         EVT_INVOKE(frame, self.onInvoke)
         EVT_CLOSE(frame, self._close)
@@ -193,7 +201,7 @@ class BasicDownloadInfo:
     def go_queue(self):
         self.switchlock.acquire()
         if self.queue and not self.working:
-            self.working = true
+            self.working = True
             self.statustext.SetLabel('working')
             q = self.queue.pop(0)
             MakeMetafile(q[0], q[1], q[2], self)
@@ -202,7 +210,7 @@ class BasicDownloadInfo:
     def cancel(self, x):
         self.switchlock.acquire()
         if self.working:
-            self.working = false
+            self.working = False
             self.cancelflag.set()
             self.cancelflag = Event()
             self.queue = []
@@ -273,7 +281,7 @@ class BasicDownloadInfo:
         self.gauge.SetValue(0)
         self.statustext.SetLabel('done!')
         self.calls['dropTargetSuccess']()
-        self.working = false
+        self.working = False
         self.go_queue()
 
     def build_failed(self, e):
@@ -283,7 +291,7 @@ class BasicDownloadInfo:
         self.gauge.SetValue(0)
         self.statustext.SetLabel('ERROR')
         self.calls['dropTargetError']()
-        self.working = false
+        self.working = False
         self.go_queue()
 
     def close(self):
@@ -309,7 +317,7 @@ class AdvancedDownloadInfo:
         self.uiflag = Event()
         self.cancelflag = Event()
         self.switchlock = Lock()
-        self.working = false
+        self.working = False
         self.queue = []
         wxInitAllImageHandlers()
         self.thostselection = self.calls['getCurrentTHost']()
@@ -355,13 +363,13 @@ class AdvancedDownloadInfo:
         groupSizer.Add(self.dropTargetPtr,0,wxALIGN_CENTER)        
         lowerSizer1 = wxGridSizer(cols = 3)
         dirlink = wxStaticText(panel, -1, 'dir')
-        dirlink.SetFont(wxFont(7, wxDEFAULT, wxNORMAL, wxNORMAL, true))
+        dirlink.SetFont(wxFont(7, wxDEFAULT, wxNORMAL, wxNORMAL, True))
         dirlink.SetForegroundColour('blue')
         EVT_LEFT_UP(dirlink,self.selectdir)
         lowerSizer1.Add(dirlink, -1, wxALIGN_LEFT)
         lowerSizer1.Add(wxStaticText(panel, -1, ''), -1, wxALIGN_CENTER)
         filelink = wxStaticText(panel, -1, 'file')
-        filelink.SetFont(wxFont(7, wxDEFAULT, wxNORMAL, wxNORMAL, true))
+        filelink.SetFont(wxFont(7, wxDEFAULT, wxNORMAL, wxNORMAL, True))
         filelink.SetForegroundColour('blue')
         EVT_LEFT_UP(filelink,self.selectfile)
         lowerSizer1.Add(filelink, -1, wxALIGN_RIGHT)
@@ -373,20 +381,20 @@ class AdvancedDownloadInfo:
         groupSizer.Add(self.gauge, 0, wxEXPAND)
         self.statustext = wxStaticText(panel, -1, 'ready',
                             style = wxALIGN_CENTER|wxST_NO_AUTORESIZE)
-        self.statustext.SetFont(wxFont(7, wxDEFAULT, wxNORMAL, wxBOLD, false))
+        self.statustext.SetFont(wxFont(7, wxDEFAULT, wxNORMAL, wxBOLD, False))
         groupSizer.Add(self.statustext, -1, wxEXPAND)
         self.choices = wxChoice(panel, -1, (-1, -1), (self.dropTargetWidth, -1),
                                     choices = [])
-        self.choices.SetFont(wxFont(7, wxDEFAULT, wxNORMAL, wxNORMAL, false))
+        self.choices.SetFont(wxFont(7, wxDEFAULT, wxNORMAL, wxNORMAL, False))
         EVT_CHOICE(self.choices, -1, self.set_thost)
         groupSizer.Add(self.choices, 0, wxEXPAND)
         cancellink = wxStaticText(panel, -1, 'cancel')
-        cancellink.SetFont(wxFont(7, wxDEFAULT, wxNORMAL, wxNORMAL, true))
+        cancellink.SetFont(wxFont(7, wxDEFAULT, wxNORMAL, wxNORMAL, True))
         cancellink.SetForegroundColour('red')
         EVT_LEFT_UP(cancellink,self.cancel)
         groupSizer.Add(cancellink, -1, wxALIGN_CENTER)
         dummyadvlink = wxStaticText(panel, -1, 'advanced')
-        dummyadvlink.SetFont(wxFont(7, wxDEFAULT, wxNORMAL, wxNORMAL, false))
+        dummyadvlink.SetFont(wxFont(7, wxDEFAULT, wxNORMAL, wxNORMAL, False))
         dummyadvlink.SetForegroundColour('blue')
         EVT_LEFT_UP(dirlink,self.selectdir)
         groupSizer.Add(dummyadvlink, -1, wxALIGN_CENTER)
@@ -412,7 +420,7 @@ class AdvancedDownloadInfo:
         leftSizer.Add(wxStaticText(panel, -1, ''))
 
         simple_link = wxStaticText(panel, -1, 'back to basic mode')
-        simple_link.SetFont(wxFont(-1, wxDEFAULT, wxNORMAL, wxNORMAL, true))
+        simple_link.SetFont(wxFont(-1, wxDEFAULT, wxNORMAL, wxNORMAL, True))
         simple_link.SetForegroundColour('blue')
         EVT_LEFT_UP(simple_link,self.calls['switchToBasic'])
         leftSizer.Add(simple_link, -1, wxALIGN_CENTER)
@@ -473,22 +481,22 @@ class AdvancedDownloadInfo:
                 "and on several lines -trackers on the same line will be\n" +
                 "tried randomly, and all the trackers on one line\n" +
                 "will be tried before the trackers on the next line.")
-        exptext.SetFont(wxFont(6, wxDEFAULT, wxNORMAL, wxNORMAL, false))
+        exptext.SetFont(wxFont(6, wxDEFAULT, wxNORMAL, wxNORMAL, False))
         gridSizer.Add(exptext, -1, wxALIGN_CENTER)
 
         self.refresh_thostlist()
         self._set_thost()
 
         if platform == 'win32':
-            self.dropTargetPtr.DragAcceptFiles(true)
+            self.dropTargetPtr.DragAcceptFiles(True)
             EVT_DROP_FILES(self.dropTargetPtr, self.selectdrop)
-            self.groupSizer1Box.DragAcceptFiles(true)
+            self.groupSizer1Box.DragAcceptFiles(True)
             EVT_DROP_FILES(self.groupSizer1Box, self.selectdrop)
-            abutton.DragAcceptFiles(true)
+            abutton.DragAcceptFiles(True)
             EVT_DROP_FILES(abutton, self.announcedrop)
-            self.annCtl.DragAcceptFiles(true)
+            self.annCtl.DragAcceptFiles(True)
             EVT_DROP_FILES(self.annCtl, self.announcedrop)
-            self.annListCtl.DragAcceptFiles(true)
+            self.annListCtl.DragAcceptFiles(True)
             EVT_DROP_FILES(self.annListCtl, self.announcedrop)
 
         gridSizer.Add(wxStaticText(panel, -1, ''))
@@ -525,10 +533,10 @@ class AdvancedDownloadInfo:
         border = wxBoxSizer(wxHORIZONTAL)
         border.Add(fullSizer, 1, wxEXPAND | wxALL, 15)
         panel.SetSizer(border)
-        panel.SetAutoLayout(true)
+        panel.SetAutoLayout(True)
         border.Fit(panel)
         frame.Fit()
-        frame.Show(true)
+        frame.Show(True)
 
         EVT_INVOKE(frame, self.onInvoke)
         EVT_CLOSE(frame, self._close)
@@ -567,12 +575,12 @@ class AdvancedDownloadInfo:
     def announcecopy(self, x):
         dl = wxFileDialog (self.frame, 'Choose .torrent file to use', '', '', '*.torrent', wxOPEN)
         if dl.ShowModal() == wxID_OK:
-            self._announcecopy(dl.GetPath(), true)
+            self._announcecopy(dl.GetPath(), True)
 
     def announcedrop(self, dat):
-        self._announcecopy(dat.GetFiles()[0], true)
+        self._announcecopy(dat.GetFiles()[0], True)
 
-    def _announcecopy(self, f, external = false):
+    def _announcecopy(self, f, external = False):
         try:
             h = open(f, 'rb')
             metainfo = bdecode(h.read())
@@ -658,7 +666,7 @@ class AdvancedDownloadInfo:
     def go_queue(self):
         self.switchlock.acquire()
         if self.queue and not self.working:
-            self.working = true
+            self.working = True
             self.statustext.SetLabel('working')
             q = self.queue.pop(0)
             MakeMetafile(q[0], q[1], q[2], self)
@@ -667,7 +675,7 @@ class AdvancedDownloadInfo:
     def cancel(self, x):
         self.switchlock.acquire()
         if self.working:
-            self.working = false
+            self.working = False
             self.cancelflag.set()
             self.cancelflag = Event()
             self.queue = []
@@ -842,7 +850,7 @@ class AdvancedDownloadInfo:
         self.gauge.SetValue(0)
         self.statustext.SetLabel('done!')
         self.calls['dropTargetSuccess']()
-        self.working = false
+        self.working = False
         self.go_queue()
 
     def build_failed(self, e):
@@ -852,7 +860,7 @@ class AdvancedDownloadInfo:
         self.gauge.SetValue(0)
         self.statustext.SetLabel('ERROR')
         self.calls['dropTargetError']()
-        self.working = false
+        self.working = False
         self.go_queue()
 
     def close(self):
@@ -913,10 +921,10 @@ class T_make:
     def getConfig(self):
         config = {}
         try:
-            config['stayontop'] = self.configobj.ReadInt('stayontop',true)
+            config['stayontop'] = self.configobj.ReadInt('stayontop',True)
         except:
-            config['stayontop'] = true
-            self.configobj.WriteInt('stayontop',true)
+            config['stayontop'] = True
+            self.configobj.WriteInt('stayontop',True)
         try:
             config['target'] = self.configobj.Read('target','default.gif')
         except:
@@ -994,7 +1002,7 @@ class T_make:
         bbdata.SetPen(wxBLACK_PEN)
         bbdata.SetBrush(wxTRANSPARENT_BRUSH)
         bbdata.DrawRectangle(x1-1,y1-1,w+2,h+2)
-        bbdata.DrawBitmap(bmp,x1,y1,true)
+        bbdata.DrawBitmap(bmp,x1,y1,True)
         try:
             self.dropTargetRefresh()
         except:
@@ -1018,7 +1026,7 @@ class T_make:
         elif e == '.bmp':
             bmp = wxBitmap(name, wxBITMAP_TYPE_BMP)
         else:
-            assert false
+            assert False
         return bmp
 
     def dropTargetHovered(self, x = None):
@@ -1049,7 +1057,7 @@ class T_make:
 class btWxApp(wxApp):
     def OnInit(self):
         self.APP = T_make()
-        return true
+        return True
 
 if __name__ == '__main__':
     btWxApp().MainLoop()

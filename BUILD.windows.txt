@@ -8,16 +8,18 @@ install the nullsoft installer - http://www.nullsoft.com/free/nsis/
 
 in a shell, go to the root BitTorrent directory and run this command
 
-python winsetup.py py2exe --icon icon_bt.ico
+python winsetup.py py2exe
 
-change to the newly created subdirectory dist\btdownloadgui,
-copy bittorrent.nsi into that directory, and run nsis on it.
+change to the newly created subdirectory dist, copy bittorrent.nsi
+and the gifs and icons into that directory, and run nsis on it.
 
-cd dist\btdownloadgui
-copy ..\..\bittorrent.nsi bittorrent.nsi
+cd dist
+copy ..\bittorrent.nsi .
+copy ..\*.gif .
+copy ..\*.ico .
 c:\progra~1\nsis\makensis.exe bittorrent.nsi
 
-This will create an installer called bittorrent.exe
+This will create an installer called bittornado-x.x.x.w32install.exe
 
 The installer is completely self-contained and will work on any 
 Windows machine, even without the above software having been 

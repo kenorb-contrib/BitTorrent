@@ -4,7 +4,7 @@
 # modified for multitracker by John Hoffman
 # see LICENSE.txt for license information
 
-from BitTorrent import PSYCO
+from BitTornado import PSYCO
 if PSYCO.psyco:
     try:
         import psyco
@@ -18,12 +18,21 @@ from sys import argv, version
 from btcompletedir import completedir
 from btmakemetafile import make_meta_file
 from threading import Event, Thread
-from BitTorrent.bencode import bdecode
-from os.path import join, isdir
+from BitTornado.bencode import bdecode
+import sys
 from os import getcwd
-from wxPython.wx import *
-true = 1
-false = 0
+from os.path import join
+try:
+    from wxPython.wx import *
+except:
+    print 'wxPython is either not installed or has not been installed properly.'
+    sys.exit(1)
+
+try:
+    True
+except:
+    True = 1
+    False = 0
 
 wxEVT_INVOKE = wxNewEventType()
 
@@ -91,7 +100,7 @@ class DownloadInfo:
                 "trackers on the same line will be tried randomly," +
                 "and all the trackers on one line\n" +
                 "will be tried before the trackers on the next line.")
-        exptext.SetFont(wxFont(6, wxDEFAULT, wxNORMAL, wxNORMAL, false))
+        exptext.SetFont(wxFont(6, wxDEFAULT, wxNORMAL, wxNORMAL, False))
         gridSizer.Add(exptext)
 
         gridSizer.Add(wxStaticText(panel, -1, ''))
@@ -120,9 +129,9 @@ class DownloadInfo:
         border.Add(b2, 0, wxALIGN_CENTER | wxSOUTH, 20)
         EVT_BUTTON(frame, b2.GetId(), self.complete)
         panel.SetSizer(border)
-        panel.SetAutoLayout(true)
+        panel.SetAutoLayout(True)
 
-#        panel.DragAcceptFiles(true)
+#        panel.DragAcceptFiles(True)
 #        EVT_DROP_FILES(panel, self.selectdrop)
 
     def selectdir(self, x):
@@ -205,7 +214,7 @@ class CompleteDir:
         self.a = a
         self.params = params
         self.flag = Event()
-        self.separatetorrents = false
+        self.separatetorrents = False
 
         if isdir(d):
             self.choicemade = Event()
@@ -224,7 +233,7 @@ class CompleteDir:
             yesbut = wxButton(panel, -1, 'Yes')
             def saidyes(e, self = self):
                 self.frame.Destroy()
-                self.separatetorrents = true
+                self.separatetorrents = True
                 self.begin()
             EVT_BUTTON(frame, yesbut.GetId(), saidyes)
             b.Add(yesbut, 0)
@@ -246,7 +255,7 @@ class CompleteDir:
             border.Add(gridSizer, 1, wxEXPAND | wxALL, 4)
             
             panel.SetSizer(border)
-            panel.SetAutoLayout(true)
+            panel.SetAutoLayout(True)
             frame.Show()
             border.Fit(panel)
             frame.Fit()
@@ -282,11 +291,11 @@ class CompleteDir:
         g2.AddGrowableRow(0)
         g2.AddGrowableCol(0)
         panel.SetSizer(g2)
-        panel.SetAutoLayout(true)
+        panel.SetAutoLayout(True)
         EVT_BUTTON(frame, self.button.GetId(), self.done)
         EVT_CLOSE(frame, self.done)
         EVT_INVOKE(frame, self.onInvoke)
-        frame.Show(true)
+        frame.Show(True)
         Thread(target = self.complete).start()
 
     def complete(self):
@@ -337,9 +346,9 @@ class CompleteDir:
 class btWxApp(wxApp):
     def OnInit(self):
         d = DownloadInfo()
-        d.frame.Show(true)
+        d.frame.Show(True)
         self.SetTopWindow(d.frame)
-        return true
+        return True
 
 if __name__ == '__main__':
     btWxApp().MainLoop()

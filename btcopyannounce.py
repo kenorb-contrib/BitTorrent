@@ -6,7 +6,7 @@
 
 from sys import argv,exit
 from os.path import split
-from BitTorrent.bencode import bencode, bdecode
+from BitTornado.bencode import bencode, bdecode
 
 
 def give_announce_list(l):

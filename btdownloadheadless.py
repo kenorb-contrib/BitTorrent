@@ -3,7 +3,7 @@
 # Written by Bram Cohen
 # see LICENSE.txt for license information
 
-from BitTorrent import PSYCO
+from BitTornado import PSYCO
 if PSYCO.psyco:
     try:
         import psyco
@@ -12,15 +12,27 @@ if PSYCO.psyco:
     except:
         pass
     
-from BitTorrent.download import download
+from BitTornado.download_bt1 import BT1Download, parse_params, get_usage, get_response
+from BitTornado.RawServer import RawServer
+from random import seed
+from socket import error as socketerror
+from BitTornado.bencode import bencode
 from threading import Event
 from os.path import abspath
 from sys import argv, version, stdout
 import sys
-from time import time
+from sha import sha
+from time import time, strftime
+from BitTornado import createPeerID
+
 assert version >= '2', "Install Python 2.0 or greater"
-true = 1
-false = 0
+try:
+    True
+except:
+    True = 1
+    False = 0
+
+PROFILER = False
 
 def hours(n):
     if n == -1:
@@ -39,7 +51,7 @@ def hours(n):
 
 class HeadlessDisplayer:
     def __init__(self):
-        self.done = false
+        self.done = False
         self.file = ''
         self.percentDone = ''
         self.timeEst = ''
@@ -53,14 +65,14 @@ class HeadlessDisplayer:
         self.last_update_time = 0
 
     def finished(self):
-        self.done = true
+        self.done = True
         self.percentDone = '100'
         self.timeEst = 'Download Succeeded!'
         self.downRate = ''
         self.display()
 
     def failed(self):
-        self.done = true
+        self.done = True
         self.percentDone = '0'
         self.timeEst = 'Download Failed!'
         self.downRate = ''
@@ -130,7 +142,59 @@ def run(params):
         cols = 80
 
     h = HeadlessDisplayer()
-    download(params, h.chooseFile, h.display, h.finished, h.error, Event(), cols, h.newpath)
+    while 1:
+        try:            
+            config = parse_params(params)
+        except ValueError, e:
+            print 'error: ' + str(e) + '\nrun with no args for parameter explanations'
+            break
+        if not config:
+            print get_usage()
+            break
+
+        myid = createPeerID()
+        seed(myid)
+        
+        doneflag = Event()
+        def disp_exception(text):
+            print text
+        rawserver = RawServer(doneflag, config['timeout_check_interval'],
+                              config['timeout'], ipv6_enable = config['ipv6_enabled'],
+                              failfunc = h.failed, errorfunc = disp_exception)
+
+        try:
+            listen_port = rawserver.find_and_bind(config['minport'], config['maxport'],
+                            config['bind'], ipv6_socket_style = config['ipv6_binds_v4'],
+                            upnp = config['upnp_nat_access'])
+        except socketerror, e:
+            print "error: Couldn't listen - " + str(e)
+            break
+
+        response = get_response(config['responsefile'], config['url'], h.error)
+        if not response:
+            break
+
+        infohash = sha(bencode(response['info'])).digest()
+
+        dow = BT1Download(h.display, h.finished, h.error, disp_exception, doneflag,
+                        config, response, infohash, myid, rawserver, listen_port)
+        
+        if not dow.saveAs(h.chooseFile, h.newpath):
+            break
+
+        if not dow.initFiles(old_style = True):
+            break
+        if not dow.startEngine():
+            break
+        dow.startRerequester()
+        dow.autoStats()
+
+        h.display(activity = 'connecting to peers')
+        rawserver.listen_forever(dow.getPortHandler())
+        h.display(activity = 'shutting down')
+        dow.shutdown()
+        break
+
     if not h.done:
         h.failed()
 
@@ -138,4 +202,16 @@ if __name__ == '__main__':
     if argv[1:] == ['--version']:
         print version
         sys.exit(0)
-    run(argv[1:])
+
+    if PROFILER:
+        import profile, pstats
+        p = profile.Profile()
+        p.runcall(run, argv[1:])
+        log = open('profile_data.'+strftime('%y%m%d%H%M%S')+'.txt','a')
+        normalstdout = sys.stdout
+        sys.stdout = log
+#        pstats.Stats(p).strip_dirs().sort_stats('cumulative').print_stats()
+        pstats.Stats(p).strip_dirs().sort_stats('time').print_stats()
+        sys.stdout = normalstdout
+    else:
+        run(argv[1:])

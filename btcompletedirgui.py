@@ -3,7 +3,7 @@
 # Written by Bram Cohen
 # see LICENSE.txt for license information
 
-from BitTorrent import PSYCO
+from BitTornado import PSYCO
 if PSYCO.psyco:
     try:
         import psyco
@@ -16,9 +16,20 @@ from sys import argv, version
 
 from btcompletedir import completedir
 from threading import Event, Thread
-from os.path import join
+import sys
 from os import getcwd
-from wxPython.wx import *
+from os.path import join
+try:
+    from wxPython.wx import *
+except:
+    print 'wxPython is either not installed or has not been installed properly.'
+    sys.exit(1)
+
+try:
+    True
+except:
+    True = 1
+    False = 0
 
 wxEVT_INVOKE = wxNewEventType()
 
@@ -73,7 +84,7 @@ class DownloadInfo:
         border.Add(b2, 0, wxALIGN_CENTER | wxSOUTH, 20)
         EVT_BUTTON(frame, b2.GetId(), self.complete)
         panel.SetSizer(border)
-        panel.SetAutoLayout(true)
+        panel.SetAutoLayout(True)
 
     def select(self, x):
         dl = wxDirDialog(self.frame, style = wxDD_DEFAULT_STYLE | wxDD_NEW_DIR_BUTTON)
@@ -123,11 +134,11 @@ class CompleteDir:
         g2.AddGrowableRow(0)
         g2.AddGrowableCol(0)
         panel.SetSizer(g2)
-        panel.SetAutoLayout(true)
+        panel.SetAutoLayout(True)
         EVT_BUTTON(frame, self.button.GetId(), self.done)
         EVT_CLOSE(frame, self.done)
         EVT_INVOKE(frame, self.onInvoke)
-        frame.Show(true)
+        frame.Show(True)
         Thread(target = self.complete).start()
 
     def complete(self):
@@ -173,9 +184,9 @@ class CompleteDir:
 class btWxApp(wxApp):
     def OnInit(self):
         d = DownloadInfo()
-        d.frame.Show(true)
+        d.frame.Show(True)
         self.SetTopWindow(d.frame)
-        return true
+        return True
 
 if __name__ == '__main__':
     btWxApp().MainLoop()

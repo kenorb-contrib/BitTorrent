@@ -1,8 +1,8 @@
 @echo off
 rem this assumes python and makensis are in the path
-python winsetup.py py2exe --windows --icon icon_bt.ico
-copy *.ico dist\btdownloadgui
-copy *.gif dist\btdownloadgui
-copy bittorrent.nsi dist\btdownloadgui
-cd dist\btdownloadgui
+python winsetup.py py2exe
+copy *.ico dist
+copy *.gif dist
+copy bittorrent.nsi dist
+cd dist
 makensis bittorrent.nsi

@@ -3,7 +3,7 @@
 # Written by Bram Cohen
 # see LICENSE.txt for license information
 
-from BitTorrent import PSYCO
+from BitTornado import PSYCO
 if PSYCO.psyco:
     try:
         import psyco
@@ -13,7 +13,7 @@ if PSYCO.psyco:
         pass
     
 from sys import argv
-from BitTorrent.track import track
+from BitTornado.BT1.track import track
 
 if __name__ == '__main__':
     track(argv[1:])

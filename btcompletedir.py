@@ -3,7 +3,7 @@
 # Written by Bram Cohen
 # see LICENSE.txt for license information
 
-from BitTorrent import PSYCO
+from BitTornado import PSYCO
 if PSYCO.psyco:
     try:
         import psyco
@@ -18,7 +18,7 @@ from threading import Event
 from traceback import print_exc
 from sys import argv
 from btmakemetafile import defaults, calcsize, make_meta_file, ignore, print_announcelist_details
-from BitTorrent.parseargs import parseargs, formatDefinitions
+from BitTornado.parseargs import parseargs, formatDefinitions
 
 def dummy(x):
     pass
