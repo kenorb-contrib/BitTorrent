@@ -34,8 +34,8 @@ downloaderfiletemplate = compile_template(ValuesMarker(
     ValuesMarker({'ip': string_template, 'port': 1}, 
     exact_length(20))))
 
-announcetemplate = compile_template({'id': string_template, 
-    'myid': exact_length(20), 'ip': string_template, 'port': 1, 
+announcetemplate = compile_template({'file id': string_template, 
+    'peer id': exact_length(20), 'ip': string_template, 'port': 1, 
     'uploaded': 0, 'downloaded': 0, 'left': 0,
     'event': OptionMarker(['started', 'completed', 'stopped'])})
 
@@ -61,7 +61,6 @@ class Tracker:
             infofiletemplate(self.published)
         self.loghandle = open(logfile, 'ab')
         self.downloads = {}
-        self.myid_to_id = {}
         self.times = {}
         if exists(dfile):
             h = open(dfile, 'rb')
@@ -91,12 +90,12 @@ class Tracker:
             return (200, 'OK', {'Content-Type': 'text/html'}, s.getvalue())
         if not self.published.has_key(path):
             return (404, 'Not Found', {'Content-Type': 'text/plain'}, alas)
-        data = {'info': self.published[path], 'id': path, 
+        data = {'info': self.published[path], 'file id': path, 
             'url': self.urlprefix + path, 'protocol': 'plaintext',
             'announce': self.urlprefix + '/announce/',
             'your ip': connection.get_ip(), 'interval': 30 * 60}
         if len(self.cached.get(path, [])) < 25:
-            self.cached[path] = [{'id': key, 'ip': value['ip'], 
+            self.cached[path] = [{'peer id': key, 'ip': value['ip'], 
                 'port': value['port']} for key, value in 
                 self.downloads.setdefault(path, {}).items()]
             shuffle(self.cached[path])
@@ -120,16 +119,16 @@ class Tracker:
         self.loghandle.flush()
         if path == 'announce/':
             announcetemplate(message)
-            peers = self.downloads.setdefault(message['id'], {})
-            myid = message['myid']
+            peers = self.downloads.setdefault(message['file id'], {})
+            myid = message['peer id']
             if message.get('event') != 'stopped':
-                self.times.setdefault(message['id'], {})[myid] = time()
+                self.times.setdefault(message['file id'], {})[myid] = time()
                 if not peers.has_key(myid):
                     peers[myid] = {'ip': message['ip'], 'port': message['port']}
             else:
                 if peers.has_key(myid):
                     del peers[myid]
-                    del self.times[message['id']][myid]
+                    del self.times[message['file id']][myid]
         else:
             infotemplate(message)
             if headers.get('content-type') != 'application/x-bittorrent':

@@ -74,8 +74,8 @@ template = compile_template({'info': [{'type': 'single',
     {'type': 'multiple', 'pieces': mult20, 'piece length': 1, 
     'files': ListMarker({'path': ListMarker(string_template), 
     'length': 0}), 'name': string_template}], 
-    'peers': ListMarker({'ip': string_template, 'port': 1, 'id': exact_length(20)}), 
-    'id': string_template, 'announce': string_template, 'interval': 1,
+    'peers': ListMarker({'ip': string_template, 'port': 1, 'peer id': exact_length(20)}), 
+    'file id': string_template, 'announce': string_template, 'interval': 1,
     'url': string_template, 'your ip': string_template})
 
 def download(params, filefunc, statusfunc, resultfunc, doneflag, cols):
@@ -227,17 +227,17 @@ def download(params, filefunc, statusfunc, resultfunc, doneflag, cols):
         resultfunc(false, "Couldn't listen - " + str(e))
         return
     for x in response['peers']:
-        encrypter.start_connection((x['ip'], x['port']), x['id'])
+        encrypter.start_connection((x['ip'], x['port']), x['peer id'])
 
     if not finflag.isSet():
         statusfunc(activity = 'connecting to peers')
     def announce(event = None, q = putqueue(response['announce']), 
-            id = response['id'], myid = myid, 
+            id = response['file id'], myid = myid, 
             ip = response['your ip'], port = listen_port, 
             up = total_up, down = total_down, 
             storage = storagewrapper):
-        a = {'ip': ip, 'port': port, 'id': id,
-            'uploaded': up[0], 'downloaded': down[0], 'myid': myid,
+        a = {'ip': ip, 'port': port, 'file id': id,
+            'uploaded': up[0], 'downloaded': down[0], 'peer id': myid,
             'left': storage.get_amount_left()}
         if event is not None:
             a['event'] = ['started', 'completed', 'stopped'][event]

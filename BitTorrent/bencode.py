@@ -27,8 +27,8 @@ implementation incompatibilities. bencode is intended to be used
 for protocols which are going to be re-implemented many times, so 
 it's very conservative in that regard.
 
-Which type is encoded is determined by the first character. 'i', 'n',
-'d', 'l' and any digit indicate integer, null, dict, list, and 
+Which type is encoded is determined by the first character, 'i', 'n',
+'d', 'l' and any digit. They indicate integer, null, dict, list, and 
 string, respectively.
 
 Strings are length-prefixed in base 10, followed by a colon.
@@ -60,7 +60,7 @@ Truncated strings come first, so in sort order 'a' comes before 'abc'.
 If a function is passed to bencode, it's called and it's return value 
 is included as a raw string, for example -
 
-bdecode(bencode(lambda None)) == None
+bdecode(bencode(lambda: None)) == None
 """
 
 # This file is licensed under the GNU Lesser General Public License v2.1.
