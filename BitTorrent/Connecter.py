@@ -41,6 +41,9 @@ class Connection:
     def is_flushed(self):
         return self.connection.is_flushed()
 
+    def is_locally_initiated(self):
+        return self.connection.is_locally_initiated()
+
     def send_interested(self):
         self.connection.send_message(INTERESTED)
 

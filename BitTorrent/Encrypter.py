@@ -24,6 +24,7 @@ class EncryptedConnection:
         self.encrypter = encrypter
         self.connection = connection
         self.id = id
+        self.locally_initiated = (id != None)
         self.complete = false
         self.closed = false
         self.buffer = StringIO()
@@ -34,6 +35,9 @@ class EncryptedConnection:
 
     def get_ip(self):
         return self.connection.get_ip()
+
+    def is_locally_initiated(self):
+        return self.locally_initiated
 
     def is_flushed(self):
         return self.connection.is_flushed()

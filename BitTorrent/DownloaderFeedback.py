@@ -24,6 +24,10 @@ class DownloaderFeedback:
         s = StringIO()
         for c in self.choker.connections:
             s.write('%20s ' % c.get_ip())
+            if c.is_locally_initiated():
+                s.write('l')
+            else:
+                s.write('r')
             u = c.get_upload()
             s.write(' %10s ' % str(int(u.rate)))
             if u.is_interested():
