@@ -71,25 +71,25 @@ class StorageWrapper:
             self.backfunc(f)
 
     def _background_allocate(self):
+        piece = chr(0xFF) * self.piece_length
         for x in xrange(len(self.hashes)):
             if self.hasdata[x]:
                 continue
-            low = self.piece_length * x
-            piece = chr(0xFF) * (min(low + self.piece_length, self.total_length) - low)
             self.accessLock.acquire()
+            while self.currentwrite == x:
+                self.accessLock.wait()
+            self.currentbackwrite = x
+            self.accessLock.release()
             try:
-                while self.currentwrite == x:
-                    self.accessLock.wait()
-                self.currentbackwrite = x
+                if not self.hasdata[x]:
+                    low = self.piece_length * x
+                    if low + piece_length > self.total_length:
+                        piece = chr(0xFF) * (self.total_length - low)
+                    self.storage.write(low, piece)
             finally:
-                self.accessLock.release()
-            if not self.hasdata[x]:
-                self.storage.write(low, piece)
-            self.accessLock.acquire()
-            try:
+                self.accessLock.acquire()
                 self.currentbackwrite = None
                 self.accessLock.notify()
-            finally:
                 self.accessLock.release()
 
     def get_amount_left(self):
@@ -152,23 +152,21 @@ class StorageWrapper:
 
     def _piece_came_in(self, index, begin, piece):
         self.accessLock.acquire()
+        while self.currentbackwrite == index:
+            self.accessLock.wait()
+        self.currentwrite = index
+        self.accessLock.release()
         try:
-            while self.currentbackwrite == index:
-                self.accessLock.wait()
-            self.currentwrite = index
+            self.storage.write(index * self.piece_length + begin, piece)
+            self.hasdata[index] = true
+            self.numactive[index] -= 1
+            if (self.inactive_requests[index] == [] and 
+                    self.numactive[index] == 0):
+                self._check_single(index)
         finally:
-            self.accessLock.release()
-        self.storage.write(index * self.piece_length + begin, piece)
-        self.hasdata[index] = true
-        self.numactive[index] -= 1
-        if (self.inactive_requests[index] == [] and 
-                self.numactive[index] == 0):
-            self._check_single(index)
-        self.accessLock.acquire()
-        try:
+            self.accessLock.acquire()
             self.currentwrite = None
             self.accessLock.notify()
-        finally:
             self.accessLock.release()
 
     def request_lost(self, index, begin, length):
