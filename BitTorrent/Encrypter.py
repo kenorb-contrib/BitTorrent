@@ -18,7 +18,7 @@ def tobinary(i):
 
 class Connection:
     def __init__(self, Encoder, connection, id):
-        self.Encoder = Encoder
+        self.encoder = Encoder
         self.connection = connection
         self.id = id
         self.locally_initiated = (id != None)
@@ -29,7 +29,7 @@ class Connection:
         self.next_func = self.read_header_len
         if self.locally_initiated:
             connection.write(chr(len(protocol_name)) + protocol_name + 
-                (chr(0) * 8) + self.Encoder.download_id + self.Encoder.my_id)
+                (chr(0) * 8) + self.encoder.download_id + self.encoder.my_id)
 
     def get_ip(self):
         return self.connection.get_ip()
@@ -57,31 +57,35 @@ class Connection:
         return 20, self.read_download_id
 
     def read_download_id(self, s):
-        if s != self.Encoder.download_id:
+        if s != self.encoder.download_id:
             return None
         if not self.locally_initiated:
             self.connection.write(chr(len(protocol_name)) + protocol_name + 
-                (chr(0) * 8) + self.Encoder.download_id + self.Encoder.my_id)
+                (chr(0) * 8) + self.encoder.download_id + self.encoder.my_id)
         return 20, self.read_peer_id
 
     def read_peer_id(self, s):
         if self.id is None:
+            for v in self.encoder.connections.values():
+                if v.id == s:
+                    return None
             self.id = s
         else:
             if s != self.id:
                 return None
-        self.complete = self.Encoder.got_id(self)
+        self.complete = True
+        self.encoder.connecter.connection_made(self)
         return 4, self.read_len
 
     def read_len(self, s):
         l = toint(s)
-        if l > self.Encoder.max_len:
+        if l > self.encoder.max_len:
             return None
         return l, self.read_message
 
     def read_message(self, s):
         if s != '':
-            self.Encoder.connecter.got_message(self, s)
+            self.encoder.connecter.got_message(self, s)
         return 4, self.read_len
 
     def read_dead(self, s):
@@ -94,9 +98,9 @@ class Connection:
 
     def sever(self):
         self.closed = True
-        del self.Encoder.connections[self.connection]
+        del self.encoder.connections[self.connection]
         if self.complete:
-            self.Encoder.connecter.connection_lost(self)
+            self.encoder.connecter.connection_lost(self)
 
     def send_message(self, message):
         self.connection.write(tobinary(len(message)) + message)
@@ -169,9 +173,8 @@ class Encoder:
         for v in self.connections.values():
             if connection is not v and connection.id == v.id:
                 connection.close()
-                return False
+                return
         self.connecter.connection_made(connection)
-        return True
 
     def external_connection_made(self, connection):
         self.connections[connection] = Connection(self, 
