@@ -4,14 +4,14 @@
 from random import randrange, shuffle, choice
 
 class PiecePicker:
-    def __init__(self, numpieces, rarest_first_cutoff = 1, rarest_first_priority_cutoff = 3):
+    def __init__(self, numpieces, rarest_first_cutoff = 1):
         self.rarest_first_cutoff = rarest_first_cutoff
-        self.rarest_first_priority_cutoff = rarest_first_priority_cutoff
         self.numpieces = numpieces
         self.interests = [range(numpieces)]
         self.pos_in_interests = range(numpieces)
         self.numinterests = [0] * numpieces
         self.started = []
+        self.seedstarted = []
         self.numgot = 0
         self.scrambled = range(numpieces)
         shuffle(self.scrambled)
@@ -48,9 +48,11 @@ class PiecePicker:
             l2[newp] = piece
             self.pos_in_interests[piece] = newp
 
-    def requested(self, piece):
+    def requested(self, piece, seed = False):
         if piece not in self.started:
             self.started.append(piece)
+        if seed and piece not in self.seedstarted:
+            self.seedstarted.append(piece)
 
     def complete(self, piece):
         assert self.numinterests[piece] is not None
@@ -63,29 +65,35 @@ class PiecePicker:
         self.numinterests[piece] = None
         try:
             self.started.remove(piece)
+            self.seedstarted.remove(piece)
         except ValueError:
             pass
 
-    def next(self, havefunc):
+    def next(self, havefunc, seed = False):
         bests = None
         bestnum = 2 ** 30
-        for i in self.started:
+        if seed:
+            s = self.seedstarted
+        else:
+            s = self.started
+        for i in s:
             if havefunc(i):
                 if self.numinterests[i] < bestnum:
                     bests = [i]
                     bestnum = self.numinterests[i]
                 elif self.numinterests[i] == bestnum:
                     bests.append(i)
-        if self.numgot < self.rarest_first_cutoff and bests:
+        if bests:
             return choice(bests)
+        if self.numgot < self.rarest_first_cutoff:
+            for i in self.scrambled:
+                if havefunc(i):
+                    return i
+            return None
         for i in xrange(1, min(bestnum, len(self.interests))):
-            if bests and i >= self.rarest_first_priority_cutoff:
-                break
             for j in self.interests[i]:
                 if havefunc(j):
                     return j
-        if bests:
-            return choice(bests)
         return None
 
     def am_I_complete(self):
@@ -147,15 +155,6 @@ def test_complete():
     assert _pull(p) == []
     p.got_have(0)
     p.lost_have(0)
-
-def test_rarest_first_takes_priority():
-    p = PiecePicker(3)
-    p.complete(2)
-    p.requested(0)
-    p.got_have(1)
-    p.got_have(0)
-    p.got_have(0)
-    assert _pull(p) == [1, 0]
 
 def test_rarer_in_started_takes_priority():
     p = PiecePicker(3)

@@ -4,7 +4,6 @@
 from CurrentRateMeasure import Measure
 from random import shuffle
 from time import time
-from math import sqrt
 
 class SingleDownload:
     def __init__(self, downloader, connection):
@@ -122,7 +121,7 @@ class SingleDownload:
         lost_interests = []
         while len(self.active_requests) < self.downloader.backlog:
             if indices is None:
-                interest = self.downloader.picker.next(self._want)
+                interest = self.downloader.picker.next(self._want, self.unhave == 0)
             else:
                 interest = None
                 for i in indices:
@@ -136,7 +135,7 @@ class SingleDownload:
                 self.connection.send_interested()
             self.example_interest = interest
             begin, length = self.downloader.storage.new_request(interest)
-            self.downloader.picker.requested(interest)
+            self.downloader.picker.requested(interest, self.unhave == 0)
             self.active_requests.append((interest, begin, length))
             self.connection.send_request(interest, begin, length)
             if not self.downloader.storage.do_I_have_requests(interest):
@@ -155,7 +154,7 @@ class SingleDownload:
                         break
                 else:
                     continue
-                interest = self.downloader.picker.next(d._want)
+                interest = self.downloader.picker.next(d._want, d.unhave == 0)
                 if interest is None:
                     d.interested = False
                     d.connection.send_not_interested()
@@ -241,7 +240,6 @@ class Downloader:
         self.snub_time = snub_time
         self.measurefunc = measurefunc
         self.downloads = []
-        self.maxlistlen = long(sqrt(numpieces))
 
     def make_download(self, connection):
         self.downloads.append(SingleDownload(self, connection))
@@ -252,7 +250,7 @@ class DummyPicker:
         self.stuff = range(num)
         self.r = r
 
-    def next(self, wantfunc):
+    def next(self, wantfunc, seed):
         for i in self.stuff:
             if wantfunc(i):
                 return i
@@ -264,7 +262,7 @@ class DummyPicker:
     def got_have(self, pos):
         self.r.append('got have')
 
-    def requested(self, pos):
+    def requested(self, pos, seed):
         self.r.append('requested')
 
     def complete(self, pos):
@@ -502,13 +500,3 @@ def test_stops_at_backlog_endgame():
     sd1.got_piece(0, n, 'ab')
     assert ev1 == []
     assert ev2 == [('cancel', 0, n, 2), ('request', 0, 2-n, 2)]
-
-# test piece flunking behavior
-# make backlog of 1, one piece with two subpieces
-# first connects, requests and gets part 1, requests part 2
-# second connects, does nothing
-# first gets part 2, flunks check, first requests part 1 and second requests part 2
-
-# test piece flunking behavior endgame
-# one piece, two sub-pieces, two peers
-# second sub-piece comes in, assert gets request for both sub-pieces from both peers
