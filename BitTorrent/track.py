@@ -231,8 +231,8 @@ class Tracker:
                     cache.append({'peer id': key, 'ip': value['ip'], 
                         'port': value['port']})
             shuffle(cache)
-        data['peers'] = cache[-self.rsize:]
-        del cache[-self.rsize:]
+        data['peers'] = cache[-rsize:]
+        del cache[-rsize:]
         connection.answer((200, 'OK', {'Content-Type': 'text/plain', 'Pragma': 'no-cache'}, bencode(data)))
         if self.natcheck:
             NatCheck(self.connectback_result, infohash, myid, ip, port, self.rawserver)
