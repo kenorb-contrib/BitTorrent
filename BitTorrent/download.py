@@ -134,10 +134,10 @@ def download(params, filefunc, statusfunc, resultfunc, doneflag, cols):
         return
     try:
         if path.exists(file):
-            statusfunc(activity = 'checking existing file...')
+            statusfunc(activity = 'checking existing file (this may take a while)')
             resuming = true
         else:
-            statusfunc(activity = 'allocating new file...')
+            statusfunc(activity = 'allocating new file (this may take a while)')
             resuming = false
         r = [0]
         finflag = Event()

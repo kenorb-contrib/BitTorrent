@@ -27,7 +27,7 @@ def formatDefinitions(options, COLS):
     for (longname, shortname, default, doc) in options:
         s.write(combined(longname, shortname) + ' <arg>\n')
         if default is not None:
-            doc += ' defaults to ' + `default`
+            doc += ' (defaults to ' + `default` + ')'
         i = 0
         for word in doc.split():
             if i == 0:
