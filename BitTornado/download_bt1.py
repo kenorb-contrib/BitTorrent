@@ -457,6 +457,7 @@ class BT1Download:
         if not statusfunc:
             statusfunc = self.statusfunc
 
+        disabled_files = None
         if self.selector_enabled:
             self.priority = self.config['priority']
             if self.priority:
@@ -478,7 +479,7 @@ class BT1Download:
                 try:
                     disabled_files = [x == -1 for x in self.priority]
                 except:
-                    disabled_files = None
+                    pass
 
         try:
             try:

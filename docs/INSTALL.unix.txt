@@ -6,7 +6,9 @@ install wxPython - http://wxpython.org/
 apt-get install libwxgtk2.2-python 
 from testing and use python 2.1)
 
-untar and put a line in /etc/mailcap which is similar to the 
+untar and run: python setup.py install
+
+put a line in /etc/mailcap which is similar to the 
 following, only replace the path to 
 /usr/bin/btdownloadgui.py with the one it's actually in.
 

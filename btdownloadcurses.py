@@ -263,7 +263,7 @@ class CursesDisplayer:
                 if not spew[i]['lineno']:
                     continue
                 self.spewwin.addnstr(i+3, 0, '%3d' % spew[i]['lineno'], 3)
-                self.spewwin.addnstr(i+3, 4, spew[i]['ip'], 15)
+                self.spewwin.addnstr(i+3, 4, spew[i]['ip']+spew[i]['direction'], 16)
                 if spew[i]['uprate'] > 100:
                     self.spewwin.addnstr(i+3, 20, '%6.0f KB/s' % (float(spew[i]['uprate']) / 1000), 11)
                 self.spewwin.addnstr(i+3, 32, '-----', 5)

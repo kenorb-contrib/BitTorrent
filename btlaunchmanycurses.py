@@ -49,14 +49,17 @@ except:
 
 Exceptions = []
 
+
 def fmttime(n):
     if n <= 0:
         return None
-    n = int(n)
+    try:
+        n = int(n)
+        assert n < 5184000  # 60 days
+    except:
+        return 'connecting to peers'
     m, s = divmod(n, 60)
     h, m = divmod(m, 60)
-    if h > 1000000:
-        return 'connecting to peers'
     return 'ETA in %d:%02d:%02d' % (h, m, s)
 
 def fmtsize(n):

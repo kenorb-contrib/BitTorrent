@@ -237,8 +237,8 @@ class Tracker:
                     if not (ip and self.allow_local_override(y['ip'], ip)):
                         ip = y['ip']
                     self.natcheckOK(infohash,x,ip,y['port'],y['left'])
-                    if not y['left']:
-                        self.seedcount[infohash] += 1
+                if not y['left']:
+                    self.seedcount[infohash] += 1
             
         for x in self.downloads.keys():
             self.times[x] = {}
@@ -286,7 +286,7 @@ class Tracker:
                                self.rawserver)
         if config['allowed_dir'] != '':
             self.allowed_dir = config['allowed_dir']
-            self.parse_allowed_interval = config['parse_allowed_interval']
+            self.parse_dir_interval = config['parse_dir_interval']
             self.allowed = self.state.setdefault('allowed',{})
             self.allowed_dir_files = self.state.setdefault('allowed_dir_files',{})
             self.allowed_dir_blocked = {}
@@ -866,7 +866,7 @@ class Tracker:
 
 
     def parse_allowed(self):
-        self.rawserver.add_task(self.parse_allowed, self.parse_allowed_interval * 60)
+        self.rawserver.add_task(self.parse_allowed, self.parse_dir_interval)
 
         r = parsedir(self.allowed_dir, self.allowed, self.allowed_dir_files,
                      self.allowed_dir_blocked, [".torrent"])

@@ -15,11 +15,6 @@ except:
     True = 1
     False = 0
     
-try:
-    wxFULL_REPAINT_ON_RESIZE
-except:
-    wxFULL_REPAINT_ON_RESIZE = 0        # fix for wx pre-2.5
-
 if (sys.platform == 'win32'):
     _FONT = 9
 else:
@@ -36,6 +31,9 @@ def hex2(c):
     return h
 def ColorToHex(c):
     return hex2(c.Red()) + ' ' + hex2(c.Green()) + ' ' + hex2(c.Blue())
+
+_CHECKINGCOLOR = ColorToHex(wxSystemSettings_GetColour(wxSYS_COLOUR_3DSHADOW))
+_DOWNLOADCOLOR = ColorToHex(wxSystemSettings_GetColour(wxSYS_COLOUR_ACTIVECAPTION))
 
 ratesettingslist = []
 for x in connChoices:
@@ -59,9 +57,9 @@ configFileDefaults = [
          "what rate setting controls to display; options are 'none', 'basic', and 'full'"),
     ('gui_forcegreenonfirewall', 0,
          "forces the status icon to be green even if the client seems to be firewalled"),
-    ('gui_checkingcolor', None, # set later
+    ('gui_checkingcolor', _CHECKINGCOLOR,
          "progress bar checking color"),
-    ('gui_downloadcolor', None, # set later
+    ('gui_downloadcolor', _DOWNLOADCOLOR,
          "progress bar downloading color"),
     ('gui_seedingcolor', '00 FF 00',
          "progress bar seeding color"),
@@ -88,12 +86,6 @@ class configReader:
 
         defaults.extend(configFileDefaults)
         self.defaults = defaultargs(defaults)
-
-        self.defaults['gui_checkingcolor'] = ColorToHex(
-            wxSystemSettings_GetColour(wxSYS_COLOUR_3DSHADOW))
-        self.defaults['gui_downloadcolor'] = ColorToHex(
-            wxSystemSettings_GetColour(wxSYS_COLOUR_ACTIVECAPTION))
-
         self.configDir = ConfigDir('gui')
         self.configDir.setDefaults(defaults,defaultsToIgnore)
         if self.configDir.checkConfig():
@@ -225,8 +217,7 @@ class configReader:
             except wxPyDeadObjectError, e:
                 self.configMenuBox = None
 
-        self.configMenuBox = wxFrame(None, -1, 'BitTorrent Preferences', size = (1,1),
-                            style = wxDEFAULT_FRAME_STYLE|wxFULL_REPAINT_ON_RESIZE)
+        self.configMenuBox = wxFrame(None, -1, 'BitTorrent Preferences', size = (1,1))
         if (sys.platform == 'win32'):
             self.icon = wxIcon(os.path.join(self.getIconDir(),'icon_bt.ico'), wxBITMAP_TYPE_ICO)
             self.configMenuBox.SetIcon(self.icon)
@@ -292,10 +283,6 @@ class configReader:
         self.maxport_data.SetRange(1,65535)
         self.maxport_data.SetValue(self.config['maxport'])
         
-        self.randomport_checkbox = wxCheckBox(panel, -1, "randomize")
-        self.randomport_checkbox.SetFont(self.default_font)
-        self.randomport_checkbox.SetValue(self.config['random_port'])
-        
         self.gui_font_data = wxSpinCtrl(panel, -1, '', (-1,-1), (self.FONT*5, -1))
         self.gui_font_data.SetFont(self.default_font)
         self.gui_font_data.SetRange(8,16)
@@ -320,13 +307,9 @@ class configReader:
             self.win32_taskbar_icon_checkbox.SetFont(self.default_font)
             self.win32_taskbar_icon_checkbox.SetValue(self.config['win32_taskbar_icon'])
             
-#            self.upnp_checkbox = wxCheckBox(panel, -1, "Enable automatic UPnP port forwarding")
-#            self.upnp_checkbox.SetFont(self.default_font)
-#            self.upnp_checkbox.SetValue(self.config['upnp_nat_access'])
-            self.upnp_data=wxChoice(panel, -1,
-                        choices = ['disabled', 'type 1 (fast)', 'type 2 (slow)'])
-            self.upnp_data.SetFont(self.default_font)
-            self.upnp_data.SetSelection(self.config['upnp_nat_access'])
+            self.upnp_checkbox = wxCheckBox(panel, -1, "Enable automatic UPnP port forwarding")
+            self.upnp_checkbox.SetFont(self.default_font)
+            self.upnp_checkbox.SetValue(self.config['upnp_nat_access'])
 
         self.gui_default_savedir_ctrl = wxTextCtrl(parent = panel, id = -1, 
                             value = self.config['gui_default_savedir'],        
@@ -357,7 +340,7 @@ class configReader:
         block1sizer = wxFlexGridSizer(cols = 1, vgap = 2)
         if (sys.platform == 'win32'):
             block1sizer.Add(self.win32_taskbar_icon_checkbox)
-#            block1sizer.Add(self.upnp_checkbox)
+            block1sizer.Add(self.upnp_checkbox)
         block1sizer.Add(self.gui_stretchwindow_checkbox)
         block1sizer.Add(self.gui_displaystats_checkbox)
         block1sizer.Add(self.gui_displaymiscstats_checkbox)
@@ -398,7 +381,6 @@ class configReader:
         portsettingsSizer1.Add(StaticText('To: '), 1, wxALIGN_CENTER_VERTICAL|wxALIGN_RIGHT)
         portsettingsSizer1.Add(self.maxport_data, 1, wxALIGN_BOTTOM)
         portsettingsSizer.Add(portsettingsSizer1)
-        portsettingsSizer.Add(self.randomport_checkbox, 1, wxALIGN_CENTER)
         block3sizer.Add(portsettingsSizer, 1, wxALIGN_CENTER)
         block3sizer.Add(StaticText(' '))
         block3sizer.Add(self.gui_ratesettingsmode_data, 1, wxALIGN_CENTER)
@@ -407,12 +389,6 @@ class configReader:
         ratesettingsSizer.Add(StaticText('Default Rate Setting: *'), 1, wxALIGN_CENTER)
         ratesettingsSizer.Add(self.gui_ratesettingsdefault_data, 1, wxALIGN_CENTER)
         block3sizer.Add(ratesettingsSizer, 1, wxALIGN_CENTER)
-        if (sys.platform == 'win32'):
-            block3sizer.Add(StaticText(' '))
-            upnpSizer = wxFlexGridSizer(cols = 1, vgap = 2)
-            upnpSizer.Add(StaticText('UPnP Port Forwarding: *'), 1, wxALIGN_CENTER)
-            upnpSizer.Add(self.upnp_data, 1, wxALIGN_CENTER)
-            block3sizer.Add(upnpSizer, 1, wxALIGN_CENTER)
         
         rowsizer.Add(block3sizer)
         colsizer.Add(rowsizer)
@@ -479,7 +455,6 @@ class configReader:
           try:
             self.minport_data.SetValue(self.defaults['minport'])
             self.maxport_data.SetValue(self.defaults['maxport'])
-            self.randomport_checkbox.SetValue(self.defaults['random_port'])
             self.gui_stretchwindow_checkbox.SetValue(self.defaults['gui_stretchwindow'])
             self.gui_displaystats_checkbox.SetValue(self.defaults['gui_displaystats'])
             self.gui_displaymiscstats_checkbox.SetValue(self.defaults['gui_displaymiscstats'])
@@ -506,8 +481,7 @@ class configReader:
 
             if (sys.platform == 'win32'):
                 self.win32_taskbar_icon_checkbox.SetValue(self.defaults['win32_taskbar_icon'])
-#                self.upnp_checkbox.SetValue(self.defaults['upnp_nat_access'])
-                self.upnp_data.SetSelection(self.defaults['upnp_nat_access'])
+                self.upnp_checkbox.SetValue(self.defaults['upnp_nat_access'])
 
             # reset advanced too
             self.advancedConfig = {}
@@ -543,7 +517,6 @@ class configReader:
             self.config['gui_forcegreenonfirewall']=int(self.gui_forcegreenonfirewall_checkbox.GetValue())
             self.config['minport']=self.minport_data.GetValue()
             self.config['maxport']=self.maxport_data.GetValue()
-            self.config['random_port']=int(self.randomport_checkbox.GetValue())
             self.config['gui_font']=self.gui_font_data.GetValue()
             self.config['gui_ratesettingsdefault']=self.gui_ratesettingsdefault_data.GetStringSelection()
             self.config['max_download_rate']=self.maxdownload_data.GetValue()
@@ -556,8 +529,7 @@ class configReader:
             
             if (sys.platform == 'win32'):
                 self.config['win32_taskbar_icon']=int(self.win32_taskbar_icon_checkbox.GetValue())
-#                self.config['upnp_nat_access']=int(self.upnp_checkbox.GetValue())
-                self.config['upnp_nat_access']=self.upnp_data.GetSelection()
+                self.config['upnp_nat_access']=int(self.upnp_checkbox.GetValue())
 
             if self.advancedConfig:
                 for key,val in self.advancedConfig.items():
@@ -647,8 +619,7 @@ class configReader:
             except wxPyDeadObjectError, e:
                 self.advancedMenuBox = None
 
-        self.advancedMenuBox = wxFrame(None, -1, 'BitTorrent Advanced Preferences', size = (1,1),
-                            style = wxDEFAULT_FRAME_STYLE|wxFULL_REPAINT_ON_RESIZE)
+        self.advancedMenuBox = wxFrame(None, -1, 'BitTorrent Advanced Preferences', size = (1,1))
         if (sys.platform == 'win32'):
             self.advancedMenuBox.SetIcon(self.icon)
 

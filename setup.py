@@ -22,7 +22,6 @@ setup(
         "bttrack.py", "btmakemetafile.py", "btlaunchmany.py", "btcompletedir.py",
         "btdownloadcurses.py", "btcompletedirgui.py", "btlaunchmanycurses.py", 
         "btmakemetafile.py", "btreannounce.py", "btrename.py", "btshowmetainfo.py",
-        "bttest.py",
         'btmaketorrentgui.py', 'btcopyannounce.py', 'btsethttpseeds.py',
         'bt-t-make.py',
         ]

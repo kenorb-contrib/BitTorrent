@@ -29,19 +29,19 @@ except:
     False = 0
 
 def hours(n):
-    if n == -1:
-        return '<unknown>'
     if n == 0:
         return 'complete!'
-    n = int(n)
-    h, r = divmod(n, 60 * 60)
-    m, sec = divmod(r, 60)
-    if h > 1000000:
+    try:
+        n = int(n)
+        assert n >= 0 and n < 5184000  # 60 days
+    except:
         return '<unknown>'
+    m, s = divmod(n, 60)
+    h, m = divmod(m, 60)
     if h > 0:
-        return '%d hour %02d min %02d sec' % (h, m, sec)
+        return '%d hour %02d min %02d sec' % (h, m, s)
     else:
-        return '%d min %02d sec' % (m, sec)
+        return '%d min %02d sec' % (m, s)
 
 
 Exceptions = []

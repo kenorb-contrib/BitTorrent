@@ -12,6 +12,8 @@ except:
     True = 1
     False = 0
 
+MAX_INCOMPLETE = 8
+
 protocol_name = 'BitTorrent protocol'
 option_pattern = chr(0)*8
 
@@ -41,6 +43,19 @@ def make_readable(s):
     return '"'+s+'"'
    
 
+class IncompleteCounter:
+    def __init__(self):
+        self.c = 0
+    def increment(self):
+        self.c += 1
+    def decrement(self):
+        self.c -= 1
+    def toomany(self):
+        return self.c >= MAX_INCOMPLETE
+    
+incompletecounter = IncompleteCounter()
+
+
 # header, reserved, download id, my id, [length, message]
 
 class Connection:
@@ -55,6 +70,8 @@ class Connection:
         self.keepalive = lambda: None
         self.closed = False
         self.buffer = StringIO()
+        if self.locally_initiated:
+            incompletecounter.increment()
         if self.locally_initiated or ext_handshake:
             self.connection.write(chr(len(protocol_name)) + protocol_name + 
                 option_pattern + self.Encoder.download_id)
@@ -113,6 +130,7 @@ class Connection:
         if self.complete:
             if self.locally_initiated:
                 self.connection.write(self.Encoder.my_id)
+                incompletecounter.decrement()
             c = self.Encoder.connecter.connection_made(self)
             self.keepalive = c.send_keepalive
         else:
@@ -147,6 +165,8 @@ class Connection:
         del self.Encoder.connections[self.connection]
         if self.complete:
             self.connecter.connection_lost(self)
+        elif self.locally_initiated:
+            incompletecounter.decrement()
 
     def send_message_raw(self, message):
         if not self.closed:
@@ -218,8 +238,15 @@ class Encoder:
         self.to_connect = list
 
     def _start_connection_from_queue(self):
-        if len(self.connections) >= self.max_connections:
+        if self.connecter.external_connection_made:
+            max_initiate = self.config['max_initiate']
+        else:
+            max_initiate = int(self.config['max_initiate']*1.5)
+        cons = len(self.connections)
+        if cons >= self.max_connections or cons >= max_initiate:
             delay = 60
+        elif incompletecounter.toomany():
+            delay = 1
         else:
             delay = 0
             dns, id = self.to_connect.pop(0)
@@ -229,12 +256,6 @@ class Encoder:
 
     def start_connection(self, dns, id):
         if len(self.connections) >= self.max_connections:
-            return True
-        if self.connecter.external_connection_made:
-            max_initiate = self.config['max_initiate']
-        else:
-            max_initiate = int(self.config['max_initiate']*1.5)
-        if len(self.connections) >= max_initiate:
             return True
         if id == self.my_id:
             return True
