@@ -149,17 +149,17 @@ class DownloadInfoFrame:
         self.invokeLater(self.onUpdateStatus, [dict])
 
     def onUpdateStatus(self, dict):
-        activity = dict.get('activity', None);
+        if self.last_update_time + 0.01 > time() and dict.get('fractionDone') not in [0.0, 1.0] and dict.get('activity') is None:
+            return
+        activity = dict.get('activity')
+        fractionDone = dict.get('fractionDone')
+        timeEst = dict.get('timeEst')
+        downRate = dict.get('downRate')
+        upRate = dict.get('upRate')
+        downTotal = dict.get('downTotal')
+        upTotal = dict.get('upTotal')
         if activity is not None and not self.fin:
             self.timeEstText.SetLabel(activity)
-        if self.last_update_time + 0.01 > time(): # updating wayyy too fast
-            return
-        fractionDone = dict.get('fractionDone', None);
-        timeEst = dict.get('timeEst', None);
-        downRate = dict.get('downRate', None);
-        upRate = dict.get('upRate', None);
-        downTotal = dict.get('downTotal', None);
-        upTotal = dict.get('upTotal', None);
         if fractionDone is not None and not self.fin:
             self.gauge.SetValue(int(fractionDone * 1000))
             self.frame.SetTitle('%d%% %s - BitTorrent %s' % (int(fractionDone*100), self.filename, version))
