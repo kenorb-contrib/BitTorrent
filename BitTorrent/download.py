@@ -20,6 +20,7 @@ from binascii import b2a_hex
 from os import path
 import socket
 from random import randrange
+from traceback import print_exc
 true = 1
 false = 0
 
@@ -50,8 +51,12 @@ def run(private_key, noncefunc, response, filefunc, displayfunc, doneflag, confi
         return false
     try:
         file_length = response['length']
-        blobs = SingleBlob(file, response['hash'], file_length, response['pieces'], 
-            response['piece length'], None, open, path.exists, path.getsize)
+        try:
+            blobs = SingleBlob(file, response['hash'], file_length, response['pieces'], 
+                response['piece length'], None, open, path.exists, path.getsize)
+        except IOError:
+            print_exc()
+            return
         if len(blobs.get_list_of_files_I_want()) == 0:
             displayfunc('that file has already been completely downloaded', 'Okay')
             return true

@@ -22,9 +22,11 @@ btdownloadprefetched is the file to get executed by Internet Explorer.
 from sys import argv, version
 assert version >= '2', "Install Python 2.0 or greater"
 from btdownloadgui import run
+from btdownloadheadless import configDefinitions
+from BitTorrent.parseargs import parseargs
 
 if __name__ == '__main__':
-    h = open(argv[0])
+    h = open(argv[1])
     prefetched = h.read()
     h.close()
-    run({}, [], prefetched)
+    run(parseargs([], configDefinitions, 0, 0)[0], [], prefetched)
