@@ -77,7 +77,7 @@ class CursesDisplayer:
         fieldwin.addstr(5, 0, self.upRate)
 
         for i in range(len(self.errors)):
-            fieldwin.addstr(6 + i, 0, self.error[i], curses.A_BOLD)
+            fieldwin.addstr(6 + i, 0, self.errors[i], curses.A_BOLD)
         else:
             fieldwin.move(6, 0)
 
