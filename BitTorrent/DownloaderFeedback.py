@@ -2,6 +2,7 @@
 # see LICENSE.txt for license information
 
 from time import time
+from cStringIO import StringIO
 
 class DownloaderFeedback:
     def __init__(self, choker, add_task, ip, statusfunc, 
@@ -36,15 +37,29 @@ class DownloaderFeedback:
         
         downRate = 0
         upRate = 0
+        s = StringIO()
+        s.write('\n\n\n')
         for c in self.choker.connections:
+            s.write(c.get_ip() + ' ')
             u = c.get_upload()
+            if u.is_interested():
+                s.write('i')
+            if u.is_choked():
+                s.write('c')
             if u.lastout < t - self.max_pause:
                 u.update_rate(0)
+            s.write(' ' + str(u.rate) + ' ')
             upRate += u.rate
 
             d = c.get_download()
+            if d.is_interested():
+                s.write('i')
+            if d.is_choked():
+                s.write('c')
             if d.lastin < t - self.max_pause:
                 d.update_rate(0)
+            s.write(' ' + str(d.rate) + '\n')
             downRate += d.rate
+        #print s.getvalue()
         self.statusfunc(timeEst=timeEst, fractionDone=fractionDone, 
             downRate=downRate, upRate=upRate)

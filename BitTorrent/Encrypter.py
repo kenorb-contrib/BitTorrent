@@ -126,8 +126,6 @@ class EncryptedConnection:
         self.hashin.update(s[:4])
         if self.hashin.digest()[:10] != s[4:]:
             return None
-        if l == 0:
-            return 14, self.read_len
         return l + 10, self.read_message
 
     def read_message(self, s):
@@ -137,7 +135,8 @@ class EncryptedConnection:
         if self.hashin.digest()[:10] != s[-10:]:
             return None
         try:
-            self.encrypter.connecter.got_message(self, m)
+            if m != '':
+                self.encrypter.connecter.got_message(self, m)
         except KeyboardInterrupt:
             raise
         except:
