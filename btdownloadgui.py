@@ -176,6 +176,7 @@ class DownloadInfoFrame:
             self.fileNameText.SetLabel('%s (%.1f MB)' % (default, float(size) / (1 << 20)))
             self.timeEstText.SetLabel('Starting up...')
             self.fileDestText.SetLabel(dl.GetPath())
+            self.frame.SetTitle('BitTorrent - ' + default)
             self.shown = true
             self.frame.Show(true)
         f.set()
