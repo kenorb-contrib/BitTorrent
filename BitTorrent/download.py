@@ -79,6 +79,8 @@ defaults = [
         'maximum kB/s to upload at, 0 means no limit'),
     ('alloc_pause', None, 3.0,
         'seconds to wait before displaying allocation feedback'),
+    ('snub_time', None, 60.0,
+        "seconds to wait for data to come in over a connection before assuming it's semi-permanently choked"),
     ]
 
 def download(params, filefunc, statusfunc, finfunc, errorfunc, doneflag, cols):
@@ -194,11 +196,7 @@ def download(params, filefunc, statusfunc, finfunc, errorfunc, doneflag, cols):
         errorfunc("Couldn't listen - " + str(e))
         return
 
-    def preference(c, finflag = finflag):
-        if finflag.isSet():
-            return c.get_upload().measure.get_rate()
-        return c.get_download().measure.get_rate()
-    choker = Choker(config['max_uploads'], rawserver.add_task, preference)
+    choker = Choker(config['max_uploads'], rawserver.add_task)
     upmeasure = Measure(config['max_rate_period'], 
         config['upload_rate_fudge'])
     downmeasure = Measure(config['max_rate_period'])
@@ -212,7 +210,8 @@ def download(params, filefunc, statusfunc, finfunc, errorfunc, doneflag, cols):
     ratemeasure = RateMeasure(storagewrapper.get_amount_left())
     downloader = Downloader(storagewrapper, PiecePicker(len(pieces)),
         config['request_backlog'], config['max_rate_period'],
-        len(pieces), downmeasure, ratemeasure.data_came_in)
+        len(pieces), downmeasure, config['snub_time'], 
+        ratemeasure.data_came_in)
     connecter = Connecter(make_upload, downloader, choker,
         len(pieces), storagewrapper.is_everything_pending, EndgameDownloader,
         upmeasure, config['max_upload_rate'] * 1024, rawserver.add_task)

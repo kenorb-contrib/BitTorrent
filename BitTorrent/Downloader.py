@@ -2,6 +2,7 @@
 # see LICENSE.txt for license information
 
 from CurrentRateMeasure import Measure
+from time import time
 true = 1
 false = 0
 
@@ -14,6 +15,7 @@ class SingleDownload:
         self.active_requests = []
         self.measure = Measure(downloader.max_rate_period)
         self.have = [false] * downloader.numpieces
+        self.last = 0
 
     def disconnected(self):
         self.downloader.downloads.remove(self)
@@ -56,6 +58,7 @@ class SingleDownload:
             self.active_requests.remove((index, begin, len(piece)))
         except ValueError:
             return false
+        self.last = time()
         self.measure.update_rate(len(piece))
         self.downloader.measurefunc(len(piece))
         self.downloader.downmeasure.update_rate(len(piece))
@@ -131,15 +134,22 @@ class SingleDownload:
         self._check_interest([i for i in xrange(len(have)) if have[i]])
         self.download_more()
 
+    def get_rate(self):
+        return self.measure.get_rate()
+
+    def is_snubbed(self):
+        return time() - self.last > self.downloader.snub_time
+
 class Downloader:
     def __init__(self, storage, picker, backlog, max_rate_period, numpieces, 
-            downmeasure, measurefunc = lambda x: None):
+            downmeasure, snub_time, measurefunc = lambda x: None):
         self.storage = storage
         self.picker = picker
         self.backlog = backlog
         self.max_rate_period = max_rate_period
         self.downmeasure = downmeasure
         self.numpieces = numpieces
+        self.snub_time = snub_time
         self.measurefunc = measurefunc
         self.downloads = []
 
@@ -214,7 +224,7 @@ class DummyConnection:
 def test_stops_at_backlog():
     ds = DummyStorage([[(0, 2), (2, 2), (4, 2), (6, 2)]])
     events = []
-    d = Downloader(ds, DummyPicker(len(ds.active), events), 2, 15, 1, Measure(15))
+    d = Downloader(ds, DummyPicker(len(ds.active), events), 2, 15, 1, Measure(15), 10)
     sd = d.make_download(DummyConnection(events))
     assert events == []
     assert ds.remaining == [[(0, 2), (2, 2), (4, 2), (6, 2)]]
@@ -238,7 +248,7 @@ def test_stops_at_backlog():
 def test_got_have_single():
     ds = DummyStorage([[(0, 2)]])
     events = []
-    d = Downloader(ds, DummyPicker(len(ds.active), events), 2, 15, 1, Measure(15))
+    d = Downloader(ds, DummyPicker(len(ds.active), events), 2, 15, 1, Measure(15), 10)
     sd = d.make_download(DummyConnection(events))
     assert events == []
     assert ds.remaining == [[(0, 2)]]
@@ -258,7 +268,7 @@ def test_got_have_single():
 def test_choke_clears_active():
     ds = DummyStorage([[(0, 2)]])
     events = []
-    d = Downloader(ds, DummyPicker(len(ds.active), events), 2, 15, 1, Measure(15))
+    d = Downloader(ds, DummyPicker(len(ds.active), events), 2, 15, 1, Measure(15), 10)
     sd1 = d.make_download(DummyConnection(events))
     sd2 = d.make_download(DummyConnection(events))
     assert events == []

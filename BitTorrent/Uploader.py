@@ -18,8 +18,15 @@ class Upload:
         self.interested = false
         self.buffer = []
         self.measure = Measure(max_rate_period, fudge)
+        self.hit = true
         if storage.do_I_have_anything():
             connection.send_bitfield(storage.get_have_list())
+
+    def set_not_hit(self):
+        self.hit = false
+
+    def get_hit(self):
+        return self.hit
 
     def got_not_interested(self):
         if self.interested:
@@ -62,11 +69,13 @@ class Upload:
             self.choked = true
             del self.buffer[:]
             self.connection.send_choke()
-        
+            self.hit = true
+
     def unchoke(self):
         if self.choked:
             self.choked = false
             self.connection.send_unchoke()
+            self.hit = true
         
     def is_choked(self):
         return self.choked

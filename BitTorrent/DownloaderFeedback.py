@@ -3,7 +3,6 @@
 
 from time import time
 from cStringIO import StringIO
-import sys
 
 class DownloaderFeedback:
     def __init__(self, choker, add_task, statusfunc, upfunc, downfunc,
@@ -49,12 +48,16 @@ class DownloaderFeedback:
                 s.write('c')
             else:
                 s.write(' ')
+            if d.is_snubbed():
+                s.write('s')
+            else:
+                s.write(' ')
             s.write('\n')
-        sys.stdout.write('\n\n\n' + s.getvalue())
+        print '\n\n\n' + s.getvalue()
 
     def display(self):
         self.add_task(self.display, self.interval)
-        self.spew()
+        #self.spew()
         if self.finflag.isSet():
             self.statusfunc(upRate = self.upfunc())
             return
