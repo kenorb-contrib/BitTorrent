@@ -97,7 +97,7 @@ class Storage:
         for file, pos, end in self._intervals(pos, amount):
             h = self.handles[file]
             h.seek(pos)
-            r.write(h.read(end - pos))
+            r.write(wrap_read(h, end - pos))
         return r.getvalue()
 
     def write(self, pos, s):
@@ -110,7 +110,7 @@ class Storage:
                 self.whandles[file] = 1
             h = self.handles[file]
             h.seek(begin)
-            h.write(s[total: total + end - begin])
+            wrap_write(h, s[total: total + end - begin])
             total += end - begin
 
     def close(self):
@@ -123,6 +123,16 @@ def lrange(a, b, c):
         r.append(a)
         a += c
     return r
+
+def wrap_read(h, amount):
+    r = h.read(amount)
+    while len(r) < amount:
+        r += h.read(amount - len(r))
+
+def wrap_write(h, amount):
+    t = h.write(data)
+    while t < len(data):
+        t += h.write(data[t:])
 
 # everything below is for testing
 

@@ -178,7 +178,7 @@ class DownloadInfoFrame:
 
     def onFinishEvent(self):
         self.timeEstText.SetLabel('Download Succeeded!')
-        self.cancelButton.SetLabel('Finish')
+        self.cancelButton.SetLabel('Close')
         self.gauge.SetValue(1000)
         self.frame.SetTitle('%s - Upload - BitTorrent %s' % (self.filename, version))
         self.downRateText.SetLabel('')
