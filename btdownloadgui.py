@@ -42,7 +42,7 @@ class InvokeEvent(wxPyEvent):
 
 class DownloadInfoFrame:
     def __init__(self, flag):
-        frame = wxFrame(None, -1, 'BitTorrent download', size = wxSize(350, 200))
+        frame = wxFrame(None, -1, 'BitTorrent download', size = wxSize(400, 250))
         self.frame = frame
         self.flag = flag
         self.fin = false
@@ -51,8 +51,6 @@ class DownloadInfoFrame:
 
         panel = wxPanel(frame, -1)
         colSizer = wxFlexGridSizer(cols = 1, vgap = 3)
-
-        colSizer.Add(wxStaticText(panel, -1, 'Saving:'), 0, wxEXPAND)
 
         self.fileNameText = wxStaticText(panel, -1, '', style = wxALIGN_LEFT)
         colSizer.Add(self.fileNameText, 0, wxEXPAND)
@@ -85,7 +83,7 @@ class DownloadInfoFrame:
         self.cancelButton = wxButton(panel, -1, 'Cancel')
         colSizer.Add(self.cancelButton, 0, wxALIGN_CENTER)
         colSizer.AddGrowableCol(0)
-        colSizer.AddGrowableRow(4)
+        colSizer.AddGrowableRow(3)
 
         border = wxBoxSizer(wxHORIZONTAL)
         border.Add(colSizer, 1, wxEXPAND | wxALL, 4)
@@ -112,6 +110,11 @@ class DownloadInfoFrame:
     def onUpdateStatus(self, fractionDone, timeEst, downRate, upRate, activity):
         if fractionDone is not None:
             self.gauge.SetValue(int(fractionDone * 1000))
+            newpercent = int(fractionDone*100)
+            if newpercent == 100:
+                self.frame.SetTitle('%s - Upload - BitTorrent' % (self.filename))
+            else:
+                self.frame.SetTitle('%d%% %s - BitTorrent' % (newpercent, self.filename))
         if timeEst is not None:
             self.timeEstText.SetLabel(hours(timeEst))
         if activity is not None and not self.fin:
@@ -176,7 +179,8 @@ class DownloadInfoFrame:
             self.fileNameText.SetLabel('%s (%.1f MB)' % (default, float(size) / (1 << 20)))
             self.timeEstText.SetLabel('Starting up...')
             self.fileDestText.SetLabel(dl.GetPath())
-            self.frame.SetTitle('BitTorrent - ' + default)
+            self.filename = default
+            self.frame.SetTitle(default + '- BitTorrent')
             self.shown = true
             self.frame.Show(true)
         f.set()

@@ -57,7 +57,7 @@ defaults = [
         'time to wait between checking if any connections have timed out'),
     ('max_slice_length', None, 2 ** 17,
         "maximum length slice to send to peers, larger requests are ignored"),
-    ('max_rate_period', None, 40.0,
+    ('max_rate_period', None, 20.0,
         "maximum amount of time to guess the current rate estimate represents"),
     ('bind', None, '', 
         'ip to bind to locally'),
