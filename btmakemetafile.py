@@ -32,19 +32,23 @@ def make_meta_file(file, url, piece_length = 2 ** 20,
         failure(str(e))
         return
 
+def calcsize(file):
+    if not isdir(file):
+        return getsize(file)
+    total = 0
+    for s in subfiles(abspath(file)):
+        total += getsize(s[1])
+    return total
+
 def makeinfo(file, piece_length, progress = dummy):
     file = abspath(file)
     if isdir(file):
         subs = subfiles(file)
-        total = 0
-        for sub in subs:
-            total += getsize(sub[1])
         subs.sort()
         pieces = []
         sh = sha()
         done = 0
         fs = []
-        subtotal = 0
         for p, f in subs:
             pos = 0
             size = getsize(f)
@@ -55,12 +59,11 @@ def makeinfo(file, piece_length, progress = dummy):
                 sh.update(h.read(a))
                 done += a
                 pos += a
-                subtotal += a
                 if done == piece_length:
                     pieces.append(sh.digest())
                     done = 0
                     sh = sha()
-                progress(float(subtotal) / total)
+                progress(a)
             h.close()
         if done > 0:
             pieces.append(sh.digest())
@@ -73,9 +76,10 @@ def makeinfo(file, piece_length, progress = dummy):
         p = 0
         h = open(file, 'rb')
         while p < size:
-            h.seek(p)
-            pieces.append(sha(h.read(piece_length)).digest())
+            x = h.read(min(piece_length, size - p))
+            pieces.append(sha(x).digest())
             p += piece_length
+            progress(len(x))
         h.close()
         return {'pieces': ''.join(pieces), 
             'piece length': piece_length, 'length': size, 
