@@ -113,7 +113,7 @@ def subfiles(d):
         p, n = stack.pop()
         if isdir(n):
             for s in listdir(n):
-                if s not in ignore and s[0] != '.':
+                if s not in ignore and s[:1] != '.':
                     stack.append((copy(p) + [s], join(n, s)))
         else:
             r.append((p, n))
