@@ -40,7 +40,7 @@ class PiecePicker:
         except ValueError:
             pass
 
-    def next(self, havefunc):
+    def next(self, havefunc, havelist = None):
         if self.got_any:
             best = None
             bestnum = 2 ** 30
@@ -48,31 +48,56 @@ class PiecePicker:
                 if havefunc(i) and self.numinterests[i] < bestnum:
                     best = i
                     bestnum = self.numinterests[i]
-            for i in self.interests[1:bestnum]:
-                r = []
-                for j in i:
-                    if havefunc(j):
-                        r.append(j)
-                if r:
-                    return r[randrange(len(r))]
+            if havelist is None:
+                for i in self.interests[1:bestnum]:
+                    for j in scramble(i):
+                        if havefunc(j):
+                            return j
+            else:
+                for i in scramble(havelist):
+                    if havefunc(i) and self.numinterests[i] < bestnum:
+                        best = i
+                        bestnum = self.numinterests[i]
             return best
         else:
             for i in self.started:
                 if havefunc(i):
                     return i
-            x = []
-            for i in self.interests[1:]:
-                x.extend(i)
-            r = []
-            for j in x:
-                if havefunc(j):
-                    r.append(j)
-            if r:
-                return r[randrange(len(r))]
+            if havelist is None:
+                for i in scramble(xrange(self.numpieces)):
+                    if havefunc(i):
+                        return i
+            else:
+                for i in scramble(havelist):
+                    if havefunc(i):
+                        return i
             return None
 
+class scramble:
+    def __init__(self, mylist):
+        self.mylist = mylist
+        if mylist:
+            self.s = randrange(len(mylist))
+        else:
+            self.s = 0
+        self.d = len(mylist)
+        if len(mylist) > 1:
+            while gcd(self.d, len(mylist)) > 1:
+                self.d = randrange(1, len(mylist))
+
+    def __getitem__(self, n):
+        if n >= len(self.mylist):
+            raise IndexError
+        return self.mylist[(self.s + self.d * n) % len(self.mylist)]
+
+def gcd(a,b):
+    while b:
+        a, b = b, a%b
+    return a
+
 def test_requested():
-    p = PiecePicker(8)
+    p = PiecePicker(9)
+    p.complete(8)
     p.got_have(0)
     p.got_have(2)
     p.got_have(4)
@@ -87,7 +112,8 @@ def test_requested():
     assert v[4:] == [2, 4] or v[4:] == [4, 2]
 
 def test_change_interest():
-    p = PiecePicker(8)
+    p = PiecePicker(9)
+    p.complete(8)
     p.got_have(0)
     p.got_have(2)
     p.got_have(4)
@@ -139,12 +165,23 @@ def test_rarer_in_started_takes_priority():
 def test_zero():
     assert _pull(PiecePicker(0)) == []
 
-def _pull(pp):
+def test_have_list():
+    p = PiecePicker(5)
+    p.requested(3)
+    x = _pull(p, [1, 2])
+    assert x[0] == 3
+    assert x[1:] == [1, 2] or x[1:] == [2, 1]
+    p.complete(4)
+    x = _pull(p, [1, 2])
+    assert x[0] == 3
+    assert x[1:] == [1, 2] or x[1:] == [2, 1]
+
+def _pull(pp, have_list = None):
     r = []
     def want(p, r = r):
         return p not in r
     while true:
-        n = pp.next(want)
+        n = pp.next(want, have_list)
         if n is None:
             break
         r.append(n)

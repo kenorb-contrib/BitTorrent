@@ -3,6 +3,7 @@
 
 from CurrentRateMeasure import Measure
 from time import time
+from math import sqrt
 true = 1
 false = 0
 
@@ -16,6 +17,13 @@ class SingleDownload:
         self.measure = Measure(downloader.max_rate_period)
         self.have = [false] * downloader.numpieces
         self.last = 0
+        self.have_list = []
+
+    def _add(self, i):
+        if self.have_list is not None:
+            self.have_list.append(i)
+            if len(self.have_list) > self.downloader.maxlistlen:
+                self.have_list = None
 
     def disconnected(self):
         self.downloader.downloads.remove(self)
@@ -70,7 +78,7 @@ class SingleDownload:
     def fix_download(self):
         if len(self.active_requests) == self.downloader.backlog:
             return
-        piece = self.downloader.picker.next(self._want)
+        piece = self.downloader.picker.next(self._want, self.have_list)
         if piece is None:
             if self.interested and len(self.active_requests) == 0:
                 self.interested = false
@@ -93,7 +101,7 @@ class SingleDownload:
                         break
                 if len(self.active_requests) == self.downloader.backlog:
                     break
-                piece = self.downloader.picker.next(self._want)
+                piece = self.downloader.picker.next(self._want, self.have_list)
             if hit:
                 for d in self.downloader.downloads:
                     d.fix_download()
@@ -102,6 +110,7 @@ class SingleDownload:
         if self.have[index]:
             return
         self.have[index] = true
+        self._add(index)
         self.downloader.picker.got_have(index)
         self.fix_download()
 
@@ -109,6 +118,7 @@ class SingleDownload:
         self.have = have
         for i in xrange(len(have)):
             if have[i]:
+                self._add(i)
                 self.downloader.picker.got_have(i)
         self.fix_download()
 
@@ -130,6 +140,7 @@ class Downloader:
         self.snub_time = snub_time
         self.measurefunc = measurefunc
         self.downloads = []
+        self.maxlistlen = long(sqrt(numpieces))
 
     def make_download(self, connection):
         self.downloads.append(SingleDownload(self, connection))
@@ -140,7 +151,7 @@ class DummyPicker:
         self.stuff = range(num)
         self.r = r
 
-    def next(self, wantfunc):
+    def next(self, wantfunc, have_list):
         for i in self.stuff:
             if wantfunc(i):
                 return i
