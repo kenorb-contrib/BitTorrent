@@ -2,7 +2,6 @@
 # see LICENSE.txt for license information
 
 from sha import sha
-from cStringIO import StringIO
 from time import time
 from bisect import bisect_right
 true = 1
@@ -73,12 +72,14 @@ class Storage:
         return r
 
     def read(self, pos, amount):
-        r = StringIO()
+        r = []
         for file, pos, end in self._intervals(pos, amount):
             h = self.handles[file]
             h.seek(pos)
-            r.write(h.read(end - pos))
-        return r.getvalue()
+            r.append(h.read(end - pos))
+        if len(r) == 1:
+            return r[0]
+        return ''.join(r)
 
     def write(self, pos, s):
         # might raise an IOError
