@@ -23,20 +23,22 @@ def fmttime(n):
         return 'n/a'
     return 'finishing in %d:%02d:%02d' % (h, m, s)
 
-def fmtsize(n):
-    s = str(n)
-    size = s[-3:]
-    while len(s) > 3:
-        s = s[:-3]
-        size = '%s,%s' % (s[-3:], size)
-    if n > 999:
-        unit = ['B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB']
-        i = 1
-        while i + 1 < len(unit) and (n >> 10) >= 999:
-            i += 1
-            n >>= 10
+def fmtsize(n, baseunit = 0, padded = 1):
+    unit = [' B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB']
+    i = baseunit
+    while i + 1 < len(unit) and n >= 999:
+        i += 1
         n = float(n) / (1 << 10)
-        size = '%s (%.0f %s)' % (size, n, unit[i])
+    if padded:
+        if i != 0:
+            size = '% 5.1f %s' % (n, unit[i])
+        else: 
+            size = '% 5.0f %s' % (n, unit[i])
+    else: 
+        if i != 0:
+            size = '%.1f %s' % (n, unit[i])
+        else: 
+            size = '%.0f %s' % (n, unit[i])
     return size
 
 def winch_handler(signum, stackframe):
@@ -57,6 +59,8 @@ def winch_handler(signum, stackframe):
     fieldpan = curses.panel.new_panel(fieldwin)
     prepare_display()
 
+# This flag stops the torrent when set.
+mainkillflag = Event()
 
 class CursesDisplayer:
     def __init__(self, mainerrlist):
@@ -67,21 +71,23 @@ class CursesDisplayer:
         self.status = ''
         self.progress = ''
         self.downloadTo = ''
-        self.downRate = '---'
-        self.upRate = '---'
+        self.downRate = '%s/s down' % (fmtsize(0))
+        self.upRate = '%s/s up  ' % (fmtsize(0))
+        self.upTotal = '%s   up  ' % (fmtsize(0, 2))
+        self.downTotal = '%s   down' % (fmtsize(0, 2))
         self.errors = []
         self.globalerrlist = mainerrlist
 
     def finished(self):
         self.done = 1
         self.activity = 'download succeeded!'
-        self.downRate = '---'
+        self.downRate = '%s/s down' % (fmtsize(0))
         self.display({'fractionDone': 1})
 
     def failed(self):
         self.done = 1
         self.activity = 'download failed!'
-        self.downRate = '---'
+        self.downRate = '%s/s down' % (fmtsize(0))
         self.display()
 
     def error(self, errormsg):
@@ -93,10 +99,13 @@ class CursesDisplayer:
         self.display()
 
     def display(self, dict = {}):
+        global mainkillflag
         fractionDone = dict.get('fractionDone', None)
         timeEst = dict.get('timeEst', None)
         downRate = dict.get('downRate', None)
         upRate = dict.get('upRate', None)
+        downTotal = dict.get('downTotal', None) # total download megs, float
+        upTotal = dict.get('upTotal', None) # total upload megs, float
         activity = dict.get('activity', None)
         if activity is not None and not self.done:
             self.activity = activity
@@ -109,13 +118,19 @@ class CursesDisplayer:
         else:
             self.status = self.activity
         if downRate is not None:
-            self.downRate = '%.1f KB/s' % (float(downRate) / (1 << 10))
+            self.downRate = '%s/s down' % (fmtsize(float(downRate)))
         if upRate is not None:
-            self.upRate = '%.1f KB/s' % (float(upRate) / (1 << 10))
+            self.upRate = '%s/s up  ' % (fmtsize(float(upRate)))
+        if upTotal is not None:
+            self.upTotal = '%s   up  ' % (fmtsize(upTotal, 2))
+        if downTotal is not None:
+            self.downTotal = '%s   down' % (fmtsize(downTotal, 2))
         inchar = fieldwin.getch()
         if inchar == 12: #^L
             winch_handler(SIGWINCH, 0)
-
+        elif inchar == ord('q'):  # quit 
+            mainkillflag.set() 
+            self.status = 'shutting down...'
         try:
             fieldwin.erase()
             fieldwin.addnstr(0, 0, self.file, fieldw, curses.A_BOLD)
@@ -124,8 +139,8 @@ class CursesDisplayer:
             if self.progress:
                 fieldwin.addnstr(3, 0, self.progress, fieldw, curses.A_BOLD)
             fieldwin.addnstr(4, 0, self.status, fieldw)
-            fieldwin.addnstr(5, 0, self.downRate, fieldw)
-            fieldwin.addnstr(6, 0, self.upRate, fieldw)
+            fieldwin.addnstr(5, 0, self.downRate + ' / ' + self.upRate, fieldw / 2)
+            fieldwin.addnstr(6, 0, self.downTotal + ' / ' + self.upTotal, fieldw / 2)
 
             if self.errors:
                 errsize = len(self.errors)
@@ -143,7 +158,7 @@ class CursesDisplayer:
 
     def chooseFile(self, default, size, saveas, dir):
         self.file = default
-        self.fileSize = fmtsize(size)
+        self.fileSize = '%d (%s)' % (size, fmtsize(size, padded = 0))
         if saveas == '':
             saveas = default
         self.downloadTo = abspath(saveas)
@@ -152,7 +167,7 @@ class CursesDisplayer:
 def run(mainerrlist, params):
     d = CursesDisplayer(mainerrlist)
     try:
-        download(params, d.chooseFile, d.display, d.finished, d.error, Event(), fieldw)
+        download(params, d.chooseFile, d.display, d.finished, d.error, mainkillflag, fieldw)
     except KeyboardInterrupt:
         # ^C to exit.. 
         pass 
@@ -167,8 +182,8 @@ def prepare_display():
         labelwin.addstr(2, 0, 'dest:')
         labelwin.addstr(3, 0, 'progress:')
         labelwin.addstr(4, 0, 'status:')
-        labelwin.addstr(5, 0, 'dl speed:')
-        labelwin.addstr(6, 0, 'ul speed:')
+        labelwin.addstr(5, 0, 'speed:')
+        labelwin.addstr(6, 0, 'totals:')
         labelwin.addstr(7, 0, 'error(s):')
     except curses.error: 
         pass
