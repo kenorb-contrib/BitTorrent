@@ -278,12 +278,21 @@ class Tracker:
             return (200, 'OK', {'Content-Type': 'text/html; charset=iso-8859-1'}, s.getvalue())
         elif path == 'scrape':
             fs = {}
-            for name, l in self.downloads.items():
+            names = []
+            if params.has_key('info_hash'):
+                if self.downloads.has_key(params['info_hash']):
+                    names = [ params['info_hash'] ]
+                # else return nothing
+            else:
+                names = self.downloads.keys()
+                names.sort()
+            for name in names:
+                l = self.downloads[name]
                 n = self.completed.get(name, 0)
                 c = len([1 for i in l.values() if type(i) == DictType and i['left'] == 0])
                 d = len(l) - c
                 fs[name] = {'complete': c, 'incomplete': d, 'downloaded': n}
-                if self.allowed is not None and self.allowed.has_key(name):
+                if (self.allowed is not None) and self.allowed.has_key(name):
                     fs[name]['name'] = self.allowed[name]['name']
             r = {'files': fs}
             return (200, 'OK', {'Content-Type': 'text/plain'}, bencode(r))
