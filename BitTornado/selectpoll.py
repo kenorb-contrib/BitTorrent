@@ -14,10 +14,12 @@ class poll:
     def __init__(self):
         self.rlist = []
         self.wlist = []
+        self.elist = []
         
     def register(self, f, t):
         if type(f) != IntType:
             f = f.fileno()
+        insert(self.elist, f)
         if (t & POLLIN):
             insert(self.rlist, f)
         else:
@@ -26,23 +28,26 @@ class poll:
             insert(self.wlist, f)
         else:
             remove(self.wlist, f)
-        
+
     def unregister(self, f):
         if type(f) != IntType:
             f = f.fileno()
         remove(self.rlist, f)
         remove(self.wlist, f)
+        remove(self.elist, f)
 
     def poll(self, timeout = None):
         if self.rlist or self.wlist:
             try:
-                r, w, e = select(self.rlist, self.wlist, [], timeout)
+                r, w, e = select(self.rlist, self.wlist, self.elist, timeout)
             except ValueError:
                 return None
         else:
             sleep(timeout)
             return []
         result = []
+        for s in e:
+            result.append((s, POLLERR))
         for s in r:
             result.append((s, POLLIN))
         for s in w:

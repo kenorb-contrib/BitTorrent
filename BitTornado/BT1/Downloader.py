@@ -86,6 +86,8 @@ class SingleDownload:
         self.guard.download = None
 
     def _letgo(self):
+        if self.downloader.queued_out.has_key(self):
+            del self.downloader.queued_out[self]
         if not self.active_requests:
             return
         if self.downloader.endgamemode:
@@ -110,8 +112,6 @@ class SingleDownload:
 
     def got_choke(self):
         if not self.choked:
-            if self.downloader.queued_out.has_key(self):
-                del self.downloader.queued_out[self]
             self.choked = True
             self._letgo()
 
@@ -177,12 +177,12 @@ class SingleDownload:
 
     def _request_more(self, new_unchoke = False):
         assert not self.choked
+        if self.downloader.endgamemode:
+            self.fix_download_endgame(new_unchoke)
+            return
         if len(self.active_requests) >= self._backlog(new_unchoke):
             if not (self.active_requests or self.backlog):
                 self.downloader.queued_out[self] = 1
-            return
-        if self.downloader.endgamemode:
-            self.fix_download_endgame(new_unchoke)
             return
         lost_interests = []
         while len(self.active_requests) < self.backlog:
@@ -346,6 +346,7 @@ class Downloader:
         self.bytes_requested = 0
         self.last_time = clock()
         self.queued_out = {}
+        self.requeueing = False
 
     def set_download_rate(self, rate):
         self.download_rate = rate * 1000
@@ -357,14 +358,16 @@ class Downloader:
         t = clock()
         self.bytes_requested -= (t - self.last_time) * self.download_rate
         self.last_time = t
-        if -self.bytes_requested > 5*self.download_rate:
-            self.bytes_requested = -5*self.download_rate
-        if self.queued_out and self.bytes_requested < 0:
+        if not self.requeueing and self.queued_out and self.bytes_requested < 0:
+            self.requeueing = True
             q = self.queued_out.keys()
             shuffle(q)
             self.queued_out = {}
             for d in q:
                 d._request_more()
+            self.requeueing = False
+        if -self.bytes_requested > 5*self.download_rate:
+            self.bytes_requested = -5*self.download_rate
         return max(int(-self.bytes_requested/self.chunksize),0)
 
     def chunk_requested(self, size):
@@ -387,12 +390,14 @@ class Downloader:
 
     def piece_flunked(self, index):
         if self.endgamemode:
-            assert self.downloads
-            while self.storage.do_I_have_requests(index):
-                nb, nl = self.storage.new_request(index)
-                self.all_requests.append((index, nb, nl))
-            for d in self.downloads:
-                d.fix_download_endgame()
+            if self.downloads:
+                while self.storage.do_I_have_requests(index):
+                    nb, nl = self.storage.new_request(index)
+                    self.all_requests.append((index, nb, nl))
+                for d in self.downloads:
+                    d.fix_download_endgame()
+                return
+            self._reset_endgame()
             return
         ds = [d for d in self.downloads if not d.choked]
         shuffle(ds)
@@ -413,10 +418,13 @@ class Downloader:
             self.perip[ip].lastdownload = None
         self.downloads.remove(download)
         if self.endgamemode and not self.downloads: # all peers gone
-            self.storage.reset_endgame(self.all_requests)
-            self.endgamemode = False
-            self.all_requests = []
-            self.endgame_queued_pieces = []
+            self._reset_endgame()
+
+    def _reset_endgame(self):            
+        self.storage.reset_endgame(self.all_requests)
+        self.endgamemode = False
+        self.all_requests = []
+        self.endgame_queued_pieces = []
 
 
     def add_disconnected_seed(self, id):
@@ -541,6 +549,8 @@ class Downloader:
         for d in self.downloads:
             if d.active_requests:
                 assert d.interested and not d.choked
-            self.all_requests.extend(d.active_requests)
+            for request in d.active_requests:
+                assert not request in self.all_requests
+                self.all_requests.append(request)
         for d in self.downloads:
             d.fix_download_endgame()

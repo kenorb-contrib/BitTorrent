@@ -307,9 +307,13 @@ class configReader:
             self.win32_taskbar_icon_checkbox.SetFont(self.default_font)
             self.win32_taskbar_icon_checkbox.SetValue(self.config['win32_taskbar_icon'])
             
-            self.upnp_checkbox = wxCheckBox(panel, -1, "Enable automatic UPnP port forwarding")
-            self.upnp_checkbox.SetFont(self.default_font)
-            self.upnp_checkbox.SetValue(self.config['upnp_nat_access'])
+#            self.upnp_checkbox = wxCheckBox(panel, -1, "Enable automatic UPnP port forwarding")
+#            self.upnp_checkbox.SetFont(self.default_font)
+#            self.upnp_checkbox.SetValue(self.config['upnp_nat_access'])
+            self.upnp_data=wxChoice(panel, -1,
+                        choices = ['disabled', 'type 1 (fast)', 'type 2 (slow)'])
+            self.upnp_data.SetFont(self.default_font)
+            self.upnp_data.SetSelection(self.config['upnp_nat_access'])
 
         self.gui_default_savedir_ctrl = wxTextCtrl(parent = panel, id = -1, 
                             value = self.config['gui_default_savedir'],        
@@ -340,7 +344,7 @@ class configReader:
         block1sizer = wxFlexGridSizer(cols = 1, vgap = 2)
         if (sys.platform == 'win32'):
             block1sizer.Add(self.win32_taskbar_icon_checkbox)
-            block1sizer.Add(self.upnp_checkbox)
+#            block1sizer.Add(self.upnp_checkbox)
         block1sizer.Add(self.gui_stretchwindow_checkbox)
         block1sizer.Add(self.gui_displaystats_checkbox)
         block1sizer.Add(self.gui_displaymiscstats_checkbox)
@@ -389,6 +393,12 @@ class configReader:
         ratesettingsSizer.Add(StaticText('Default Rate Setting: *'), 1, wxALIGN_CENTER)
         ratesettingsSizer.Add(self.gui_ratesettingsdefault_data, 1, wxALIGN_CENTER)
         block3sizer.Add(ratesettingsSizer, 1, wxALIGN_CENTER)
+        if (sys.platform == 'win32'):
+            block3sizer.Add(StaticText(' '))
+            upnpSizer = wxFlexGridSizer(cols = 1, vgap = 2)
+            upnpSizer.Add(StaticText('UPnP Port Forwarding: *'), 1, wxALIGN_CENTER)
+            upnpSizer.Add(self.upnp_data, 1, wxALIGN_CENTER)
+            block3sizer.Add(upnpSizer, 1, wxALIGN_CENTER)
         
         rowsizer.Add(block3sizer)
         colsizer.Add(rowsizer)
@@ -481,7 +491,8 @@ class configReader:
 
             if (sys.platform == 'win32'):
                 self.win32_taskbar_icon_checkbox.SetValue(self.defaults['win32_taskbar_icon'])
-                self.upnp_checkbox.SetValue(self.defaults['upnp_nat_access'])
+#                self.upnp_checkbox.SetValue(self.defaults['upnp_nat_access'])
+                self.upnp_data.SetSelection(self.defaults['upnp_nat_access'])
 
             # reset advanced too
             self.advancedConfig = {}
@@ -529,7 +540,8 @@ class configReader:
             
             if (sys.platform == 'win32'):
                 self.config['win32_taskbar_icon']=int(self.win32_taskbar_icon_checkbox.GetValue())
-                self.config['upnp_nat_access']=int(self.upnp_checkbox.GetValue())
+#                self.config['upnp_nat_access']=int(self.upnp_checkbox.GetValue())
+                self.config['upnp_nat_access']=self.upnp_data.GetSelection()
 
             if self.advancedConfig:
                 for key,val in self.advancedConfig.items():

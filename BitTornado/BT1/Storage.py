@@ -10,10 +10,7 @@ try:
     from os import fsync
 except ImportError:
     fsync = lambda x: None
-try:
-    from bisect import bisect_right
-except:
-    bisect_right = None
+from bisect import bisect
     
 try:
     True
@@ -29,7 +26,8 @@ def dummy_status(fractionDone = None, activity = None):
     pass
 
 class Storage:
-    def __init__(self, files, piece_length, doneflag, config):
+    def __init__(self, files, piece_length, doneflag, config,
+                 disabled_files = None):
         # can raise IOError and ValueError
         self.files = files
         self.piece_length = piece_length
@@ -53,7 +51,11 @@ class Storage:
         self.lock_while_reading = config.get('lock_while_reading', False)
         self.lock = Lock()
 
-        for file, length in files:
+        if not disabled_files:
+            disabled_files = [False] * len(files)
+
+        for i in xrange(len(files)):
+            file, length = files[i]
             if doneflag.isSet():    # bail out if doneflag is set
                 return
             self.disabled_ranges.append(None)
@@ -66,23 +68,25 @@ class Storage:
                 self.working_ranges.append([range])
                 numfiles += 1
                 total += length
-                if exists(file):
-                    l = getsize(file)
-                    if l > length:
-                        h = open(file, 'rb+')
-                        h.truncate(length)
+                if disabled_files[i]:
+                    l = 0
+                else:
+                    if exists(file):
+                        l = getsize(file)
+                        if l > length:
+                            h = open(file, 'rb+')
+                            h.truncate(length)
+                            h.flush()
+                            h.close()
+                            l = length
+                    else:
+                        l = 0
+                        h = open(file, 'wb+')
                         h.flush()
                         h.close()
-                        l = length
-                else:
-                    l = 0
-                    h = open(file, 'wb+')
-                    h.flush()
-                    h.close()
-                    
+                    self.mtimes[file] = getmtime(file)
                 self.tops[file] = l
                 self.sizes[file] = length
-                self.mtimes[file] = getmtime(file)
                 so_far += l
 
         self.total_length = total
@@ -133,34 +137,47 @@ class Storage:
         return True
 
 
+    def _sync(self, file):
+        self._close(file)
+        if self.handlebuffer:
+            self.handlebuffer.remove(file)
+
     def sync(self):
         # may raise IOError or OSError
         for file in self.whandles.keys():
-            self._close(file)
-            if self.handlebuffer:
-                self.handlebuffer.remove(file)
+            self._sync(file)
         self.whandles = {}
 
-    set_readonly = sync
+
+    def set_readonly(self, f=None):
+        if f is None:
+            self.sync()
+            return
+        file = self.files[f]
+        if self.whandles.has_key(file):
+            self._sync(file)
+            del self.whandles[file]
+            
 
     def get_total_length(self):
         return self.total_length
 
 
     def _open(self, file, mode):
-        try:
-          if self.handlebuffer is not None:
-            assert getsize(file) == self.tops[file]
-            newmtime = getmtime(file)
-            oldmtime = self.mtimes[file]
-            assert newmtime <= oldmtime+1
-            assert newmtime >= oldmtime-1
-        except:
-            if DEBUG:
-                print ( file+' modified: '
-                        +strftime('(%y/%m/%d %H:%M:%S)',localtime(self.mtimes[file]))
-                        +strftime(' != (%y/%m/%d %H:%M:%S) ?',localtime(getmtime(file))) )
-            raise IOError('modified during download')
+        if self.mtimes.has_key(file):
+            try:
+              if self.handlebuffer is not None:
+                assert getsize(file) == self.tops[file]
+                newmtime = getmtime(file)
+                oldmtime = self.mtimes[file]
+                assert newmtime <= oldmtime+1
+                assert newmtime >= oldmtime-1
+            except:
+                if DEBUG:
+                    print ( file+' modified: '
+                            +strftime('(%x %X)',localtime(self.mtimes[file]))
+                            +strftime(' != (%x %X) ?',localtime(getmtime(file))) )
+                raise IOError('modified during download')
         return open(file, mode)
 
 
@@ -233,40 +250,22 @@ class Storage:
         self.ranges = []
         for l in self.working_ranges:
             self.ranges.extend(l)
-        if bisect_right:
             self.begins = [i[0] for i in self.ranges]
 
-    if bisect_right:
-        def _intervals(self, pos, amount):
-            r = []
-            stop = pos + amount
-            p = bisect_right(self.begins, pos) - 1
-            while p < len(self.ranges):
-                begin, end, offset, file = self.ranges[p]
-                if begin >= stop:
-                    break
-                r.append(( file,
-                           offset + max(pos, begin) - begin,
-                           offset + min(end, stop) - begin   ))
-                p += 1
-            return r
+    def _intervals(self, pos, amount):
+        r = []
+        stop = pos + amount
+        p = bisect(self.begins, pos) - 1
+        while p < len(self.ranges):
+            begin, end, offset, file = self.ranges[p]
+            if begin >= stop:
+                break
+            r.append(( file,
+                       offset + max(pos, begin) - begin,
+                       offset + min(end, stop) - begin   ))
+            p += 1
+        return r
 
-    else:        
-        def _intervals(self, pos, amount):
-            r = []
-            stop = pos + amount
-            p = 0
-            while p < len(self.ranges):
-                begin, end, offset, file = self.ranges[p]
-                if begin < pos:
-                    continue
-                if begin >= stop:
-                    break
-                r.append(( file,
-                           offset + max(pos, begin) - begin,
-                           offset + min(end, stop) - begin   ))
-                p += 1
-            return r
 
     def read(self, pos, amount, flush_first = False):
         r = []
@@ -413,6 +412,15 @@ class Storage:
         r = self.file_ranges[f]
         if not r:
             return
+        file = r[3]
+        if not exists(file):
+            h = open(file, 'wb+')
+            h.flush()
+            h.close()
+        if not self.tops.has_key(file):
+            self.tops[file] = getsize(file)
+        if not self.mtimes.has_key(file):
+            self.mtimes[file] = getmtime(file)
         self.working_ranges[f] = [r]
         self._reset_ranges()
 

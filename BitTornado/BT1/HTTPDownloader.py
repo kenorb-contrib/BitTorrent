@@ -162,7 +162,6 @@ class SingleDownload:
             return False
         self.measure.update_rate(len(self.received_data))
         self.downloader.measurefunc(len(self.received_data))
-        self.downloader.downmeasure.update_rate(len(self.received_data))
         if self.cancelled:
             return False
         if not self._fulfill_requests():
@@ -223,8 +222,7 @@ class SingleDownload:
 class HTTPDownloader:
     def __init__(self, storage, picker, rawserver,
                  finflag, errorfunc, peerdownloader,
-                 max_rate_period, infohash, downmeasure, gotpiecefunc,
-                 measurefunc = lambda x: None):
+                 max_rate_period, infohash, measurefunc, gotpiecefunc):
         self.storage = storage
         self.picker = picker
         self.rawserver = rawserver
@@ -233,7 +231,6 @@ class HTTPDownloader:
         self.peerdownloader = peerdownloader
         self.infohash = infohash
         self.max_rate_period = max_rate_period
-        self.downmeasure = downmeasure
         self.gotpiecefunc = gotpiecefunc
         self.measurefunc = measurefunc
         self.downloads = []

@@ -6,12 +6,19 @@ try:
     from types import BooleanType
 except ImportError:
     BooleanType = None
+try:
+    from types import UnicodeType
+except ImportError:
+    UnicodeType = None
 from cStringIO import StringIO
 
 def decode_int(x, f):
     f += 1
     newf = x.index('e', f)
-    n = long(x[f:newf])
+    try:
+        n = int(x[f:newf])
+    except:
+        n = long(x[f:newf])
     if x[f] == '-':
         if x[f + 1] == '0':
             raise ValueError
@@ -29,6 +36,10 @@ def decode_string(x, f):
         raise ValueError
     colon += 1
     return (x[colon:colon+n], colon+n)
+
+def decode_unicode(x, f):
+    s, f = decode_string(x, f+1)
+    return (s.decode('UTF-8'),f)
 
 def decode_list(x, f):
     r, f = [], f+1
@@ -62,6 +73,7 @@ decode_func['6'] = decode_string
 decode_func['7'] = decode_string
 decode_func['8'] = decode_string
 decode_func['9'] = decode_string
+#decode_func['u'] = decode_unicode
   
 def bdecode(x):
     try:
@@ -236,7 +248,11 @@ def encode_bool(x,r):
 def encode_string(x,r):    
     r.extend((str(len(x)),':',x))
 
-def encode_list(x,r):    
+def encode_unicode(x,r):
+    #r.append('u')
+    encode_string(x.encode('UTF-8'),r)
+
+def encode_list(x,r):
         r.append('l')
         for e in x:
             encode_func[type(e)](e, r)
@@ -261,6 +277,8 @@ encode_func[TupleType] = encode_list
 encode_func[DictType] = encode_dict
 if BooleanType:
     encode_func[BooleanType] = encode_bool
+if UnicodeType:
+    encode_func[UnicodeType] = encode_unicode
     
 def bencode(x):
     r = []

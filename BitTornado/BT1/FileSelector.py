@@ -206,12 +206,14 @@ class FileSelector:
                 self.storage.delete_file(f)
 
     def pickle(self):
-        s = self.storage.pickle()
-        sw = self.storagewrapper.pickle()
         d = {'priority': self.priority}
-        for k in s.keys():
-            d[k] = s[k]
-        for k in sw.keys():
-            d[k] = sw[k]
+        try:
+            s = self.storage.pickle()
+            sw = self.storagewrapper.pickle()
+            for k in s.keys():
+                d[k] = s[k]
+            for k in sw.keys():
+                d[k] = sw[k]
+        except (IOError, OSError):
+            pass
         return d
-

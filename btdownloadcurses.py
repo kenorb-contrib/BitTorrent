@@ -15,7 +15,7 @@ if PSYCO.psyco:
         pass
 
 from BitTornado.download_bt1 import BT1Download, defaults, parse_params, get_usage, get_response
-from BitTornado.RawServer import RawServer
+from BitTornado.RawServer import RawServer, UPnP_ERROR
 from random import seed
 from socket import error as socketerror
 from BitTornado.bencode import bencode
@@ -55,15 +55,15 @@ except:
     False = 0
 
 def fmttime(n):
-    if n == -1:
-        return 'download not progressing (file not being uploaded by others?)'
     if n == 0:
         return 'download complete!'
-    n = int(n)
+    try:
+        n = int(n)
+        assert n >= 0 and n < 5184000  # 60 days
+    except:
+        return '<unknown>'
     m, s = divmod(n, 60)
     h, m = divmod(m, 60)
-    if h > 1000000:
-        return 'n/a'
     return 'finishing in %d:%02d:%02d' % (h, m, s)
 
 def fmtsize(n):
@@ -333,16 +333,21 @@ def run(scrwin, errlist, params):
                                   config['timeout'], ipv6_enable = config['ipv6_enabled'],
                                   failfunc = d.failed, errorfunc = d.error)
 
-            upnp = config['upnp_nat_access']
-            if upnp and not UPnP_test():
-                upnp = False
-            try:
-                listen_port = rawserver.find_and_bind(config['minport'], config['maxport'],
-                                config['bind'], ipv6_socket_style = config['ipv6_binds_v4'],
-                                upnp = upnp)
-            except socketerror, e:
-                d.error("Couldn't listen - " + str(e))
-                break
+            upnp_type = UPnP_test(config['upnp_nat_access'])
+            while True:
+                try:
+                    listen_port = rawserver.find_and_bind(config['minport'], config['maxport'],
+                                    config['bind'], ipv6_socket_style = config['ipv6_binds_v4'],
+                                    upnp = upnp_type)
+                    break
+                except socketerror, e:
+                    if upnp_type and e == UPnP_ERROR:
+                        d.error('WARNING: COULD NOT FORWARD VIA UPnP')
+                        upnp_type = 0
+                        continue
+                    d.error("Couldn't listen - " + str(e))
+                    d.failed()
+                    return
 
             response = get_response(config['responsefile'], config['url'], d.error)
             if not response:
@@ -375,6 +380,10 @@ def run(scrwin, errlist, params):
     except KeyboardInterrupt:
         # ^C to exit.. 
         pass 
+    try:
+        rawserver.shutdown()
+    except:
+        pass
     if not d.done:
         d.failed()
 

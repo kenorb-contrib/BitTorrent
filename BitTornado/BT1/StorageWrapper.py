@@ -397,8 +397,10 @@ class StorageWrapper:
 
     def _bgalloc(self):
         self.allocfunc()
-        self.backfunc(self._bgalloc,
-              float(self.piece_size)/(self.config.get('alloc_rate',1.0)*1048576))
+        if self.config.get('alloc_rate',0) < 0.1:
+            self.config['alloc_rate'] = 0.1
+        self.backfunc( self._bgalloc,
+              float(self.piece_size)/(self.config['alloc_rate']*1048576) )
 
 
     def _waspre(self, piece):
@@ -691,6 +693,7 @@ class StorageWrapper:
 
 
     def request_lost(self, index, begin, length):
+        assert not (begin, length) in self.inactive_requests[index]
         insort(self.inactive_requests[index], (begin, length))
         self.amount_inactive += length
         self.numactive[index] -= 1
@@ -905,6 +908,7 @@ class StorageWrapper:
                 if have[index]:
                     if not places.has_key(index):
                         if index not in valid_places:
+                            have[index] = False
                             continue
                         assert not got.has_key(index)
                         places[index] = index

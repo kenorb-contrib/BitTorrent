@@ -12,8 +12,8 @@ if PSYCO.psyco:
     except:
         pass
     
-from BitTornado.download_bt1 import BT1Download, parse_params, get_usage, get_response
-from BitTornado.RawServer import RawServer
+from BitTornado.download_bt1 import BT1Download, defaults, parse_params, get_usage, get_response
+from BitTornado.RawServer import RawServer, UPnP_ERROR
 from random import seed
 from socket import error as socketerror
 from BitTornado.bencode import bencode
@@ -38,19 +38,19 @@ except:
 PROFILER = False
 
 def hours(n):
-    if n == -1:
-        return '<unknown>'
     if n == 0:
         return 'complete!'
-    n = int(n)
-    h, r = divmod(n, 60 * 60)
-    m, sec = divmod(r, 60)
-    if h > 1000000:
+    try:
+        n = int(n)
+        assert n >= 0 and n < 5184000  # 60 days
+    except:
         return '<unknown>'
+    m, s = divmod(n, 60)
+    h, m = divmod(m, 60)
     if h > 0:
-        return '%d hour %02d min %02d sec' % (h, m, sec)
+        return '%d hour %02d min %02d sec' % (h, m, s)
     else:
-        return '%d min %02d sec' % (m, sec)
+        return '%d min %02d sec' % (m, s)
 
 class HeadlessDisplayer:
     def __init__(self):
@@ -174,16 +174,21 @@ def run(params):
         rawserver = RawServer(doneflag, config['timeout_check_interval'],
                               config['timeout'], ipv6_enable = config['ipv6_enabled'],
                               failfunc = h.failed, errorfunc = disp_exception)
-        upnp = config['upnp_nat_access']
-        if upnp and not UPnP_test():
-            upnp = False
-        try:
-            listen_port = rawserver.find_and_bind(config['minport'], config['maxport'],
-                            config['bind'], ipv6_socket_style = config['ipv6_binds_v4'],
-                            upnp = upnp)
-        except socketerror, e:
-            print "error: Couldn't listen - " + str(e)
-            break
+        upnp_type = UPnP_test(config['upnp_nat_access'])
+        while True:
+            try:
+                listen_port = rawserver.find_and_bind(config['minport'], config['maxport'],
+                                config['bind'], ipv6_socket_style = config['ipv6_binds_v4'],
+                                upnp = upnp_type)
+                break
+            except socketerror, e:
+                if upnp_type and e == UPnP_ERROR:
+                    print 'WARNING: COULD NOT FORWARD VIA UPnP'
+                    upnp_type = 0
+                    continue
+                print "error: Couldn't listen - " + str(e)
+                h.failed()
+                return
 
         response = get_response(config['responsefile'], config['url'], h.error)
         if not response:
@@ -212,7 +217,10 @@ def run(params):
         h.display(activity = 'shutting down')
         dow.shutdown()
         break
-
+    try:
+        rawserver.shutdown()
+    except:
+        pass
     if not h.done:
         h.failed()
 

@@ -54,9 +54,9 @@ class HeadlessDisplayer:
         for x in data:
             ( name, status, progress, peers, seeds, seedsmsg, dist,
               uprate, dnrate, upamt, dnamt, size, t, msg ) = x
-            print '"%s": "%s" (%s) - %sP%s%s%.3fD u%0.1fK/s-d%0.1fK/s u%dK-d%dK' % (
+            print '"%s": "%s" (%s) - %sP%s%s%.3fD u%0.1fK/s-d%0.1fK/s u%dK-d%dK "%s"' % (
                         name, status, progress, peers, seeds, seedsmsg, dist,
-                        uprate/1000, dnrate/1000, upamt/1024, dnamt/1024)
+                        uprate/1000, dnrate/1000, upamt/1024, dnamt/1024, msg)
         return False
             
     def message(self, s):

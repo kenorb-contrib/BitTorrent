@@ -22,7 +22,7 @@ except:
     print 'wxPython is either not installed or has not been installed properly.'
     sys.exit(1)
 from BitTornado.download_bt1 import BT1Download, defaults, parse_params, get_usage, get_response
-from BitTornado.RawServer import RawServer
+from BitTornado.RawServer import RawServer, UPnP_ERROR
 from random import seed
 from socket import error as socketerror
 from BitTornado.ConnChoice import *
@@ -54,19 +54,19 @@ WXPROFILER = False
 # Note to packagers: edit OLDICONPATH in BitTornado/ConfigDir.py
 
 def hours(n):
-    if n == -1:
-        return '<unknown>'
     if n == 0:
         return 'download complete'
-    n = int(n)
-    h, r = divmod(n, 60 * 60)
-    m, sec = divmod(r, 60)
-    if h > 1000000:
+    try:
+        n = int(n)
+        assert n >= 0 and n < 5184000  # 60 days
+    except:
         return '<unknown>'
+    m, s = divmod(n, 60)
+    h, m = divmod(m, 60)
     if h > 0:
-        return '%d hour(s) %02d min %02d sec' % (h, m, sec)
+        return '%d hour(s) %02d min %02d sec' % (h, m, s)
     else:
-        return '%d min %02d sec' % (m, sec)
+        return '%d min %02d sec' % (m, s)
 
 def size_format(s):
     if (s < 1024):
@@ -254,7 +254,7 @@ class DownloadInfoFrame:
             statidata = wxMemoryDC()
             statidata.SelectObject(self.statusIcon)
             statidata.SetPen(wxTRANSPARENT_PEN)
-            statidata.SetBrush(wxBrush(wxSystemSettings_GetColour(wxSYS_COLOUR_MENU),wxSOLID))
+            statidata.SetBrush(wxBrush(self.bgcolor,wxSOLID))
             statidata.DrawRectangle(0,0,32,32)
             self.statusIconPtr = wxStaticBitmap(panel, -1, self.statusIcon)
             topboxsizer.Add(self.statusIconPtr)
@@ -783,7 +783,7 @@ class DownloadInfoFrame:
 
     def details(self, event):
         try:
-            if not self.dow:
+            if not self.dow or not self.filename:
                 return
             metainfo = self.dow.getResponse()
             if metainfo is None:
@@ -1263,7 +1263,7 @@ class DownloadInfoFrame:
 
     def advanced(self, event):
         try:
-            if self.filename is None:
+            if not self.dow or not self.filename:
                 return
             if (self.advBox is not None):
                 try:
@@ -2198,16 +2198,21 @@ def _next(params, d, doneflag, configfile):
                                   config['timeout'], ipv6_enable = config['ipv6_enabled'],
                                   failfunc = d.error, errorfunc = d.errorwindow)
 
-            upnp = config['upnp_nat_access']
-            if upnp and not UPnP_test():
-                upnp = False
-            try:
-                listen_port = rawserver.find_and_bind(config['minport'], config['maxport'],
-                                config['bind'], ipv6_socket_style = config['ipv6_binds_v4'],
-                                upnp = upnp)
-            except socketerror, e:
-                d.error("Couldn't listen - " + str(e))
-                break
+            upnp_type = UPnP_test(config['upnp_nat_access'])
+            while True:
+                try:
+                    listen_port = rawserver.find_and_bind(config['minport'], config['maxport'],
+                                    config['bind'], ipv6_socket_style = config['ipv6_binds_v4'],
+                                    upnp = upnp_type)
+                    break
+                except socketerror, e:
+                    if upnp_type and e == UPnP_ERROR:
+                        d.error('WARNING: COULD NOT FORWARD VIA UPnP')
+                        upnp_type = 0
+                        continue
+                    d.error("Couldn't listen - " + str(e))
+                    d.failed()
+                    return
             d.connection_stats = rawserver.get_stats()
 
             response = get_response(config['responsefile'], config['url'], d.error)
@@ -2284,6 +2289,10 @@ def _next(params, d, doneflag, configfile):
         print_exc(file = data)
         print data.getvalue()   # report exception here too
         d.errorwindow(data.getvalue())
+    try:
+        rawserver.shutdown()
+    except:
+        pass
     if not d.fin:
         d.failed()
     

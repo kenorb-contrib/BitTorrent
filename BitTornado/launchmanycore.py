@@ -13,7 +13,7 @@ if PSYCO.psyco:
         pass
 
 from download_bt1 import BT1Download
-from RawServer import RawServer
+from RawServer import RawServer, UPnP_ERROR
 from RateLimiter import RateLimiter
 from ServerPortHandler import MultiHandler
 from parsedir import parsedir
@@ -37,13 +37,13 @@ except:
 
 
 def fmttime(n):
-    if n is None:
+    try:
+        n = int(n)  # n may be None or too large
+        assert n < 5184000  # 60 days
+    except:
         return 'downloading'
-    n = int(n)
     m, s = divmod(n, 60)
     h, m = divmod(m, 60)
-    if h > 1000000:
-        return 'downloading'
     return '%d:%02d:%02d' % (h, m, s)
 
 class SingleDownload:
@@ -58,6 +58,7 @@ class SingleDownload:
         self.checking = False
         self.working = False
         self.seed = False
+        self.closed = False
 
         self.status_msg = ''
         self.status_err = ['']
@@ -113,6 +114,8 @@ class SingleDownload:
         self.shutdown(False)
 
     def shutdown(self, quiet=True):
+        if self.closed:
+            return
         self.doneflag.set()
         self.rawserver.shutdown()
         if self.checking or self.working:
@@ -120,6 +123,7 @@ class SingleDownload:
         self.waiting = False
         self.checking = False
         self.working = False
+        self.closed = True
         self.controller.was_stopped(self.hash)
         if not quiet:
             self.controller.died(self.hash)
@@ -166,17 +170,21 @@ class LaunchMany:
             self.rawserver = RawServer(self.doneflag, config['timeout_check_interval'],
                               config['timeout'], ipv6_enable = config['ipv6_enabled'],
                               failfunc = self.failed, errorfunc = self.exchandler)
-            upnp = config['upnp_nat_access']
-            if upnp and not UPnP_test():
-                upnp = False
-            try:
-                self.listen_port = self.rawserver.find_and_bind(
-                                config['minport'], config['maxport'], config['bind'],
-                                ipv6_socket_style = config['ipv6_binds_v4'],
-                                upnp = upnp)
-            except socketerror, e:
-                self.failed("Couldn't listen - " + str(e))
-                return
+            upnp_type = UPnP_test(config['upnp_nat_access'])
+            while True:
+                try:
+                    self.listen_port = self.rawserver.find_and_bind(
+                                    config['minport'], config['maxport'], config['bind'],
+                                    ipv6_socket_style = config['ipv6_binds_v4'],
+                                    upnp = upnp_type)
+                    break
+                except socketerror, e:
+                    if upnp_type and e == UPnP_ERROR:
+                        self.Output.message('WARNING: COULD NOT FORWARD VIA UPnP')
+                        upnp_type = 0
+                        continue
+                    self.failed("Couldn't listen - " + str(e))
+                    return
 
             self.ratelimiter = RateLimiter(self.rawserver.add_task,
                                            config['upload_unit_size'])
@@ -189,11 +197,13 @@ class LaunchMany:
 
             self.handler.listen_forever()
 
+            self.Output.message('shutting down')
+            self.hashcheck_queue = []
             for hash in self.torrent_list:
                 self.Output.message('dropped "'+self.torrent_cache[hash]['path']+'"')
                 self.downloads[hash].shutdown()
+            rawserver.shutdown()
 
-            self.Output.message('shutting down')
         except:
             data = StringIO()
             print_exc(file = data)
@@ -334,8 +344,9 @@ class LaunchMany:
         return saveas
 
 
-    def hashchecksched(self, hash):
-        self.hashcheck_queue.append(hash)
+    def hashchecksched(self, hash = None):
+        if hash:
+            self.hashcheck_queue.append(hash)
         if not self.hashcheck_current:
             self._hashcheck_start()
 
@@ -351,7 +362,8 @@ class LaunchMany:
             self.hashcheck_current = None
 
     def died(self, hash):
-        self.Output.message('DIED: "'+self.torrent_cache[hash]['path']+'"')
+        if self.torrent_cache.has_key(hash):
+            self.Output.message('DIED: "'+self.torrent_cache[hash]['path']+'"')
         
     def was_stopped(self, hash):
         try:
@@ -359,7 +371,9 @@ class LaunchMany:
         except:
             pass
         if self.hashcheck_current == hash:
-            self._hashcheck_start()
+            self.hashcheck_current = None
+            if self.hashcheck_queue:
+                self._hashcheck_start()
 
     def failed(self, s):
         self.Output.message('FAILURE: '+s)

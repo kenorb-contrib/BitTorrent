@@ -188,7 +188,8 @@ class Rerequester:
 
 
     def _fail(self, callback):
-        if self.upratefunc() < 100 and self.downratefunc() < 100:
+        if ( (self.upratefunc() < 100 and self.downratefunc() < 100)
+             or not self.amount_left() ):
             for f in ['rejected', 'bad_data', 'troublecode']:
                 if self.errorcodes.has_key(f):
                     r = self.errorcodes[f]

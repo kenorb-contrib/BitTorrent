@@ -14,10 +14,7 @@ if PSYCO.psyco:
 
 from sys import argv, version, exit
 assert version >= '2', "Install Python 2.0 or greater"
-from os import listdir
-from os.path import join, split
-from threading import Event
-from traceback import print_exc
+from os.path import split
 from BitTornado.BT1.makemetafile import defaults, completedir, print_announcelist_details
 from BitTornado.parseargs import parseargs, formatDefinitions
 

@@ -2,7 +2,7 @@
 # see LICENSE.txt for license information
 
 from bisect import insort
-from SocketHandler import SocketHandler
+from SocketHandler import SocketHandler, UPnP_ERROR
 import socket
 from cStringIO import StringIO
 from traceback import print_exc
@@ -71,9 +71,11 @@ class RawServer:
         return self.excflag
 
     def add_task(self, func, delay, id = None):
+        assert float(delay) >= 0
         insort(self.funcs, (clock() + delay, func, id))
 
     def external_add_task(self, func, delay = 0, id = None):
+        assert float(delay) >= 0
         self.externally_added.append((func, delay, id))
 
     def scan_for_timeouts(self):
@@ -112,7 +114,7 @@ class RawServer:
                     self.pop_external()
                     self._kill_tasks()
                     if self.funcs:
-                        period = self.funcs[0][0] - clock()
+                        period = self.funcs[0][0] + 0.001 - clock()
                     else:
                         period = 2 ** 30
                     if period < 0:
@@ -155,7 +157,7 @@ class RawServer:
                 if self.exccount > 10:
                     return
         finally:
-            self.sockethandler.shutdown()
+#            self.sockethandler.shutdown()
             self.finished.set()
 
     def is_finished(self):
@@ -188,3 +190,6 @@ class RawServer:
 #            print data.getvalue()   # report exception here too
             if not kbint:           # don't report here if it's a keyboard interrupt
                 self.errorfunc(data.getvalue())
+
+    def shutdown(self):
+        self.sockethandler.shutdown()

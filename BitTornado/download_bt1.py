@@ -86,7 +86,8 @@ defaults = [
     ('ipv6_binds_v4', autodetect_socket_style(),
         'set if an IPv6 server socket will also field IPv4 connections'),
     ('upnp_nat_access', 1,
-        'attempt to autoconfigure a UPnP router to forward a server port'),
+        'attempt to autoconfigure a UPnP router to forward a server port ' +
+        '(0 = disabled, 1 = mode 1 [fast], 2 = mode 2 [slow])'),
     ('upload_rate_fudge', 5.0, 
         'time equivalent of writing to kernel-level TCP buffer, for rate adjustment'),
     ('display_interval', .5,
@@ -171,13 +172,11 @@ def download(self, params, filefunc, statusfunc, finfunc, errorfunc, doneflag, c
                           config['timeout'], ipv6_enable = config['ipv6_enabled'],
                           failfunc = failed, errorfunc = exchandler)
 
-    upnp = config['upnp_nat_access']
-    if upnp and not UPnP_test():
-        upnp = False
+    upnp_type = UPnP_test(config['upnp_nat_access'])
     try:
         listen_port = rawserver.find_and_bind(config['minport'], config['maxport'],
                         config['bind'], ipv6_socket_style = config['ipv6_binds_v4'],
-                        upnp = upnp)
+                        upnp = upnp_type)
     except socketerror, e:
         failed("Couldn't listen - " + str(e))
         return
@@ -332,9 +331,8 @@ class BT1Download:
             self.appdataobj = appdataobj
         elif self.selector_enabled:
             self.appdataobj = ConfigDir()
-            expire_cache_data = config['expire_cache_data']
-            if expire_cache_data:
-                self.appdataobj.deleteOldCacheData(expire_cache_data,[self.infohash])
+            self.appdataobj.deleteOldCacheData( config['expire_cache_data'],
+                                                [self.infohash] )
 
         self.excflag = self.rawserver.get_exception_flag()
         self.failed = False
@@ -429,15 +427,39 @@ class BT1Download:
         if not statusfunc:
             statusfunc = self.statusfunc
 
+        if self.selector_enabled:
+            self.priority = self.config['priority']
+            if self.priority:
+                try:
+                    self.priority = self.priority.split(',')
+                    assert len(self.priority) == len(self.files)
+                    self.priority = [int(p) for p in self.priority]
+                    for p in self.priority:
+                        assert p >= -1
+                        assert p <= 2
+                except:
+                    self.errorfunc('bad priority list given, ignored')
+                    self.priority = None
+
+            data = self.appdataobj.getTorrentData(self.infohash)
+            try:
+                disabled_files = [x == -1 for x in data['resume data']['priority']]
+            except:
+                try:
+                    disabled_files = [x == -1 for x in self.priority]
+                except:
+                    disabled_files = None
+
         def failed(reason, self = self):
             self.failed = True
             self.doneflag.set()
             if reason is not None:
                 self.errorfunc(reason)
+
         try:
             try:
                 self.storage = Storage(self.files, self.info['piece length'],
-                                       self.doneflag, self.config)
+                                       self.doneflag, self.config, disabled_files)
             except IOError, e:
                 self.errorfunc('trouble accessing files - ' + str(e))
                 return None
@@ -481,8 +503,6 @@ class BT1Download:
                                              self.storage, self.storagewrapper,
                                              self.rawserver.external_add_task,
                                              failed)
-
-            data = self.appdataobj.getTorrentData(self.infohash)
             if data:
                 data = data.get('resume data')
                 if data:
@@ -555,38 +575,26 @@ class BT1Download:
         self.encoder_ban = self.encoder.ban
 
         def httpmeasure(x, self=self):
-            self.downmeasure(x)
+            self.downmeasure.update_rate(x)
+            self.ratemeasure.data_came_in(x)
             self.downloader.external_data_received(x)
         self.httpdownloader = HTTPDownloader(self.storagewrapper, self.picker,
             self.rawserver, self.finflag, self.errorfunc, self.downloader,
             self.config['max_rate_period'], self.infohash, httpmeasure,
-            self.connecter.got_piece, self.ratemeasure.data_came_in)
+            self.connecter.got_piece)
         if self.response.has_key('httpseeds') and not self.finflag.isSet():
             for u in self.response['httpseeds']:
                 self.httpdownloader.make_download(u)
 
-        if self.fileselector:
+        if self.selector_enabled:
             def cancelfunc(pieces, self=self):
                 self.downloader.cancel_piece_download(pieces)
                 self.httpdownloader.cancel_piece_download(pieces)
             def reqmorefunc(pieces, self=self):
                 self.downloader.requeue_piece_download(pieces)
             self.fileselector.tie_in(self.picker, cancelfunc, reqmorefunc)
-
-            priority = self.config['priority']
-            if priority:
-                try:
-                    priority = priority.split(',')
-                    assert len(priority) == len(self.files)
-                    priority = [int(p) for p in priority]
-                    for p in priority:
-                        assert p >= -1
-                        assert p <= 2
-                    self.fileselector.set_priorities_now(priority)
-                except:
-                    self.errorfunc('bad priority list given, ignored')
-                    priority = None
-
+            if self.priority:
+                self.fileselector.set_priorities_now(self.priority)
             self.appdataobj.deleteTorrentData(self.infohash)
                                 # erase old data once you've started modifying it
         self.started = True
@@ -665,7 +673,10 @@ class BT1Download:
             if not self.failed:
                 self.fileselector.finish()
                 torrentdata['resume data'] = self.fileselector.pickle()
-            self.appdataobj.writeTorrentData(self.infohash,torrentdata)
+            try:
+                self.appdataobj.writeTorrentData(self.infohash,torrentdata)
+            except:
+                self.appdataobj.deleteTorrentData(self.infohash) # clear it
         return not self.failed and not self.excflag.isSet()
         # if returns false, you may wish to auto-restart the torrent
 

@@ -15,6 +15,7 @@ import sys
 from random import shuffle
 from natpunch import UPnP_open_port, UPnP_close_port
 # from BT1.StreamCheck import StreamCheck
+# import inspect
 try:
     True
 except:
@@ -22,6 +23,8 @@ except:
     False = 0
 
 all = POLLIN | POLLOUT
+
+UPnP_ERROR = "unable to forward port via UPnP"
 
 class SingleSocket:
     def __init__(self, socket_handler, sock, handler, ip = None):
@@ -32,6 +35,7 @@ class SingleSocket:
         self.last_hit = clock()
         self.fileno = sock.fileno()
         self.connected = False
+        self.skipped = 0
 #        self.check = StreamCheck()
         try:
             self.ip = self.socket.getpeername()[0]
@@ -50,6 +54,17 @@ class SingleSocket:
         return self.ip
         
     def close(self):
+        '''
+        for x in xrange(5,0,-1):
+            try:
+                f = inspect.currentframe(x).f_code
+                print (f.co_filename,f.co_firstlineno,f.co_name)
+                del f
+            except:
+                pass
+        print ''
+        '''
+        self.connected = False
         sock = self.socket
         self.socket = None
         self.buffer = []
@@ -72,13 +87,17 @@ class SingleSocket:
 
     def try_write(self):
         if self.connected:
+            dead = False
             try:
                 while self.buffer:
                     buf = self.buffer[0]
                     amount = self.socket.send(buf)
+                    if amount == 0:
+                        self.skipped += 1
+                        break
+                    self.skipped = 0
                     if amount != len(buf):
-                        if amount != 0:
-                            self.buffer[0] = buf[amount:]
+                        self.buffer[0] = buf[amount:]
                         break
                     del self.buffer[0]
             except socket.error, e:
@@ -86,9 +105,12 @@ class SingleSocket:
                     dead = e[0] != EWOULDBLOCK
                 except:
                     dead = True
-                if dead:
-                    self.socket_handler.dead_from_write.append(self)
-                    return
+                self.skipped += 1
+            if self.skipped >= 3:
+                dead = True
+            if dead:
+                self.socket_handler.dead_from_write.append(self)
+                return
         if self.buffer:
             self.socket_handler.poll.register(self.socket, all)
         else:
@@ -176,7 +198,7 @@ class SocketHandler:
                         pass
                     self.servers = None
                     self.interfaces = None
-                raise socket.error('unable to forward port via UPnP')
+                raise socket.error(UPnP_ERROR)
             self.port_forwarded = port
         self.port = port
 
@@ -311,7 +333,7 @@ class SocketHandler:
             connects = len(self.single_sockets)
             to_close = int(connects*0.05)+1 # close 5% of sockets
             self.max_connects = connects-to_close
-            closelist = self.single_sockets.keys()
+            closelist = self.single_sockets.values()
             shuffle(closelist)
             closelist = closelist[:to_close]
             for sock in closelist:

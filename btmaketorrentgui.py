@@ -15,8 +15,7 @@ if PSYCO.psyco:
 
 from sys import argv, version
 
-from btcompletedir import completedir
-from btmakemetafile import make_meta_file
+from BitTornado.BT1.makemetafile import make_meta_file, completedir
 from threading import Event, Thread
 from BitTornado.bencode import bdecode
 import sys
@@ -61,7 +60,7 @@ class DownloadInfo:
         b = wxBoxSizer(wxHORIZONTAL)
         self.dirCtl = wxTextCtrl(panel, -1, '')
         b.Add(self.dirCtl, 1, wxEXPAND)
-        b.Add(10, 10, 0, wxEXPAND)
+#        b.Add(10, 10, 0, wxEXPAND)
         
         button = wxButton(panel, -1, 'dir', size = (30,20))
         EVT_BUTTON(frame, button.GetId(), self.selectdir)
@@ -125,7 +124,7 @@ class DownloadInfo:
         border = wxBoxSizer(wxVERTICAL)
         border.Add(gridSizer, 0, wxEXPAND | wxNORTH | wxEAST | wxWEST, 25)
         b2 = wxButton(panel, -1, 'make')
-        border.Add(10, 10, 1, wxEXPAND)
+#        border.Add(10, 10, 1, wxEXPAND)
         border.Add(b2, 0, wxALIGN_CENTER | wxSOUTH, 20)
         EVT_BUTTON(frame, b2.GetId(), self.complete)
         panel.SetSizer(border)

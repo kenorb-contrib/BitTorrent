@@ -1,6 +1,6 @@
 product_name = 'BitTornado'
 
-version = "T-0.3.1 (BitTornado)"
+version = "T-0.3.2 (BitTornado)"
 
 version_short = version.split(' ')[0]
 

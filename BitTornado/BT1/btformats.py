@@ -6,7 +6,7 @@ from re import compile
 
 reg = compile(r'^[^/\\.~][^/\\]*$')
 
-ints = [LongType, IntType]
+ints = (LongType, IntType)
 
 def check_info(info):
     if type(info) != DictType:

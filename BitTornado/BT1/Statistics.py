@@ -154,3 +154,5 @@ class Statistics:
                                 del self.filepieces2[i][-1]
                             if not self.filepieces2[i]:
                                 self.fileinplace[i] = True
+                                self.storage.storage.set_readonly(i)
+
