@@ -1,3 +1,5 @@
+>10.2 Jaguar Required!  Sorry...
+
 InternetExplorer users:  You must launch BitTorrent with InternetExplorer NOT RUNNING in order to register as a helper app.  This only needs to be done once.
 
 Safari:  Safari doesn't automatically hand the torrent file off to BitTorrent.  Open the torrent file to start the download.
@@ -16,7 +18,7 @@ BitTorrent uses "tit for tat" for deciding which peer to upload to.  In general 
 
 
 
-Release Notes Version 3.2.2  2003/05/29
+Release Notes Version 3.2.2  2003/05/30
 ----------
 Latest BitTorrent
 Fixed bug where opening multiple torrent files at once caused a deadlock
