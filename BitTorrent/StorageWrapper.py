@@ -38,7 +38,6 @@ class StorageWrapper:
         self.waschecked = [check_hashes] * len(hashes)
         self.hasdata = [false] * len(hashes)
         self.accessLock = Condition()
-        self.currentwrite = None
         self.currentbackwrite = None
         self.backfunc = backfunc
         self.doneflag = flag
@@ -73,11 +72,10 @@ class StorageWrapper:
     def _background_allocate(self):
         piece = chr(0xFF) * self.piece_length
         for x in xrange(len(self.hashes)):
-            if self.hasdata[x]:
-                continue
             self.accessLock.acquire()
-            while self.currentwrite == x:
-                self.accessLock.wait()
+            if self.hasdata[x]:
+                self.accessLock.release()
+                continue
             self.currentbackwrite = x
             self.accessLock.release()
             try:
@@ -154,18 +152,16 @@ class StorageWrapper:
         self.accessLock.acquire()
         while self.currentbackwrite == index:
             self.accessLock.wait()
-        self.currentwrite = index
+        self.hasdata[index] = true
         self.accessLock.release()
         try:
             self.storage.write(index * self.piece_length + begin, piece)
-            self.hasdata[index] = true
             self.numactive[index] -= 1
             if (self.inactive_requests[index] == [] and 
                     self.numactive[index] == 0):
                 self._check_single(index)
         finally:
             self.accessLock.acquire()
-            self.currentwrite = None
             self.accessLock.notify()
             self.accessLock.release()
 
