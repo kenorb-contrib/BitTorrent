@@ -206,7 +206,7 @@ class Tracker:
                     'Requested download is not authorized for use with this tracker.'}))
             ip = connection.get_ip()
             if params.has_key('ip'):
-                if not self.only_local_override_ip or ip[:3] == '10:' or ip[:4] in ('192.', '169.', '127.', '172.'):
+                if not self.only_local_override_ip or ip[:3] == '10.' or ip[:4] in ('192.', '169.', '127.'):
                     ip = params['ip']
             if params.has_key('event') and params['event'] not in ['started', 'completed', 'stopped']:
                 raise ValueError, 'invalid event'
