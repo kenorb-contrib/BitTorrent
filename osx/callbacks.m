@@ -22,9 +22,10 @@ static PyObject *chooseFile(PyObject *self, PyObject *args)
     char *saveas = NULL;
     int dir;
     char *res;
+    int dlid;
     NSString *path;
     
-    if (!PyArg_ParseTuple(args, "slsi", &def, &size, &saveas, &dir))
+    if (!PyArg_ParseTuple(args, "islsi", &dlid, &def, &size, &saveas, &dir))
 	return NULL;
     path = [NSString stringWithCString:saveas];
     [panel runModalForDirectory:saveas ? path : NSHomeDirectory() file:[NSString stringWithCString:def]];
@@ -40,15 +41,17 @@ static PyObject *display(PyObject *self, PyObject *args, PyObject *keywds)
     float upRate = 0.0;
     float downRate = 0.0;
     char *activity = "";
+    int dlid;
     NSAutoreleasePool *pool =[[NSAutoreleasePool alloc] init];
-    NSMutableDictionary *dict = [NSMutableDictionary dictionaryWithCapacity:5];
+    NSMutableDictionary *dict = [NSMutableDictionary dictionaryWithCapacity:6];
     
-    static char *kwlist[] = {"fractionDone", "timeEst", "upRate", "downRate", "activity", NULL};
+    static char *kwlist[] = {"dlid", "fractionDone", "timeEst", "upRate", "downRate", "activity", NULL};
 
-     if (!PyArg_ParseTupleAndKeywords(args, keywds, "|ffffs", kwlist, 
+     if (!PyArg_ParseTupleAndKeywords(args, keywds, "i|ffffs", kwlist, &dlid, 
 					&fractionDone, &timeEst, &upRate, &downRate, &activity))
         return NULL;
-	
+    
+    [dict setObject:[NSNumber numberWithInt:dlid] forKey:@"dlid"];
     [dict setObject:[NSNumber numberWithFloat:fractionDone] forKey:@"fractionDone"];
     [dict setObject:[NSNumber numberWithFloat:timeEst] forKey:@"timeEst"];
     [dict setObject:[NSNumber numberWithFloat:upRate] forKey:@"upRate"];
@@ -65,19 +68,20 @@ static PyObject *display(PyObject *self, PyObject *args, PyObject *keywds)
 
 static PyObject *finished(PyObject *self, PyObject *args)
 {
-    int fin;
+    int fin, dlid;
     char *errmsg = NULL;
     NSAutoreleasePool *pool =[[NSAutoreleasePool alloc] init];
-    NSMutableDictionary *dict = [NSMutableDictionary dictionaryWithCapacity:2];
+    NSMutableDictionary *dict = [NSMutableDictionary dictionaryWithCapacity:3];
 
-    if(!PyArg_ParseTuple(args, "iz", &fin, &errmsg))
+    if(!PyArg_ParseTuple(args, "iiz", &dlid, &fin, &errmsg))
 	return NULL;
     if(errmsg)
 	[dict setObject:[NSString stringWithCString:errmsg] forKey:@"errmsg"];
     else
 	[dict setObject:@"" forKey:@"errmsg"];
     [dict setObject:[NSNumber numberWithInt:fin] forKey:@"fin"];
-    
+    [dict setObject:[NSNumber numberWithInt:dlid] forKey:@"dlid"];
+
     [[NSNotificationCenter defaultCenter] postNotificationName:FINISHED
 							object:nil
 							userInfo:dict];

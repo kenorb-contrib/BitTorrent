@@ -8,6 +8,9 @@ static PyThreadState *tstate;
 
 - (void)awakeFromNib
 {
+    dlid = 0;
+    PyRun_SimpleString("import cocoa");
+    PyRun_SimpleString("dlmgr = cocoa.DLManager()");
     tstate = PyEval_SaveThread();
 }
 
@@ -22,22 +25,18 @@ static PyThreadState *tstate;
 
 - (IBAction)takeUrl:(id)sender
 {
-    id controller = [[DLWindowController alloc] init];
+    id controller = [[DLWindowController alloc] initWithDlId:dlid];
     NSString *str, *urlstr;
     
     [urlWindow orderOut:self];
     [NSBundle loadNibNamed:@"DLWindow" owner:controller];
     
     PyEval_RestoreThread(tstate);
-    PyRun_SimpleString("from callbacks import *");
-    PyRun_SimpleString("from BitTorrent.download import download");
-    PyRun_SimpleString("from threading import Event");
-    PyRun_SimpleString("from thread import start_new_thread");
     urlstr = [url stringValue];
-    str = [NSString localizedStringWithFormat:@"start_new_thread(download, (['--url=%@'], chooseFile, display, finished, Event(), 80))", urlstr];
+    str = [NSString localizedStringWithFormat:@"dlmgr.newDlWithUrl(%d, '%@')", dlid, urlstr];
     PyRun_SimpleString([str cString]);
+    dlid++;
     tstate = PyEval_SaveThread();
-
 }
 
 @end

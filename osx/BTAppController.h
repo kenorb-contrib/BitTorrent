@@ -6,6 +6,8 @@
 {
     IBOutlet NSTextField *url;
     IBOutlet NSWindow *urlWindow;
+    int dlid;
+    NSMutableArray *dlControllers;
 }
 - (void)awakeFromNib;
 - (IBAction)cancelUrl:(id)sender;

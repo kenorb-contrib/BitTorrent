@@ -3,11 +3,12 @@
 
 @implementation DLWindowController
 
-- (id)init
+- (id)initWithDlId:(int)nid
 {
     id not = [NSNotificationCenter defaultCenter];
  
-    [super init];   
+    [super init];
+    dlid = [[NSNumber numberWithInt:nid] retain];
     [not addObserver:self selector:@selector(chooseFile:) name:CHOOSE object:nil];
     [not addObserver:self selector:@selector(display:) name:DISPLAY object:nil];
     [not addObserver:self selector:@selector(finished:) name:FINISHED object:nil];
@@ -47,6 +48,9 @@
     NSString *str, *activity;
     long est;
     
+    if(![[dict objectForKey:@"dlid"] isEqualToNumber:dlid])
+	return;
+    
     activity = [dict objectForKey:@"activity"];
     if ([[dict objectForKey:@"fractionDone"] floatValue] != 0.0) {
 	frac = [[dict objectForKey:@"fractionDone"] floatValue];
@@ -77,6 +81,9 @@
     NSNumber *fin;
     NSString *errmsg;
     
+    if(![[dict objectForKey:@"dlid"] isEqualToNumber:dlid])
+    return;
+
     fin = [dict objectForKey:@"fin"];
     errmsg = [dict objectForKey:@"errmsg"];
     

@@ -13,6 +13,7 @@
     IBOutlet id ulRate;
     NSString *timeEst;
     float frac;
+    NSNumber *dlid;
 }
-- (id)init;
+- (id)initWithDlId:(int)nid;
 @end

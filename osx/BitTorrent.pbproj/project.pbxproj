@@ -168,6 +168,7 @@
 				089C165CFE840E0CC02AAC07,
 				F5D01D46027E88A401A845D2,
 				F5D01D48027E8A5701A845D2,
+				F583FE5402827A1B01A845D2,
 			);
 			isa = PBXGroup;
 			name = Resources;
@@ -281,6 +282,7 @@
 				F5D01D36027E0B0201A845D2,
 				F5D01D47027E88A401A845D2,
 				F5D01D49027E8A5701A845D2,
+				F583FE5502827A1C01A845D2,
 			);
 			isa = PBXResourcesBuildPhase;
 			name = "Bundle Resources";
@@ -359,6 +361,17 @@
 		};
 		F504D09C0280653301A845D2 = {
 			fileRef = F504D09B0280653201A845D2;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		F583FE5402827A1B01A845D2 = {
+			isa = PBXFileReference;
+			path = cocoa.py;
+			refType = 4;
+		};
+		F583FE5502827A1C01A845D2 = {
+			fileRef = F583FE5402827A1B01A845D2;
 			isa = PBXBuildFile;
 			settings = {
 			};
