@@ -152,6 +152,9 @@ class DummyPicker:
         self.stuff = range(num)
         self.r = r
 
+    def __getitem__(self, key):
+        return self.stuff[key]
+
     def __iter__(self):
         return iter(self.stuff)
 

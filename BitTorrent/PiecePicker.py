@@ -43,6 +43,15 @@ class PiecePicker:
         self.interestpos = range(numpieces)
         self.fixed = []
 
+    # this is a total hack to support python2.1 but supports for ... in
+    def __getitem__(self, key):
+        if key == 0:
+            self.picker = SinglePicker(self)
+        try:
+            return self.picker.next()
+        except NameError:
+            raise IndexError
+
     def got_have(self, i):
         if self.numinterests[i] is None:
             return
