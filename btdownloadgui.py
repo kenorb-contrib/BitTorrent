@@ -204,7 +204,6 @@ class DownloadInfoFrame(wxFrame):
         self.downRateText.SetLabel('')
 
     def onErrorEvent(self, event):
-        print 'onErrorEvent'
         if not self.shown:
             self.Show(true)
         dlg = wxMessageDialog(self, message = event.errormsg, 
