@@ -76,7 +76,7 @@ class SingleSocket:
             self.raw_server.poll.register(self.socket, all)
 
 class RawServer:
-    def __init__(self, doneflag, timeout_check_interval, timeout, noisy = true):
+    def __init__(self, doneflag, timeout_check_interval, timeout, noisy = true, errorfunc None):
         self.timeout_check_interval = timeout_check_interval
         self.timeout = timeout
         self.poll = poll()
@@ -85,6 +85,7 @@ class RawServer:
         self.dead_from_write = []
         self.doneflag = doneflag
         self.noisy = noisy
+        self.errorfunc = errorfunc
         self.funcs = []
         self.externally_added = []
         self.add_task(self.scan_for_timeouts, timeout_check_interval)
@@ -207,7 +208,9 @@ class RawServer:
                             return
                         except:
                             if self.noisy:
-                                print_exc()
+                                data = StringIO()
+                                print_exc(file = data)
+                                self.errorfunc(data.getvalue())
                     self._close_dead()
                     self.handle_events(events)
                     if self.doneflag.isSet():
@@ -220,7 +223,9 @@ class RawServer:
                     print_exc()
                     return
                 except:
-                    print_exc()
+                    data = StringIO()
+                    print_exc(file = data)
+                    self.errorfunc(data.getvalue())
         finally:
             for ss in self.single_sockets.values():
                 ss.close()

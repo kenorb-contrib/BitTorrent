@@ -190,7 +190,7 @@ def download(params, filefunc, statusfunc, finfunc, errorfunc, doneflag, cols, p
         doneflag.set()
         if reason is not None:
             errorfunc(reason)
-    rawserver = RawServer(doneflag, config['timeout_check_interval'], config['timeout'])
+    rawserver = RawServer(doneflag, config['timeout_check_interval'], config['timeout'], errorfunc = errorfunc)
     try:
         try:
             storage = Storage(files, open, path.exists, 
