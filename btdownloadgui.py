@@ -138,7 +138,7 @@ class DownloadInfoFrame:
             wxPostEvent(self.frame, InvokeEvent(func, args, kwargs))
 
     def updateStatus(self, d):
-        if self.last_update_time + 0.1 < time() or d.get('fractionDone') in [0.0, 1.0] or d.has_key('activity'):
+        if (self.last_update_time + 0.1 < time() and not self.showing_error) or d.get('fractionDone') in (0.0, 1.0) or d.has_key('activity'):
             self.invokeLater(self.onUpdateStatus, [d])
 
     def onUpdateStatus(self, d):
