@@ -184,7 +184,7 @@ class DownloadInfoFrame(wxFrame):
         self.fin = true
         wxPostEvent(self, FinishEvent())
 
-    def failed(self)
+    def failed(self):
         self.fin = true
         wxPostEvent(self, FailEvent())
 
