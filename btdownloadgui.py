@@ -11,6 +11,7 @@ from threading import Event, Thread
 from os.path import join
 from os import getcwd
 from wxPython.wx import *
+from time import strftime
 
 def hours(n):
     if n == -1:
@@ -47,7 +48,6 @@ class DownloadInfoFrame:
         self.flag = flag
         self.fin = false
         self.shown = false
-        self.showing_error = false
 
         panel = wxPanel(frame, -1)
         colSizer = wxFlexGridSizer(cols = 1, vgap = 3)
@@ -79,7 +79,8 @@ class DownloadInfoFrame:
 
         colSizer.Add(gridSizer, 0, wxEXPAND)
 
-        colSizer.Add(1, 1, 1, wxEXPAND)
+        self.errorText = wxStaticText(panel, -1, '', style = wxALIGN_LEFT)
+        colSizer.Add(self.errorText, 0, wxEXPAND)
         self.cancelButton = wxButton(panel, -1, 'Cancel')
         colSizer.Add(self.cancelButton, 0, wxALIGN_CENTER)
         colSizer.AddGrowableCol(0)
@@ -145,16 +146,9 @@ class DownloadInfoFrame:
         self.downRateText.SetLabel('')
 
     def onErrorEvent(self, errormsg):
-        if self.showing_error:
-            return
-        self.showing_error = true
         if not self.shown:
             self.frame.Show(true)
-        dlg = wxMessageDialog(self.frame, message = errormsg, 
-            caption = 'Download Error', style = wxOK | wxICON_ERROR)
-        dlg.ShowModal()
-        dlg.Destroy()
-        self.showing_error = false
+        self.errorText.SetLabel(strftime('ERROR (%I:%M %p) -\n') + errormsg)
 
     def chooseFile(self, default, size, saveas, dir):
         f = Event()
