@@ -66,7 +66,7 @@ defaults = [
         'time between updates of displayed information'),
     ('rerequest_interval', None, 5 * 60,
         'time to wait between requesting more peers'),
-    ('min_peers', None, 10, 
+    ('min_peers', None, 20, 
         'minimum number of peers to not do rerequesting'),
     ('http_timeout', None, 60, 
         'number of seconds to wait before assuming that an http connection has timed out'),
@@ -152,15 +152,19 @@ def download(params, filefunc, statusfunc, finfunc, errorfunc, doneflag, cols):
         if reason is not None:
             errorfunc(reason)
     try:
-        storage = Storage(files, open, path.exists, 
-            path.getsize, statusfunc)
+        try:
+            storage = Storage(files, open, path.exists, 
+                path.getsize, statusfunc)
+        except IOError, e:
+            errorfunc('trouble accessing files - ' + str(e))
+            return
         def finished(finfunc = finfunc, finflag = finflag, 
                 ann = ann, storage = storage, errorfunc = errorfunc):
             finflag.set()
             try:
                 storage.set_readonly()
             except (IOError, OSError), e:
-                errorfunc('trouble setting readonly at end -' + str(e))
+                errorfunc('trouble setting readonly at end - ' + str(e))
             if ann[0] is not None:
                 ann[0](1)
             finfunc()
