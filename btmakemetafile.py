@@ -21,6 +21,8 @@ defaults = [
         "which power of 2 to set the piece size to"),
     ('comment', '',
         "optional human-readable comment to put in .torrent"),
+    ('target', '',
+        "optional target file for the torrent")
     ]
 
 ignore = ['core', 'CVS']
@@ -29,13 +31,16 @@ def dummy(v):
     pass
 
 def make_meta_file(file, url, piece_len_exp = 18, 
-        flag = Event(), progress = dummy, progress_percent=1, comment = None):
+        flag = Event(), progress = dummy, progress_percent=1, comment = None, target = None):
     piece_length = 2 ** piece_len_exp
     a, b = split(file)
-    if b == '':
-        f = a + '.torrent'
+    if target == '':
+        if b == '':
+            f = a + '.torrent'
+        else:
+            f = join(a, b + '.torrent')
     else:
-        f = join(a, b + '.torrent')
+        f = target
     info = makeinfo(file, piece_length, flag, progress, progress_percent)
     if flag.isSet():
         return
@@ -145,7 +150,7 @@ if __name__ == '__main__':
         try:
             config, args = parseargs(argv[3:], defaults, 0, 0)
             make_meta_file(argv[1], argv[2], config['piece_size_pow2'], progress = prog,
-                comment = config['comment'])
+                comment = config['comment'], target = config['target'])
         except ValueError, e:
             print 'error: ' + str(e)
             print 'run with no args for parameter explanations'
