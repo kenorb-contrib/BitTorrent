@@ -127,7 +127,7 @@ bt_ProxyObject *bt_getProxy(NSPort *receivePort, NSPort *sendPort);
     [[dict objectForKey:@"flag"] getBytes:&flag];
 
     // do the download!
-    ret = PyObject_CallFunction(dl, "[s]OOOOOi", [str cString], chooseFile, display, finished, nerror, flag, 80);
+    ret = PyObject_CallFunction(dl, "[ss]OOOOOi", [str cString], "--display_interval=1.0", chooseFile, display, finished, nerror, flag, 80);
     [proxy->dlController dlExited];
     
     // clean up
