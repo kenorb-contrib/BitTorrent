@@ -131,7 +131,7 @@
     timeEst = [@"Download Succeeded." retain];
     [progressBar setDoubleValue:100.0];
     [timeRemaining setStringValue:timeEst];
-    [percentCompleted setStringValue:[NSString localizedStringWithFormat:@"%2.1f%%", frac * 100]];
+    [percentCompleted setStringValue:@"100%"];
 }
 
 - (void)dlExited
