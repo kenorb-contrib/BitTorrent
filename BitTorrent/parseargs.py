@@ -1,19 +1,8 @@
 # Written by Bill Bumgarner and Bram Cohen
 # see LICENSE.txt for license information
 
-from getopt import getopt, GetoptError
 from types import *
 from cStringIO import StringIO
-
-def combined(longname, shortname):
-    s = ''
-    if longname:
-        s = '--' + longname
-        if shortname:
-            s += '/'
-    if shortname:
-        s += '-' + shortname
-    return s
 
 def formatDefinitions(options, COLS):
     s = StringIO()
@@ -24,8 +13,8 @@ def formatDefinitions(options, COLS):
         width = COLS - 2
         indent = " "
 
-    for (longname, shortname, default, doc) in options:
-        s.write(combined(longname, shortname) + ' <arg>\n')
+    for (longname, default, doc) in options:
+        s.write('--' + longname + ' <arg>\n')
         if default is not None:
             doc += ' (defaults to ' + repr(default) + ')'
         i = 0
@@ -45,60 +34,81 @@ def formatDefinitions(options, COLS):
 def usage(str):
     raise ValueError(str)
 
-def parseargs(argv, options, minargs, maxargs):
+def parseargs(argv, options, minargs = None, maxargs = None):
     config = {}
-    required = {}
-
-    shortopts = ''
-    longopts = []
-    shortkeyed = {}
     longkeyed = {}
     for option in options:
-        longname, shortname, default, doc = option
-        if shortname:
-            shortopts += shortname + ':'
-            shortkeyed['-' + shortname] = option
-
-        if longname:
-            longopts.append(longname + '=')
-            longkeyed['--' + longname] = option
-
-        if default is None:
-            required[longname] = option
+        longname, default, doc = option
+        longkeyed[longname] = option
+        config[longname] = default
+    options = []
+    args = []
+    pos = 0
+    while pos < len(argv):
+        if argv[pos][:2] != '--':
+            args.append(argv[pos])
+            pos += 1
         else:
-            config[longname] = default
-
-    try:
-        options, args = getopt(argv, shortopts, longopts)
-    except GetoptError, e:
-        usage(str(e))
-
-    for key, value in options:
-        if shortkeyed.has_key(key):
-            longname, shortname, default, doc = shortkeyed[key]
-        else:
-            longname, shortname, default, doc = longkeyed[key]
-        try:
-            t = type(config.get(longname))
-            if t is NoneType or t is StringType:
-                config[longname] = value
-            elif t is IntType or t is LongType:
-                config[longname] = long(value)
-            elif t is FloatType:
-                config[longname] = float(value)
-            else:
-                assert 0
-        except ValueError, e:
-            usage('wrong format of %s - %s' % (key, str(e)))
-
-    for key in required.keys():
-        if not config.has_key(key):
-            longname, shortname, default, doc = required[key]
-            usage("Option %s is required." % combined(longname, shortname))
-
-    if len(args) < minargs:
+            if pos == len(argv) - 1:
+                usage('parameter passed in at end with no value')
+            key, value = argv[pos][2:], argv[pos+1]
+            pos += 2
+            if not longkeyed.has_key(key):
+                usage('unknown key --' + key)
+            longname, default, doc = longkeyed[key]
+            try:
+                t = type(config[longname])
+                if t is NoneType or t is StringType:
+                    config[longname] = value
+                elif t is IntType or t is LongType:
+                    config[longname] = long(value)
+                elif t is FloatType:
+                    config[longname] = float(value)
+                else:
+                    assert 0
+            except ValueError, e:
+                usage('wrong format of --%s - %s' % (key, str(e)))
+    for key, value in config.items():
+        if value is None:
+            usage("Option --%s is required." % key)
+    if minargs is not None and len(args) < minargs:
         usage("Must supply at least %d args." % minargs)
-    if len(args) > maxargs:
+    if maxargs is not None and len(args) > maxargs:
         usage("Too many args - %d max." % maxargs)
-
     return (config, args)
+
+def test_parseargs():
+    assert parseargs(('d', '--a', 'pq', 'e', '--b', '3', '--c', '4.5', 'f'), (('a', 'x', ''), ('b', 1, ''), ('c', 2.3, ''))) == ({'a': 'pq', 'b': 3, 'c': 4.5}, ['d', 'e', 'f'])
+    assert parseargs([], [('a', 'x', '')]) == ({'a': 'x'}, [])
+    assert parseargs(['--a', 'x', '--a', 'y'], [('a', '', '')]) == ({'a': 'y'}, [])
+    try:
+        parseargs([], [('a', 'x', '')])
+    except ValueError:
+        pass
+    try:
+        parseargs(['--a', 'x'], [])
+    except ValueError:
+        pass
+    try:
+        parseargs(['--a'], [('a', 'x', '')])
+    except ValueError:
+        pass
+    try:
+        parseargs([], [], 1, 2)
+    except ValueError:
+        pass
+    assert parseargs(['x'], [], 1, 2) == ({}, ['x'])
+    assert parseargs(['x', 'y'], [], 1, 2) == ({}, ['x', 'y'])
+    try:
+        parseargs(['x', 'y', 'z'], [], 1, 2)
+    except ValueError:
+        pass
+    try:
+        parseargs(['--a', '2.0'], [('a', 3, '')])
+    except ValueError:
+        pass
+    try:
+        parseargs(['--a', 'z'], [('a', 2.1, '')])
+    except ValueError:
+        pass
+

@@ -22,25 +22,25 @@ true = 1
 false = 0
 
 defaults = [
-    ('port', 'p', 80, "Port to listen on."),
-    ('dfile', 'd', None, 'file to store recent downloader info in'),
-    ('bind', None, '', 'ip to bind to locally'),
-    ('socket_timeout', None, 15, 'timeout for closing connections'),
-    ('save_dfile_interval', None, 5 * 60, 'seconds between saving dfile'),
-    ('timeout_downloaders_interval', None, 45 * 60, 'seconds between expiring downloaders'),
-    ('reannounce_interval', None, 30 * 60, 'seconds downloaders should wait between reannouncements'),
-    ('response_size', None, 50, 'number of peers to send in an info message'),
-    ('timeout_check_interval', None, 5,
+    ('port', 80, "Port to listen on."),
+    ('dfile', None, 'file to store recent downloader info in'),
+    ('bind', '', 'ip to bind to locally'),
+    ('socket_timeout', 15, 'timeout for closing connections'),
+    ('save_dfile_interval', 5 * 60, 'seconds between saving dfile'),
+    ('timeout_downloaders_interval', 45 * 60, 'seconds between expiring downloaders'),
+    ('reannounce_interval', 30 * 60, 'seconds downloaders should wait between reannouncements'),
+    ('response_size', 50, 'number of peers to send in an info message'),
+    ('timeout_check_interval', 5,
         'time to wait between checking if any connections have timed out'),
-    ('nat_check', None, 1,
+    ('nat_check', 1,
         'whether to check back and ban downloaders behind NAT'),
-    ('min_time_between_log_flushes', None, 3.0,
+    ('min_time_between_log_flushes', 3.0,
         'minimum time it must have been since the last flush to do another one'),
-    ('allowed_dir', None, '', 'only allow downloads for .torrents in this dir'),
-    ('parse_allowed_interval', None, 15, 'minutes between reloading of allowed_dir'),
-    ('show_names', None, 1, 'whether to display names from allowed dir'),
-    ('favicon', None, '', 'file containing x-icon data to return when browser requests favicon.ico'),
-    ('only_local_override_ip', None, 1, "ignore the ip GET parameter from machines which aren't on local network IPs")
+    ('allowed_dir', '', 'only allow downloads for .torrents in this dir'),
+    ('parse_allowed_interval', 15, 'minutes between reloading of allowed_dir'),
+    ('show_names', 1, 'whether to display names from allowed dir'),
+    ('favicon', '', 'file containing x-icon data to return when browser requests favicon.ico'),
+    ('only_local_override_ip', 1, "ignore the ip GET parameter from machines which aren't on local network IPs")
     ]
 
 def downloaderfiletemplate(x):

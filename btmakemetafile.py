@@ -17,13 +17,13 @@ from threading import Event
 from time import time
 
 defaults = [
-    ('piece_size_pow2', None, 18,
+    ('piece_size_pow2', 18,
         "which power of 2 to set the piece size to"),
-    ('comment', None, '',
+    ('comment', '',
         "optional human-readable comment to put in .torrent"),
     ]
 
-ignore = ['core', 'CVS'] # ignoring these files could be trouble
+ignore = ['core', 'CVS']
 
 def dummy(v):
     pass
