@@ -14,7 +14,7 @@
     IBOutlet id timeRemaining;
     IBOutlet id ulRate;
     NSString *timeEst;
-    NSString *location;
+    NSString *savepath;
     float frac;
     PyObject *flag;
     long totalsize;
@@ -32,4 +32,6 @@
 - (void)setFlag:(PyObject *)nflag;
 - (void)setConnection:(NSConnection *)nc;
 - (void)dealloc;
+
+- (id)validRequestorForSendType:(NSString *)sendType returnType:(NSString *)returnType;
 @end

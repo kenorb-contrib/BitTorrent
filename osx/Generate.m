@@ -9,8 +9,7 @@
 
 @implementation Generate
 
-#define THOSTKEY @"TrackerHost"
-#define TPORTKEY @"TrackerPort"
+#define ANNOUNCEKEY @"AnnounceString"
 #define GWINKEY @"GenerateFrame"
 #define COMPLETEDIRKEY @"CompleteDir"
 
@@ -24,18 +23,14 @@
 
     defaults = [NSUserDefaults standardUserDefaults];
     appDefaults = [NSMutableDictionary
-        dictionaryWithObject:@"" forKey:THOSTKEY];
-    [appDefaults setObject:@"" forKey:TPORTKEY];
+        dictionaryWithObject:@"" forKey:ANNOUNCEKEY];
     [appDefaults setObject:[NSNumber numberWithInt:NSOffState] forKey:COMPLETEDIRKEY];
     [appDefaults setObject:[gWindow stringWithSavedFrame] forKey:GWINKEY];
     [defaults registerDefaults:appDefaults];
 
     [gWindow setFrameAutosaveName:GWINKEY];
     [gWindow setFrameUsingName:GWINKEY];
-    [[portField cell] setEntryType:NSPositiveIntType];
-    [[[portField cell] formatter] setHasThousandSeparators:NO];
-    [hostField setStringValue:[defaults objectForKey:THOSTKEY]];
-    [portField setStringValue:[defaults objectForKey:TPORTKEY]];
+    [announce setStringValue:[defaults objectForKey:ANNOUNCEKEY]];
     [subCheck setState:[[defaults objectForKey:COMPLETEDIRKEY] intValue]];
     return self;
 }
@@ -50,20 +45,15 @@
     // do a bunch of checking
     // put up alert sheet if error
     
-    [portField validateEditing];
     
-    if([[hostField stringValue] compare:@""] == NSOrderedSame) {
-    NSBeginAlertSheet(NSLocalizedString(@"Invalid Host Name", @""), nil, nil, nil, gWindow, nil, nil, nil, nil, NSLocalizedString(@"You must enter the host name of a tracker.", @""));
-    }
-    else if([[portField stringValue] compare:@""] == NSOrderedSame) {
-    NSBeginAlertSheet(NSLocalizedString(@"Invalid Port Number", @""), nil, nil, nil, gWindow, nil, nil, nil, nil, NSLocalizedString(@"You must enter the port number of a tracker.", @""));
+    if([[announce stringValue] compare:@""] == NSOrderedSame) {
+    NSBeginAlertSheet(NSLocalizedString(@"Invalid Tracker URL", @""), nil, nil, nil, gWindow, nil, nil, nil, nil, NSLocalizedString(@"You must enter the tracker URL.  Contact the tracker administrator for the URL.", @""));
     }
     else if (fname == nil) {
         NSBeginAlertSheet(NSLocalizedString(@"Invalid File", @"invalid file chose fo generate"), nil, nil, nil, gWindow, nil, nil, nil, nil, NSLocalizedString(@"You must drag a file or folder into the generate window first.", @"empty file for generate"));
     }
     else {
-        [defaults setObject:[hostField stringValue] forKey:THOSTKEY];
-        [defaults setObject:[portField stringValue] forKey:TPORTKEY];
+        [defaults setObject:[announce stringValue] forKey:ANNOUNCEKEY];
         [defaults setObject:[NSNumber numberWithInt:[subCheck state]] forKey:COMPLETEDIRKEY];
         a = [fname pathComponents];
         range.location = 0;
@@ -88,7 +78,6 @@
 }
 
 - (void) prepareGenerateSaveFile:(NSString *)f {
-    NSString *url;
     NSConnection *conn;
     NSMutableDictionary *dict = [NSMutableDictionary dictionaryWithCapacity:5];
     NSPort *left, *right;
@@ -98,12 +87,11 @@
     conn = [[NSConnection alloc] initWithReceivePort:left sendPort:right];
     [conn setRootObject:self];
 
-    url = [NSString stringWithFormat:@"http://%@:%@/announce", [hostField stringValue], [portField stringValue]];
     [dict setObject:right forKey:@"receive"];
     [dict setObject:left forKey:@"send"];
     [dict setObject:f forKey:@"f"];
     [dict setObject:fname forKey:@"fname"];
-    [dict setObject:url forKey:@"url"];
+    [dict setObject:[announce stringValue] forKey:@"url"];
 
     // if subCheck is both enabled and checked
     if ([subCheck isEnabled] && [subCheck state]) {
@@ -187,19 +175,18 @@
         mmf = PyDict_GetItemString(md, "makeinfo");
         display = PyObject_GetAttrString((PyObject *)proxy, "metaprogress");
         res = PyObject_CallFunction(mmf, "siOOi", [filename cString],  262144, flag, display, 1);
-        if(res)
-            enc = PyObject_CallFunction(be, "{s:O,s:s}", "info", res, "announce", [url cString]);
-        if(PyErr_Occurred())
-            PyErr_Print();
-        else {
-            desc = fopen([f cString], "w");
-            fwrite(PyString_AsString(enc), sizeof(char), PyString_Size(enc), desc);
-            fclose(desc);
-            if(enc) {
-                Py_DECREF(enc);
-            }
-        }
         if(res) {
+            enc = PyObject_CallFunction(be, "{s:O,s:s}", "info", res, "announce", [url cString]);
+            if(PyErr_Occurred())
+                PyErr_Print();
+            else {
+                desc = fopen([f cString], "w");
+                fwrite(PyString_AsString(enc), sizeof(char), PyString_Size(enc), desc);
+                fclose(desc);
+                if(enc) {
+                    Py_DECREF(enc);
+                }
+            }
             Py_DECREF(res);
         }
     }

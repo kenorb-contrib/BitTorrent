@@ -103,6 +103,7 @@
         [[self window] setTitleWithRepresentedFilename:fname];
         [[NSUserDefaults standardUserDefaults] setObject:[panel directory] forKey:LASTDIR];
         totalsize = size;
+        savepath = [fname retain];
         return fname;
     }
     // user cancelled
@@ -114,6 +115,8 @@
 {
     [file setStringValue:[NSString stringWithFormat:NSLocalizedString(@"(%1.1f MB) %@ ", @"size and filename for dl window tite") , totalsize / 1048576.0, newPath]];
     [[self window] setTitleWithRepresentedFilename:newPath];
+    [savepath release];
+    savepath = [newPath retain];
 }
 
 - (void)display:(NSDictionary *)dict
@@ -182,4 +185,26 @@
     [[NSApp delegate] setTstate:PyEval_SaveThread()];
     [super dealloc];
 }
+
+// Services stuff...
+- (id)validRequestorForSendType:(NSString *)sendType returnType:(NSString *)returnType {
+    if (returnType == nil && ([sendType isEqualToString:NSFilenamesPboardType] ||[sendType isEqualToString:NSStringPboardType])) {
+        return self;
+    }
+    return nil;
+}
+
+- (BOOL)writeSelectionToPasteboard:(NSPasteboard *)pboard types:(NSArray *)types
+{
+
+    if ([types containsObject:NSFilenamesPboardType] == NO && [types containsObject:NSStringPboardType] == NO) {
+        return NO;
+    }
+
+    [pboard declareTypes:[NSArray arrayWithObjects:NSStringPboardType, nil] owner:nil];
+    [pboard setPropertyList:[NSArray arrayWithObjects:savepath, nil] forType:NSFilenamesPboardType];
+    [pboard setString:savepath forType:NSStringPboardType];
+    return YES;
+}
+
 @end

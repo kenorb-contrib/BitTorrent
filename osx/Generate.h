@@ -8,9 +8,8 @@
 {
     IBOutlet id fileField;
     IBOutlet id gWindow;
-    IBOutlet id hostField;
+    IBOutlet id announce;
     IBOutlet id iconWell;
-    IBOutlet id portField;
     IBOutlet id gButton;
     IBOutlet id progressMeter;
     IBOutlet id subCheck;

@@ -143,6 +143,7 @@
 				29B97323FDCFA39411CA2CEA,
 				19C28FACFE9D520D11CA2CBB,
 				F55ADF7802F292E001A845D2,
+				73A43D3803C6C24900000124,
 				F56F7C3602F3544601A845D2,
 			);
 			isa = PBXGroup;
@@ -259,8 +260,18 @@
 			<array>
 				<string>torrent</string>
 			</array>
+			<key>CFBundleTypeIconFile</key>
+			<string>torrent.icns</string>
+			<key>CFBundleTypeMIMETypes</key>
+			<array>
+				<string>application/x-bittorrent</string>
+			</array>
 			<key>CFBundleTypeName</key>
 			<string>BitTorrent Metainfo File</string>
+			<key>CFBundleTypeOSTypes</key>
+			<array>
+				<string>BTMF</string>
+			</array>
 			<key>CFBundleTypeRole</key>
 			<string>Viewer</string>
 		</dict>
@@ -316,6 +327,7 @@
 				F56F7C3E02F3731501A845D2,
 				F542E1980308BE0401AA9403,
 				7325C8A503BE3FCB004B4E79,
+				73A43D3903C6C24A00000124,
 			);
 			isa = PBXResourcesBuildPhase;
 			runOnlyForDeploymentPostprocessing = 0;
@@ -400,6 +412,17 @@
 		};
 		7325C8A503BE3FCB004B4E79 = {
 			fileRef = 7325C8A403BE3FCB004B4E79;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		73A43D3803C6C24900000124 = {
+			isa = PBXFileReference;
+			path = torrent.icns;
+			refType = 4;
+		};
+		73A43D3903C6C24A00000124 = {
+			fileRef = 73A43D3803C6C24900000124;
 			isa = PBXBuildFile;
 			settings = {
 			};
