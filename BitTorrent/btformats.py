@@ -76,9 +76,10 @@ def check_peers(message):
         port = p.get('port')
         if type(port) not in ints or p <= 0:
             raise ValueError
-        id = p.get('peer id')
-        if type(id) != StringType or len(id) != 20:
-            raise ValueError
+        if p.has_key('peer id'):
+            id = p.get('peer id')
+            if type(id) != StringType or len(id) != 20:
+                raise ValueError
     interval = message.get('interval', 1)
     if type(interval) not in ints or interval <= 0:
         raise ValueError
