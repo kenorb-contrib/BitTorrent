@@ -7,14 +7,25 @@
 # fmttime and fmtsize stolen from btdownloadcurses. 
 # see LICENSE.txt for license information
 
+from BitTorrent import PSYCO
+if PSYCO.psyco:
+    try:
+        import psyco
+        assert psyco.__version__ >= 0x010100f0
+        psyco.full()
+    except:
+        pass
+
 from BitTorrent.download import download
-from threading import Thread, Event, Lock
+from threading import Thread, Event, RLock
 from os import listdir
-from os.path import abspath, join, exists, getsize
-from sys import argv, stdout, exit
+from os.path import abspath, join, exists
+from sys import argv, version, stdout, exit
 from time import sleep
 from signal import signal, SIGWINCH 
 import traceback
+
+assert version >= '2', "Install Python 2.0 or greater"
 
 def fmttime(n):
     if n == -1:
@@ -28,25 +39,19 @@ def fmttime(n):
         return 'n/a'
     return 'finishing in %d:%02d:%02d' % (h, m, s)
 
-def fmtsize(n, baseunit = 0, padded = 1):
+def fmtsize(n):
     unit = [' B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB']
-    i = baseunit
-    while i + 1 < len(unit) and n >= 999:
-        i += 1
+    i = 0
+    if (n > 999):
+        i = 1
+        while i + 1 < len(unit) and (n >> 10) >= 999:
+            i += 1
+            n >>= 10
         n = float(n) / (1 << 10)
-    size = ''
-    if padded:
-        if n < 10:
-            size = '  '
-        elif n < 100:
-            size = ' '
-    if i != 0:
-        size += '%.1f %s' % (n, unit[i])
+    if i > 0:
+        size = '%.1f' % n + '%s' % unit[i]
     else:
-        if padded:
-            size += '%.0f   %s' % (n, unit[i])
-        else:
-            size += '%.0f %s' % (n, unit[i])
+        size = '%.0f' % n + '%s' % unit[i]
     return size
 
 def dummy(*args, **kwargs):
@@ -55,22 +60,11 @@ def dummy(*args, **kwargs):
 threads = {}
 ext = '.torrent'
 status = 'btlaunchmany starting..'
-filecheck = Lock()
-mainquitflag = Event()
+filecheck = RLock()
 
-def cleanup_and_quit():
-    status = 'Killing torrents..'
-    for file, threadinfo in threads.items(): 
-        status = 'Killing torrent %s' % file
-        threadinfo['kill'].set() 
-        threadinfo['thread'].join() 
-        del threads[file]
-    displaykiller.set()
-    displaythread.join()
-   
 def dropdir_mainloop(d, params):
     deadfiles = []
-    global threads, status, mainquitflag
+    global threads, status
     while 1:
         files = listdir(d)
         # new files
@@ -94,9 +88,6 @@ def dropdir_mainloop(d, params):
                 threadinfo['timeout'] = threadinfo['timeout'] - 1
             elif not threadinfo['thread'].isAlive():
                 # died without permission
-                # if it was checking the file, it's not anymore
-                if threadinfo.get('checking', None):
-                    filecheck.release()
                 if threadinfo.get('try') == 6: 
                     # Died on the sixth try? You're dead.
                     deadfiles.append(file)
@@ -111,28 +102,17 @@ def dropdir_mainloop(d, params):
                 if threadinfo.get('timeout', -1) == -1:
                     threadinfo['kill'].set()
                     threadinfo['thread'].join()
-                # if it had the lock, unlock it
-                if threadinfo.get('checking', None):
-                    filecheck.release()
                 del threads[file]
         for file in deadfiles:
             # if the file dissapears, remove it from our dead list
             if file not in files: 
                 deadfiles.remove(file)
-        if mainquitflag.isSet(): 
-            cleanup_and_quit()
-            break
         sleep(1)
 
-def display_thread(displaykiller, mainquitflag):
+def display_thread(displaykiller):
     interval = 0.1
     global threads, status
     while 1:
-        inchar = mainwin.getch();
-        if inchar == 12: # ^L
-            winch_handler()
-        elif inchar == ord('q'): # quit
-            mainquitflag.set() 
         # display file info
         if (displaykiller.isSet()): 
             break
@@ -140,50 +120,36 @@ def display_thread(displaykiller, mainquitflag):
         winpos = 0
         totalup = 0
         totaldown = 0
-        totaluptotal = 0.0
-        totaldowntotal = 0.0
         for file, threadinfo in threads.items(): 
             uprate = threadinfo.get('uprate', 0)
             downrate = threadinfo.get('downrate', 0)
             uptxt = '%s/s' % fmtsize(uprate)
             downtxt = '%s/s' % fmtsize(downrate)
-            uptotal = threadinfo.get('uptotal', 0.0)
-            downtotal = threadinfo.get('downtotal', 0.0)
-            uptotaltxt = fmtsize(uptotal, baseunit = 2)
-            downtotaltxt = fmtsize(downtotal, baseunit = 2)
             filesize = threadinfo.get('filesize', 'N/A')
             mainwin.addnstr(winpos, 0, threadinfo.get('savefile', file), mainwinw - 28, curses.A_BOLD)
-            mainwin.addnstr(winpos, mainwinw - 30, filesize, 8)
-            mainwin.addnstr(winpos, mainwinw - 21, downtxt, 10)
-            mainwin.addnstr(winpos, mainwinw - 10, uptxt, 10)
+            mainwin.addnstr(winpos, mainwinw - 28 + (8 - len(filesize)), filesize, 8)
+            mainwin.addnstr(winpos, mainwinw - 20 + (10 - len(downtxt)), downtxt, 10)
+            mainwin.addnstr(winpos, mainwinw - 10 + (10 - len(uptxt)), uptxt, 10)
             winpos = winpos + 1
             mainwin.addnstr(winpos, 0, '^--- ', 5) 
             if threadinfo.get('timeout', 0) > 0:
-                mainwin.addnstr(winpos, 6, 'Try %d: died, retrying in %d' % (threadinfo.get('try', 1), threadinfo.get('timeout')), mainwinw - 21)
+                mainwin.addnstr(winpos, 6, 'Try %d: died, retrying in %d' % (threadinfo.get('try', 1), threadinfo.get('timeout')), mainwinw - 5)
             else:
-                mainwin.addnstr(winpos, 6, threadinfo.get('status',''), mainwinw - 21)
-            mainwin.addnstr(winpos, mainwinw - 21, downtotaltxt, 8)
-            mainwin.addnstr(winpos, mainwinw - 10, uptotaltxt, 8)
+                mainwin.addnstr(winpos, 6, threadinfo.get('status',''), mainwinw - 5)
             winpos = winpos + 1
             totalup += uprate
             totaldown += downrate
-            totaluptotal += uptotal
-            totaldowntotal += downtotal
         # display statusline
         statuswin.erase() 
         statuswin.addnstr(0, 0, status, mainwinw)
         # display totals line
         totaluptxt = '%s/s' % fmtsize(totalup)
         totaldowntxt = '%s/s' % fmtsize(totaldown)
-        totaluptotaltxt = fmtsize(totaluptotal, baseunit = 2)
-        totaldowntotaltxt = fmtsize(totaldowntotal, baseunit = 2)
         
         totalwin.erase()
-        totalwin.addnstr(0, mainwinw - 29, 'Totals:', 7);
-        totalwin.addnstr(0, mainwinw - 21, totaldowntxt, 10)
-        totalwin.addnstr(0, mainwinw - 10, totaluptxt, 10)
-        totalwin.addnstr(1, mainwinw - 21, totaldowntotaltxt, 8)
-        totalwin.addnstr(1, mainwinw - 10, totaluptotaltxt, 8)
+        totalwin.addnstr(0, mainwinw - 27, 'Totals:', 7);
+        totalwin.addnstr(0, mainwinw - 20 + (10 - len(totaldowntxt)), totaldowntxt, 10)
+        totalwin.addnstr(0, mainwinw - 10 + (10 - len(totaluptxt)), totaluptxt, 10)
         curses.panel.update_panels()
         curses.doupdate()
         sleep(interval)
@@ -208,12 +174,10 @@ class StatusUpdater:
         self.done = 1
         self.myinfo['done'] = 1
         self.activity = 'download succeeded!'
-        self.display({'fractionDone' : 1, 'downRate' : 0})
+        self.display(fractionDone = 1)
 
     def err(self, msg): 
         self.myinfo['errors'].append(msg)
-        # errors often come with evil tracebacks that mess up our screen.
-        winch_handler()
         self.display()
 
     def failed(self): 
@@ -227,21 +191,16 @@ class StatusUpdater:
         if saveas == '': 
             saveas = default
         # it asks me where I want to save it before checking the file.. 
-        if exists(saveas) and (getsize(saveas) > 0):
+        if (exists(saveas)):
             # file will get checked
-            while (not filecheck.acquire(0) and not self.myinfo['kill'].isSet()):
+            while (not filecheck.acquire(blocking = 0) and not self.myinfo['kill'].isSet()):
                 self.myinfo['status'] = 'Waiting for disk check...'
                 sleep(0.1)
-            if not self.myinfo['kill'].isSet():
-                self.checking = 1
-                self.myinfo['checking'] = 1
+            self.checking = 1
         self.myinfo['savefile'] = saveas
         return saveas
-    
-    def display(self, dict = {}):
-        fractionDone = dict.get('fractionDone', None)
-        timeEst = dict.get('timeEst', None)
-        activity = dict.get('activity', None) 
+
+    def display(self, fractionDone = None, timeEst = None, downRate = None, upRate = None, activity = None, statistics = None, **kws):
         global filecheck, status
         if activity is not None and not self.done: 
             self.activity = activity
@@ -251,38 +210,30 @@ class StatusUpdater:
             self.myinfo['status'] = '%s (%.1f%%)' % (self.activity, fractionDone * 100)
         else: 
             self.myinfo['status'] = self.activity
-        if self.activity != 'checking existing file' and self.checking:
+        if statistics is not None and self.checking:
             # we finished checking our files. 
             filecheck.release()
             self.checking = 0
             self.myinfo['checking'] = 0
-        if dict.has_key('upRate'):
-            self.myinfo['uprate'] = dict['upRate']
-        if dict.has_key('downRate'):
-            self.myinfo['downrate'] = dict['downRate']
-        if dict.has_key('upTotal'):
-            self.myinfo['uptotal'] = dict['upTotal']
-        if dict.has_key('downTotal'):
-            self.myinfo['downtotal'] = dict['downTotal']
+        if downRate is None: 
+            downRate = 0
+        if upRate is None:
+            upRate = 0
+        self.myinfo['uprate'] = int(upRate)
+        self.myinfo['downrate'] = int(downRate)
 
 def prepare_display(): 
     global mainwinw, scrwin, headerwin, totalwin
-    try:
-        scrwin.border(ord('|'),ord('|'),ord('-'),ord('-'),ord(' '),ord(' '),ord(' '),ord(' '))
-        headerwin.addnstr(0, 0, 'Filename', mainwinw - 25, curses.A_BOLD)
-        headerwin.addnstr(0, mainwinw - 26, 'Size', 4);
-        headerwin.addnstr(0, mainwinw - 19, 'Download', 8);
-        headerwin.addnstr(0, mainwinw -  6, 'Upload', 6);
-        totalwin.addnstr(0, mainwinw - 27, 'Totals:', 7);
-    except curses.error:
-        pass
-    mainwin.nodelay(1)
+    scrwin.border(ord('|'),ord('|'),ord('-'),ord('-'),ord(' '),ord(' '),ord(' '),ord(' '))
+    headerwin.addnstr(0, 0, 'Filename', mainwinw - 25, curses.A_BOLD)
+    headerwin.addnstr(0, mainwinw - 24, 'Size', 4);
+    headerwin.addnstr(0, mainwinw - 18, 'Download', 8);
+    headerwin.addnstr(0, mainwinw -  6, 'Upload', 6);
+    totalwin.addnstr(0, mainwinw - 27, 'Totals:', 7);
     curses.panel.update_panels()
     curses.doupdate()
 
-
-
-def winch_handler(signum = SIGWINCH, stackframe = None): 
+def winch_handler(signum, stackframe): 
     global scrwin, mainwin, mainwinw, headerwin, totalwin, statuswin
     global scrpan, mainpan, headerpan, totalpan, statuspan
     # SIGWINCH. Remake the frames!
@@ -307,7 +258,7 @@ def winch_handler(signum = SIGWINCH, stackframe = None):
     headerwin = curses.newwin(1, mainwinw+1, 1, mainwinx)
     headerpan = curses.panel.new_panel(headerwin)
 
-    totalwin = curses.newwin(2, mainwinw+1, scrh-4, mainwinx)
+    totalwin = curses.newwin(1, mainwinw+1, scrh-3, mainwinx)
     totalpan = curses.panel.new_panel(totalwin)
 
     statuswin = curses.newwin(1, mainwinw+1, scrh-2, mainwinx)
@@ -326,7 +277,9 @@ if __name__ == '__main__':
   <global options> - options to be applied to all torrents (see btdownloadheadless.py)
 """
         exit(-1)
-    dietrace = 0
+    if argv[1:] == ['--version']:
+        print version
+        exit(0)
     try: 
         import curses
         import curses.panel
@@ -352,7 +305,7 @@ if __name__ == '__main__':
         headerwin = curses.newwin(1, mainwinw+1, 1, mainwinx)
         headerpan = curses.panel.new_panel(headerwin)
 
-        totalwin = curses.newwin(2, mainwinw+1, scrh-4, mainwinx)
+        totalwin = curses.newwin(1, mainwinw+1, scrh-3, mainwinx)
         totalpan = curses.panel.new_panel(totalwin)
 
         statuswin = curses.newwin(1, mainwinw+1, scrh-2, mainwinx)
@@ -364,16 +317,24 @@ if __name__ == '__main__':
         statuswin.scrollok(0)
         prepare_display()
         displaykiller = Event()
-        displaythread = Thread(target = display_thread, name = 'display', args = [displaykiller, mainquitflag])
+        displaythread = Thread(target = display_thread, name = 'display', args = [displaykiller])
         displaythread.setDaemon(1)
         displaythread.start()
         dropdir_mainloop(argv[1], argv[2:])
     except KeyboardInterrupt: 
-        cleanup_and_quit()
+        status = '^C caught! Killing torrents..'
+        for file, threadinfo in threads.items(): 
+            status = 'Killing torrent %s' % file
+            threadinfo['kill'].set() 
+            threadinfo['thread'].join() 
+            del threads[file]
+        displaykiller.set()
+        displaythread.join()
+        curses.nocbreak()
+        curses.echo()
+        curses.endwin()
     except:
-        dietrace = traceback
-    curses.nocbreak()
-    curses.echo()
-    curses.endwin()
-    if dietrace != 0:
-        dietrace.print_exc()
+        curses.nocbreak()
+        curses.echo()
+        curses.endwin()
+        traceback.print_exc()

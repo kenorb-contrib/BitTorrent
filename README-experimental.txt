@@ -1,0 +1,15 @@
+CHANGES FROM EIKE FROST'S EXPERIMENTAL CLIENT:
+----------------------------------------------
+
+* Background file allocation - missing file space is allocated in
+  the background, and hashes are checked only for pre-existing data
+
+* Multitracker addition - .torrent file can now specify multiple
+  trackers
+
+* Preferences menu - lets you conveniently configure the GUI client
+
+* Status light - gives you important information about the torrent
+  at a glance
+
+* and various other improvements and bug fixes

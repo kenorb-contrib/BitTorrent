@@ -7,13 +7,24 @@
 # fmttime and fmtsize stolen from btdownloadcurses. 
 # see LICENSE.txt for license information
 
+from BitTorrent import PSYCO
+if PSYCO.psyco:
+    try:
+        import psyco
+        assert psyco.__version__ >= 0x010100f0
+        psyco.full()
+    except:
+        pass
+
 from BitTorrent.download import download
 from threading import Thread, Event, Lock
 from os import listdir
-from os.path import abspath, join, exists, getsize
-from sys import argv, stdout, exit
+from os.path import abspath, join, exists
+from sys import argv, version, stdout, exit
 from time import sleep
 import traceback
+
+assert version >= '2', "Install Python 2.0 or greater"
 
 def fmttime(n):
     if n == -1:
@@ -27,27 +38,20 @@ def fmttime(n):
         return 'n/a'
     return '%d:%02d:%02d' % (h, m, s)
 
-def fmtsize(n, baseunit = 0, padded = 1):
+def fmtsize(n):
     unit = [' B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB']
-    i = baseunit
-    while i + 1 < len(unit) and n >= 999:
-        i += 1
+    i = 0
+    if (n > 999):
+        i = 1
+        while i + 1 < len(unit) and (n >> 10) >= 999:
+            i += 1
+            n >>= 10
         n = float(n) / (1 << 10)
-    size = ''
-    if padded:
-        if n < 10:
-            size = '  '
-        elif n < 100:
-            size = ' '
-    if i != 0:
-        size += '%.1f %s' % (n, unit[i])
+    if i > 0:
+        size = '%.1f' % n + '%s' % unit[i]
     else:
-        if padded:
-            size += '%.0f   %s' % (n, unit[i])
-        else:
-            size += '%.0f %s' % (n, unit[i])
+        size = '%.0f' % n + '%s' % unit[i]
     return size
-
 
 def dummy(*args, **kwargs):
     pass
@@ -84,9 +88,6 @@ def dropdir_mainloop(d, params):
                 threadinfo['timeout'] = threadinfo['timeout'] - 1
             elif not threadinfo['thread'].isAlive():
                 # died without permission
-                # if it was checking the file, it isn't anymore.
-                if threadinfo.get('checking', None):
-                    filecheck.release()
                 if threadinfo.get('try') == 6: 
                     # Died on the sixth try? You're dead.
                     deadfiles.append(file)
@@ -103,9 +104,6 @@ def dropdir_mainloop(d, params):
                 if threadinfo.get('timeout', -1) == -1:
                     threadinfo['kill'].set()
                     threadinfo['thread'].join()
-                # if this thread was filechecking, open it up
-                if threadinfo.get('checking', None): 
-                    filecheck.release()
                 del threads[file]
         for file in deadfiles:
             # if the file dissapears, remove it from our dead list
@@ -122,17 +120,11 @@ def display_thread(displaykiller):
             break
         totalup = 0
         totaldown = 0
-        totaluptotal = 0.0
-        totaldowntotal = 0.0
         for file, threadinfo in threads.items(): 
             uprate = threadinfo.get('uprate', 0)
             downrate = threadinfo.get('downrate', 0)
-            uptxt = fmtsize(uprate, padded = 0)
-            downtxt = fmtsize(downrate, padded = 0)
-            uptotal = threadinfo.get('uptotal', 0.0)
-            downtotal = threadinfo.get('downtotal', 0.0)
-            uptotaltxt = fmtsize(uptotal, baseunit = 2, padded = 0)
-            downtotaltxt = fmtsize(downtotal, baseunit = 2, padded = 0)
+            uptxt = fmtsize(uprate)
+            downtxt = fmtsize(downrate)
             filename = threadinfo.get('savefile', file)
             if threadinfo.get('timeout', 0) > 0:
                 trys = threadinfo.get('try', 1)
@@ -140,17 +132,13 @@ def display_thread(displaykiller):
                 print '%s: try %d died, retry in %d' % (filename, trys, timeout)
             else:
                 status = threadinfo.get('status','')
-                print '%s: Spd: %s/%s Tot: %s/%s [%s]' % (filename, uptxt, downtxt, uptotaltxt, downtotaltxt, status)
+                print '%s: %s/%s [%s]' % (filename, uptxt, downtxt, status)
             totalup += uprate
             totaldown += downrate
-            totaluptotal += uptotal
-            totaldowntotal += downtotal
         # display totals line
-        totaluptxt = fmtsize(totalup, padded = 0)
-        totaldowntxt = fmtsize(totaldown, padded = 0)
-        totaluptotaltxt = fmtsize(totaluptotal, baseunit = 2, padded = 0)
-        totaldowntotaltxt = fmtsize(totaldowntotal, baseunit = 2, padded = 0)
-        print 'All: Spd: %s/%s Tot: %s/%s' % (totaluptxt, totaldowntxt, totaluptotaltxt, totaldowntotaltxt)
+        totaluptxt = '%s/s' % fmtsize(totalup)
+        totaldowntxt = '%s/s' % fmtsize(totaldown)
+        print 'Total: %s up %s down' % (totaluptxt, totaldowntxt)
         print
         stdout.flush()
         sleep(interval)
@@ -166,6 +154,10 @@ class StatusUpdater:
         self.activity = 'starting'
         self.display()
         self.myinfo['errors'] = []
+        self.percentDone = 0
+        self.doingdown = 0
+        self.doingup = 0
+
 
     def download(self): 
         download(self.params + ['--responsefile', self.file], self.choose, self.display, self.finished, self.err, self.myinfo['kill'], 80)
@@ -176,7 +168,7 @@ class StatusUpdater:
         self.done = 1
         self.myinfo['done'] = 1
         self.activity = 'complete'
-        self.display({'fractionDone' : 1})
+        self.display(fractionDone = 1)
 
     def err(self, msg): 
         self.myinfo['errors'].append(msg)
@@ -193,47 +185,52 @@ class StatusUpdater:
             saveas = default
         # it asks me where I want to save it before checking the file.. 
         self.myinfo['savefile'] = self.file[:-len(ext)]
-        if exists(self.file[:-len(ext)]) and (getsize(self.file[:-len(ext)]) > 0):
+        if exists(self.file[:-len(ext)]):
             # file will get checked
             while (not filecheck.acquire(0) and not self.myinfo['kill'].isSet()):
                 self.myinfo['status'] = 'disk wait'
                 sleep(0.1)
-            if not self.myinfo['kill'].isSet():
-                self.myinfo['checking'] = 1
-                self.checking = 1
+            self.checking = 1
         return self.file[:-len(ext)]
-    
-    def display(self, dict = {}):
-        fractionDone = dict.get('fractionDone', None)
-        timeEst = dict.get('timeEst', None)
-        activity = dict.get('activity', None) 
-        global status
-        if activity is not None and not self.done: 
-            if activity == 'checking existing file':
-                self.activity = 'disk check'
-            elif activity == 'connecting to peers':
-                self.activity = 'connecting'
+
+    def display(self, fractionDone = None,
+            timeEst = None, downRate = None, upRate = None,
+            activity = None, statistics = None, **kws):
+        if fractionDone is not None:
+            newpercent = int(fractionDone*100)
+            if newpercent != self.percentDone:
+                self.percentDone = newpercent
+                print self.file + (': %d%%' % newpercent)
+        if activity is not None:
+            print self.file + ': ' + activity
+        if downRate is not None:
+            if self.doingdown*.8 <= downRate <= self.doingdown*1.2:
+                pass
+            else:
+                self.doingdown = downRate
+                print self.file + (': downloading %.0f kB/s' % (float(downRate) / (1 << 10)))
+        if upRate is not None:
+            if self.doingup*.8 <= upRate <= self.doingup*1.2:
+                pass
             else:
                 self.activity = activity
         elif timeEst is not None: 
             self.activity = fmttime(timeEst)
         if fractionDone is not None: 
             self.myinfo['status'] = '%s %.0f%%' % (self.activity, fractionDone * 100)
-        else:
-            self.myinfo['status'] = self.activity
-        if self.activity != 'checking existing file' and self.checking:
+        if statistics is not None and self.checking:
             # we finished checking our files. 
             filecheck.release()
             self.checking = 0
             self.myinfo['checking'] = 0
-        if dict.has_key('upRate'):
-            self.myinfo['uprate'] = dict['upRate']
-        if dict.has_key('downRate'):
-            self.myinfo['downrate'] = dict['downRate']
-        if dict.has_key('upTotal'):
-            self.myinfo['uptotal'] = dict['upTotal']
-        if dict.has_key('downTotal'):
-            self.myinfo['downtotal'] = dict['downTotal']
+        else:
+            self.myinfo['status'] = self.activity
+        if downRate is None: 
+            downRate = 0
+        if upRate is None:
+            upRate = 0
+        self.myinfo['uprate'] = int(upRate)
+        self.myinfo['downrate'] = int(downRate)
 
 if __name__ == '__main__':
     if (len(argv) < 2):
@@ -242,6 +239,9 @@ if __name__ == '__main__':
   <global options> - options to be applied to all torrents (see btdownloadheadless.py)
 """
         exit(-1)
+    if argv[1:] == ['--version']:
+        print version
+        exit(0)
     try:
         displaykiller = Event()
         displaythread = Thread(target = display_thread, name = 'display', args = [displaykiller])

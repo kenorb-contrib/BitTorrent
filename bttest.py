@@ -3,6 +3,13 @@
 # Written by Bram Cohen
 # see LICENSE.txt for license information
 
+try:
+    import psyco
+    assert psyco.__version__ >= 0x010100f0
+    psyco.full()
+except:
+    pass
+
 from BitTorrent import testtest
 import bttrack
 import btmakemetafile

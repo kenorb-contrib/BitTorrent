@@ -18,11 +18,11 @@ class poll:
     def register(self, f, t):
         if type(f) != IntType:
             f = f.fileno()
-        if (t & POLLIN) != 0:
+        if (t & POLLIN):
             insert(self.rlist, f)
         else:
             remove(self.rlist, f)
-        if (t & POLLOUT) != 0:
+        if (t & POLLOUT):
             insert(self.wlist, f)
         else:
             remove(self.wlist, f)
@@ -34,7 +34,7 @@ class poll:
         remove(self.wlist, f)
 
     def poll(self, timeout = None):
-        if self.rlist != [] or self.wlist != []:
+        if self.rlist or self.wlist:
             r, w, e = select(self.rlist, self.wlist, [], timeout)
         else:
             sleep(timeout)

@@ -34,13 +34,23 @@ def formatDefinitions(options, COLS):
 def usage(str):
     raise ValueError(str)
 
-def parseargs(argv, options, minargs = None, maxargs = None):
+
+def defaultargs(options):
+    list = {}
+    for (longname, default, doc) in options:
+        list[longname] = default
+    return list
+        
+
+def parseargs(argv, options, minargs = None, maxargs = None, presets = {}):
     config = {}
     longkeyed = {}
     for option in options:
         longname, default, doc = option
         longkeyed[longname] = option
         config[longname] = default
+    for longname in presets.keys():        # presets after defaults but before arguments
+        config[longname] = presets[longname]
     options = []
     args = []
     pos = 0

@@ -3,6 +3,9 @@
 
 from cStringIO import StringIO
 from socket import error as socketerror
+from traceback import print_exc
+true = 1
+false = 0
 
 protocol_name = 'BitTorrent protocol'
 
@@ -15,7 +18,7 @@ class NatCheck:
         self.peerid = peerid
         self.ip = ip
         self.port = port
-        self.closed = False
+        self.closed = false
         self.buffer = StringIO()
         self.next_len = 1
         self.next_func = self.read_header_len
@@ -24,12 +27,12 @@ class NatCheck:
             self.connection.write(chr(len(protocol_name)) + protocol_name +
                 (chr(0) * 8) + downloadid)
         except socketerror:
-            self.answer(False)
+            self.answer(false)
         except IOError:
-            self.answer(False)
+            self.answer(false)
 
     def answer(self, result):
-        self.closed = True
+        self.closed = true
         try:
             self.connection.close()
         except AttributeError:
@@ -57,11 +60,11 @@ class NatCheck:
     def read_peer_id(self, s):
         if s != self.peerid:
             return None
-        self.answer(True)
+        self.answer(true)
         return None
 
     def data_came_in(self, connection, s):
-        while True:
+        while true:
             if self.closed:
                 return
             i = self.next_len - self.buffer.tell()
@@ -76,14 +79,14 @@ class NatCheck:
             x = self.next_func(m)
             if x is None:
                 if not self.closed:
-                    self.answer(False)
+                    self.answer(false)
                 return
             self.next_len, self.next_func = x
 
     def connection_lost(self, connection):
         if not self.closed:
-            self.closed = True
-            self.resultfunc(False, self.downloadid, self.peerid, self.ip, self.port)
+            self.closed = true
+            self.resultfunc(false, self.downloadid, self.peerid, self.ip, self.port)
 
     def connection_flushed(self, connection):
         pass

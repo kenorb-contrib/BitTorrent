@@ -3,12 +3,25 @@
 # Written by Henry 'Pi' James
 # see LICENSE.txt for license information
 
-from BitTorrent.download import download
+SPEW_SCROLL_RATE = 3
+
+from BitTorrent import PSYCO
+if PSYCO.psyco:
+    try:
+        import psyco
+        assert psyco.__version__ >= 0x010100f0
+        psyco.full()
+    except:
+        pass
+
+from BitTorrent.download import Download
 from threading import Event
 from os.path import abspath
 from signal import signal, SIGWINCH
-from sys import argv, stdout
-from time import strftime, time
+from sys import argv, version, stdout
+import sys
+from time import time, strftime
+assert version >= '2', "Install Python 2.0 or greater"
 
 def fmttime(n):
     if n == -1:
@@ -22,55 +35,48 @@ def fmttime(n):
         return 'n/a'
     return 'finishing in %d:%02d:%02d' % (h, m, s)
 
-def commaize(n): 
+def fmtsize(n):
     s = str(n)
-    commad = s[-3:]
+    size = s[-3:]
     while len(s) > 3:
         s = s[:-3]
-        commad = '%s,%s' % (s[-3:], commad)
-    return commad
-
-def fmtsize(n, baseunit = 0, padded = 1):
-    unit = [' B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB']
-    i = baseunit
-    while i + 1 < len(unit) and n >= 999:
-        i += 1
+        size = '%s,%s' % (s[-3:], size)
+    if n > 999:
+        unit = ['B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB']
+        i = 1
+        while i + 1 < len(unit) and (n >> 10) >= 999:
+            i += 1
+            n >>= 10
         n = float(n) / (1 << 10)
-    size = ''
-    if padded:
-        if n < 10:
-            size = '  '
-        elif n < 100:
-            size = ' '
-    if i != 0:
-        size += '%.1f %s' % (n, unit[i])
-    else:
-        if padded:
-            size += '%.0f   %s' % (n, unit[i])
-        else: 
-            size += '%.0f %s' % (n, unit[i])
+        size = '%s (%.0f %s)' % (size, n, unit[i])
     return size
 
 def winch_handler(signum, stackframe):
-    global scrwin, scrpan, labelwin, labelpan, fieldw, fieldh, fieldwin, fieldpan
+    global scrwin, scrpan, labelwin, labelpan
+    global fieldh, fieldw, fieldy, fieldx, fieldwin, fieldpan
+    global spewwin, spewpan, spewh, speww, spewy, spewx
     # SIGWINCH. Remake the frames!
     ## Curses Trickery
-    curses.endwin()
+    try:
+        curses.endwin()
+    except:
+        pass
     # delete scrwin somehow?
     scrwin.refresh()
     scrwin = curses.newwin(0, 0, 0, 0) 
     scrh, scrw = scrwin.getmaxyx()
     scrpan = curses.panel.new_panel(scrwin)
-    labelh, labelw, labely, labelx = scrh - 2, 9, 1, 2
+    labelh, labelw, labely, labelx = 11, 9, 1, 2
     labelwin = curses.newwin(labelh, labelw, labely, labelx)
     labelpan = curses.panel.new_panel(labelwin)
-    fieldh, fieldw, fieldy, fieldx = scrh - 2, scrw - 2 - labelw - 3, 1, labelw + 3
+    fieldh, fieldw, fieldy, fieldx = labelh, scrw - 2 - labelw - 3, 1, labelw + 3
     fieldwin = curses.newwin(fieldh, fieldw, fieldy, fieldx)
     fieldpan = curses.panel.new_panel(fieldwin)
+    spewh, speww, spewy, spewx = scrh - labelh - 2, scrw - 3, 1 + labelh, 2
+    spewwin = curses.newwin(spewh, speww, spewy, spewx)
+    spewpan = curses.panel.new_panel(spewwin)
     prepare_display()
 
-# This flag stops the torrent when set.
-mainkillflag = Event()
 
 class CursesDisplayer:
     def __init__(self, mainerrlist):
@@ -81,48 +87,41 @@ class CursesDisplayer:
         self.status = ''
         self.progress = ''
         self.downloadTo = ''
-        self.downRate = '%s/s down' % (fmtsize(0))
-        self.upRate = '%s/s up  ' % (fmtsize(0))
-        self.upTotal = '%s   up  ' % (fmtsize(0, 2))
-        self.downTotal = '%s   down' % (fmtsize(0, 2))
+        self.downRate = '---'
+        self.upRate = '---'
+        self.shareRating = ''
+        self.seedStatus = ''
+        self.peerStatus = ''
         self.errors = []
         self.globalerrlist = mainerrlist
         self.last_update_time = 0
+        self.spew_scroll_time = 0
+        self.spew_scroll_pos = 0
 
     def finished(self):
         self.done = 1
         self.activity = 'download succeeded!'
-        self.downRate = '%s/s down' % (fmtsize(0))
-        self.display({'fractionDone': 1})
+        self.downRate = '---'
+        self.display(fractionDone = 1)
 
     def failed(self):
-        global mainkillflag
-        if not mainkillflag.isSet():
-            self.done = 1
-            self.activity = 'download failed!'
-            self.downRate = '%s/s down' % (fmtsize(0))
-            self.display()
-
-    def error(self, errormsg):
-        errtxt = strftime('[%H:%M:%S] ') + errormsg
-        self.errors.append(errtxt)
-        self.globalerrlist.append(errtxt)
-        # force redraw to get rid of nasty stack backtrace
-        winch_handler(SIGWINCH, 0)
+        self.done = 1
+        self.activity = 'download failed!'
+        self.downRate = '---'
         self.display()
 
-    def display(self, dict = {}):
-        if self.last_update_time + 0.1 > time() and dict.get('fractionDone') not in (0.0, 1.0) and not dict.has_key('activity'):
+    def error(self, errormsg):
+        newerrmsg = strftime('[%H:%M:%S] ') + errormsg
+        self.errors.append(newerrmsg)
+        self.globalerrlist.append(newerrmsg)
+        self.display()
+
+    def display(self, fractionDone = None, timeEst = None,
+            downRate = None, upRate = None, activity = None,
+            statistics = None, spew = None, **kws):
+        if self.last_update_time + 0.1 > time() and fractionDone not in (0.0, 1.0) and activity is not None:
             return
         self.last_update_time = time()
-        global mainkillflag
-        fractionDone = dict.get('fractionDone', None)
-        timeEst = dict.get('timeEst', None)
-        downRate = dict.get('downRate', None)
-        upRate = dict.get('upRate', None)
-        downTotal = dict.get('downTotal', None) # total download megs, float
-        upTotal = dict.get('upTotal', None) # total upload megs, float
-        activity = dict.get('activity', None)
         if activity is not None and not self.done:
             self.activity = activity
         elif timeEst is not None:
@@ -134,47 +133,103 @@ class CursesDisplayer:
         else:
             self.status = self.activity
         if downRate is not None:
-            self.downRate = '%s/s down' % (fmtsize(float(downRate)))
+            self.downRate = '%.1f KB/s' % (float(downRate) / (1 << 10))
         if upRate is not None:
-            self.upRate = '%s/s up  ' % (fmtsize(float(upRate)))
-        if upTotal is not None:
-            self.upTotal = '%s   up  ' % (fmtsize(upTotal, 2))
-        if downTotal is not None:
-            self.downTotal = '%s   down' % (fmtsize(downTotal, 2))
-        inchar = fieldwin.getch()
-        if inchar == 12: #^L
-            winch_handler(SIGWINCH, 0)
-        elif inchar == ord('q'):  # quit 
-            mainkillflag.set() 
-            self.status = 'shutting down...'
-        try:
-            fieldwin.erase()
-            fieldwin.addnstr(0, 0, self.file, fieldw, curses.A_BOLD)
-            fieldwin.addnstr(1, 0, self.fileSize, fieldw)
-            fieldwin.addnstr(2, 0, self.downloadTo, fieldw)
-            if self.progress:
-                fieldwin.addnstr(3, 0, self.progress, fieldw, curses.A_BOLD)
-            fieldwin.addnstr(4, 0, self.status, fieldw)
-            fieldwin.addnstr(5, 0, self.downRate + ' - ' + self.upRate, fieldw / 2)
-            fieldwin.addnstr(6, 0, self.downTotal + ' - ' + self.upTotal, fieldw / 2)
+            self.upRate = '%.1f KB/s' % (float(upRate) / (1 << 10))
+        if statistics is not None:
+           if (statistics.shareRating < 0) or (statistics.shareRating > 100):
+               self.shareRating = 'oo  (%.1f MB up / %.1f MB down)' % (float(statistics.upTotal) / (1<<20), float(statistics.downTotal) / (1<<20))
+           else:
+               self.shareRating = '%.3f  (%.1f MB up / %.1f MB down)' % (statistics.shareRating, float(statistics.upTotal) / (1<<20), float(statistics.downTotal) / (1<<20))
+           if not self.done:
+              self.seedStatus = '%d seen now, plus %.3f distributed copies' % (statistics.numSeeds,0.001*int(1000*statistics.numCopies))
+           else:
+              self.seedStatus = '%d seen recently, plus %.3f distributed copies' % (statistics.numOldSeeds,0.001*int(1000*statistics.numCopies))
+           self.peerStatus = '%d seen now, %.1f%% done at %.1f kB/s' % (statistics.numPeers,statistics.percentDone,float(statistics.torrentRate) / (1 << 10))
 
+        fieldwin.erase()
+        fieldwin.addnstr(0, 0, self.file, fieldw, curses.A_BOLD)
+        fieldwin.addnstr(1, 0, self.fileSize, fieldw)
+        fieldwin.addnstr(2, 0, self.downloadTo, fieldw)
+        if self.progress:
+          fieldwin.addnstr(3, 0, self.progress, fieldw, curses.A_BOLD)
+        fieldwin.addnstr(4, 0, self.status, fieldw)
+        fieldwin.addnstr(5, 0, self.downRate, fieldw)
+        fieldwin.addnstr(6, 0, self.upRate, fieldw)
+        fieldwin.addnstr(7, 0, self.shareRating, fieldw)
+        fieldwin.addnstr(8, 0, self.seedStatus, fieldw)
+        fieldwin.addnstr(9, 0, self.peerStatus, fieldw)
+
+        spewwin.erase()
+
+        if not spew:
+            errsize = spewh
             if self.errors:
+                spewwin.addnstr(0, 0, "error(s):", speww, curses.A_BOLD)
                 errsize = len(self.errors)
-                for i in range(errsize):
-                    if (7 + i) >= fieldh:
-                        break
-                    fieldwin.addnstr(7 + i, 0, self.errors[errsize - i - 1], fieldw, curses.A_BOLD)
-            else:
-                fieldwin.move(7, 0)
-        except curses.error: 
-            pass
+                displaysize = min(errsize, spewh)
+                displaytop = errsize - displaysize
+                for i in range(displaysize):
+                    spewwin.addnstr(i, labelw, self.errors[displaytop + i],
+                                 speww-labelw-1, curses.A_BOLD)
+        else:
+            if self.errors:
+                spewwin.addnstr(0, 0, "error:", speww, curses.A_BOLD)
+                spewwin.addnstr(0, labelw, self.errors[-1],
+                                 speww-labelw-1, curses.A_BOLD)
+            spewwin.addnstr(2, 0, " #      IP                 Upload           Download     Completed  Speed", speww, curses.A_BOLD)
+
+
+            if self.spew_scroll_time + SPEW_SCROLL_RATE < time():
+                self.spew_scroll_time = time()
+                if len(spew) > spewh-5 or self.spew_scroll_pos > 0:
+                    self.spew_scroll_pos += 1
+            if self.spew_scroll_pos > len(spew):
+                self.spew_scroll_pos = 0
+
+            for i in range(len(spew)):
+                spew[i]['lineno'] = i+1
+            spew.append({'lineno': None})
+            spew = spew[self.spew_scroll_pos:] + spew[:self.spew_scroll_pos]                
+            
+            for i in range(min(spewh - 5, len(spew))):
+                if not spew[i]['lineno']:
+                    continue
+                spewwin.addnstr(i+3, 0, '%3d' % spew[i]['lineno'], 3)
+                spewwin.addnstr(i+3, 4, spew[i]['ip'], 15)
+                if spew[i]['uprate'] > 100:
+                    spewwin.addnstr(i+3, 20, '%6.0f KB/s' % (float(spew[i]['uprate']) / 1000), 11)
+                spewwin.addnstr(i+3, 32, '-----', 5)
+                if spew[i]['uinterested'] == 1:
+                    spewwin.addnstr(i+3, 33, 'I', 1)
+                if spew[i]['uchoked'] == 1:
+                    spewwin.addnstr(i+3, 35, 'C', 1)
+                if spew[i]['downrate'] > 100:
+                    spewwin.addnstr(i+3, 38, '%6.0f KB/s' % (float(spew[i]['downrate']) / 1000), 11)
+                spewwin.addnstr(i+3, 50, '-------', 7)
+                if spew[i]['dinterested'] == 1:
+                    spewwin.addnstr(i+3, 51, 'I', 1)
+                if spew[i]['dchoked'] == 1:
+                    spewwin.addnstr(i+3, 53, 'C', 1)
+                if spew[i]['snubbed'] == 1:
+                    spewwin.addnstr(i+3, 55, 'S', 1)
+                spewwin.addnstr(i+3, 58, '%5.1f%%' % (float(int(spew[i]['completed']*1000))/10), 6)
+                if spew[i]['speed'] is not None:
+                    spewwin.addnstr(i+3, 64, '%5.0f KB/s' % (float(spew[i]['speed'])/1000), 10)
+
+            if statistics is not None:
+                spewwin.addnstr(spewh-1, 0,
+                        'downloading %d pieces, have %d fragments, %d of %d pieces completed'
+                        % ( statistics.storage_active, statistics.storage_dirty,
+                            statistics.storage_numcomplete,
+                            statistics.storage_totalpieces ), speww-1 )
 
         curses.panel.update_panels()
         curses.doupdate()
 
     def chooseFile(self, default, size, saveas, dir):
         self.file = default
-        self.fileSize = '%s (%s)' % (commaize(size), fmtsize(size, padded = 0))
+        self.fileSize = fmtsize(size)
         if saveas == '':
             saveas = default
         self.downloadTo = abspath(saveas)
@@ -182,8 +237,10 @@ class CursesDisplayer:
 
 def run(mainerrlist, params):
     d = CursesDisplayer(mainerrlist)
+    dow = Download()
+    d.dow = dow
     try:
-        download(params, d.chooseFile, d.display, d.finished, d.error, mainkillflag, fieldw)
+        dow.download(params, d.chooseFile, d.display, d.finished, d.error, Event(), fieldw)
     except KeyboardInterrupt:
         # ^C to exit.. 
         pass 
@@ -191,19 +248,19 @@ def run(mainerrlist, params):
         d.failed()
 
 def prepare_display():
-    try:
-        scrwin.border(ord('|'),ord('|'),ord('-'),ord('-'),ord(' '),ord(' '),ord(' '),ord(' '))
-        labelwin.addstr(0, 0, 'file:')
-        labelwin.addstr(1, 0, 'size:')
-        labelwin.addstr(2, 0, 'dest:')
-        labelwin.addstr(3, 0, 'progress:')
-        labelwin.addstr(4, 0, 'status:')
-        labelwin.addstr(5, 0, 'speed:')
-        labelwin.addstr(6, 0, 'totals:')
-        labelwin.addstr(7, 0, 'error(s):')
-    except curses.error: 
-        pass
-    fieldwin.nodelay(1)
+    scrwin.border(ord('|'),ord('|'),ord('-'),ord('-'),ord(' '),ord(' '),ord(' '),ord(' '))
+    labelwin.addstr(0, 0, 'file:')
+    labelwin.addstr(1, 0, 'size:')
+    labelwin.addstr(2, 0, 'dest:')
+    labelwin.addstr(3, 0, 'progress:')
+    labelwin.addstr(4, 0, 'status:')
+    labelwin.addstr(5, 0, 'dl speed:')
+    labelwin.addstr(6, 0, 'ul speed:')
+    labelwin.addstr(7, 0, 'sharing:')
+    labelwin.addstr(8, 0, 'seeds:')
+    labelwin.addstr(9, 0, 'peers:')
+#    labelwin.addstr(10, 0, '')
+#    labelwin.addstr(11, 0, 'error(s):')
     curses.panel.update_panels()
     curses.doupdate()
 
@@ -224,29 +281,47 @@ except:
        'port of Python, running on all Win32 systems (www.cygwin.com).'
     print
     print 'You may still use "btdownloadheadless.py" to download.'
+    sys.exit(1)
 
 scrh, scrw = scrwin.getmaxyx()
 scrpan = curses.panel.new_panel(scrwin)
-labelh, labelw, labely, labelx = scrh - 2, 9, 1, 2
+labelh, labelw, labely, labelx = 11, 9, 1, 2
 labelwin = curses.newwin(labelh, labelw, labely, labelx)
 labelpan = curses.panel.new_panel(labelwin)
-fieldh, fieldw, fieldy, fieldx = scrh - 2, scrw - 2 - labelw - 3, 1, labelw + 3
+fieldh, fieldw, fieldy, fieldx = labelh, scrw - 2 - labelw - 3, 1, labelw + 3
 fieldwin = curses.newwin(fieldh, fieldw, fieldy, fieldx)
 fieldpan = curses.panel.new_panel(fieldwin)
+spewh, speww, spewy, spewx = scrh - labelh - 2, scrw - 3, 1 + labelh, 2
+spewwin = curses.newwin(spewh, speww, spewy, spewx)
+spewpan = curses.panel.new_panel(spewwin)
 prepare_display()
 
 signal(SIGWINCH, winch_handler)
 
 if __name__ == '__main__':
+    if argv[1:] == ['--version']:
+        print version
+        sys.exit(0)
     mainerrlist = []
     try:
-        run(mainerrlist, argv[1:])
-    finally:
-        curses.nocbreak()
-        curses.echo()
-        curses.endwin()
+        try:
+            run(mainerrlist, argv[1:])
+        finally:
+            try:
+                curses.nocbreak()
+            except:
+                pass
+            try:
+                curses.echo()
+            except:
+                pass
+            try:
+                curses.endwin()
+            except:
+                pass
+    except KeyboardInterrupt:
+        pass
     if len(mainerrlist) != 0:
        print "These errors occurred during execution:"
        for error in mainerrlist:
           print error
-

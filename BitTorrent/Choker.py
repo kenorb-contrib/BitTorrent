@@ -1,26 +1,47 @@
 # Written by Bram Cohen
 # see LICENSE.txt for license information
 
-from random import randrange
+from random import randrange, shuffle
+from time import time
+true = 1
+false = 0
 
 class Choker:
-    def __init__(self, max_uploads, schedule, done = lambda: False, min_uploads = None):
-        self.max_uploads = max_uploads
-        if min_uploads is None:
-            min_uploads = max_uploads
-        self.min_uploads = min_uploads
+    def __init__(self, config, schedule, picker, done = lambda: false):
+        self.config = config
         self.schedule = schedule
+        self.picker = picker
         self.connections = []
-        self.count = 0
+        self.last_preferred = 0
+        self.last_round_robin = time()
         self.done = done
-        schedule(self._round_robin, 10)
-    
+        self.super_seed = false
+        schedule(self._round_robin, 5)
+
     def _round_robin(self):
-        self.schedule(self._round_robin, 10)
-        self.count += 1
-        if self.count % 3 == 0:
-            for i in xrange(len(self.connections)):
-                u = self.connections[i].get_upload()
+        self.schedule(self._round_robin, 5)
+        if self.super_seed:
+            cons = range(len(self.connections))
+            to_close = []
+            count = self.config['min_uploads']-self.last_preferred
+            if count > 0:   # optimization
+                shuffle(cons)
+            for c in cons:
+                i = self.picker.next_have(self.connections[c], count > 0)
+                if i is None:
+                    continue
+                if i < 0:
+                    to_close.append(self.connections[c])
+                    continue
+                self.connections[c].send_have(i)
+                count -= 1
+            for c in to_close:
+                c.close()
+        if self.last_round_robin + self.config['round_robin_period'] < time():
+            self.last_round_robin = time()
+            for i in xrange(1, len(self.connections)):
+                c = self.connections[i]
+                u = c.get_upload()
                 if u.is_choked() and u.is_interested():
                     self.connections = self.connections[i:] + self.connections[:i]
                     break
@@ -28,7 +49,7 @@ class Choker:
 
     def _snubbed(self, c):
         if self.done():
-            return False
+            return false
         return c.get_download().is_snubbed()
 
     def _rate(self, c):
@@ -42,21 +63,22 @@ class Choker:
         for c in self.connections:
             if not self._snubbed(c) and c.get_upload().is_interested():
                 preferred.append((-self._rate(c), c))
+        self.last_preferred = len(preferred)
         preferred.sort()
-        del preferred[self.max_uploads - 1:]
+        del preferred[(self.config['max_uploads']) - 1:]
         preferred = [x[1] for x in preferred]
         count = len(preferred)
-        hit = False
+        hit = false
         for c in self.connections:
             u = c.get_upload()
             if c in preferred:
                 u.unchoke()
             else:
-                if count < self.min_uploads or not hit:
+                if count < self.config['min_uploads'] or not hit:
                     u.unchoke()
                     if u.is_interested():
                         count += 1
-                        hit = True
+                        hit = true
                 else:
                     u.choke()
 
@@ -68,6 +90,7 @@ class Choker:
 
     def connection_lost(self, connection):
         self.connections.remove(connection)
+        self.picker.lost_peer(connection)
         if connection.get_upload().is_interested() and not connection.get_upload().is_choked():
             self._rechoke()
 
@@ -79,14 +102,11 @@ class Choker:
         if not connection.get_upload().is_choked():
             self._rechoke()
 
-    def change_max_uploads(self, newval):
-        def foo(self=self, newval=newval):
-            self._change_max_uploads(newval)
-        self.schedule(foo, 0);
-        
-    def _change_max_uploads(self, newval):
-        self.max_uploads = newval
-        self._rechoke()
+    def set_super_seed(self):
+        self.super_seed = true
+        while self.connections:             # close all connections
+            self.connections[0].close()
+
 
 class DummyScheduler:
     def __init__(self):
@@ -109,7 +129,7 @@ class DummyConnection:
 
 class DummyDownloader:
     def __init__(self, c):
-        self.s = False
+        self.s = false
         self.c = c
 
     def is_snubbed(self):
@@ -120,16 +140,16 @@ class DummyDownloader:
 
 class DummyUploader:
     def __init__(self):
-        self.i = False
-        self.c = True
+        self.i = false
+        self.c = true
 
     def choke(self):
         if not self.c:
-            self.c = True
+            self.c = true
 
     def unchoke(self):
         if self.c:
-            self.c = False
+            self.c = false
 
     def is_choked(self):
         return self.c
@@ -160,8 +180,8 @@ def test_resort():
     c2 = DummyConnection(1)
     c3 = DummyConnection(2)
     c4 = DummyConnection(3)
-    c2.u.i = True
-    c3.u.i = True
+    c2.u.i = true
+    c3.u.i = true
     choker.connection_made(c1)
     assert not c1.u.c
     choker.connection_made(c2, 1)
@@ -193,8 +213,8 @@ def test_interest():
     c1 = DummyConnection()
     c2 = DummyConnection(1)
     c3 = DummyConnection(2)
-    c2.u.i = True
-    c3.u.i = True
+    c2.u.i = true
+    c3.u.i = true
     choker.connection_made(c1)
     assert not c1.u.c
     choker.connection_made(c2, 1)
@@ -204,12 +224,12 @@ def test_interest():
     assert not c1.u.c
     assert c2.u.c
     assert not c3.u.c
-    c3.u.i = False
+    c3.u.i = false
     choker.not_interested(c3)
     assert not c1.u.c
     assert not c2.u.c
     assert not c3.u.c
-    c3.u.i = True
+    c3.u.i = true
     choker.interested(c3)
     assert not c1.u.c
     assert c2.u.c
@@ -223,17 +243,17 @@ def test_robin_interest():
     choker = Choker(1, s)
     c1 = DummyConnection(0)
     c2 = DummyConnection(1)
-    c1.u.i = True
+    c1.u.i = true
     choker.connection_made(c2)
     assert not c2.u.c
     choker.connection_made(c1, 0)
     assert not c1.u.c
     assert c2.u.c
-    c1.u.i = False
+    c1.u.i = false
     choker.not_interested(c1)
     assert not c1.u.c
     assert not c2.u.c
-    c1.u.i = True
+    c1.u.i = true
     choker.interested(c1)
     assert not c1.u.c
     assert c2.u.c
@@ -246,8 +266,8 @@ def test_skip_not_interested():
     c1 = DummyConnection(0)
     c2 = DummyConnection(1)
     c3 = DummyConnection(2)
-    c1.u.i = True
-    c3.u.i = True
+    c1.u.i = true
+    c3.u.i = true
     choker.connection_made(c2)
     assert not c2.u.c
     choker.connection_made(c1, 0)
@@ -277,9 +297,9 @@ def test_connection_lost_no_interrupt():
     c1 = DummyConnection(0)
     c2 = DummyConnection(1)
     c3 = DummyConnection(2)
-    c1.u.i = True
-    c2.u.i = True
-    c3.u.i = True
+    c1.u.i = true
+    c2.u.i = true
+    c3.u.i = true
     choker.connection_made(c1)
     choker.connection_made(c2, 1)
     choker.connection_made(c3, 2)
@@ -319,9 +339,9 @@ def test_connection_made_no_interrupt():
     c1 = DummyConnection(0)
     c2 = DummyConnection(1)
     c3 = DummyConnection(2)
-    c1.u.i = True
-    c2.u.i = True
-    c3.u.i = True
+    c1.u.i = true
+    c2.u.i = true
+    c3.u.i = true
     choker.connection_made(c1)
     choker.connection_made(c2, 1)
     f = s.s[0][0]
@@ -347,8 +367,8 @@ def test_round_robin():
     choker = Choker(1, s)
     c1 = DummyConnection(0)
     c2 = DummyConnection(1)
-    c1.u.i = True
-    c2.u.i = True
+    c1.u.i = true
+    c2.u.i = true
     choker.connection_made(c1)
     choker.connection_made(c2, 1)
     f = s.s[0][0]
@@ -398,14 +418,14 @@ def test_multi():
     choker.connection_made(c9, 8)
     choker.connection_made(c10, 9)
     choker.connection_made(c11, 10)
-    c2.u.i = True
-    c4.u.i = True
-    c6.u.i = True
-    c8.u.i = True
-    c10.u.i = True
-    c2.d.s = True
-    c6.d.s = True
-    c8.d.s = True
+    c2.u.i = true
+    c4.u.i = true
+    c6.u.i = true
+    c8.u.i = true
+    c10.u.i = true
+    c2.d.s = true
+    c6.d.s = true
+    c8.d.s = true
     s.s[0][0]()
     assert not c1.u.c
     assert not c2.u.c
@@ -418,5 +438,3 @@ def test_multi():
     assert c9.u.c
     assert not c10.u.c
     assert c11.u.c
-
-

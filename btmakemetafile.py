@@ -1,9 +1,20 @@
 #!/usr/bin/env python
 
 # Written by Bram Cohen
+# multitracker extensions by John Hoffman
 # see LICENSE.txt for license information
 
-from sys import argv
+from BitTorrent import PSYCO
+if PSYCO.psyco:
+    try:
+        import psyco
+        assert psyco.__version__ >= 0x010100f0
+        psyco.full()
+    except:
+        pass
+
+from sys import argv, version, exit
+assert version >= '2', "Install Python 2.0 or greater"
 from os.path import getsize, split, join, abspath, isdir
 from os import listdir
 from sha import sha
@@ -16,45 +27,98 @@ from threading import Event
 from time import time
 
 defaults = [
-    ('piece_size_pow2', 18,
-        "which power of 2 to set the piece size to"),
+    ('announce_list', '',
+        'a list of announce URLs - explained below'),
+    ('piece_size_pow2', 0,
+        "which power of 2 to set the piece size to (0 = automatic)"),
     ('comment', '',
         "optional human-readable comment to put in .torrent"),
     ('target', '',
         "optional target file for the torrent")
     ]
 
+default_piece_len_exp = 18
+
 ignore = ['core', 'CVS']
+
+def print_announcelist_details():
+    print ('    announce_list = optional list of redundant/backup tracker URLs, in the format:')
+    print ('           url[,url...][|url[,url...]...]')
+    print ('                where URLs separated by commas are all tried first')
+    print ('                before the next group of URLs separated by the pipe is checked.')
+    print ("                If none is given, it is assumed you don't want one in the metafile.")
+    print ('                If announce_list is given, clients which support it')
+    print ('                will ignore the <announce> value.')
+    print ('           Examples:')
+    print ('                http://tracker1.com|http://tracker2.com|http://tracker3.com')
+    print ('                     (tries trackers 1-3 in order)')
+    print ('                http://tracker1.com,http://tracker2.com,http://tracker3.com')
+    print ('                     (tries trackers 1-3 in a randomly selected order)')
+    print ('                http://tracker1.com|http://backup1.com,http://backup2.com')
+    print ('                     (tries tracker 1 first, then tries between the 2 backups randomly)')
 
 def dummy(v):
     pass
 
-def make_meta_file(file, url, piece_len_exp = 18, 
-        flag = Event(), progress = dummy, progress_percent=1, comment = None, target = None):
-    piece_length = 2 ** piece_len_exp
-    a, b = split(file)
-    if target == '':
+def make_meta_file(file, url, params = {}, flag = Event(),
+                   progress = dummy, progress_percent = 1):
+    if params.has_key('piece_size_pow2'):
+        piece_len_exp = params['piece_size_pow2']
+    else:
+        piece_len_exp = default_piece_len_exp
+    if params.has_key('target') and params['target'] != '':
+        f = params['target']
+    else:
+        a, b = split(file)
         if b == '':
             f = a + '.torrent'
         else:
             f = join(a, b + '.torrent')
-    else:
-        f = target
+            
+    if piece_len_exp == 0:  # automatic
+        size = calcsize(file)
+        if   size > 8L*1024*1024*1024:   # > 8 gig =
+            piece_len_exp = 21          #   2 meg pieces
+        elif size > 2*1024*1024*1024:   # > 2 gig =
+            piece_len_exp = 20          #   1 meg pieces
+        elif size > 512*1024*1024:      # > 512M =
+            piece_len_exp = 19          #   512K pieces
+        elif size > 64*1024*1024:       # > 64M =
+            piece_len_exp = 18          #   256K pieces
+        elif size > 16*1024*1024:       # > 16M =
+            piece_len_exp = 17          #   128K pieces
+        elif size > 4*1024*1024:        # > 4M =
+            piece_len_exp = 16          #   64K pieces
+        else:                           # < 4M =
+            piece_len_exp = 15          #   32K pieces
+    piece_length = 2 ** piece_len_exp
+    
     info = makeinfo(file, piece_length, flag, progress, progress_percent)
     if flag.isSet():
         return
     check_info(info)
     h = open(f, 'wb')
     data = {'info': info, 'announce': strip(url), 'creation date': long(time())}
-    if comment:
-        data['comment'] = comment
+    if params.has_key('comment') and params['comment'] != '':
+        data['comment'] = params['comment']
+    if params.has_key('real_announce_list'):    # shortcut for progs calling in from outside
+        data['announce-list'] = params['real_announce_list']
+    elif params.has_key('announce_list') and params['announce_list'] != '':
+        list = []
+        for tier in params['announce_list'].split('|'):
+            sublist = []
+            for tracker in tier.split(','):
+                sublist += [tracker]
+            list += [sublist]
+        data['announce-list'] = list
+        
     h.write(bencode(data))
     h.close()
 
 def calcsize(file):
     if not isdir(file):
         return getsize(file)
-    total = 0
+    total = 0L
     for s in subfiles(abspath(file)):
         total += getsize(s[1])
     return total
@@ -66,15 +130,15 @@ def makeinfo(file, piece_length, flag, progress, progress_percent=1):
         subs.sort()
         pieces = []
         sh = sha()
-        done = 0
+        done = 0L
         fs = []
         totalsize = 0.0
-        totalhashed = 0
+        totalhashed = 0L
         for p, f in subs:
             totalsize += getsize(f)
 
         for p, f in subs:
-            pos = 0
+            pos = 0L
             size = getsize(f)
             fs.append({'length': size, 'path': p})
             h = open(f, 'rb')
@@ -104,7 +168,7 @@ def makeinfo(file, piece_length, flag, progress, progress_percent=1):
     else:
         size = getsize(file)
         pieces = []
-        p = 0
+        p = 0L
         h = open(file, 'rb')
         while p < size:
             x = h.read(min(piece_length, size - p))
@@ -141,15 +205,18 @@ def prog(amount):
 
 if __name__ == '__main__':
     if len(argv) < 3:
-        print 'usage is -'
-        print argv[0] + ' file trackerurl [params]'
+        a,b = split(argv[0])
+        print 'Usage: ' + b + ' <trackerurl> <file> [file...] [params...]'
         print
         print formatDefinitions(defaults, 80)
-    else:
-        try:
-            config, args = parseargs(argv[3:], defaults, 0, 0)
-            make_meta_file(argv[1], argv[2], config['piece_size_pow2'], progress = prog,
-                comment = config['comment'], target = config['target'])
-        except ValueError, e:
-            print 'error: ' + str(e)
-            print 'run with no args for parameter explanations'
+        print_announcelist_details()
+        print ('')
+        exit(2)
+
+    try:
+        config, args = parseargs(argv[1:], defaults, 2, None)
+        for file in args[1:]:
+            make_meta_file(file, args[0], config, progress = prog)
+    except ValueError, e:
+        print 'error: ' + str(e)
+        print 'run with no args for parameter explanations'

@@ -1,31 +1,50 @@
 # Written by Bram Cohen
 # see LICENSE.txt for license information
 
-def booleans_to_bitfield(booleans):
+false = 0
+true = 1
+
+def _int_to_booleans(x):
     r = []
-    for i in xrange(0, len(booleans), 8):
-        v = 0
-        p = 0x80
-        for j in booleans[i:i+8]:
-            if j:
-                v |= p
-            p >>= 1
-        r.append(chr(v))
+    for i in range(8):
+        if x & 0x80:
+            r.append(true)
+        else:
+            r.append(false)
+        x <<= 1
+    return tuple(r)
+
+# lookup table
+TBL = [_int_to_booleans(i) for i in range(256)]
+
+
+def booleans_to_bitfield(booleans):
+    r = [None] * ((len(booleans) + 7) // 8)
+    p = 0x80
+    v = 0
+    pos = 0
+    for b in booleans:
+        if b:
+            v |= p
+        p >>= 1
+        if not p:
+            r[pos] = chr(v)
+            pos += 1
+            v = 0
+            p = 0x80
+    if p != 0x80:
+        r[pos] = chr(v)
     return ''.join(r)
+
 
 def bitfield_to_booleans(bitfield, l):
     extra = len(bitfield) * 8 - l
     if extra < 0 or extra >= 8:
         return None
     r = []
+    t = TBL
     for c in bitfield:
-        v = ord(c)
-        for i in xrange(8):
-            if v & 0x80 != 0:
-                r.append(True)
-            else:
-                r.append(False)
-            v <<= 1
+        r.extend(t[ord(c)])
     if extra > 0:
         if r[-extra:] != [0] * extra:
             return None
