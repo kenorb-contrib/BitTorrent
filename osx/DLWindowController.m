@@ -27,8 +27,9 @@
 {
     id not = [NSNotificationCenter defaultCenter];
     if(!finished) {
-	// update window to say cancelled here
+	[timeRemaining setStringValue:@"Download cancelled!"];
     }
+    [cancelButton setEnabled:NO];
     [[NSApp delegate] cancelDlWithId:dlid];
     [not removeObserver:self];
 }
@@ -101,6 +102,7 @@
     return;
 
     finished = 1;
+    [cancelButton setEnabled:NO];
     fin = [dict objectForKey:@"fin"];
     errmsg = [dict objectForKey:@"errmsg"];
     

@@ -11,6 +11,7 @@
     IBOutlet id progressBar;
     IBOutlet id timeRemaining;
     IBOutlet id ulRate;
+    IBOutlet id cancelButton;
     NSString *timeEst;
     float frac;
     NSNumber *dlid;

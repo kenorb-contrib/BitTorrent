@@ -39,4 +39,4 @@ class DLManager:
 	
     def cancelDlWithId(self, id):
 	self.flags[id].set()
-
+	del(self.flags[id])

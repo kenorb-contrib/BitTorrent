@@ -16,22 +16,39 @@
 static PyObject *chooseFile(PyObject *self, PyObject *args)
 {
     NSAutoreleasePool *pool =[[NSAutoreleasePool alloc] init];
-    NSSavePanel *panel = [NSSavePanel savePanel];
+    id panel;
     char *def = "";
     long size;
     char *saveas = NULL;
     int dir;
-    char *res;
+    PyObject *res;
     int dlid;
     NSString *path;
     
     if (!PyArg_ParseTuple(args, "islsi", &dlid, &def, &size, &saveas, &dir))
 	return NULL;
     path = [NSString stringWithCString:saveas];
-    [panel runModalForDirectory:saveas ? path : NSHomeDirectory() file:[NSString stringWithCString:def]];
-    res = [[panel filename] cString];
+    if(!dir) {
+	panel = [NSSavePanel savePanel];
+	if([panel runModalForDirectory:saveas ? path : NSHomeDirectory() file:[NSString stringWithCString:def]]) {
+	    res = PyString_FromString([[panel filename] cString]);
+	    [pool release];
+	    return res;
+	}
+    }
+    else {
+	panel = [NSOpenPanel openPanel];
+	[panel setCanChooseFiles:NO];
+	[panel setCanChooseDirectories:YES];
+	if([panel runModalForDirectory:saveas ? path : NSHomeDirectory() file:[NSString stringWithCString:def]]) {
+	    res = PyString_FromString([[panel filename] cString]);
+	    [pool release];
+	    return res;
+	}
+    }
     [pool release];
-    return PyString_FromString(res);
+    Py_INCREF(Py_None);
+    return Py_None;
 }
 
 static PyObject *display(PyObject *self, PyObject *args, PyObject *keywds)
