@@ -197,7 +197,6 @@ class MultiFile:
                 for i in range(l, length, interval)[1:] + [length-1]:
                     h.seek(i)
                     h.write(chr(1))
-                    h.flush()
                     statusfunc(fractionDone = float(so_far + i - l)/total)
                 so_far += length - l
             statusfunc(fractionDone = 1.0)

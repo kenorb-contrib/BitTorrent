@@ -133,6 +133,11 @@ def download(params, filefunc, statusfunc, resultfunc, doneflag, cols):
         file = filefunc(info['name'], file_length, config['saveas'], true)
         if file is None:
             return
+        try:
+            makedirs(file)
+        except IOError, e:
+            resultfunc(false, "Couldn't allocate root dir - " + str(e))
+            return
         files = []
         for x in info['files']:
             n = file

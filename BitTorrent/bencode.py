@@ -39,7 +39,7 @@ bencode(-20) == '(3:int3:-20)'
 Lists are encoded in list order before the close parentheses, 
 for example -
 
-bencode(['abc', 'd']) == '(4:list1:abc3:d)'
+bencode(['abc', 'd']) == '(4:list3:abc1:d)'
 bencode([2, 'f']) == '(4:list(3:int1:2)1:f)'
 
 Dicts are encoded by containing alternating keys and values, 
