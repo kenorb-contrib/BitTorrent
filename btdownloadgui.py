@@ -89,47 +89,48 @@ class DownloadInfoFrame(wxFrame):
         EVT_FINISH_STATUS(self, self.onFinishEvent)
         
     def drawGUI(self):
+        panel = wxPanel(self, -1)
         colSizer = wxBoxSizer(wxVERTICAL)
 
-        colSizer.Add(wxStaticText(self, -1, 'Saving:'), 0, wxALIGN_LEFT|wxTOP, 7)
+        colSizer.Add(wxStaticText(panel, -1, 'Saving:'), 0, wxALIGN_LEFT|wxTOP, 7)
 
-        self.fileNameText = wxStaticText(self, -1, '', style = wxALIGN_LEFT)
+        self.fileNameText = wxStaticText(panel, -1, '', style = wxALIGN_LEFT)
         colSizer.Add(self.fileNameText, 0, wxEXPAND, 4)
 
-        self.gauge = wxGauge(self, -1, range = 100)
+        self.gauge = wxGauge(panel, -1, range = 100)
         self.gauge.SetBezelFace(5)
         self.gauge.SetShadowWidth(5)
         colSizer.Add(self.gauge, 0, wxEXPAND, 7)
 
         gridSizer = wxFlexGridSizer(cols = 2, vgap = 7, hgap = 8)
         
-        gridSizer.Add(wxStaticText(self, -1, 'Estimated time left:'))
-        self.timeEstText = wxStaticText(self, -1, '')
+        gridSizer.Add(wxStaticText(panel, -1, 'Estimated time left:'))
+        self.timeEstText = wxStaticText(panel, -1, '')
         gridSizer.Add(self.timeEstText, 0, wxEXPAND)
 
-        gridSizer.Add(wxStaticText(self, -1, 'Download to:'))
-        self.fileDestText = wxStaticText(self, -1, '')
+        gridSizer.Add(wxStaticText(panel, -1, 'Download to:'))
+        self.fileDestText = wxStaticText(panel, -1, '')
         gridSizer.Add(self.fileDestText, 0, wxEXPAND)
 
-        gridSizer.Add(wxStaticText(self, -1, 'Download rate:'))
-        self.downRateText = wxStaticText(self, -1, '')
+        gridSizer.Add(wxStaticText(panel, -1, 'Download rate:'))
+        self.downRateText = wxStaticText(panel, -1, '')
         gridSizer.Add(self.downRateText, 0, wxEXPAND)
 
-        gridSizer.Add(wxStaticText(self, -1, 'Upload rate:'))
-        self.upRateText = wxStaticText(self, -1, '')
+        gridSizer.Add(wxStaticText(panel, -1, 'Upload rate:'))
+        self.upRateText = wxStaticText(panel, -1, '')
         gridSizer.Add(self.upRateText, 0, wxEXPAND)
         gridSizer.AddGrowableCol(1)
 
         colSizer.Add(gridSizer, 0, wxEXPAND, 7)
         
-        self.cancelButton = wxButton(self, -1, 'Cancel')
+        self.cancelButton = wxButton(panel, -1, 'Cancel')
         colSizer.Add(self.cancelButton, 0, wxALIGN_RIGHT, 5)
-        colSizer.Add(wxStaticText(self, -1, ''), 1, wxEXPAND)
+        colSizer.Add(wxStaticText(panel, -1, ''), 1, wxEXPAND)
 
         border = wxBoxSizer(wxHORIZONTAL)
         border.Add(colSizer, 1, wxALL, 25)
-        self.SetSizer(border)
-        self.SetAutoLayout(true)
+        panel.SetSizer(border)
+        panel.SetAutoLayout(true)
         
     def updateStatus(self, fractionDone = None,
             timeEst = None, downRate = None, upRate = None,
