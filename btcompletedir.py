@@ -6,6 +6,7 @@
 from os import listdir
 from os.path import join
 from threading import Event
+from traceback import print_exc
 from sys import argv
 from btmakemetafile import calcsize, make_meta_file
 
@@ -14,6 +15,7 @@ def dummy(x):
 
 def completedir(dir, url, flag = Event(), vc = dummy, fc = dummy):
     files = listdir(dir)
+    files.sort()
     ext = '.torrent'
 
     togen = []
@@ -31,7 +33,10 @@ def completedir(dir, url, flag = Event(), vc = dummy, fc = dummy):
         vc(float(subtotal[0]) / total)
     for i in togen:
         fc(i)
-        make_meta_file(i, url, flag = flag, progress = callback)
+        try:
+            make_meta_file(i, url, flag = flag, progress = callback)
+        except ValueError:
+            print_exc()
 
 def dc(v):
     print v
