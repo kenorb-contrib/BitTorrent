@@ -80,6 +80,7 @@ class SingleDownload:
             self.downloader.requests.remove((index, begin, len(piece)))
         except ValueError:
             return false
+        self.update_rate(len(piece))
         storage = self.downloader.storage
         storage.piece_came_in(index, begin, piece)
         if storage.do_I_have_requests(index):
