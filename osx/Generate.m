@@ -48,13 +48,13 @@
     [portField validateEditing];
     
     if([[hostField stringValue] compare:@""] == NSOrderedSame) {
-	NSBeginAlertSheet(@"Invalid Host Name", nil, nil, nil, gWindow, nil, nil, nil, nil, @"You must enter the host name of a tracker.");
+	NSBeginAlertSheet(NSLocalizedString(@"Invalid Host Name", @""), nil, nil, nil, gWindow, nil, nil, nil, nil, NSLocalizedString(@"You must enter the host name of a tracker.", @""));
     }
     else if([[portField stringValue] compare:@""] == NSOrderedSame) {
-	NSBeginAlertSheet(@"Invalid Port Number", nil, nil, nil, gWindow, nil, nil, nil, nil, @"You must enter the port number of a tracker.");
+	NSBeginAlertSheet(NSLocalizedString(@"Invalid Port Number", @""), nil, nil, nil, gWindow, nil, nil, nil, nil, NSLocalizedString(@"You must enter the port number of a tracker.", @""));
     }
     else if (fname == nil) {
-    	NSBeginAlertSheet(@"Invalid File", nil, nil, nil, gWindow, nil, nil, nil, nil, @"You must drag a file or folder into the generate window first.");
+    	NSBeginAlertSheet(NSLocalizedString(@"Invalid File", @"invalid file chose fo generate"), nil, nil, nil, gWindow, nil, nil, nil, nil, NSLocalizedString(@"You must drag a file or folder into the generate window first.", @"empty file for generate"));
     }
     else {
 	[defaults setObject:[hostField stringValue] forKey:THOSTKEY];

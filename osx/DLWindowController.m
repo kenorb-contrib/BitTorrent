@@ -83,7 +83,7 @@
     
     if(!dir) {
 	panel = [NSSavePanel savePanel];
-	[panel setTitle:@"Save, choose an existing file to resume."];
+	[panel setTitle:NSLocalizedString(@"Save, choose an existing file to resume.", @"save instructions")];
 	if([panel runModalForDirectory:[[NSUserDefaults standardUserDefaults] objectForKey:LASTDIR] file:defaultFile]) {
 	    fname = [panel filename];
 	}
@@ -92,14 +92,14 @@
 	panel = [NSOpenPanel openPanel];
 	[panel setCanChooseFiles:YES];
 	[panel setCanChooseDirectories:YES];
-	[panel setTitle:@"Choose directory, choose existing directory to resume."];
-	[panel setPrompt:@"Save"];
+	[panel setTitle:NSLocalizedString(@"Choose directory, choose existing directory to resume.", @"save directory instructions")];
+	[panel setPrompt:NSLocalizedString(@"Save", @"save directory prompt")];
 	if([panel runModalForDirectory:[[NSUserDefaults standardUserDefaults] objectForKey:LASTDIR] file:defaultFile]) {
 	    fname = [panel filename];
 	}
     }
     if(fname) {
-	[file setStringValue:[NSString stringWithFormat:@"%@ (%1.1f MB)", [fname lastPathComponent], size / 1048576.0]];
+	[file setStringValue:[NSString stringWithFormat:NSLocalizedString(@"%@ (%1.1f MB)", @"filename and size for dl window tite"),[fname lastPathComponent], size / 1048576.0]];
 	[[self window] setTitleWithRepresentedFilename:fname];
 	[[NSUserDefaults standardUserDefaults] setObject:[panel directory] forKey:LASTDIR];
 	return fname;
@@ -130,31 +130,31 @@
 	    [timeEst release];
 	    timeEst = [activity retain];
 	}
-	str = [NSString localizedStringWithFormat:@"%2.1f%%", frac * 100];
+	str = [NSString stringWithFormat:NSLocalizedString(@"%2.1f%%", @"percent dl completed"), frac * 100];
 
 	[percentCompleted setStringValue:str];
 	[progressBar setDoubleValue:frac];
 	[timeRemaining setStringValue:timeEst];
     }
-    [dlRate setStringValue:[NSString localizedStringWithFormat:@"%2.1f K/s", [[dict objectForKey:@"downRate"] floatValue] / 1024]];
-    [ulRate setStringValue:[NSString localizedStringWithFormat:@"%2.1f K/s", [[dict objectForKey:@"upRate"] floatValue] / 1024]];
+    [dlRate setStringValue:[NSString stringWithFormat:NSLocalizedString(@"%2.1f K/s",@"transfer rate"), [[dict objectForKey:@"downRate"] floatValue] / 1024]];
+    [ulRate setStringValue:[NSString stringWithFormat:NSLocalizedString(@"%2.1f K/s", @"transfer rate"), [[dict objectForKey:@"upRate"] floatValue] / 1024]];
 }
 
 - (void)finished
 {
     done = 1;
     [timeEst release];
-    timeEst = [@"Download Succeeded." retain];
+    timeEst = [NSLocalizedString(@"Download Succeeded.", @"download completed successfully") retain];
     [progressBar setDoubleValue:100.0];
     [timeRemaining setStringValue:timeEst];
-    [percentCompleted setStringValue:@"100%"];
+    [percentCompleted setStringValue:NSLocalizedString(@"100%", @"one hundred percent")];
 }
 
 - (void)dlExited
 {
     if(!done) {
 	[progressBar setDoubleValue:0.0];
-	[timeRemaining setStringValue:@"Download Failed!"];
+	[timeRemaining setStringValue:NSLocalizedString(@"Download Failed!", @"download failed")];
 	[dlRate setStringValue:@""];
 	[ulRate setStringValue:@""];
 	[percentCompleted setStringValue:@""];

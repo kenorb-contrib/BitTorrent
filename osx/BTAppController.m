@@ -1,8 +1,8 @@
+#import "ICHelper.h"
 #import "BTAppController.h"
 #import "DLWindowController.h"
 #import "Generate.h"
 #import "pystructs.h"
-#import "ICHelper.h"
 
 static PyThreadState *tstate;
 

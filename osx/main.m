@@ -20,7 +20,7 @@ int main(int argc, const char *argv[])
     // set up python
     Py_SetPythonHome((char*)[[[NSBundle mainBundle] resourcePath] cString]);
     Py_Initialize();
-    PySys_SetArgv(argc, argv);
+    PySys_SetArgv(argc, (char **)argv);
     PyEval_InitThreads();
 
     // add our resource path to sys.path so we can find the BT modules
