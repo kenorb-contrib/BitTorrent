@@ -53,6 +53,8 @@ class Rerequester:
             s += '&last=' + quote(str(self.last))
         if self.trackerid is not None:
             s += '&trackerid=' + quote(str(self.trackerid))
+        if self.howmany() >= self.maxpeers:
+            s += '&numwant=0'
         if event != 3:
             s += '&event=' + ['started', 'completed', 'stopped'][event]
         set = SetOnce().set
@@ -92,8 +94,12 @@ class Rerequester:
                 self.errorfunc('rejected by tracker - ' + r['failure reason'])
             else:
                 self.announce_interval = r.get('interval', self.announce_interval)
-                self.trackerid = r.get('trackerid', self.trackerid)
+                self.interval = r.get('min interval', self.interval)
+                self.trackerid = r.get('tracker id', self.trackerid)
                 self.last = r.get('last')
+                ps = len(r['peers']) + self.howmany()
+                if ps < self.maxpeers and r.get('num peers', 1000) > ps * 1.2:
+                    self.last = None
                 for x in r['peers']:
                     self.connect((x['ip'], x['port']), x['peer id'])
         except ValueError, e:

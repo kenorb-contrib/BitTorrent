@@ -6,7 +6,7 @@ from cStringIO import StringIO
 
 class DownloaderFeedback:
     def __init__(self, choker, add_task, statusfunc, upfunc, downfunc,
-            remainingfunc, leftfunc, file_length, finflag, interval):
+            remainingfunc, leftfunc, file_length, finflag, interval, sp):
         self.choker = choker
         self.add_task = add_task
         self.statusfunc = statusfunc
@@ -17,6 +17,7 @@ class DownloaderFeedback:
         self.file_length = file_length
         self.finflag = finflag
         self.interval = interval
+        self.sp = sp
         self.lastids = []
         self.display()
 
@@ -72,7 +73,8 @@ class DownloaderFeedback:
 
     def display(self):
         self.add_task(self.display, self.interval)
-        #self.spew()
+        if self.sp:
+            self.spew()
         if self.finflag.isSet():
             self.statusfunc(upRate = self.upfunc())
             return

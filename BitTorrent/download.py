@@ -81,6 +81,8 @@ defaults = [
         'seconds to wait before displaying allocation feedback'),
     ('snub_time', None, 60.0,
         "seconds to wait for data to come in over a connection before assuming it's semi-permanently choked"),
+    ('spew', None, 0,
+        "whether to display diagnostic info to stdout"),
     ]
 
 def download(params, filefunc, statusfunc, finfunc, errorfunc, doneflag, cols, pathFunc = None):
@@ -251,7 +253,7 @@ def download(params, filefunc, statusfunc, finfunc, errorfunc, doneflag, cols, p
     DownloaderFeedback(choker, rawserver.add_task, statusfunc, 
         upmeasure.get_rate, downmeasure.get_rate, ratemeasure.get_time_left, 
         ratemeasure.get_size_left, file_length, finflag,
-        config['display_interval'])
+        config['display_interval'], config['spew'])
 
     statusfunc(activity = 'connecting to peers')
     ann[0] = rerequest.announce

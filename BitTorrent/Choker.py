@@ -40,17 +40,16 @@ class Choker:
         preferred = []
         for c in self.connections:
             if not self._snubbed(c) and c.get_upload().is_interested():
-                preferred.append((self._rate(c), c))
+                preferred.append((-self._rate(c), c))
         preferred.sort()
-        preferred.reverse()
         del preferred[self.max_uploads - 1:]
         preferred = [x[1] for x in preferred]
-        for c in preferred:
-            c.get_upload().unchoke()
         count = len(preferred)
         for c in self.connections:
-            if c not in preferred:
-                u = c.get_upload()
+            u = c.get_upload()
+            if c in preferred:
+                u.unchoke()
+            else:
                 if count < self.max_uploads:
                     u.unchoke()
                     if u.is_interested():
@@ -66,7 +65,7 @@ class Choker:
 
     def connection_lost(self, connection):
         self.connections.remove(connection)
-        if not connection.get_upload().is_choked():
+        if connection.get_upload().is_interested() and not connection.get_upload().is_choked():
             self._rechoke()
 
     def interested(self, connection):

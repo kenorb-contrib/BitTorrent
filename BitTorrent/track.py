@@ -204,6 +204,9 @@ class Tracker:
             myid = params.get('peer_id', '')
             if len(myid) != 20:
                 raise ValueError, 'id not of length 20'
+            rsize = self.response_size
+            if params.has_key('num want'):
+                rsize = int(params['num want'])
         except ValueError, e:
             return (400, 'Bad Request', {'Content-Type': 'text/plain'}, 
                 'you sent me garbage - ' + str(e))
@@ -221,15 +224,15 @@ class Tracker:
                 del ts[myid]
         data = {'interval': self.reannounce_interval}
         cache = self.cached.setdefault(infohash, [])
-        if len(cache) < self.response_size:
+        if len(cache) < self.rsize:
             for key, value in self.downloads.setdefault(
                     infohash, {}).items():
                 if not value.get('nat'):
                     cache.append({'peer id': key, 'ip': value['ip'], 
                         'port': value['port']})
             shuffle(cache)
-        data['peers'] = cache[-self.response_size:]
-        del cache[-self.response_size:]
+        data['peers'] = cache[-self.rsize:]
+        del cache[-self.rsize:]
         connection.answer((200, 'OK', {'Content-Type': 'text/plain', 'Pragma': 'no-cache'}, bencode(data)))
         if self.natcheck:
             NatCheck(self.connectback_result, infohash, myid, ip, port, self.rawserver)

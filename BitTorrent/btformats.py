@@ -79,7 +79,17 @@ def check_peers(message):
         id = p.get('peer id')
         if type(id) != StringType or len(id) != 20:
             raise ValueError
-    interval = message.get('interval')
+    interval = message.get('interval', 1)
     if type(interval) not in ints or interval <= 0:
         raise ValueError
-    
+    minint = message.get('min interval', 1)
+    if type(minint) not in ints or minint <= 0:
+        raise ValueError
+    if type(message.get('tracker id', '')) != StringType:
+        raise ValueError
+    npeers = message.get('num peers', 0)
+    if type(npeers) not in ints or npeers < 0:
+        raise ValueError
+    last = message.get('last', 0)
+    if type(last) not in ints or last < 0:
+        raise ValueError
