@@ -1,0 +1,14 @@
+Build Instructions For OSX
+
+1.  Install Python as a Framework
+  - unpack python
+  - ./configure --enable-framework
+  - make
+  - make frameworkinstall
+
+2.  Build BitTorrent
+  - python setup.py build
+
+3.  Build BT OSX
+  - click hammer icon
+  - note, you may have to point PB to the location of Resources like the BitTorrent directory and _StreamEncrypter.so if your build directory is different from mine.
