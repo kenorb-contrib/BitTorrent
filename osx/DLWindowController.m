@@ -101,31 +101,31 @@
 {
     NSString *str, *activity;
     long est;
+ 
+    if(!done) {   
+	activity = [dict objectForKey:@"activity"];
+	if ([[dict objectForKey:@"fractionDone"] floatValue] != 0.0) {
+	    frac = [[dict objectForKey:@"fractionDone"] floatValue];
+	}
     
-    activity = [dict objectForKey:@"activity"];
-    if ([[dict objectForKey:@"fractionDone"] floatValue] != 0.0) {
-	frac = [[dict objectForKey:@"fractionDone"] floatValue];
-    }
+	// format dict timeEst here and put in ivar timeEst
+	est = [[dict objectForKey:@"timeEst"] longValue];
+	if(est > 0) {
+	    [timeEst release];
+	    timeEst = [[self hours:est] retain];
+	}
+	if(![activity isEqualToString:@""]) {
+	    [timeEst release];
+	    timeEst = [activity retain];
+	}
+	str = [NSString localizedStringWithFormat:@"%2.1f%%", frac * 100];
 
-    // format dict timeEst here and put in ivar timeEst
-    est = [[dict objectForKey:@"timeEst"] longValue];
-    if(est > 0) {
-	[timeEst release];
-	timeEst = [[self hours:est] retain];
-    }
-    if(![activity isEqualToString:@""]) {
-	[timeEst release];
-	timeEst = [activity retain];
-    }
-    str = [NSString localizedStringWithFormat:@"%2.1f%%", frac * 100];
-
-    [percentCompleted setStringValue:str];
-    [dlRate setStringValue:[NSString localizedStringWithFormat:@"%2.1f K/s", [[dict objectForKey:@"downRate"] floatValue] / 1024]];
-    [ulRate setStringValue:[NSString localizedStringWithFormat:@"%2.1f K/s", [[dict objectForKey:@"upRate"] floatValue] / 1024]];
-    [progressBar setDoubleValue:frac];
-    if(!done) {
+	[percentCompleted setStringValue:str];
+	[progressBar setDoubleValue:frac];
 	[timeRemaining setStringValue:timeEst];
     }
+    [dlRate setStringValue:[NSString localizedStringWithFormat:@"%2.1f K/s", [[dict objectForKey:@"downRate"] floatValue] / 1024]];
+    [ulRate setStringValue:[NSString localizedStringWithFormat:@"%2.1f K/s", [[dict objectForKey:@"upRate"] floatValue] / 1024]];
 }
 
 - (void)finished
