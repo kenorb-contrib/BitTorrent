@@ -45,7 +45,7 @@ defaults = [
     ('logfile', '', 'file to write the tracker logs, use - for stdout (default)'),
     ('allow_get', 0, 'use with allowed_dir; adds a /file?hash={hash} url that allows users to download the torrent file'),
     ('keep_dead', 0, 'keep dead torrents after they expire (so they still show up on your /scrape and web page)'),
-    ('scrape_allowed', 'full', 'scrape access allowed (can be none, specific or full)')
+    ('scrape_allowed', 'full', 'scrape access allowed (can be none, specific or full)'),
     ('max_give', 200, 'maximum number of peers to give with any one request'),
     ]
 
