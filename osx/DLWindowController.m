@@ -40,6 +40,7 @@
     else
 	return [NSString stringWithFormat:@"%2d min(s) %2d sec(s)", m, sec]; 
 }
+
 - (void)display:(NSNotification *)notification
 {
     NSDictionary *dict = [notification userInfo];
@@ -53,7 +54,7 @@
 
     // format dict timeEst here and put in ivar timeEst
     est = [[dict objectForKey:@"timeEst"] longValue];
-    if(est >= 0) {
+    if(est > 0) {
 	[timeEst release];
 	timeEst = [[self hours:est] retain];
     }
@@ -61,7 +62,7 @@
 	[timeEst release];
 	timeEst = [activity retain];
     }
-    str = [NSString localizedStringWithFormat:@"%2.1f", frac * 100];
+    str = [NSString localizedStringWithFormat:@"%2.1f%%", frac * 100];
 
     [percentCompleted setStringValue:str];
     [dlRate setStringValue:[NSString localizedStringWithFormat:@"%2.1f K/s", [[dict objectForKey:@"downRate"] floatValue] / 1024]];
@@ -72,6 +73,26 @@
 
 - (void)finished:(NSNotification *)notification
 {
+    NSDictionary *dict = [notification userInfo];
+    NSNumber *fin;
+    NSString *errmsg;
+    
+    fin = [dict objectForKey:@"fin"];
+    errmsg = [dict objectForKey:@"errmsg"];
+    
+    [timeEst release];
+    if([fin intValue]) {
+	frac = 1.0;
+	timeEst = [@"Download Succeeded." retain];
+    }
+    else {
+	if([errmsg isEqualToString:@""])
+	    timeEst = [@"Download Failed!" retain];
+	else
+	    timeEst = [[NSString stringWithFormat:@"Download failed - %@", errmsg] retain];
+    }
+    [timeRemaining setStringValue:timeEst];
+    [percentCompleted setStringValue:[NSString localizedStringWithFormat:@"%2.1f%%", frac * 100]];
 }
 
 @end

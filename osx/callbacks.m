@@ -65,6 +65,23 @@ static PyObject *display(PyObject *self, PyObject *args, PyObject *keywds)
 
 static PyObject *finished(PyObject *self, PyObject *args)
 {
+    int fin;
+    char *errmsg = NULL;
+    NSAutoreleasePool *pool =[[NSAutoreleasePool alloc] init];
+    NSMutableDictionary *dict = [NSMutableDictionary dictionaryWithCapacity:2];
+
+    if(!PyArg_ParseTuple(args, "iz", &fin, &errmsg))
+	return NULL;
+    if(errmsg)
+	[dict setObject:[NSString stringWithCString:errmsg] forKey:@"errmsg"];
+    else
+	[dict setObject:@"" forKey:@"errmsg"];
+    [dict setObject:[NSNumber numberWithInt:fin] forKey:@"fin"];
+    
+    [[NSNotificationCenter defaultCenter] postNotificationName:FINISHED
+							object:nil
+							userInfo:dict];
+    [pool release];
     Py_INCREF(Py_None);
     return Py_None;
 }
