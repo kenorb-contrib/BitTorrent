@@ -16,6 +16,7 @@ from urllib import urlopen, quote, unquote
 from traceback import print_exc
 from os.path import exists
 from cStringIO import StringIO
+from socket import error as socketerror
 true = 1
 false = 0
 
@@ -62,7 +63,7 @@ class TrackerHandler(BaseHTTPRequestHandler):
             self.server.lock.acquire()
             try:
                 self.put()
-            except IOError:
+            except IOError, socketerror:
                 pass
             except ValueError, e:
                 print_exc()
@@ -151,7 +152,7 @@ class TrackerHandler(BaseHTTPRequestHandler):
             self.server.lock.acquire()
             try:
                 self.get(head)
-            except IOError:
+            except IOError, socketerror:
                 pass
             except ValueError, e:
                 print_exc()
