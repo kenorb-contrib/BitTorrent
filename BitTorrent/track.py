@@ -45,7 +45,8 @@ defaults = [
     ('only_local_override_ip', 1, "ignore the ip GET parameter from machines which aren't on local network IPs"),
     ('logfile', '', 'file to write the tracker logs, use - for stdout (default)'),
     ('allow_get', 0, 'use with allowed_dir; adds a /file?hash={hash} url that allows users to download the torrent file'),
-    ('keep_dead', 0, 'keep dead torrents after they expire (so they still show up on your /scrape and web page)')
+    ('keep_dead', 0, 'keep dead torrents after they expire (so they still show up on your /scrape and web page)'),
+    ('max_give', 200, 'maximum number of peers to give with any one request'),
     ]
 
 def statefiletemplate(x):
@@ -116,6 +117,7 @@ class Tracker:
         self.response_size = config['response_size']
         self.dfile = config['dfile']
         self.natcheck = config['nat_check']
+        self.max_give = config['max_give']
         favicon = config['favicon']
         if favicon and (favicon != '') and isfile(favicon):
             self.favicon = open(favicon,'r').read()
@@ -320,7 +322,7 @@ class Tracker:
                 raise ValueError, 'id not of length 20'
             rsize = self.response_size
             if params.has_key('numwant'):
-                rsize = int(params['numwant'])
+                rsize = min(long(params['numwant']), self.max_give)
         except ValueError, e:
             return (400, 'Bad Request', {'Content-Type': 'text/plain'}, 
                 'you sent me garbage - ' + str(e))
