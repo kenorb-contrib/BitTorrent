@@ -30,6 +30,8 @@ def completedir(files, url, flag = Event(), vc = dummy, fc = dummy, piece_len_po
         subtotal[0] += x
         vc(float(subtotal[0]) / total)
     for i in togen:
+        if flag.isSet():
+            break
         t = split(i)
         if t[1] == '':
             i = t[0]
