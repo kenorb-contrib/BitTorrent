@@ -195,7 +195,7 @@ class Tracker:
             s.write('<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">\n' \
                 '<html><head><title>BitTorrent download info</title>\n')
             if self.favicon != None:
-                s.write('<link rel="SHORTCUT ICON" href="/favicon.ico">\n')
+                s.write('<link rel="shortcut icon" href="/favicon.ico" />\n')
             s.write('</head>\n<body>\n' \
                 '<h3>BitTorrent download info</h3>\n'\
                 '<ul>\n'
@@ -214,7 +214,7 @@ class Tracker:
                 uc = {}
                 ud = {}
                 if self.allowed != None and self.show_names:
-                    s.write('<table summary="files" border=1>\n' \
+                    s.write('<table summary="files" border="1">\n' \
                         '<tr><th>info hash</th><th>torrent name</th><th align="right">size</th><th align="right">complete</th><th align="right">downloading</th><th align="right">downloaded</th><th align="right">transferred</th></tr>\n')
                 else:
                     s.write('<table summary="files">\n' \
