@@ -2,12 +2,16 @@
 # this file is public domain
 
 from bencode import bencode, bdecode
-from btemplate import compile_template
+from btemplate import compile_template, exact_length, string_template, ListMarker
 true = 1
 false = 0
 
-message_template = compile_template({'type': ['choke', 'unchoke',
-    'slice', 'I have', 'send', 'interested', 'done']})
+message_template = compile_template([{'type': 'choke'}, 
+    {'type': 'unchoke'}, {'type': 'interested'}, {'type': 'done'}, 
+    {'type': 'I have', 'blobs': ListMarker(exact_length(20))}, 
+    {'type': 'slice', 'blob': exact_length(20), 
+        'begin': 0, 'slice': string_template}, 
+    {'type': 'send', 'blob': exact_length(20), 'begin': 0, 'length': 0}])
 
 class Connection:
     def __init__(self, connection):

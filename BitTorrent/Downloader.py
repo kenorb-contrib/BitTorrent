@@ -1,15 +1,8 @@
 # Written by Bram Cohen
 # this file is public domain
 
-from btemplate import compile_template, ListMarker, string_template, exact_length
 true = 1
 false = 0
-
-have_blobs_template = compile_template({'type': 'I have', 
-    'blobs': ListMarker(exact_length(20))})
-
-here_is_a_slice_template = compile_template({'type': 'slice', 
-    'blob': exact_length(20), 'begin': 0, 'slice': string_template})
 
 done_message = {'type': 'done'}
 
@@ -23,21 +16,21 @@ class Download:
         self.choked = false
         self.interested = false
 
-    def got_choke(self, message):
+    def got_choke(self):
         if self.choked:
             return 
         self.choked = true
-        for i in self.downloader.data.cleared(self):
+        for i in self.data.cleared(self):
             i.adjust()
 
-    def got_unchoke(self, message):
+    def got_unchoke(self):
         if not self.choked:
             return
         self.choked = false
         self.adjust()
 
     def adjust(self):
-        data = self.downloader.data
+        data = self.data
         if self.choked:
             if self.interested:
                 if not data.want_more(self):
@@ -50,18 +43,16 @@ class Download:
             return
         f = {}
         while true:
-            if data.num_current(self) >= self.downloader.backlog:
-                if self.interested:
-                    self.interested = false
-                    self.connection.send_message(done_message)
+            if data.num_current(self) >= self.backlog:
                 break
             s = data.get_next(self)
             if s is None:
-                if self.interested:
+                if self.interested and data.num_current(self) == 0:
                     self.interested = false
                     self.connection.send_message(done_message)
                 break
             blob, begin, length, full = s
+            self.interested = true
             self.connection.send_message({'type': 'send', 
                 'blob': blob, 'begin': begin, 'length': length})
             for x in full:
@@ -71,8 +62,7 @@ class Download:
                 x.adjust()
 
     def got_slice(self, message):
-        here_is_a_slice_template(message)
-        complete, check = self.downloader.data.came_in(self, 
+        complete, check = self.data.came_in(self, 
             message['blob'], message['begin'], message['slice'])
         self.adjust()
         for c in check:
@@ -82,8 +72,7 @@ class Download:
         return None
 
     def got_I_have(self, message):
-        have_blobs_template(message)
-        if self.downloader.data.has_blobs(self, 
+        if self.data.has_blobs(self, 
                 message['blobs']) and not self.interested:
             self.adjust()
 
@@ -94,25 +83,176 @@ class Download:
         del self.data
         del self.choked
 
-"""
+class DummyConnection:
+    def __init__(self):
+        self.m = []
+        self.more = []
+        self.choked = false
+        self.disconnected = false
+        self.current = 0
+        
+    def send_message(self, message):
+        self.m.append(message)
+
+class DummyData:
+    def __init__(self):
+        self.all = []
+
+    def cleared(self, d):
+        d.connection.current = 0
+        return self.all
+        
+    def want_more(self, d):
+        return len(d.connection.more) > 0
+
+    def num_current(self, d):
+        return d.connection.current
+        
+    def get_next(self, d):
+        c = d.connection
+        if len(c.more) == 0:
+            return None
+        r = c.more[0]
+        del c.more[0]
+        c.current += 1
+        if len(c.more) == 0:
+            return r + ([],)
+        else:
+            return r + (self.all,)
+        
+    def came_in(self, d, blob, begin, slice):
+        c = d.connection
+        c.current -= 1
+        if c.current == 0:
+            return (blob, self.all)
+        else:
+            return (None, [])
+        
+    def has_blobs(self, d, blobs):
+        return true
+        
+    def disconnected(self, d):
+        d.connection.disconnected = true
+        return self.all
 
 def test_choke():
-    make eight things, put two in each state, one want more one not and one extraneous
-    choke remaining one, return all others to check
-    assert correct behavior
+    # unchoked, interested, want
+    dd = DummyData()
+    yyy = DummyConnection()
+    yyn = DummyConnection()
+    yny = DummyConnection()
+    ynn = DummyConnection()
+    nyy = DummyConnection()
+    nyn = DummyConnection()
+    nny = DummyConnection()
+    nnn = DummyConnection()
+    extra = DummyConnection()
+    
+    yyyd = Download(yyy, dd, 2)
+    yynd = Download(yyn, dd, 2)
+    ynyd = Download(yny, dd, 2)
+    ynnd = Download(ynn, dd, 2)
+    nyyd = Download(nyy, dd, 2)
+    nynd = Download(nyn, dd, 2)
+    nnyd = Download(nny, dd, 2)
+    nnnd = Download(nnn, dd, 2)
+    extrad = Download(extra, dd, 2)
+    
+    yyy.more.append(('a', 0, 2))
+    yny.more.append(('a', 0, 2))
+    nyy.more.append(('a', 0, 2))
+    nny.more.append(('a', 0, 2))
 
-def test_I_have():
-    assert does not adjust if has_blobs returns false
-    assert adjusts if interested on I have, otherwise not
+    nyyd.got_choke()
+    nynd.got_choke()
+    nnyd.got_choke()
+    nnnd.got_choke()
 
-def test_disconnected():
-    assert adjusts all in response from disconnected()
+    dd.all = [yyyd, yynd, ynyd, ynnd, nyyd, nynd, nnyd, nnnd, extrad]
 
-def test_unchoke():
-    assert adjusts after unchoke
+    yyyd.got_I_have({'type': 'I have', 'blobs': ['a']})
+    yynd.got_I_have({'type': 'I have', 'blobs': ['a']})
+    nyyd.got_I_have({'type': 'I have', 'blobs': ['a']})
+    nynd.got_I_have({'type': 'I have', 'blobs': ['a']})
+
+    assert yyy.m == [{'type': 'send', 'blob': 'a', 'begin': 0, 'length': 2}]
+    del yyy.m[:]
+    assert yyn.m == []
+    del yyn.m[:]
+    assert nyy.m == [{'type': 'interested'}]
+    del nyy.m[:]
+    assert nyn.m == []
+    del nyn.m[:]
+    
+    extrad.disconnected()
+    assert extra.disconnected
+    assert not yyy.disconnected
+    assert not yyn.disconnected
+    assert not yny.disconnected
+    assert not ynn.disconnected
+    assert not nyy.disconnected
+    assert not nyn.disconnected
+    assert not nny.disconnected
+    assert not nnn.disconnected
+
+    assert yyy.m == []
+    assert yyn.m == []
+    assert yny.m == [{'type': 'send', 'blob': 'a', 'begin': 0, 'length': 2}]
+    assert ynn.m == []
+    assert nyy.m == []
+    assert nyn.m == []
+    assert nny.m == [{'type': 'interested'}]
+    assert nnn.m == []
 
 def test_halts_at_backlog():
-    assert stops requesting at backlog, resets to zero when chocked, and 
-    requests exactly one more after one comes in
+    dd = DummyData()
+    c = DummyConnection()
+    c.more.append(('a', 0, 2))
+    c.more.append(('a', 2, 2))
+    c.more.append(('a', 4, 2))
+    c.more.append(('a', 6, 2))
+    c.more.append(('a', 8, 2))
+    c.more.append(('a', 10, 2))
+    d = Download(c, dd, 2)
+    dd.all.append(d)
+    
+    d.got_I_have({'type': 'I have', 'blobs': ['a']})
+    assert d.interested
+    
+    assert c.m == [{'type': 'send', 'blob': 'a', 'begin': 0, 'length': 2},
+        {'type': 'send', 'blob': 'a', 'begin': 2, 'length': 2}]
+    del c.m[:]
+    assert c.current == 2
+    assert d.interested
 
-"""
+    d.got_choke()
+    assert d.interested
+    assert c.current == 0
+    d.got_unchoke()
+
+    assert c.m == [{'type': 'send', 'blob': 'a', 'begin': 4, 'length': 2},
+        {'type': 'send', 'blob': 'a', 'begin': 6, 'length': 2}]
+    del c.m[:]
+    assert c.current == 2
+    assert d.interested
+
+    d.got_slice({'type': 'slice', 'blob': 'a', 'begin': 4, 'slice': 'pq'})
+    assert c.m == [{'type': 'send', 'blob': 'a', 'begin': 8, 'length': 2}]
+    del c.m[:]
+    assert c.current == 2
+
+    d.got_slice({'type': 'slice', 'blob': 'a', 'begin': 6, 'slice': 'pq'})
+    assert c.m == [{'type': 'send', 'blob': 'a', 'begin': 10, 'length': 2}]
+    del c.m[:]
+    assert c.current == 2
+
+    assert d.got_slice({'type': 'slice', 'blob': 'a', 
+        'begin': 8, 'slice': 'pq'}) == None
+    assert c.m == []
+    assert c.current == 1
+    assert d.interested
+
+    assert d.got_slice({'type': 'slice', 'blob': 'a', 
+        'begin': 10, 'slice': 'pq'}) == 'a'
+    assert c.m == [{'type': 'done'}]
+    assert c.current == 0

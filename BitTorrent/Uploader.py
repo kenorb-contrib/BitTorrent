@@ -1,12 +1,8 @@
 # written by Bram Cohen
 # this file is public domain
 
-from btemplate import compile_template, exact_length
 true = 1
 false = 0
-
-send_template = compile_template({'type': 'send',
-    'blob': exact_length(20), 'begin': 0, 'length': 0})
 
 class Upload:
     def __init__(self, connection, choker, blobs):
@@ -42,7 +38,6 @@ class Upload:
                     'blob': blob, 'begin': begin, 'slice': slice})
 
     def got_send(self, m):
-        send_template(m)
         if not self.reported_choked:
             self.buffer.append((m['blob'], m['begin'], m['length']))
             self.flushed()
