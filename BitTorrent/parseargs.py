@@ -50,10 +50,10 @@ def formatDefinitions(optionDefinitions):
         outArray.append( (lineForm, doc) )
 
     try:
-        raise ''
         import curses
         curses.initscr()
         COLS = curses.COLS
+        curses.endwin()
     except:
         COLS = 80
 
