@@ -13,12 +13,10 @@
     IBOutlet id progressBar;
     IBOutlet id timeRemaining;
     IBOutlet id ulRate;
-    IBOutlet id cancelButton;
-    IBOutlet id window;
     NSString *timeEst;
+    NSString *location;
     float frac;
     PyObject *flag;
-    int finished;
     NSConnection *conn;
 }
 - (IBAction)cancelDl:(id)sender;

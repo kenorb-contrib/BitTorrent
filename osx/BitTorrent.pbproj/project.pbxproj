@@ -167,7 +167,6 @@
 				F5D01D34027E0B0201A845D2,
 				089C165CFE840E0CC02AAC07,
 				F5D01D46027E88A401A845D2,
-				F5D01D48027E8A5701A845D2,
 			);
 			isa = PBXGroup;
 			name = Resources;
@@ -244,6 +243,8 @@
 <dict>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>English</string>
+	<key>CFBundleDocumentTypes</key>
+	<array/>
 	<key>CFBundleExecutable</key>
 	<string>BitTorrent</string>
 	<key>CFBundleIconFile</key>
@@ -253,7 +254,7 @@
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleSignature</key>
-	<string>????</string>
+	<string>BTBC</string>
 	<key>CFBundleVersion</key>
 	<string>0.1</string>
 	<key>NSMainNibFile</key>
@@ -281,7 +282,6 @@
 				080E96DCFE201CFB7F000001,
 				F5D01D36027E0B0201A845D2,
 				F5D01D47027E88A401A845D2,
-				F5D01D49027E8A5701A845D2,
 			);
 			isa = PBXResourcesBuildPhase;
 			name = "Bundle Resources";
@@ -455,23 +455,11 @@
 		F5D01D46027E88A401A845D2 = {
 			isa = PBXFolderReference;
 			name = BitTorrent;
-			path = "../build/lib.darwin-5.3-Power Macintosh-2.2/BitTorrent";
+			path = ../BitTorrent;
 			refType = 2;
 		};
 		F5D01D47027E88A401A845D2 = {
 			fileRef = F5D01D46027E88A401A845D2;
-			isa = PBXBuildFile;
-			settings = {
-			};
-		};
-		F5D01D48027E8A5701A845D2 = {
-			isa = PBXFileReference;
-			name = _StreamEncrypter.so;
-			path = "../build/lib.darwin-5.3-Power Macintosh-2.2/_StreamEncrypter.so";
-			refType = 2;
-		};
-		F5D01D49027E8A5701A845D2 = {
-			fileRef = F5D01D48027E8A5701A845D2;
 			isa = PBXBuildFile;
 			settings = {
 			};

@@ -6,7 +6,6 @@
 - (id)init
 { 
     [super init];
-    finished = 0;
     timeEst = [@"" retain];
     return self;
 }
@@ -22,11 +21,6 @@
 }
 - (IBAction)cancelDl:(id)sender
 {
-    if(!finished) {
-	finished = 1;
-	[timeRemaining setStringValue:@"Download cancelled!"];
-    }
-    [cancelButton setEnabled:NO];
     PyEval_RestoreThread([[NSApp delegate] tstate]);
     PyObject_CallMethod(flag, "set", NULL);
     [[NSApp delegate] setTstate:PyEval_SaveThread()];
@@ -72,6 +66,7 @@
     
     if(!dir) {
 	panel = [NSSavePanel savePanel];
+	[panel setTitle:@"Save, choose an existing file to resume."];
 	if([panel runModalForDirectory:NSHomeDirectory() file:defaultFile]) {
 	    fname = [panel filename];
 	}
@@ -80,13 +75,15 @@
 	panel = [NSOpenPanel openPanel];
 	[panel setCanChooseFiles:NO];
 	[panel setCanChooseDirectories:YES];
+	[panel setTitle:@"Choose directory, choose existing directory to resume."];
+	[panel setPrompt:@"Save"];
 	if([panel runModalForDirectory:NSHomeDirectory() file:defaultFile]) {
 	    fname = [panel filename];
 	}
     }
     [file setStringValue:[NSString stringWithFormat:@"%@ (%1.1f MB)", [fname lastPathComponent], size / 1048576.0]];
     [downloadTo setStringValue:fname];
-    [window setTitleWithRepresentedFilename:fname];
+    [[self window] setTitleWithRepresentedFilename:fname];
     
     return fname;
 }
@@ -96,9 +93,6 @@
     NSString *str, *activity;
     long est;
     
-    if(finished)
-	return;
-	
     activity = [dict objectForKey:@"activity"];
     if ([[dict objectForKey:@"fractionDone"] floatValue] != 0.0) {
 	frac = [[dict objectForKey:@"fractionDone"] floatValue];
@@ -128,8 +122,6 @@
     NSNumber *fin;
     NSString *errmsg;
     
-    finished = 1;
-    [cancelButton setEnabled:NO];
     fin = [dict objectForKey:@"fin"];
     errmsg = [dict objectForKey:@"errmsg"];
     

@@ -7,21 +7,17 @@ Build Instructions For OSX
   - make frameworkinstall
 
 2.  Build BitTorrent
-  - python setup.py build
-
-3.  Build BT OSX
   - open project file and click hammer icon
-  - note, you may have to point PB to the location of Resources like
-the BitTorrent directory and _StreamEncrypter.so if the top-level
-build directory created by BT's setup.py script differs in name from
-mine.
-
+  - note, you may have to help PB find the Python framework if you don't
+  have it installed in /Library/Frameworks
+  
+  
 
 
 ----------------
 HACKING GUIDE
 
-the thing that makes BT-OSX not so straightforward is on the Mac
+The thing that makes BT-OSX not so straightforward is on the Mac
 you don't create a whole new instance of the app for each download.
 That means each download runs in it's own thread.  BT uses callbacks
 for display updating, which is all well and good, but you con't
@@ -46,7 +42,7 @@ it is messaged by the python callbacks to update the DL window
 responds to; chooseFile, display, and finished callbacks..
 
  callbacks.m - Python object written in C, it's methods are passed into
- BitTorrent as callbacks.
+ BitTorrent as callbacks.  It encapsulates the connection to the DLWindowController.
  
  
  here's how it goes:
@@ -72,4 +68,3 @@ DLWindowController via the NSConnection, with the messages being
 dispatched on the main event loop...
 
 
-   
