@@ -82,7 +82,7 @@ def makeinfo(file, piece_length, flag, progress):
                 return
             pieces.append(sha(x).digest())
             p += piece_length
-            progress(len(x))
+            progress(float(p) / size)
         h.close()
         return {'pieces': ''.join(pieces), 
             'piece length': piece_length, 'length': size, 
