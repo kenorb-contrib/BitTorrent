@@ -63,10 +63,9 @@ class StorageWrapper:
             elif not check_hashes:
                 markgot(i, i)
             else:
-                v = self.storage.read(piece_size * i, self._piecelen(i))
-                sh = sha(v[:lastlen])
+                sh = sha(self.storage.read(piece_size * i, lastlen))
                 sp = sh.digest()
-                sh.update(v[lastlen:])
+                sh.update(self.storage.read(piece_size * i + lastlen, self._piecelen(i) - lastlen))
                 s = sh.digest()
                 if s == hashes[i]:
                     markgot(i, i)

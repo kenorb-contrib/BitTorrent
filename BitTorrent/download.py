@@ -23,7 +23,6 @@ from os import path, makedirs
 from parseargs import parseargs, formatDefinitions
 from socket import error as socketerror
 from random import seed
-from traceback import print_exc
 from threading import Thread, Event
 from time import time
 try:
