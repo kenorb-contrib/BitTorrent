@@ -99,7 +99,7 @@
         }
     }
     if(fname) {
-        [file setStringValue:[NSString stringWithFormat:NSLocalizedString(@"(%1.1f MB) %@ ", @"size and filename for dl window tite") , size / 1048576.0, [fname lastPathComponent]]];
+        [file setStringValue:[NSString stringWithFormat:NSLocalizedString(@"(%1.1f MB) %@ ", @"size and filename for dl window tite") , size / 1048576.0, fname]];
         [[self window] setTitleWithRepresentedFilename:fname];
         [[NSUserDefaults standardUserDefaults] setObject:[panel directory] forKey:LASTDIR];
         totalsize = size;
