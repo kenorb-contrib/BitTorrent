@@ -7,7 +7,8 @@ from sys import argv, version
 
 from btcompletedir import completedir
 from threading import Event, Thread
-from os.path import join
+from os.path import join, split
+from sys import argv
 from wxPython.wx import *
 from traceback import print_exc
 
@@ -26,8 +27,9 @@ class InvokeEvent(wxPyEvent):
 
 class DownloadInfo:
     def __init__(self):
-        frame = wxFrame(None, -1, 'BitTorrent complete dir 1.0.1', size = wxSize(550, 250))
+        frame = wxFrame(None, -1, 'BitTorrent complete dir 1.1', size = wxSize(550, 250))
         self.frame = frame
+        frame.SetIcon(wxIcon(join(split(argv[0])[0], 'bittorrent.ico'), wxBITMAP_TYPE_ICO))
 
         panel = wxPanel(frame, -1)
 
