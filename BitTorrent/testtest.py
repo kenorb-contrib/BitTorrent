@@ -44,6 +44,8 @@ def try_single(m):
     print_failed(failed)
 
 def try_module(module, modulename, failed):
+    if not hasattr(module, '__dict__'):
+        return
     for n, func in module.__dict__.items():
         if not callable(func) or n[:4] != 'test':
             continue

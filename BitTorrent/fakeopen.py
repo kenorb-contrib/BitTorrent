@@ -12,6 +12,9 @@ class FakeHandle:
     def flush(self):
         pass
     
+    def close(self):
+        pass
+    
     def seek(self, pos):
         self.pos = pos
     

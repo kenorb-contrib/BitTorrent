@@ -11,8 +11,6 @@ csize = 2 ** 20
 class SingleBlob:
     def __init__(self, file, file_hash, file_length, pieces, piece_length, callback, open, exists, getsize):
         self.open = open
-        self.exists = exists
-        self.getsize = getsize
         self.piece_length = piece_length
         self.file_hash = file_hash
         self.file_length = file_length
@@ -46,9 +44,9 @@ class SingleBlob:
             self.want[i] = 1
         self.want_list = self.want.keys()
         shuffle(self.want_list)
-        if self.exists(file):
+        if exists(file):
             self.already_existed = true
-            if self.getsize(file) != file_length:
+            if getsize(file) != file_length:
                 raise ValueError, 'existing file is of incorrect length'
             i = 0
             self.h = self.open(file, 'rb+')

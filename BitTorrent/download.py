@@ -72,9 +72,9 @@ def run(private_key, noncefunc, response, filefunc, displayfunc, doneflag, confi
     r = []
     def finished(result, displayfunc = displayfunc, doneflag = doneflag, r = r):
         if result:
-            displayfunc('download succeeded', 'Okay')
+            displayfunc('Download Succeeded!', 'Okay')
         else:
-            displayfunc('download failed', 'Okay')
+            displayfunc('Download Failed', 'Okay')
         r.append(1)
         doneflag.set()
     blobs.callback = finished

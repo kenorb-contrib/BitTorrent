@@ -16,7 +16,7 @@ from entropy import entropy
 from bencode import bencode, bdecode
 from binascii import b2a_hex
 from btemplate import compile_template, string_template
-from os.path import split
+from os.path import split, getsize
 from random import randrange
 true = 1
 false = 0
@@ -36,7 +36,7 @@ def publish(config, files):
     noncefunc = lambda e = entropy: e(20)
     throttler = Throttler(config['max_uploads'])
     piece_length = config['piece_size']
-    blobs = MultiBlob(files, piece_length)
+    blobs = MultiBlob(files, piece_length, open, getsize)
     uploader = Uploader(throttler, blobs)
     downloader = DummyDownloader()
     connecter = Connecter(uploader, downloader)
