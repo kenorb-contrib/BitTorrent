@@ -51,6 +51,7 @@ class HeadlessDisplayer:
             else:
                 self.timeEst = 'failed - ' + errormsg
         self.downRate = ''
+        self.display()
 
     def display(self, fractionDone = None, timeEst = None, 
             downRate = None, upRate = None, activity = None):
