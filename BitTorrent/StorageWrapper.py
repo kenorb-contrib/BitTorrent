@@ -87,7 +87,10 @@ class StorageWrapper:
         # returns (begin, length)
         self.numactive[index] += 1
         self.total_inactive -= 1
-        return self.inactive_requests[index].pop()
+        rs = self.inactive_requests[index]
+        r = min(rs)
+        rs.remove(r)
+        return r
 
     def piece_came_in(self, index, begin, piece):
         try:
