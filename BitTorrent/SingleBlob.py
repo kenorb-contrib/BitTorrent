@@ -3,6 +3,7 @@
 
 from sha import sha
 from random import shuffle
+from threading import Event
 true = 1
 false = 0
 
@@ -27,7 +28,7 @@ def make_indices(pieces, piece_length, file_length):
 
 class SingleBlob:
     def __init__(self, file, file_length, pieces, piece_length, 
-            callback, open, exists, getsize):
+            callback, open, exists, getsize, flag = Event()):
         self.open = open
         self.callback = callback
         self.indices = make_indices(pieces, piece_length, file_length)
@@ -50,6 +51,8 @@ class SingleBlob:
                 self.h.flush()
             for blob in self.want.keys():
                 self.check_blob(blob)
+                if flag.isSet():
+                    return
         else:
             self.h = self.open(file, 'wb+')
             self.h.seek(file_length - 1)

@@ -149,7 +149,8 @@ def download(params, filefunc, statusfunc, resultfunc, doneflag, cols):
                 doneflag.set()
             resultfunc(result, errormsg)
         blobs = SingleBlob(file, file_length, response['pieces'], 
-            response['piece length'], finished, open, path.exists, path.getsize)
+            response['piece length'], finished, open, path.exists, 
+            path.getsize, doneflag)
         left = blobs.get_amount_left()
     except ValueError, e:
         print_exc()
