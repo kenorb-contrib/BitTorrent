@@ -162,8 +162,12 @@ def download(params, filefunc, statusfunc, resultfunc, doneflag, cols):
         return
     rawserver = RawServer(config['max_poll_period'], doneflag,
         config['timeout'])
-    choker = Choker(config['max_uploads'], rawserver.add_task, config['choke_interval'],
-        lambda c: c.get_download().rate)
+    def preference(c, finflag = finflag):
+        if finflag.isSet():
+            return c.get_upload().rate
+        return c.get_download().rate
+    choker = Choker(config['max_uploads'], rawserver.add_task, 
+        config['choke_interval'], preference)
     total_up = [0l]
     total_down = [0l]
     def make_upload(connection, choker = choker, blobs = blobs, 
