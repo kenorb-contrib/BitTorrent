@@ -217,4 +217,4 @@ if __name__ == '__main__':
         track(config)
     except ValueError, e:
         print "usage: %s [options]" % argv[0]
-        print formatDefinitions(configDefinitions, 80)
+        print formatDefinitions(defaults, 80)
