@@ -15,7 +15,7 @@ def checkpoints(s, l):
 def test():
     p = ''.join([chr((3 * i) % 256) for i in xrange(500)])
     a = checkpoints(p, [0, 3, 11, 200, 350, 400, 500])
-    b = checkpoints(p, [0, 21, 27, 28, 29, 301, 500])
+    b = checkpoints(p, [0, 0, 21, 27, 28, 29, 301, 500])
     assert a == b
 
 from sha import sha

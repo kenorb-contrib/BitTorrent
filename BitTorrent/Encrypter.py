@@ -79,6 +79,8 @@ class EncryptedConnection:
         l = binary_to_int(self.decrypt(s))
         if l > self.encrypter.max_len:
             return None, None
+        if l == 0:
+            return 4, self.read_len
         return l, self.read_message
 
     def read_message(self, s):
@@ -129,15 +131,27 @@ class EncryptedConnection:
         return 1
 
 class Encrypter:
-    def __init__(self, connecter, raw_server, noncefunc, private_key, max_len):
+    def __init__(self, connecter, raw_server, noncefunc, private_key, max_len,
+            schedulefunc, keepalive_delay):
         self.raw_server = raw_server
         self.connecter = connecter
         self.noncefunc = noncefunc
         self.max_len = max_len
+        self.schedulefunc = schedulefunc
+        self.keepalive_delay = keepalive_delay
         self.connections = {}
         assert len(private_key) == 20
         self.private_key = binary_to_int(private_key)
         self.public_key = int_to_binary(pow(2, self.private_key, p), 192)
+        self.schedulefunc = schedulefunc
+        self.keepalive_delay = keepalive_delay
+        schedulefunc(self.send_keepalives, keepalive_delay)
+
+    def send_keepalives(self):
+        self.schedulefunc(self.send_keepalives, self.keepalive_delay)
+        for e in self.connections.values():
+            if e.complete:
+                e.send_message('')
 
     def get_id(self):
         return sha(self.public_key).digest()
@@ -240,7 +254,7 @@ def flush2(c1, e1, c2, e2):
 def test_proper_communication_initiating_side_close():
     dc1 = DummyConnecter()
     rs1 = DummyRawServer()
-    e1 = Encrypter(dc1, rs1, lambda: 'a' * 20, 'b' * 20, 500)
+    e1 = Encrypter(dc1, rs1, lambda: 'a' * 20, 'b' * 20, 500, lambda a, b: None, 1000)
     assert dc1.c_made == []
     assert dc1.c_lost == []
     assert dc1.m_rec == []
@@ -252,7 +266,7 @@ def test_proper_communication_initiating_side_close():
 
     rs2 = DummyRawServer()
     dc2 = DummyConnecter()
-    e2 = Encrypter(dc2, rs2, lambda: 'c' * 20, 'd' * 20, 500)
+    e2 = Encrypter(dc2, rs2, lambda: 'c' * 20, 'd' * 20, 500, lambda a, b: None, 1000)
     assert dc2.c_made == []
     assert dc2.c_lost == []
     assert dc2.m_rec == []
@@ -346,7 +360,7 @@ def test_proper_communication_initiating_side_close():
 def test_reconstruction():
     dc1 = DummyConnecter()
     rs1 = DummyRawServer()
-    e1 = Encrypter(dc1, rs1, lambda: 'a' * 20, 'b' * 20, 500)
+    e1 = Encrypter(dc1, rs1, lambda: 'a' * 20, 'b' * 20, 500, lambda a, b: None, 1000)
     assert dc1.c_made == []
     assert dc1.c_lost == []
     assert dc1.m_rec == []
@@ -358,7 +372,7 @@ def test_reconstruction():
 
     dc2 = DummyConnecter()
     rs2 = DummyRawServer()
-    e2 = Encrypter(dc2, rs2, lambda: 'c' * 20, 'd' * 20, 500)
+    e2 = Encrypter(dc2, rs2, lambda: 'c' * 20, 'd' * 20, 500, lambda a, b: None, 1000)
     assert dc2.c_made == []
     assert dc2.c_lost == []
     assert dc2.m_rec == []
@@ -452,7 +466,7 @@ def test_reconstruction():
 def test_proper_communication_receiving_side_close():
     dc1 = DummyConnecter()
     rs1 = DummyRawServer()
-    e1 = Encrypter(dc1, rs1, lambda: 'a' * 20, 'b' * 20, 500)
+    e1 = Encrypter(dc1, rs1, lambda: 'a' * 20, 'b' * 20, 500, lambda a, b: None, 1000)
     assert dc1.c_made == []
     assert dc1.c_lost == []
     assert dc1.m_rec == []
@@ -464,7 +478,7 @@ def test_proper_communication_receiving_side_close():
 
     dc2 = DummyConnecter()
     rs2 = DummyRawServer()
-    e2 = Encrypter(dc2, rs2, lambda: 'c' * 20, 'd' * 20, 500)
+    e2 = Encrypter(dc2, rs2, lambda: 'c' * 20, 'd' * 20, 500, lambda a, b: None, 1000)
     assert dc2.c_made == []
     assert dc2.c_lost == []
     assert dc2.m_rec == []
@@ -558,7 +572,7 @@ def test_proper_communication_receiving_side_close():
 def test_garbage_data_before_completion():
     dc1 = DummyConnecter()
     rs1 = DummyRawServer()
-    e1 = Encrypter(dc1, rs1, lambda: 'a' * 20, 'b' * 20, 500)
+    e1 = Encrypter(dc1, rs1, lambda: 'a' * 20, 'b' * 20, 500, lambda a, b: None, 1000)
     assert dc1.c_made == []
     assert dc1.c_lost == []
     assert dc1.m_rec == []
@@ -581,7 +595,7 @@ def test_garbage_data_before_completion():
 def test_rejected_data_after_completion():
     dc1 = DummyConnecter()
     rs1 = DummyRawServer()
-    e1 = Encrypter(dc1, rs1, lambda: 'a' * 20, 'b' * 20, 5)
+    e1 = Encrypter(dc1, rs1, lambda: 'a' * 20, 'b' * 20, 5, lambda a, b: None, 1000)
     assert dc1.c_made == []
     assert dc1.c_lost == []
     assert dc1.m_rec == []
@@ -593,7 +607,7 @@ def test_rejected_data_after_completion():
 
     dc2 = DummyConnecter()
     rs2 = DummyRawServer()
-    e2 = Encrypter(dc2, rs2, lambda: 'c' * 20, 'd' * 20, 5)
+    e2 = Encrypter(dc2, rs2, lambda: 'c' * 20, 'd' * 20, 5, lambda a, b: None, 1000)
     assert dc2.c_made == []
     assert dc2.c_lost == []
     assert dc2.m_rec == []
@@ -668,7 +682,7 @@ def test_rejected_data_after_completion():
 def test_local_close_in_data_received():
     dc1 = DummyConnecter()
     rs1 = DummyRawServer()
-    e1 = Encrypter(dc1, rs1, lambda: 'a' * 20, 'b' * 20, 5)
+    e1 = Encrypter(dc1, rs1, lambda: 'a' * 20, 'b' * 20, 5, lambda a, b: None, 1000)
     assert dc1.c_made == []
     assert dc1.c_lost == []
     assert dc1.m_rec == []
@@ -680,7 +694,7 @@ def test_local_close_in_data_received():
 
     dc2 = DummyConnecter()
     rs2 = DummyRawServer()
-    e2 = Encrypter(dc2, rs2, lambda: 'c' * 20, 'd' * 20, 5)
+    e2 = Encrypter(dc2, rs2, lambda: 'c' * 20, 'd' * 20, 5, lambda a, b: None, 1000)
     assert dc2.c_made == []
     assert dc2.c_lost == []
     assert dc2.m_rec == []
@@ -756,7 +770,7 @@ def test_local_close_in_data_received():
 def test_local_close_and_extra_data():
     dc1 = DummyConnecter()
     rs1 = DummyRawServer()
-    e1 = Encrypter(dc1, rs1, lambda: 'a' * 20, 'b' * 20, 5)
+    e1 = Encrypter(dc1, rs1, lambda: 'a' * 20, 'b' * 20, 5, lambda a, b: None, 1000)
     assert dc1.c_made == []
     assert dc1.c_lost == []
     assert dc1.m_rec == []
@@ -768,7 +782,7 @@ def test_local_close_and_extra_data():
 
     dc2 = DummyConnecter()
     rs2 = DummyRawServer()
-    e2 = Encrypter(dc2, rs2, lambda: 'c' * 20, 'd' * 20, 5)
+    e2 = Encrypter(dc2, rs2, lambda: 'c' * 20, 'd' * 20, 5, lambda a, b: None, 1000)
     assert dc2.c_made == []
     assert dc2.c_lost == []
     assert dc2.m_rec == []
@@ -845,7 +859,7 @@ def test_local_close_and_extra_data():
 def test_local_close_and_rejected_data():
     dc1 = DummyConnecter()
     rs1 = DummyRawServer()
-    e1 = Encrypter(dc1, rs1, lambda: 'a' * 20, 'b' * 20, 5)
+    e1 = Encrypter(dc1, rs1, lambda: 'a' * 20, 'b' * 20, 5, lambda a, b: None, 1000)
     assert dc1.c_made == []
     assert dc1.c_lost == []
     assert dc1.m_rec == []
@@ -857,7 +871,7 @@ def test_local_close_and_rejected_data():
 
     dc2 = DummyConnecter()
     rs2 = DummyRawServer()
-    e2 = Encrypter(dc2, rs2, lambda: 'c' * 20, 'd' * 20, 5)
+    e2 = Encrypter(dc2, rs2, lambda: 'c' * 20, 'd' * 20, 5, lambda a, b: None, 1000)
     assert dc2.c_made == []
     assert dc2.c_lost == []
     assert dc2.m_rec == []

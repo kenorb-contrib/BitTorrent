@@ -32,6 +32,8 @@ defaults = [
     # ( <name in config dict>, <long getopt descript>, <short getopt descript>, <default value>, '''usage''')
     ('max_uploads', 'max-uploads=', None, 3,
         """the maximum number of uploads to allow at once."""),
+    ('keepalive_interval', 'keepalive-interval=', None, 120.0,
+        'number of seconds to pause between sending keepalives'),
     ('download_chunk_size', 'download-chunk-size=', None, 2 ** 15,
         """How many bytes to query for per request."""),
     ('request_backlog', 'request-backlog=', None, 5,
@@ -135,7 +137,8 @@ def download(params, filefunc, displayfunc, doneflag, cols):
     connecter = Connecter(uploader, downloader)
     seed(entropy(20))
     encrypter = Encrypter(connecter, rawserver, lambda e = entropy: e(20),
-        entropy(20), config['max_message_length'])
+        entropy(20), config['max_message_length'], rawserver.add_task, 
+        config['keepalive_interval'])
     connecter.set_encrypter(encrypter)
     listen_port = config['port']
     if listen_port == 0:

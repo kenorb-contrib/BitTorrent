@@ -38,6 +38,27 @@ class Throttler:
     def data_sent_out(self, up, amount):
         pass
 
+    def download_connected(self, down):
+        pass
+
+    def download_disconnected(self, down):
+        pass
+
+    def download_throttled(self, down):
+        pass
+
+    def download_unthrottled(self, down):
+        pass
+
+    def download_possible(self, down):
+        down.start_new_downloads()
+
+    def download_hiccuped(self, down, fin):
+        pass
+
+    def data_came_in(self, down, amount, finished):
+        pass
+
 class DummyConnection:
     def __init__(self, id, t):
         self.throttled = false

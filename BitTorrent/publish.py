@@ -40,6 +40,8 @@ defaults = [
         """The prefix url for announcing to the publicist."""),
     ('postlocation', 'post-location=', None, '',
         """post url for announcing to the publicist."""),
+    ('keepalive_interval', 'keepalive-interval=', None, 120.0,
+        'number of seconds to pause between sending keepalives'),
     ]
 
 def publish(params, cols):
@@ -72,7 +74,8 @@ def publish(params, cols):
     connecter = Connecter(uploader, downloader)
     rawserver = RawServer(config['max_poll_period'], Event())
     encrypter = Encrypter(connecter, rawserver, noncefunc, private_key, 
-        config['max_message_length'])
+        config['max_message_length'], rawserver.add_task, 
+        config['keepalive_interval'])
     connecter.set_encrypter(encrypter)
     listen_port = config['port']
 
