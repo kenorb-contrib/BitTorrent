@@ -137,6 +137,7 @@ class StorageWrapper:
             return self._piece_came_in(index, begin, piece)
         except IOError, e:
             self.failed('IO Error ' + str(e))
+            return True
 
     def _piece_came_in(self, index, begin, piece):
         if not self.places.has_key(index):
@@ -144,6 +145,9 @@ class StorageWrapper:
             if self.places.has_key(n):
                 oldpos = self.places[n]
                 old = self.storage.read(self.piece_size * oldpos, self._piecelen(n))
+                if sha(old).digest() != self.hashes[n]:
+                    self.failed('data corrupted on disk - maybe you have two copies running?')
+                    return True
                 self.storage.write(self.piece_size * n, old)
                 self.places[n] = n
                 if index == oldpos or index in self.holes:
