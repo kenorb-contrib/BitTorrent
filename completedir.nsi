@@ -15,7 +15,7 @@ Section "Install"
   File dist\library.zip
   File bittorrent.ico
   CreateShortCut "$STARTMENU\Programs\completedir.lnk" "$INSTDIR\btcompletedirgui.exe"
-  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\CompleteDir" "DisplayName" "BitTorrent complete dir 1.0.1"
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\CompleteDir" "DisplayName" "BitTorrent complete dir 1.1"
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\CompleteDir" "UninstallString" '"$INSTDIR\uninstall.exe"'
   MessageBox MB_OK "Complete dir has been successfully installed! Run it under the Programs in the Start Menu."
 SectionEnd
