@@ -16,8 +16,6 @@ from threading import Thread, Event
 from time import time, sleep
 import sys
 from random import randrange
-true = 1
-false = 0
 
 all = POLLIN | POLLOUT
 
@@ -29,7 +27,7 @@ class SingleSocket:
         self.buffer = []
         self.last_hit = time()
         self.fileno = sock.fileno()
-        self.connected = false
+        self.connected = False
         
     def get_ip(self):
         try:
@@ -78,7 +76,7 @@ class SingleSocket:
             self.raw_server.poll.register(self.socket, all)
 
 class RawServer:
-    def __init__(self, doneflag, timeout_check_interval, timeout, noisy = true, errorfunc = None):
+    def __init__(self, doneflag, timeout_check_interval, timeout, noisy = True, errorfunc = None):
         self.timeout_check_interval = timeout_check_interval
         self.timeout = timeout
         self.poll = poll()
@@ -109,7 +107,7 @@ class RawServer:
             if k.socket is not None:
                 self._close_socket(k)
 
-    def bind(self, port, bind = '', reuse = false):
+    def bind(self, port, bind = '', reuse = False):
         server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         if reuse:
             server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -156,7 +154,7 @@ class RawServer:
                 s = self.single_sockets.get(sock)
                 if s is None:
                     continue
-                s.connected = true
+                s.connected = True
                 if (event & (POLLHUP | POLLERR)) != 0:
                     self._close_socket(s)
                     continue
@@ -180,7 +178,7 @@ class RawServer:
 
     def pop_external(self):
         try:
-            while true:
+            while True:
                 (a, b) = self.externally_added.pop()
                 self.add_task(a, b)
         except IndexError:
@@ -520,7 +518,7 @@ def test_normal():
 def test_catch_exception():
     l = []
     f = Event()
-    s = RawServer(f, 100, 100, false)
+    s = RawServer(f, 100, 100, False)
     loop(s)
     sl(s, DummyHandler(), beginport + 9)
     s.add_task(lambda l = l: l.append('b'), 2)

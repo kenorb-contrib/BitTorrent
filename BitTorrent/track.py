@@ -12,7 +12,6 @@ from urlparse import urlparse
 from os import rename
 from os.path import exists, isfile
 from cStringIO import StringIO
-from traceback import print_exc
 from time import time, gmtime, strftime
 from random import shuffle
 from sha import sha
@@ -20,8 +19,6 @@ from types import StringType, LongType, ListType, DictType
 from binascii import b2a_hex, a2b_hex, a2b_base64
 import sys
 import __init__
-true = 1
-false = 0
 
 defaults = [
     ('port', 80, "Port to listen on."),
@@ -422,7 +419,7 @@ def track(args):
         return
     r = RawServer(Event(), config['timeout_check_interval'], config['socket_timeout'])
     t = Tracker(config, r)
-    r.bind(config['port'], config['bind'], true)
+    r.bind(config['port'], config['bind'], True)
     r.listen_forever(HTTPHandler(t.get, config['min_time_between_log_flushes']))
     t.save_dfile()
     print '# Shutting down: ' + isotime()

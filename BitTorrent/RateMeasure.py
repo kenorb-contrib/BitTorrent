@@ -2,8 +2,6 @@
 # see LICENSE.txt for license information
 
 from time import time
-true = 1
-false = 0
 
 class RateMeasure:
     def __init__(self, left):
@@ -12,12 +10,12 @@ class RateMeasure:
         self.rate = 0
         self.remaining = None
         self.left = left
-        self.broke = false
-        self.got_anything = false
+        self.broke = False
+        self.got_anything = False
 
     def data_came_in(self, amount):
         if not self.got_anything:
-            self.got_anything = true
+            self.got_anything = True
             self.start = time() - 2
             self.last = self.start
             self.left -= amount
@@ -51,4 +49,4 @@ class RateMeasure:
         if self.broke and self.last - self.start < 20:
             self.start = self.last - 20
         if self.last - self.start > 20:
-            self.broke = true
+            self.broke = True

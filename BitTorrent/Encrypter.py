@@ -4,9 +4,6 @@
 from cStringIO import StringIO
 from binascii import b2a_hex
 from socket import error as socketerror
-from traceback import print_exc
-true = 1
-false = 0
 
 protocol_name = 'BitTorrent protocol'
 
@@ -25,8 +22,8 @@ class Connection:
         self.connection = connection
         self.id = id
         self.locally_initiated = (id != None)
-        self.complete = false
-        self.closed = false
+        self.complete = False
+        self.closed = False
         self.buffer = StringIO()
         self.next_len = 1
         self.next_func = self.read_header_len
@@ -96,7 +93,7 @@ class Connection:
             self.sever()
 
     def sever(self):
-        self.closed = true
+        self.closed = True
         del self.Encoder.connections[self.connection]
         if self.complete:
             self.Encoder.connecter.connection_lost(self)
@@ -105,7 +102,7 @@ class Connection:
         self.connection.write(tobinary(len(message)) + message)
 
     def data_came_in(self, s):
-        while true:
+        while True:
             if self.closed:
                 return
             i = self.next_len - self.buffer.tell()
@@ -172,9 +169,9 @@ class Encoder:
         for v in self.connections.values():
             if connection is not v and connection.id == v.id:
                 connection.close()
-                return false
+                return False
         self.connecter.connection_made(connection)
-        return true
+        return True
 
     def external_connection_made(self, connection):
         self.connections[connection] = Connection(self, 
@@ -196,7 +193,7 @@ class Encoder:
 class DummyConnecter:
     def __init__(self):
         self.log = []
-        self.close_next = false
+        self.close_next = False
     
     def connection_made(self, connection):
         self.log.append(('made', connection))
@@ -223,9 +220,9 @@ class DummyRawServer:
 
 class DummyRawConnection:
     def __init__(self):
-        self.closed = false
+        self.closed = False
         self.data = []
-        self.flushed = true
+        self.flushed = True
 
     def get_ip(self):
         return 'fake.ip'
@@ -239,7 +236,7 @@ class DummyRawConnection:
         
     def close(self):
         assert not self.closed
-        self.closed = true
+        self.closed = True
 
     def pop(self):
         r = ''.join(self.data)
@@ -333,7 +330,7 @@ def test_flushed():
     assert rs.connects == []
     assert not c1.closed
     
-    c1.flushed = false
+    c1.flushed = False
     assert not ch.is_flushed()
     
 def test_wrong_header_length():
@@ -531,7 +528,7 @@ def test_local_close_in_message_receive():
     del c.log[:]
     assert not c1.closed
 
-    c.close_next = true
+    c.close_next = True
     e.data_came_in(c1, chr(0) * 3 + chr(4) + 'abcd')
     assert c.log == [('got', ch, 'abcd'), ('lost', ch)]
     assert c1.closed

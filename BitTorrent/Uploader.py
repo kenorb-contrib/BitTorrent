@@ -3,9 +3,6 @@
 
 from CurrentRateMeasure import Measure
 
-true = 1
-false = 0
-
 class Upload:
     def __init__(self, connection, choker, storage, 
             max_slice_length, max_rate_period, fudge):
@@ -14,8 +11,8 @@ class Upload:
         self.storage = storage
         self.max_slice_length = max_slice_length
         self.max_rate_period = max_rate_period
-        self.choked = true
-        self.interested = false
+        self.choked = True
+        self.interested = False
         self.buffer = []
         self.measure = Measure(max_rate_period, fudge)
         if storage.do_I_have_anything():
@@ -23,13 +20,13 @@ class Upload:
 
     def got_not_interested(self):
         if self.interested:
-            self.interested = false
+            self.interested = False
             del self.buffer[:]
             self.choker.not_interested(self.connection)
 
     def got_interested(self):
         if not self.interested:
-            self.interested = true
+            self.interested = True
             self.choker.interested(self.connection)
 
     def flushed(self):
@@ -59,13 +56,13 @@ class Upload:
 
     def choke(self):
         if not self.choked:
-            self.choked = true
+            self.choked = True
             del self.buffer[:]
             self.connection.send_choke()
 
     def unchoke(self):
         if self.choked:
-            self.choked = false
+            self.choked = False
             self.connection.send_unchoke()
         
     def is_choked(self):
@@ -83,7 +80,7 @@ class Upload:
 class DummyConnection:
     def __init__(self, events):
         self.events = events
-        self.flushed = false
+        self.flushed = False
 
     def send_bitfield(self, bitfield):
         self.events.append(('bitfield', bitfield))
@@ -119,11 +116,11 @@ class DummyStorage:
 
     def do_I_have_anything(self):
         self.events.append('do I have')
-        return true
+        return True
 
     def get_have_list(self):
         self.events.append('get have list')
-        return [false, true]
+        return [False, True]
 
     def get_piece(self, index, begin, length):
         self.events.append(('get piece', index, begin, length))
@@ -142,10 +139,10 @@ def test_skip_over_choke():
     u.got_interested()
     assert u.is_interested()
     u.got_request(0, 0, 3)
-    dco.flushed = true
+    dco.flushed = True
     u.flushed()
     assert events == ['do I have', 'get have list', 
-        ('bitfield', [false, true]), 'interested']
+        ('bitfield', [False, True]), 'interested']
 
 def test_bad_piece():
     events = []
@@ -160,10 +157,10 @@ def test_bad_piece():
     u.unchoke()
     assert not u.is_choked()
     u.got_request(0, 0, 4)
-    dco.flushed = true
+    dco.flushed = True
     u.flushed()
     assert events == ['do I have', 'get have list', 
-        ('bitfield', [false, true]), 'interested', 'unchoke', 
+        ('bitfield', [False, True]), 'interested', 'unchoke', 
         ('get piece', 0, 0, 4), 'closed']
 
 def test_still_rejected_after_unchoke():
@@ -181,10 +178,10 @@ def test_still_rejected_after_unchoke():
     u.got_request(0, 0, 3)
     u.choke()
     u.unchoke()
-    dco.flushed = true
+    dco.flushed = True
     u.flushed()
     assert events == ['do I have', 'get have list', 
-        ('bitfield', [false, true]), 'interested', 'unchoke', 
+        ('bitfield', [False, True]), 'interested', 'unchoke', 
         'choke', 'unchoke']
 
 def test_sends_when_flushed():
@@ -196,11 +193,11 @@ def test_sends_when_flushed():
     u.unchoke()
     u.got_interested()
     u.got_request(0, 1, 3)
-    dco.flushed = true
+    dco.flushed = True
     u.flushed()
     u.flushed()
     assert events == ['do I have', 'get have list', 
-        ('bitfield', [false, true]), 'unchoke', 'interested', 
+        ('bitfield', [False, True]), 'unchoke', 'interested', 
         ('get piece', 0, 1, 3), ('piece', 0, 1, 'aaa')]
 
 def test_sends_immediately():
@@ -211,10 +208,10 @@ def test_sends_immediately():
     u = Upload(dco, dch, ds, 100, 20, 5)
     u.unchoke()
     u.got_interested()
-    dco.flushed = true
+    dco.flushed = True
     u.got_request(0, 1, 3)
     assert events == ['do I have', 'get have list', 
-        ('bitfield', [false, true]), 'unchoke', 'interested', 
+        ('bitfield', [False, True]), 'unchoke', 'interested', 
         ('get piece', 0, 1, 3), ('piece', 0, 1, 'aaa')]
 
 def test_cancel():
@@ -229,9 +226,9 @@ def test_cancel():
     u.got_cancel(0, 1, 3)
     u.got_cancel(0, 1, 2)
     u.flushed()
-    dco.flushed = true
+    dco.flushed = True
     assert events == ['do I have', 'get have list', 
-        ('bitfield', [false, true]), 'unchoke', 'interested']
+        ('bitfield', [False, True]), 'unchoke', 'interested']
 
 def test_clears_on_not_interested():
     events = []
@@ -243,10 +240,10 @@ def test_clears_on_not_interested():
     u.got_interested()
     u.got_request(0, 1, 3)
     u.got_not_interested()
-    dco.flushed = true
+    dco.flushed = True
     u.flushed()
     assert events == ['do I have', 'get have list', 
-        ('bitfield', [false, true]), 'unchoke', 'interested', 
+        ('bitfield', [False, True]), 'unchoke', 'interested', 
         'not interested']
 
 def test_close_when_sends_on_not_interested():
@@ -257,7 +254,7 @@ def test_close_when_sends_on_not_interested():
     u = Upload(dco, dch, ds, 100, 20, 5)
     u.got_request(0, 1, 3)
     assert events == ['do I have', 'get have list', 
-        ('bitfield', [false, true]), 'closed']
+        ('bitfield', [False, True]), 'closed']
 
 def test_close_over_max_length():
     events = []
@@ -268,13 +265,13 @@ def test_close_over_max_length():
     u.got_interested()
     u.got_request(0, 1, 101)
     assert events == ['do I have', 'get have list', 
-        ('bitfield', [false, true]), 'interested', 'closed']
+        ('bitfield', [False, True]), 'interested', 'closed']
 
 def test_no_bitfield_on_start_empty():
     events = []
     dco = DummyConnection(events)
     dch = DummyChoker(events)
     ds = DummyStorage(events)
-    ds.do_I_have_anything = lambda: false
+    ds.do_I_have_anything = lambda: False
     u = Upload(dco, dch, ds, 100, 20, 5)
     assert events == []

@@ -64,7 +64,7 @@ class DownloadInfo:
         border.Add(b2, 0, wxALIGN_CENTER | wxSOUTH, 20)
         EVT_BUTTON(frame, b2.GetId(), self.complete)
         panel.SetSizer(border)
-        panel.SetAutoLayout(true)
+        panel.SetAutoLayout(True)
 
     def select(self, x):
         dl = wxDirDialog(self.frame, style = wxDD_DEFAULT_STYLE | wxDD_NEW_DIR_BUTTON)
@@ -114,11 +114,11 @@ class CompleteDir:
         g2.AddGrowableRow(0)
         g2.AddGrowableCol(0)
         panel.SetSizer(g2)
-        panel.SetAutoLayout(true)
+        panel.SetAutoLayout(True)
         EVT_BUTTON(frame, self.button.GetId(), self.done)
         EVT_CLOSE(frame, self.done)
         EVT_INVOKE(frame, self.onInvoke)
-        frame.Show(true)
+        frame.Show(True)
         Thread(target = self.complete).start()
 
     def complete(self):
@@ -163,9 +163,9 @@ class CompleteDir:
 class btWxApp(wxApp):
     def OnInit(self):
         d = DownloadInfo()
-        d.frame.Show(true)
+        d.frame.Show(True)
         self.SetTopWindow(d.frame)
-        return true
+        return True
 
 if __name__ == '__main__':
     btWxApp().MainLoop()

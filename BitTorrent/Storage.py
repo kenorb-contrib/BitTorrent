@@ -2,10 +2,7 @@
 # see LICENSE.txt for license information
 
 from sha import sha
-from time import time
 from bisect import bisect_right
-true = 1
-false = 0
 
 class Storage:
     def __init__(self, files, open, exists, getsize):
@@ -47,8 +44,8 @@ class Storage:
     def was_preallocated(self, pos, length):
         for file, begin, end in self._intervals(pos, length):
             if self.tops.get(file, 0) < end:
-                return false
-        return true
+                return False
+        return True
 
     def set_readonly(self):
         # may raise IOError or OSError

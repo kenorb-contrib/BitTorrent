@@ -2,8 +2,6 @@
 # see LICENSE.txt for license information
 
 from random import randrange, shuffle, choice
-true = 1
-false = 0
 
 class PiecePicker:
     def __init__(self, numpieces, rarest_first_cutoff = 1, rarest_first_priority_cutoff = 3):
@@ -176,7 +174,7 @@ def _pull(pp):
     r = []
     def want(p, r = r):
         return p not in r
-    while true:
+    while True:
         n = pp.next(want)
         if n is None:
             break

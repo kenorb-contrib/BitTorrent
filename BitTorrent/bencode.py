@@ -1,7 +1,6 @@
 # Written by Petru Paler
 # see LICENSE.txt for license information
 
-from types import IntType, LongType, StringType, ListType, TupleType, DictType
 import re
 from cStringIO import StringIO
 
@@ -206,26 +205,25 @@ def test_bdecode():
 
 def bencode_rec(x, b):
     t = type(x)
-    if t in (IntType, LongType):
+    if t in (int, long, bool):
         b.write('i%de' % x)
-    elif t is StringType:
+    elif t is str:
         b.write('%d:%s' % (len(x), x))
-    elif t in (ListType, TupleType):
+    elif t in (list, tuple):
         b.write('l')
         for e in x:
             bencode_rec(e, b)
         b.write('e')
-    elif t is DictType:
+    elif t is dict:
         b.write('d')
         keylist = x.keys()
         keylist.sort()
         for k in keylist:
-            assert type(k) is StringType
+            assert type(k) is str
             bencode_rec(k, b)
             bencode_rec(x[k], b)
         b.write('e')
     else:
-        print "*** error *** could not encode type %s (value: %s)" % (t, x)
         assert 0
 
 def bencode(x):

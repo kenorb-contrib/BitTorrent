@@ -16,8 +16,6 @@ from wxPython.wx import *
 from time import strftime, time
 from webbrowser import open_new
 from traceback import print_exc
-true = 1
-false = 0
 
 def hours(n):
     if n == -1:
@@ -53,7 +51,7 @@ class DownloadInfoFrame:
         self.frame = frame
         self.flag = flag
         self.uiflag = Event()
-        self.fin = false
+        self.fin = False
         self.last_update_time = 0
 
         panel = wxPanel(frame, -1)
@@ -65,7 +63,7 @@ class DownloadInfoFrame:
         fnsizer.Add(self.fileNameText, 1, wxALIGN_BOTTOM)
         self.aboutText = wxStaticText(panel, -1, 'about', style = wxALIGN_RIGHT)
         self.aboutText.SetForegroundColour('Blue')
-        self.aboutText.SetFont(wxFont(14, wxNORMAL, wxNORMAL, wxNORMAL, true))
+        self.aboutText.SetFont(wxFont(14, wxNORMAL, wxNORMAL, wxNORMAL, True))
         fnsizer.Add(self.aboutText, 0, wxEXPAND)
         colSizer.Add(fnsizer, 0, wxEXPAND)
 
@@ -125,7 +123,7 @@ class DownloadInfoFrame:
         border = wxBoxSizer(wxHORIZONTAL)
         border.Add(colSizer, 1, wxEXPAND | wxALL, 4)
         panel.SetSizer(border)
-        panel.SetAutoLayout(true)
+        panel.SetAutoLayout(True)
         
         EVT_LEFT_DOWN(self.aboutText, self.donate)
         EVT_CLOSE(frame, self.done)
@@ -183,11 +181,11 @@ class DownloadInfoFrame:
           print_ex()
 
     def finished(self):
-        self.fin = true
+        self.fin = True
         self.invokeLater(self.onFinishEvent)
 
     def failed(self):
-        self.fin = true
+        self.fin = True
         self.invokeLater(self.onFailEvent)
 
     def error(self, errormsg):
@@ -253,7 +251,7 @@ class btWxApp(wxApp):
         d = DownloadInfoFrame(doneflag)
         self.SetTopWindow(d.frame)
         thread = Thread(target = next, args = [self.params, d, doneflag])
-        thread.setDaemon(false)
+        thread.setDaemon(False)
         thread.start()
         return 1
 

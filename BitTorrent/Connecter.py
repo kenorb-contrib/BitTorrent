@@ -2,11 +2,8 @@
 # see LICENSE.txt for license information
 
 from bitfield import bitfield_to_booleans, booleans_to_bitfield
-from traceback import print_exc
 from binascii import b2a_hex
 from CurrentRateMeasure import Measure
-true = 1
-false = 0
 
 def toint(s):
     return long(b2a_hex(s), 16)
@@ -34,7 +31,7 @@ class Connection:
     def __init__(self, connection, connecter):
         self.connection = connection
         self.connecter = connecter
-        self.got_anything = false
+        self.got_anything = False
 
     def get_ip(self):
         return self.connection.get_ip()
@@ -47,7 +44,7 @@ class Connection:
 
     def is_flushed(self):
         if self.connecter.rate_capped:
-            return false
+            return False
         return self.connection.is_flushed()
 
     def is_locally_initiated(self):
@@ -102,17 +99,17 @@ class Connecter:
         self.max_upload_rate = max_upload_rate
         self.sched = sched
         self.totalup = totalup
-        self.rate_capped = false
+        self.rate_capped = False
         self.connections = {}
 
     def _update_upload_rate(self, amount):
         self.totalup.update_rate(amount)
         if self.max_upload_rate > 0 and self.totalup.get_rate_noupdate() > self.max_upload_rate:
-            self.rate_capped = true
+            self.rate_capped = True
             self.sched(self._uncap, self.totalup.time_until_rate(self.max_upload_rate))
 
     def _uncap(self):
-        self.rate_capped = false
+        self.rate_capped = False
         while not self.rate_capped:
             up = None
             minrate = None
@@ -163,7 +160,7 @@ class Connecter:
         if t == BITFIELD and c.got_anything:
             connection.close()
             return
-        c.got_anything = true
+        c.got_anything = True
         if (t in [CHOKE, UNCHOKE, INTERESTED, NOT_INTERESTED] and 
                 len(message) != 1):
             connection.close()
@@ -321,7 +318,7 @@ def test_operation():
     co.got_message(dc, PIECE + tobinary(1) + tobinary(0) + 'abc')
     co.got_message(dc, PIECE + tobinary(1) + tobinary(3) + 'def')
     co.connection_flushed(dc)
-    cc.send_bitfield([false, true, true])
+    cc.send_bitfield([False, True, True])
     cc.send_interested()
     cc.send_not_interested()
     cc.send_choke()
@@ -332,7 +329,7 @@ def test_operation():
     cc.send_piece(1, 2, 'abc')
     co.connection_lost(dc)
     x = ['made upload', 'made download', 'made', 
-        ('bitfield', [true, true, false]), 'choke', 'unchoke',
+        ('bitfield', [True, True, False]), 'choke', 'unchoke',
         'interested', 'not interested', ('have', 2), 
         ('request', 1, 5, 6), ('cancel', 2, 3, 4),
         ('piece', 1, 0, 'abc'), ('piece', 1, 3, 'def'), 

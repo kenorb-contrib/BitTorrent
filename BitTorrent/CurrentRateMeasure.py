@@ -2,8 +2,6 @@
 # see LICENSE.txt for license information
 
 from time import time
-true = 1
-false = 0
 
 class Measure:
     def __init__(self, max_rate_period, fudge = 1):

@@ -3,8 +3,6 @@
 
 from sha import sha
 from threading import Event
-true = 1
-false = 0
 
 def dummy_status(fractionDone = None, activity = None):
     pass
@@ -15,7 +13,7 @@ def dummy_data_flunked(size):
 class StorageWrapper:
     def __init__(self, storage, request_size, hashes, 
             piece_size, finished, failed, 
-            statusfunc = dummy_status, flag = Event(), check_hashes = true,
+            statusfunc = dummy_status, flag = Event(), check_hashes = True,
             data_flunked = dummy_data_flunked):
         self.storage = storage
         self.request_size = request_size
@@ -33,8 +31,8 @@ class StorageWrapper:
         self.numactive = [0] * len(hashes)
         self.inactive_requests = [1] * len(hashes)
         self.amount_inactive = self.total_length
-        self.endgame = false
-        self.have = [false] * len(hashes)
+        self.endgame = False
+        self.have = [False] * len(hashes)
         self.waschecked = [check_hashes] * len(hashes)
         self.places = {}
         self.holes = []
@@ -53,7 +51,7 @@ class StorageWrapper:
                 "fractionDone" : 0})
         def markgot(piece, pos, self = self, check_hashes = check_hashes):
             self.places[piece] = pos
-            self.have[piece] = true
+            self.have[piece] = True
             self.amount_left -= self._piecelen(piece)
             self.amount_inactive -= self._piecelen(piece)
             self.inactive_requests[piece] = None
@@ -132,7 +130,7 @@ class StorageWrapper:
         rs.remove(r)
         self.amount_inactive -= r[1]
         if self.amount_inactive == 0:
-            self.endgame = true
+            self.endgame = True
         return r
 
     def piece_came_in(self, index, begin, piece):
@@ -175,9 +173,9 @@ class StorageWrapper:
         self.numactive[index] -= 1
         if not self.inactive_requests[index] and not self.numactive[index]:
             if sha(self.storage.read(self.piece_size * self.places[index], self._piecelen(index))).digest() == self.hashes[index]:
-                self.have[index] = true
+                self.have[index] = True
                 self.inactive_requests[index] = None
-                self.waschecked[index] = true
+                self.waschecked[index] = True
                 self.amount_left -= self._piecelen(index)
                 if self.amount_left == 0:
                     self.finished()
@@ -185,8 +183,8 @@ class StorageWrapper:
                 self.data_flunked(self._piecelen(index))
                 self.inactive_requests[index] = 1
                 self.amount_inactive += self._piecelen(index)
-                return false
-        return true
+                return False
+        return True
 
     def request_lost(self, index, begin, length):
         self.inactive_requests[index].append((begin, length))
@@ -207,17 +205,17 @@ class StorageWrapper:
             if sha(self.storage.read(self.piece_size * self.places[index], self._piecelen(index))).digest() != self.hashes[index]:
                 self.failed('told file complete on start-up, but piece failed hash check')
                 return None
-            self.waschecked[index] = true
+            self.waschecked[index] = True
         if begin + length > self._piecelen(index):
             return None
         return self.storage.read(self.piece_size * self.places[index] + begin, length)
 
 class DummyStorage:
-    def __init__(self, total, pre = false, ranges = []):
+    def __init__(self, total, pre = False, ranges = []):
         self.pre = pre
         self.ranges = ranges
         self.s = chr(0xFF) * total
-        self.done = false
+        self.done = False
 
     def was_preexisting(self):
         return self.pre
@@ -225,8 +223,8 @@ class DummyStorage:
     def was_preallocated(self, begin, length):
         for b, l in self.ranges:
             if begin >= b and begin + length <= b + l:
-                return true
-        return false
+                return True
+        return False
 
     def get_total_length(self):
         return len(self.s)
@@ -238,14 +236,14 @@ class DummyStorage:
         self.s = self.s[:begin] + piece + self.s[begin + len(piece):]
 
     def finished(self):
-        self.done = true
+        self.done = True
 
 def test_basic():
     ds = DummyStorage(3)
     sw = StorageWrapper(ds, 2, [sha('abc').digest()], 4, ds.finished, None)
     assert sw.get_amount_left() == 3
     assert not sw.do_I_have_anything()
-    assert sw.get_have_list() == [false]
+    assert sw.get_have_list() == [False]
     assert sw.do_I_have_requests(0)
     x = []
     x.append(sw.new_request(0))
@@ -264,13 +262,13 @@ def test_basic():
     assert not sw.do_I_have_requests(0)
     assert sw.get_amount_left() == 3
     assert not sw.do_I_have_anything()
-    assert sw.get_have_list() == [false]
+    assert sw.get_have_list() == [False]
     assert not ds.done
     sw.piece_came_in(0, 2, 'c')
     assert not sw.do_I_have_requests(0)
     assert sw.get_amount_left() == 0
     assert sw.do_I_have_anything()
-    assert sw.get_have_list() == [true]
+    assert sw.get_have_list() == [True]
     assert sw.get_piece(0, 0, 3) == 'abc'
     assert sw.get_piece(0, 1, 2) == 'bc'
     assert sw.get_piece(0, 0, 2) == 'ab'
@@ -283,28 +281,28 @@ def test_two_pieces():
         sha('d').digest()], 3, ds.finished, None)
     assert sw.get_amount_left() == 4
     assert not sw.do_I_have_anything()
-    assert sw.get_have_list() == [false, false]
+    assert sw.get_have_list() == [False, False]
     assert sw.do_I_have_requests(0)
     assert sw.do_I_have_requests(1)
 
     assert sw.new_request(0) == (0, 3)
     assert sw.get_amount_left() == 4
     assert not sw.do_I_have_anything()
-    assert sw.get_have_list() == [false, false]
+    assert sw.get_have_list() == [False, False]
     assert not sw.do_I_have_requests(0)
     assert sw.do_I_have_requests(1)
 
     assert sw.new_request(1) == (0, 1)
     assert sw.get_amount_left() == 4
     assert not sw.do_I_have_anything()
-    assert sw.get_have_list() == [false, false]
+    assert sw.get_have_list() == [False, False]
     assert not sw.do_I_have_requests(0)
     assert not sw.do_I_have_requests(1)
 
     sw.piece_came_in(0, 0, 'abc')
     assert sw.get_amount_left() == 1
     assert sw.do_I_have_anything()
-    assert sw.get_have_list() == [true, false]
+    assert sw.get_have_list() == [True, False]
     assert not sw.do_I_have_requests(0)
     assert not sw.do_I_have_requests(1)
     assert sw.get_piece(0, 0, 3) == 'abc'
@@ -314,7 +312,7 @@ def test_two_pieces():
     assert ds.done
     assert sw.get_amount_left() == 0
     assert sw.do_I_have_anything()
-    assert sw.get_have_list() == [true, true]
+    assert sw.get_have_list() == [True, True]
     assert not sw.do_I_have_requests(0)
     assert not sw.do_I_have_requests(1)
     assert sw.get_piece(1, 0, 1) == 'd'
@@ -324,14 +322,14 @@ def test_hash_fail():
     sw = StorageWrapper(ds, 4, [sha('abcd').digest()], 4, ds.finished, None)
     assert sw.get_amount_left() == 4
     assert not sw.do_I_have_anything()
-    assert sw.get_have_list() == [false]
+    assert sw.get_have_list() == [False]
     assert sw.do_I_have_requests(0)
 
     assert sw.new_request(0) == (0, 4)
     sw.piece_came_in(0, 0, 'abcx')
     assert sw.get_amount_left() == 4
     assert not sw.do_I_have_anything()
-    assert sw.get_have_list() == [false]
+    assert sw.get_have_list() == [False]
     assert sw.do_I_have_requests(0)
 
     assert sw.new_request(0) == (0, 4)
@@ -340,30 +338,30 @@ def test_hash_fail():
     assert ds.done
     assert sw.get_amount_left() == 0
     assert sw.do_I_have_anything()
-    assert sw.get_have_list() == [true]
+    assert sw.get_have_list() == [True]
     assert not sw.do_I_have_requests(0)
 
 def test_lazy_hashing():
     ds = DummyStorage(4, ranges = [(0, 4)])
     flag = Event()
-    sw = StorageWrapper(ds, 4, [sha('abcd').digest()], 4, ds.finished, lambda x, flag = flag: flag.set(), check_hashes = false)
+    sw = StorageWrapper(ds, 4, [sha('abcd').digest()], 4, ds.finished, lambda x, flag = flag: flag.set(), check_hashes = False)
     assert sw.get_piece(0, 0, 2) is None
     assert flag.isSet()
 
 def test_lazy_hashing_pass():
     ds = DummyStorage(4)
     flag = Event()
-    sw = StorageWrapper(ds, 4, [sha(chr(0xFF) * 4).digest()], 4, ds.finished, lambda x, flag = flag: flag.set(), check_hashes = false)
+    sw = StorageWrapper(ds, 4, [sha(chr(0xFF) * 4).digest()], 4, ds.finished, lambda x, flag = flag: flag.set(), check_hashes = False)
     assert sw.get_piece(0, 0, 2) is None
     assert not flag.isSet()
 
 def test_preexisting():
-    ds = DummyStorage(4, true, [(0, 4)])
+    ds = DummyStorage(4, True, [(0, 4)])
     sw = StorageWrapper(ds, 2, [sha(chr(0xFF) * 2).digest(), 
         sha('ab').digest()], 2, ds.finished, None)
     assert sw.get_amount_left() == 2
     assert sw.do_I_have_anything()
-    assert sw.get_have_list() == [true, false]
+    assert sw.get_have_list() == [True, False]
     assert not sw.do_I_have_requests(0)
     assert sw.do_I_have_requests(1)
     assert sw.new_request(1) == (0, 2)
@@ -372,7 +370,7 @@ def test_preexisting():
     assert ds.done
     assert sw.get_amount_left() == 0
     assert sw.do_I_have_anything()
-    assert sw.get_have_list() == [true, true]
+    assert sw.get_have_list() == [True, True]
     assert not sw.do_I_have_requests(0)
     assert not sw.do_I_have_requests(1)
 
@@ -395,12 +393,12 @@ def test_total_too_big():
         pass
 
 def test_end_above_total_length():
-    ds = DummyStorage(3, true)
+    ds = DummyStorage(3, True)
     sw = StorageWrapper(ds, 4, [sha('qqq').digest()], 4, ds.finished, None)
     assert sw.get_piece(0, 0, 4) == None
 
 def test_end_past_piece_end():
-    ds = DummyStorage(4, true, ranges = [(0, 4)])
+    ds = DummyStorage(4, True, ranges = [(0, 4)])
     sw = StorageWrapper(ds, 4, [sha(chr(0xFF) * 2).digest(), 
         sha(chr(0xFF) * 2).digest()], 2, ds.finished, None)
     assert ds.done

@@ -9,8 +9,6 @@ from os.path import abspath
 from sys import argv, version, stdout
 from cStringIO import StringIO
 assert version >= '2', "Install Python 2.0 or greater"
-true = 1
-false = 0
 
 def hours(n):
     if n == -1:
@@ -29,7 +27,7 @@ def hours(n):
 
 class HeadlessDisplayer:
     def __init__(self):
-        self.done = false
+        self.done = False
         self.file = ''
         self.percentDone = ''
         self.timeEst = ''
@@ -41,14 +39,14 @@ class HeadlessDisplayer:
         self.errors = []
 
     def finished(self):
-        self.done = true
+        self.done = True
         self.percentDone = '100'
         self.timeEst = 'Download Succeeded!'
         self.downRate = ''
         self.display({})
 
     def failed(self):
-        self.done = true
+        self.done = True
         self.percentDone = '0'
         self.timeEst = 'Download Failed!'
         self.downRate = ''

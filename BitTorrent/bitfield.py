@@ -1,9 +1,6 @@
 # Written by Bram Cohen
 # see LICENSE.txt for license information
 
-true = 1
-false = 0
-
 def booleans_to_bitfield(booleans):
     r = []
     for i in xrange(0, len(booleans), 8):
@@ -25,9 +22,9 @@ def bitfield_to_booleans(bitfield, l):
         v = ord(c)
         for i in xrange(8):
             if v & 0x80 != 0:
-                r.append(true)
+                r.append(True)
             else:
-                r.append(false)
+                r.append(False)
             v <<= 1
     if extra > 0:
         if r[-extra:] != [0] * extra:

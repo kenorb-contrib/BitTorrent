@@ -11,9 +11,8 @@ functions are try_all and try_single
 # Written by Bram Cohen
 # see LICENSE.txt for license information
 
-import traceback
-import sys
-import types
+from traceback import print_exc
+from sys import modules
 
 def try_all(excludes = [], excluded_paths=[]):
     """
@@ -23,7 +22,7 @@ def try_all(excludes = [], excluded_paths=[]):
     modules from files under under any of excluded_paths are also skipped.
     """
     failed = []
-    for modulename, module in sys.modules.items():
+    for modulename, module in modules.items():
         # skip builtins
         if not hasattr(module, '__file__'):
             continue
@@ -40,7 +39,7 @@ def try_single(m):
     
     accepts either a module object or a module name in string form
     """
-    if type(m) == types.StringType:
+    if type(m) is str:
         modulename = m
         module = __import__(m)
     else:
@@ -62,7 +61,7 @@ def try_module(module, modulename, failed):
             func()
             print 'passed ' + name
         except:
-            traceback.print_exc()
+            print_exc()
             failed.append(name)
             print 'failed ' + name
 

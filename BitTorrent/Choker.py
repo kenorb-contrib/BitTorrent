@@ -2,11 +2,9 @@
 # see LICENSE.txt for license information
 
 from random import randrange
-true = 1
-false = 0
 
 class Choker:
-    def __init__(self, max_uploads, schedule, done = lambda: false, min_uploads = None):
+    def __init__(self, max_uploads, schedule, done = lambda: False, min_uploads = None):
         self.max_uploads = max_uploads
         if min_uploads is None:
             min_uploads = max_uploads
@@ -30,7 +28,7 @@ class Choker:
 
     def _snubbed(self, c):
         if self.done():
-            return false
+            return False
         return c.get_download().is_snubbed()
 
     def _rate(self, c):
@@ -48,7 +46,7 @@ class Choker:
         del preferred[self.max_uploads - 1:]
         preferred = [x[1] for x in preferred]
         count = len(preferred)
-        hit = false
+        hit = False
         for c in self.connections:
             u = c.get_upload()
             if c in preferred:
@@ -58,7 +56,7 @@ class Choker:
                     u.unchoke()
                     if u.is_interested():
                         count += 1
-                        hit = true
+                        hit = True
                 else:
                     u.choke()
 
@@ -111,7 +109,7 @@ class DummyConnection:
 
 class DummyDownloader:
     def __init__(self, c):
-        self.s = false
+        self.s = False
         self.c = c
 
     def is_snubbed(self):
@@ -122,16 +120,16 @@ class DummyDownloader:
 
 class DummyUploader:
     def __init__(self):
-        self.i = false
-        self.c = true
+        self.i = False
+        self.c = True
 
     def choke(self):
         if not self.c:
-            self.c = true
+            self.c = True
 
     def unchoke(self):
         if self.c:
-            self.c = false
+            self.c = False
 
     def is_choked(self):
         return self.c
@@ -162,8 +160,8 @@ def test_resort():
     c2 = DummyConnection(1)
     c3 = DummyConnection(2)
     c4 = DummyConnection(3)
-    c2.u.i = true
-    c3.u.i = true
+    c2.u.i = True
+    c3.u.i = True
     choker.connection_made(c1)
     assert not c1.u.c
     choker.connection_made(c2, 1)
@@ -195,8 +193,8 @@ def test_interest():
     c1 = DummyConnection()
     c2 = DummyConnection(1)
     c3 = DummyConnection(2)
-    c2.u.i = true
-    c3.u.i = true
+    c2.u.i = True
+    c3.u.i = True
     choker.connection_made(c1)
     assert not c1.u.c
     choker.connection_made(c2, 1)
@@ -206,12 +204,12 @@ def test_interest():
     assert not c1.u.c
     assert c2.u.c
     assert not c3.u.c
-    c3.u.i = false
+    c3.u.i = False
     choker.not_interested(c3)
     assert not c1.u.c
     assert not c2.u.c
     assert not c3.u.c
-    c3.u.i = true
+    c3.u.i = True
     choker.interested(c3)
     assert not c1.u.c
     assert c2.u.c
@@ -225,17 +223,17 @@ def test_robin_interest():
     choker = Choker(1, s)
     c1 = DummyConnection(0)
     c2 = DummyConnection(1)
-    c1.u.i = true
+    c1.u.i = True
     choker.connection_made(c2)
     assert not c2.u.c
     choker.connection_made(c1, 0)
     assert not c1.u.c
     assert c2.u.c
-    c1.u.i = false
+    c1.u.i = False
     choker.not_interested(c1)
     assert not c1.u.c
     assert not c2.u.c
-    c1.u.i = true
+    c1.u.i = True
     choker.interested(c1)
     assert not c1.u.c
     assert c2.u.c
@@ -248,8 +246,8 @@ def test_skip_not_interested():
     c1 = DummyConnection(0)
     c2 = DummyConnection(1)
     c3 = DummyConnection(2)
-    c1.u.i = true
-    c3.u.i = true
+    c1.u.i = True
+    c3.u.i = True
     choker.connection_made(c2)
     assert not c2.u.c
     choker.connection_made(c1, 0)
@@ -279,9 +277,9 @@ def test_connection_lost_no_interrupt():
     c1 = DummyConnection(0)
     c2 = DummyConnection(1)
     c3 = DummyConnection(2)
-    c1.u.i = true
-    c2.u.i = true
-    c3.u.i = true
+    c1.u.i = True
+    c2.u.i = True
+    c3.u.i = True
     choker.connection_made(c1)
     choker.connection_made(c2, 1)
     choker.connection_made(c3, 2)
@@ -321,9 +319,9 @@ def test_connection_made_no_interrupt():
     c1 = DummyConnection(0)
     c2 = DummyConnection(1)
     c3 = DummyConnection(2)
-    c1.u.i = true
-    c2.u.i = true
-    c3.u.i = true
+    c1.u.i = True
+    c2.u.i = True
+    c3.u.i = True
     choker.connection_made(c1)
     choker.connection_made(c2, 1)
     f = s.s[0][0]
@@ -349,8 +347,8 @@ def test_round_robin():
     choker = Choker(1, s)
     c1 = DummyConnection(0)
     c2 = DummyConnection(1)
-    c1.u.i = true
-    c2.u.i = true
+    c1.u.i = True
+    c2.u.i = True
     choker.connection_made(c1)
     choker.connection_made(c2, 1)
     f = s.s[0][0]
@@ -400,14 +398,14 @@ def test_multi():
     choker.connection_made(c9, 8)
     choker.connection_made(c10, 9)
     choker.connection_made(c11, 10)
-    c2.u.i = true
-    c4.u.i = true
-    c6.u.i = true
-    c8.u.i = true
-    c10.u.i = true
-    c2.d.s = true
-    c6.d.s = true
-    c8.d.s = true
+    c2.u.i = True
+    c4.u.i = True
+    c6.u.i = True
+    c8.u.i = True
+    c10.u.i = True
+    c2.d.s = True
+    c6.d.s = True
+    c8.d.s = True
     s.s[0][0]()
     assert not c1.u.c
     assert not c2.u.c

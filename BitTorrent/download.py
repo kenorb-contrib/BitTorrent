@@ -26,8 +26,6 @@ from random import seed
 from traceback import print_exc
 from threading import Thread, Event
 from time import time
-true = 1
-false = 0
 try:
     from os import getpid
 except ImportError:
@@ -133,7 +131,7 @@ def download(params, filefunc, statusfunc, finfunc, errorfunc, doneflag, cols, p
         return
     
     try:
-        def make(f, forcedir = false):
+        def make(f, forcedir = False):
             if not forcedir:
                 f = path.split(f)[0]
             if f != '' and not path.exists(f):
@@ -142,7 +140,7 @@ def download(params, filefunc, statusfunc, finfunc, errorfunc, doneflag, cols, p
         info = response['info']
         if info.has_key('length'):
             file_length = info['length']
-            file = filefunc(info['name'], file_length, config['saveas'], false)
+            file = filefunc(info['name'], file_length, config['saveas'], False)
             if file is None:
                 return
             make(file)
@@ -151,7 +149,7 @@ def download(params, filefunc, statusfunc, finfunc, errorfunc, doneflag, cols, p
             file_length = 0
             for x in info['files']:
                 file_length += x['length']
-            file = filefunc(info['name'], file_length, config['saveas'], true)
+            file = filefunc(info['name'], file_length, config['saveas'], True)
             if file is None:
                 return
   
@@ -165,7 +163,7 @@ def download(params, filefunc, statusfunc, finfunc, errorfunc, doneflag, cols, p
                 if not existing:
                     file = path.join(file, info['name'])
                     
-            make(file, true)
+            make(file, True)
             
             # alert the UI to any possible change in path
             if pathFunc != None:

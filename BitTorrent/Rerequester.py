@@ -5,10 +5,7 @@ from zurllib import urlopen, quote
 from btformats import check_peers
 from bencode import bdecode
 from threading import Thread, Lock
-from traceback import print_exc
 from socket import error
-true = 1
-false = 0
 
 class Rerequester:
     def __init__(self, url, interval, sched, howmany, minpeers, 
@@ -34,7 +31,7 @@ class Rerequester:
         self.errorfunc = errorfunc
         self.maxpeers = maxpeers
         self.doneflag = doneflag
-        self.last_failed = true
+        self.last_failed = True
         self.sched(self.c, interval / 2)
 
     def c(self):
@@ -65,7 +62,7 @@ class Rerequester:
             if set():
                 if self.last_failed:
                     self.errorfunc('Problem connecting to tracker - timeout exceeded')
-                self.last_failed = true
+                self.last_failed = True
                 callback()
         self.sched(checkfail, self.timeout)
         Thread(target = self.rerequest, args = [s, set, callback]).start()
@@ -77,7 +74,7 @@ class Rerequester:
             h.close()
             if set():
                 def add(self = self, r = r, callback = callback):
-                    self.last_failed = false
+                    self.last_failed = False
                     self.postrequest(r, callback)
                 self.externalsched(add)
         except (IOError, error), e:
@@ -85,7 +82,7 @@ class Rerequester:
                 def fail(self = self, r = 'Problem connecting to tracker - ' + str(e)):
                     if self.last_failed:
                         self.errorfunc(r)
-                    self.last_failed = true
+                    self.last_failed = True
                 self.externalsched(fail)
                 self.externalsched(callback)
 
@@ -118,13 +115,13 @@ class Rerequester:
 class SetOnce:
     def __init__(self):
         self.lock = Lock()
-        self.first = true
+        self.first = True
 
     def set(self):
         try:
             self.lock.acquire()
             r = self.first
-            self.first = false
+            self.first = False
             return r
         finally:
             self.lock.release()

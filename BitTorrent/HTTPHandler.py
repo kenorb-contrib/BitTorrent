@@ -5,10 +5,8 @@ from cStringIO import StringIO
 from sys import stdout
 import time
 from gzip import GzipFile
-true = 1
-false = 0
 
-DEBUG = false
+DEBUG = False
 
 weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 
@@ -20,9 +18,9 @@ class HTTPConnection:
         self.handler = handler
         self.connection = connection
         self.buf = ''
-        self.closed = false
-        self.done = false
-        self.donereading = false
+        self.closed = False
+        self.done = False
+        self.donereading = False
         self.next_func = self.read_type
 
     def get_ip(self):
@@ -30,30 +28,30 @@ class HTTPConnection:
 
     def data_came_in(self, data):
         if self.donereading or self.next_func is None:
-            return true
+            return True
         self.buf += data
-        while true:
+        while True:
             try:
                 i = self.buf.index('\n')
             except ValueError:
-                return true
+                return True
             val = self.buf[:i]
             self.buf = self.buf[i+1:]
             self.next_func = self.next_func(val)
             if self.donereading:
-                return true
+                return True
             if self.next_func is None or self.closed:
-                return false
+                return False
 
     def read_type(self, data):
         self.header = data.strip()
         words = data.split()
         if len(words) == 3:
             self.command, self.path, garbage = words
-            self.pre1 = false
+            self.pre1 = False
         elif len(words) == 2:
             self.command, self.path = words
-            self.pre1 = true
+            self.pre1 = True
             if self.command != 'GET':
                 return None
         else:
@@ -66,7 +64,7 @@ class HTTPConnection:
     def read_header(self, data):
         data = data.strip()
         if data == '':
-            self.donereading = true
+            self.donereading = True
             # check for Accept-Encoding: header, pick a 
             if self.headers.has_key('accept-encoding'):
                 ae = self.headers['accept-encoding']
@@ -134,7 +132,7 @@ class HTTPConnection:
             self.handler.lastflush = t
             stdout.flush()
 
-        self.done = true
+        self.done = True
         r = StringIO()
         r.write('HTTP/1.0 ' + str(responsecode) + ' ' + 
             responsestring + '\r\n')
@@ -165,7 +163,7 @@ class HTTPHandler:
 
     def connection_lost(self, connection):
         ec = self.connections[connection]
-        ec.closed = true
+        ec.closed = True
         del ec.connection
         del ec.next_func
         del self.connections[connection]
