@@ -78,23 +78,17 @@ class PiecePicker:
                     bestnum = self.numinterests[i]
                 elif self.numinterests[i] == bestnum:
                     bests.append(i)
-        if self.numgot >= self.rarest_first_cutoff:
-            for i in xrange(1, min(bestnum, len(self.interests))):
-                if bests and i >= self.rarest_first_priority_cutoff:
-                    break
-                for j in self.interests[i]:
-                    if havefunc(j):
-                        return j
-            if bests:
-                return choice(bests)
-            return None
-        else:
-            if bests:
-                return choice(bests)
-            for i in self.scrambled:
-                if havefunc(i):
-                    return i
-            return None
+        if self.numgot < self.rarest_first_cutoff and bests:
+            return choice(bests)
+        for i in xrange(1, min(bestnum, len(self.interests))):
+            if bests and i >= self.rarest_first_priority_cutoff:
+                break
+            for j in self.interests[i]:
+                if havefunc(j):
+                    return j
+        if bests:
+            return choice(bests)
+        return None
 
     def am_I_complete(self):
         return self.numgot == self.numpieces
