@@ -12,7 +12,7 @@ false = 0
 class Rerequester:
     def __init__(self, url, interval, sched, howmany, minpeers, 
             connect, externalsched, amount_left, up, down,
-            port, ip, myid, infohash, timeout, errorfunc):
+            port, ip, myid, infohash, timeout, errorfunc, maxpeers):
         self.url = ('%s?info_hash=%s&peer_id=%s&port=%s' %
             (url, quote(infohash), quote(myid), str(port)))
         if ip != '':
@@ -31,6 +31,7 @@ class Rerequester:
         self.down = down
         self.timeout = timeout
         self.errorfunc = errorfunc
+        self.maxpeers = maxpeers
         self.last_failed = true
         self.sched(self.c, interval / 2)
 

@@ -249,7 +249,7 @@ def download(params, filefunc, statusfunc, finfunc, errorfunc, doneflag, cols, p
         config['min_peers'], encrypter.start_connection, 
         rawserver.external_add_task, storagewrapper.get_amount_left, 
         upmeasure.get_total, downmeasure.get_total, listen_port, 
-        config['ip'], myid, infohash, config['http_timeout'], errorfunc)
+        config['ip'], myid, infohash, config['http_timeout'], errorfunc, config['max_initiate'])
     DownloaderFeedback(choker, rawserver.add_task, statusfunc, 
         upmeasure.get_rate, downmeasure.get_rate, ratemeasure.get_time_left, 
         ratemeasure.get_size_left, file_length, finflag,
