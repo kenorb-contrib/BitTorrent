@@ -3,7 +3,7 @@
 
 from urllib import urlopen, quote
 from urlparse import urljoin
-from re import compile
+from btformats import check_message
 from Choker import Choker
 from Storage import Storage
 from StorageWrapper import StorageWrapper
@@ -15,7 +15,6 @@ from RawServer import RawServer
 from DownloaderFeedback import DownloaderFeedback
 from RateMeasure import RateMeasure
 from bencode import bencode, bdecode
-from btemplate import compile_template, string_template, ListMarker, OptionMarker, exact_length
 from sha import sha
 from os import path, makedirs
 from parseargs import parseargs, formatDefinitions
@@ -64,29 +63,16 @@ defaults = [
         'time between updates of displayed information'),
     ]
 
-def mult20(thing, verbose):
-    if type(thing) != type(''):
-        raise ValueError, 'must be a string'
-    if len(thing) % 20 != 0:
-        raise ValueError, 'must be multiple of 20'
-
-template = compile_template({'info': {'pieces': mult20, 'piece length': 1, 
-    'files': OptionMarker(ListMarker({'path': ListMarker(string_template), 
-    'length': OptionMarker(0)})), 'name': string_template}, 
-    'peers': ListMarker({'ip': string_template, 'port': 1, 
-    'peer id': exact_length(20)}), 'file id': string_template, 
-    'announce': string_template, 'interval': 1, 'url': string_template, 
-    'your ip': string_template})
-
 def download(params, filefunc, statusfunc, resultfunc, doneflag, cols):
     if len(params) == 0:
         resultfunc(false, 'arguments are -\n' + formatDefinitions(defaults, cols))
         return
     try:
         config, garbage = parseargs(params, defaults, 0, 0)
-        if config['responsefile'] == '' and config['url'] == '':
-            raise ValueError('need responsefile or url')
+        if (config['responsefile'] == '') == (config['url'] == ''):
+            raise ValueError, 'need responsefile or url'
     except ValueError, e:
+        print_exc()
         resultfunc(false, 'error: ' + str(e) + '\nrun with no args for parameter explanations')
         return
     
@@ -113,33 +99,11 @@ def download(params, filefunc, statusfunc, resultfunc, doneflag, cols):
 
     try:
         response = bdecode(response)
-        template(response)
-        info = response['info']
-        if info.has_key('files') == info.has_key('length'):
-            raise ValueError, 'single/multiple file mix'
+        check_message(response)
     except ValueError, e:
+        print_exc()
         resultfunc(false, "got bad file info - " + str(e))
         return
-    reg = compile(r'^[^/\\.~][^/\\]*$')
-    if not reg.match(info['name']):
-        resultfunc(false, 'file name specified by server rejected for security reasons')
-        return
-    if info.has_key('files'):
-        files = info['files']
-        for d in files:
-            for f in d['path']:
-                if not reg.match(f):
-                    resultfunc(false, 'file name specified by server rejected for security reasons')
-                    return
-        for i in xrange(len(files)):
-            for j in xrange(i):
-                if files[i]['path'] == files[j]['path']:
-                    resultfunc(false, 'duplicate file in info')
-                    return
-        for d in files:
-            if d['path'] == []:
-                resultfunc(false, 'empty path in info')
-                return
     
     def make(f, forcedir = false, resultfunc = resultfunc):
         try:
@@ -240,8 +204,7 @@ def download(params, filefunc, statusfunc, resultfunc, doneflag, cols):
     encrypter = Encrypter(connecter, rawserver, 
         myid, config['max_message_length'], rawserver.add_task, 
         config['keepalive_interval'], sha(bencode(info)).digest())
-    DownloaderFeedback(choker, rawserver.add_task, 
-        ip, statusfunc, 
+    DownloaderFeedback(choker, rawserver.add_task, ip, statusfunc, 
         config['max_rate_recalculate_interval'], ratemeasure.get_time_left, 
         ratemeasure.get_size_left, file_length, finflag,
         config['display_interval'])

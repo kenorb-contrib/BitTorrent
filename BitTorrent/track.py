@@ -2,10 +2,10 @@
 # see LICENSE.txt for license information
 
 from parseargs import parseargs, formatDefinitions
+from btformats import check_info
 from RawServer import RawServer
 from HTTPHandler import HTTPHandler
 from threading import Event
-from btemplate import compile_template, ListMarker, string_template, OptionMarker, exact_length, ValuesMarker
 from bencode import bencode, bdecode
 from urllib import urlopen, quote, unquote
 from urlparse import urlparse
@@ -14,6 +14,7 @@ from cStringIO import StringIO
 from traceback import print_exc
 from time import time
 from random import shuffle
+from types import StringType, LongType, ListType, DictType
 true = 1
 false = 0
 
@@ -30,21 +31,28 @@ defaults = [
     ('response_size', None, 25, 'number of peers to send in an info message'),
     ]
 
-def mult20(thing, verbose):
-    if type(thing) != type(''):
-        raise ValueError, 'must be a string'
-    if len(thing) % 20 != 0:
-        raise ValueError, 'must be multiple of 20'
+def infofiletemplate(x):
+    if type(x) != DictType:
+        raise ValueError
+    for y in x.values():
+        check_info(y)
 
-infotemplate = compile_template({'pieces': mult20, 
-    'piece length': 1, 'files': OptionMarker(ListMarker({
-    'path': ListMarker(string_template), 'length': 0})), 
-    'name': string_template, 'length': OptionMarker(0)})
-
-infofiletemplate = compile_template(ValuesMarker(infotemplate))
-
-downloaderfiletemplate = compile_template(ValuesMarker(
-    ValuesMarker({'ip': string_template, 'port': 1}, exact_length(20))))
+def downloaderfiletemplate(x):
+    if type(x) != DictType:
+        raise ValueError
+    for y in x.values():
+        if type(y) != DictType:
+            raise ValueError
+        for id, info in y.items():
+            if len(id) != 20:
+                raise ValueError
+            if type(info) != DictType:
+                raise ValueError
+            if type(info.get('ip')) != StringType:
+                raise ValueError
+            port = info.get('port')
+            if type(port) != LongType or port <= 0:
+                raise ValueError
 
 alas = 'your file may exist elsewhere in the universe\n\nbut alas, not here'
 
@@ -161,7 +169,7 @@ class Tracker:
     def realput(self, connection, path, headers, data):
         path = unquote(path)[1:]
         message = bdecode(data)
-        infotemplate(message)
+        check_info(message)
         if headers.get('content-type') != 'application/x-bittorrent':
             return (403, 'forbidden', {'Content-Type': 'text/plain'},
                 'only accepting puts of content-type application/x-bittorrent')
