@@ -89,6 +89,8 @@ def download(params, filefunc, statusfunc, finfunc, errorfunc, doneflag, cols, p
     if len(params) == 0:
         errorfunc('arguments are -\n' + formatDefinitions(defaults, cols))
         return
+    if len(params) == 1:
+        params = ['--responsefile'] + params
     try:
         config, garbage = parseargs(params, defaults, 0, 0)
         if (config['responsefile'] == '') == (config['url'] == ''):
