@@ -98,7 +98,12 @@ class Connecter:
                 self.uploader.connection_made(up)
             else:
                 up.connection.close()
-                up.connection = connection
+                del up.dict
+                del up.connection
+                newup = TransferConnection(connection, self.uploads)
+                self.uploads[k] = newup
+                self.uploader.connection_lost(up)
+                self.uploader.connection_made(newup)
         elif message == 'upload':
             if down is None:
                 down = TransferConnection(connection, self.downloads)
@@ -106,7 +111,12 @@ class Connecter:
                 self.downloader.connection_made(down)
             else:
                 down.connection.close()
-                down.connection = connection
+                del down.dict
+                del down.connection
+                newdown = TransferConnection(connection, self.downloads)
+                self.downloads[k] = newdown
+                self.downloader.connection_lost(down)
+                self.downloader.connection_made(newdown)
         else:
             connection.close()
 
