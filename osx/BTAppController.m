@@ -1,6 +1,7 @@
 #import "BTAppController.h"
 #import "DLWindowController.h"
 #import "pystructs.h"
+#import "ICHelper.h"
 
 static PyThreadState *tstate;
 
@@ -19,7 +20,7 @@ bt_ProxyObject *bt_getProxy(NSPort *receivePort, NSPort *sendPort);
     vers = PyDict_GetItemString(md, "version");
     version = [[NSString stringWithCString:PyString_AsString(vers)] retain];
     tstate = PyEval_SaveThread();
-    
+    [[[ICHelper alloc] init] installICHandler:self];
     return self;
 }
 

@@ -28,7 +28,13 @@ static PyObject *chooseFile(bt_ProxyObject *self, PyObject *args)
     Py_BEGIN_ALLOW_THREADS
     str = [self->dlController chooseFile:[NSString stringWithCString:def] size:size isDirectory:dir];
     Py_END_ALLOW_THREADS
-    res = PyString_FromString([str cString]);
+    if(str) {
+	res = PyString_FromString([str cString]);
+    }
+    else {
+	Py_INCREF(Py_None);
+	res = Py_None;
+    }
     [pool release];
     return res;
 }

@@ -17,6 +17,8 @@
 				F5D01D38027E0FE201A845D2,
 				F5D01D3D027E224601A845D2,
 				F5D01D3E027E224601A845D2,
+				F5A3C5CA02F3CA7101A845D2,
+				F5A3C5CB02F3CA7101A845D2,
 			);
 			isa = PBXGroup;
 			name = Classes;
@@ -51,6 +53,7 @@
 			children = (
 				1058C7A1FEA54F0111CA2CBB,
 				F55ADF7A02F3401201A845D2,
+				F5A3C5D002F3DA9B01A845D2,
 			);
 			isa = PBXGroup;
 			name = "Linked Frameworks";
@@ -217,13 +220,12 @@
 				F56F7C3B02F361FF01A845D2,
 			);
 			buildSettings = {
-				DEBUGGING_SYMBOLS = NO;
 				FRAMEWORK_SEARCH_PATHS = "";
 				HEADER_SEARCH_PATHS = "";
 				INSTALL_PATH = "$(HOME)/Applications";
 				LIBRARY_SEARCH_PATHS = /usr/local/lib/opython/config;
-				OPTIMIZATION_CFLAGS = "-O2";
-				OTHER_CFLAGS = "-Wall";
+				OPTIMIZATION_CFLAGS = "-O0";
+				OTHER_CFLAGS = "-Wall -g";
 				OTHER_LDFLAGS = "";
 				PRODUCT_NAME = BitTorrent;
 				SECTORDER_FLAGS = "";
@@ -291,6 +293,8 @@
 				F5D01D3F027E224601A845D2,
 				F506F6C50287AE7901A845D2,
 				F5F1BAA702F0842B01A845D2,
+				F5A3C5CC02F3CA7101A845D2,
+				F5A3C5CD02F3CA7101A845D2,
 			);
 			isa = PBXHeadersBuildPhase;
 			name = Headers;
@@ -309,9 +313,10 @@
 			buildActionMask = 2147483647;
 			files = (
 				29B9732CFDCFA39411CA2CEA,
-				F5D01D3A027E0FE201A845D2,
 				F5D01D40027E224601A845D2,
 				F5D01D42027E7D9D01A845D2,
+				F5A3C5CE02F3CA7101A845D2,
+				F5A3C5D302F6385901A845D2,
 			);
 			isa = PBXSourcesBuildPhase;
 			name = Sources;
@@ -329,6 +334,7 @@
 			files = (
 				F56F7C3C02F372C401A845D2,
 				F56F7C3D02F372C401A845D2,
+				F5A3C5D102F3DA9B01A845D2,
 			);
 			isa = PBXFrameworksBuildPhase;
 			name = "Frameworks & Libraries";
@@ -441,6 +447,52 @@
 			path = BUILD_INSTRUCTIONS;
 			refType = 2;
 		};
+		F5A3C5CA02F3CA7101A845D2 = {
+			isa = PBXFileReference;
+			path = ICHelper.h;
+			refType = 4;
+		};
+		F5A3C5CB02F3CA7101A845D2 = {
+			isa = PBXFileReference;
+			path = ICHelper.m;
+			refType = 4;
+		};
+		F5A3C5CC02F3CA7101A845D2 = {
+			fileRef = F5A3C5CA02F3CA7101A845D2;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		F5A3C5CD02F3CA7101A845D2 = {
+			fileRef = F5D01D37027E0FE201A845D2;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		F5A3C5CE02F3CA7101A845D2 = {
+			fileRef = F5A3C5CB02F3CA7101A845D2;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		F5A3C5D002F3DA9B01A845D2 = {
+			isa = PBXFrameworkReference;
+			name = Carbon.framework;
+			path = /System/Library/Frameworks/Carbon.framework;
+			refType = 0;
+		};
+		F5A3C5D102F3DA9B01A845D2 = {
+			fileRef = F5A3C5D002F3DA9B01A845D2;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		F5A3C5D302F6385901A845D2 = {
+			fileRef = F5D01D38027E0FE201A845D2;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
 		F5D01D34027E0B0201A845D2 = {
 			children = (
 				F5D01D35027E0B0201A845D2,
@@ -471,12 +523,6 @@
 			isa = PBXFileReference;
 			path = DLWindowController.m;
 			refType = 4;
-		};
-		F5D01D3A027E0FE201A845D2 = {
-			fileRef = F5D01D38027E0FE201A845D2;
-			isa = PBXBuildFile;
-			settings = {
-			};
 		};
 		F5D01D3D027E224601A845D2 = {
 			isa = PBXFileReference;

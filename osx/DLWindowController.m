@@ -68,7 +68,7 @@
 - (NSString *)chooseFile:(NSString *)defaultFile size:(long)size isDirectory:(int)dir
 {
     id panel;
-    NSString *fname = @"";
+    NSString *fname = nil;
     
     if(!dir) {
 	panel = [NSSavePanel savePanel];
@@ -87,10 +87,14 @@
 	    fname = [panel filename];
 	}
     }
-    [file setStringValue:[NSString stringWithFormat:@"%@ (%1.1f MB)", [fname lastPathComponent], size / 1048576.0]];
-    [[self window] setTitleWithRepresentedFilename:fname];
-    
-    return fname;
+    if(fname) {
+	[file setStringValue:[NSString stringWithFormat:@"%@ (%1.1f MB)", [fname lastPathComponent], size / 1048576.0]];
+	[[self window] setTitleWithRepresentedFilename:fname];
+	return fname;
+    }
+    // user cancelled
+    [[self window] performClose:self];
+    return nil;
 }
 
 - (void)display:(NSDictionary *)dict
