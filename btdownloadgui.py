@@ -20,13 +20,13 @@ def run(configDictionary, files, prefetched = None):
     def getname(default, root = root):
         result = asksaveasfilename(initialfile = default)
         return result
-    l = Label(root, text = "You shouldn't see this")
+    l = Label(root, text = "initializing...")
     l.pack()
     doneflag = Event()
     def shutdown(root = root, doneflag = doneflag):
         doneflag.set()
         root.destroy()
-    quit_button = Button(root, text = 'garbage', width=28, height=1, 
+    quit_button = Button(root, text = 'Cancel', width=28, height=1, 
         command = shutdown)
     quit_button.pack(side = 'bottom')
     def displayfunc(a, b, root = root, l = l, button = quit_button):

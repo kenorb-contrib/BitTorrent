@@ -78,6 +78,7 @@ def run(private_key, noncefunc, response, filefunc, displayfunc, doneflag, confi
         r.append(1)
         doneflag.set()
     blobs.callback = finished
+    left = blobs.get_amount_left()
 
     connecter.start_connecting([(x['ip'], x['port']) for x in response['peers']])
 
@@ -85,6 +86,8 @@ def run(private_key, noncefunc, response, filefunc, displayfunc, doneflag, confi
         a = {'type': 'announce', 'id': response['id'], 'port': listen_port}
         if config['ip'] != '':
             a['ip'] = config['ip']
+        if blobs.already_existed:
+            a['remaining'] = left
         url = urljoin(response['url'], response['announce'] + 
             b2a_hex(bencode(a)) + response.get('postannounce', ''))
         h = urlopen(url)
@@ -96,7 +99,7 @@ def run(private_key, noncefunc, response, filefunc, displayfunc, doneflag, confi
             displayfunc("Couldn't announce - " + response['reason'], 'Okay')
             return false
         DownloaderFeedback(uploader, downloader, throttler, rawserver.add_task, 
-            listen_port, response['your ip'], file_length, blobs.get_amount_left(), displayfunc)
+            listen_port, response['your ip'], file_length, left, displayfunc)
     except IOError, e:
         displayfunc("Couldn't announce - " + str(e), 'Okay')
         return false
