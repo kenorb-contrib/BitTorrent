@@ -92,14 +92,11 @@ class RawServer:
         self.errorfunc = errorfunc
         self.maxconnects = maxconnects
         self.funcs = []
-        self.externally_added = []
+        self.unscheduled_tasks = []
         self.add_task(self.scan_for_timeouts, timeout_check_interval)
 
     def add_task(self, func, delay):
-        insort(self.funcs, (time() + delay, func))
-
-    def external_add_task(self, func, delay = 0):
-        self.externally_added.append((func, delay))
+        self.unscheduled_tasks.append((func, delay))
 
     def scan_for_timeouts(self):
         self.add_task(self.scan_for_timeouts, self.timeout_check_interval)
@@ -190,11 +187,11 @@ class RawServer:
                     if s.is_flushed():
                         s.handler.connection_flushed(s)
 
-    def pop_external(self):
+    def pop_uncheduled(self):
         try:
             while True:
-                (a, b) = self.externally_added.pop()
-                self.add_task(a, b)
+                (func, delay) = self.unscheduled_tasks.pop()
+                insort(self.funcs, (time() + delay, func))
         except IndexError:
             pass
 
@@ -203,7 +200,7 @@ class RawServer:
         try:
             while not self.doneflag.isSet():
                 try:
-                    self.pop_external()
+                    self.pop_unscheduled()
                     if len(self.funcs) == 0:
                         period = 2 ** 30
                     else:
