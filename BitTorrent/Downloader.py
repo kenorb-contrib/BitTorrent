@@ -15,9 +15,9 @@ class Download:
         self.interested = false
         self.max_rate_period = max_rate_period
         self.total_down = total_down
-        self.ratesince = time()
+        self.ratesince = time() - 3.0
         self.lastin = self.ratesince
-        self.rate = 0
+        self.rate = 0.0
         data.connected(self)
 
     def adjust(self):

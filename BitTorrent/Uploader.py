@@ -19,7 +19,7 @@ class Upload:
         self.reported_choked = false
         self.interested = false
         self.buffer = []
-        self.ratesince = time()
+        self.ratesince = time() - 3.0
         self.lastout = self.ratesince
         self.rate = 0.0
 
@@ -82,12 +82,14 @@ class Upload:
             self.reported_choked = false
 
     def choke(self):
-        self.choked = true
-        self.fix_choke()
+        if not self.choked:
+            self.choked = true
+            self.fix_choke()
         
     def unchoke(self):
-        self.choked = false
-        self.fix_choke()
+        if self.choked:
+            self.choked = false
+            self.fix_choke()
         
     def is_choked(self):
         return self.choked

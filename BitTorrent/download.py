@@ -4,7 +4,7 @@
 from urllib import urlopen
 from urlparse import urljoin
 from StreamEncrypter import make_encrypter
-from PublisherChoker import Choker
+from Choker import Choker
 from SingleBlob import SingleBlob
 from Uploader import Upload
 from DownloaderData import DownloaderData
@@ -54,8 +54,6 @@ defaults = [
         'local file name to save the file as, null indicates query user'),
     ('timeout', None, 300.0,
         'time to wait between closing sockets which nothing has been received on'),
-    ('choke_interval', None, 30.0,
-        "number of seconds to pause between changing who's choked"),
     ('max_slice_length', None, 2 ** 17,
         "maximum length slice to send to peers, larger requests are ignored"),
     ('max_rate_recalculate_interval', None, 15.0,
@@ -158,7 +156,7 @@ def download(params, filefunc, statusfunc, resultfunc, doneflag, cols):
             return c.get_upload().rate
         return c.get_download().rate
     choker = Choker(config['max_uploads'], rawserver.add_task, 
-        config['choke_interval'], preference)
+        preference)
     total_up = [0l]
     total_down = [0l]
     def make_upload(connection, choker = choker, blobs = blobs, 
