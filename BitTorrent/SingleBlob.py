@@ -4,7 +4,6 @@
 from sha import sha
 from random import shuffle
 from threading import Event
-from suck import suck
 from cStringIO import StringIO
 true = 1
 false = 0
@@ -217,7 +216,7 @@ class MultiFile:
         for file, pos, end in self.intervals(pos, amount):
             h = self.handles[file]
             h.seek(pos)
-            r.write(suck(h, end - pos))
+            r.write(h.read(end - pos))
         return r.getvalue()
         
     def write(self, pos, s):

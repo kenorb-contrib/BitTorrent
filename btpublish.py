@@ -11,7 +11,6 @@ from os.path import getsize, split, join, abspath, isdir
 from os import listdir
 from sha import sha
 from copy import copy
-from BitTorrent.suck import suck
 from BitTorrent.bencode import bencode, bdecode
 
 def publish(file, url):
@@ -46,7 +45,7 @@ def makeinfo(file, piece_length = 2 ** 20):
             h = open(f, 'rb')
             while pos < size:
                 a = min(size - pos, piece_length - done)
-                sh.update(suck(h, a))
+                sh.update(h.read(a))
                 done += a
                 pos += a
                 if done == piece_length:
@@ -66,7 +65,7 @@ def makeinfo(file, piece_length = 2 ** 20):
         h = open(file, 'rb')
         while p < size:
             h.seek(p)
-            pieces.append(sha(suck(h, piece_length)).digest())
+            pieces.append(sha(h.read(piece_length)).digest())
             p += piece_length
         h.close()
         return bencode({'type': 'single', 'pieces': pieces, 
