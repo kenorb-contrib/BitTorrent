@@ -2,6 +2,7 @@
 # see LICENSE.txt for license information
 
 from BitTornado.bitfield import Bitfield
+from BitTornado.clock import clock
 from binascii import b2a_hex
 
 try:
@@ -44,6 +45,7 @@ class Connection:
         self.partial_message = None
         self.download = None
         self.send_choke_queued = False
+        self.just_unchoked = None
 
     def get_ip(self, real=False):
         return self.connection.get_ip(real)
@@ -74,6 +76,7 @@ class Connection:
         else:
             self._send_message(CHOKE)
             self.upload.choke_sent()
+            self.just_unchoked = 0
 
     def send_unchoke(self):
         if self.send_choke_queued:
@@ -82,6 +85,11 @@ class Connection:
                 print 'CHOKE SUPPRESSED'
         else:
             self._send_message(UNCHOKE)
+            if ( self.partial_message or self.just_unchoked is None
+                 or not self.upload.interested or self.download.active_requests ):
+                self.just_unchoked = 0
+            else:
+                self.just_unchoked = clock()
 
     def send_request(self, index, begin, length):
         self._send_message(REQUEST + tobinary(index) + 
@@ -121,7 +129,7 @@ class Connection:
             index, begin, piece = s
             self.partial_message = ''.join((
                             tobinary(len(piece) + 9), PIECE,
-                            tobinary(index), tobinary(begin), piece ))
+                            tobinary(index), tobinary(begin), piece.tostring() ))
             if DEBUG:
                 print 'sending chunk: '+str(index)+': '+str(begin)+'-'+str(begin+len(piece))
 
@@ -136,6 +144,7 @@ class Connection:
             self.send_choke_queued = False
             self.outqueue.append(tobinary(1)+CHOKE)
             self.upload.choke_sent()
+            self.just_unchoked = 0
         q.extend(self.outqueue)
         self.outqueue = []
         q = ''.join(q)
@@ -153,6 +162,13 @@ class Connection:
 
     def backlogged(self):
         return not self.connection.is_flushed()
+
+    def got_request(self, i, p, l):
+        self.upload.got_request(i, p, l)
+        if self.just_unchoked:
+            self.connecter.ratelimiter.ping(clock() - self.just_unchoked)
+            self.just_unchoked = 0
+    
 
 
 
@@ -243,7 +259,7 @@ class Connecter:
             if i >= self.numpieces:
                 connection.close()
                 return
-            c.upload.got_request(i, toint(message[5:9]), 
+            c.got_request(i, toint(message[5:9]), 
                 toint(message[9:]))
         elif t == CANCEL:
             if len(message) != 13:

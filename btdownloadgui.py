@@ -32,7 +32,7 @@ from BitTornado.natpunch import UPnP_test
 from threading import Event, Thread
 from os.path import *
 from os import getcwd
-from time import strftime, time, localtime
+from time import strftime, time, localtime, sleep
 from BitTornado.clock import clock
 from webbrowser import open_new
 from traceback import print_exc
@@ -50,6 +50,11 @@ except:
 
 PROFILER = False
 WXPROFILER = False
+
+try:
+    wxFULL_REPAINT_ON_RESIZE
+except:
+    wxFULL_REPAINT_ON_RESIZE = 0        # fix for wx pre-2.5
 
 # Note to packagers: edit OLDICONPATH in BitTornado/ConfigDir.py
 
@@ -118,10 +123,12 @@ def pr(event):
 
 class DownloadInfoFrame:
     def __init__(self, flag, configfile):
+        self._errorwindow = None
         try:
             self.FONT = configfile.config['gui_font']
             self.default_font = wxFont(self.FONT, wxDEFAULT, wxNORMAL, wxNORMAL, False)
-            frame = wxFrame(None, -1, 'BitTorrent ' + version + ' download')
+            frame = wxFrame(None, -1, 'BitTorrent ' + version + ' download',
+                            style = wxDEFAULT_FRAME_STYLE|wxFULL_REPAINT_ON_RESIZE)
             self.flag = flag
             self.configfile = configfile
             self.configfileargs = configfile.config
@@ -154,13 +161,13 @@ class DownloadInfoFrame:
             self.fileList = None
             self.lastexternalannounce = ''
             self.refresh_details = False
-            self._errorwindow = None
             self.lastuploadsettings = 0
             self.old_download = 0
             self.old_upload = 0
             self.old_ratesettings = None
             self.current_ratesetting = None
             self.gaugemode = None
+            self.autorate = False
             
             self.filename = None
             self.dow = None
@@ -576,13 +583,14 @@ class DownloadInfoFrame:
                 pass
         return self.config != None
 
-
     def onRateScroll(self, event):
         try:
+            if self.autorate:
+                return
+            if not self._try_get_config():
+                return
             if (self.scrollock == 0):
                 self.scrollock = 1
-                if not self._try_get_config():
-                    return
                 self.updateSpinnerFlag = 1
                 self.dow.setUploadRate(self.rateslider.GetValue()
                             * connChoices[self.connChoice.GetSelection()]['rate'].get('div',1))
@@ -592,6 +600,8 @@ class DownloadInfoFrame:
 
     def onConnScroll(self, event):
         try:
+            if self.autorate:
+                return
             if not self._try_get_config():
                 return
             self.connSpinner.SetValue (self.connslider.GetValue ())
@@ -599,8 +609,10 @@ class DownloadInfoFrame:
         except:
             self.exception()
 
-    def onRateSpinner(self, event):
+    def onRateSpinner(self, event = None):
         try:
+            if self.autorate:
+                return
             if not self._try_get_config():
                 return
             if (self.spinlock == 0):
@@ -632,8 +644,10 @@ class DownloadInfoFrame:
         except:
             self.exception()
 
-    def onConnSpinner(self, event):
+    def onConnSpinner(self, event = None):
         try:
+            if self.autorate:
+                return
             if not self._try_get_config():
                 return
             self.connslider.SetValue (self.connSpinner.GetValue())
@@ -646,37 +660,50 @@ class DownloadInfoFrame:
             if not self._try_get_config():
                 return
             num = self.connChoice.GetSelection()
-            if connChoices[num].has_key('super-seed'):  # selecting super-seed is now a toggle
-                self.dow.set_super_seed()               # one way change, don't go back
-                num = self.lastuploadsettings
-                self.connChoice.SetSelection(num)
+            choice = connChoices[num]
+            if choice.has_key('super-seed'):  # selecting super-seed is now a toggle
+                self.dow.set_super_seed()     # one way change, don't go back
+                self.connChoice.SetSelection(self.lastuploadsettings)
                 return
             self.lastuploadsettings = num
             self.current_ratesetting = self.connChoice.GetStringSelection()
             if rate is None:
-                rate = connChoices[num]['rate']['def']
-            self.rateSpinner.SetRange (connChoices[num]['rate']['min'],
-                                   connChoices[num]['rate']['max'])
-            self.rateSpinner.SetValue (rate)
-            self.rateslider.SetRange (
-                connChoices[num]['rate']['min']/connChoices[num]['rate'].get('div',1),
-                connChoices[num]['rate']['max']/connChoices[num]['rate'].get('div',1))
-            self.rateslider.SetValue (rate/connChoices[num]['rate'].get('div',1))
-            self.rateLowerText.SetLabel ('  %d' % (connChoices[num]['rate']['min']))
-            self.rateUpperText.SetLabel ('%d' % (connChoices[num]['rate']['max']))
+                rate = choice['rate']['def']
+            self.rateSpinner.SetRange (choice['rate']['min'],
+                                   choice['rate']['max'])
+            self.rateSpinner.SetValue(rate)
+            self.rateslider.SetRange(
+                choice['rate']['min']/choice['rate'].get('div',1),
+                choice['rate']['max']/choice['rate'].get('div',1))
+            self.rateslider.SetValue (rate/choice['rate'].get('div',1))
+            self.rateLowerText.SetLabel ('  %d' % (choice['rate']['min']))
+            self.rateUpperText.SetLabel ('%d' % (choice['rate']['max']))
             if cons is None:
-                cons = connChoices[num]['conn']['def']
-            self.connSpinner.SetRange (connChoices[num]['conn']['min'],
-                                       connChoices[num]['conn']['max'])
+                cons = choice['conn']['def']
+            self.connSpinner.SetRange (choice['conn']['min'],
+                                       choice['conn']['max'])
             self.connSpinner.SetValue (cons)
-            self.connslider.SetRange (connChoices[num]['conn']['min'],
-                                      connChoices[num]['conn']['max'])
+            self.connslider.SetRange (choice['conn']['min'],
+                                      choice['conn']['max'])
             self.connslider.SetValue (cons)
-            self.connLowerText.SetLabel ('  %d' % (connChoices[num]['conn']['min']))
-            self.connUpperText.SetLabel ('%d' % (connChoices[num]['conn']['max']))
+            self.connLowerText.SetLabel ('  %d' % (choice['conn']['min']))
+            self.connUpperText.SetLabel ('%d' % (choice['conn']['max']))
             self.onConnScroll (0)
             self.onRateScroll (0)
-            self.dow.setInitiate(connChoices[num].get('initiate', 40))
+            self.dow.setInitiate(choice.get('initiate', 40))
+            if choice.has_key('automatic'):
+                if not self.autorate:
+                    self.autorate = True
+                    self.rateSpinner.Enable(False)
+                    self.connSpinner.Enable(False)
+                    self.dow.setUploadRate(-1)
+            else:
+                if self.autorate:
+                    self.autorate = False
+                    self.rateSpinner.Enable(True)
+                    self.connSpinner.Enable(True)
+                    self.onRateSpinner()
+                    self.onConnSpinner()
         except:
             self.exception()
 
@@ -689,7 +716,8 @@ class DownloadInfoFrame:
                 except wxPyDeadObjectError, e:
                     self.aboutBox = None
 
-            self.aboutBox = wxFrame(None, -1, 'About BitTorrent', size = (1,1))
+            self.aboutBox = wxFrame(None, -1, 'About BitTorrent', size = (1,1),
+                            style = wxDEFAULT_FRAME_STYLE|wxFULL_REPAINT_ON_RESIZE)
             if (sys.platform == 'win32'):
                 self.aboutBox.SetIcon(self.icon)
 
@@ -806,7 +834,8 @@ class DownloadInfoFrame:
                 except wxPyDeadObjectError, e:
                     self.detailBox = None
 
-            self.detailBox = wxFrame(None, -1, 'Torrent Details ', size = wxSize(405,230))
+            self.detailBox = wxFrame(None, -1, 'Torrent Details ', size = wxSize(405,230),
+                            style = wxDEFAULT_FRAME_STYLE|wxFULL_REPAINT_ON_RESIZE)
             if (sys.platform == 'win32'):
                 self.detailBox.SetIcon(self.icon)
 
@@ -1070,7 +1099,8 @@ class DownloadInfoFrame:
                 except wxPyDeadObjectError, e:
                     self.creditsBox = None
 
-            self.creditsBox = wxFrame(None, -1, 'Credits', size = (1,1))
+            self.creditsBox = wxFrame(None, -1, 'Credits', size = (1,1),
+                            style = wxDEFAULT_FRAME_STYLE|wxFULL_REPAINT_ON_RESIZE)
             if (sys.platform == 'win32'):
                 self.creditsBox.SetIcon(self.icon)
 
@@ -1163,7 +1193,8 @@ class DownloadInfoFrame:
                 except wxPyDeadObjectError, e:
                     self.statusIconHelpBox = None
 
-            self.statusIconHelpBox = wxFrame(None, -1, 'Help with the BitTorrent Status Light', size = (1,1))
+            self.statusIconHelpBox = wxFrame(None, -1, 'Help with the BitTorrent Status Light', size = (1,1),
+                            style = wxDEFAULT_FRAME_STYLE|wxFULL_REPAINT_ON_RESIZE)
             if (sys.platform == 'win32'):
                 self.statusIconHelpBox.SetIcon(self.icon)
 
@@ -1271,7 +1302,8 @@ class DownloadInfoFrame:
                 except wxPyDeadObjectError, e:
                     self.advBox = None
 
-            self.advBox = wxFrame(None, -1, 'BitTorrent Advanced', size = wxSize(200,200))
+            self.advBox = wxFrame(None, -1, 'BitTorrent Advanced', size = wxSize(200,200),
+                            style = wxDEFAULT_FRAME_STYLE|wxFULL_REPAINT_ON_RESIZE)
             if (sys.platform == 'win32'):
                 self.advBox.SetIcon(self.icon)
 
@@ -1382,7 +1414,8 @@ class DownloadInfoFrame:
                     except wxPyDeadObjectError, e:
                         frame.advextannouncebox = None
 
-                frame.advextannouncebox = wxFrame(None, -1, 'External Announce', size = (1,1))
+                frame.advextannouncebox = wxFrame(None, -1, 'External Announce', size = (1,1),
+                            style = wxDEFAULT_FRAME_STYLE|wxFULL_REPAINT_ON_RESIZE)
                 if (sys.platform == 'win32'):
                     frame.advextannouncebox.SetIcon(frame.icon)
 
@@ -1478,7 +1511,8 @@ class DownloadInfoFrame:
     def onDisplayUsage(self, text):        
         try:
             self.done(None)
-            w = wxFrame(None, -1, 'BITTORRENT USAGE')
+            w = wxFrame(None, -1, 'BITTORRENT USAGE',
+                            style = wxDEFAULT_FRAME_STYLE|wxFULL_REPAINT_ON_RESIZE)
             panel = wxPanel(w, -1)
             sizer = wxFlexGridSizer(cols = 1)
             sizer.Add(wxTextCtrl(panel, -1, text,
@@ -1571,7 +1605,6 @@ class DownloadInfoFrame:
                          / connChoices[self.connChoice.GetSelection()]['rate'].get('div',1))
             if self.rateslider.GetValue() != newValue:
                 self.rateslider.SetValue(newValue)
-
         if self.updateSpinnerFlag == 1:
             self.updateSpinnerFlag = 0
             cc = connChoices[self.connChoice.GetSelection()]
@@ -1579,6 +1612,7 @@ class DownloadInfoFrame:
                 newValue = (self.rateslider.GetValue() * cc['rate'].get('div',1))
                 if self.rateSpinner.GetValue() != newValue:
                     self.rateSpinner.SetValue(newValue)
+
         if self.fin:
             if statistics is not None:
                 if statistics.numOldSeeds > 0 or statistics.numCopies > 1:
@@ -1623,6 +1657,10 @@ class DownloadInfoFrame:
             except:
                 pass
         if statistics is not None:
+            if self.autorate:
+                self.rateSpinner.SetValue(statistics.upRate)
+                self.connSpinner.SetValue(statistics.upSlots)
+
             downtotal = statistics.downTotal + self.old_download
             uptotal = statistics.upTotal + self.old_upload
             if self.configfileargs['gui_displaymiscstats']:
@@ -1828,8 +1866,8 @@ class DownloadInfoFrame:
                 else:
                     self.fileList.SetItemImage(i,0,0)
                     try:
-                        frac = int((len(statistics.filepieces2[i])-len(statistics.filepieces[i]))
-                                /len(statistics.filepieces2[i]))
+                        frac = ( (len(statistics.filepieces2[i])-len(statistics.filepieces[i]))
+                                 /float(len(statistics.filepieces2[i])) )
                     except:
                         frac = 0
                     if frac:
@@ -2080,7 +2118,8 @@ class DownloadInfoFrame:
 
     def on_errorwindow(self, err):
         if self._errorwindow is None:
-            w = wxFrame(None, -1, 'BITTORRENT ERROR', size = (1,1))
+            w = wxFrame(None, -1, 'BITTORRENT ERROR', size = (1,1),
+                            style = wxDEFAULT_FRAME_STYLE|wxFULL_REPAINT_ON_RESIZE)
             panel = wxPanel(w, -1)
 
             sizer = wxFlexGridSizer(cols = 1)
@@ -2183,6 +2222,7 @@ def next(params, d, doneflag, configfile):
         _next(params, d, doneflag, configfile)
 
 def _next(params, d, doneflag, configfile):
+    err = False
     try:
         while 1:
             try:            
@@ -2206,7 +2246,7 @@ def _next(params, d, doneflag, configfile):
                 try:
                     listen_port = rawserver.find_and_bind(config['minport'], config['maxport'],
                                     config['bind'], ipv6_socket_style = config['ipv6_binds_v4'],
-                                    upnp = upnp_type)
+                                    upnp = upnp_type, randomizer = config['random_port'])
                     break
                 except socketerror, e:
                     if upnp_type and e == UPnP_ERROR:
@@ -2273,21 +2313,27 @@ def _next(params, d, doneflag, configfile):
                 d.updateStatus(activity = 'connecting to peers')
             rawserver.listen_forever(dow.getPortHandler())
 
-            torrentdata = {'saved as': savedas}
-            torrentdata['rate settings'] = {
+            ratesettings = {
                     'rate setting': d.current_ratesetting,
-                    'uploads': config['min_uploads'],
-                    'max upload rate': config['max_upload_rate'],
                     'max download rate': config['max_download_rate']
                 }
+            if d.current_ratesetting != 'automatic':
+                ratesettings['uploads'] = config['min_uploads']
+                ratesettings['max upload rate'] = config['max_upload_rate']
             up, dn = dow.get_transfer_stats()
-            torrentdata['stats'] = {
+            stats = {
                     'uploaded': up + d.old_upload,
                     'downloaded': dn + d.old_download
+                }
+            torrentdata = {
+                    'saved as': savedas,
+                    'rate settings': ratesettings,
+                    'stats': stats
                 }
             dow.shutdown(torrentdata)
             break
     except:
+        err = True
         data = StringIO()
         print_exc(file = data)
         print data.getvalue()   # report exception here too
@@ -2298,7 +2344,9 @@ def _next(params, d, doneflag, configfile):
         pass
     if not d.fin:
         d.failed()
-    
+    if err:
+        sleep(10e10)    # this will make the app stick in the task manager,
+                        # but so be it
 
 
 if __name__ == '__main__':

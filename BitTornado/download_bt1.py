@@ -54,8 +54,10 @@ defaults = [
         "maximum length prefix encoding you'll accept over the wire - larger values get the connection dropped."),
     ('ip', '',
         "ip to report you have to the tracker."),
-    ('minport', 6881, 'minimum port to listen on, counts up if unavailable'),
-    ('maxport', 6999, 'maximum port to listen on'),
+    ('minport', 10000, 'minimum port to listen on, counts up if unavailable'),
+    ('maxport', 60000, 'maximum port to listen on'),
+    ('random_port', 1, 'whether to choose randomly inside the port range ' +
+        'instead of counting up linearly'),
     ('responsefile', '',
         'file the server response was stored in, alternative to url'),
     ('url', '',
@@ -106,9 +108,9 @@ defaults = [
     ('check_hashes', 1,
         'whether to check hashes on disk'),
     ('max_upload_rate', 0,
-        'maximum kB/s to upload at, 0 means no limit'),
+        'maximum kB/s to upload at (0 = no limit, -1 = automatic)'),
     ('max_download_rate', 0,
-        'maximum kB/s to download at, 0 means no limit'),
+        'maximum kB/s to download at (0 = no limit)'),
     ('alloc_type', 'normal',
         'allocation type (may be normal, background, pre-allocate or sparse)'),
     ('alloc_rate', 2.0,
@@ -179,7 +181,7 @@ def download(self, params, filefunc, statusfunc, finfunc, errorfunc, doneflag, c
     try:
         listen_port = rawserver.find_and_bind(config['minport'], config['maxport'],
                         config['bind'], ipv6_socket_style = config['ipv6_binds_v4'],
-                        upnp = upnp_type)
+                        upnp = upnp_type, randomizer = config['random_port'])
     except socketerror, e:
         failed("Couldn't listen - " + str(e))
         return
@@ -368,7 +370,7 @@ class BT1Download:
                 make(file)
                 files = [(file, file_length)]
             else:
-                file_length = 0
+                file_length = 0L
                 for x in self.info['files']:
                     file_length += x['length']
                 file = filefunc(self.info['name'], file_length,
@@ -580,7 +582,8 @@ class BT1Download:
             self.ratelimiter = ratelimiter
         else:
             self.ratelimiter = RateLimiter(self.rawserver.add_task,
-                                           self.config['upload_unit_size'])
+                                           self.config['upload_unit_size'],
+                                           self.setConns)
             self.ratelimiter.set_upload_rate(self.config['max_upload_rate'])
         
         self.ratemeasure = RateMeasure()
@@ -652,7 +655,7 @@ class BT1Download:
 
     def _init_stats(self):
         self.statistics = Statistics(self.upmeasure, self.downmeasure,
-                    self.connecter, self.httpdownloader,
+                    self.connecter, self.httpdownloader, self.ratelimiter,
                     self.rerequest_lastfailed, self.filedatflag)
         if self.info.has_key('files'):
             self.statistics.set_dirstats(self.files, self.len_pieces, self.info['piece length'])

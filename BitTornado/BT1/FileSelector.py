@@ -39,6 +39,7 @@ class FileSelector:
                 total += length
         self.numpieces = int((total+piece_length-1)/piece_length)
         self.piece_priority = [1] * self.numpieces
+        
 
 
     def init_priority(self, new_priority):
@@ -87,9 +88,10 @@ class FileSelector:
         self.requestmorefunc = requestmorefunc
 
         if self.new_priority:
-            self.new_piece_priority = self._set_piece_priority(self.new_priority)
+            old_priority = self.priority
             self.priority = self.new_priority
-        self.new_priority = None
+            self.new_priority = None
+            self.new_piece_priority = self._set_piece_priority(self.priority)
 
         if self.new_partials:
             shuffle(self.new_partials)
@@ -98,8 +100,8 @@ class FileSelector:
         self.new_partials = None
         
 
-    def _set_files_disabled(self, new_priority):
-        old_disabled = [p == -1 for p in self.priority]
+    def _set_files_disabled(self, old_priority, new_priority):
+        old_disabled = [p == -1 for p in old_priority]
         new_disabled = [p == -1 for p in new_priority]
         data_to_update = []
         for f in xrange(self.numfiles):
@@ -112,13 +114,16 @@ class FileSelector:
                 if data is None:
                     return False
                 buffer.append((piece, start, data))
-        
+
+        files_updated = False        
         try:
             for f in xrange(self.numfiles):
                 if new_disabled[f] and not old_disabled[f]:
                     self.storage.disable_file(f)
+                    files_updated = True
                 if old_disabled[f] and not new_disabled[f]:
                     self.storage.enable_file(f)
+                    files_updated = True
         except (IOError, OSError), e:
             if new_disabled[f]:
                 msg = "can't open partial file for "
@@ -126,11 +131,14 @@ class FileSelector:
                 msg = 'unable to open '
             self.failfunc(msg + self.files[f] + ': ' + str(e))
             return False
+        if files_updated:
+            self.storage.reset_file_status()
 
         changed_pieces = {}
         for piece, start, data in buffer:
             if not self.storagewrapper.write_raw(piece, start, data):
                 return False
+            data.release()
             changed_pieces[piece] = 1
         if not self.storagewrapper.doublecheck_data(changed_pieces):
             return False
@@ -174,30 +182,43 @@ class FileSelector:
         return new_piece_priority        
 
 
-    def set_priorities_now(self, new_priority):
-        if not self._set_files_disabled(new_priority):
+    def set_priorities_now(self, new_priority = None):
+        if not new_priority:
+            new_priority = self.new_priority
+            self.new_priority = None    # potential race condition
+            if not new_priority:
+                return
+        old_priority = self.priority
+        self.priority = new_priority
+        if not self._set_files_disabled(old_priority, new_priority):
             return
         self.piece_priority = self._set_piece_priority(new_priority)
-        self.priority = new_priority
 
     def set_priorities(self, new_priority):
-        def s(self=self, new_priority = new_priority):
-            self.set_priorities_now(new_priority)
+        self.new_priority = new_priority
+        def s(self=self):
+            self.set_priorities_now()
         self.sched(s)
         
     def set_priority(self, f, p):
-        new_priority = [i for i in self.priority]
+        new_priority = self.get_priorities()
         new_priority[f] = p
         self.set_priorities(new_priority)
 
     def get_priorities(self):
-        return [i for i in self.priority]
+        priority = self.new_priority
+        if not priority:
+            priority = self.priority    # potential race condition
+        return [i for i in priority]
 
     def __setitem__(self, index, val):
         self.set_priority(index, val)
 
     def __getitem__(self, index):
-        return self.priority[index]
+        try:
+            return self.new_priority[index]
+        except:
+            return self.priority[index]
 
 
     def finish(self):

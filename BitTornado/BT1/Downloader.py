@@ -60,7 +60,7 @@ class SingleDownload:
         self.measure = Measure(downloader.max_rate_period)
         self.peermeasure = Measure(downloader.max_rate_period)
         self.have = Bitfield(downloader.numpieces)
-        self.last = 0
+        self.last = -1000
         self.example_interest = None
         self.backlog = 2
         self.ip = connection.get_ip()

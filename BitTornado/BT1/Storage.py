@@ -1,6 +1,7 @@
 # Written by Bram Cohen
 # see LICENSE.txt for license information
 
+from BitTornado.piecebuffer import BufferPool
 from threading import Lock
 from time import time, strftime, localtime
 import os
@@ -20,8 +21,12 @@ except:
 
 DEBUG = False
 
-MAXLOCKSIZE = 1000000000
-MAXLOCKRANGE = 3999999999   # only lock first 4 gig of file
+MAXREADSIZE = 32768
+MAXLOCKSIZE = 1000000000L
+MAXLOCKRANGE = 3999999999L   # only lock first 4 gig of file
+
+_pool = BufferPool()
+PieceBuffer = _pool.new
 
 def dummy_status(fractionDone = None, activity = None):
     pass
@@ -278,7 +283,7 @@ class Storage:
 
 
     def read(self, pos, amount, flush_first = False):
-        r = []
+        r = PieceBuffer()
         for file, pos, end in self._intervals(pos, amount):
             if DEBUG:
                 print 'reading '+file+' from '+str(pos)+' to '+str(end)
@@ -288,12 +293,14 @@ class Storage:
                 h.flush()
                 fsync(h)
             h.seek(pos)
-            data = h.read(end - pos)
+            while pos < end:
+                length = min(end-pos, MAXREADSIZE)
+                data = h.read(length)
+                if len(data) != length:
+                    raise IOError('error reading data from '+file)
+                r.append(data)
+                pos += length
             self.lock.release()
-            if len(data) != end-pos:
-                raise IOError('error reading data from '+file)
-            r.append(data)
-        r = ''.join(r)
         return r
 
     def write(self, pos, s):
@@ -343,7 +350,7 @@ class Storage:
 
     def _get_disabled_ranges(self, f):
         if not self.file_ranges[f]:
-            return ((),())
+            return ((),(),())
         r = self.disabled_ranges[f]
         if r:
             return r
@@ -432,7 +439,6 @@ class Storage:
         if not self.mtimes.has_key(file):
             self.mtimes[file] = getmtime(file)
         self.working_ranges[f] = [r]
-        self._reset_ranges()
 
     def disable_file(self, f):
         if self.disabled[f]:
@@ -453,7 +459,9 @@ class Storage:
             if not self.mtimes.has_key(file):
                 self.mtimes[file] = getmtime(file)
         self.working_ranges[f] = r[0]
-        self._reset_ranges()
+
+    reset_file_status = _reset_ranges
+
 
     def get_piece_update_list(self, f):
         return self._get_disabled_ranges(f)[1]

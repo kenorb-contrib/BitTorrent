@@ -15,7 +15,11 @@ except:
     True = 1
     False = 0
 
-OLDICONPATH = os.path.abspath(os.path.dirname(os.path.realpath(sys.argv[0])))
+try:
+    realpath = os.path.realpath
+except:
+    realpath = lambda x:x
+OLDICONPATH = os.path.abspath(os.path.dirname(realpath(sys.argv[0])))
 
 DIRNAME = '.'+product_name
 

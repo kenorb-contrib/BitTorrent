@@ -15,6 +15,11 @@ except:
     True = 1
     False = 0
     
+try:
+    wxFULL_REPAINT_ON_RESIZE
+except:
+    wxFULL_REPAINT_ON_RESIZE = 0        # fix for wx pre-2.5
+
 if (sys.platform == 'win32'):
     _FONT = 9
 else:
@@ -217,7 +222,8 @@ class configReader:
             except wxPyDeadObjectError, e:
                 self.configMenuBox = None
 
-        self.configMenuBox = wxFrame(None, -1, 'BitTorrent Preferences', size = (1,1))
+        self.configMenuBox = wxFrame(None, -1, 'BitTorrent Preferences', size = (1,1),
+                            style = wxDEFAULT_FRAME_STYLE|wxFULL_REPAINT_ON_RESIZE)
         if (sys.platform == 'win32'):
             self.icon = wxIcon(os.path.join(self.getIconDir(),'icon_bt.ico'), wxBITMAP_TYPE_ICO)
             self.configMenuBox.SetIcon(self.icon)
@@ -282,6 +288,10 @@ class configReader:
         self.maxport_data.SetFont(self.default_font)
         self.maxport_data.SetRange(1,65535)
         self.maxport_data.SetValue(self.config['maxport'])
+        
+        self.randomport_checkbox = wxCheckBox(panel, -1, "randomize")
+        self.randomport_checkbox.SetFont(self.default_font)
+        self.randomport_checkbox.SetValue(self.config['random_port'])
         
         self.gui_font_data = wxSpinCtrl(panel, -1, '', (-1,-1), (self.FONT*5, -1))
         self.gui_font_data.SetFont(self.default_font)
@@ -385,6 +395,7 @@ class configReader:
         portsettingsSizer1.Add(StaticText('To: '), 1, wxALIGN_CENTER_VERTICAL|wxALIGN_RIGHT)
         portsettingsSizer1.Add(self.maxport_data, 1, wxALIGN_BOTTOM)
         portsettingsSizer.Add(portsettingsSizer1)
+        portsettingsSizer.Add(self.randomport_checkbox, 1, wxALIGN_CENTER)
         block3sizer.Add(portsettingsSizer, 1, wxALIGN_CENTER)
         block3sizer.Add(StaticText(' '))
         block3sizer.Add(self.gui_ratesettingsmode_data, 1, wxALIGN_CENTER)
@@ -465,6 +476,7 @@ class configReader:
           try:
             self.minport_data.SetValue(self.defaults['minport'])
             self.maxport_data.SetValue(self.defaults['maxport'])
+            self.randomport_checkbox.SetValue(self.defaults['random_port'])
             self.gui_stretchwindow_checkbox.SetValue(self.defaults['gui_stretchwindow'])
             self.gui_displaystats_checkbox.SetValue(self.defaults['gui_displaystats'])
             self.gui_displaymiscstats_checkbox.SetValue(self.defaults['gui_displaymiscstats'])
@@ -528,6 +540,7 @@ class configReader:
             self.config['gui_forcegreenonfirewall']=int(self.gui_forcegreenonfirewall_checkbox.GetValue())
             self.config['minport']=self.minport_data.GetValue()
             self.config['maxport']=self.maxport_data.GetValue()
+            self.config['random_port']=int(self.randomport_checkbox.GetValue())
             self.config['gui_font']=self.gui_font_data.GetValue()
             self.config['gui_ratesettingsdefault']=self.gui_ratesettingsdefault_data.GetStringSelection()
             self.config['max_download_rate']=self.maxdownload_data.GetValue()
@@ -631,7 +644,8 @@ class configReader:
             except wxPyDeadObjectError, e:
                 self.advancedMenuBox = None
 
-        self.advancedMenuBox = wxFrame(None, -1, 'BitTorrent Advanced Preferences', size = (1,1))
+        self.advancedMenuBox = wxFrame(None, -1, 'BitTorrent Advanced Preferences', size = (1,1),
+                            style = wxDEFAULT_FRAME_STYLE|wxFULL_REPAINT_ON_RESIZE)
         if (sys.platform == 'win32'):
             self.advancedMenuBox.SetIcon(self.icon)
 

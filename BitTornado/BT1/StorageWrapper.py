@@ -250,12 +250,14 @@ class StorageWrapper:
             d1 = self.read_raw(i,0,self.lastlen)
             if d1 is None:
                 return None
+            sh = sha(d1[:])
+            d1.release()
+            sp = sh.digest()
             d2 = self.read_raw(i,self.lastlen,self._piecelen(i)-self.lastlen)
             if d2 is None:
                 return None
-            sh = sha(d1)
-            sp = sh.digest()
-            sh.update(d2)
+            sh.update(d2[:])
+            d2.release()
             s = sh.digest()
             if s == self.hashes[i]:
                 self._markgot(i, i)
@@ -310,13 +312,15 @@ class StorageWrapper:
             return None
         if self.double_check and self.have[i]:
             if self.triple_check:
+                old.release()
                 old = self.read_raw( i, 0, self._piecelen(i),
                                             flush_first = True )
                 if old is None:
                     return None
-            if sha(old).digest() != self.hashes[i]:
+            if sha(old[:]).digest() != self.hashes[i]:
                 self.failed('download corrupted; please restart and resume')
                 return None
+        old.release()
 
         self.places[i] = i
         self.tomove -= 1
@@ -538,13 +542,15 @@ class StorageWrapper:
         if self.have[index] and (
                 self.triple_check or (self.double_check and index == newpos) ):
             if self.triple_check:
+                old.release()
                 old = self.read_raw(newpos, 0, self._piecelen(index),
                                     flush_first = True)
                 if old is None:
                     return -1
-            if sha(old).digest() != self.hashes[index]:
+            if sha(old[:]).digest() != self.hashes[index]:
                 self.failed('download corrupted; please restart and resume')
                 return -1
+        old.release()
 
         if self.blocked[index]:
             self.blocked_moveout.remove(index)
@@ -620,11 +626,12 @@ class StorageWrapper:
             old = self.read_raw(self.places[index], begin, len(piece))
             if old is None:
                 return True
-            if old != piece:
+            if old[:].tostring() != piece:
                 try:
                     self.failed_pieces[index][self.download_history[index][begin]] = 1
                 except:
                     self.failed_pieces[index][None] = 1
+            old.release()
         self.download_history.setdefault(index,{})[begin] = source
         
         if not self._write_to_buffer(index, begin, piece):
@@ -650,8 +657,9 @@ class StorageWrapper:
                                  flush_first = self.triple_check)
         if data is None:
             return True
-
-        if sha(data).digest() != self.hashes[index]:
+        hash = sha(data[:]).digest()
+        data.release()
+        if hash != self.hashes[index]:
 
             self.amount_obtained -= length
             self.data_flunked(length, index)
@@ -711,7 +719,7 @@ class StorageWrapper:
             data = self.read_raw(self.places[index], 0, self._piecelen(index))
             if data is None:
                 return None
-            if sha(data).digest() != self.hashes[index]:
+            if sha(data[:]).digest() != self.hashes[index]:
                 self.failed('told file complete on start-up, but piece failed hash check')
                 return None
             self.waschecked[index] = True
@@ -721,11 +729,18 @@ class StorageWrapper:
             if begin > self._piecelen(index):
                 return None
             length = self._piecelen(index)-begin
+            if begin == 0:
+                return self.read_raw(self.places[index], 0, length)
         elif begin + length > self._piecelen(index):
             return None
         if data is not None:
-            return data[begin:begin+length]
-        return self.read_raw(self.places[index], begin, length)
+            s = data[begin:begin+length]
+            data.release()
+            return s
+        data = self.read_raw(self.places[index], begin, length)
+        s = data.getarray()
+        data.release()
+        return s
 
     def read_raw(self, piece, begin, length, flush_first = False):
         try:
@@ -754,9 +769,10 @@ class StorageWrapper:
                                        flush_first = True )
                 if piece is None:
                     return False
-                if sha(piece).digest() != self.hashes[index]:
+                if sha(piece[:]).digest() != self.hashes[index]:
                     self.failed('download corrupted; please restart and resume')
                     return False
+                piece.release()
         return True
 
 

@@ -87,9 +87,9 @@ class RawServer:
         self.sockethandler.bind(port, bind, reuse, ipv6_socket_style)
 
     def find_and_bind(self, minport, maxport, bind = '', reuse = False,
-                        ipv6_socket_style = 1, upnp = False):
+                      ipv6_socket_style = 1, upnp = 0, randomizer = False):
         return self.sockethandler.find_and_bind(minport, maxport, bind, reuse,
-                                                 ipv6_socket_style, upnp)
+                                 ipv6_socket_style, upnp, randomizer)
 
     def start_connection_raw(self, dns, socktype, handler = None):
         return self.sockethandler.start_connection_raw(dns, socktype, handler)

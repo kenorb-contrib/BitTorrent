@@ -176,7 +176,7 @@ class LaunchMany:
                     self.listen_port = self.rawserver.find_and_bind(
                                     config['minport'], config['maxport'], config['bind'],
                                     ipv6_socket_style = config['ipv6_binds_v4'],
-                                    upnp = upnp_type)
+                                    upnp = upnp_type, randomizer = config['random_port'])
                     break
                 except socketerror, e:
                     if upnp_type and e == UPnP_ERROR:

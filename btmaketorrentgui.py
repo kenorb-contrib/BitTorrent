@@ -279,7 +279,7 @@ class CompleteDir:
         gridSizer.Add(self.currentLabel, 0, wxEXPAND)
         self.gauge = wxGauge(panel, -1, range = 1000, style = wxGA_SMOOTH)
         gridSizer.Add(self.gauge, 0, wxEXPAND)
-        gridSizer.Add(10, 10, 1, wxEXPAND)
+        gridSizer.Add((10, 10), 1, wxEXPAND)
         self.button = wxButton(panel, -1, 'cancel')
         gridSizer.Add(self.button, 0, wxALIGN_CENTER)
         gridSizer.AddGrowableRow(2)

@@ -12,7 +12,7 @@ except ImportError:
 from time import sleep
 from clock import clock
 import sys
-from random import shuffle
+from random import shuffle, randrange
 from natpunch import UPnP_open_port, UPnP_close_port
 # from BT1.StreamCheck import StreamCheck
 # import inspect
@@ -204,9 +204,20 @@ class SocketHandler:
         self.port = port
 
     def find_and_bind(self, minport, maxport, bind = '', reuse = False,
-                                          ipv6_socket_style = 1, upnp = 0):
+                      ipv6_socket_style = 1, upnp = 0, randomizer = False):
         e = 'maxport less than minport - no ports to check'
-        for listen_port in xrange(minport, maxport+1):
+        if maxport-minport < 50 or not randomizer:
+            portrange = range(minport, maxport+1)
+            if randomizer:
+                shuffle(portrange)
+                portrange = portrange[:20]  # check a maximum of 20 ports
+        else:
+            portrange = []
+            while len(portrange) < 20:
+                listen_port = randrange(minport, maxport+1)
+                if not listen_port in portrange:
+                    portrange.append(listen_port)
+        for listen_port in portrange:
             try:
                 self.bind(listen_port, bind,
                                ipv6_socket_style = ipv6_socket_style, upnp = upnp)
@@ -214,7 +225,6 @@ class SocketHandler:
             except socket.error, e:
                 pass
         raise socket.error(str(e))
-        return
 
 
     def set_handler(self, handler):

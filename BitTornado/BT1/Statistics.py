@@ -9,11 +9,13 @@ except:
     False = 0
 
 class Statistics:
-    def __init__(self, upmeasure, downmeasure, connecter, httpdl, rerequest_lastfailed, fdatflag):
+    def __init__(self, upmeasure, downmeasure, connecter, httpdl,
+                 ratelimiter, rerequest_lastfailed, fdatflag):
         self.upmeasure = upmeasure
         self.downmeasure = downmeasure
         self.connecter = connecter
         self.httpdl = httpdl
+        self.ratelimiter = ratelimiter
         self.downloader = connecter.downloader
         self.picker = connecter.downloader.picker
         self.storage = connecter.downloader.storage
@@ -34,6 +36,8 @@ class Statistics:
         self.piecescomplete = None
         self.backgroundallocating = False
         self.storage_totalpieces = len(self.storage.hashes)
+        self.upRate = 0
+        self.upSlots = 0
 
 
     def set_dirstats(self, files, numpieces, piece_length):
@@ -122,6 +126,13 @@ class Statistics:
 
         self.peers_kicked = self.downloader.kicked.items()
         self.peers_banned = self.downloader.banned.items()
+
+        try:
+            self.upRate = int(self.ratelimiter.upload_rate/1000)
+            assert self.upRate < 5000
+        except:
+            self.upRate = 0
+        self.upSlots = self.ratelimiter.slots
 
         if self.fdatflag.isSet():
             if not self.fdatactive:

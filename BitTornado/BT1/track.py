@@ -70,14 +70,15 @@ defaults = [
     ('hupmonitor', 0, 'whether to reopen the log file upon receipt of HUP signal'),
     ('http_timeout', 60, 
         'number of seconds to wait before assuming that an http connection has timed out'),
-    ('parse_allowed_interval', 1, 'minutes between reloading of allowed_dir'),
+    ('parse_dir_interval', 60, 'seconds between reloading of allowed_dir'),
     ('show_infopage', 1, "whether to display an info page when the tracker's root dir is loaded"),
     ('infopage_redirect', '', 'a URL to redirect the info page to'),
     ('show_names', 1, 'whether to display names from allowed dir'),
     ('favicon', '', 'file containing x-icon data to return when browser requests favicon.ico'),
     ('allowed_ips', '', 'only allow connections from IPs specified in the given file; '+
              'file contains subnet data in the format: aa.bb.cc.dd/len'),
-    ('only_local_override_ip', 1, "ignore the ip GET parameter from machines which aren't on local network IPs"),
+    ('only_local_override_ip', 2, "ignore the ip GET parameter from machines which aren't on local network IPs " +
+             "(0 = never, 1 = always, 2 = ignore if NAT checking is not enabled)"),
     ('logfile', '', 'file to write the tracker logs, use - for stdout (default)'),
     ('allow_get', 0, 'use with allowed_dir; adds a /file?hash={hash} url that allows users to download the torrent file'),
     ('keep_dead', 0, 'keep dead torrents after they expire (so they still show up on your /scrape and web page)'),
@@ -209,6 +210,8 @@ class Tracker:
         if config['allowed_ips'] != '':
             self.allowed_IPs.read_fieldlist(config['allowed_ips'])
         self.only_local_override_ip = config['only_local_override_ip']
+        if self.only_local_override_ip == 2:
+            self.only_local_override_ip = not config['nat_check']
 
         if exists(self.dfile):
             try:
@@ -328,7 +331,7 @@ class Tracker:
 
     def allow_local_override(self, ip, given_ip):
         return is_valid_ip(given_ip) and (
-            self.only_local_override_ip or local_IPs.includes(ip) )
+            not self.only_local_override_ip or local_IPs.includes(ip) )
 
     def aggregate_senddata(self, query):
         url = self.aggregate_forward+'?'+query
@@ -738,7 +741,7 @@ class Tracker:
                 'your IP is not allowed on this tracker'}))
 
         nip = get_forwarded_ip(headers)
-        if nip and self.natcheck:
+        if nip and not self.only_local_override_ip:
             ip = nip
             try:
                 ip = to_ipv4(ip)
