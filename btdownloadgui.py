@@ -218,7 +218,7 @@ class DownloadInfoFrame:
                 dl = wxDirDialog(self.frame, 'Choose a directory to save to, pick a partial download to resume', 
                     join(getcwd(), default), style = wxDD_DEFAULT_STYLE | wxDD_NEW_DIR_BUTTON)
             else:
-                dl = wxFileDialog(self.frame, 'Choose file to save as, pick a partial download to resume', '', default, '*.*', wxSAVE)
+                dl = wxFileDialog(self.frame, 'Choose file to save as, pick a partial download to resume', '', default, '*', wxSAVE)
             if dl.ShowModal() != wxID_OK:
                 self.done(None)
                 f.set()

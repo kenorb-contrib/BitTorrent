@@ -6,8 +6,8 @@ Name completedir
 SilentInstall silent
 InstallDir "$PROGRAMFILES\completedir\"
 Section "Install"
-  WriteUninstaller "$INSTDIR\uninstall.exe"
   SetOutPath $INSTDIR
+  WriteUninstaller "$INSTDIR\uninstall.exe"
   File btcompletedirgui.exe
   File *.pyd
   File *.dll
