@@ -3,7 +3,6 @@
 # Written by Bram Cohen
 # see LICENSE.txt for license information
 
-from os import listdir
 from os.path import join, split
 from threading import Event
 from traceback import print_exc
@@ -13,15 +12,14 @@ from btmakemetafile import calcsize, make_meta_file, ignore
 def dummy(x):
     pass
 
-def completedir(dir, url, flag = Event(), vc = dummy, fc = dummy, piece_len_pow2 = None):
-    files = listdir(dir)
+def completedir(files, url, flag = Event(), vc = dummy, fc = dummy, piece_len_pow2 = None):
     files.sort()
     ext = '.torrent'
 
     togen = []
     for f in files:
-        if f[-len(ext):] != ext and (f + ext) not in files:
-            togen.append(join(dir, f))
+        if f[-len(ext):] != ext:
+            togen.append(f)
         
     total = 0
     for i in togen:
@@ -44,4 +42,4 @@ def dc(v):
     print v
 
 if __name__ == '__main__':
-    completedir(argv[1], argv[2], fc = dc)
+    completedir(argv[2:], argv[1], fc = dc)

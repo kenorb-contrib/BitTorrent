@@ -33,7 +33,7 @@ class DownloadInfo:
 
         gridSizer = wxFlexGridSizer(cols = 2, rows = 2, vgap = 15, hgap = 8)
         
-        gridSizer.Add(wxStaticText(panel, -1, 'directory to build:'))
+        gridSizer.Add(wxStaticText(panel, -1, 'Files to make .torrents for:'))
         self.dirCtl = wxTextCtrl(panel, -1, '')
 
         b = wxBoxSizer(wxHORIZONTAL)
@@ -67,9 +67,9 @@ class DownloadInfo:
         panel.SetAutoLayout(True)
 
     def select(self, x):
-        dl = wxDirDialog(self.frame, style = wxDD_DEFAULT_STYLE | wxDD_NEW_DIR_BUTTON)
+        dl = wxFileDialog(self.frame, "Choose files", getcwd(), "", '*.*', wxOPEN | wxMULTIPLE)
         if dl.ShowModal() == wxID_OK:
-            self.dirCtl.SetValue(dl.GetPath())
+            self.dirCtl.SetValue(';'.join(dl.GetPaths()))
 
     def complete(self, x):
         if self.dirCtl.GetValue() == '':
@@ -79,8 +79,8 @@ class DownloadInfo:
             dlg.Destroy()
             return
         try:
-            ps = 2 ** (21 - self.piece_length.GetSelection())
-            CompleteDir(self.dirCtl.GetValue(), self.annCtl.GetValue(), ps)
+            ps = 21 - self.piece_length.GetSelection()
+            CompleteDir(self.dirCtl.GetValue().split(';'), self.annCtl.GetValue(), ps)
         except:
             print_exc()
 
@@ -92,7 +92,7 @@ class CompleteDir:
         self.a = a
         self.pl = pl
         self.flag = Event()
-        frame = wxFrame(None, -1, 'BitTorrent make directory', size = wxSize(550, 250))
+        frame = wxFrame(None, -1, 'BitTorrent make .torrent', size = wxSize(550, 250))
         self.frame = frame
 
         panel = wxPanel(frame, -1)
