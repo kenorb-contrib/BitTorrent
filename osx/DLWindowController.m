@@ -76,7 +76,7 @@
     return [NSString stringWithFormat:@"%2d min(s) %2d sec(s)", m, sec]; 
 }
 
-- (NSString *)chooseFile:(NSString *)defaultFile size:(long)size isDirectory:(int)dir
+- (NSString *)chooseFile:(NSString *)defaultFile size:(double)size isDirectory:(int)dir
 {
     id panel;
     NSString *fname = nil;
@@ -99,7 +99,7 @@
         }
     }
     if(fname) {
-        [file setStringValue:[NSString stringWithFormat:NSLocalizedString(@"(%1.1f MB) %@ ", @"size and filename for dl window tite") , size / 1048576.0, fname]];
+        [file setStringValue:[NSString stringWithFormat:NSLocalizedString(@"(%1.1f MB) %@ ", @"size and filename for dl window tite") , size, fname]];
         [[self window] setTitleWithRepresentedFilename:fname];
         [[NSUserDefaults standardUserDefaults] setObject:[panel directory] forKey:LASTDIR];
         totalsize = size;
@@ -113,7 +113,7 @@
 
 - (void)pathUpdated:(NSString *)newPath
 {
-    [file setStringValue:[NSString stringWithFormat:NSLocalizedString(@"(%1.1f MB) %@ ", @"size and filename for dl window tite") , totalsize / 1048576.0, newPath]];
+    [file setStringValue:[NSString stringWithFormat:NSLocalizedString(@"(%1.1f MB) %@ ", @"size and filename for dl window tite") , totalsize, newPath]];
     [[self window] setTitleWithRepresentedFilename:newPath];
     [savepath release];
     savepath = [newPath retain];

@@ -17,7 +17,7 @@
     NSString *savepath;
     float frac;
     PyObject *flag;
-    long totalsize;
+    double totalsize;
     NSConnection *conn;
     int done;
 }
@@ -27,7 +27,7 @@
 - (void)error:(NSString *)str;
 - (void)display:(NSDictionary *)dict;
 - (void)pathUpdated:(NSString *)newPath;
-- (NSString *)chooseFile:(NSString *)defaultFile size:(long)size isDirectory:(int)dir;
+- (NSString *)chooseFile:(NSString *)defaultFile size:(double)size isDirectory:(int)dir;
 - (void)dlExited;
 - (void)setFlag:(PyObject *)nflag;
 - (void)setConnection:(NSConnection *)nc;

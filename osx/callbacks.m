@@ -16,25 +16,33 @@ static PyObject *chooseFile(bt_ProxyObject *self, PyObject *args)
 {
     NSAutoreleasePool *pool =[[NSAutoreleasePool alloc] init];
     char *def = "";
-    long size;
+    PyObject *obj;
+    PyObject *megabyte;
     char *saveas = NULL;
     int dir;
     PyObject *res;
     NSString *str;
 
-    if (!PyArg_ParseTuple(args, "slsi", &def, &size, &saveas, &dir))
-	return NULL;
+    if (!PyArg_ParseTuple(args, "sOsi", &def, &obj, &saveas, &dir))
+        return NULL;
+
+    megabyte  = Py_BuildValue("f", 1048576.0);
+    obj = PyNumber_Divide(obj, megabyte);
     
     Py_BEGIN_ALLOW_THREADS
-    str = [self->dlController chooseFile:[NSString stringWithCString:def] size:size isDirectory:dir];
+        str = [self->dlController chooseFile:[NSString stringWithCString:def] size:PyFloat_AsDouble(obj) isDirectory:dir];
     Py_END_ALLOW_THREADS
     if(str) {
-	res = PyString_FromString([str cString]);
+        res = PyString_FromString([str cString]);
     }
     else {
-	Py_INCREF(Py_None);
-	res = Py_None;
+        Py_INCREF(Py_None);
+        res = Py_None;
     }
+    
+    Py_DECREF(obj);
+    Py_DECREF(megabyte);
+    
     [pool release];
     return res;
 }
@@ -121,10 +129,10 @@ static PyObject *finished(bt_ProxyObject *self, PyObject *args)
     NSAutoreleasePool *pool =[[NSAutoreleasePool alloc] init];
 
     Py_BEGIN_ALLOW_THREADS
-    [self->dlController finished];
+        [self->dlController finished];
     Py_END_ALLOW_THREADS
     [pool release];
-    Py_INCREF(Py_None);
+        Py_INCREF(Py_None);
     return Py_None;
 }
 
@@ -136,14 +144,14 @@ static PyObject *nerror(bt_ProxyObject *self, PyObject *args)
     NSAutoreleasePool *pool =[[NSAutoreleasePool alloc] init];
 
     if(!PyArg_ParseTuple(args, "s", &BTerr, &errmsg))
-	return NULL;
+        return NULL;
     if(errmsg)
-	str = [NSString stringWithCString:errmsg];
+        str = [NSString stringWithCString:errmsg];
     else
-	str = [NSString stringWithCString:BTerr];
+        str = [NSString stringWithCString:BTerr];
 
     Py_BEGIN_ALLOW_THREADS
-    [self->dlController error:str];
+        [self->dlController error:str];
     Py_END_ALLOW_THREADS
     [pool release];
     Py_INCREF(Py_None);
