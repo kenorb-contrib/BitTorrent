@@ -17,11 +17,11 @@ def tobinary(i):
 # header, reserved, download id, my id, [length, message]
 
 class Connection:
-    def __init__(self, Encoder, connection, id):
+    def __init__(self, Encoder, connection, id, is_local):
         self.encoder = Encoder
         self.connection = connection
         self.id = id
-        self.locally_initiated = (id != None)
+        self.locally_initiated = is_local
         self.complete = False
         self.closed = False
         self.buffer = StringIO()
@@ -69,7 +69,7 @@ class Connection:
     def read_peer_id(self, s):
         if not self.id:
             for v in self.encoder.connections.values():
-                if v.id == s:
+                if s and v.id == s:
                     return None
             self.id = s
             if self.locally_initiated:
@@ -167,7 +167,7 @@ class Encoder:
                     return
         try:
             c = self.raw_server.start_connection(dns)
-            self.connections[c] = Connection(self, c, id)
+            self.connections[c] = Connection(self, c, id, True)
         except socketerror:
             pass
     
@@ -189,7 +189,7 @@ class Encoder:
 
     def external_connection_made(self, connection):
         self.connections[connection] = Connection(self, 
-            connection, None)
+            connection, None, False)
 
     def connection_flushed(self, connection):
         c = self.connections[connection]

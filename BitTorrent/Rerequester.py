@@ -114,7 +114,7 @@ class Rerequester:
                         if r.get('num peers', 1000) > ps * 1.2:
                             self.last = None
                 for x in r['peers']:
-                    self.connect((x['ip'], x['port']), x.get('peer id', 0))
+                    self.connect((x['ip'], x['port']), x.get('peer id'))
         except ValueError, e:
             if data != '':
                 self.errorfunc('bad data from tracker - ' + str(e))
