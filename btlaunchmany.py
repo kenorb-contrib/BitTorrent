@@ -1,6 +1,7 @@
 #!/usr/bin/env python2
 
 # Written by Bram Cohen
+# Dropdir support added by Michael Janssen
 # see LICENSE.txt for license information
 
 from BitTorrent.download import download
@@ -17,23 +18,54 @@ def dummy(*args, **kwargs):
     pass
 
 def runmany(d, params):
-    files = listdir(d)
-    for file in files:
-        if file[-len(ext):] == ext:
-            if file[:-len(ext)] not in files:
-                print 'Trying download of ' + file
-            Thread(target = runsingle(join(d, file), params).download).start()
+    threads = []
+    killflags = {}
+    deadfiles = []
+    while 1:
+        files = listdir(d)
+        # new files
+        for file in files:
+            if file[-len(ext):] == ext:
+                if file not in [x.getName() for x in threads] + deadfiles:
+                    print 'Starting torrent for ' + file
+                    stdout.flush()
+                    killflags[file] = Event()
+                    threads.append(Thread(target = runsingle(join(d, file), params, killflags[file]).download, name = file))
+                    threads[-1].start()
+        # old files
+        for i in range(len(threads)):
+            try:
+                threadname = threads[i].getName()
+            except IndexError:
+                # raised when we delete a thread from earlier,
+                # the last ones fall out of range
+                break
+            if not threads[i].isAlive():
+                # died without our permission
+                deadfiles.append(threadname)
+                del killflags[threadname]
+                del threads[i]
+            elif threadname not in files:
+                # file gone!
+                print threadname + ': torrent file gone, stopping downloader'
+                stdout.flush()
+                killflags[threadname].set()
+                threads[i].join()
+                del killflags[threadname]
+                del threads[i]
+        sleep(1)
 
 class runsingle:
-    def __init__(self, file, params):
+    def __init__(self, file, params, killflag):
         self.file = file
         self.params = params
         self.percentDone = 0
         self.doingdown = 0
         self.doingup = 0
+        self.killflag = killflag
     
     def download(self):
-        download(self.params + ['--responsefile', self.file], self.choose, self.status, self.finished, self.err, Event(), 80)
+        download(self.params + ['--responsefile', self.file], self.choose, self.status, self.finished, self.err, self.killflag, 80)
 
     def err(self, msg):
         print self.file + ': error - ' + msg
