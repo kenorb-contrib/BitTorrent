@@ -88,14 +88,14 @@ class Rerequester:
                 def add(self = self, r = r):
                     self.last_failed = False
                     self.postrequest(r)
-                self.externalsched(add)
+                self.externalsched(add, 0)
         except (IOError, error), e:
             if set():
                 def fail(self = self, r = 'Problem connecting to tracker - ' + str(e)):
                     if self.last_failed:
                         self.errorfunc(r)
                     self.last_failed = True
-                self.externalsched(fail)
+                self.externalsched(fail, 0)
 
     def postrequest(self, data):
         try:

@@ -187,7 +187,7 @@ class RawServer:
                     if s.is_flushed():
                         s.handler.connection_flushed(s)
 
-    def pop_uncheduled(self):
+    def pop_unscheduled(self):
         try:
             while True:
                 (func, delay) = self.unscheduled_tasks.pop()

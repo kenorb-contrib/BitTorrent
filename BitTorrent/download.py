@@ -273,7 +273,7 @@ def download(params, filefunc, statusfunc, finfunc, errorfunc, doneflag, cols, p
     rerequest = Rerequester(response['announce'], config['rerequest_interval'], 
         rawserver.add_task, connecter.how_many_connections, 
         config['min_peers'], encoder.start_connection, 
-        rawserver.external_add_task, storagewrapper.get_amount_left, 
+        rawserver.add_task, storagewrapper.get_amount_left, 
         upmeasure.get_total, downmeasure.get_total, listen_port, 
         config['ip'], myid, infohash, config['http_timeout'], errorfunc, 
         config['max_initiate'], doneflag, upmeasure.get_rate, downmeasure.get_rate,
