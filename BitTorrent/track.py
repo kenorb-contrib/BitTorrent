@@ -325,7 +325,7 @@ class Tracker:
             infohash = params['info_hash']
             if self.allowed != None:
                 if not self.allowed.has_key(infohash):
-                    return (200, 'Okay', {'Content-Type': 'text/plain', 'Pragma': 'no-cache'}, bencode({'failure reason':
+                    return (200, 'OK', {'Content-Type': 'text/plain', 'Pragma': 'no-cache'}, bencode({'failure reason':
                     'Requested download is not authorized for use with this tracker.'}))
             ip = connection.get_ip()
             ip_override = 0
@@ -350,17 +350,19 @@ class Tracker:
         peers = self.downloads.setdefault(infohash, {})
         self.completed.setdefault(infohash, 0)
         ts = self.times.setdefault(infohash, {})
+        confirm = 0
         if peers.has_key(myid):
             myinfo = peers[myid]
             if myinfo.has_key('key'):
                 if params.get('key') != myinfo['key']:
-                    return (200, 'Okay', {'Content-Type': 'text/plain', 'Pragma': 'no-cache'}, 
+                    return (200, 'OK', {'Content-Type': 'text/plain', 'Pragma': 'no-cache'}, 
                         bencode({'failure reason': 'key did not match key supplied earlier'}))
-            else:
-                if myinfo['ip'] != ip:
-                    return (200, 'Okay', {'Content-Type': 'text/plain', 'Pragma': 'no-cache'}, 
-                        bencode({'failure reason': 'key parameter must be supported to change ips'}))
-        if params.get('event', '') != 'stopped':
+                confirm = 1
+            elif myinfo['ip'] == ip:
+                confirm = 1
+        else:
+            confirm = 1
+        if params.get('event', '') != 'stopped' and confirm:
             ts[myid] = time()
             if not peers.has_key(myid):
                 peers[myid] = {'ip': ip, 'port': port, 'left': left}
@@ -387,7 +389,7 @@ class Tracker:
                     NatCheck(self.connectback_result, infohash, myid, ip, port, self.rawserver)
             else:
                 peers[myid]['nat'] = 0
-        else:
+        elif confirm:
             if peers.has_key(myid):
                 if self.becache1[infohash].has_key(myid):
                     del self.becache1[infohash][myid]
