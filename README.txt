@@ -45,13 +45,9 @@ tracker's response.
 Next run a downloader, here's an example -
 
 btdownloadheadless.py --url http://my.tracker/somename.ext --saveas \
-    myfile.ext --permanent 1
+    myfile.ext
 
 Make sure the saveas argument points to the complete file.
-
-The 'permanent' argument is strongly suggested to make the tracker not 
-forget the permanent downloader when a bunch more people start 
-downloading. The need for it will go away in a future release.
 
 BitTorrent defaults to port 6881. If it can't use 6881, (probably because 
 another download is happening) it tries 6882, then 6883, etc. It gives up 

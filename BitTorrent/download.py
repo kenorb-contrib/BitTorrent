@@ -58,8 +58,6 @@ defaults = [
         "maximum amount of time to let a connection pause before reducing it's rate"),
     ('max_rate_period', None, 20.0,
         "maximum amount of time to guess the current rate estimate represents"),
-    ('permanent', None, 0,
-        "whether this peer will stop uploading once it's done downloading"),
     ('bind', None, '', 
         'ip to bind to locally'),
     ]
