@@ -8,30 +8,43 @@ remains quite small, since each new downloader introduces new
 upload capacity.
 
 Windows web browser support is added by running an installer. 
-Instructions for making the installer are in BUILD.windows.txt
+A prebuilt one is available, but instructions for building it 
+yourself are in BUILD.windows.txt
 
 Instructions for Unix installation are in INSTALL.unix.txt
 
-BitTorrent consists of two parts - downloaders, which acts as 
-a web helper app, and trackers, which coordinate between them.
-You only need to run one tracker.
+To start hosting -
+
+1) start running a tracker
+
+First, you need a tracker. Trackers refer downloaders to each other. 
+The load on the tracker is very small, so you only need one for all 
+your files.
 
 To run a tracker, execute the command bttrack.py Here is an 
 example -
 
 ./bttrack.py --port 8080 --dfile dstate
 
-dfile is where the information about current downloaders is saved 
-periodically. An empty one will be created if it doesn't exist 
+--dfile is where persistent information is kept on the tracker across 
+invocations. It makes everything start working again immediately if 
+you restart the tracker. A new one will be created if it doesn't exist 
 already.
+
+The tracker must be on a net-addressible box, and you must know the 
+ip number or dns name of it.
 
 The tracker outputs web logs to standard out. You can get information 
 about the files it's currently serving by getting its index page. 
 
-To generate a metainfo file, run the publish script and give it the 
-file you want metainfo for and the url of the tracker
+2) create a metainfo file using btmakemetafile.py
 
-./btpublish.py myfile.ext http://my.tracker/announce
+To generate a metainfo file, run the publish btmakemetafile and give 
+it the file you want metainfo for and the url of the tracker
+
+./btmakemetafile.py myfile.ext http://my.tracker/announce
+
+This will generate a file called myfile.ext.torrent
 
 This command may take a while to scan over the whole file hashing it.
 
@@ -39,16 +52,34 @@ The /announce path is special and hard-coded into the tracker.
 Make sure to give the domain or ip your tracker is on instead of 
 my.tracker.
 
-This will generate a file called myfile.ext.torrent. Now you must 
-associate the .torrent exension with mimetype application/x-bittorrent
-on your web server and put the .torrent file on it. You can hyperlink 
-to it like any other file.
+You can use either a dns name or an IP address in the tracker url.
 
-Next you have to run a downloader which already has the complete file, 
+3) associate .torrent with application/x-bittorrent on your web server
+
+The way you do this is dependent on the particular web server you're using.
+
+You must have a web server which can serve ordinary static files and is 
+addressable from the internet at large.
+
+4) put the newly made .torrent file on your web server
+
+Note that the file name you choose on the server must end in .torrent, so 
+it gets associated with the right mimetype.
+
+5) put up a static page which links to the location you uploaded to in step 4
+
+The file you uploaded in step 4 is linked to using an ordinary url.
+
+6) copy the file you wish to serve to your origin machine
+
+This is the machine which the file will come from initially.
+
+7) start a downloader on the origin machine
+
+You have to run a downloader which already has the complete file, 
 so new downloaders have a place to get it from. Here's an example -
 
-./btdownloadheadless.py --saveas myfile.ext --responsefile \
-    myfile.ext.torrent
+./btdownloadheadless.py --url http://my.server/myfile.torrent --saveas myfile.ext
 
 Make sure the saveas argument points to the already complete file.
 
@@ -56,10 +87,15 @@ BitTorrent defaults to port 6881. If it can't use 6881, (probably because
 another download is happening) it tries 6882, then 6883, etc. It gives up 
 after 6889.
 
-BitTorrent can also publish whole directories - simply point at the 
-directory with files in it, they'll be published as one unit. All files 
-in subdirectories will be included, although files and directories named 
-'CVS' and 'core' are ignored.
+8) you're done!
+
+Now you just have to get people downloading! Refer them to the page you 
+created in step 5.
+
+BitTorrent can also publish whole directories - simply point 
+btmakemetafile.py at the directory with files in it, they'll be published 
+as one unit. All files in subdirectories will be included, although files 
+and directories named 'CVS' and 'core' are ignored.
 
 If you have any questions, try the web site or mailing list -
 
