@@ -66,16 +66,22 @@ class TrackerHandler(BaseHTTPRequestHandler):
                 checkfunc(message)
                 ip = message.get('ip', self.client_address[0])
                 for file in message['files']:
-                    name = file['name']
-                    if not published.has_key(name) or (file['hash'], file['length'],
+                    if published.has_key(name) and (file['hash'], file['length'],
                             file['pieces'], file['piece length']) != published[name][2:]:
-                        published[name] = ([{'ip': ip, 'port': message['port']}], [], 
+                        self.send_response(200)
+                        self.end_headers()
+                        self.wfile.write(bencode({'type': 'failure', 
+                            'reason': 'mismatching data for ' + file}))
+                        return
+                for file in message['files']:
+                    name = file['name']
+                    if not published.has_key(name):
+                        published[name] = ([], [], 
                             file['hash'], file['length'], file['pieces'], 
                             file['piece length'])
-                    else:
-                        n = {'ip': ip, 'port': message['port']}
-                        if n not in published[name][0]:
-                            published[name][0].append(n)
+                    n = {'ip': ip, 'port': message['port']}
+                    if n not in published[name][0]:
+                        published[name][0].append(n)
                 h = open(self.server.file, 'wb')
                 h.write(bencode(published))
                 h.close()
