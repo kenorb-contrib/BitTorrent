@@ -32,6 +32,8 @@ defaults = [
         'time to wait between checking if any connections have timed out'),
     ('nat_check', None, 0,
         'whether to check back and ban downloaders behind NAT'),
+    ('min_time_between_log_flushes', None, 3.0,
+        'minimum time it must have been since the last flush to do another one'),
     ]
 
 def downloaderfiletemplate(x):
@@ -201,6 +203,6 @@ def track(args):
     r = RawServer(Event(), config['timeout_check_interval'], config['socket_timeout'])
     t = Tracker(config, r)
     r.bind(config['port'], config['bind'])
-    r.listen_forever(HTTPHandler(t.get))
+    r.listen_forever(HTTPHandler(t.get, config['min_time_between_log_flushes']))
 
 

@@ -29,7 +29,7 @@ class Rerequester:
         self.down = down
         self.timeout = timeout
         self.errorfunc = errorfunc
-        self.sched(self.c, interval)
+        self.sched(self.c, interval / 2)
 
     def c(self):
         self.sched(self.c, self.interval)

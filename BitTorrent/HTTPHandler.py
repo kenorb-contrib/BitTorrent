@@ -2,6 +2,7 @@
 # see LICENSE.txt for license information
 
 from cStringIO import StringIO
+from sys import stdout
 import time
 true = 1
 false = 0
@@ -25,7 +26,7 @@ class HTTPConnection:
         return self.connection.get_ip()
 
     def data_came_in(self, data):
-        if self.done:
+        if self.donereading:
             return true
         self.buf += data
         while true:
@@ -79,7 +80,12 @@ class HTTPConnection:
         print '%s - - [%02d/%3s/%04d:%02d:%02d:%02d] "%s" %i %i' % (
             self.connection.get_ip(), day, months[month], year, hour, minute, 
             second, self.header, responsecode, len(data))
+        t = time.time()
+        if t - self.handler.lastflush > self.handler.minflush:
+            self.handler.lastflush = t
+            stdout.flush()
 
+        self.done = true
         r = StringIO()
         r.write('HTTP/1.0 ' + str(responsecode) + ' ' + 
             responsestring + '\r\n')
@@ -91,22 +97,19 @@ class HTTPConnection:
         if self.command != 'HEAD':
             r.write(data)
         self.connection.write(r.getvalue())
-        if self.connection.is_flushed():
-            self.connection.close()
-        self.done = true
 
 class HTTPHandler:
-    def __init__(self, getfunc):
+    def __init__(self, getfunc, minflush):
         self.connections = {}
         self.getfunc = getfunc
+        self.minflush = minflush
+        self.lastflush = time.time()
 
     def external_connection_made(self, connection):
         self.connections[connection] = HTTPConnection(self, connection)
 
     def connection_flushed(self, connection):
-        c = self.connections[connection]
-        if c.done:
-            c.close()
+        pass
 
     def connection_lost(self, connection):
         ec = self.connections[connection]
