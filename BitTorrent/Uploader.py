@@ -13,9 +13,9 @@ def len20(s, verbose):
     if type(s) != StringType or len(s) != 20:
         raise ValueError
 
-throttle_message = bencode({'type': "you're throttled"})
+choke_message = bencode({'type': "you're choked"})
     
-unthrottle_message = bencode({'type': "you're not throttled"})
+unchoke_message = bencode({'type': "you're not choked"})
 
 support_message = bencode({'type': 'I support', 
     'list all files': None, 'send slice': None})
@@ -27,7 +27,7 @@ class SingleUpload:
     def __init__(self, connection, uploader):
         self.connection = connection
         self.uploader = uploader
-        self.throttled = false
+        self.choked = false
         self.uploading = false
         self.id = connection.get_id()
         self.listing_all_files = false
@@ -51,7 +51,7 @@ class SingleUpload:
             elif mtype == 'done downloading':
                 if self.uploading:
                     self.uploading = false
-                    self.uploader.throttler.upload_stopped(self)
+                    self.uploader.choker.upload_stopped(self)
             elif mtype == 'list all files':
                 self.listing_all_files = true
                 self.connection.send_message(bencode({'type': 'I have files', 
@@ -61,8 +61,8 @@ class SingleUpload:
 
     def got_send_slice(self, m):
         send_slice_template(m)
-        if self.throttled:
-            self.connection.send_message(throttle_message)
+        if self.choked:
+            self.connection.send_message(choke_message)
             return
         file = m['file']
         begin = m['begin']
@@ -80,30 +80,30 @@ class SingleUpload:
         end = begin + len(slice)
         if not self.uploading:
             self.uploading = true
-            self.uploader.throttler.upload_started(self)
-        self.uploader.throttler.data_sent_out(self, len(slice))
+            self.uploader.choker.upload_started(self)
+        self.uploader.choker.data_sent_out(self, len(slice))
 
-    def throttle(self):
-        self.throttled = true
+    def choke(self):
+        self.choked = true
         self.uploading = false
-        self.connection.send_message(throttle_message)
+        self.connection.send_message(choke_message)
         
-    def unthrottle(self):
-        self.throttled = false
-        self.connection.send_message(unthrottle_message)
+    def unchoke(self):
+        self.choked = false
+        self.connection.send_message(unchoke_message)
         
     def get_id(self):
         return self.id
         
-    def is_throttled(self):
-        return self.throttled
+    def is_choked(self):
+        return self.choked
         
     def is_uploading(self):
         return self.uploading
 
 class Uploader:
-    def __init__(self, throttler, database):
-        self.throttler = throttler
+    def __init__(self, choker, database):
+        self.choker = choker
         self.database = database
         # {id: SingleUploader}
         self.uploads = {}
@@ -112,13 +112,13 @@ class Uploader:
         s = SingleUpload(connection, self)
         assert not self.uploads.has_key(s.get_id())
         self.uploads[s.get_id()] = s
-        self.throttler.upload_connected(s)
+        self.choker.upload_connected(s)
         
     def connection_lost(self, connection):
         s = self.uploads[connection.get_id()]
         del s.connection
         del self.uploads[connection.get_id()]
-        self.throttler.upload_disconnected(s)
+        self.choker.upload_disconnected(s)
         
     def got_message(self, connection, message):
         self.uploads[connection.get_id()].got_message(message)
@@ -147,7 +147,7 @@ class DummyDatabase:
     def get_list_of_files_I_have(self):
         return self.files.keys()
 
-class DummyThrottler:
+class DummyChoker:
     def __init__(self):
         self.up = []
         self.events = []
@@ -180,7 +180,7 @@ class DummyConnection:
         return self.id
 
 def test():
-    th = DummyThrottler()
+    th = DummyChoker()
     val = 'a' * 20 + 'z' * 10
     key = sha(val).digest()
     dd = DummyDatabase({key: val})
@@ -203,18 +203,18 @@ def test():
     del c.m[:]
     assert th.events == []
     
-    th.up[0].throttle()
-    assert c.m == [bencode({'type': "you're throttled"})]
+    th.up[0].choke()
+    assert c.m == [bencode({'type': "you're choked"})]
     del c.m[:]
     assert th.events == []
     
     up.got_message(c, bencode({'type': 'send slice', 'file': key, 'begin': 0, 'length': 20}))
-    assert c.m == [bencode({'type': "you're throttled"})]
+    assert c.m == [bencode({'type': "you're choked"})]
     del c.m[:]
     assert th.events == []
 
-    th.up[0].unthrottle()
-    assert c.m == [bencode({'type': "you're not throttled"})]
+    th.up[0].unchoke()
+    assert c.m == [bencode({'type': "you're not choked"})]
     del c.m[:]
     assert th.events == []
     

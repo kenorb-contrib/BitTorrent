@@ -4,36 +4,36 @@
 true = 1
 false = 0
 
-class Throttler:
+class Choker:
     def __init__(self, max_uploads):
         self.max_uploads = max_uploads
         self.uploads = {}
     
-    def rethrottle(self):
+    def rechoke(self):
         current_uploads = len([1 for up in \
             self.uploads.values() if up.is_uploading()])
         if current_uploads < self.max_uploads:
             for u in self.uploads.values():
-                if u.is_throttled():
-                    u.unthrottle()
+                if u.is_choked():
+                    u.unchoke()
         else:
             for u in self.uploads.values():
                 if not u.is_uploading():
-                    u.throttle()
+                    u.choke()
     
     def upload_connected(self, up):
         self.uploads[up.get_id()] = up
-        self.rethrottle()
+        self.rechoke()
 
     def upload_disconnected(self, up):
         del self.uploads[up.get_id()]
-        self.rethrottle()
+        self.rechoke()
 
     def upload_started(self, up):
-        self.rethrottle()
+        self.rechoke()
 
     def upload_stopped(self, up):
-        self.rethrottle()
+        self.rechoke()
 
     def data_sent_out(self, up, amount):
         pass
@@ -44,10 +44,10 @@ class Throttler:
     def download_disconnected(self, down):
         pass
 
-    def download_throttled(self, down):
+    def download_choked(self, down):
         pass
 
-    def download_unthrottled(self, down):
+    def download_unchoked(self, down):
         pass
 
     def download_possible(self, down):
@@ -61,7 +61,7 @@ class Throttler:
 
 class DummyConnection:
     def __init__(self, id, t):
-        self.throttled = false
+        self.choked = false
         self.uploading = false
         self.id = id
         self.t = t
@@ -80,60 +80,60 @@ class DummyConnection:
     def get_id(self):
         return self.id
 
-    def is_throttled(self):
-        return self.throttled
+    def is_choked(self):
+        return self.choked
 
-    def throttle(self):
-        self.throttled = true
+    def choke(self):
+        self.choked = true
         
-    def unthrottle(self):
-        self.throttled = false
+    def unchoke(self):
+        self.choked = false
 
 def test():
-    t = Throttler(2)
+    t = Choker(2)
     da = DummyConnection('a', t)
     db = DummyConnection('b', t)
     dc = DummyConnection('c', t)
     dd = DummyConnection('d', t)
     t.upload_connected(da)
-    assert not da.throttled
+    assert not da.choked
     
     t.upload_connected(db)
-    assert not da.throttled
-    assert not db.throttled
+    assert not da.choked
+    assert not db.choked
     
     t.upload_connected(dc)
-    assert not da.throttled
-    assert not db.throttled
-    assert not dc.throttled
+    assert not da.choked
+    assert not db.choked
+    assert not dc.choked
 
     da.start_uploading()
-    assert not da.throttled
-    assert not db.throttled
-    assert not dc.throttled
+    assert not da.choked
+    assert not db.choked
+    assert not dc.choked
     
     db.start_uploading()
-    assert not da.throttled
-    assert not db.throttled
-    assert dc.throttled
+    assert not da.choked
+    assert not db.choked
+    assert dc.choked
     
     db.stop_uploading()
-    assert not da.throttled
-    assert not db.throttled
-    assert not dc.throttled
+    assert not da.choked
+    assert not db.choked
+    assert not dc.choked
     
     dc.start_uploading()
-    assert not da.throttled
-    assert db.throttled
-    assert not dc.throttled
+    assert not da.choked
+    assert db.choked
+    assert not dc.choked
     
     t.upload_connected(dd)
-    assert not da.throttled
-    assert db.throttled
-    assert not dc.throttled
-    assert dd.throttled
+    assert not da.choked
+    assert db.choked
+    assert not dc.choked
+    assert dd.choked
     
     t.upload_disconnected(dc)
-    assert not da.throttled
-    assert not db.throttled
-    assert not dd.throttled
+    assert not da.choked
+    assert not db.choked
+    assert not dd.choked

@@ -4,7 +4,7 @@
 from parseargs import parseargs, formatDefinitions
 from urllib import urlopen
 from StreamEncrypter import make_encrypter
-from PublisherThrottler import Throttler
+from PublisherChoker import Choker
 from MultiBlob import MultiBlob
 from Uploader import Uploader
 from DummyDownloader import DummyDownloader
@@ -66,11 +66,11 @@ def publish(params, cols):
 
     private_key = entropy(20)
     noncefunc = lambda e = entropy: e(20)
-    throttler = Throttler(config['max_uploads'])
+    choker = Choker(config['max_uploads'])
     piece_length = config['piece_size']
     blobs = MultiBlob(files, piece_length, open, getsize, exists, 
         split, getmtime, time, isfile)
-    uploader = Uploader(throttler, blobs)
+    uploader = Uploader(choker, blobs)
     downloader = DummyDownloader()
     connecter = Connecter(uploader, downloader)
     rawserver = RawServer(config['max_poll_period'], Event(),

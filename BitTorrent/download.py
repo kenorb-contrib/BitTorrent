@@ -4,7 +4,7 @@
 from urllib import urlopen
 from urlparse import urljoin
 from StreamEncrypter import make_encrypter
-from PublisherThrottler import Throttler
+from PublisherChoker import Choker
 from SingleBlob import SingleBlob
 from Uploader import Uploader
 from Downloader import Downloader
@@ -130,9 +130,9 @@ def download(params, filefunc, displayfunc, doneflag, cols):
     except IOError, e:
         displayfunc('disk access error - ' + str(e), 'Okay')
         return false
-    throttler = Throttler(config['max_uploads'])
-    uploader = Uploader(throttler, blobs)
-    downloader = Downloader(throttler, blobs, uploader, 
+    choker = Choker(config['max_uploads'])
+    uploader = Uploader(choker, blobs)
+    downloader = Downloader(choker, blobs, uploader, 
         config['download_slice_size'], config['request_backlog'])
     rawserver = RawServer(config['max_poll_period'], doneflag,
         config['timeout'])
@@ -176,7 +176,7 @@ def download(params, filefunc, displayfunc, doneflag, cols):
         if response['type'] == 'failure':
             displayfunc("Couldn't announce - " + response['reason'], 'Okay')
             return false
-        DownloaderFeedback(uploader, downloader, throttler, rawserver.add_task, 
+        DownloaderFeedback(uploader, downloader, choker, rawserver.add_task, 
             listen_port, response['your ip'], file_length, left, displayfunc)
     except IOError, e:
         displayfunc("Couldn't announce - " + str(e), 'Okay')

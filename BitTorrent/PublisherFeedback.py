@@ -40,7 +40,7 @@ class PublisherFeedback:
         for x in k:
             u = self.uploader.uploads[x]
             s.write(u.get_ip())
-            if u.is_throttled():
+            if u.is_choked():
                 s.write(' T ')
             elif u.is_uploading():
                 s.write(' U ')

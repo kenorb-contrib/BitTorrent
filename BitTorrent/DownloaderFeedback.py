@@ -19,11 +19,11 @@ def ex(n):
         return '0' + str(n)
 
 class DownloaderFeedback:
-    def __init__(self, uploader, downloader, throttler, add_task, port, ip, filesize, amount_left, displayfunc):
+    def __init__(self, uploader, downloader, choker, add_task, port, ip, filesize, amount_left, displayfunc):
         self.add_task = add_task
         self.uploader = uploader
         self.downloader = downloader
-        self.throttler = throttler
+        self.choker = choker
         self.port = port
         self.ip = ip
         self.filesize = filesize
@@ -94,7 +94,7 @@ class DownloaderFeedback:
                 s.write('remote\n')
             
             if u is not None:
-                if u.is_throttled():
+                if u.is_choked():
                     s.write('T ')
                 elif u.is_uploading():
                     s.write('U ')
@@ -105,7 +105,7 @@ class DownloaderFeedback:
                     s.write(str(u.total) + ' ' + str(kify(u.rate)))
             s.write('\n')
             if d is not None:
-                if d.is_throttled():
+                if d.is_choked():
                     s.write('T ')
                 else:
                     s.write(str(len(d.active_requests)) + ' ')

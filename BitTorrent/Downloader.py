@@ -29,7 +29,7 @@ class SingleDownload:
         self.downloader = downloader
         self.connection = connection
         self.id = connection.get_id()
-        self.throttled = false
+        self.choked = false
         self.active_requests = []
         self.peer_has = {}
         self.total = 0
@@ -46,8 +46,8 @@ class SingleDownload:
     def is_downloading(self):
         return len(self.active_requests) != 0
 
-    def is_throttled(self):
-        return self.throttled
+    def is_choked(self):
+        return self.choked
 
     def start_new_downloads(self):
         if len(self.active_requests) >= self.downloader.backlog:
@@ -75,7 +75,7 @@ class SingleDownload:
                 begin += chunk_size
 
     def start_downloading(self):
-        if self.throttled or len(self.active_requests) > 0:
+        if self.choked or len(self.active_requests) > 0:
             return false
         self.start_new_downloads()
         return len(self.active_requests) > 0
@@ -88,12 +88,12 @@ class SingleDownload:
             mtype = m.get('type')
             if mtype == 'here is a slice':
                 self.got_slice_message(m)
-            elif mtype == "you're throttled":
-                self.got_throttled_message(m)
-            elif mtype == "you're not throttled":
-                if self.throttled:
-                    self.throttled = false
-                    self.downloader.throttler.download_unthrottled(self)
+            elif mtype == "you're choked":
+                self.got_choked_message(m)
+            elif mtype == "you're not choked":
+                if self.choked:
+                    self.choked = false
+                    self.downloader.choker.download_unchoked(self)
             elif mtype == 'I have files':
                 self.got_files_message(m)
             elif mtype == "I don't have files":
@@ -101,12 +101,12 @@ class SingleDownload:
         except ValueError:
             print_exc()
 
-    def got_throttled_message(self, message):
-        if self.throttled:
+    def got_choked_message(self, message):
+        if self.choked:
             return 
-        self.throttled = true
+        self.choked = true
         del self.active_requests[:]
-        self.downloader.throttler.download_throttled(self)
+        self.downloader.choker.download_choked(self)
 
     def got_slice_message(self, message):
         here_is_a_slice_template(message)
@@ -139,9 +139,9 @@ class SingleDownload:
         self.total += len(slice)
         if len(self.active_requests) == 0:
             self.connection.send_message(done_message)
-            self.downloader.throttler.data_came_in(self, len(slice), true)
+            self.downloader.choker.data_came_in(self, len(slice), true)
         else:
-            self.downloader.throttler.data_came_in(self, len(slice), false)
+            self.downloader.choker.data_came_in(self, len(slice), false)
         if completed:
             self.downloader.uploader.received_file(file)
 
@@ -149,7 +149,7 @@ class SingleDownload:
         have_files_template(message)
         for f in message['files']:
             self.peer_has[f] = 1
-        self.downloader.throttler.download_possible(self)
+        self.downloader.choker.download_possible(self)
 
     def got_no_files_message(self, message):
         do_not_have_files_template(message)
@@ -163,13 +163,13 @@ class SingleDownload:
         self.start_new_downloads()
         if len(self.active_requests) == 0:
             self.connection.send_message(done_message)
-            self.downloader.throttler.download_hiccuped(self, true)
+            self.downloader.choker.download_hiccuped(self, true)
         else:
-            self.downloader.throttler.download_hiccuped(self, false)
+            self.downloader.choker.download_hiccuped(self, false)
 
 class Downloader:
-    def __init__(self, throttler, database, uploader, chunk_size, backlog):
-        self.throttler = throttler
+    def __init__(self, choker, database, uploader, chunk_size, backlog):
+        self.choker = choker
         self.database = database
         self.uploader = uploader
         self.chunk_size = chunk_size
@@ -182,13 +182,13 @@ class Downloader:
         down = SingleDownload(self, connection)
         self.downloads[down.get_id()] = down
         connection.send_message(bencode({'type': 'list all files'}))
-        self.throttler.download_connected(down)
+        self.choker.download_connected(down)
 
     def connection_lost(self, connection):
         down = self.downloads[connection.get_id()]
         del down.connection
         del self.downloads[down.get_id()]
-        self.throttler.download_disconnected(down)
+        self.choker.download_disconnected(down)
 
     def got_message(self, connection, message):
         self.downloads[connection.get_id()].got_message(message)
@@ -204,16 +204,16 @@ class DummyUploader:
     def received_file(self, file):
         self.received.append(file)
 
-class DummyThrottler:
+class DummyChoker:
     def __init__(self):
         self.downloads = []
         self.events = []
 
-    def download_throttled(self, download):
-        self.events.append('throttled')
+    def download_choked(self, download):
+        self.events.append('choked')
 
-    def download_unthrottled(self, download):
-        self.events.append('unthrottled')
+    def download_unchoked(self, download):
+        self.events.append('unchoked')
 
     def download_possible(self, download):
         self.events.append('possible')
@@ -270,480 +270,480 @@ def test_even():
     file = 'abcdef'
     fid = sha(file).digest()
     database = DummyDatabase({fid: len(file)})
-    throttler = DummyThrottler()
+    choker = DummyChoker()
     uploader = DummyUploader()
-    downloader = Downloader(throttler, database, uploader, 3, 3)
+    downloader = Downloader(choker, database, uploader, 3, 3)
     connection = DummyConnection('a' * 20)
     
     downloader.connection_made(connection)
     assert uploader.received == []
-    assert throttler.events == ['connected']
-    del throttler.events[:]
-    assert len(throttler.downloads) == 1
-    sd = throttler.downloads[0]
-    del throttler.downloads[:]
+    assert choker.events == ['connected']
+    del choker.events[:]
+    assert len(choker.downloads) == 1
+    sd = choker.downloads[0]
+    del choker.downloads[:]
     assert sd.get_id() == 'a' * 20
     assert not sd.is_downloading()
-    assert not sd.is_throttled()
+    assert not sd.is_choked()
     assert database.files == {}
     assert connection.messages == [bencode({'type': 'list all files'})]
     del connection.messages[:]
     
     assert not sd.start_downloading()
     assert uploader.received == []
-    assert throttler.events == []
+    assert choker.events == []
     assert database.files == {}
     assert connection.messages == []
     assert not sd.is_downloading()
-    assert not sd.is_throttled()
+    assert not sd.is_choked()
 
     downloader.got_message(connection, bencode({'type': 'I have files', 'files': [fid]}))
     assert uploader.received == []
-    assert throttler.events == ['possible']
-    del throttler.events[:]
+    assert choker.events == ['possible']
+    del choker.events[:]
     assert database.files == {}
     assert connection.messages == []
     assert not sd.is_downloading()
-    assert not sd.is_throttled()
+    assert not sd.is_choked()
 
     assert sd.start_downloading()
     assert uploader.received == []
-    assert throttler.events == []
+    assert choker.events == []
     assert database.files == {}
     assert connection.messages == [bencode({'type': 'send slice', 'file': fid, 
         'begin': 0, 'length': 3}), bencode({'type': 'send slice', 'file': fid, 
         'begin': 3, 'length': 3})]
     del connection.messages[:]
     assert sd.is_downloading()
-    assert not sd.is_throttled()
+    assert not sd.is_choked()
 
     assert not sd.start_downloading()
     assert uploader.received == []
-    assert throttler.events == []
+    assert choker.events == []
     assert database.files == {}
     assert connection.messages == []
     assert sd.is_downloading()
-    assert not sd.is_throttled()
+    assert not sd.is_choked()
 
     downloader.got_message(connection, bencode({'type': 'here is a slice', 
         'file': fid, 'begin': 0, 'slice': 'abc'}))
     assert uploader.received == []
-    assert throttler.events == [('in', 3, false)]
-    del throttler.events[:]
+    assert choker.events == [('in', 3, false)]
+    del choker.events[:]
     assert database.files == {fid: 'abc'}
     assert connection.messages == []
     assert sd.is_downloading()
-    assert not sd.is_throttled()
+    assert not sd.is_choked()
 
     assert not sd.start_downloading()
     assert uploader.received == []
-    assert throttler.events == []
+    assert choker.events == []
     assert database.files == {fid: 'abc'}
     assert connection.messages == []
     assert sd.is_downloading()
-    assert not sd.is_throttled()
+    assert not sd.is_choked()
 
     downloader.got_message(connection, bencode({'type': 'here is a slice', 
         'file': fid, 'begin': 3, 'slice': 'def'}))
     assert uploader.received == [fid]
     del uploader.received[:]
-    assert throttler.events == [('in', 3, true)]
-    del throttler.events[:]
+    assert choker.events == [('in', 3, true)]
+    del choker.events[:]
     assert database.files == {fid: 'abcdef'}
     assert connection.messages == [done_message]
     del connection.messages[:]
     assert not sd.is_downloading()
-    assert not sd.is_throttled()
+    assert not sd.is_choked()
 
     assert not sd.start_downloading()
     assert uploader.received == []
-    assert throttler.events == []
+    assert choker.events == []
     assert database.files == {fid: 'abcdef'}
     assert connection.messages == []
     assert not sd.is_downloading()
-    assert not sd.is_throttled()
+    assert not sd.is_choked()
 
 def test_out_of_order():
     file = 'abcde'
     fid = sha(file).digest()
     database = DummyDatabase({fid: len(file)})
-    throttler = DummyThrottler()
+    choker = DummyChoker()
     uploader = DummyUploader()
-    downloader = Downloader(throttler, database, uploader, 3, 1)
+    downloader = Downloader(choker, database, uploader, 3, 1)
     connection1 = DummyConnection('a' * 20)
     connection2 = DummyConnection('b' * 20)
 
     downloader.connection_made(connection1)
     assert uploader.received == []
-    assert throttler.events == ['connected']
-    del throttler.events[:]
-    assert len(throttler.downloads) == 1
-    sd1 = throttler.downloads[0]
-    del throttler.downloads[:]
+    assert choker.events == ['connected']
+    del choker.events[:]
+    assert len(choker.downloads) == 1
+    sd1 = choker.downloads[0]
+    del choker.downloads[:]
     assert sd1.get_id() == 'a' * 20
     assert not sd1.is_downloading()
-    assert not sd1.is_throttled()
+    assert not sd1.is_choked()
     assert database.files == {}
     assert connection1.messages == [bencode({'type': 'list all files'})]
     del connection1.messages[:]
     
     downloader.connection_made(connection2)
     assert uploader.received == []
-    assert throttler.events == ['connected']
-    del throttler.events[:]
-    assert len(throttler.downloads) == 1
-    sd2 = throttler.downloads[0]
-    del throttler.downloads[:]
+    assert choker.events == ['connected']
+    del choker.events[:]
+    assert len(choker.downloads) == 1
+    sd2 = choker.downloads[0]
+    del choker.downloads[:]
     assert sd2.get_id() == 'b' * 20
     assert not sd2.is_downloading()
-    assert not sd2.is_throttled()
+    assert not sd2.is_choked()
     assert database.files == {}
     assert connection2.messages == [bencode({'type': 'list all files'})]
     del connection2.messages[:]
     
     downloader.got_message(connection1, bencode({'type': 'I have files', 'files': [fid]}))
     assert uploader.received == []
-    assert throttler.events == ['possible']
-    del throttler.events[:]
+    assert choker.events == ['possible']
+    del choker.events[:]
     assert database.files == {}
     assert connection1.messages == []
     assert not sd1.is_downloading()
-    assert not sd1.is_throttled()
+    assert not sd1.is_choked()
 
     assert sd1.start_downloading()
     assert uploader.received == []
-    assert throttler.events == []
+    assert choker.events == []
     assert database.files == {}
     assert connection1.messages == [bencode({'type': 'send slice', 'file': fid, 
         'begin': 0, 'length': 3})]
     del connection1.messages[:]
     assert sd1.is_downloading()
-    assert not sd1.is_throttled()
+    assert not sd1.is_choked()
 
     downloader.got_message(connection2, bencode({'type': 'I have files', 'files': [fid]}))
     assert uploader.received == []
-    assert throttler.events == ['possible']
-    del throttler.events[:]
+    assert choker.events == ['possible']
+    del choker.events[:]
     assert database.files == {}
     assert connection2.messages == []
     assert not sd2.is_downloading()
-    assert not sd2.is_throttled()
+    assert not sd2.is_choked()
 
     assert sd2.start_downloading()
     assert uploader.received == []
-    assert throttler.events == []
+    assert choker.events == []
     assert database.files == {}
     assert connection2.messages == [bencode({'type': 'send slice', 'file': fid, 
         'begin': 3, 'length': 2})]
     del connection2.messages[:]
     assert sd2.is_downloading()
-    assert not sd2.is_throttled()
+    assert not sd2.is_choked()
 
     downloader.got_message(connection2, bencode({'type': 'here is a slice', 
         'file': fid, 'begin': 3, 'slice': 'de'}))
     assert uploader.received == []
     del uploader.received[:]
-    assert throttler.events == [('in', 2, true)]
-    del throttler.events[:]
+    assert choker.events == [('in', 2, true)]
+    del choker.events[:]
     assert database.files == {}
     assert connection2.messages == [done_message]
     del connection2.messages[:]
     assert not sd2.is_downloading()
-    assert not sd2.is_throttled()
+    assert not sd2.is_choked()
 
     downloader.got_message(connection1, bencode({'type': 'here is a slice', 
         'file': fid, 'begin': 0, 'slice': 'abc'}))
     assert uploader.received == [fid]
     del uploader.received[:]
-    assert throttler.events == [('in', 3, true)]
-    del throttler.events[:]
+    assert choker.events == [('in', 3, true)]
+    del choker.events[:]
     assert database.files == {fid: 'abcde'}
     assert connection1.messages == [done_message]
     del connection1.messages[:]
     assert not sd1.is_downloading()
-    assert not sd1.is_throttled()
+    assert not sd1.is_choked()
 
 def test_disconnect():
     file = 'ab'
     fid = sha(file).digest()
     database = DummyDatabase({fid: len(file)})
-    throttler = DummyThrottler()
+    choker = DummyChoker()
     uploader = DummyUploader()
-    downloader = Downloader(throttler, database, uploader, 3, 1)
+    downloader = Downloader(choker, database, uploader, 3, 1)
     connection1 = DummyConnection('a' * 20)
     connection2 = DummyConnection('b' * 20)
 
     downloader.connection_made(connection1)
     assert uploader.received == []
-    assert throttler.events == ['connected']
-    del throttler.events[:]
-    assert len(throttler.downloads) == 1
-    sd1 = throttler.downloads[0]
-    del throttler.downloads[:]
+    assert choker.events == ['connected']
+    del choker.events[:]
+    assert len(choker.downloads) == 1
+    sd1 = choker.downloads[0]
+    del choker.downloads[:]
     assert sd1.get_id() == 'a' * 20
     assert not sd1.is_downloading()
-    assert not sd1.is_throttled()
+    assert not sd1.is_choked()
     assert database.files == {}
     assert connection1.messages == [bencode({'type': 'list all files'})]
     del connection1.messages[:]
     
     downloader.connection_made(connection2)
     assert uploader.received == []
-    assert throttler.events == ['connected']
-    del throttler.events[:]
-    assert len(throttler.downloads) == 1
-    sd2 = throttler.downloads[0]
-    del throttler.downloads[:]
+    assert choker.events == ['connected']
+    del choker.events[:]
+    assert len(choker.downloads) == 1
+    sd2 = choker.downloads[0]
+    del choker.downloads[:]
     assert sd2.get_id() == 'b' * 20
     assert not sd2.is_downloading()
-    assert not sd2.is_throttled()
+    assert not sd2.is_choked()
     assert database.files == {}
     assert connection2.messages == [bencode({'type': 'list all files'})]
     del connection2.messages[:]
     
     downloader.got_message(connection1, bencode({'type': 'I have files', 'files': [fid]}))
     assert uploader.received == []
-    assert throttler.events == ['possible']
-    del throttler.events[:]
+    assert choker.events == ['possible']
+    del choker.events[:]
     assert database.files == {}
     assert connection1.messages == []
     assert not sd1.is_downloading()
-    assert not sd1.is_throttled()
+    assert not sd1.is_choked()
 
     assert sd1.start_downloading()
     assert uploader.received == []
-    assert throttler.events == []
+    assert choker.events == []
     assert database.files == {}
     assert connection1.messages == [bencode({'type': 'send slice', 'file': fid, 
         'begin': 0, 'length': 2})]
     del connection1.messages[:]
     assert sd1.is_downloading()
-    assert not sd1.is_throttled()
+    assert not sd1.is_choked()
 
     downloader.got_message(connection2, bencode({'type': 'I have files', 'files': [fid]}))
     assert uploader.received == []
-    assert throttler.events == ['possible']
-    del throttler.events[:]
+    assert choker.events == ['possible']
+    del choker.events[:]
     assert database.files == {}
     assert connection2.messages == []
     assert not sd2.is_downloading()
-    assert not sd2.is_throttled()
+    assert not sd2.is_choked()
 
     assert not sd2.start_downloading()
     assert uploader.received == []
-    assert throttler.events == []
+    assert choker.events == []
     assert database.files == {}
     assert connection2.messages == []
     assert not sd2.is_downloading()
-    assert not sd2.is_throttled()
+    assert not sd2.is_choked()
 
     downloader.connection_lost(connection1)
     assert uploader.received == []
-    assert throttler.events == ['disconnected']
-    del throttler.events[:]
+    assert choker.events == ['disconnected']
+    del choker.events[:]
     assert database.files == {}
     assert connection1.messages == []
 
     assert sd2.start_downloading()
     assert uploader.received == []
-    assert throttler.events == []
+    assert choker.events == []
     assert database.files == {}
     assert connection2.messages == [bencode({'type': 'send slice', 'file': fid, 
         'begin': 0, 'length': 2})]
     del connection2.messages[:]
     assert sd2.is_downloading()
-    assert not sd2.is_throttled()
+    assert not sd2.is_choked()
 
-def test_throttle():
+def test_choke():
     file = 'abc'
     fid = sha(file).digest()
     database = DummyDatabase({fid: len(file)})
-    throttler = DummyThrottler()
+    choker = DummyChoker()
     uploader = DummyUploader()
-    downloader = Downloader(throttler, database, uploader, 3, 3)
+    downloader = Downloader(choker, database, uploader, 3, 3)
     connection = DummyConnection('a' * 20)
     
     downloader.connection_made(connection)
     assert uploader.received == []
-    assert throttler.events == ['connected']
-    del throttler.events[:]
-    assert len(throttler.downloads) == 1
-    sd = throttler.downloads[0]
-    del throttler.downloads[:]
+    assert choker.events == ['connected']
+    del choker.events[:]
+    assert len(choker.downloads) == 1
+    sd = choker.downloads[0]
+    del choker.downloads[:]
     assert sd.get_id() == 'a' * 20
     assert not sd.is_downloading()
-    assert not sd.is_throttled()
+    assert not sd.is_choked()
     assert database.files == {}
     assert connection.messages == [bencode({'type': 'list all files'})]
     del connection.messages[:]
     
     assert not sd.start_downloading()
     assert uploader.received == []
-    assert throttler.events == []
+    assert choker.events == []
     assert database.files == {}
     assert connection.messages == []
     assert not sd.is_downloading()
-    assert not sd.is_throttled()
+    assert not sd.is_choked()
 
     downloader.got_message(connection, bencode({'type': 'I have files', 'files': [fid]}))
     assert uploader.received == []
-    assert throttler.events == ['possible']
-    del throttler.events[:]
+    assert choker.events == ['possible']
+    del choker.events[:]
     assert database.files == {}
     assert connection.messages == []
     assert not sd.is_downloading()
-    assert not sd.is_throttled()
+    assert not sd.is_choked()
 
     assert sd.start_downloading()
     assert uploader.received == []
-    assert throttler.events == []
+    assert choker.events == []
     assert database.files == {}
     assert connection.messages == [bencode({'type': 'send slice', 'file': fid, 
         'begin': 0, 'length': 3})]
     del connection.messages[:]
     assert sd.is_downloading()
-    assert not sd.is_throttled()
+    assert not sd.is_choked()
 
-    downloader.got_message(connection, bencode({'type': "you're throttled"}))
+    downloader.got_message(connection, bencode({'type': "you're choked"}))
     assert uploader.received == []
-    assert throttler.events == ['throttled']
-    del throttler.events[:]
+    assert choker.events == ['choked']
+    del choker.events[:]
     assert database.files == {}
     assert connection.messages == []
     assert not sd.is_downloading()
-    assert sd.is_throttled()
+    assert sd.is_choked()
 
     assert not sd.start_downloading()
     assert uploader.received == []
-    assert throttler.events == []
+    assert choker.events == []
     assert database.files == {}
     assert connection.messages == []
     assert not sd.is_downloading()
-    assert sd.is_throttled()
+    assert sd.is_choked()
 
-    downloader.got_message(connection, bencode({'type': "you're throttled"}))
+    downloader.got_message(connection, bencode({'type': "you're choked"}))
     assert uploader.received == []
-    assert throttler.events == []
+    assert choker.events == []
     assert database.files == {}
     assert connection.messages == []
     assert not sd.is_downloading()
-    assert sd.is_throttled()
+    assert sd.is_choked()
 
-    downloader.got_message(connection, bencode({'type': "you're not throttled"}))
+    downloader.got_message(connection, bencode({'type': "you're not choked"}))
     assert uploader.received == []
-    assert throttler.events == ['unthrottled']
-    del throttler.events[:]
+    assert choker.events == ['unchoked']
+    del choker.events[:]
     assert database.files == {}
     assert connection.messages == []
     assert not sd.is_downloading()
-    assert not sd.is_throttled()
+    assert not sd.is_choked()
 
-    downloader.got_message(connection, bencode({'type': "you're not throttled"}))
+    downloader.got_message(connection, bencode({'type': "you're not choked"}))
     assert uploader.received == []
-    assert throttler.events == []
+    assert choker.events == []
     assert database.files == {}
     assert connection.messages == []
     assert not sd.is_downloading()
-    assert not sd.is_throttled()
+    assert not sd.is_choked()
 
     assert sd.start_downloading()
     assert uploader.received == []
-    assert throttler.events == []
+    assert choker.events == []
     assert database.files == {}
     assert connection.messages == [bencode({'type': 'send slice', 'file': fid, 
         'begin': 0, 'length': 3})]
     del connection.messages[:]
     assert sd.is_downloading()
-    assert not sd.is_throttled()
+    assert not sd.is_choked()
 
 def test_hiccup():
     file = 'abc'
     fid = sha(file).digest()
     database = DummyDatabase({fid: len(file)})
-    throttler = DummyThrottler()
+    choker = DummyChoker()
     uploader = DummyUploader()
-    downloader = Downloader(throttler, database, uploader, 3, 3)
+    downloader = Downloader(choker, database, uploader, 3, 3)
     connection = DummyConnection('a' * 20)
     
     downloader.connection_made(connection)
     assert uploader.received == []
-    assert throttler.events == ['connected']
-    del throttler.events[:]
-    assert len(throttler.downloads) == 1
-    sd = throttler.downloads[0]
-    del throttler.downloads[:]
+    assert choker.events == ['connected']
+    del choker.events[:]
+    assert len(choker.downloads) == 1
+    sd = choker.downloads[0]
+    del choker.downloads[:]
     assert sd.get_id() == 'a' * 20
     assert not sd.is_downloading()
-    assert not sd.is_throttled()
+    assert not sd.is_choked()
     assert database.files == {}
     assert connection.messages == [bencode({'type': 'list all files'})]
     del connection.messages[:]
     
     assert not sd.start_downloading()
     assert uploader.received == []
-    assert throttler.events == []
+    assert choker.events == []
     assert database.files == {}
     assert connection.messages == []
     assert not sd.is_downloading()
-    assert not sd.is_throttled()
+    assert not sd.is_choked()
 
     downloader.got_message(connection, bencode({'type': 'I have files', 'files': [fid]}))
     assert uploader.received == []
-    assert throttler.events == ['possible']
-    del throttler.events[:]
+    assert choker.events == ['possible']
+    del choker.events[:]
     assert database.files == {}
     assert connection.messages == []
     assert not sd.is_downloading()
-    assert not sd.is_throttled()
+    assert not sd.is_choked()
 
     assert sd.start_downloading()
     assert uploader.received == []
-    assert throttler.events == []
+    assert choker.events == []
     assert database.files == {}
     assert connection.messages == [bencode({'type': 'send slice', 'file': fid, 
         'begin': 0, 'length': 3})]
     del connection.messages[:]
     assert sd.is_downloading()
-    assert not sd.is_throttled()
+    assert not sd.is_choked()
 
     downloader.got_message(connection, bencode({'type': "I don't have files", 
         'files': [fid]}))
     assert uploader.received == []
-    assert throttler.events == [('hiccup', true)]
-    del throttler.events[:]
+    assert choker.events == [('hiccup', true)]
+    del choker.events[:]
     assert database.files == {}
     assert connection.messages == [bencode({'type': 'done downloading'})]
     del connection.messages[:]
     assert not sd.is_downloading()
-    assert not sd.is_throttled()
+    assert not sd.is_choked()
 
     downloader.got_message(connection, bencode({'type': "I don't have files", 
         'files': [fid]}))
     assert uploader.received == []
-    assert throttler.events == []
+    assert choker.events == []
     assert database.files == {}
     assert connection.messages == []
     assert not sd.is_downloading()
-    assert not sd.is_throttled()
+    assert not sd.is_choked()
 
     downloader.got_message(connection, bencode({'type': 'I have files', 'files': [fid]}))
     assert uploader.received == []
-    assert throttler.events == ['possible']
-    del throttler.events[:]
+    assert choker.events == ['possible']
+    del choker.events[:]
     assert database.files == {}
     assert connection.messages == []
     assert not sd.is_downloading()
-    assert not sd.is_throttled()
+    assert not sd.is_choked()
 
     assert sd.start_downloading()
     assert uploader.received == []
-    assert throttler.events == []
+    assert choker.events == []
     assert database.files == {}
     assert connection.messages == [bencode({'type': 'send slice', 'file': fid, 
         'begin': 0, 'length': 3})]
     del connection.messages[:]
     assert sd.is_downloading()
-    assert not sd.is_throttled()
+    assert not sd.is_choked()
 
 def test_hiccup2():
     file1 = 'ab'
@@ -751,93 +751,93 @@ def test_hiccup2():
     file2 = 'cd'
     fid2 = sha(file2).digest()
     database = DummyDatabase({fid1: len(file1), fid2: len(file2)}, [fid1, fid2])
-    throttler = DummyThrottler()
+    choker = DummyChoker()
     uploader = DummyUploader()
-    downloader = Downloader(throttler, database, uploader, 3, 1)
+    downloader = Downloader(choker, database, uploader, 3, 1)
     connection = DummyConnection('a' * 20)
     
     downloader.connection_made(connection)
     assert uploader.received == []
-    assert throttler.events == ['connected']
-    del throttler.events[:]
-    assert len(throttler.downloads) == 1
-    sd = throttler.downloads[0]
-    del throttler.downloads[:]
+    assert choker.events == ['connected']
+    del choker.events[:]
+    assert len(choker.downloads) == 1
+    sd = choker.downloads[0]
+    del choker.downloads[:]
     assert sd.get_id() == 'a' * 20
     assert not sd.is_downloading()
-    assert not sd.is_throttled()
+    assert not sd.is_choked()
     assert database.files == {}
     assert connection.messages == [bencode({'type': 'list all files'})]
     del connection.messages[:]
     
     assert not sd.start_downloading()
     assert uploader.received == []
-    assert throttler.events == []
+    assert choker.events == []
     assert database.files == {}
     assert connection.messages == []
     assert not sd.is_downloading()
-    assert not sd.is_throttled()
+    assert not sd.is_choked()
 
     downloader.got_message(connection, bencode({'type': 'I have files', 'files': [fid1, fid2]}))
     assert uploader.received == []
-    assert throttler.events == ['possible']
-    del throttler.events[:]
+    assert choker.events == ['possible']
+    del choker.events[:]
     assert database.files == {}
     assert connection.messages == []
     assert not sd.is_downloading()
-    assert not sd.is_throttled()
+    assert not sd.is_choked()
 
     assert sd.start_downloading()
     assert uploader.received == []
-    assert throttler.events == []
+    assert choker.events == []
     assert database.files == {}
     assert connection.messages == [bencode({'type': 'send slice', 'file': fid1, 
         'begin': 0, 'length': 2})]
     del connection.messages[:]
     assert sd.is_downloading()
-    assert not sd.is_throttled()
+    assert not sd.is_choked()
 
     downloader.got_message(connection, bencode({'type': "I don't have files", 
         'files': [fid1]}))
     assert uploader.received == []
-    assert throttler.events == [('hiccup', false)]
-    del throttler.events[:]
+    assert choker.events == [('hiccup', false)]
+    del choker.events[:]
     assert database.files == {}
     assert connection.messages == [bencode({'type': 'send slice', 'file': fid2, 
         'begin': 0, 'length': 2})]
     del connection.messages[:]
     assert sd.is_downloading()
-    assert not sd.is_throttled()
+    assert not sd.is_choked()
 
     downloader.got_message(connection, bencode({'type': "I don't have files", 
         'files': [fid2]}))
     assert uploader.received == []
-    assert throttler.events == [('hiccup', true)]
-    del throttler.events[:]
+    assert choker.events == [('hiccup', true)]
+    del choker.events[:]
     assert database.files == {}
     assert connection.messages == [bencode({'type': 'done downloading'})]
     del connection.messages[:]
     assert not sd.is_downloading()
-    assert not sd.is_throttled()
+    assert not sd.is_choked()
 
     downloader.got_message(connection, bencode({'type': 'I have files', 'files': [fid1, fid2]}))
     assert uploader.received == []
-    assert throttler.events == ['possible']
-    del throttler.events[:]
+    assert choker.events == ['possible']
+    del choker.events[:]
     assert database.files == {}
     assert connection.messages == []
     assert not sd.is_downloading()
-    assert not sd.is_throttled()
+    assert not sd.is_choked()
 
     assert sd.start_downloading()
     assert uploader.received == []
-    assert throttler.events == []
+    assert choker.events == []
     assert database.files == {}
     assert connection.messages == [bencode({'type': 'send slice', 'file': fid1, 
         'begin': 0, 'length': 2})]
     del connection.messages[:]
     assert sd.is_downloading()
-    assert not sd.is_throttled()
+    assert not sd.is_choked()
 
 
 
