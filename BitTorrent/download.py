@@ -39,8 +39,6 @@ defaults = [
         "how many requests to keep in a single pipe at once."),
     ('max_message_length', None, 2 ** 23,
         "maximum length prefix encoding you'll accept over the wire - larger values get the connection dropped."),
-    ('max_poll_period', None, 2.0,
-        "Maximum number of seconds to block in calls to select()"),
     ('ip', 'i', '',
         "ip to report you have to the tracker."),
     ('minport', None, 6881, 'minimum port to listen on, counts up if unavailable'),
@@ -83,7 +81,7 @@ template = compile_template({'info': {'pieces': mult20, 'piece length': 1,
 
 def download(params, filefunc, statusfunc, resultfunc, doneflag, cols):
     if len(params) == 0:
-        resultfunc(false, formatDefinitions(defaults, cols))
+        resultfunc(false, 'arguments are -\n' + formatDefinitions(defaults, cols))
         return
     try:
         config, garbage = parseargs(params, defaults, 0, 0)
@@ -215,8 +213,7 @@ def download(params, filefunc, statusfunc, resultfunc, doneflag, cols):
         return
     if doneflag.isSet():
         return
-    rawserver = RawServer(config['max_poll_period'], doneflag,
-        config['timeout'])
+    rawserver = RawServer(doneflag, config['timeout'])
     def preference(c, finflag = finflag):
         if finflag.isSet():
             return c.get_upload().rate

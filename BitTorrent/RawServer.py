@@ -72,8 +72,7 @@ class SingleSocket:
             self.raw_server.poll.register(self.socket, all)
 
 class RawServer:
-    def __init__(self, max_poll_period, doneflag, timeout, noisy = true):
-        self.max_poll_period = max_poll_period
+    def __init__(self, doneflag, timeout, noisy = true):
         self.timeout = timeout
         self.poll = poll()
         # {socket: SingleSocket}
@@ -161,11 +160,9 @@ class RawServer:
             while not self.doneflag.isSet():
                 try:
                     if len(self.funcs) == 0:
-                        period = self.max_poll_period
+                        period = 2 ** 30
                     else:
                         period = self.funcs[0][0] - time()
-                        if period > self.max_poll_period:
-                            period = self.max_poll_period
                     if period < 0:
                         period = 0
                     events = self.poll.poll(period * timemult)

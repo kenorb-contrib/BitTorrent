@@ -1,6 +1,7 @@
 # Written by Bram Cohen
 # see LICENSE.txt for license information
 
+from parseargs import parseargs, formatDefinitions
 from RawServer import RawServer
 from HTTPHandler import HTTPHandler
 from threading import Event
@@ -14,6 +15,20 @@ from time import time
 from random import shuffle
 true = 1
 false = 0
+
+defaults = [
+    ('port', 'p', 80, "Port to listen on."),
+    ('ip', 'i', None, "ip to report you have to downloaders."),
+    ('file', 's', None, 'file to store state in'),
+    ('dfile', 'd', None, 'file to store recent downloader info in'),
+    ('logfile', None, None, 'file to write BitTorrent announcements to'),
+    ('bind', None, '', 'ip to bind to locally'),
+    ('socket_timeout', None, 30, 'timeout for closing connections'),
+    ('save_dfile_interval', None, 5 * 60, 'seconds between saving dfile'),
+    ('timeout_downloaders_interval', None, 45 * 60, 'seconds between expiring downloaders'),
+    ('reannounce_interval', None, 30 * 60, 'seconds downloaders should wait between reannouncements'),
+    ('response_size', None, 25, 'number of peers to send in an info message'),
+    ]
 
 def mult20(thing, verbose):
     if type(thing) != type(''):
@@ -43,25 +58,25 @@ thanks = (200, 'OK', {'Content-Type': 'text/plain'},
     'Thanks! Love, Kerensa.')
 
 class Tracker:
-    def __init__(self, ip, port, statefile, dfile, logfile, rawserver):
-        self.urlprefix = 'http://' + ip + ':' + str(port)
-        self.statefile = statefile
-        self.dfile = dfile
+    def __init__(self, config, rawserver):
+        self.response_size = config['response_size']
+        self.urlprefix = 'http://' + config['ip'] + ':' + str(config['port'])
+        self.statefile = config['file']
+        self.dfile = config['dfile']
         self.rawserver = rawserver
-        self.loghandle = open(logfile, 'ab')
+        self.loghandle = open(config['logfile'], 'ab')
         self.cached = {}
         self.published = {}
-        if exists(statefile):
-            h = open(statefile, 'rb')
+        if exists(self.statefile):
+            h = open(self.statefile, 'rb')
             r = h.read()
             h.close()
             self.published = bdecode(r)
             infofiletemplate(self.published)
-        self.loghandle = open(logfile, 'ab')
         self.downloads = {}
         self.times = {}
-        if exists(dfile):
-            h = open(dfile, 'rb')
+        if exists(self.dfile):
+            h = open(self.dfile, 'rb')
             ds = h.read()
             h.close()
             self.downloads = bdecode(ds)
@@ -70,9 +85,12 @@ class Tracker:
                 self.times[x] = {}
                 for y in self.downloads[x].keys():
                     self.times[x][y] = 0
-        rawserver.add_task(self.save_dfile, 5 * 60)
+        self.reannounce_interval = config['reannounce_interval']
+        self.save_dfile_interval = config['save_dfile_interval']
+        rawserver.add_task(self.save_dfile, self.save_dfile_interval)
         self.prevtime = time()
-        rawserver.add_task(self.expire_downloaders, 45 * 60)
+        self.timeout_downloaders_interval = config['timeout_downloaders_interval']
+        rawserver.add_task(self.expire_downloaders, self.timeout_downloaders_interval)
 
     def get(self, connection, path, headers):
         path = unquote(path)[1:]
@@ -92,14 +110,14 @@ class Tracker:
         data = {'info': self.published[path], 'file id': path, 
             'url': self.urlprefix + path, 
             'announce': self.urlprefix + '/announce/', 'junk': None,
-            'your ip': connection.get_ip(), 'interval': 30 * 60}
-        if len(self.cached.get(path, [])) < 25:
+            'your ip': connection.get_ip(), 'interval': self.reannounce_interval}
+        if len(self.cached.get(path, [])) < self.response_size:
             self.cached[path] = [{'peer id': key, 'ip': value['ip'], 
                 'port': value['port']} for key, value in 
                 self.downloads.setdefault(path, {}).items()]
             shuffle(self.cached[path])
-        data['peers'] = self.cached[path][-25:]
-        del self.cached[path][-25:]
+        data['peers'] = self.cached[path][-self.response_size:]
+        del self.cached[path][-self.response_size:]
         return (200, 'OK', {'Content-Type': 'application/x-bittorrent', 
             'Pragma': 'no-cache'}, bencode(data))
 
@@ -145,7 +163,7 @@ class Tracker:
         return thanks
 
     def save_dfile(self):
-        self.rawserver.add_task(self.save_dfile, 5 * 60)
+        self.rawserver.add_task(self.save_dfile, self.save_dfile_interval)
         h = open(self.dfile, 'wb')
         h.write(bencode(self.downloads))
         h.close()
@@ -157,9 +175,16 @@ class Tracker:
                     del self.times[x][myid]
                     del self.downloads[x][myid]
         self.prevtime = time()
-        self.rawserver.add_task(self.expire_downloaders, 45 * 60)
+        self.rawserver.add_task(self.expire_downloaders, self.timeout_downloaders_interval)
 
-def track(ip, port, statefile, dfile, logfile, bind):
+def track(args):
+    if len(args) == 0:
+        print formatDefinitions(defaults, 80)
+    try:
+        config, files = parseargs(args, defaults, 0, 0)
+    except ValueError, e:
+        print 'error: ' + str(e)
+        print 'run with no arguments for parameter explanations'
     try:
         h = urlopen('http://bitconjurer.org/BitTorrent/status-tracker-02-08-00.txt')
         status = h.read().strip()
@@ -169,9 +194,9 @@ def track(ip, port, statefile, dfile, logfile, bind):
             return
     except IOError, e:
         print "Couldn't check version number - " + str(e)
-    r = RawServer(100, Event(), 30)
-    t = Tracker(ip, port, statefile, dfile, logfile, r)
-    r.bind(port, bind)
+    r = RawServer(Event(), config['socket_timeout'])
+    t = Tracker(config, r)
+    r.bind(config['port'], config['bind'])
     r.listen_forever(HTTPHandler(t.get, t.put))
 
 
