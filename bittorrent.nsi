@@ -9,18 +9,19 @@ Section "Install"
   File _sre.pyd
   File _tkinter.pyd
   File _winreg.pyd
+  File btdownloadprefetched.exe
   File python21.dll
   File PyWinTypes21.dll
   File select.pyd
   File tcl83.dll
   File tk83.dll
-  File windownload.exe
+  File win32api.pyd
   File /r tcl
   WriteRegStr HKCR .torrent "" torrent_auto_file
   WriteRegStr HKCR "MIME\Database\Content Type\bittorrent/redirect" Extension .torrent
   WriteRegStr HKCR torrent_auto_file "" "TORRENT File"
   WriteRegBin HKCR torrent_auto_file EditFlags 00000100
-  WriteRegStr HKCR "torrent_auto_file\shell\open\command" "" '$INSTDIR\windownload.exe "%1"'
+  WriteRegStr HKCR "torrent_auto_file\shell\open\command" "" '$INSTDIR\btdownloadprefetched.exe "%1"'
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\BitTorrent" "DisplayName" "BitTorrent 2.3.2"
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\BitTorrent" "UninstallString" '"$INSTDIR\uninstall.exe"'
   MessageBox MB_OK "Hyperlinks in Internet Explorer which use BitTorrent will now work!"

@@ -3,7 +3,7 @@
 # Written by Bram Cohen
 # this file is public domain
 
-from BitTorrent.download import downloadurl
+from BitTorrent.download import download, downloadurl
 from BitTorrent.parseargs import parseargs
 from threading import Event, Thread
 from Tkinter import Tk, Label, Button

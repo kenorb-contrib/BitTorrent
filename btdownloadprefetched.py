@@ -24,7 +24,7 @@ assert version >= '2', "Install Python 2.0 or greater"
 from btdownloadgui import run
 
 if __name__ == '__main__':
-    h = open(files[0])
+    h = open(argv[0])
     prefetched = h.read()
     h.close()
     run({}, [], prefetched)

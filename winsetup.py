@@ -6,4 +6,4 @@
 from distutils.core import setup
 import py2exe
 
-setup(name='download', scripts=['windownload.py'])
+setup(name='download', scripts=['btdownloadprefetched.py'])
