@@ -1,11 +1,11 @@
-OutFile "BitTorrent-experimental-S-5.8.10-w32install.exe"
-Name "BitTorrent S-5.8.10 (SHAD0W's Experimental)"
+OutFile "BitTorrent-experimental-S-5.8.11-w32install.exe"
+Name "BitTorrent S-5.8.11 (SHAD0W's Experimental)"
 SetCompressor bzip2
 InstallDir "$PROGRAMFILES\BitTorrent"
 Icon "icon_bt.ico"
 UninstallIcon "icon_done.ico"
 InstallDirRegKey  HKLM "Software\Microsoft\Windows\CurrentVersion\App Paths\btdownloadgui.exe" ""
-DirText "Setup will install BitTorrent S-5.8.10 (SHAD0W's Experimental) in the following folder.$\r$\n$\r$\nTo install in a different folder, click Browse and select another folder."
+DirText "Setup will install BitTorrent S-5.8.11 (SHAD0W's Experimental) in the following folder.$\r$\n$\r$\nTo install in a different folder, click Browse and select another folder."
 ShowInstDetails show
 ShowUnInstDetails show
 
@@ -14,16 +14,10 @@ Section "MainGroup" SEC01
   IfFileExists "$INSTDIR\_psyco.pyd" +1 +2
   delete "$INSTDIR\_psyco.pyd"
   SetOverwrite on
-  File "btdownloadgui.exe"
-  File "python23.dll"
-  File "wxmsw24h.dll"
-  File "_socket.pyd"
-  File "_sre.pyd"
-  File "_ssl.pyd"
-  File "_winreg.pyd"
-  File "select.pyd"
-  File "wxc.pyd"
-  File "zlib.pyd"
+  File "*.exe"
+  File "*.dll"
+  File "*.pyd"
+  File "library.zip"
   File "icon_bt.ico"
   File "icon_done.ico"
   CreateDirectory "$SMPROGRAMS\BitTorrent (SHAD0W's Experimental)"
@@ -54,10 +48,10 @@ Section -Post
 
   WriteUninstaller "$INSTDIR\uninst.exe"
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\App Paths\btdownloadgui.exe" "" "$INSTDIR\btdownloadgui.exe"
-  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\BitTorrent (SHAD0W's Experimental)" "DisplayName" "BitTorrent S-5.8.10 (SHAD0W's Experimental)"
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\BitTorrent (SHAD0W's Experimental)" "DisplayName" "BitTorrent S-5.8.11 (SHAD0W's Experimental)"
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\BitTorrent (SHAD0W's Experimental)" "UninstallString" "$INSTDIR\uninst.exe"
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\BitTorrent (SHAD0W's Experimental)" "DisplayIcon" "$INSTDIR\btdownloadgui.exe"
-  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\BitTorrent (SHAD0W's Experimental)" "DisplayVersion" "S-5.8.10"
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\BitTorrent (SHAD0W's Experimental)" "DisplayVersion" "S-5.8.11"
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\BitTorrent (SHAD0W's Experimental)" "URLInfoAbout" "http://bt.degreez.net/"
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\BitTorrent (SHAD0W's Experimental)" "Publisher" "John Hoffman"
 SectionEnd
@@ -65,11 +59,11 @@ SectionEnd
 
 Function un.onUninstSuccess
   HideWindow
-  MessageBox MB_ICONINFORMATION|MB_OK "BitTorrent S-5.8.10 (SHAD0W's Experimental) was successfully removed from your computer."
+  MessageBox MB_ICONINFORMATION|MB_OK "BitTorrent S-5.8.11 (SHAD0W's Experimental) was successfully removed from your computer."
 FunctionEnd
 
 Function un.onInit
-  MessageBox MB_ICONQUESTION|MB_YESNO|MB_DEFBUTTON2 "Are you sure you want to completely remove BitTorrent S-5.8.10 (SHAD0W's Experimental) and all of its components?" IDYES +2
+  MessageBox MB_ICONQUESTION|MB_YESNO|MB_DEFBUTTON2 "Are you sure you want to completely remove BitTorrent S-5.8.11 (SHAD0W's Experimental) and all of its components?" IDYES +2
   Abort
 FunctionEnd
 

@@ -9,7 +9,7 @@ from urlparse import urlparse
 from httplib import HTTPConnection
 from urllib import quote
 from threading import Thread
-from __init__ import version
+from __init__ import version_short
 true = 1
 false = 0
 
@@ -90,11 +90,15 @@ class SingleDownload:
             self.active = true
 
     def _request(self):
+        import encodings.ascii
+        import encodings.punycode
+        import encodings.idna
+        
         self.error = None
         self.received_data = None
         try:
             self.connection.request('GET',self.url, None,
-                                    {'User-Agent': 'BitTorrent/' + version})
+                                {'User-Agent': 'BitTorrent/' + version_short})
             r = self.connection.getresponse()
             self.connection_status = r.status
             self.received_data = r.read()

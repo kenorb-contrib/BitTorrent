@@ -1,5 +1,5 @@
 
-version = "S-5.8.10 (SHAD0W's experimental)"
+version = "S-5.8.11 (SHAD0W's experimental)"
 
 version_short = version.split(' ')[0]
 

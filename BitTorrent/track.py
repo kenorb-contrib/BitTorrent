@@ -15,7 +15,7 @@ from os import rename, getpid
 from os.path import exists, isfile
 from cStringIO import StringIO
 from traceback import print_exc
-from time import time, gmtime, strftime
+from time import time, gmtime, strftime, localtime
 from random import shuffle, seed, randrange
 from sha import sha
 from types import StringType, LongType, ListType, DictType
@@ -48,6 +48,8 @@ defaults = [
         'time to wait between checking if any connections have timed out'),
     ('nat_check', 3,
         "how many times to check if a downloader is behind a NAT (0 = don't check)"),
+    ('log_nat_checks', 0,
+        "whether to add entries to the log for nat-check results"),
     ('min_time_between_log_flushes', 3.0,
         'minimum time it must have been since the last flush to do another one'),
     ('min_time_between_cache_refreshes', 60.0,
@@ -502,31 +504,6 @@ class Tracker:
         else:
             rsize = self.response_size
 
-        if event in ['started', 'completed', None]:
-            ts[myid] = time()
-            if not peer:
-                peer = {'ip': ip, 'port': port, 'left': left}
-                peers[myid] = peer
-                if port:
-                    if not self.natcheck:
-                        self.natcheckOK(infohash,myid,ip,port,left)
-                else:
-                    peer['nat'] = 1
-            else:
-                if not left and peer['left'] and not peer.get('nat', -1):
-                    for bc in self.becache[infohash][1:]:
-                        bc[1][myid] = bc[0][myid]
-                        del bc[0][myid]
-                peer['left'] = left
-                
-            if event == 'completed':
-                self.completed[infohash] += 1
-                
-            if port and self.natcheck:
-                to_nat = peer.get('nat', -1)
-                if to_nat and to_nat < self.natcheck:
-                    NatCheck(self.connectback_result, infohash, myid, ip, port, self.rawserver)
-
         if event == 'stopped':
             if peer and peer['ip'] == ip:
                 del peers[myid]
@@ -539,6 +516,34 @@ class Tracker:
                     else:
                         del bc[1][1][myid]
                         del bc[2][1][myid]
+        else:
+            ts[myid] = time()
+            if not peer:
+                peer = {'ip': ip, 'port': port, 'left': left}
+                peers[myid] = peer
+                if port:
+                    if not self.natcheck:
+                        peer['nat'] = 0
+                        self.natcheckOK(infohash,myid,ip,port,left)
+                else:
+                    peer['nat'] = 2**30
+            elif peer['ip'] != ip:
+                return rsize
+            else:
+                if not left and peer['left'] and not peer.get('nat', -1):
+                    for bc in self.becache[infohash][1:]:
+                        bc[1][myid] = bc[0][myid]
+                        del bc[0][myid]
+                if peer['left']:
+                    peer['left'] = left
+                
+            if event == 'completed':
+                self.completed[infohash] += 1
+                
+            if port and self.natcheck:
+                to_nat = peer.get('nat', -1)
+                if to_nat and to_nat < self.natcheck:
+                    NatCheck(self.connectback_result, infohash, myid, ip, port, self.rawserver)
 
         return rsize
 
@@ -732,10 +737,25 @@ class Tracker:
                                                   'peer id': peerid}))
             bc[2][1][peerid] = Bencached(bencode({'ip': ip, 'port': port}))
 
+
+    def natchecklog(self, peerid, ip, port, result):
+        year, month, day, hour, minute, second, a, b, c = localtime(time())
+        print '%s - %s [%02d/%3s/%04d:%02d:%02d:%02d] "!natcheck-%s:%i" %i 0 - -' % (
+            ip, peerid, day, months[month], year, hour, minute, second,
+            ip, port, result)
+
     def connectback_result(self, result, downloadid, peerid, ip, port):
         record = self.downloads.get(downloadid, {}).get(peerid)
         if record is None or record['ip'] != ip or record['port'] != port:
+            if self.config['log_nat_checks']:
+                self.natchecklog(peerid, ip, port, 404)
             return
+        if self.config['log_nat_checks']:
+            if result:
+                x = 200
+            else:
+                x = 503
+            self.natchecklog(peerid, ip, port, x)
         if not record.has_key('nat'):
             record['nat'] = int(not result)
             if result:
@@ -743,6 +763,8 @@ class Tracker:
         elif result and record['nat']:
             record['nat'] = 0
             self.natcheckOK(downloadid,peerid,ip,port,record['left'])
+        elif not result:
+            record['nat'] += 1
 
 
     def save_dfile(self):

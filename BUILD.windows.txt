@@ -8,7 +8,7 @@ install the nullsoft installer - http://www.nullsoft.com/free/nsis/
 
 in a shell, go to the root BitTorrent directory and run this command
 
-python winsetup.py py2exe --windows --icon icon_bt.ico
+python winsetup.py py2exe --icon icon_bt.ico
 
 change to the newly created subdirectory dist\btdownloadgui,
 copy bittorrent.nsi into that directory, and run nsis on it.

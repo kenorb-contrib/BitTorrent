@@ -6,4 +6,7 @@
 from distutils.core import setup
 import py2exe
 
-setup(name='download', scripts=['btdownloadgui.py'])
+setup( windows = [ {
+    'script': 'btdownloadgui.py',
+    "icon_resources": [ (1, "icon_bt.ico")]
+} ] )
