@@ -31,47 +31,6 @@ class DownloaderFeedback:
                     return cs[i:] + cs[:i]
         return cs
 
-    def print_spew(self):
-        s = StringIO()
-        cs = self._rotate()
-        self.lastids = [c.get_id() for c in cs]
-        for c in cs:
-            s.write('%20s ' % c.get_ip())
-            if c is self.choker.connections[0]:
-                s.write('*')
-            else:
-                s.write(' ')
-            if c.is_locally_initiated():
-                s.write('l')
-            else:
-                s.write('r')
-            u = c.get_upload()
-            s.write(' %10s ' % str(int(u.measure.get_rate())))
-            if u.is_interested():
-                s.write('i')
-            else:
-                s.write(' ')
-            if u.is_choked():
-                s.write('c')
-            else:
-                s.write(' ')
-
-            d = c.get_download()
-            s.write(' %10s ' % str(int(d.measure.get_rate())))
-            if d.is_interested():
-                s.write('i')
-            else:
-                s.write(' ')
-            if d.is_choked():
-                s.write('c')
-            else:
-                s.write(' ')
-            if d.is_snubbed():
-                s.write('s')
-            else:
-                s.write(' ')
-            s.write('\n')
-
     def collect_spew(self):
         l = [ ]
         cs = self._rotate()
