@@ -24,9 +24,8 @@ int main(int argc, const char *argv[])
     PyEval_InitThreads();
 
     // add our resource path to sys.path so we can find the BT modules
-    str = [NSString localizedStringWithFormat:@"import sys;sys.path.append('%@');sys.path.append('%@');sys.path.append('.')", [[NSBundle mainBundle] resourcePath], [[[NSBundle mainBundle] resourcePath] stringByAppendingPathComponent:@"python"]];
+    str = [NSString stringWithFormat:@"import sys;sys.path.append('%@')", [[NSBundle mainBundle] resourcePath]];
     PyRun_SimpleString((char *)[str cString]);
     [pool release];
-    
     return NSApplicationMain(argc, argv);
 }

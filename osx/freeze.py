@@ -20,7 +20,8 @@ so_modules = ['_socket', 'sha', 'time', 'binascii', 'cStringIO', 'errno', 'macfs
 
 
 res = join(environ['SYMROOT'], '%s.%s/Contents/Resources' % (environ['TARGET_NAME'], environ['WRAPPER_EXTENSION']))
-py = join(res, 'python')
+py = join(res, 'lib/python2.2')
+dy = join(py, 'lib-dynload')
 bt = join(res, 'BitTorrent')
 
 try:
@@ -29,6 +30,14 @@ except OSError, reason:
     # ignore errno=17 directory already exists...
     if reason.errno != 17:
 	raise OSError, reason
+
+try:
+    makedirs(dy)
+except OSError, reason:
+    # ignore errno=17 directory already exists...
+    if reason.errno != 17:
+	raise OSError, reason
+
 try:
     makedirs(bt)
 except OSError, reason:
@@ -44,7 +53,8 @@ for module in py_modules:
 
 source = join(sys.prefix, so_path)
 for module in so_modules:
-    copy(join(source, module +".so"), py)
+    copy(join(source, module +".so"), dy)
+
 
 source = join(environ['SRCROOT'], '../BitTorrent')
 for f in listdir(source):
@@ -52,4 +62,4 @@ for f in listdir(source):
 	copy(join(source, f), bt)
 
 print "Stripping C modules..."
-system("strip -x %s" % join(py, "*.so"))
+system("strip -x %s" % join(dy, "*.so"))
