@@ -318,7 +318,7 @@ def test_operation():
         tobinary(2) + tobinary(3)), ('m', PIECE + tobinary(1) + 
         tobinary(2) + 'abc'), 'disconnected', 'lost']
     for a, b in zip (events, x):
-        assert a == b, `a, b`
+        assert a == b, repr(a, b)
 
 def test_conversion():
     assert toint(tobinary(50000)) == 50000
