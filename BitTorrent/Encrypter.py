@@ -12,15 +12,20 @@ false = 0
 
 protocol_name = 'BitTorrent by Bram Cohen protocol version 1.0'
 
-# see http://www.ietf.org/internet-drafts/draft-ietf-ipsec-ike-modp-groups-01.txt
-p = long('FFFFFFFFFFFFFFFFC90FDAA22168C234C4C6628B80DC1CD1' +
-'29024E088A67CC74020BBEA63B139B22514A08798E3404DD' +
-'EF9519B3CD3A431B302B0A6DF25F14374FE1356D6D51C245' +
-'E485B576625E7EC6F44C42E9A637ED6B0BFF5CB6F406B7ED' +
-'EE386BFB5A899FA5AE9F24117C4B1FE649286651ECE45B3D' +
-'C2007CB8A163BF0598DA48361C55D39A69163FA8FD24CF5F' +
-'83655D23DCA3AD961C62F356208552BB9ED529077096966D' +
-'670C354E4ABC9804F1746C08CA237327FFFFFFFFFFFFFFFF', 16)
+# see http://www.ietf.org/ids.by.wg/ipsec.html
+# This prime is: 2^2048 - 2^1984 - 1 + 2^64 * { [2^1918 pi] + 124476 }
+p = long(''.join([c for c in 
+        'FFFFFFFF FFFFFFFF C90FDAA2 2168C234 C4C6628B 80DC1CD1' +
+        '29024E08 8A67CC74 020BBEA6 3B139B22 514A0879 8E3404DD' +
+        'EF9519B3 CD3A431B 302B0A6D F25F1437 4FE1356D 6D51C245' +
+        'E485B576 625E7EC6 F44C42E9 A637ED6B 0BFF5CB6 F406B7ED' +
+        'EE386BFB 5A899FA5 AE9F2411 7C4B1FE6 49286651 ECE45B3D' +
+        'C2007CB8 A163BF05 98DA4836 1C55D39A 69163FA8 FD24CF5F' +
+        '83655D23 DCA3AD96 1C62F356 208552BB 9ED52907 7096966D' +
+        '670C354E 4ABC9804 F1746C08 CA18217C 32905E46 2E36CE3B' +
+        'E39E772C 180E8603 9B2783A2 EC07A28F B5C55DF0 6F4C52C9' +
+        'DE2BCBF6 95581718 3995497C EA956AE5 15D22618 98FA0510' +
+        '15728E5A 8AACAA68 FFFFFFFF FFFFFFFF' if c != ' ']), 16)
 
 class EncryptedConnection:
     def __init__(self, encrypter, connection, dns):
@@ -53,17 +58,17 @@ class EncryptedConnection:
         return 8, self.read_reserved
 
     def read_reserved(self, s):
-        return 212, self.read_crypto
+        return 276, self.read_crypto
 
     def read_crypto(self, s):
-        otherpk = binary_to_int(s[:192])
+        otherpk = binary_to_int(s[:256])
         if otherpk >= p - 1 or otherpk <= 1:
             return None, None
-        if s[:192] == self.encrypter.public_key:
+        if s[:256] == self.encrypter.public_key:
             return None, None
-        self.id = sha(s[:192]).digest()
-        shared_key = int_to_binary(pow(otherpk, self.encrypter.private_key, p), 192)
-        othernonce = s[192:]
+        self.id = sha(s[:256]).digest()
+        shared_key = int_to_binary(pow(otherpk, self.encrypter.private_key, p), 256)
+        othernonce = s[256:]
         if othernonce == self.nonce:
             return None, None
         self.encrypt = make_encrypter(sha(self.nonce + othernonce + shared_key).digest()[:16])
@@ -151,7 +156,7 @@ class Encrypter:
         self.connections = {}
         assert len(private_key) == 20
         self.private_key = binary_to_int(private_key)
-        self.public_key = int_to_binary(pow(2, self.private_key, p), 192)
+        self.public_key = int_to_binary(pow(2, self.private_key, p), 256)
         schedulefunc(self.send_keepalives, keepalive_delay)
 
     def send_keepalives(self):

@@ -179,7 +179,7 @@ def download(params, filefunc, statusfunc, resultfunc, doneflag, cols):
         ratemeasure.get_size_left, file_length, finflag)
 
     if config['port'] == 0:
-        r = xrange(6881, 6888)
+        r = xrange(6881, 6890)
     else:
         r = [config['port']]
     for listen_port in r:
