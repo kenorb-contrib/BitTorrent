@@ -163,7 +163,7 @@ class TrackerHandler(BaseHTTPRequestHandler):
 
 def track(config):
     try:
-        h = urlopen('http://bitconjurer.org/BitTorrent/status-tracker-02-05-01.txt')
+        h = urlopen('http://bitconjurer.org/BitTorrent/status-tracker-02-06.txt')
         status = h.read().strip()
         h.close()
         if status != 'current':
