@@ -20,10 +20,12 @@ class SingleDownload:
         self.have_list = []
 
     def _add(self, i):
-        if self.have_list is not None:
+        if self.have_list is not None and not self.downloader.storage.do_I_have(i):
             self.have_list.append(i)
             if len(self.have_list) > self.downloader.maxlistlen:
-                self.have_list = None
+                self.have_list = [x for x in self.have_list if not self.downloader.storage.do_I_have(x)]
+                if len(self.have_list) > self.downloader.maxlistlen * .66
+                    self.have_list = None
 
     def disconnected(self):
         self.downloader.downloads.remove(self)
