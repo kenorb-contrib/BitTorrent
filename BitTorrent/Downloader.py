@@ -19,6 +19,7 @@ class SingleDownload:
         self.have = [false] * downloader.numpieces
         self.last = 0
         self.example_interest = None
+        self.partials = []
 
     def disconnected(self):
         self.downloader.downloads.remove(self)
@@ -114,10 +115,16 @@ class SingleDownload:
         lost_interests = []
         while len(self.active_requests) < self.downloader.backlog:
             if indices is None:
-                for index, begin, length in self.active_requests:
-                    if self.downloader.storage.do_I_have_requests(index):
-                        interest = index
+                i = 0
+                while i < len(self.partials):
+                    next = self.partials[i]
+                    if self.downloader.storage.do_I_have(next):
+                        del self.partials[i]
+                        continue
+                    if self.downloader.storage.do_I_have_requests(next):
+                        interest = next
                         break
+                    i += 1
                 else:
                     interest = self.downloader.picker.next(self._want)
             else:
@@ -132,6 +139,8 @@ class SingleDownload:
                 self.interested = true
                 self.connection.send_interested()
             self.example_interest = interest
+            if interest not in self.partials:
+                self.partials.append(interest)
             begin, length = self.downloader.storage.new_request(interest)
             self.downloader.picker.requested(interest)
             self.active_requests.append((interest, begin, length))
@@ -144,6 +153,19 @@ class SingleDownload:
         if lost_interests:
             for d in self.downloader.downloads:
                 if d.active_requests or not d.interested:
+                    continue
+                i = 0
+                hit = false
+                while i < len(d.partials):
+                    next = d.partials[i]
+                    if self.downloader.storage.do_I_have(next):
+                        del d.partials[i]
+                        continue
+                    if self.downloader.storage.do_I_have_requests(next):
+                        hit = true
+                        break
+                    i += 1
+                if hit:
                     continue
                 if d.example_interest is not None and self.downloader.storage.do_I_have_requests(d.example_interest):
                     continue
