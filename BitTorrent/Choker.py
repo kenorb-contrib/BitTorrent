@@ -76,7 +76,8 @@ class Choker:
 
     def connection_lost(self, connection):
         self.connections.remove(connection)
-        self._rechoke()
+        if not connection.get_upload().is_choked():
+            self._rechoke()
 
     def interested(self, connection):
         if not connection.get_upload().is_choked():
