@@ -12,18 +12,6 @@ from os.path import join
 from os import getcwd
 from wxPython.wx import *
 
-def kify(n):
-    return str(long((float(n) / (2 ** 10)) * 10) / 10.0)
-
-def mbfy(n):
-    return str(long((float(n) / (2 ** 20)) * 10) / 10.0)
-
-def ex(n):
-    if n >= 10:
-        return str(n)
-    else:
-        return '0' + str(n)
-
 def hours(n):
     if n == -1:
         return '<unknown>'
@@ -35,9 +23,9 @@ def hours(n):
     if h > 1000000:
         return '<unknown>'
     if h > 0:
-        return str(h) + ' hour ' + ex(m) + ' min ' + ex(sec) + ' sec'
+        return '%d hour %02d min %02d sec' % (h, m, sec)
     else:
-        return str(m) + ' min ' + ex(sec) + ' sec'
+        return '%d min %02d sec' % (m, sec)
 
 wxEVT_CHOOSE_FILE = wxNewId()
 
@@ -179,9 +167,9 @@ class DownloadInfoFrame(wxFrame):
         if event.activity is not None and not self.fin:
             self.timeEstText.SetLabel(event.activity)
         if event.downRate is not None:
-            self.downRateText.SetLabel('%s kB/s' % kify(event.downRate))
+            self.downRateText.SetLabel('%.1f K/s' % (float(event.downRate) / (1 << 10)))
         if event.upRate is not None:
-            self.upRateText.SetLabel('%s kB/s' % kify(event.upRate))
+            self.upRateText.SetLabel('%.1f K/s' % (float(event.upRate) / (1 << 10)))
 
     def finished(self):
         if self.flag.isSet():
@@ -247,7 +235,7 @@ class DownloadInfoFrame(wxFrame):
             self.done(None)
         else:
             event.bucket[0] = dl.GetPath()
-            self.fileNameText.SetLabel(event.default + ' (' + mbfy(event.size) + ' MB)')
+            self.fileNameText.SetLabel('%s (%.1f MB)' % (event.default, float(event.size) / (1 << 20)))
             self.timeEstText.SetLabel('Starting up...')
             self.fileDestText.SetLabel(dl.GetPath())
             self.shown = true

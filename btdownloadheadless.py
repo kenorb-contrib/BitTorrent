@@ -11,18 +11,6 @@ assert version >= '2', "Install Python 2.0 or greater"
 true = 1
 false = 0
 
-def kify(n):
-    return str(long((float(n) / (2 ** 10)) * 10) / 10.0)
-
-def mbfy(n):
-    return str(long((float(n) / (2 ** 20)) * 10) / 10.0)
-
-def ex(n):
-    if n >= 10:
-        return str(n)
-    else:
-        return '0' + str(n)
-
 def hours(n):
     if n == -1:
         return '<unknown>'
@@ -34,9 +22,9 @@ def hours(n):
     if h > 1000000:
         return '<unknown>'
     if h > 0:
-        return str(h) + ' hour ' + ex(m) + ' min ' + ex(sec) + ' sec'
+        return '%d hour %02d min %02d sec' % (h, m, sec)
     else:
-        return str(m) + ' min ' + ex(sec) + ' sec'
+        return '%d min %02d sec' % (m, sec)
 
 class HeadlessDisplayer:
     def __init__(self):
@@ -76,9 +64,9 @@ class HeadlessDisplayer:
         if activity is not None and not self.done:
             self.timeEst = activity
         if downRate is not None:
-            self.downRate = kify(downRate) + ' K/s'
+            self.downRate = '%.1f K/s' % (float(downRate) / (1 << 10))
         if upRate is not None:
-            self.upRate = kify(upRate) + ' K/s'
+            self.upRate = '%.1f K/s' % (float(upRate) / (1 << 10))
         print '\n\n\n\n'
         for err in self.errors:
             print 'ERROR:\n' + err + '\n'
@@ -91,7 +79,7 @@ class HeadlessDisplayer:
         stdout.flush()
 
     def chooseFile(self, default, size, saveas, dir):
-        self.file = default + ' (' + mbfy(size) + ' MB)'
+        self.file = '%s (%.1f MB)' % (default, float(size) / (1 << 20))
         if saveas != '':
             default = saveas
         self.downloadTo = abspath(default)

@@ -24,6 +24,7 @@ class SingleDownload:
             self.connection.set_download(self)
             self.choked = old.choked
             self.have = old.have
+            self.ratesince = old.ratesince
             self.lastin = old.lastin
             self.rate = old.rate
             self.interested = old.interested
