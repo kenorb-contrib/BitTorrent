@@ -50,7 +50,7 @@
 		1058C7A0FEA54F0111CA2CBB = {
 			children = (
 				1058C7A1FEA54F0111CA2CBB,
-				F5D01D32027DFD5101A845D2,
+				F55ADF7A02F3401201A845D2,
 			);
 			isa = PBXGroup;
 			name = "Linked Frameworks";
@@ -70,12 +70,6 @@
 			isa = PBXGroup;
 			name = "Other Frameworks";
 			refType = 4;
-		};
-		1058C7A3FEA54F0111CA2CBB = {
-			fileRef = 1058C7A1FEA54F0111CA2CBB;
-			isa = PBXBuildFile;
-			settings = {
-			};
 		};
 //100
 //101
@@ -141,6 +135,8 @@
 				29B97317FDCFA39411CA2CEA,
 				29B97323FDCFA39411CA2CEA,
 				19C28FACFE9D520D11CA2CBB,
+				F55ADF7802F292E001A845D2,
+				F56F7C3602F3544601A845D2,
 			);
 			isa = PBXGroup;
 			name = BitTorrent;
@@ -219,12 +215,14 @@
 				29B97328FDCFA39411CA2CEA,
 				29B9732BFDCFA39411CA2CEA,
 				29B9732DFDCFA39411CA2CEA,
+				F56F7C3B02F361FF01A845D2,
 			);
 			buildSettings = {
+				DEBUGGING_SYMBOLS = NO;
 				FRAMEWORK_SEARCH_PATHS = "";
 				HEADER_SEARCH_PATHS = "";
 				INSTALL_PATH = "$(HOME)/Applications";
-				LIBRARY_SEARCH_PATHS = "";
+				LIBRARY_SEARCH_PATHS = /usr/local/lib/opython/config;
 				OPTIMIZATION_CFLAGS = "-O2";
 				OTHER_CFLAGS = "-Wall";
 				OTHER_LDFLAGS = "";
@@ -264,7 +262,7 @@
 	<key>CFBundleGetInfoString</key>
 	<string>BitTorrent Peer To Peer Download Application</string>
 	<key>CFBundleIconFile</key>
-	<string></string>
+	<string>waterfall.icns</string>
 	<key>CFBundleIdentifier</key>
 	<string>BitTorrent</string>
 	<key>CFBundleInfoDictionaryVersion</key>
@@ -305,6 +303,7 @@
 				080E96DCFE201CFB7F000001,
 				F5D01D36027E0B0201A845D2,
 				F565958402DD36FB01A845D2,
+				F56F7C3E02F3731501A845D2,
 			);
 			isa = PBXResourcesBuildPhase;
 			name = "Bundle Resources";
@@ -331,8 +330,8 @@
 		29B9732DFDCFA39411CA2CEA = {
 			buildActionMask = 2147483647;
 			files = (
-				1058C7A3FEA54F0111CA2CBB,
-				F5D01D33027DFD5101A845D2,
+				F56F7C3C02F372C401A845D2,
+				F56F7C3D02F372C401A845D2,
 			);
 			isa = PBXFrameworksBuildPhase;
 			name = "Frameworks & Libraries";
@@ -362,6 +361,7 @@
 			);
 			buildSettings = {
 				COPY_PHASE_STRIP = YES;
+				OPTIMIZATION_CFLAGS = "-O2";
 			};
 			isa = PBXBuildStyle;
 			name = Deployment;
@@ -387,6 +387,17 @@
 			settings = {
 			};
 		};
+		F55ADF7802F292E001A845D2 = {
+			isa = PBXFileReference;
+			path = waterfall.icns;
+			refType = 4;
+		};
+		F55ADF7A02F3401201A845D2 = {
+			isa = PBXFileReference;
+			name = libpython2.2.a;
+			path = /usr/local/lib/opython/config/libpython2.2.a;
+			refType = 0;
+		};
 		F565958302DD36FB01A845D2 = {
 			isa = PBXFolderReference;
 			name = BitTorrent;
@@ -395,6 +406,42 @@
 		};
 		F565958402DD36FB01A845D2 = {
 			fileRef = F565958302DD36FB01A845D2;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		F56F7C3602F3544601A845D2 = {
+			isa = PBXFileReference;
+			path = freeze.py;
+			refType = 4;
+		};
+		F56F7C3B02F361FF01A845D2 = {
+			buildActionMask = 2147483647;
+			files = (
+			);
+			generatedFileNames = (
+			);
+			isa = PBXShellScriptBuildPhase;
+			name = "Shell Script";
+			neededFileNames = (
+			);
+			shellPath = /bin/sh;
+			shellScript = $SRCROOT/freeze.py;
+		};
+		F56F7C3C02F372C401A845D2 = {
+			fileRef = 1058C7A1FEA54F0111CA2CBB;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		F56F7C3D02F372C401A845D2 = {
+			fileRef = F55ADF7A02F3401201A845D2;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		F56F7C3E02F3731501A845D2 = {
+			fileRef = F55ADF7802F292E001A845D2;
 			isa = PBXBuildFile;
 			settings = {
 			};
@@ -408,18 +455,6 @@
 			isa = PBXFileReference;
 			path = BUILD_INSTRUCTIONS;
 			refType = 2;
-		};
-		F5D01D32027DFD5101A845D2 = {
-			isa = PBXFrameworkReference;
-			name = Python.framework;
-			path = /Library/Frameworks/Python.framework;
-			refType = 0;
-		};
-		F5D01D33027DFD5101A845D2 = {
-			fileRef = F5D01D32027DFD5101A845D2;
-			isa = PBXBuildFile;
-			settings = {
-			};
 		};
 		F5D01D34027E0B0201A845D2 = {
 			children = (
