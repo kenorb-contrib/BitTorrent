@@ -53,6 +53,9 @@ def downloaderfiletemplate(x):
             port = info.get('port')
             if type(port) != LongType or port <= 0:
                 raise ValueError
+            left = info.get('left')
+            if type(left) != LongType or left < 0:
+                raise ValueError
 
 alas = 'your file may exist elsewhere in the universe\n\nbut alas, not here'
 
@@ -109,8 +112,10 @@ class Tracker:
                 s.write('(no files published yet)')
             names.sort()
             for name in names:
+                l = self.downloads.get(name, {})
                 s.write('<a href="' + name + '">' + name + '</a> (' + 
-                    str(len(self.downloads.get(name, []))) + ')<p>\n\n')
+                    str(len([1 for i in l.values() if i['left'] == 0])) + '/' + 
+                    str(len(l)) + ')<p>\n\n')
             return (200, 'OK', {'Content-Type': 'text/html'}, s.getvalue())
         if path == 'announce/':
             try:
@@ -126,6 +131,8 @@ class Tracker:
                 uploaded = long(params.get('uploaded', ''))
                 downloaded = long(params.get('downloaded', ''))
                 left = long(params.get('left', ''))
+                if left < 0:
+                    raise ValueError, 'left must be nonnegative'
                 peers = self.downloads.setdefault(fileid, {})
                 myid = params.get('peer_id', '')
                 if len(myid) != 20:
@@ -136,7 +143,9 @@ class Tracker:
             if params.get('event', '') != 'stopped':
                 self.times.setdefault(fileid, {})[myid] = time()
                 if not peers.has_key(myid):
-                    peers[myid] = {'ip': params['ip'], 'port': port}
+                    peers[myid] = {'ip': params['ip'], 'port': port, 'left': left}
+                else:
+                    peers[myid]['left'] = left
             else:
                 if peers.has_key(myid):
                     del peers[myid]
