@@ -223,7 +223,7 @@ def test_bdecode():
         pass
     bdecode('d0:i3ee')
 
-from types import StringType, IntType, LongType, BooleanType, DictType, ListType, TupleType
+from types import StringType, IntType, LongType, DictType, ListType, TupleType
 
 class Bencached(object):
     __slots__ = ['bencoded']
@@ -259,11 +259,16 @@ encode_func = {}
 encode_func[type(Bencached)] = encode_bencached
 encode_func[IntType] = encode_int
 encode_func[LongType] = encode_int
-encode_func[BooleanType] = encode_int
 encode_func[StringType] = encode_string
 encode_func[ListType] = encode_list
 encode_func[TupleType] = encode_list
 encode_func[DictType] = encode_dict
+
+try:
+    from types import BooleanType
+    encode_func[BooleanType] = encode_int
+except ImportError:
+    pass
 
 def bencode(x):
     r = []
