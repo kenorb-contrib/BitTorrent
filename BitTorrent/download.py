@@ -273,7 +273,8 @@ def download(params, filefunc, statusfunc, finfunc, errorfunc, doneflag, cols, p
         rawserver.external_add_task, storagewrapper.get_amount_left, 
         upmeasure.get_total, downmeasure.get_total, listen_port, 
         config['ip'], myid, infohash, config['http_timeout'], errorfunc, 
-        config['max_initiate'], doneflag, upmeasure.get_rate, downmeasure.get_rate)
+        config['max_initiate'], doneflag, upmeasure.get_rate, downmeasure.get_rate,
+        encoder.ever_got_incoming)
     if config['spew']:
         spewflag.set()
     DownloaderFeedback(choker, rawserver.add_task, statusfunc, 
@@ -295,7 +296,7 @@ def download(params, filefunc, statusfunc, finfunc, errorfunc, doneflag, cols, p
     
     statusfunc({"activity" : 'connecting to peers'})
     ann[0] = rerequest.announce
-    rerequest.d(0)
+    rerequest.begin()
     rawserver.listen_forever(encoder)
     storage.close()
     rerequest.announce(2)

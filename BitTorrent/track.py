@@ -137,6 +137,8 @@ class Tracker:
         else:
             self.state = {}
             self.state['peers'] = tempstate
+        for (pid, x) in self.state['peers'].items():
+            x['cache'] = Bencached(bencode({'peer id': pid, 'ip': x['ip'], 'port': x['port']}))
         self.downloads    = self.state.setdefault('peers', {})
         self.completed    = self.state.setdefault('completed', {})
         statefiletemplate(self.state)

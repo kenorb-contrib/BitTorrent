@@ -6,12 +6,13 @@ from btformats import check_peers
 from bencode import bdecode
 from threading import Thread, Lock
 from socket import error
+from time import time
 
 class Rerequester:
     def __init__(self, url, interval, sched, howmany, minpeers, 
             connect, externalsched, amount_left, up, down,
             port, ip, myid, infohash, timeout, errorfunc, maxpeers, doneflag,
-            upratefunc, downratefunc):
+            upratefunc, downratefunc, ever_got_incoming):
         self.url = ('%s?info_hash=%s&peer_id=%s&port=%s' %
             (url, quote(infohash), quote(myid), str(port)))
         if ip != '':
@@ -34,21 +35,25 @@ class Rerequester:
         self.doneflag = doneflag
         self.upratefunc = upratefunc
         self.downratefunc = downratefunc
+        self.ever_got_incoming = ever_got_incoming
         self.last_failed = True
-        self.sched(self.c, interval / 2)
+        self.last_time = 0
 
     def c(self):
         self.sched(self.c, self.interval)
-        if self.howmany() < self.minpeers:
-            self.announce(3)
+        if self.ever_got_incoming():
+            getmore = self.howmany() <= self.minpeers / 3
+        else:
+            getmore = self.howmany() < self.minpeers
+        if getmore or time() - self.last_time > self.announce_interval:
+            self.announce()
 
-    def d(self, event = 3):
-        self.announce(event, self.e)
+    def begin(self):
+        self.sched(self.c, self.interval)
+        self.announce(0)
 
-    def e(self):
-        self.sched(self.d, self.announce_interval)
-
-    def announce(self, event = 3, callback = lambda: None):
+    def announce(self, event = None):
+        self.last_time = time()
         s = ('%s&uploaded=%s&downloaded=%s&left=%s' %
             (self.url, str(self.up()), str(self.down()), 
             str(self.amount_left())))
@@ -60,27 +65,26 @@ class Rerequester:
             s += '&numwant=0'
         else:
             s += '&no_peer_id=1'
-        if event != 3:
+        if event != None:
             s += '&event=' + ['started', 'completed', 'stopped'][event]
         set = SetOnce().set
-        def checkfail(self = self, set = set, callback = callback):
+        def checkfail(self = self, set = set):
             if set():
                 if self.last_failed and self.upratefunc() < 100 and self.downratefunc() < 100:
                     self.errorfunc('Problem connecting to tracker - timeout exceeded')
                 self.last_failed = True
-                callback()
         self.sched(checkfail, self.timeout)
-        Thread(target = self.rerequest, args = [s, set, callback]).start()
+        Thread(target = self.rerequest, args = [s, set]).start()
 
-    def rerequest(self, url, set, callback):
+    def rerequest(self, url, set):
         try:
             h = urlopen(url)
             r = h.read()
             h.close()
             if set():
-                def add(self = self, r = r, callback = callback):
+                def add(self = self, r = r):
                     self.last_failed = False
-                    self.postrequest(r, callback)
+                    self.postrequest(r)
                 self.externalsched(add)
         except (IOError, error), e:
             if set():
@@ -89,9 +93,8 @@ class Rerequester:
                         self.errorfunc(r)
                     self.last_failed = True
                 self.externalsched(fail)
-                self.externalsched(callback)
 
-    def postrequest(self, data, callback):
+    def postrequest(self, data):
         try:
             r = bdecode(data)
             check_peers(r)
@@ -115,7 +118,6 @@ class Rerequester:
         except ValueError, e:
             if data != '':
                 self.errorfunc('bad data from tracker - ' + str(e))
-        callback()
 
 class SetOnce:
     def __init__(self):

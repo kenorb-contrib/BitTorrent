@@ -144,6 +144,7 @@ class Encoder:
         self.keepalive_delay = keepalive_delay
         self.download_id = download_id
         self.max_initiate = max_initiate
+        self.everinc = False
         self.connections = {}
         schedulefunc(self.send_keepalives, keepalive_delay)
 
@@ -180,7 +181,11 @@ class Encoder:
                 return
         self.connecter.connection_made(connection)
 
+    def ever_got_incoming(self):
+        return self.everinc
+
     def external_connection_made(self, connection):
+        self.everinc = True
         self.connections[connection] = Connection(self, 
             connection, None)
 
