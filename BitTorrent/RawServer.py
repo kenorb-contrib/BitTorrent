@@ -147,6 +147,7 @@ class RawServer:
                     try:
                         newsock, addr = self.server.accept()
                         newsock.setblocking(0)
+                        newsock.setsockopt(socket.IPPROTO_IP, socket.IP_TOS, 32)
                         if len(self.single_sockets) >= self.maxconnects:
                             newsock.close()
                             continue
