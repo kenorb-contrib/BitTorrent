@@ -30,15 +30,12 @@ def make_indices(pieces, piece_length, file_length):
 def dummy_status(fractionDone = None, activity = None):
     pass
 
-def dummymake(file):
-    pass
-
 class SingleBlob:
     def __init__(self, files, pieces, piece_length,
                 callback, open, exists, getsize, flag = Event(),
-                statusfunc = dummy_status, make = dummymake):
+                statusfunc = dummy_status):
         try:
-            self.fileobj = MultiFile(files, open, exists, getsize, statusfunc, make)
+            self.fileobj = MultiFile(files, open, exists, getsize, statusfunc)
             file_length = 0
             for f, fl in files:
                 file_length += fl
@@ -153,7 +150,7 @@ class SingleBlob:
         return self.fileobj.preexisting
 
 class MultiFile:
-    def __init__(self, files, open, exists, getsize, statusfunc, make = dummymake):
+    def __init__(self, files, open, exists, getsize, statusfunc):
         self.ranges = []
         total = 0
         so_far = 0
@@ -171,7 +168,6 @@ class MultiFile:
                     if getsize(file) > 0:
                         raise ValueError, 'existing file %s too large' % file
                 else:
-                    make(file)
                     open(file, 'wb').close()
         self.handles = {}
         self.preexisting = false
@@ -180,7 +176,6 @@ class MultiFile:
                 self.handles[file] = open(file, 'rb+')
                 self.preexisting = true
             else:
-                make(file)
                 self.handles[file] = open(file, 'wb+')
         if total > so_far:
             interval = max(2048, total / 100)

@@ -116,11 +116,23 @@ def download(params, filefunc, statusfunc, resultfunc, doneflag, cols):
         resultfunc(false, "protocol I don't know specified - " + 
             str(response['protocol']))
         return
+    def make(f, forcedir = false, resultfunc = resultfunc):
+        try:
+            if not forcedir:
+                f = path.split(f)[0]
+            if not path.exists(f):
+                makedirs(f)
+            return true
+        except OSError, e:
+            resultfunc(false, "Couldn't allocate root dir - " + str(e))
+            return false
     info = response['info']
     if info['type'] == 'single':
         file_length = info['length']
         file = filefunc(info['name'], file_length, config['saveas'], false)
         if file is None:
+            return
+        if not make(file):
             return
         files = [(file, info['length'])]
     else:
@@ -130,10 +142,7 @@ def download(params, filefunc, statusfunc, resultfunc, doneflag, cols):
         file = filefunc(info['name'], file_length, config['saveas'], true)
         if file is None:
             return
-        try:
-            makedirs(file)
-        except IOError, e:
-            resultfunc(false, "Couldn't allocate root dir - " + str(e))
+        if not make(file, true):
             return
         files = []
         for x in info['files']:
@@ -141,6 +150,8 @@ def download(params, filefunc, statusfunc, resultfunc, doneflag, cols):
             for i in x['path']:
                 n = path.join(n, i)
             files.append((n, x['length']))
+            if not make(n):
+                return
     r = [false]
     finflag = Event()
     def finished(result, errormsg = None, fatal = false, 
@@ -153,16 +164,11 @@ def download(params, filefunc, statusfunc, resultfunc, doneflag, cols):
         if fatal:
             doneflag.set()
         resultfunc(result, errormsg)
-    def make(f):
-        try:
-            makedirs(path.split(f)[0])
-        except OSError:
-            pass
     myid = sha(str(time()) + ' ' + response['your ip']).digest()
     seed(myid)
     blobs = SingleBlob(files, info['pieces'], 
         info['piece length'], finished, open, path.exists, 
-        path.getsize, doneflag, statusfunc, make)
+        path.getsize, doneflag, statusfunc)
     if doneflag.isSet():
         return
     rawserver = RawServer(config['max_poll_period'], doneflag,
