@@ -5,9 +5,10 @@
 
 @interface BTAppController : NSObject
 {
-    IBOutlet NSTextField *url;
+    IBOutlet NSTextField *url, *versField;
     IBOutlet NSWindow *urlWindow, *aboutWindow;
     NSMutableArray *dlControllers;
+    NSString *version;
 }
 - (IBAction)cancelUrl:(id)sender;
 - (IBAction)openURL:(id)sender;

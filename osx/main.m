@@ -18,6 +18,7 @@ int main(int argc, const char *argv[])
     NSString *str;
 
     // set up python
+    Py_SetPythonHome([[[NSBundle mainBundle] resourcePath] cString]);
     Py_Initialize();
     PySys_SetArgv(argc, argv);
     PyEval_InitThreads();

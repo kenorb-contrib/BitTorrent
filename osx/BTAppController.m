@@ -10,9 +10,16 @@ bt_ProxyObject *bt_getProxy(NSPort *receivePort, NSPort *sendPort);
 
 - init
 {
+    PyObject *mm, *md, *vers;    
     [super init];
+    
     PyRun_SimpleString("from threading import Event;from BitTorrent.download import download");
+    mm = PyImport_ImportModule("BitTorrent");
+    md = PyModule_GetDict(mm);
+    vers = PyDict_GetItemString(md, "version");
+    version = [[NSString stringWithCString:PyString_AsString(vers)] retain];
     tstate = PyEval_SaveThread();
+    
     return self;
 }
 
@@ -142,6 +149,7 @@ bt_ProxyObject *bt_getProxy(NSPort *receivePort, NSPort *sendPort);
 
 - (IBAction)openAbout:(id)sender
 {
+    [versField setStringValue:version];
     [aboutWindow makeKeyAndOrderFront:self];
 }
 
