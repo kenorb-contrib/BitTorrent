@@ -125,7 +125,7 @@ def download(params, filefunc, statusfunc, errorfunc, doneflag, cols):
     file = config['saveas']
     if file == '':
         file = filefunc(response['name'])
-    if file == '':
+    if file is None:
         return false
     try:
         file_length = response['length']

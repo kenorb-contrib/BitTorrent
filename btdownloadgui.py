@@ -148,7 +148,7 @@ class DownloadInfoFrame(wxFrame):
 
     def chooseFile(self, default):
         f = Event()
-        bucket = []
+        bucket = [None]
         wxPostEvent(self, ChooseFileEvent(default, bucket, f))
         f.wait()
         return bucket[0]
@@ -156,14 +156,14 @@ class DownloadInfoFrame(wxFrame):
     def onChooseFile(self, event):
         dl = wxFileDialog(self, 'Choose file to save as, pick a partial download to resume', '.', event.default, '*.*', wxSAVE)
         if dl.ShowModal() != wxID_OK:
-            event.bucket.append('')
+            self.done(None)
         else:
-            event.bucket.append(dl.GetPath())
-        self.fileName = event.default
-        self.fileNameText.SetLabel(event.default)
-        self.timeEstText.SetLabel('Starting up...')
-        self.fileDestText.SetLabel(dl.GetPath()) 
-        self.Show(true)
+            event.bucket[0] = dl.GetPath()
+            self.fileName = event.default
+            self.fileNameText.SetLabel(event.default)
+            self.timeEstText.SetLabel('Starting up...')
+            self.fileDestText.SetLabel(dl.GetPath()) 
+            self.Show(true)
         event.flag.set()
 
     def done(self, event):
