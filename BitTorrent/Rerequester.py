@@ -82,7 +82,8 @@ class Rerequester:
                 for x in r['peers']:
                     self.connect((x['ip'], x['port']), x['peer id'])
         except ValueError, e:
-            self.errorfunc('bad data from tracker - ' + str(e))
+            if data != '':
+                self.errorfunc('bad data from tracker - ' + str(e))
         callback()
 
 class SetOnce:
