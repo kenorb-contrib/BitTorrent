@@ -5,13 +5,14 @@
 
 from os import listdir
 from os.path import join
+from threading import Event
 from sys import argv
 from btmakemetafile import calcsize, make_meta_file
 
 def dummy(x):
     pass
 
-def completedir(dir, url, c = dummy):
+def completedir(dir, url, flag = Event(), vc = dummy, fc = dummy):
     files = listdir(dir)
     ext = '.torrent'
 
@@ -25,12 +26,12 @@ def completedir(dir, url, c = dummy):
         total += calcsize(i)
 
     subtotal = [0]
-    def callback(x, subtotal = subtotal, total = total, c = c):
+    def callback(x, subtotal = subtotal, total = total, vc = vc):
         subtotal[0] += x
-        c(float(subtotal[0]) / total)
+        vc(float(subtotal[0]) / total)
     for i in togen:
-        print i
-        make_meta_file(i, url, progress = callback)
+        fc(i)
+        make_meta_file(i, url, flag = flag, progress = callback)
 
 def dc(v):
     print v

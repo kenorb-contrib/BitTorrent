@@ -96,21 +96,19 @@ class DownloadInfoFrame:
         EVT_INVOKE(frame, self.onInvoke)
 
     def onInvoke(self, event):
-        apply(event.func, event.args, event.kwargs)
+        if not self.flag.isSet():
+            apply(event.func, event.args, event.kwargs)
 
     def invokeLater(self, func, args = [], kwargs = {}):
-        wxPostEvent(self.frame, InvokeEvent(func, args, kwargs))
+        if not self.flag.isSet():
+            wxPostEvent(self.frame, InvokeEvent(func, args, kwargs))
 
     def updateStatus(self, fractionDone = None,
             timeEst = None, downRate = None, upRate = None,
             activity=None):
-        if self.flag.isSet():
-            return
         self.invokeLater(self.onUpdateStatus, [fractionDone, timeEst, downRate, upRate, activity])
 
     def onUpdateStatus(self, fractionDone, timeEst, downRate, upRate, activity):
-        if self.flag.isSet():
-            return
         if fractionDone is not None:
             self.gauge.SetValue(int(fractionDone * 1000))
         if timeEst is not None:
@@ -123,52 +121,37 @@ class DownloadInfoFrame:
             self.upRateText.SetLabel('%.1f K/s' % (float(upRate) / (1 << 10)))
 
     def finished(self):
-        if self.flag.isSet():
-            return
         self.fin = true
         self.invokeLater(self.onFinishEvent)
 
     def failed(self):
-        if self.flag.isSet():
-            return
         self.fin = true
         self.invokeLater(self.onFailEvent)
 
     def error(self, errormsg):
-        if self.flag.isSet():
-            return
         self.invokeLater(self.onErrorEvent, [errormsg])
 
     def onFinishEvent(self):
-        if self.flag.isSet():
-            return
         self.timeEstText.SetLabel('Download Succeeded!')
         self.cancelButton.SetLabel('Finish')
         self.gauge.SetValue(1000)
         self.downRateText.SetLabel('')
 
     def onFailEvent(self):
-        if self.flag.isSet():
-            return
         self.timeEstText.SetLabel('Failed!')
         self.cancelButton.SetLabel('Close')
         self.gauge.SetValue(0)
         self.downRateText.SetLabel('')
 
     def onErrorEvent(self, errormsg):
-        if self.flag.isSet():
-            return
         if not self.shown:
             self.frame.Show(true)
         dlg = wxMessageDialog(self.frame, message = errormsg, 
             caption = 'Download Error', style = wxOK | wxICON_ERROR)
-        dlg.Fit()
-        dlg.Center()
-        dlg.Show(true)
+        dlg.ShowModal()
+        dlg.Destroy()
 
     def chooseFile(self, default, size, saveas, dir):
-        if self.flag.isSet():
-            return ''
         f = Event()
         bucket = [None]
         self.invokeLater(self.onChooseFile, [default, bucket, f, size, dir])
@@ -176,8 +159,6 @@ class DownloadInfoFrame:
         return bucket[0]
     
     def onChooseFile(self, default, bucket, f, size, dir):
-        if self.flag.isSet():
-            return
         if dir:
             dl = wxDirDialog(self.frame, 'Choose a directory to save to, pick a partial download to resume', 
                 join(getcwd(), default), style = wxDD_DEFAULT_STYLE | wxDD_NEW_DIR_BUTTON)

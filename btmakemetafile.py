@@ -11,26 +11,25 @@ from sha import sha
 from copy import copy
 from BitTorrent.bencode import bencode
 from BitTorrent.btformats import check_info
+from threading import Event
 
 def dummy(v):
     pass
 
 def make_meta_file(file, url, piece_length = 2 ** 20, 
-        failure = dummy, progress = dummy):
+        flag = Event(), progress = dummy):
     a, b = split(file)
     if b == '':
         f = a + '.torrent'
     else:
         f = join(a, b + '.torrent')
-    info = makeinfo(file, piece_length, progress)
-    try:
-        check_info(info)
-        h = open(f, 'wb')
-        h.write(bencode({'info': info, 'announce': url}))
-        h.close()
-    except (ValueError, IOError), e:
-        failure(str(e))
+    info = makeinfo(file, piece_length, flag, progress)
+    if flag.isSet():
         return
+    check_info(info)
+    h = open(f, 'wb')
+    h.write(bencode({'info': info, 'announce': url}))
+    h.close()
 
 def calcsize(file):
     if not isdir(file):
@@ -40,7 +39,7 @@ def calcsize(file):
         total += getsize(s[1])
     return total
 
-def makeinfo(file, piece_length, progress = dummy):
+def makeinfo(file, piece_length, flag, progress):
     file = abspath(file)
     if isdir(file):
         subs = subfiles(file)
@@ -57,6 +56,8 @@ def makeinfo(file, piece_length, progress = dummy):
             while pos < size:
                 a = min(size - pos, piece_length - done)
                 sh.update(h.read(a))
+                if flag.isSet():
+                    return
                 done += a
                 pos += a
                 if done == piece_length:
@@ -77,6 +78,8 @@ def makeinfo(file, piece_length, progress = dummy):
         h = open(file, 'rb')
         while p < size:
             x = h.read(min(piece_length, size - p))
+            if flag.isSet():
+                return
             pieces.append(sha(x).digest())
             p += piece_length
             progress(len(x))
@@ -98,11 +101,8 @@ def subfiles(d):
             r.append((p, n))
     return r
 
-def fail(reason):
-    print 'failed! ' + reason
-
 def prog(amount):
     print '%.1f%% complete' % (amount * 100)
 
 if __name__ == '__main__':
-    make_meta_file(argv[1], argv[2], failure = fail, progress = prog)
+    make_meta_file(argv[1], argv[2], progress = prog)
