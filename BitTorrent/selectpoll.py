@@ -2,6 +2,7 @@
 # see LICENSE.txt for license information
 
 from select import select, error
+from time import sleep
 from types import IntType
 from bisect import bisect
 POLLIN = 1
@@ -33,7 +34,11 @@ class poll:
         remove(self.wlist, f)
 
     def poll(self, timeout = None):
-        r, w, e = select(self.rlist, self.wlist, [], timeout)
+        if self.rlist != [] or self.wlist != []:
+            r, w, e = select(self.rlist, self.wlist, [], timeout)
+        else:
+            sleep(timeout)
+            return []
         result = []
         for s in r:
             result.append((s, POLLIN))
