@@ -35,6 +35,7 @@ class StorageWrapper:
         self.inactive_requests = [[] for i in xrange(len(hashes))]
         self.total_inactive = 0
         self.have = [false] * len(hashes)
+        self.waschecked = [check_hashes] * len(hashes)
         if len(hashes) == 0:
             finished()
             return
@@ -60,11 +61,10 @@ class StorageWrapper:
 
     def _check_single(self, index, check = true):
         low = self.piece_length * index
-        high = low + self.piece_length
-        if index == len(self.hashes) - 1:
-            high = self.total_length
+        high = min(low + self.piece_length, self.total_length)
         length = high - low
         if check:
+            self.waschecked[index] = true
             if not self.check_hashes or sha(self.storage.read(low, length)).digest() == self.hashes[index]:
                 self.have[index] = true
                 self.amount_left -= length
@@ -130,6 +130,13 @@ class StorageWrapper:
             return None
 
     def _get_piece(self, index, begin, length):
+        if not self.waschecked[index]:
+            low = self.piece_length * index
+            high = min(low + self.piece_length, self.total_length)
+            if sha(self.storage.read(low, high - low)).digest() != self.hashes[index]:
+                self.failed('told file complete on start-up, but piece failed hash check')
+                return None
+            self.waschecked[index] = true
         if not self.have[index]:
             return None
         low = self.piece_length * index + begin
@@ -261,6 +268,20 @@ def test_hash_fail():
     assert sw.do_I_have_anything()
     assert sw.get_have_list() == [true]
     assert not sw.do_I_have_requests(0)
+
+def test_lazy_hashing():
+    ds = DummyStorage(4)
+    flag = Event()
+    sw = StorageWrapper(ds, 4, [sha('abcd').digest()], 4, ds.finished, lambda x, flag = flag: flag.set(), check_hashes = false)
+    assert sw.get_piece(0, 0, 2) is None
+    assert flag.isSet()
+
+def test_lazy_hashing_pass():
+    ds = DummyStorage(4)
+    flag = Event()
+    sw = StorageWrapper(ds, 4, [sha('qqqq').digest()], 4, ds.finished, lambda x, flag = flag: flag.set(), check_hashes = false)
+    assert sw.get_piece(0, 0, 2) is None
+    assert not flag.isSet()
 
 def test_preexisting():
     ds = DummyStorage(4, true)
