@@ -195,7 +195,7 @@ class Tracker:
                 ip = ip, port = port, left = left, params = params,
                 connection = connection):
             if not result:
-                connection.answer((200, 'OK', {}, bencode({'failure reason':
+                connection.answer((200, 'OK', {'Content-Type': 'text/plain', 'Pragma': 'no-cache'}, bencode({'failure reason':
                     'You are behind NAT. Please open port 6881 or download from elsewhere'})))
                 return
             peers = self.downloads.setdefault(infohash, {})
@@ -220,7 +220,7 @@ class Tracker:
                 shuffle(cache)
             data['peers'] = cache[-self.response_size:]
             del cache[-self.response_size:]
-            connection.answer((200, 'OK', {'Pragma': 'no-cache'}, bencode(data)))
+            connection.answer((200, 'OK', {'Content-Type': 'text/plain', 'Pragma': 'no-cache'}, bencode(data)))
         if (not self.natcheck or params.get('event') == 'stopped' or
                 self.downloads.get(infohash, {}).has_key(myid)):
             respond(true)
