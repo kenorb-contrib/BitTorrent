@@ -11,6 +11,8 @@
     IBOutlet id progressBar;
     IBOutlet id timeRemaining;
     IBOutlet id ulRate;
+    NSString *timeEst;
+    float frac;
 }
 - (id)init;
 @end

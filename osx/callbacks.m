@@ -27,7 +27,7 @@ static PyObject *chooseFile(PyObject *self, PyObject *args)
     if (!PyArg_ParseTuple(args, "slsi", &def, &size, &saveas, &dir))
 	return NULL;
     path = [NSString stringWithCString:saveas];
-    [panel runModalForDirectory:saveas ? path : NSHomeDirectory() file:saveas ? [path lastPathComponent] : @""];
+    [panel runModalForDirectory:saveas ? path : NSHomeDirectory() file:[NSString stringWithCString:def]];
     res = [[panel filename] cString];
     [pool release];
     return PyString_FromString(res);
