@@ -74,7 +74,7 @@ class StorageWrapper:
                 elif not self.have[-1] and sp == hashes[-1] and (i == len(hashes) - 1 or not self._waspre(len(hashes) - 1)):
                     markgot(len(hashes) - 1, i)
                 else:
-                    self.holes.append(i)
+                    self.places[i] = i
                 if flag.isSet():
                     return
                 numchecked += 1
