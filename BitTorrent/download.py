@@ -89,10 +89,12 @@ def download(params, filefunc, statusfunc, finfunc, errorfunc, doneflag, cols, p
     if len(params) == 0:
         errorfunc('arguments are -\n' + formatDefinitions(defaults, cols))
         return
-    if len(params) == 1:
-        params = ['--responsefile'] + params
     try:
-        config, garbage = parseargs(params, defaults, 0, 0)
+        config, args = parseargs(params, defaults, 0, 1)
+        if args:
+            if config.has_key('responsefile'):
+                raise ValueError, 'must have responsefile as arg or parameter, not both'
+            config['responsefile'] = args[0]
         if (config['responsefile'] == '') == (config['url'] == ''):
             raise ValueError, 'need responsefile or url'
     except ValueError, e:
