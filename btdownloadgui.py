@@ -27,68 +27,18 @@ def hours(n):
     else:
         return '%d min %02d sec' % (m, sec)
 
-wxEVT_CHOOSE_FILE = wxNewId()
+wxEVT_INVOKE = wxNewEventType()
 
-def EVT_CHOOSE_FILE(win, func):
-    win.Connect(-1, -1, wxEVT_CHOOSE_FILE, func)
+def EVT_INVOKE(win, func):
+    win.Connect(-1, -1, wxEVT_INVOKE, func)
 
-class ChooseFileEvent(wxPyEvent):
-    def __init__(self, default, bucket, flag, size, dir):
+class InvokeEvent(wxPyEvent):
+    def __init__(self, func, args, kwargs):
         wxPyEvent.__init__(self)
-        self.SetEventType(wxEVT_CHOOSE_FILE)
-        self.default = default
-        self.bucket = bucket
-        self.flag = flag
-        self.size = size
-        self.dir = dir
-
-wxEVT_UPDATE_STATUS = wxNewId()
-
-def EVT_UPDATE_STATUS(win, func):
-    win.Connect(-1, -1, wxEVT_UPDATE_STATUS, func)
-
-class UpdateStatusEvent(wxPyEvent):
-    def __init__(self, fractionDone, timeEst, downRate, upRate,
-            activity):
-        
-        wxPyEvent.__init__(self)
-        self.SetEventType(wxEVT_UPDATE_STATUS)
-        self.fractionDone = fractionDone
-        self.timeEst = timeEst
-        self.downRate = downRate
-        self.upRate = upRate
-        self.activity = activity
-
-wxEVT_FINISH_STATUS = wxNewId()
-
-def EVT_FINISH_STATUS(win, func):
-    win.Connect(-1, -1, wxEVT_FINISH_STATUS, func)
-
-class FinishEvent(wxPyEvent):
-    def __init__(self):
-        wxPyEvent.__init__(self)
-        self.SetEventType(wxEVT_FINISH_STATUS)
-
-wxEVT_FAIL_STATUS = wxNewId()
-
-def EVT_FAIL_STATUS(win, func):
-    win.Connect(-1, -1, wxEVT_FAIL_STATUS, func)
-
-class FailEvent(wxPyEvent):
-    def __init__(self):
-        wxPyEvent.__init__(self)
-        self.SetEventType(wxEVT_FAIL_STATUS)
-
-wxEVT_ERROR_STATUS = wxNewId()
-
-def EVT_ERROR_STATUS(win, func):
-    win.Connect(-1, -1, wxEVT_ERROR_STATUS, func)
-
-class ErrorEvent(wxPyEvent):
-    def __init__(self, errormsg):
-        wxPyEvent.__init__(self)
-        self.SetEventType(wxEVT_ERROR_STATUS)
-        self.errormsg = errormsg
+        self.SetEventType(wxEVT_INVOKE)
+        self.func = func
+        self.args = args
+        self.kwargs = kwargs
 
 class DownloadInfoFrame:
     def __init__(self, flag):
@@ -143,51 +93,53 @@ class DownloadInfoFrame:
         
         EVT_CLOSE(frame, self.done)
         EVT_BUTTON(frame, self.cancelButton.GetId(), self.done)
-        EVT_CHOOSE_FILE(frame, self.onChooseFile)
-        EVT_UPDATE_STATUS(frame, self.onUpdateStatus)
-        EVT_FINISH_STATUS(frame, self.onFinishEvent)
-        EVT_FAIL_STATUS(frame, self.onFailEvent)
-        EVT_ERROR_STATUS(frame, self.onErrorEvent)
-        
+        EVT_INVOKE(frame, self.onInvoke)
+
+    def onInvoke(self, event):
+        apply(event.func, event.args, event.kwargs)
+
+    def invokeLater(self, func, args = [], kwargs = {}):
+        wxPostEvent(self.frame, InvokeEvent(func, args, kwargs))
+
     def updateStatus(self, fractionDone = None,
             timeEst = None, downRate = None, upRate = None,
             activity=None):
         if self.flag.isSet():
             return
-        wxPostEvent(self.frame, UpdateStatusEvent(fractionDone, timeEst, downRate, upRate, activity))
+        self.invokeLater(self.onUpdateStatus, [fractionDone, timeEst, downRate, upRate, activity])
 
-    def onUpdateStatus(self, event):
+    def onUpdateStatus(self, fractionDone, timeEst, downRate, upRate, activity):
         if self.flag.isSet():
             return
-        if event.fractionDone is not None:
-            self.gauge.SetValue(int(event.fractionDone * 1000))
-        if event.timeEst is not None:
-            self.timeEstText.SetLabel(hours(event.timeEst))
-        if event.activity is not None and not self.fin:
-            self.timeEstText.SetLabel(event.activity)
-        if event.downRate is not None:
-            self.downRateText.SetLabel('%.1f K/s' % (float(event.downRate) / (1 << 10)))
-        if event.upRate is not None:
-            self.upRateText.SetLabel('%.1f K/s' % (float(event.upRate) / (1 << 10)))
+        if fractionDone is not None:
+            self.gauge.SetValue(int(fractionDone * 1000))
+        if timeEst is not None:
+            self.timeEstText.SetLabel(hours(timeEst))
+        if activity is not None and not self.fin:
+            self.timeEstText.SetLabel(activity)
+        if downRate is not None:
+            self.downRateText.SetLabel('%.1f K/s' % (float(downRate) / (1 << 10)))
+        if upRate is not None:
+            self.upRateText.SetLabel('%.1f K/s' % (float(upRate) / (1 << 10)))
 
     def finished(self):
         if self.flag.isSet():
             return
         self.fin = true
-        wxPostEvent(self.frame, FinishEvent())
+        self.invokeLater(self.onFinishEvent)
 
     def failed(self):
         if self.flag.isSet():
             return
         self.fin = true
-        wxPostEvent(self.frame, FailEvent())
+        self.invokeLater(self.onFailEvent)
 
     def error(self, errormsg):
         if self.flag.isSet():
             return
-        wxPostEvent(self.frame, ErrorEvent(errormsg))
+        self.invokeLater(self.onErrorEvent, [errormsg])
 
-    def onFinishEvent(self, event):
+    def onFinishEvent(self):
         if self.flag.isSet():
             return
         self.timeEstText.SetLabel('Download Succeeded!')
@@ -195,7 +147,7 @@ class DownloadInfoFrame:
         self.gauge.SetValue(1000)
         self.downRateText.SetLabel('')
 
-    def onFailEvent(self, event):
+    def onFailEvent(self):
         if self.flag.isSet():
             return
         self.timeEstText.SetLabel('Failed!')
@@ -203,12 +155,12 @@ class DownloadInfoFrame:
         self.gauge.SetValue(0)
         self.downRateText.SetLabel('')
 
-    def onErrorEvent(self, event):
+    def onErrorEvent(self, errormsg):
         if self.flag.isSet():
             return
         if not self.shown:
             self.frame.Show(true)
-        dlg = wxMessageDialog(self.frame, message = event.errormsg, 
+        dlg = wxMessageDialog(self.frame, message = errormsg, 
             caption = 'Download Error', style = wxOK | wxICON_ERROR)
         dlg.Fit()
         dlg.Center()
@@ -219,28 +171,28 @@ class DownloadInfoFrame:
             return ''
         f = Event()
         bucket = [None]
-        wxPostEvent(self.frame, ChooseFileEvent(default, bucket, f, size, dir))
+        self.invokeLater(self.onChooseFile, [default, bucket, f, size, dir])
         f.wait()
         return bucket[0]
     
-    def onChooseFile(self, event):
+    def onChooseFile(self, default, bucket, f, size, dir):
         if self.flag.isSet():
             return
-        if event.dir:
+        if dir:
             dl = wxDirDialog(self.frame, 'Choose a directory to save to, pick a partial download to resume', 
-                join(getcwd(), event.default), style = wxDD_DEFAULT_STYLE | wxDD_NEW_DIR_BUTTON)
+                join(getcwd(), default), style = wxDD_DEFAULT_STYLE | wxDD_NEW_DIR_BUTTON)
         else:
-            dl = wxFileDialog(self.frame, 'Choose file to save as, pick a partial download to resume', '', event.default, '*.*', wxSAVE)
+            dl = wxFileDialog(self.frame, 'Choose file to save as, pick a partial download to resume', '', default, '*.*', wxSAVE)
         if dl.ShowModal() != wxID_OK:
             self.done(None)
         else:
-            event.bucket[0] = dl.GetPath()
-            self.fileNameText.SetLabel('%s (%.1f MB)' % (event.default, float(event.size) / (1 << 20)))
+            bucket[0] = dl.GetPath()
+            self.fileNameText.SetLabel('%s (%.1f MB)' % (default, float(size) / (1 << 20)))
             self.timeEstText.SetLabel('Starting up...')
             self.fileDestText.SetLabel(dl.GetPath())
             self.shown = true
             self.frame.Show(true)
-        event.flag.set()
+        f.set()
 
     def done(self, event):
         self.flag.set()
