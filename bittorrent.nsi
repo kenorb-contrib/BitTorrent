@@ -21,6 +21,10 @@ Section "Install"
   WriteRegStr HKCR "bittorrent\shell\open\command" "" `"$INSTDIR\btdownloadgui.exe" --responsefile "%1"`
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\BitTorrent" "DisplayName" "BitTorrent 3.2.1"
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\BitTorrent" "UninstallString" '"$INSTDIR\uninstall.exe"'
+  NSISdl::download /TIMEOUT=30000 "http://bitconjurer.org/BitTorrent/donate.html" "$TEMP\donate.html"
+  ExecShell open "$TEMP\donate.html"
+  Sleep 600
+  BringToFront
   MessageBox MB_OK "BitTorrent has been successfully installed!"
 SectionEnd
 
