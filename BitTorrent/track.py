@@ -6,7 +6,7 @@ from RawServer import RawServer
 from HTTPHandler import HTTPHandler
 from NatCheck import NatCheck
 from threading import Event
-from bencode import bencode, bdecode
+from bencode import bencode, bdecode, Bencached
 from zurllib import urlopen, quote, unquote
 from urlparse import urlparse
 from os import rename
@@ -343,6 +343,7 @@ class Tracker:
                     peers[myid] = {'ip': ip, 'port': port, 'left': left, "local_override" : local_override}
                 else:
                     peers[myid] = {'ip': ip, 'port': port, 'left': left}
+                peers[myid]['cache'] = Bencached(bencode({'peer id': myid, 'ip': ip, 'port': port}))
             else:
                 peers[myid]['left'] = left
             if params.get('event', '') == 'completed':
@@ -358,7 +359,7 @@ class Tracker:
         if len(cache) < rsize:
             for key, value in self.downloads.setdefault(infohash, {}).items():
                 if type(value) == DictType and not value.get('nat'):
-                    cache.append({'peer id': key, 'ip': value['ip'], 'port': value['port']})
+                    cache.append(value['cache'])
             shuffle(cache)
         data['peers'] = cache[-rsize:]
         del cache[-rsize:]
