@@ -20,7 +20,7 @@ from binascii import b2a_hex
 from os import path
 from parseargs import parseargs, formatDefinitions
 import socket
-from random import randrange
+from random import randrange, seed
 true = 1
 false = 0
 
@@ -140,6 +140,7 @@ def download(params, filefunc, displayfunc, doneflag, cols):
         config['download_chunk_size'], config['request_backlog'])
     rawserver = RawServer(config['max_poll_period'], doneflag)
     connecter = Connecter(uploader, downloader)
+    seed(entropy(20))
     encrypter = Encrypter(connecter, rawserver, lambda e = entropy: e(20),
         entropy(20), config['max_message_length'])
     connecter.set_encrypter(encrypter)
@@ -149,9 +150,9 @@ def download(params, filefunc, displayfunc, doneflag, cols):
     r = [0]
     def finished(result, displayfunc = displayfunc, doneflag = doneflag, r = r):
         if result:
+            r[0] = 1
             displayfunc('Download Succeeded!', 'Okay')
         else:
-            r[0] = 1
             displayfunc('Download Failed', 'Okay')
         doneflag.set()
     blobs.callback = finished

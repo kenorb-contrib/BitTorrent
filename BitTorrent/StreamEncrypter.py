@@ -1,10 +1,7 @@
 # written by Bram Cohen
 # this file is public domain
 
-try:
-    from _StreamEncrypter import make_encrypter
-except ImportError:
-    assert 0, 'run setup.py and move StreamEncrypter.so into this directory'
+from _StreamEncrypter import make_encrypter
 
 # everything below is for testing
 
