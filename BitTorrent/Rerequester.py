@@ -85,7 +85,7 @@ class Rerequester:
             if r.has_key('failure reason'):
                 self.errorfunc('rejected by tracker - ' + r['failure reason'])
             else:
-                self.announce_interval = r['interval']
+                self.announce_interval = r.get('interval', self.announce_interval)
                 for x in r['peers']:
                     self.connect((x['ip'], x['port']), x['peer id'])
         except ValueError, e:
