@@ -4,13 +4,20 @@
             ACTIONS = {
                 cancelUrl = id; 
                 openAbout = id; 
+                openGenerator = id; 
                 openTrackerResponse = id; 
                 openURL = id; 
                 takeUrl = id; 
             }; 
             CLASS = BTAppController; 
             LANGUAGE = ObjC; 
-            OUTLETS = {aboutWindow = id; url = NSTextField; urlWindow = NSWindow; versField = id; }; 
+            OUTLETS = {
+                aboutWindow = NSWindow; 
+                generator = id; 
+                url = NSTextField; 
+                urlWindow = NSWindow; 
+                versField = NSTextField; 
+            }; 
             SUPERCLASS = NSObject; 
         }, 
         {CLASS = FirstResponder; LANGUAGE = ObjC; SUPERCLASS = NSObject; }

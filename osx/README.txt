@@ -2,4 +2,8 @@ InternetExplorer users:  You must launch BitTorrent with InternetExplorer NOT RU
 
 Mozilla:  restart Mozilla after launching BitTorrent for the first time.
 
-OmniWeb:  OmniWeb doesn't seem to pay attention to InternetConfig.  Just double-click the .torrent file in the download panel or otherwise open the .torrent file to get things started.
+OmniWeb:  OmniWeb doesn't seem to want to auto-launch BT.  Just double-click the .torrent file in the download panel or otherwise open the .torrent file to get things started.
+
+
+Notes for those creating Torrent files:
+  BT internally doesn't deal well with files that have spaces in their names.

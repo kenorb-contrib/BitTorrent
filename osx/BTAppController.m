@@ -1,5 +1,6 @@
 #import "BTAppController.h"
 #import "DLWindowController.h"
+#import "Generate.h"
 #import "pystructs.h"
 #import "ICHelper.h"
 
@@ -117,7 +118,6 @@ bt_ProxyObject *bt_getProxy(NSPort *receivePort, NSPort *sendPort);
     Py_DECREF(mm);
     tstate = PyEval_SaveThread();
     
-    // fire off new thread
     [NSThread detachNewThreadSelector:@selector(runWithDict:) toTarget:[self class]  
 	withObject:dict];
 }
@@ -152,7 +152,7 @@ bt_ProxyObject *bt_getProxy(NSPort *receivePort, NSPort *sendPort);
     [[dict objectForKey:@"flag"] getBytes:&flag];
 
     // do the download!
-    ret = PyObject_CallFunction(dl, "[ss]OOOOOi", [str cString], "--display_interval=1.0", chooseFile, display, finished, nerror, flag, 80);
+    ret = PyObject_CallFunction(dl, "[ss]OOOOOi", [str cString], "--display_interval=1.5", chooseFile, display, finished, nerror, flag, 80);
     [proxy->dlController dlExited];
     
     // clean up
@@ -181,5 +181,14 @@ bt_ProxyObject *bt_getProxy(NSPort *receivePort, NSPort *sendPort);
 {
     return [NSNotificationCenter defaultCenter];
 }
+
+- (IBAction)openGenerator:(id)sender
+{
+    if (!generator) {
+	generator = [[Generate alloc] init];
+    }
+    [generator open];
+}
+
 
 @end

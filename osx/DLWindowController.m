@@ -1,5 +1,5 @@
 #import "DLWindowController.h"
-#import "BTAppController.h"
+#import "Tstate.h"
 
 @implementation DLWindowController
 
@@ -79,7 +79,7 @@
     }
     else {
 	panel = [NSOpenPanel openPanel];
-	[panel setCanChooseFiles:NO];
+	[panel setCanChooseFiles:YES];
 	[panel setCanChooseDirectories:YES];
 	[panel setTitle:@"Choose directory, choose existing directory to resume."];
 	[panel setPrompt:@"Save"];

@@ -15,7 +15,7 @@ void init_callbacks();
 int main(int argc, const char *argv[])
 {
     NSAutoreleasePool *pool =[[NSAutoreleasePool alloc] init];
-    NSString *str;
+    PyObject *mm, *md, *path;    
 
     // set up python
     Py_SetPythonHome((char*)[[[NSBundle mainBundle] resourcePath] cString]);
@@ -24,8 +24,11 @@ int main(int argc, const char *argv[])
     PyEval_InitThreads();
 
     // add our resource path to sys.path so we can find the BT modules
-    str = [NSString stringWithFormat:@"import sys;sys.path.append('%@')", [[NSBundle mainBundle] resourcePath]];
-    PyRun_SimpleString((char *)[str cString]);
+    mm = PyImport_ImportModule("sys");
+    md = PyModule_GetDict(mm);
+    path = PyDict_GetItemString(md, "path");
+    PyList_Append(path, PyString_FromString([[[NSBundle mainBundle] resourcePath] cString]));
+    
     [pool release];
     return NSApplicationMain(argc, argv);
 }
