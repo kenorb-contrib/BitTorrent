@@ -8,7 +8,7 @@
 # see LICENSE.txt for license information
 
 from BitTorrent.download import download
-from threading import Thread, Event, RLock
+from threading import Thread, Event, Lock
 from os import listdir
 from os.path import abspath, join, exists
 from sys import argv, version, stdout, exit
@@ -19,18 +19,18 @@ assert version >= '2', "Install Python 2.0 or greater"
 
 def fmttime(n):
     if n == -1:
-        return 'download not progressing (no seeds?)'
+        return '(no seeds?)'
     if n == 0:
-        return 'download complete!'
+        return 'complete'
     n = int(n)
     m, s = divmod(n, 60)
     h, m = divmod(m, 60)
     if h > 1000000:
         return 'n/a'
-    return 'finishing in %d:%02d:%02d' % (h, m, s)
+    return '%d:%02d:%02d' % (h, m, s)
 
 def fmtsize(n):
-    unit = [' B', 'KiB', 'MiB', 'GiB', 'TiB', 'PiB', 'EiB', 'ZiB', 'YiB']
+    unit = [' B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB']
     i = 0
     if (n > 999):
         i = 1
@@ -50,7 +50,7 @@ def dummy(*args, **kwargs):
 threads = {}
 ext = '.torrent'
 print 'btlaunchmany starting..'
-filecheck = RLock()
+filecheck = Lock()
 
 def dropdir_mainloop(d, params):
     deadfiles = []
@@ -114,16 +114,16 @@ def display_thread(displaykiller):
         for file, threadinfo in threads.items(): 
             uprate = threadinfo.get('uprate', 0)
             downrate = threadinfo.get('downrate', 0)
-            uptxt = '%s/s' % fmtsize(uprate)
-            downtxt = '%s/s' % fmtsize(downrate)
+            uptxt = fmtsize(uprate)
+            downtxt = fmtsize(downrate)
             filename = threadinfo.get('savefile', file)
             if threadinfo.get('timeout', 0) > 0:
                 trys = threadinfo.get('try', 1)
                 timeout = threadinfo.get('timeout')
-                print '%s: died on try %d, retrying in %d' % (filename, trys, timeout)
+                print '%s: try %d died, retry in %d' % (filename, trys, timeout)
             else:
                 status = threadinfo.get('status','')
-                print '%s: %s up %s down [%s]' % (filename, uptxt, downtxt, status)
+                print '%s: %s/%s [%s]' % (filename, uptxt, downtxt, status)
             totalup += uprate
             totaldown += downrate
         # display totals line
@@ -166,23 +166,22 @@ class StatusUpdater:
         self.display() 
 
     def choose(self, default, size, saveas, dir):
-        global filecheck
         self.myinfo['downfile'] = default
         self.myinfo['filesize'] = fmtsize(size)
         if saveas == '': 
             saveas = default
         # it asks me where I want to save it before checking the file.. 
         self.myinfo['savefile'] = self.file[:-len(ext)]
-        if (exists(saveas)):
+        if exists(self.file[:-len(ext)]):
             # file will get checked
-            while (not filecheck.acquire(blocking = 0) and not self.myinfo['kill'].isSet()):
+            while (not filecheck.acquire(0) and not self.myinfo['kill'].isSet()):
                 self.myinfo['status'] = 'disk wait'
                 sleep(0.1)
             self.checking = 1
         return self.file[:-len(ext)]
     
     def display(self, fractionDone = None, timeEst = None, downRate = None, upRate = None, activity = None): 
-        global filecheck, status
+        global status
         if activity is not None and not self.done: 
             if activity == 'checking existing file':
                 self.activity = 'disk check'

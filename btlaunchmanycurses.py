@@ -31,7 +31,7 @@ def fmttime(n):
     return 'finishing in %d:%02d:%02d' % (h, m, s)
 
 def fmtsize(n):
-    unit = [' B', 'KiB', 'MiB', 'GiB', 'TiB', 'PiB', 'EiB', 'ZiB', 'YiB']
+    unit = [' B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB']
     i = 0
     if (n > 999):
         i = 1
