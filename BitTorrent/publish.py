@@ -122,7 +122,7 @@ class DummyDownload:
     def __init__(self, connection):
         pass
 
-    def got_choke(self, message):
+    def got_choke(self):
         pass
     
     def got_unchoke(self):
