@@ -8,7 +8,7 @@
 # see LICENSE.txt for license information
 
 from BitTorrent.download import download
-from threading import Thread, Event, RLock
+from threading import Thread, Event, Lock
 from os import listdir
 from os.path import abspath, join, exists
 from sys import argv, version, stdout, exit
@@ -51,11 +51,22 @@ def dummy(*args, **kwargs):
 threads = {}
 ext = '.torrent'
 status = 'btlaunchmany starting..'
-filecheck = RLock()
+filecheck = Lock()
+mainquitflag = Event()
 
+def cleanup_and_quit():
+    status = 'Killing torrents..'
+    for file, threadinfo in threads.items(): 
+        status = 'Killing torrent %s' % file
+        threadinfo['kill'].set() 
+        threadinfo['thread'].join() 
+        del threads[file]
+    displaykiller.set()
+    displaythread.join()
+   
 def dropdir_mainloop(d, params):
     deadfiles = []
-    global threads, status
+    global threads, status, mainquitflag
     while 1:
         files = listdir(d)
         # new files
@@ -93,17 +104,28 @@ def dropdir_mainloop(d, params):
                 if threadinfo.get('timeout', -1) == -1:
                     threadinfo['kill'].set()
                     threadinfo['thread'].join()
+                # if it had the lock, unlock it
+                if threadinfo.get('checking', None) == 1:
+                    filecheck.release()
                 del threads[file]
         for file in deadfiles:
             # if the file dissapears, remove it from our dead list
             if file not in files: 
                 deadfiles.remove(file)
+        if mainquitflag.isSet(): 
+            cleanup_and_quit()
+            break
         sleep(1)
 
-def display_thread(displaykiller):
+def display_thread(displaykiller, mainquitflag):
     interval = 0.1
     global threads, status
     while 1:
+        inchar = mainwin.getch();
+        if inchar == 12: # ^L
+            winch_handler(SIGWINCH, 0)
+        elif inchar == ord('q'): # quit
+            mainquitflag.set() 
         # display file info
         if (displaykiller.isSet()): 
             break
@@ -165,7 +187,7 @@ class StatusUpdater:
         self.done = 1
         self.myinfo['done'] = 1
         self.activity = 'download succeeded!'
-        self.display(fractionDone = 1)
+        self.display({'fractionDone' : 1})
 
     def err(self, msg): 
         self.myinfo['errors'].append(msg)
@@ -184,14 +206,20 @@ class StatusUpdater:
         # it asks me where I want to save it before checking the file.. 
         if (exists(saveas)):
             # file will get checked
-            while (not filecheck.acquire(blocking = 0) and not self.myinfo['kill'].isSet()):
+            while (not filecheck.acquire(0) and not self.myinfo['kill'].isSet()):
                 self.myinfo['status'] = 'Waiting for disk check...'
                 sleep(0.1)
             self.checking = 1
+            self.myinfo['checking'] = 1
         self.myinfo['savefile'] = saveas
         return saveas
     
-    def display(self, fractionDone = None, timeEst = None, downRate = None, upRate = None, activity = None): 
+    def display(self, dict = {}):
+        fractionDone = dict.get('fractionDone', None)
+        timeEst = dict.get('timeEst', None)
+        downRate = dict.get('downRate', None)
+        upRate = dict.get('upRate', None)
+        activity = dict.get('activity', None) 
         global filecheck, status
         if activity is not None and not self.done: 
             self.activity = activity
@@ -203,6 +231,7 @@ class StatusUpdater:
                 # we finished checking our files. 
                 filecheck.release()
                 self.checking = 0
+                self.myinfo['checking'] = 0
         else:
             self.myinfo['status'] = self.activity
         if downRate is None: 
@@ -214,14 +243,20 @@ class StatusUpdater:
 
 def prepare_display(): 
     global mainwinw, scrwin, headerwin, totalwin
-    scrwin.border(ord('|'),ord('|'),ord('-'),ord('-'),ord(' '),ord(' '),ord(' '),ord(' '))
-    headerwin.addnstr(0, 0, 'Filename', mainwinw - 25, curses.A_BOLD)
-    headerwin.addnstr(0, mainwinw - 24, 'Size', 4);
-    headerwin.addnstr(0, mainwinw - 18, 'Download', 8);
-    headerwin.addnstr(0, mainwinw -  6, 'Upload', 6);
-    totalwin.addnstr(0, mainwinw - 27, 'Totals:', 7);
+    try:
+        scrwin.border(ord('|'),ord('|'),ord('-'),ord('-'),ord(' '),ord(' '),ord(' '),ord(' '))
+        headerwin.addnstr(0, 0, 'Filename', mainwinw - 25, curses.A_BOLD)
+        headerwin.addnstr(0, mainwinw - 24, 'Size', 4);
+        headerwin.addnstr(0, mainwinw - 18, 'Download', 8);
+        headerwin.addnstr(0, mainwinw -  6, 'Upload', 6);
+        totalwin.addnstr(0, mainwinw - 27, 'Totals:', 7);
+    except curses.error:
+        pass
+    mainwin.nodelay(1)
     curses.panel.update_panels()
     curses.doupdate()
+
+
 
 def winch_handler(signum, stackframe): 
     global scrwin, mainwin, mainwinw, headerwin, totalwin, statuswin
@@ -304,19 +339,12 @@ if __name__ == '__main__':
         statuswin.scrollok(0)
         prepare_display()
         displaykiller = Event()
-        displaythread = Thread(target = display_thread, name = 'display', args = [displaykiller])
+        displaythread = Thread(target = display_thread, name = 'display', args = [displaykiller, mainquitflag])
         displaythread.setDaemon(1)
         displaythread.start()
         dropdir_mainloop(argv[1], argv[2:])
     except KeyboardInterrupt: 
-        status = '^C caught! Killing torrents..'
-        for file, threadinfo in threads.items(): 
-            status = 'Killing torrent %s' % file
-            threadinfo['kill'].set() 
-            threadinfo['thread'].join() 
-            del threads[file]
-        displaykiller.set()
-        displaythread.join()
+        cleanup_and_quit()
         curses.nocbreak()
         curses.echo()
         curses.endwin()

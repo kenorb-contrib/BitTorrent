@@ -155,7 +155,7 @@ class StatusUpdater:
         self.done = 1
         self.myinfo['done'] = 1
         self.activity = 'complete'
-        self.display(fractionDone = 1)
+        self.display({'fractionDone' : 1})
 
     def err(self, msg): 
         self.myinfo['errors'].append(msg)
@@ -180,7 +180,12 @@ class StatusUpdater:
             self.checking = 1
         return self.file[:-len(ext)]
     
-    def display(self, fractionDone = None, timeEst = None, downRate = None, upRate = None, activity = None): 
+    def display(self, dict = {}):
+        fractionDone = dict.get('fractionDone', None)
+        timeEst = dict.get('timeEst', None)
+        downRate = dict.get('downRate', None)
+        upRate = dict.get('upRate', None)
+        activity = dict.get('activity', None) 
         global status
         if activity is not None and not self.done: 
             if activity == 'checking existing file':

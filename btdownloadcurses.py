@@ -8,6 +8,7 @@ from threading import Event
 from os.path import abspath
 from signal import signal, SIGWINCH
 from sys import argv, version, stdout
+from time import strftime
 assert version >= '2', "Install Python 2.0 or greater"
 
 def fmttime(n):
@@ -39,7 +40,7 @@ def fmtsize(n):
     return size
 
 def winch_handler(signum, stackframe):
-    global scrwin, scrpan, labelwin, labelpan, fieldw, fieldwin, fieldpan
+    global scrwin, scrpan, labelwin, labelpan, fieldw, fieldh, fieldwin, fieldpan
     # SIGWINCH. Remake the frames!
     ## Curses Trickery
     curses.endwin()
@@ -75,7 +76,7 @@ class CursesDisplayer:
         self.done = 1
         self.activity = 'download succeeded!'
         self.downRate = '---'
-        self.display(fractionDone = 1)
+        self.display({'fractionDone': 1})
 
     def failed(self):
         self.done = 1
@@ -84,11 +85,14 @@ class CursesDisplayer:
         self.display()
 
     def error(self, errormsg):
-        self.errors.append(errormsg)
-        self.globalerrlist.append(errormsg)
+        errtxt = strftime('[%H:%M:%S] ') + errormsg
+        self.errors.append(errtxt)
+        self.globalerrlist.append(errtxt)
+        # force redraw to get rid of nasty stack backtrace
+        winch_handler(SIGWINCH, 0)
         self.display()
 
-    def display(self, dict):
+    def display(self, dict = {}):
         fractionDone = dict.get('fractionDone', None)
         timeEst = dict.get('timeEst', None)
         downRate = dict.get('downRate', None)
@@ -108,22 +112,31 @@ class CursesDisplayer:
             self.downRate = '%.1f KB/s' % (float(downRate) / (1 << 10))
         if upRate is not None:
             self.upRate = '%.1f KB/s' % (float(upRate) / (1 << 10))
+        inchar = fieldwin.getch()
+        if inchar == 12: #^L
+            winch_handler(SIGWINCH, 0)
 
-        fieldwin.erase()
-        fieldwin.addnstr(0, 0, self.file, fieldw, curses.A_BOLD)
-        fieldwin.addnstr(1, 0, self.fileSize, fieldw)
-        fieldwin.addnstr(2, 0, self.downloadTo, fieldw)
-        if self.progress:
-          fieldwin.addnstr(3, 0, self.progress, fieldw, curses.A_BOLD)
-        fieldwin.addnstr(4, 0, self.status, fieldw)
-        fieldwin.addnstr(5, 0, self.downRate, fieldw)
-        fieldwin.addnstr(6, 0, self.upRate, fieldw)
+        try:
+            fieldwin.erase()
+            fieldwin.addnstr(0, 0, self.file, fieldw, curses.A_BOLD)
+            fieldwin.addnstr(1, 0, self.fileSize, fieldw)
+            fieldwin.addnstr(2, 0, self.downloadTo, fieldw)
+            if self.progress:
+                fieldwin.addnstr(3, 0, self.progress, fieldw, curses.A_BOLD)
+            fieldwin.addnstr(4, 0, self.status, fieldw)
+            fieldwin.addnstr(5, 0, self.downRate, fieldw)
+            fieldwin.addnstr(6, 0, self.upRate, fieldw)
 
-        if self.errors:
-            for i in range(len(self.errors)):
-                fieldwin.addnstr(7 + i, 0, self.errors[i], fieldw, curses.A_BOLD)
-        else:
-            fieldwin.move(7, 0)
+            if self.errors:
+                errsize = len(self.errors)
+                for i in range(errsize):
+                    if (7 + i) >= fieldh:
+                        break
+                    fieldwin.addnstr(7 + i, 0, self.errors[errsize - i - 1], fieldw, curses.A_BOLD)
+            else:
+                fieldwin.move(7, 0)
+        except curses.error: 
+            pass
 
         curses.panel.update_panels()
         curses.doupdate()
@@ -147,15 +160,19 @@ def run(mainerrlist, params):
         d.failed()
 
 def prepare_display():
-    scrwin.border(ord('|'),ord('|'),ord('-'),ord('-'),ord(' '),ord(' '),ord(' '),ord(' '))
-    labelwin.addstr(0, 0, 'file:')
-    labelwin.addstr(1, 0, 'size:')
-    labelwin.addstr(2, 0, 'dest:')
-    labelwin.addstr(3, 0, 'progress:')
-    labelwin.addstr(4, 0, 'status:')
-    labelwin.addstr(5, 0, 'dl speed:')
-    labelwin.addstr(6, 0, 'ul speed:')
-    labelwin.addstr(7, 0, 'error(s):')
+    try:
+        scrwin.border(ord('|'),ord('|'),ord('-'),ord('-'),ord(' '),ord(' '),ord(' '),ord(' '))
+        labelwin.addstr(0, 0, 'file:')
+        labelwin.addstr(1, 0, 'size:')
+        labelwin.addstr(2, 0, 'dest:')
+        labelwin.addstr(3, 0, 'progress:')
+        labelwin.addstr(4, 0, 'status:')
+        labelwin.addstr(5, 0, 'dl speed:')
+        labelwin.addstr(6, 0, 'ul speed:')
+        labelwin.addstr(7, 0, 'error(s):')
+    except curses.error: 
+        pass
+    fieldwin.nodelay(1)
     curses.panel.update_panels()
     curses.doupdate()
 
