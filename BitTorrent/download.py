@@ -182,8 +182,8 @@ def download(params, filefunc, displayfunc, doneflag, cols):
         if response['type'] == 'failure':
             displayfunc("Couldn't announce - " + response['reason'], 'Okay')
             return false
-        DownloaderFeedback(uploader, downloader, choker, rawserver.add_task, 
-            listen_port, response['your ip'], file_length, left, displayfunc)
+        DownloaderFeedback(connecter, rawserver.add_task, 
+            listen_port, response['your ip'], displayfunc)
     except IOError, e:
         displayfunc("Couldn't announce - " + str(e), 'Okay')
         return false

@@ -1,6 +1,8 @@
 # Written by Bram Cohen
 # this file is public domain
 
+from time import time
+
 true = 1
 false = 0
 
@@ -11,6 +13,9 @@ class Download:
         self.backlog = backlog
         self.choked = false
         self.interested = false
+        self.ratesince = time()
+        self.lastin = self.ratesince
+        self.rate = 0
 
     def adjust(self):
         data = self.data
@@ -59,9 +64,18 @@ class Download:
         if self.interested:
             self.adjust()
 
+    def update_rate(self, amount):
+        t = time()
+        self.rate = (self.rate * (self.lastin - self.ratesince) + 
+            amount) / (t - self.ratesince)
+        self.lastin = t
+        if self.ratesince < t - 20:
+            self.ratesince = t - 20
+
     def got_slice(self, message):
         complete, check = self.data.came_in(self, 
             message['blob'], message['begin'], message['slice'])
+        self.update_rate(len(message['slice']))
         self.adjust()
         for c in check:
             c.adjust()

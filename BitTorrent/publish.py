@@ -106,7 +106,7 @@ def publish(params, cols):
     except ValueError, e:
         print "got bad publication response - " + str(e)
         return
-    PublisherFeedback(uploader, rawserver.add_task, listen_port, response['your ip'], blobs.blobs)
+    PublisherFeedback(connecter, rawserver.add_task, listen_port, response['your ip'])
     rawserver.start_listening(encrypter, listen_port, false)
 
 class DummyDownload:

@@ -1,6 +1,8 @@
 # written by Bram Cohen
 # this file is public domain
 
+from time import time
+
 true = 1
 false = 0
 
@@ -13,6 +15,9 @@ class Upload:
         self.reported_choked = false
         self.interested = false
         self.buffer = []
+        self.ratesince = time()
+        self.lastout = self.ratesince
+        self.rate = 0.0
 
     def send_intro(self):
         self.connection.send_message({'type': 'I have', 
@@ -29,6 +34,14 @@ class Upload:
             self.interested = true
             self.choker.interested(self.connection)
 
+    def update_rate(self, amount):
+        t = time()
+        self.rate = (self.rate * (self.lastout - self.ratesince) + 
+            amount) / (t - self.ratesince)
+        self.lastout = t
+        if self.ratesince < t - 20:
+            self.ratesince = t - 20
+
     def flushed(self):
         self.fix_choke()
         while len(self.buffer) > 0 and self.connection.is_flushed():
@@ -38,6 +51,7 @@ class Upload:
             if slice is not None:
                 self.connection.send_message({'type': 'slice', 
                     'blob': blob, 'begin': begin, 'slice': slice})
+                self.update_rate(len(slice))
 
     def got_send(self, m):
         if not self.reported_choked:
