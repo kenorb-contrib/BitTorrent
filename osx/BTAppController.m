@@ -16,7 +16,7 @@ static PyThreadState *tstate;
 
     [super init];
     
-    PyRun_SimpleString("from threading import Event;from BitTorrent.download import download");
+    PyRun_SimpleString("from threading import Event;from BitTorrent.download import download;from binascii import *");
     mm = PyImport_ImportModule("BitTorrent");
     md = PyModule_GetDict(mm);
     vers = PyDict_GetItemString(md, "version");
