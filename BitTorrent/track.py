@@ -92,7 +92,7 @@ class Tracker:
             return (404, 'Not Found', {'Content-Type': 'text/plain'}, alas)
         data = {'info': self.published[path], 'file id': path, 
             'url': self.urlprefix + path, 'protocol': 'plaintext',
-            'announce': self.urlprefix + '/announce/',
+            'announce': self.urlprefix + '/announce/', 'junk': None,
             'your ip': connection.get_ip(), 'interval': 30 * 60}
         if len(self.cached.get(path, [])) < 25:
             self.cached[path] = [{'peer id': key, 'ip': value['ip'], 
