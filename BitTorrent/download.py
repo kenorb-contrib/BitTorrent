@@ -213,7 +213,7 @@ def download(params, filefunc, statusfunc, finfunc, errorfunc, doneflag, cols, p
         storagewrapper = StorageWrapper(storage, 
             config['download_slice_size'], pieces, 
             info['piece length'], finished, failed, 
-            statusfunc, doneflag, config['check_hashes'], data_flunked, rawserver.external_add_task)
+            statusfunc, doneflag, config['check_hashes'], data_flunked, rawserver.add_task)
     except ValueError, e:
         failed('bad data - ' + str(e))
     except IOError, e:
