@@ -129,13 +129,6 @@ class DummyEncrypter:
     def start_connection(self, ip):
         self.c.append(ip)
 
-class DummyScheduler:
-    def __init__(self):
-        self.c = []
-    
-    def __call__(self, func, delay, args = []):
-        self.c.append((func, delay, args))
-
 class DummyConnection:
     def __init__(self, mid, dns = None):
         self.closed = false
@@ -179,12 +172,10 @@ class DummyTransfer:
 def test_close_local_of_local_start():
     up = DummyTransfer()
     down = DummyTransfer()
-    s = DummyScheduler()
-    c = Connecter(up, down, s, 5, 6)
+    c = Connecter(up, down)
     e = DummyEncrypter()
     c.set_encrypter(e)
     c.start_connecting(['testcode.com'])
-    assert s.c == []
     assert e.c == ['testcode.com']
     del e.c[:]
 
@@ -192,7 +183,6 @@ def test_close_local_of_local_start():
     c.locally_initiated_connection_completed(dc)
     assert len(down.cs_made) == 1 and down.cs_made[0].get_id() == 'a' * 20
     assert len(up.cs_made) == 0
-    assert s.c == []
     assert dc.m == ['download']
     del dc.m[:]
 
@@ -205,26 +195,21 @@ def test_close_local_of_local_start():
     assert not dc.closed
     down.cs_made[0].close()
     assert dc.closed
-    assert s.c == []
 
 def test_close_remote_of_local_start():
     up = DummyTransfer()
     down = DummyTransfer()
-    s = DummyScheduler()
-    c = Connecter(up, down, s, 5, 6)
+    c = Connecter(up, down)
     e = DummyEncrypter()
     c.set_encrypter(e)
     c.start_connecting(['testcode.com'])
-    assert s.c == []
     assert e.c == ['testcode.com']
     del e.c[:]
-    assert s.c == []
     
     dc = DummyConnection('a' * 20, 'testcode.com')
     c.locally_initiated_connection_completed(dc)
     assert len(down.cs_made) == 1 and down.cs_made[0].get_id() == 'a' * 20
     assert len(up.cs_made) == 0
-    assert s.c == []
     assert e.c == ['testcode.com']
     del e.c[:]
     assert dc.m == ['download']
@@ -239,13 +224,11 @@ def test_close_remote_of_local_start():
     assert not dc.closed
     c.connection_lost(dc)
     assert down.cs_lost == down.cs_made
-    assert len(s.c) == 1 and s.c[0][1] == 5 and s.c[0][2] == ['testcode.com']
 
 def test_close_remote_of_remote_start():
     up = DummyTransfer()
     down = DummyTransfer()
-    s = DummyScheduler()
-    c = Connecter(up, down, s, 5, 6)
+    c = Connecter(up, down)
     e = DummyEncrypter()
     c.set_encrypter(e)
     
@@ -265,8 +248,7 @@ def test_close_remote_of_remote_start():
 def test_close_local_of_remote_start():
     up = DummyTransfer()
     down = DummyTransfer()
-    s = DummyScheduler()
-    c = Connecter(up, down, s, 5, 6)
+    c = Connecter(up, down)
     e = DummyEncrypter()
     c.set_encrypter(e)
     
@@ -287,8 +269,7 @@ def test_close_local_of_remote_start():
 def test_remote_connect_down():
     up = DummyTransfer()
     down = DummyTransfer()
-    s = DummyScheduler()
-    c = Connecter(up, down, s, 5, 6)
+    c = Connecter(up, down)
     e = DummyEncrypter()
     c.set_encrypter(e)
     
@@ -305,20 +286,20 @@ def test_remote_connect_down():
 
     dc2 = DummyConnection('a' * 20)
     c.got_message(dc2, 'upload')
-    assert len(down.cs_made) == 1
+    assert len(down.cs_made) == 2 and down.cs_made[0].get_id() == 'a' * 20
+    assert len(down.cs_lost) == 1 and down.cs_lost[0] == down.cs_made[0]
     assert dc.closed
 
     c.got_message(dc2, 'booga 3')
-    assert down.m == [(down.cs_made[0], 'booga 3')]
+    assert down.m == [(down.cs_made[1], 'booga 3')]
 
-    down.cs_made[0].send_message('booga 4')
+    down.cs_made[1].send_message('booga 4')
     assert dc2.m == ['booga 4']
     
 def test_remote_connect_up():
     up = DummyTransfer()
     down = DummyTransfer()
-    s = DummyScheduler()
-    c = Connecter(up, down, s, 5, 6)
+    c = Connecter(up, down)
     e = DummyEncrypter()
     c.set_encrypter(e)
     
@@ -335,33 +316,30 @@ def test_remote_connect_up():
 
     dc2 = DummyConnection('a' * 20)
     c.got_message(dc2, 'download')
-    assert len(up.cs_made) == 1
+    assert len(up.cs_made) == 2 and up.cs_made[1].get_id() == 'a' * 20
+    assert len(up.cs_lost) == 1 and up.cs_lost[0] == up.cs_made[0]
     assert dc.closed
 
     c.got_message(dc2, 'booga 3')
-    assert up.m == [(up.cs_made[0], 'booga 3')]
+    assert up.m == [(up.cs_made[1], 'booga 3')]
 
-    up.cs_made[0].send_message('booga 4')
+    up.cs_made[1].send_message('booga 4')
     assert dc2.m == ['booga 4']
     
 def test_local_connect():
     up = DummyTransfer()
     down = DummyTransfer()
-    s = DummyScheduler()
-    c = Connecter(up, down, s, 5, 6)
+    c = Connecter(up, down)
     e = DummyEncrypter()
     c.set_encrypter(e)
     c.start_connecting(['testcode.com'])
-    assert s.c == []
     assert e.c == ['testcode.com']
     del e.c[:]
-    assert s.c == []
     
     dc = DummyConnection('a' * 20, 'testcode.com')
     c.locally_initiated_connection_completed(dc)
     assert len(down.cs_made) == 1 and down.cs_made[0].get_id() == 'a' * 20
     assert len(up.cs_made) == 0
-    assert s.c == []
     assert e.c == ['testcode.com']
     del e.c[:]
     assert dc.m == ['download']
@@ -373,12 +351,9 @@ def test_local_connect():
     c.got_message(dc, 'b')
     assert down.m == [(down.cs_made[0], 'b')]
 
-    assert s.c == []
-
     dc2 = DummyConnection('a' * 20, 'testcode.com')
     c.locally_initiated_connection_completed(dc2)
     assert len(up.cs_made) == 1 and up.cs_made[0].get_id() == 'a' * 20
-    assert s.c == []
     assert dc2.m == ['upload']
     del dc2.m[:]
 
@@ -387,8 +362,6 @@ def test_local_connect():
     
     c.got_message(dc2, 'd')
     assert up.m == [(up.cs_made[0], 'd')]
-
-    assert s.c == []
 
     dc3 = DummyConnection('a' * 20, 'testcode.com')
     c.locally_initiated_connection_completed(dc3)
