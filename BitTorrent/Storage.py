@@ -34,13 +34,15 @@ class Storage:
                     open(file, 'wb').close()
         self.total_length = total
         self.handles = {}
+        self.whandles = {}
         self.preexisting = false
         for file, length in files:
             if exists(file):
-                self.handles[file] = open(file, 'rb+')
+                self.handles[file] = open(file, 'rb')
                 self.preexisting = true
             else:
                 self.handles[file] = open(file, 'wb+')
+                self.whandles[file] = 1
         if total > so_far:
             interval = max(2 ** 20, long(total / 100))
             tstart = time()
@@ -98,6 +100,9 @@ class Storage:
         # might raise an IOError
         total = 0
         for file, begin, end in self._intervals(pos, len(s)):
+            if not self.whandles.has_key(file):
+                self.handles[file] = open(file, 'rb+')
+                self.whandles[file] = 1
             h = self.handles[file]
             h.seek(begin)
             h.write(s[total: total + end - begin])
