@@ -131,7 +131,7 @@
 		};
 		29B97314FDCFA39411CA2CEA = {
 			children = (
-				F57B922302F27DF501A845D2,
+				F5A3C5DA02F6923301A845D2,
 				F57B922402F27DF501A845D2,
 				080E96DDFE201D6D7F000001,
 				29B97315FDCFA39411CA2CEA,
@@ -223,10 +223,9 @@
 				FRAMEWORK_SEARCH_PATHS = "";
 				HEADER_SEARCH_PATHS = "";
 				INSTALL_PATH = "$(HOME)/Applications";
-				LIBRARY_SEARCH_PATHS = /usr/local/lib/opython/config;
+				LIBRARY_SEARCH_PATHS = /usr/local/lib/python2.2/config;
 				OPTIMIZATION_CFLAGS = "-O0";
 				OTHER_CFLAGS = "-Wall -g";
-				OTHER_LDFLAGS = "";
 				PRODUCT_NAME = BitTorrent;
 				SECTORDER_FLAGS = "";
 				WARNING_CFLAGS = "-Wmost -Wno-four-char-constants -Wno-unknown-pragmas";
@@ -305,6 +304,7 @@
 				080E96DCFE201CFB7F000001,
 				F5D01D36027E0B0201A845D2,
 				F56F7C3E02F3731501A845D2,
+				F5A3C5DB02F6923301A845D2,
 			);
 			isa = PBXResourcesBuildPhase;
 			name = "Bundle Resources";
@@ -398,7 +398,7 @@
 		F55ADF7A02F3401201A845D2 = {
 			isa = PBXFileReference;
 			name = libpython2.2.a;
-			path = /usr/local/lib/opython/config/libpython2.2.a;
+			path = /usr/local/lib/python2.2/config/libpython2.2.a;
 			refType = 0;
 		};
 		F56F7C3602F3544601A845D2 = {
@@ -436,11 +436,6 @@
 			isa = PBXBuildFile;
 			settings = {
 			};
-		};
-		F57B922302F27DF501A845D2 = {
-			isa = PBXFileReference;
-			path = README;
-			refType = 2;
 		};
 		F57B922402F27DF501A845D2 = {
 			isa = PBXFileReference;
@@ -489,6 +484,17 @@
 		};
 		F5A3C5D302F6385901A845D2 = {
 			fileRef = F5D01D38027E0FE201A845D2;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		F5A3C5DA02F6923301A845D2 = {
+			isa = PBXFileReference;
+			path = README.txt;
+			refType = 2;
+		};
+		F5A3C5DB02F6923301A845D2 = {
+			fileRef = F5A3C5DA02F6923301A845D2;
 			isa = PBXBuildFile;
 			settings = {
 			};
