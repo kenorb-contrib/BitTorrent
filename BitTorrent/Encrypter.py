@@ -110,7 +110,11 @@ class EncryptedConnection:
             m = self.buffer.getvalue()
             self.buffer.reset()
             self.buffer.truncate()
-            x = self.next_func(m)
+            try:
+                x = self.next_func(m)
+            except:
+                self.close()
+                raise
             if x is None:
                 self.close()
                 return
