@@ -22,39 +22,50 @@ def runmany(d, params):
     threads = []
     killflags = {}
     deadfiles = []
-    while 1:
-        files = listdir(d)
-        # new files
-        for file in files:
-            if file[-len(ext):] == ext:
-                if file not in [x.getName() for x in threads] + deadfiles:
-                    print 'Starting torrent for ' + file
+    try:
+        while 1:
+            files = listdir(d)
+            # new files
+            for file in files:
+                if file[-len(ext):] == ext:
+                    if file not in [x.getName() for x in threads] + deadfiles:
+                        print 'Starting torrent for ' + file
+                        stdout.flush()
+                        killflags[file] = Event()
+                        threads.append(Thread(target = runsingle(join(d, file), params, killflags[file]).download, name = file))
+                        threads[-1].start()
+            # old files
+            for i in range(len(threads)):
+                try:
+                    threadname = threads[i].getName()
+                except IndexError:
+                    # raised when we delete a thread from earlier,
+                    # the last ones fall out of range
+                    break
+                if not threads[i].isAlive():
+                    # died without our permission
+                    deadfiles.append(threadname)
+                    del killflags[threadname]
+                    del threads[i]
+                elif threadname not in files:
+                    # file gone!
+                    print threadname + ': torrent file gone, stopping downloader'
                     stdout.flush()
-                    killflags[file] = Event()
-                    threads.append(Thread(target = runsingle(join(d, file), params, killflags[file]).download, name = file))
-                    threads[-1].start()
-        # old files
-        for i in range(len(threads)):
-            try:
-                threadname = threads[i].getName()
-            except IndexError:
-                # raised when we delete a thread from earlier,
-                # the last ones fall out of range
-                break
-            if not threads[i].isAlive():
-                # died without our permission
-                deadfiles.append(threadname)
-                del killflags[threadname]
-                del threads[i]
-            elif threadname not in files:
-                # file gone!
-                print threadname + ': torrent file gone, stopping downloader'
-                stdout.flush()
-                killflags[threadname].set()
-                threads[i].join()
-                del killflags[threadname]
-                del threads[i]
-        sleep(1)
+                    killflags[threadname].set()
+                    threads[i].join()
+                    del killflags[threadname]
+                    del threads[i]
+            sleep(1)
+    except KeyboardInterrupt:
+        print "^C caught.. cleaning up.. "
+        stdout.flush()
+        for thread in threads:
+            threadname = thread.getName()
+            print "%s: killing torrent.." % threadname
+            stdout.flush()
+            killflags[threadname].set()
+            thread.join()
+
 
 class runsingle:
     def __init__(self, file, params, killflag):
