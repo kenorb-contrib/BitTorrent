@@ -167,7 +167,7 @@ def download(params, filefunc, statusfunc, finfunc, errorfunc, doneflag, cols, p
     
     finflag = Event()
     ann = [None]
-    myid = sha(repr(time()) + ' ' + str(getpid())).digest()
+    myid = (chr(0) * 12) + sha(repr(time()) + ' ' + str(getpid())).digest()[-8:]
     seed(myid)
     pieces = [info['pieces'][x:x+20] for x in xrange(0, 
         len(info['pieces']), 20)]
@@ -240,7 +240,7 @@ def download(params, filefunc, statusfunc, finfunc, errorfunc, doneflag, cols, p
     connecter = Connecter(make_upload, downloader, choker,
         len(pieces), storagewrapper.is_everything_pending, EndgameDownloader,
         upmeasure, config['max_upload_rate'] * 1024, rawserver.add_task)
-    infohash = (chr(0) * 12) + sha(bencode(info)).digest()[-8:]
+    infohash = sha(bencode(info)).digest()
     encrypter = Encrypter(connecter, rawserver, 
         myid, config['max_message_length'], rawserver.add_task, 
         config['keepalive_interval'], infohash, config['max_initiate'])
