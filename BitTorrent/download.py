@@ -4,7 +4,7 @@
 from urllib import urlopen
 from urlparse import urljoin
 from StreamEncrypter import make_encrypter
-from Throttler import Throttler
+from PublisherThrottler import Throttler
 from SingleBlob import SingleBlob
 from Uploader import Uploader
 from Downloader import Downloader
@@ -30,14 +30,8 @@ def len20(s, verbose):
 
 defaults = [
     # ( <name in config dict>, <long getopt descript>, <short getopt descript>, <default value>, '''usage''')
-    ('unthrottle_diff', 'unthrottle-diff=', None, 2 ** 23,
-        """How much a peer's balance must exceed that of the lowest balance current downloader before they get unthrottled. Will be removed after the switch from balances to transfer rates."""),
-    ('rethrottle_diff', 'rethrottle-diff=', None, 2 ** 20,
-        """the point at which unthrottle_diff is undone, will be removed after the switch to transfer rates."""),
     ('max_uploads', 'max-uploads=', None, 3,
         """the maximum number of uploads to allow at once."""),
-    ('max_downloads', 'max-downloads=', None, 6,
-        """the maximum number of downloads to do at once."""),
     ('download_chunk_size', 'download-chunk-size=', None, 2 ** 15,
         """How many bytes to query for per request."""),
     ('request_backlog', 'request-backlog=', None, 5,
@@ -133,8 +127,7 @@ def download(params, filefunc, displayfunc, doneflag, cols):
     except IOError, e:
         displayfunc('disk access error - ' + str(e), 'Okay')
         return false
-    throttler = Throttler(config['rethrottle_diff'], config['unthrottle_diff'], 
-        config['max_uploads'], config['max_downloads'])
+    throttler = Throttler(config['max_uploads'])
     uploader = Uploader(throttler, blobs)
     downloader = Downloader(throttler, blobs, uploader, 
         config['download_chunk_size'], config['request_backlog'])
