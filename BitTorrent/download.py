@@ -212,7 +212,7 @@ def download(params, filefunc, statusfunc, resultfunc, doneflag, cols):
     if not finflag.isSet():
         statusfunc(activity = 'connecting to peers')
     q = putqueue(response['announce'])
-    myid = entropy(20)
+    myid = encrypter.get_id()
     a = {'type': 'announce', 'id': response['id'], 
             'myid': myid, 'permanent': config['permanent'], 
             'contact': {'ip': response['your ip'], 'port': listen_port}}

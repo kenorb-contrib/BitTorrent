@@ -15,7 +15,9 @@ from BitTorrent.suck import suck
 from BitTorrent.bencode import bencode, bdecode
 
 def publish(file, url):
-    data = makeinfo(file)
+    announce(makeinfo(file), url)
+
+def announce(data, url):
     protocol, host, path, g1, g2, g3 = urlparse(url)
     if protocol != 'http':
         raise ValueError, "can't handle protocol '" + protocol + "'"
@@ -37,7 +39,6 @@ def makeinfo(file):
     if isdir(file):
         subs = subfiles(file)
         subs.sort()
-        pieces = []
         pieces = []
         sh = sha()
         done = 0
