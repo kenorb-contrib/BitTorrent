@@ -19,6 +19,8 @@ setup(
     packages = ["BitTorrent"],
 
     scripts = ["btdownloadgui.py", "btdownloadheadless.py", "btdownloadlibrary.py", 
-        "btdownloadprefetched.py", "bttrack.py", "btmakemetafile.py"]
-    
+        "bttrack.py", "btmakemetafile.py", "btlaunchmany.py", "btcompletedir.py",
+        "btdownloadcurses.py", "btcompletedirgui.py", "btlaunchmanycurses.py", 
+        "btmakemetafile.py", "btreannounce.py", "btrename.py", "btshowmetainfo.py",
+        "bttest.py"]
     )

@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 
 # Written by Henry 'Pi' James and Loring Holden
 # see LICENSE.txt for license information

@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 
 # Written by Bram Cohen
 # Dropdir support added by Michael Janssen

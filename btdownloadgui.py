@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 
 # Written by Bram Cohen and Myers Carpenter
 # see LICENSE.txt for license information

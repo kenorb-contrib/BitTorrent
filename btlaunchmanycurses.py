@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 
 # Written by Michael Janssen (jamuraa at base0 dot net)
 # heavily borrowed code from btlaunchmany.py written by Bram Cohen
