@@ -122,7 +122,7 @@ def download(params, filefunc, statusfunc, finfunc, errorfunc, doneflag, cols, p
         if config['responsefile'] != '' and config['responsefile'].find('Temporary Internet Files') != -1:
             errorfunc('BitTorrent was passed a filename that doesn\'t exist.  ' +
                 'Either clear your Temporary Internet Files or right-click the link ' + 
-                'and save the .torrent to disk first.'
+                'and save the .torrent to disk first.')
         else:
             errorfunc('problem getting response info - ' + str(e))
         return
@@ -285,7 +285,7 @@ def download(params, filefunc, statusfunc, finfunc, errorfunc, doneflag, cols, p
 
     # useful info and functions for the UI
     if paramfunc:
-        paramfunc({ 'max_upload_rate' : connecter.change_max_upload_rate,  # change_max_upload_rate(<int KiB/sec>)
+        paramfunc({ 'max_upload_rate' : connecter.change_max_upload_rate,  # change_max_upload_rate(<int bytes/sec>)
                     'max_uploads': choker.change_max_uploads, # change_max_uploads(<int max uploads>)
                     'listen_port' : listen_port, # int
                     'peer_id' : myid, # string
