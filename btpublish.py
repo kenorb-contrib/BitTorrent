@@ -17,7 +17,6 @@ def make_meta_file(file, url, piece_length = 2 ** 20):
         f = a + '.torrent'
     else:
         f = join(a, b + '.torrent')
-    print 'f', f
     h = open(f, 'wb')
     h.write(bencode({'info': makeinfo(file, piece_length), 
         'announce': url}))

@@ -27,6 +27,7 @@ class StorageWrapper:
         self.failed = failed
         self.numactive = [0] * len(hashes)
         self.inactive_requests = [[] for i in xrange(len(hashes))]
+        self.total_inactive = 0
         self.have = [false] * len(hashes)
         if len(hashes) == 0:
             finished()
@@ -66,8 +67,13 @@ class StorageWrapper:
             x = 0
             while x + self.request_size < length:
                 l.append((x, self.request_size))
+                self.total_inactive += 1
                 x += self.request_size
             l.append((x, length - x))
+            self.total_inactive += 1
+
+    def is_everything_pending(self):
+        return self.total_inactive == 0
 
     def get_have_list(self):
         return self.have
@@ -81,6 +87,7 @@ class StorageWrapper:
     def new_request(self, index):
         # returns (begin, length)
         self.numactive[index] += 1
+        self.total_inactive -= 1
         return self.inactive_requests[index].pop()
 
     def piece_came_in(self, index, begin, piece):
@@ -99,6 +106,7 @@ class StorageWrapper:
     def request_lost(self, index, begin, length):
         self.inactive_requests[index].append((begin, length))
         self.numactive[index] -= 1
+        self.total_inactive += 1
 
     def get_piece(self, index, begin, length):
         try:

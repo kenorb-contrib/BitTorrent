@@ -15,6 +15,7 @@ from RawServer import RawServer
 from Rerequester import Rerequester
 from DownloaderFeedback import DownloaderFeedback
 from RateMeasure import RateMeasure
+from EndgameDownloader import EndgameDownloader
 from bencode import bencode, bdecode
 from sha import sha
 from os import path, makedirs
@@ -206,8 +207,8 @@ def download(params, filefunc, statusfunc, finfunc, errorfunc, doneflag, cols):
     downloader = Downloader(storagewrapper, 
         config['request_backlog'], config['max_rate_period'],
         len(pieces), total_down, ratemeasure.data_came_in)
-    connecter = Connecter(make_upload, downloader.make_download, choker,
-        len(pieces))
+    connecter = Connecter(make_upload, downloader, choker,
+        len(pieces), storagewrapper.is_everything_pending, EndgameDownloader)
     infohash = sha(bencode(info)).digest()
     encrypter = Encrypter(connecter, rawserver, 
         myid, config['max_message_length'], rawserver.add_task, 
@@ -216,7 +217,7 @@ def download(params, filefunc, statusfunc, finfunc, errorfunc, doneflag, cols):
         rawserver.add_task, connecter.how_many_connections, 
         config['min_peers'], encrypter.start_connection, 
         rawserver.external_add_task, storagewrapper.get_amount_left, 
-        downloader.close_finished, total_up, total_down, listen_port, 
+        total_up, total_down, listen_port, 
         config['ip'], myid, infohash, config['http_timeout'], errorfunc)
     DownloaderFeedback(choker, rawserver.add_task, statusfunc, 
         config['max_rate_recalculate_interval'], ratemeasure.get_time_left, 

@@ -88,8 +88,8 @@ class EncryptedConnection:
 
     def close(self):
         if not self.closed:
-            self.sever()
             self.connection.close()
+            self.sever()
 
     def sever(self):
         self.closed = true

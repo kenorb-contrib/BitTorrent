@@ -11,7 +11,7 @@ false = 0
 
 class Rerequester:
     def __init__(self, url, interval, sched, howmany, minpeers, 
-            connect, externalsched, amount_left, clean, up, down,
+            connect, externalsched, amount_left, up, down,
             port, ip, myid, infohash, timeout, errorfunc):
         self.url = ('%s?info_hash=%s&peer_id=%s&port=%s' %
             (url, quote(infohash), quote(myid), str(port)))
@@ -25,7 +25,6 @@ class Rerequester:
         self.connect = connect
         self.externalsched = externalsched
         self.amount_left = amount_left
-        self.clean = clean
         self.up = up
         self.down = down
         self.timeout = timeout
@@ -34,8 +33,6 @@ class Rerequester:
 
     def c(self):
         self.sched(self.c, self.interval)
-        if self.amount_left() == 0:
-            self.clean()
         if self.howmany() < self.minpeers:
             self.announce(3)
 

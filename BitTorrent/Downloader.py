@@ -133,11 +133,6 @@ class Downloader:
             self.priority_to_index[self.index_to_priority[i]] = i
         self.downloads = []
 
-    def close_finished(self):
-        for d in copy(self.downloads):
-            if false not in d.have:
-                d.connection.close()
-
     def change_interest(self, index, before):
         assert before in [0, 1]
         after = self.storage.do_I_have_requests(index)
