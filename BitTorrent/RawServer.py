@@ -78,8 +78,8 @@ class RawServer:
     def shutdown(self):
         self.running = false
 
-    def add_task(self, func, delay, args = []):
-        insort(self.funcs, (time() + delay, func, args))
+    def add_task(self, func, delay):
+        insort(self.funcs, (time() + delay, func))
 
     def start_listening(self, handler, port, ret = true):
         self.handler = handler
@@ -161,10 +161,10 @@ class RawServer:
                     if not self.running:
                         return
                     while len(self.funcs) > 0 and self.funcs[0][0] <= time():
-                        garbage, func, args = self.funcs[0]
+                        garbage, func = self.funcs[0]
                         del self.funcs[0]
                         try:
-                            func(*args)
+                            func()
                         except KeyboardInterrupt:
                             raise
                         except:
@@ -432,17 +432,6 @@ def test_normal():
     s.add_task(lambda l = l: l.append('c'), 1.5)
     sleep(3)
     assert l == ['a', 'b', 'c', 'd']
-    s.shutdown()
-
-def test_args():
-    l = []
-    def func(a, l = l):
-        l.append(a)
-    s = RawServer(5)
-    s.start_listening(DummyHandler(), 5008)
-    s.add_task(lambda a, l = l: l.append(a), 1, [3])
-    sleep(1.5)
-    assert l == [3]
     s.shutdown()
 
 def test_catch_exception():
