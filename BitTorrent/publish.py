@@ -6,8 +6,7 @@ from urllib import urlopen
 from StreamEncrypter import make_encrypter
 from PublisherChoker import Choker
 from MultiBlob import MultiBlob
-from Uploader import Uploader
-from DummyDownloader import DummyDownloader
+from Uploader import Upload
 from Connecter import Connecter
 from Encrypter import Encrypter
 from RawServer import RawServer
@@ -43,7 +42,28 @@ defaults = [
         'number of seconds to pause between sending keepalives'),
     ('timeout', None, 300.0,
         'time to wait between closing sockets which nothing has been received on'),
+    ('choke_interval', None, 30.0,
+        "number of seconds to pause between changing who's choked"),
     ]
+
+class DummyDownload:
+    def __init__(self, connection):
+        pass
+
+    def got_choke(self, message):
+        pass
+    
+    def got_unchoke(self, message):
+        pass
+    
+    def got_slice(self, message):
+        pass
+    
+    def got_I_have(self, message):
+        pass
+
+    def disconnected(self):
+        pass
 
 def publish(params, cols):
     try:
@@ -66,20 +86,19 @@ def publish(params, cols):
 
     private_key = entropy(20)
     noncefunc = lambda e = entropy: e(20)
-    choker = Choker(config['max_uploads'])
+    listen_port = config['port']
+    rawserver = RawServer(config['max_poll_period'], Event(),
+        config['timeout'])
+    choker = Choker(config['max_uploads'], rawserver.add_task, config['choke_interval'])
     piece_length = config['piece_size']
     blobs = MultiBlob(files, piece_length, open, getsize, exists, 
         split, getmtime, time, isfile)
-    uploader = Uploader(choker, blobs)
-    downloader = DummyDownloader()
-    connecter = Connecter(uploader, downloader)
-    rawserver = RawServer(config['max_poll_period'], Event(),
-        config['timeout'])
+    def make_upload(connection, choker = choker, blobs = blobs):
+        return Upload(connection, choker, blobs)
+    connecter = Connecter(make_upload, DummyDownload, choker)
     encrypter = Encrypter(connecter, rawserver, noncefunc, private_key, 
         config['max_message_length'], rawserver.add_task, 
         config['keepalive_interval'])
-    connecter.set_encrypter(encrypter)
-    listen_port = config['port']
 
     try:
         files = []
