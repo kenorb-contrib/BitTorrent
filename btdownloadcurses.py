@@ -11,15 +11,15 @@ assert version >= '2', "Install Python 2.0 or greater"
 
 def fmttime(n):
     if n == -1:
-        return 'n/a'
+        return 'download not progressing (file not being uploaded by others?)'
     if n == 0:
-        return 'complete!'
+        return 'download complete!'
     n = int(n)
     m, s = divmod(n, 60)
     h, m = divmod(m, 60)
     if h > 1000000:
         return 'n/a'
-    return '%d:%02d:%02d' % (h, m, s)
+    return 'finishing in %d:%02d:%02d' % (h, m, s)
 
 def fmtsize(n):
     s = str(n)
@@ -71,7 +71,7 @@ class CursesDisplayer:
         if activity is not None and not self.done:
             self.activity = activity
         elif timeEst is not None:
-            self.activity = 'finishing in %s' % fmttime(timeEst)
+            self.activity = fmttime(timeEst)
         if fractionDone is not None:
             blocknum = int(fieldw * fractionDone)
             self.progress = blocknum * '#' + (fieldw - blocknum) * '_'
