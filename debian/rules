@@ -13,7 +13,7 @@ binary-arch:
 binary-indep: build
 	mkdir -p debian/bittorrent/DEBIAN debian/bittorrent/usr/share/doc/bittorrent debian/bittorrent/usr/share/man/man1 debian/bittorrent/usr/lib/mime/packages
 	cp FAQ.txt README.txt credits.txt todo.txt debian/bittorrent/usr/share/doc/bittorrent
-	cp debian/changelog debian/bittorrent/usr/share/doc/changelog.Debian
+	cp debian/changelog debian/bittorrent/usr/share/doc/bittorrent/changelog.Debian
 	cp debian/postinst debian/postrm debian/bittorrent/DEBIAN
 	cp debian/mailcap debian/bittorrent/usr/lib/mime/packages/bittorrent
 	ln -s ../man7/undocumented.7.gz debian/bittorrent/usr/share/man/man1/btdownloadgui.py.gz
