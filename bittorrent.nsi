@@ -15,6 +15,7 @@ Section "Install"
   File dist\library.zip
   File redirdonate.html
   File bittorrent.ico
+  File LICENSE.txt
   WriteRegStr HKCR .torrent "" bittorrent
   WriteRegStr HKCR .torrent "Content Type" application/x-bittorrent
   WriteRegStr HKCR "MIME\Database\Content Type\application/x-bittorrent" Extension .torrent
