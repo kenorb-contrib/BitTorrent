@@ -101,7 +101,6 @@ class RawServer:
     def start_listening(self, handler, port, ret = true):
         self.handler = handler
         self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.server.setblocking(0)
         self.server.bind(('', port))
         self.server.listen(5)
