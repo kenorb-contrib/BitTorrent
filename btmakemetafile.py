@@ -14,10 +14,13 @@ from BitTorrent.bencode import bencode
 from BitTorrent.btformats import check_info
 from BitTorrent.parseargs import parseargs, formatDefinitions
 from threading import Event
+from time import time
 
 defaults = [
     ('piece_size_pow2', None, 18,
         "which power of 2 to set the piece size to"),
+    ('comment', None, '',
+        "optional human-readable comment to put in .torrent"),
     ]
 
 ignore = ['core', 'CVS'] # ignoring these files could be trouble
@@ -26,7 +29,7 @@ def dummy(v):
     pass
 
 def make_meta_file(file, url, piece_len_exp = 18, 
-        flag = Event(), progress = dummy, progress_percent=1):
+        flag = Event(), progress = dummy, progress_percent=1, comment = None):
     piece_length = 2 ** piece_len_exp
     a, b = split(file)
     if b == '':
@@ -38,7 +41,10 @@ def make_meta_file(file, url, piece_len_exp = 18,
         return
     check_info(info)
     h = open(f, 'wb')
-    h.write(bencode({'info': info, 'announce': strip(url)}))
+    data = {'info': info, 'announce': strip(url), 'creation date': time()}
+    if comment:
+        data['comment'] = comment
+    h.write(bencode(data))
     h.close()
 
 def calcsize(file):
@@ -138,7 +144,8 @@ if __name__ == '__main__':
     else:
         try:
             config, args = parseargs(argv[3:], defaults, 0, 0)
-            make_meta_file(argv[1], argv[2], config['piece_size_pow2'], progress = prog)
+            make_meta_file(argv[1], argv[2], config['piece_size_pow2'], progress = prog,
+                comment = config['comment'])
         except ValueError, e:
             print 'error: ' + str(e)
             print 'run with no args for parameter explanations'
