@@ -50,6 +50,7 @@ class DownloadInfoFrame:
         frame = wxFrame(None, -1, 'BitTorrent ' + version + ' download', size = wxSize(400, 250))
         self.frame = frame
         self.flag = flag
+        self.uiflag = Event()
         self.fin = false
 
         panel = wxPanel(frame, -1)
@@ -131,11 +132,11 @@ class DownloadInfoFrame:
         open_new('http://bitconjurer.org/BitTorrent/donate.html')
 
     def onInvoke(self, event):
-        if not self.flag.isSet():
+        if not self.uiflag.isSet():
             apply(event.func, event.args, event.kwargs)
 
     def invokeLater(self, func, args = [], kwargs = {}):
-        if not self.flag.isSet():
+        if not self.uiflag.isSet():
             wxPostEvent(self.frame, InvokeEvent(func, args, kwargs))
 
     def updateStatus(self, dict):
@@ -222,6 +223,7 @@ class DownloadInfoFrame:
         self.fileDestText.SetLabel(path)
 
     def done(self, event):
+        self.uiflag.set()
         self.flag.set()
         self.frame.Destroy()
 
