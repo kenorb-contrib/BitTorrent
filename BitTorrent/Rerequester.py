@@ -64,7 +64,7 @@ class Rerequester:
         if self.howmany() >= self.maxpeers:
             s += '&numwant=0'
         else:
-            s += '&no_peer_id=1'
+            s += '&compact=1'
         if event != None:
             s += '&event=' + ['started', 'completed', 'stopped'][event]
         set = SetOnce().set
@@ -105,7 +105,17 @@ class Rerequester:
                 self.interval = r.get('min interval', self.interval)
                 self.trackerid = r.get('tracker id', self.trackerid)
                 self.last = r.get('last')
-                ps = len(r['peers']) + self.howmany()
+                p = r['peers']
+                peers = []
+                if type(p) == type(''):
+                    for x in xrange(0, len(p), 6):
+                        ip = '.'.join([str(ord(i)) for i in p[x:x+4]])
+                        port = (ord(p[x+4]) << 8) | ord(p[x+5])
+                        peers.append((ip, port, None))
+                else:
+                    for x in p:
+                        peers.append((x['ip'], x['port'], x.get('peer id')))
+                ps = len(peers) + self.howmany()
                 if ps < self.maxpeers:
                     if self.doneflag.isSet():
                         if r.get('num peers', 1000) - r.get('done peers', 0) > ps * 1.2:
@@ -113,8 +123,8 @@ class Rerequester:
                     else:
                         if r.get('num peers', 1000) > ps * 1.2:
                             self.last = None
-                for x in r['peers']:
-                    self.connect((x['ip'], x['port']), x.get('peer id'))
+                for x in peers:
+                    self.connect((x[0], x[1]), x[2])
         except ValueError, e:
             if data != '':
                 self.errorfunc('bad data from tracker - ' + str(e))

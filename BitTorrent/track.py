@@ -109,6 +109,9 @@ def isotime(secs = None):
         secs = time()
     return strftime('%Y-%m-%d %H:%M UTC', gmtime(secs))
 
+def compact_peer_info(ip, port):
+    return ''.join([chr(int(i)) for i in ip.split('.')]) + chr((port & 0xFF00) >> 8) + chr(port & 0xFF)
+
 class Tracker:
     def __init__(self, config, rawserver):
         self.response_size = config['response_size']
@@ -116,12 +119,14 @@ class Tracker:
         self.natcheck = config['nat_check']
         self.max_give = config['max_give']
         favicon = config['favicon']
-        if favicon and (favicon != '') and isfile(favicon):
-            self.favicon = open(favicon,'r').read()
-        else:
-            if favicon and (favicon != ''):
+        self.favicon = None
+        if favicon:
+            if isfile(favicon):
+                h = open(favicon, 'rb')
+                self.favicon = h.read()
+                h.close()
+            else:
                 print "**warning** specified favicon file -- %s -- does not exist." % favicon
-            self.favicon = None
         self.rawserver = rawserver
         self.becache1 = {}
         self.becache2 = {}
@@ -150,8 +155,7 @@ class Tracker:
                 if not dat.get('nat',1):
                     self.becache1.setdefault(x,{})[y] = Bencached(bencode({'ip': dat['ip'], 
                         'port': dat['port'], 'peer id': y}))
-                    self.becache2.setdefault(x,{})[y] = Bencached(bencode({'ip': dat['ip'], 
-                        'port': dat['port']}))
+                    self.becache2.setdefault(x,{})[y] = compact_peer_info(dat['ip'], dat['port'])
         self.reannounce_interval = config['reannounce_interval']
         self.save_dfile_interval = config['save_dfile_interval']
         self.show_names = config['show_names']
@@ -353,7 +357,7 @@ class Tracker:
                     peers[myid] = {'ip': ip, 'port': port, 'left': left}
                 if not self.natcheck or local_override:
                     self.becache1.setdefault(infohash,{})[myid] = Bencached(bencode({'ip': ip, 'port': port, 'peer id': myid}))
-                    self.becache2.setdefault(infohash,{})[myid] = Bencached(bencode({'ip': ip, 'port': port}))
+                    self.becache2.setdefault(infohash,{})[myid] = compact_peer_info(ip, port)
             else:
                 peers[myid]['left'] = left
             if params.get('event', '') == 'completed':
@@ -368,29 +372,34 @@ class Tracker:
                 peers[myid]['nat'] = 0
         else:
             if peers.has_key(myid) and peers[myid]['ip'] == ip:
-                try:
+                if self.becache1[infohash].has_key(myid):
                     del self.becache1[infohash][myid]
                     del self.becache2[infohash][myid]
-                except KeyError:
-                    pass
                 del peers[myid]
                 del ts[myid]
         data = {'interval': self.reannounce_interval}
-        if rsize > 0:
-            if params.get('no_peer_id', 0):
+        if params.get('compact', 0):
+            if rsize == 0:
+                data['peers'] = ''
+            else:
                 cache = self.cache2.setdefault(infohash, [])
-                b = self.becache2
+                if len(cache) < rsize:
+                    del cache[:]
+                    cache.extend(self.becache2.setdefault(infohash, {}).values())
+                    shuffle(cache)
+                data['peers'] = ''.join(cache[-rsize:])
+                del cache[-rsize:]
+        else:
+            if rsize == 0:
+                data['peers'] = []
             else:
                 cache = self.cache1.setdefault(infohash, [])
-                b = self.becache1
-            if len(cache) < rsize:
-                del cache[:]
-                cache.extend(b.setdefault(infohash, {}).values())
-                shuffle(cache)
-            data['peers'] = cache[-rsize:]
-            del cache[-rsize:]
-        else:
-            data['peers'] = []
+                if len(cache) < rsize:
+                    del cache[:]
+                    cache.extend(self.becache1.setdefault(infohash, {}).values())
+                    shuffle(cache)
+                data['peers'] = cache[-rsize:]
+                del cache[-rsize:]
         connection.answer((200, 'OK', {'Content-Type': 'text/plain', 'Pragma': 'no-cache'}, bencode(data)))
 
     def connectback_result(self, result, downloadid, peerid, ip, port):
@@ -406,7 +415,7 @@ class Tracker:
                 record['nat'] += 1
         if result:
             self.becache1.setdefault(downloadid,{})[peerid] = Bencached(bencode({'ip': ip, 'port': port, 'peer id': peerid}))
-            self.becache2.setdefault(downloadid,{})[peerid] = Bencached(bencode({'ip': ip, 'port': port}))
+            self.becache2.setdefault(downloadid,{})[peerid] = compact_peer_info(ip, port)
 
     def save_dfile(self):
         self.rawserver.add_task(self.save_dfile, self.save_dfile_interval)
@@ -422,11 +431,9 @@ class Tracker:
         for x in self.times.keys():
             for myid, t in self.times[x].items():
                 if t < self.prevtime:
-                    try:
+                    if self.becache1[x].has_key(myid):
                         del self.becache1[x][myid]
                         del self.becache2[x][myid]
-                    except KeyError:
-                        pass
                     del self.times[x][myid]
                     del self.downloads[x][myid]
         self.prevtime = time()

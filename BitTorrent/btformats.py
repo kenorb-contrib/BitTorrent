@@ -66,20 +66,21 @@ def check_peers(message):
             raise ValueError
         return
     peers = message.get('peers')
-    if type(peers) != ListType:
-        raise ValueError
-    for p in peers:
-        if type(p) != DictType:
-            raise ValueError
-        if type(p.get('ip')) != StringType:
-            raise ValueError
-        port = p.get('port')
-        if type(port) not in ints or p <= 0:
-            raise ValueError
-        if p.has_key('peer id'):
-            id = p.get('peer id')
-            if type(id) != StringType or len(id) != 20:
+    if type(peers) == ListType:
+        for p in peers:
+            if type(p) != DictType:
                 raise ValueError
+            if type(p.get('ip')) != StringType:
+                raise ValueError
+            port = p.get('port')
+            if type(port) not in ints or p <= 0:
+                raise ValueError
+            if p.has_key('peer id'):
+                id = p.get('peer id')
+                if type(id) != StringType or len(id) != 20:
+                    raise ValueError
+    elif type(peers) != StringType or len(peers) % 6 != 0:
+        raise ValueError
     interval = message.get('interval', 1)
     if type(interval) not in ints or interval <= 0:
         raise ValueError
