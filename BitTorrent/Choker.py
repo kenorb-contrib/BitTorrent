@@ -21,10 +21,13 @@ class Choker:
         self.schedule(self.round_robin, 10)
         self.count += 1
         if self.count % 3 == 0:
-            if not self.interrupted and self.connections != []:
-                x = self.connections[0]
-                del self.connections[0]
-                self.connections.append(x)
+            if not self.interrupted:
+                for i in xrange(1, len(self.connections)):
+                    u = self.connections[i].get_upload()
+                    if u.is_interested() and u.is_choked():
+                        self.connections.extend(self.connections[:i])
+                        del self.connections[:i]
+                        break
             self.interrupted = false
         self.preforder = [(-self.measurefunc(x), x) for x in self.connections]
         self.preforder.sort()
