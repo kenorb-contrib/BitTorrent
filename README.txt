@@ -24,7 +24,7 @@ your files.
 To run a tracker, execute the command bttrack.py Here is an 
 example -
 
-./bttrack.py --port 8080 --dfile dstate
+./bttrack.py --port 6969 --dfile dstate
 
 --dfile is where persistent information is kept on the tracker across 
 invocations. It makes everything start working again immediately if 

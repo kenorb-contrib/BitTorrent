@@ -29,6 +29,7 @@ class Rerequester:
         self.down = down
         self.timeout = timeout
         self.errorfunc = errorfunc
+        self.last_failed = true
         self.sched(self.c, interval / 2)
 
     def c(self):
@@ -49,9 +50,12 @@ class Rerequester:
         if event != 3:
             s += '&event=' + ['started', 'completed', 'stopped'][event]
         set = SetOnce().set
-        def checkfail(self = self, set = set):
+        def checkfail(self = self, set = set, callback = callback):
             if set():
-                self.errorfunc('Problem connecting to tracker - timeout exceeded')
+                if self.last_failed:
+                    self.errorfunc('Problem connecting to tracker - timeout exceeded')
+                self.last_failed = true
+                callback()
         self.sched(checkfail, self.timeout)
         Thread(target = self.rerequest, args = [s, set, callback]).start()
 
@@ -62,14 +66,17 @@ class Rerequester:
             h.close()
             if set():
                 def add(self = self, r = r, callback = callback):
+                    self.last_failed = false
                     self.postrequest(r, callback)
                 self.externalsched(add)
         except IOError, e:
-            set()
-            def fail(self = self, r = 'Problem connecting to tracker - ' + str(e)):
-                self.errorfunc(r)
-            self.externalsched(fail)
-            self.externalsched(callback)
+            if set():
+                def fail(self = self, r = 'Problem connecting to tracker - ' + str(e)):
+                    if self.last_failed:
+                        self.errorfunc(r)
+                    self.last_failed = true
+                self.externalsched(fail)
+                self.externalsched(callback)
 
     def postrequest(self, data, callback):
         try:
