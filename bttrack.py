@@ -147,12 +147,7 @@ class TrackerHandler(BaseHTTPRequestHandler):
                 self.send_header('Content-Type', 'bittorrent/redirect')
                 publishers, blob, length, pieces, piece_length = published[f]
                 requesters = self.server.downloads.get(f, [])
-                if self.client_address[0] in self.server.ips:
-                    requesters = publishers + requesters
-                elif self.server.level < 600:
-                    self.server.level += 60
-                    self.server.ips.append(self.client_address[0])
-                    requesters = publishers + requesters
+                requesters = publishers + requesters
                 response = {'hash': blob, 'pieces': pieces, 'piece length': piece_length, 
                     'peers': requesters, 'type': 'success', 'finish': prefix3,
                     'length': length, 'id': f, 'name': f, 'announce': prefix2,
@@ -187,24 +182,6 @@ def track(config):
     s.port = port
     s.lock = Condition()
     s.ip = config['ip']
-    s.ips = []
-    s.level = 0
-    def reduce_level(s = s):
-        while true:
-            sleep(1)
-            try:
-                s.lock.acquire()
-                s.level = max(0, s.level - 1)
-            finally:
-                s.lock.release()
-    def clear_ips(s = s):
-        while true:
-            sleep(600)
-            try:
-                s.lock.acquire()
-                del s.ips[:]
-            finally:
-                s.lock.release()
     d = config['dfile']
     if d != '':
         if exists(d):
@@ -225,8 +202,6 @@ def track(config):
                 finally:
                     s.lock.release()
         Thread(target = store_downloads).start()
-    Thread(target = reduce_level).start()
-    Thread(target = clear_ips).start()
     Thread(target = s.serve_forever).start()
 
 configDefinitions = [

@@ -7,8 +7,10 @@ include winsetup.py
 include bittorrent.nsi
 
 # include all top level scripts
-include bt-download.py
-include bt-download-headless.py
-include bt-download-prefetched.py
-include bt-publish.py
-include bt-publicize.py
+include btdownloadlibrary.py
+include btdownloadheadless.py
+include btdownloadgui.py
+include btdownloadprefetched.py
+include btpublish.py
+include bttrack.py
+include bttest.py
