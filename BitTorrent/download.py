@@ -193,14 +193,13 @@ def download(params, filefunc, displayfunc, doneflag, cols):
         
     if response1.has_key('finish'):
         try:
-            a = {'type': 'finished', 'id': response1['id']}
+            a = {'type': 'finished', 'id': response1['id'], 'myid': myid}
             if r[0]:
                 a['result'] = 'success'
             else:
                 a['result'] = 'failure'
             url = urljoin(response1['url'], response1['finish'] + 
-                b2a_hex(bencode(a)) + response1.get('postfinish', ''), 
-                'myid': myid)
+                b2a_hex(bencode(a)) + response1.get('postfinish', ''))
             h = urlopen(url)
             h.read()
             h.close()

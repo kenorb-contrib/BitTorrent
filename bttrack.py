@@ -48,7 +48,16 @@ class TrackerHandler(BaseHTTPRequestHandler):
         # {filename: ([{'ip': ip, 'port': port}], [{'ip': ip, 'port': port}], hash, length, pieces, piece_length)}
         published = self.server.published
         path = unquote(self.path)
-        if path[:len(prefix)] == prefix:
+        if path == '/' or path == '/index.html':
+            self.send_response(200)
+            self.end_headers()
+            self.wfile.write('<html><head><title>Published BitTorrent files</title></head><body>\n')
+            names = published.keys()
+            names.sort()
+            for name in names:
+                self.wfile.write('<a href="' + name + '">' + name + '</a><p>\n\n')
+            self.wfile.write('</body></html>\n')
+        elif path[:len(prefix)] == prefix:
             try:
                 try:
                     message = bdecode(a2b_hex(path[len(prefix):]))
