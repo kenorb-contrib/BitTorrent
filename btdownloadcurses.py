@@ -21,11 +21,27 @@ def fmttime(n):
         return 'n/a'
     return '%d:%02d:%02d' % (h, m, s)
 
+def fmtsize(n):
+    s = str(n)
+    size = s[-3:]
+    while len(s) > 3:
+        s = s[:-3]
+        size = '%s,%s' % (s[-3:], size)
+    if n > 999:
+        unit = ['B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB']
+        i = 1
+        while i + 1 < len(unit) and (n >> 10) >= 999:
+            i += 1
+            n >>= 10
+        n = float(n) / (1 << 10)
+        size = '%s (%.0f %s)' % (size, n, unit[i])
+    return size
+
 class CursesDisplayer:
     def __init__(self):
         self.done = 0
         self.file = ''
-        self.fileSize = -1
+        self.fileSize = ''
         self.activity = ''
         self.status = ''
         self.progress = ''
@@ -38,7 +54,7 @@ class CursesDisplayer:
         self.done = 1
         self.activity = 'download succeeded!'
         self.downRate = '---'
-        self.display()
+        self.display(fractionDone = 1)
 
     def failed(self):
         self.done = 1
@@ -57,8 +73,9 @@ class CursesDisplayer:
         elif timeEst is not None:
             self.activity = 'finishing in %s' % fmttime(timeEst)
         if fractionDone is not None:
+            blocknum = int(fieldw * fractionDone)
+            self.progress = blocknum * '#' + (fieldw - blocknum) * '_'
             self.status = '%s (%.1f%%)' % (self.activity, fractionDone * 100)
-            self.progress = int(fieldw * fractionDone) * '#'
         else:
             self.status = self.activity
         if downRate is not None:
@@ -68,25 +85,26 @@ class CursesDisplayer:
 
         fieldwin.erase()
         fieldwin.addstr(0, 0, self.file, curses.A_BOLD)
-        fieldwin.addstr(1, 0, self.downloadTo)
+        fieldwin.addstr(1, 0, self.fileSize)
+        fieldwin.addstr(2, 0, self.downloadTo)
         if self.progress:
-          fieldwin.addstr(2, 0, fieldw * '_', curses.A_BOLD)
-          fieldwin.addstr(2, 0, self.progress, curses.A_BOLD)
-        fieldwin.addstr(3, 0, self.status)
-        fieldwin.addstr(4, 0, self.downRate)
-        fieldwin.addstr(5, 0, self.upRate)
+          fieldwin.addstr(3, 0, self.progress, curses.A_BOLD)
+        fieldwin.addstr(4, 0, self.status)
+        fieldwin.addstr(5, 0, self.downRate)
+        fieldwin.addstr(6, 0, self.upRate)
 
-        for i in range(len(self.errors)):
-            fieldwin.addstr(6 + i, 0, self.errors[i], curses.A_BOLD)
+        if self.errors:
+            for i in range(len(self.errors)):
+                fieldwin.addstr(7 + i, 0, self.errors[i], curses.A_BOLD)
         else:
-            fieldwin.move(6, 0)
+            fieldwin.move(7, 0)
 
         curses.panel.update_panels()
         curses.doupdate()
 
     def chooseFile(self, default, size, saveas, dir):
         self.file = default
-        self.fileSize = size
+        self.fileSize = fmtsize(size)
         if saveas == '':
             saveas = default
         self.downloadTo = abspath(saveas)
@@ -106,12 +124,13 @@ def prepare_display():
     # yes, i know there is curses.win.box(), i would like to use it, too, but
     # somehow it sucks in cygwin due to some shortcomings of it's curses port
     labelwin.addstr(0, 0, 'file:')
-    labelwin.addstr(1, 0, 'dest:')
-    labelwin.addstr(2, 0, 'progress:')
-    labelwin.addstr(3, 0, 'status:')
-    labelwin.addstr(4, 0, 'dl speed:')
-    labelwin.addstr(5, 0, 'ul speed:')
-    labelwin.addstr(6, 0, 'error(s):')
+    labelwin.addstr(1, 0, 'size:')
+    labelwin.addstr(2, 0, 'dest:')
+    labelwin.addstr(3, 0, 'progress:')
+    labelwin.addstr(4, 0, 'status:')
+    labelwin.addstr(5, 0, 'dl speed:')
+    labelwin.addstr(6, 0, 'ul speed:')
+    labelwin.addstr(7, 0, 'error(s):')
     curses.panel.update_panels()
     curses.doupdate()
 
