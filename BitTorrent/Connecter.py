@@ -284,7 +284,7 @@ def test_operation():
     co.connection_made(dc)
     assert len(cs) == 1
     cc = cs[0]
-    co.got_message(dc, BITFIELD + chr(3))
+    co.got_message(dc, BITFIELD + chr(0xc0))
     co.got_message(dc, CHOKE)
     co.got_message(dc, UNCHOKE)
     co.got_message(dc, INTERESTED)
@@ -311,7 +311,7 @@ def test_operation():
         ('request', 1, 5, 6), ('cancel', 2, 3, 4),
         ('piece', 1, 0, 'abc'), ('piece', 1, 3, 'def'), 
         ('m', HAVE + tobinary(1)),
-        'flushed', ('m', BITFIELD + chr(6)), ('m', INTERESTED), 
+        'flushed', ('m', BITFIELD + chr(0x60)), ('m', INTERESTED), 
         ('m', NOT_INTERESTED), ('m', CHOKE), ('m', UNCHOKE), 
         ('m', HAVE + tobinary(4)), ('m', REQUEST + tobinary(0) + 
         tobinary(2) + tobinary(1)), ('m', CANCEL + tobinary(1) + 

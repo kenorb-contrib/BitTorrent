@@ -8,11 +8,11 @@ def booleans_to_bitfield(booleans):
     r = []
     for i in xrange(0, len(booleans), 8):
         v = 0
-        p = 1
+        p = 0x80
         for j in booleans[i:i+8]:
             if j:
-                v |= 0xFF & p
-            p <<= 1
+                v |= p
+            p >>= 1
         r.append(chr(v))
     return ''.join(r)
 
@@ -24,8 +24,11 @@ def bitfield_to_booleans(bitfield, l):
     for c in bitfield:
         v = ord(c)
         for i in xrange(8):
-            r.append(v & 1)
-            v >>= 1
+            if v & 0x80 != 0:
+                r.append(true)
+            else:
+                r.append(false)
+            v <<= 1
     if extra > 0:
         if r[-extra:] != [0] * extra:
             return None
