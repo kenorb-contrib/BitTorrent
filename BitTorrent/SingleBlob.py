@@ -68,6 +68,12 @@ class SingleBlob:
         return sum
 
     def get_slice(self, blob, begin, length):
+        try:
+            return self._get_slice(blob, begin, length)
+        except IOError, e:
+            self.callback(false, 'IOError: ' + str(e), fatal = true)
+
+    def _get_slice(self, blob, begin, length):
         if not self.complete.has_key(blob):
             return None
         beginindex, endindex = self.indices[blob][0]
@@ -90,11 +96,24 @@ class SingleBlob:
         return self.complete.keys()
 
     def save_slice(self, blob, begin, slice):
+        try:
+            self._save_slice(blob, begin, slice)
+        except IOError, e:
+            self.callback(false, 'IOError: ' + str(e), fatal = true)
+
+    def _save_slice(self, blob, begin, slice):
         beginindex, endindex = self.indices[blob][0]
         self.h.seek(beginindex + begin)
         self.h.write(slice)
-    
+
     def check_blob(self, blob):
+        try:
+            return self._check_blob(blob)
+        except IOError, e:
+            self.callback(false, 'IOError: ' + str(e), fatal = true)
+            return false
+
+    def _check_blob(self, blob):
         beginindex, endindex = self.indices[blob][0]
         self.h.seek(beginindex)
         x = self.h.read(endindex - beginindex)

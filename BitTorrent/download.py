@@ -138,9 +138,13 @@ def download(params, filefunc, statusfunc, resultfunc, doneflag, cols):
             resuming = false
         r = [0]
         finflag = Event()
-        def finished(result, resultfunc = resultfunc, finflag = finflag):
+        def finished(result, errormsg = None, fatal = false, resultfunc = resultfunc, finflag = finflag, doneflag = doneflag):
+            if doneflag.isSet():
+                return
             finflag.set()
-            resultfunc(result)
+            if fatal:
+                doneflag.set()
+            resultfunc(result, errormsg)
         blobs = SingleBlob(file, file_length, response['pieces'], 
             response['piece length'], finished, open, path.exists, path.getsize)
         left = blobs.get_amount_left()
