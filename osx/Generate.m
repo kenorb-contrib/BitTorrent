@@ -196,7 +196,7 @@
         mmf = PyDict_GetItemString(md, "completedir");
         display = PyObject_GetAttrString((PyObject *)proxy, "metaprogress");
         displayFname = PyObject_GetAttrString((PyObject *)proxy, "fnameprogress");
-        res = PyObject_CallFunction(mmf, "ssOOO", [filename cString], [url cString], flag, display, displayFname);
+        res = PyObject_CallFunction(mmf, "ssOOOi", [filename cString], [url cString], flag, display, displayFname, 18);
         if(PyErr_Occurred())
             PyErr_Print();
         if(res) {

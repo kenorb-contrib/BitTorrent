@@ -10,7 +10,7 @@
     NSMutableArray *dlControllers;
     NSString *version;
     NSPoint lastPoint;
-    id generator;
+    id generator, prefs, prefwindow;
 }
 - (IBAction)cancelUrl:(id)sender;
 - (IBAction)openURL:(id)sender;
@@ -26,4 +26,5 @@
 - (PyThreadState *)tstate;
 - (void)setTstate:(PyThreadState *)nstate;
 - (IBAction)openGenerator:(id)sender;
+- (IBAction)openPrefs:(id)sender;
 @end

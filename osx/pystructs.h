@@ -5,4 +5,5 @@
 typedef struct {
     PyObject_HEAD
     id dlController;  // NSProxy connection
+    PyObject *chooseFlag;  // chooseFileFlag
 } bt_ProxyObject;

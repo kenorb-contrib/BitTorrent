@@ -16,7 +16,7 @@ static PyObject *chooseFile(bt_ProxyObject *self, PyObject *args)
 {
     NSAutoreleasePool *pool =[[NSAutoreleasePool alloc] init];
     char *def = "";
-    PyObject *obj;
+    PyObject *obj, *event, *mm, *md;
     PyObject *megabyte;
     char *saveas = NULL;
     int dir;
@@ -29,9 +29,18 @@ static PyObject *chooseFile(bt_ProxyObject *self, PyObject *args)
     megabyte  = Py_BuildValue("f", 1048576.0);
     obj = PyNumber_Divide(obj, megabyte);
     
+    mm = PyImport_ImportModule("__main__");
+
     Py_BEGIN_ALLOW_THREADS
-        str = [self->dlController chooseFile:[NSString stringWithCString:def] size:PyFloat_AsDouble(obj) isDirectory:dir];
+        [self->dlController chooseFile:[NSString stringWithCString:def] size:PyFloat_AsDouble(obj) isDirectory:dir];
     Py_END_ALLOW_THREADS
+  
+    PyObject_CallMethod(self->chooseFlag, "wait", NULL);  
+    
+    Py_BEGIN_ALLOW_THREADS
+        str = [self->dlController savePath];
+    Py_END_ALLOW_THREADS
+
     if(str) {
         res = PyString_FromString([str cString]);
     }
@@ -166,6 +175,7 @@ staticforward PyTypeObject bt_ProxyType;
 static void bt_proxy_dealloc(bt_ProxyObject* self)
 {
     [self->dlController release];
+    Py_DECREF(self->chooseFlag);
     PyObject_Del(self);
 }
 
@@ -204,7 +214,7 @@ static PyTypeObject bt_ProxyType = {
 };
 
 // given two ports, create a new proxy object
-bt_ProxyObject *bt_getProxy(NSPort *receivePort, NSPort *sendPort)
+bt_ProxyObject *bt_getProxy(NSPort *receivePort, NSPort *sendPort, PyObject *chooseFileFlag)
 {
     bt_ProxyObject *proxy;
     id foo;
@@ -216,6 +226,8 @@ bt_ProxyObject *bt_getProxy(NSPort *receivePort, NSPort *sendPort)
     [foo setProtocolForProxy:@protocol(BTCallbacks)];
     [foo retain];
     proxy->dlController = foo;
+    proxy->chooseFlag = chooseFileFlag;
+    Py_INCREF(proxy->chooseFlag);
     return (bt_ProxyObject *)proxy;
 }
 

@@ -16,7 +16,7 @@
     NSString *timeEst;
     NSString *savepath;
     float frac;
-    PyObject *flag;
+    PyObject *flag, *chooseflag;
     double totalsize;
     NSConnection *conn;
     int done;
@@ -27,11 +27,16 @@
 - (void)error:(NSString *)str;
 - (void)display:(NSDictionary *)dict;
 - (void)pathUpdated:(NSString *)newPath;
-- (NSString *)chooseFile:(NSString *)defaultFile size:(double)size isDirectory:(int)dir;
+- (void)chooseFile:(NSString *)defaultFile size:(double)size isDirectory:(int)dir;
+- (NSString *)savePath;
 - (void)dlExited;
 - (void)setFlag:(PyObject *)nflag;
+- (void)setChooseFlag:(PyObject *)nflag;
 - (void)setConnection:(NSConnection *)nc;
 - (void)dealloc;
+
+- (void)savePanelDidEnd:(NSSavePanel *)sheet returnCode:(int)returnCode contextInfo:(void  *)contextInfo;
+- (void)openPanelDidEnd:(NSOpenPanel *)sheet returnCode:(int)returnCode contextInfo:(void  *)contextInfo;
 
 - (id)validRequestorForSendType:(NSString *)sendType returnType:(NSString *)returnType;
 @end

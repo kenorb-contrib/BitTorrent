@@ -17,6 +17,8 @@
 				F5D01D3E027E224601A845D2,
 				F5D01D37027E0FE201A845D2,
 				F5D01D38027E0FE201A845D2,
+				73FFC8050471552300010167,
+				73FFC8060471552300010167,
 				F5A3C5CA02F3CA7101A845D2,
 				F5A3C5CB02F3CA7101A845D2,
 				F5ACEF980308CD8E01538297,
@@ -177,6 +179,7 @@
 				F542E1960308BE0301AA9403,
 				089C165CFE840E0CC02AAC07,
 				7325C8A403BE3FCB004B4E79,
+				73FFC7F50470806800010167,
 			);
 			isa = PBXGroup;
 			name = Resources;
@@ -231,7 +234,6 @@
 			buildSettings = {
 				FRAMEWORK_SEARCH_PATHS = "";
 				HEADER_SEARCH_PATHS = /usr/local/include/;
-				INSTALL_PATH = "$(HOME)/Applications";
 				LIBRARY_SEARCH_PATHS = /usr/local/lib/python2.2/config;
 				OPTIMIZATION_CFLAGS = "-O0";
 				OTHER_CFLAGS = "-Wall -g";
@@ -244,7 +246,6 @@
 			);
 			isa = PBXApplicationTarget;
 			name = BitTorrent;
-			productInstallPath = "$(HOME)/Applications";
 			productName = BitTorrent;
 			productReference = 17587328FF379C6511CA2CBB;
 			productSettingsXML = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>
@@ -315,6 +316,7 @@
 				F5ACEF9A0308CD8E01538297,
 				F5ACEF9E030B4FE301538297,
 				73D8011103BE3B7900053DF6,
+				73FFC8070471552300010167,
 			);
 			isa = PBXHeadersBuildPhase;
 			runOnlyForDeploymentPostprocessing = 0;
@@ -328,6 +330,7 @@
 				F542E1980308BE0401AA9403,
 				7325C8A503BE3FCB004B4E79,
 				73A43D3903C6C24A00000124,
+				73FFC7F70470806900010167,
 			);
 			isa = PBXResourcesBuildPhase;
 			runOnlyForDeploymentPostprocessing = 0;
@@ -341,6 +344,7 @@
 				F5A3C5D302F6385901A845D2,
 				F5ACEF9B0308CD8E01538297,
 				73EF07FB03BA9D8100000104,
+				73FFC8080471552300010167,
 			);
 			isa = PBXSourcesBuildPhase;
 			runOnlyForDeploymentPostprocessing = 0;
@@ -441,6 +445,51 @@
 		};
 		73EF07FB03BA9D8100000104 = {
 			fileRef = F5D01D41027E7D9D01A845D2;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		73FFC7F50470806800010167 = {
+			children = (
+				73FFC7F60470806800010167,
+			);
+			isa = PBXVariantGroup;
+			name = Preferences.nib;
+			path = "";
+			refType = 4;
+		};
+		73FFC7F60470806800010167 = {
+			isa = PBXFileReference;
+			name = English;
+			path = English.lproj/Preferences.nib;
+			refType = 4;
+		};
+		73FFC7F70470806900010167 = {
+			fileRef = 73FFC7F50470806800010167;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		73FFC8050471552300010167 = {
+			fileEncoding = 4;
+			isa = PBXFileReference;
+			path = Preferences.h;
+			refType = 4;
+		};
+		73FFC8060471552300010167 = {
+			fileEncoding = 4;
+			isa = PBXFileReference;
+			path = Preferences.m;
+			refType = 4;
+		};
+		73FFC8070471552300010167 = {
+			fileRef = 73FFC8050471552300010167;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		73FFC8080471552300010167 = {
+			fileRef = 73FFC8060471552300010167;
 			isa = PBXBuildFile;
 			settings = {
 			};

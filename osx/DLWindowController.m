@@ -44,6 +44,11 @@
     flag = nflag;
     Py_INCREF(flag);
 }
+- (void)setChooseFlag:(PyObject *)nflag
+{
+    chooseflag = nflag;
+    Py_INCREF(chooseflag);
+}
 
 - (void)setConnection:(NSConnection *)nc
 {
@@ -76,39 +81,63 @@
     return [NSString stringWithFormat:@"%2d min(s) %2d sec(s)", m, sec]; 
 }
 
-- (NSString *)chooseFile:(NSString *)defaultFile size:(double)size isDirectory:(int)dir
+- (void)savePanelDidEnd:(NSSavePanel *)sheet returnCode:(int)returnCode contextInfo:(void  *)contextInfo
 {
+    if(returnCode == NSOKButton) {
+        [file setStringValue:[NSString stringWithFormat:NSLocalizedString(@"(%1.1f MB) %@ ", @"size and filename for dl window tite") , totalsize, [sheet filename]]];
+        [[self window] setTitleWithRepresentedFilename:[sheet filename]];
+        [[NSUserDefaults standardUserDefaults] setObject:[sheet directory] forKey:LASTDIR];
+        savepath = [[sheet filename] retain];
+    }
+    else {
+        // user cancelled
+        [[self window] performClose:self];
+    }
+    PyEval_RestoreThread([[NSApp delegate] tstate]);
+    PyObject_CallMethod(chooseflag, "set", NULL);
+    [[NSApp delegate] setTstate:PyEval_SaveThread()];
+}
+
+- (void)openPanelDidEnd:(NSOpenPanel *)sheet returnCode:(int)returnCode contextInfo:(void  *)contextInfo
+{
+    if(returnCode == NSOKButton) {
+        [file setStringValue:[NSString stringWithFormat:NSLocalizedString(@"(%1.1f MB) %@ ", @"size and filename for dl window tite") , totalsize, [sheet filename]]];
+        [[self window] setTitleWithRepresentedFilename:[sheet filename]];
+        [[NSUserDefaults standardUserDefaults] setObject:[sheet directory] forKey:LASTDIR];
+        savepath = [[sheet filename] retain];
+    }
+    else {
+        // user cancelled
+        [[self window] performClose:self];
+    }
+    PyEval_RestoreThread([[NSApp delegate] tstate]);
+    PyObject_CallMethod(chooseflag, "set", NULL);
+    [[NSApp delegate] setTstate:PyEval_SaveThread()];
+
+}
+
+- (NSString *)savePath
+{
+    return savepath;
+}
+- (void)chooseFile:(NSString *)defaultFile size:(double)size isDirectory:(int)dir{
     id panel;
-    NSString *fname = nil;
     
+    totalsize = size;
+    [[self window] setTitleWithRepresentedFilename:defaultFile];
     if(!dir) {
         panel = [NSSavePanel savePanel];
         [panel setTitle:NSLocalizedString(@"Save, choose an existing file to resume.", @"save instructions")];
-        if([panel runModalForDirectory:[[NSUserDefaults standardUserDefaults] objectForKey:LASTDIR] file:defaultFile]) {
-            fname = [panel filename];
-        }
+        [panel beginSheetForDirectory:[[NSUserDefaults standardUserDefaults] objectForKey:LASTDIR] file:defaultFile modalForWindow:[self window] modalDelegate:self didEndSelector:@selector(savePanelDidEnd:returnCode:contextInfo:) contextInfo:nil];
     }
     else {
         panel = [NSOpenPanel openPanel];
         [panel setCanChooseFiles:YES];
         [panel setCanChooseDirectories:YES];
-        [panel setTitle:NSLocalizedString(@"Choose directory, choose existing directory to resume.", @"save directory instructions")];
+        [panel setTitle:defaultFile];
         [panel setPrompt:NSLocalizedString(@"Save", @"save directory prompt")];
-        if([panel runModalForDirectory:[[NSUserDefaults standardUserDefaults] objectForKey:LASTDIR] file:defaultFile]) {
-            fname = [panel filename];
-        }
+        [panel beginSheetForDirectory:[[NSUserDefaults standardUserDefaults] objectForKey:LASTDIR] file:defaultFile modalForWindow:[self window] modalDelegate:self didEndSelector:@selector(openPanelDidEnd:returnCode:contextInfo:) contextInfo:nil];
     }
-    if(fname) {
-        [file setStringValue:[NSString stringWithFormat:NSLocalizedString(@"(%1.1f MB) %@ ", @"size and filename for dl window tite") , size, fname]];
-        [[self window] setTitleWithRepresentedFilename:fname];
-        [[NSUserDefaults standardUserDefaults] setObject:[panel directory] forKey:LASTDIR];
-        totalsize = size;
-        savepath = [fname retain];
-        return fname;
-    }
-    // user cancelled
-    [[self window] performClose:self];
-    return nil;
 }
 
 - (void)pathUpdated:(NSString *)newPath
@@ -182,6 +211,7 @@
     timeEst = nil;
     PyEval_RestoreThread([[NSApp delegate] tstate]);
     Py_DECREF(flag);
+    Py_DECREF(chooseflag);
     [[NSApp delegate] setTstate:PyEval_SaveThread()];
     [super dealloc];
 }

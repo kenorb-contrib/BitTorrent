@@ -3,16 +3,17 @@
 #import "DLWindowController.h"
 #import "Generate.h"
 #import "pystructs.h"
+#import "callbacks.h"
+#import "Preferences.h"
 
 static PyThreadState *tstate;
-
-bt_ProxyObject *bt_getProxy(NSPort *receivePort, NSPort *sendPort);
 
 @implementation BTAppController
 
 - init
 {
-    PyObject *mm, *md, *vers;    
+    PyObject *mm, *md, *vers;
+
     [super init];
     
     PyRun_SimpleString("from threading import Event;from BitTorrent.download import download");
@@ -25,6 +26,8 @@ bt_ProxyObject *bt_getProxy(NSPort *receivePort, NSPort *sendPort);
     
     lastPoint.x = 0.0;
     lastPoint.y = 0.0;
+
+    prefs = [[Preferences alloc] init];
     return self;
 }
 
@@ -41,6 +44,15 @@ bt_ProxyObject *bt_getProxy(NSPort *receivePort, NSPort *sendPort);
 
     [controller showWindow:self];
     return controller;
+}
+
+- (IBAction)openPrefs:(id)sender
+{
+    if (!prefwindow) {
+        [NSBundle loadNibNamed:@"Preferences" owner:prefs];
+        prefwindow = [prefs window];
+    }
+    [prefs showWindow:self];
 }
 
 - (PyThreadState *)tstate
@@ -88,10 +100,13 @@ bt_ProxyObject *bt_getProxy(NSPort *receivePort, NSPort *sendPort);
     NSPort *left, *right;
     NSConnection *conn;
     NSMutableDictionary *dict = [NSMutableDictionary dictionaryWithCapacity:4];
-    PyObject *flag;
+    PyObject *flag, *chooseFileFlag;
     PyObject *mm, *md, *event;    
     left = [NSPort port];
     right = [NSPort port];
+    NSUserDefaults *defaults; 
+    
+    defaults = [NSUserDefaults standardUserDefaults];
     
     // create UI side of the connection
     conn = [[NSConnection alloc] initWithReceivePort:left sendPort:right];
@@ -108,13 +123,21 @@ bt_ProxyObject *bt_getProxy(NSPort *receivePort, NSPort *sendPort);
     // create flag
     event = PyDict_GetItemString(md, "Event");
     flag = PyObject_CallObject(event, NULL);
-    Py_INCREF(flag);
+    chooseFileFlag = PyObject_CallObject(event, NULL);
     [controller setFlag:flag]; // controller keeps this reference to flag
+    [controller setChooseFlag:chooseFileFlag]; // controller keeps this reference to flag
     
     [dict setObject:right forKey:@"receive"];
     [dict setObject:left forKey:@"send"];
+    [dict setObject:[NSData dataWithBytes:&chooseFileFlag length:sizeof(PyObject *)] forKey:@"chooseFileFlag"];
     [dict setObject:[NSData dataWithBytes:&flag length:sizeof(PyObject *)] forKey:@"flag"];
     [dict setObject:urlstr forKey:@"str"];
+    [dict setObject:[NSString stringWithFormat:@"--minport=%@", [defaults objectForKey:MINPORT]] forKey:@"minport"];
+    [dict setObject:[NSString stringWithFormat:@"--maxport=%@", [defaults objectForKey:MAXPORT]] forKey:@"maxport"];
+    if (![[defaults objectForKey:IP] isEqualToString:@""]) {
+        [dict setObject:[NSString stringWithFormat:@"--ip=%@", [defaults objectForKey:IP]] forKey:@"ip"];
+    }
+    [dict setObject:[NSString stringWithFormat:@"--maxport=%@", [defaults objectForKey:MAXPORT]] forKey:@"maxport"];
     Py_DECREF(mm);
     tstate = PyEval_SaveThread();
     
@@ -127,9 +150,11 @@ bt_ProxyObject *bt_getProxy(NSPort *receivePort, NSPort *sendPort);
     NSAutoreleasePool *pool;
     bt_ProxyObject *proxy;
     NSString *str;
-    PyObject *chooseFile, *finished, *display, *nerror, *mm, *md, *dl, *flag, *ret, *pathUpdated;
+    PyObject *chooseFile, *finished, *display, *nerror, *mm, *md, *dl, *flag, *chooseFileFlag, *ret, *pathUpdated;
     PyThreadState *ts;
-    
+    const char *minport = [[dict objectForKey:@"minport"] cString];
+    const char *maxport = [[dict objectForKey:@"maxport"] cString];
+
     pool = [[NSAutoreleasePool alloc] init];
     
     ts = PyThreadState_New(tstate->interp);
@@ -139,10 +164,12 @@ bt_ProxyObject *bt_getProxy(NSPort *receivePort, NSPort *sendPort);
     mm = PyImport_ImportModule("__main__");
     md = PyModule_GetDict(mm);
     dl = PyDict_GetItemString(md, "download");
-    
+    ts = PyEval_SaveThread();    
     // create proxy, which creates our side of connection
-    proxy = (bt_ProxyObject *)bt_getProxy([dict objectForKey:@"receive"], [dict objectForKey:@"send"]);
-    
+    [[dict objectForKey:@"chooseFileFlag"] getBytes:&chooseFileFlag];
+    proxy = (bt_ProxyObject *)bt_getProxy([dict objectForKey:@"receive"], [dict objectForKey:@"send"], (PyObject *)chooseFileFlag);
+
+    PyEval_RestoreThread(ts);    
     // get callbacks and other args
     str = [dict objectForKey:@"str"];
     chooseFile = PyObject_GetAttrString((PyObject *)proxy, "chooseFile");
@@ -151,10 +178,16 @@ bt_ProxyObject *bt_getProxy(NSPort *receivePort, NSPort *sendPort);
     pathUpdated = PyObject_GetAttrString((PyObject *)proxy, "pathUpdated");
     nerror = PyObject_GetAttrString((PyObject *)proxy, "nerror");
     [[dict objectForKey:@"flag"] getBytes:&flag];
-
+    
     // do the download!
-    ret = PyObject_CallFunction(dl, "[ss]OOOOOiO", [str cString], "--display_interval=1.5", 
-				chooseFile, display, finished, nerror, flag, 80, pathUpdated);
+    if([dict objectForKey:@"ip"]) {
+            ret = PyObject_CallFunction(dl, "[sssss]OOOOOiO", [str cString], "--display_interval=1.5", minport, maxport, [[dict objectForKey:@"ip"] cString],
+                                    chooseFile, display, finished, nerror, flag, 80, pathUpdated);
+    }
+    else {
+        ret = PyObject_CallFunction(dl, "[ssss]OOOOOiO", [str cString], "--display_interval=1.5", minport, maxport,
+                                    chooseFile, display, finished, nerror, flag, 80, pathUpdated);
+    }
     [proxy->dlController dlExited];
     
     // clean up
