@@ -7,8 +7,8 @@ SilentInstall silent
 SetCompressor bzip2
 InstallDir "$PROGRAMFILES\BitTorrent\"
 Section "Install"
-  WriteUninstaller "$INSTDIR\uninstall.exe"
   SetOutPath $INSTDIR
+  WriteUninstaller "$INSTDIR\uninstall.exe"
   File dist\btdownloadgui\btdownloadgui.exe
   File dist\btdownloadgui\*.pyd
   File dist\btdownloadgui\*.dll
