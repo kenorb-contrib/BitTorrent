@@ -17,7 +17,7 @@ Section "Install"
   WriteRegBin HKCR BitTorrent.torrent EditFlags 00000100
   WriteRegStr HKCR "BitTorrent.torrent\shell" "" open
   WriteRegStr HKCR "BitTorrent.torrent\shell\open\command" "" '$INSTDIR\btdownloadprefetched.exe "%1"'
-  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\BitTorrent" "DisplayName" "BitTorrent 2.7.2"
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\BitTorrent" "DisplayName" "BitTorrent 2.8.0"
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\BitTorrent" "UninstallString" '"$INSTDIR\uninstall.exe"'
   MessageBox MB_OK "Hyperlinks in Internet Explorer which use BitTorrent will now work!"
 SectionEnd

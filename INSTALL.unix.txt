@@ -1,22 +1,35 @@
-(under debian, you can currently get the following 
-using apt-get install libwxgtk2.2-python and 
-python2.1-dev from testing and use python 2.1)
-
 install Python, version 2.0 or later - http://python.org/
 
 install wxPython - http://wxpython.org/
 
-untar and cd to the root BitTorrent directory and 
-enter the following command
+(under debian, you can currently get the above 
+using apt-get install libwxgtk2.2-python and 
+python2.1-dev from testing and use python 2.1)
 
-./setup.py install
+To install system-wide - 
 
-To integrate with your web browser, copy the contents of 
-the file named 'torrent' into your /etc/mailcap file. 
-Under Debian you can do this with 
-cp torrent /usr/lib/mime/packages;update-mime
-(some unixes don't have a mailcap file, if you get it working 
-on one which doesn't, please let me know how)
+    untar and cd to the root BitTorrent directory and 
+    enter the following command
+    
+    ./setup.py install
+    
+    To integrate with your web browser, copy the contents of 
+    the file named 'torrent' into your /etc/mailcap file. 
+    Under Debian you can do this with 
+    cp torrent /usr/lib/mime/packages;update-mime
+    (some unixes don't have a mailcap file, if you get it working 
+    on one which doesn't, please let me know how)
+
+To install in a specific location -
+
+    untar and put a line in /etc/mailcap which is similar to the 
+    one in the file named 'torrent', only replace the path to 
+    /usr/bin/btdownloadprefetched.py with the one it's actually in.
 
 You may have to restart your web browser for it to start 
 using BitTorrent.
+
+If you're using a web browser which doesn't respect 
+/etc/mailcap you can go into the mimetype configuration for 
+your web browser and manually associate application/x-bittorrent 
+with btdownloadprefetched.py (with the appropriate path, of course.)

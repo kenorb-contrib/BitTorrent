@@ -91,7 +91,7 @@ def download(params, filefunc, statusfunc, resultfunc, doneflag, cols):
         return
     
     try:
-        h = urlopen('http://bitconjurer.org/BitTorrent/status-downloader-02-07-01.txt')
+        h = urlopen('http://bitconjurer.org/BitTorrent/status-downloader-02-08-00.txt')
         status = h.read().strip()
         h.close()
         if status != 'current':

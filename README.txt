@@ -18,7 +18,7 @@ web server, and the downloader, which acts as a web helper app.
 To run a tracker, execute the command bttrack.py Here is an 
 example -
 
-bttrack.py --port 8080 --ip 69.69.69.69 --file btstate \
+./bttrack.py --port 8080 --ip 69.69.69.69 --file btstate \
     --dfile dstate --logfile logfile
 
 You should substitute your own ip for 69.69.69.69. You can use 
@@ -36,18 +36,18 @@ To publish, first run the publish script to let the tracker know about
 a file, then run a downloader which already has the complete file to 
 make it available. Here's the publish command -
 
-btpublish.py myfile.ext http://my.tracker/somename.ext
+./btpublish.py myfile.ext http://my.tracker/somename.ext
 
 This command will take some time to scan over the file, then report 
-the information to the tracker and return. It will report whether the 
+the information to the tracker and complete. It will report the 
 tracker's response.
 
 Next run a downloader, here's an example -
 
-btdownloadheadless.py --url http://my.tracker/somename.ext --saveas \
+./btdownloadheadless.py --url http://my.tracker/somename.ext --saveas \
     myfile.ext
 
-Make sure the saveas argument points to the complete file.
+Make sure the saveas argument points to the already complete file.
 
 BitTorrent defaults to port 6881. If it can't use 6881, (probably because 
 another download is happening) it tries 6882, then 6883, etc. It gives up 
@@ -63,3 +63,5 @@ If you have any questions, try the web site or mailing list -
 http://bitconjurer.org/BitTorrent/
 
 http://groups.yahoo.com/group/BitTorrent
+
+You can also often find me, Bram, in #bittorrent of irc.openprojects.net

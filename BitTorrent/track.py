@@ -162,7 +162,7 @@ class Tracker:
 
 def track(ip, port, statefile, dfile, logfile, bind):
     try:
-        h = urlopen('http://bitconjurer.org/BitTorrent/status-tracker-02-07-02.txt')
+        h = urlopen('http://bitconjurer.org/BitTorrent/status-tracker-02-08-00.txt')
         status = h.read().strip()
         h.close()
         if status != 'current':
