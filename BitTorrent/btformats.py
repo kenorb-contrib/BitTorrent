@@ -48,10 +48,6 @@ def check_info(info):
 def check_message(message):
     if type(message) != DictType:
         raise ValueError
-    if message.has_key('failure reason'):
-        if type(message['failure reason']) != StringType:
-            raise ValueError
-        return
     check_info(message.get('info'))
     if type(message.get('announce')) != StringType:
         raise ValueError
@@ -59,6 +55,10 @@ def check_message(message):
 def check_peers(message):
     if type(message) != DictType:
         raise ValueError
+    if message.has_key('failure reason'):
+        if type(message['failure reason']) != StringType:
+            raise ValueError
+        return
     peers = message.get('peers')
     if type(peers) != ListType:
         raise ValueError
