@@ -103,7 +103,7 @@ class SingleBlob:
         del self.want[blob]
         self.want_list.remove(blob)
         if len(self.want) == 0:
-            self.callback()
+            self.callback(true)
         return true
 
 # everything below is for testing
@@ -117,7 +117,7 @@ def test_normal():
     r = []
     f = FakeOpen()
     sb = SingleBlob('test', 15, [a, b], 10, 
-        lambda r = r: r.append(1), f.open, f.exists, f.getsize)
+        r.append, f.open, f.exists, f.getsize)
     assert r == []
     x = sb.get_list_of_blobs_I_want()
     assert x == [a, b] or x == [b, a]
@@ -165,7 +165,7 @@ def test_even():
     r = []
     f = FakeOpen()
     sb = SingleBlob('test', 20, [a, b], 10, 
-        lambda r = r: r.append(1), f.open, f.exists, f.getsize)
+        r.append, f.open, f.exists, f.getsize)
     assert r == []
     x = sb.get_list_of_blobs_I_want()
     assert x == [a, b] or x == [b, a]
@@ -209,7 +209,7 @@ def test_short():
     a = sha(s).digest()
     r = []
     f = FakeOpen()
-    sb = SingleBlob('test', 8, [a], 10, lambda r = r: r.append(1), 
+    sb = SingleBlob('test', 8, [a], 10, r.append, 
         f.open, f.exists, f.getsize)
     assert r == []
     assert sb.get_list_of_blobs_I_want() == [a]
@@ -235,7 +235,7 @@ def test_zero_length():
     r = []
     f = FakeOpen()
     sb = SingleBlob('test', 0, [], 10, 
-        lambda r = r: r.append(1), f.open, f.exists, f.getsize)
+        r.append, f.open, f.exists, f.getsize)
     assert r == []
     
 def test_too_big():
@@ -244,7 +244,7 @@ def test_too_big():
     r = []
     f = FakeOpen()
     try:
-        sb = SingleBlob('test', 11, [a], 10, lambda r = r: r.append(1), 
+        sb = SingleBlob('test', 11, [a], 10, r.append, 
             f.open, f.exists, f.getsize)
         assert false
     except ValueError:
@@ -257,7 +257,7 @@ def test_too_small():
     f = FakeOpen()
     try:
         sb = SingleBlob('test', 8, [a, b], 
-            10, lambda r = r: r.append(1), f.open, f.exists, f.getsize)
+            10, r.append, f.open, f.exists, f.getsize)
         assert false
     except ValueError:
         pass
@@ -266,7 +266,7 @@ def test_repeat_piece():
     b = sha('abc').digest()
     r = []
     f = FakeOpen()
-    sb = SingleBlob('test', 6, [b, b], 3, lambda r = r: r.append(1), 
+    sb = SingleBlob('test', 6, [b, b], 3, r.append, 
         f.open, f.exists, f.getsize)
     assert r == []
     
@@ -280,7 +280,7 @@ def test_resume_with_repeat_piece_present():
     c = sha('q').digest()
     r = []
     f = FakeOpen({'test': 'abcaaaf'})
-    sb = SingleBlob('test', 7, [b, b, c], 3, lambda r = r: r.append(1), 
+    sb = SingleBlob('test', 7, [b, b, c], 3, r.append, 
         f.open, f.exists, f.getsize)
     assert r == []
     
@@ -294,7 +294,7 @@ def test_flunk_repeat_with_different_sizes():
     f = FakeOpen()
     try:
         sb = SingleBlob('test', 15, [a, a], 
-            10, lambda r = r: r.append(1), f.open, f.exists, f.getsize)
+            10, r.append, f.open, f.exists, f.getsize)
         assert false
     except ValueError:
         pass

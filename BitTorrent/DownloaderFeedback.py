@@ -24,8 +24,8 @@ def hours(n):
         return str(m) + ':' + ex(sec)
 
 class DownloaderFeedback:
-    def __init__(self, connecter, add_task, port, ip, displayfunc):
-        self.connecter = connecter
+    def __init__(self, choker, add_task, port, ip, displayfunc):
+        self.choker = choker
         self.add_task = add_task
         self.port = port
         self.ip = ip
@@ -37,40 +37,36 @@ class DownloaderFeedback:
         t = time()
         s = StringIO()
         s.write('listening on ' + self.ip + ':' + str(self.port) + '\n')
-        ls = []
-        for c in self.connecter.connections.values():
-            ls.append(c.get_ip(), c)
-        ls.sort()
 
-        for ip, c in ls:
-            s.write(ip + ' ')
+        for c in self.choker.connections:
+            s.write(c.get_ip() + ' ')
             u = c.get_upload()
             if u.lastout < t - 15:
                 u.update_rate(0)
             if c.is_locally_initiated():
-                s.write('L ')
+                s.write('l ')
             else:
-                s.write('R ')
+                s.write('r ')
             if u.is_choked():
-                s.write('C')
+                s.write('c')
             else:
                 s.write(' ')
             if u.is_interested():
-                s.write('I')
+                s.write('i')
             else:
                 s.write(' ')
-            s.write(kify(u.rate) + ' up ')
+            s.write(' %6s up ' % kify(u.rate) + '    ')
 
             d = c.get_download()
             if d.lastin < t - 15:
                 d.update_rate(0)
             if d.is_choked():
-                s.write('C')
+                s.write('c')
             else:
                 s.write(' ')
             if d.is_interested():
-                s.write('I')
+                s.write('i')
             else:
                 s.write(' ')
-            s.write(kify(d.rate) + ' down\n')
+            s.write(' %6s down\n' % kify(d.rate))
         self.displayfunc(s.getvalue(), 'Cancel')

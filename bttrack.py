@@ -25,7 +25,7 @@ def len20(s, verbose):
     if ((type(s) != StringType) or (len(s) != 20)):
         raise ValueError, 'bad hash value'
 
-checkfunc = compile_template({'type': 'publish', 'files': ListMarker({'hash': len20, 
+checkfunc = compile_template({'type': 'publish', 'files': ListMarker({
     'pieces': ListMarker(len20), 'piece length': 1, 'name': string_template, 
     'length': 0}), 'ip': OptionMarker(string_template), 'port': 1})
 
@@ -45,7 +45,7 @@ class TrackerHandler(BaseHTTPRequestHandler):
             self.server.lock.release()
     
     def get(self):
-        # {filename: ([{'ip': ip, 'port': port}], hash, length, pieces, piece_length)}
+        # {filename: ([{'ip': ip, 'port': port}], length, pieces, piece_length)}
         published = self.server.published
         path = unquote(self.path)
         if path == '/' or path == '/index.html':
@@ -66,7 +66,7 @@ class TrackerHandler(BaseHTTPRequestHandler):
                 checkfunc(message)
                 ip = message.get('ip', self.client_address[0])
                 for file in message['files']:
-                    if published.has_key('name') and (file['hash'], file['length'],
+                    if published.has_key('name') and (file['length'],
                             file['pieces'], file['piece length']) != published[name][1:]:
                         self.send_response(200)
                         self.end_headers()
@@ -77,7 +77,7 @@ class TrackerHandler(BaseHTTPRequestHandler):
                 for file in message['files']:
                     name = file['name']
                     if not published.has_key(name):
-                        published[name] = ([], file['hash'], file['length'], 
+                        published[name] = ([], file['length'], 
                             file['pieces'], file['piece length'])
                     n = {'ip': ip, 'port': message['port']}
                     if n not in published[name][0]:
@@ -117,7 +117,7 @@ class TrackerHandler(BaseHTTPRequestHandler):
                     self.end_headers()
                     self.wfile.write(bencode({'type': 'failure', 'reason': 'no such file'}))
                 else:
-                    publishers, hash, length, pieces, piece_length = published[f]
+                    publishers, length, pieces, piece_length = published[f]
                     requesters = self.server.downloads.setdefault(f, [])
                     ip = message.get('ip', self.client_address[0])
                     requesters.append({'ip': ip, 'port': message['port']})
@@ -145,10 +145,10 @@ class TrackerHandler(BaseHTTPRequestHandler):
             else:
                 self.send_response(200)
                 self.send_header('Content-Type', 'application/x-bittorrent')
-                publishers, blob, length, pieces, piece_length = published[f]
+                publishers, length, pieces, piece_length = published[f]
                 requesters = self.server.downloads.get(f, [])
                 requesters = publishers + requesters
-                response = {'hash': blob, 'pieces': pieces, 'piece length': piece_length, 
+                response = {'pieces': pieces, 'piece length': piece_length, 
                     'peers': requesters, 'type': 'success', 'finish': prefix3,
                     'length': length, 'id': f, 'name': f, 'announce': prefix2,
                     'url': 'http://' + self.server.ip + ':' + str(self.server.port) + '/' + quote(f)}

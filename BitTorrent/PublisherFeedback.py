@@ -11,9 +11,9 @@ def kify(n):
     return str(long((n / (2 ** 10)) * 10) / 10.0)
 
 class PublisherFeedback:
-    def __init__(self, connecter, add_task, port, ip):
+    def __init__(self, choker, add_task, port, ip):
+        self.choker = choker
         self.add_task = add_task
-        self.connecter = connecter
         self.port = port
         self.ip = ip
         self.start = time()
@@ -24,28 +24,21 @@ class PublisherFeedback:
         t = time()
         s = StringIO()
         s.write('\n\n\n\n')
-        ls = []
-        for c in self.connecter.connections.values():
-            ls.append((c.get_ip(), c))
-        ls.sort()
-        sum = 0
-        for ip, c in ls:
+        for c in self.choker.connections:
             u = c.get_upload()
             if u.lastout < t - 15:
                 u.update_rate(0)
-            sum += u.rate
-            s.write(u.get_ip())
+            s.write(c.get_ip())
             s.write(' ')
             if u.is_choked():
-                s.write('C')
+                s.write('c')
             else:
                 s.write(' ')
             if u.is_interested():
-                s.write('I')
+                s.write('i')
             else:
                 s.write(' ')
-            s.write(' ' + kify(u.rate) + '\n')
+            s.write(' %6s\n' % kify(u.rate))
         s.write('\nat ' + self.ip + ':' + str(self.port))
-        s.write('\ntotal '+ kify(sum))
         print s.getvalue()
         stdout.flush()

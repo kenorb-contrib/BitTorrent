@@ -16,16 +16,17 @@ class Download:
         self.ratesince = time()
         self.lastin = self.ratesince
         self.rate = 0
+        data.connected(self)
 
     def adjust(self):
         data = self.data
         if self.choked:
             if self.interested:
-                if not data.want_more(self):
+                if not data.do_I_want_more(self):
                     self.interested = false
                     self.connection.send_message({'type': 'done'})
             else:
-                if data.want_more(self):
+                if data.do_I_want_more(self):
                     self.interested = true
                     self.connection.send_message({'type': 'interested'})
             return
@@ -63,6 +64,12 @@ class Download:
         self.choked = false
         if self.interested:
             self.adjust()
+
+    def is_choked(self):
+        return self.choked
+
+    def is_interested(self):
+        return self.interested
 
     def update_rate(self, amount):
         t = time()
@@ -114,7 +121,7 @@ class DummyData:
         d.connection.current = 0
         return self.all
         
-    def want_more(self, d):
+    def do_I_want_more(self, d):
         return len(d.connection.more) > 0
 
     def num_current(self, d):
@@ -142,7 +149,10 @@ class DummyData:
         
     def has_blobs(self, d, blobs):
         return true
-        
+
+    def connected(self, d):
+        pass
+
     def disconnected(self, d):
         d.connection.disconnected = true
         return self.all

@@ -15,7 +15,7 @@ def len20(s, verbose):
 
 info_template = compile_template({'version': '1.0', 'file name': st,
     'last modified': 0, 'file length': 0, 'pieces': ListMarker(len20),
-    'piece length': 1, 'hash': len20})
+    'piece length': 1})
 
 class MultiBlob:
     def __init__(self, blobs, piece_length, open, getsize, exists, 
@@ -52,7 +52,7 @@ class MultiBlob:
                         for (blob, vs) in indices.items():
                             begin, end = vs[0]
                             self.blobs[blob] = (file, begin, end)
-                        self.info.append((filetail, v['hash'], 
+                        self.info.append((filetail, 
                             v['pieces'], v['file length']))
                     else:
                         c = false
@@ -61,7 +61,6 @@ class MultiBlob:
                 if c:
                     continue
             pieces = []
-            fhash = sha()
             len = getsize(file)
             h = open(file, 'rb')
             i = 0
@@ -69,23 +68,19 @@ class MultiBlob:
                 block = h.read(piece_length)
                 piece = sha(block).digest()
                 pieces.append(piece)
-                fhash.update(block)
                 self.blobs[piece] = (file, i, i + piece_length)
                 i += piece_length
             block = h.read(len - i)
             piece = sha(block).digest()
             pieces.append(piece)
-            fhash.update(block)
-            fhash = fhash.digest()
             self.blobs[piece] = (file, i, len)
             h.close()
-            self.info.append((filetail, fhash, pieces, len))
+            self.info.append((filetail, pieces, len))
             
             h = open(metafile, 'wb')
             h.write(bencode({'version': '1.0', 'file name': filetail, 
                 'last modified': getmtime(file), 'file length': len, 
-                'piece length': piece_length, 'pieces': pieces,
-                'hash': fhash}))
+                'piece length': piece_length, 'pieces': pieces}))
             h.close()
 
     def get_info(self):
@@ -127,7 +122,7 @@ def test_long_file():
     assert mb.get_slice(b, 4, 1) == s[14:]
     assert mb.get_slice(b, 4, 3) == None
     assert mb.get_slice(chr(0) * 20, 0, 2) == None
-    assert mb.get_info() == [('test', sha(s).digest(), [a, b], 15)]
+    assert mb.get_info() == [('test', [a, b], 15)]
 
 def test_resurrected():
     s = 'abc' * 5
@@ -147,7 +142,7 @@ def test_resurrected():
     assert mb.get_slice(b, 4, 1) == s[14:]
     assert mb.get_slice(b, 4, 3) == None
     assert mb.get_slice(chr(0) * 20, 0, 2) == None
-    assert mb.get_info() == [('test', sha(s).digest(), [a, b], 15)]
+    assert mb.get_info() == [('test', [a, b], 15)]
 
 def test_even():
     s = 'abcd' * 5
@@ -163,7 +158,7 @@ def test_even():
     assert mb.get_slice(a, 5, 20) == None
     assert mb.get_slice(b, 0, 2) == s[10:12]
     assert mb.get_slice(b, 4, 6) == s[14:]
-    assert mb.get_info() == [('test', sha(s).digest(), [a, b], 20)]
+    assert mb.get_info() == [('test', [a, b], 20)]
 
 def test_short():
     s = 'abc' * 2
@@ -176,7 +171,7 @@ def test_short():
     assert mb.get_slice(a, 5, 1) == s[5:]
     assert mb.get_slice(a, 5, 20) == None
     assert mb.get_slice(a, 2, 1) == s[2:3]
-    assert mb.get_info() == [('test', a, [a], 6)]
+    assert mb.get_info() == [('test', [a], 6)]
 
 def test_null():
     s = ''
@@ -188,6 +183,6 @@ def test_null():
     assert mb.get_slice(a, 0, 5) == None
     assert mb.get_slice(a, 0, 0) == ''
     assert mb.get_slice(a, 1, 2) == None
-    assert mb.get_info() == [('test', a, [a], 0)]
+    assert mb.get_info() == [('test', [a], 0)]
 
 

@@ -94,7 +94,7 @@ class RawServer:
             s.hit = false
         for k in tokill:
             if k.socket is not None:
-                self.close_socket(k)
+                self._close_socket(k)
 
     def start_listening(self, handler, port, ret = true):
         self.handler = handler
@@ -139,20 +139,20 @@ class RawServer:
                 if s is None:
                     continue
                 if (event & (POLLHUP | POLLERR)) != 0:
-                    self.close_socket(s)
+                    self._close_socket(s)
                     continue
                 if (event & POLLIN) != 0:
                     try:
                         s.hit = true
                         data = s.socket.recv(100000)
                         if data == '':
-                            self.close_socket(s)
+                            self._close_socket(s)
                         else:
                             self.handler.data_came_in(s, data)
                     except socket.error, e:
                         code, msg = e
                         if code != EWOULDBLOCK:
-                            self.close_socket(s)
+                            self._close_socket(s)
                             continue
                 if (event & POLLOUT) != 0 and s.socket is not None:
                     s.try_write()
@@ -184,18 +184,18 @@ class RawServer:
                         except:
                             if self.noisy:
                                 print_exc()
-                    self.close_dead()
+                    self._close_dead()
                     self.handle_events(events)
                     if self.doneflag.isSet():
                         return
-                    self.close_dead()
+                    self._close_dead()
                 except error, e:
                     if self.doneflag.isSet():
                         return
                     else:
                         print_exc()
                 except KeyboardInterrupt:
-                    return
+                    raise
                 except:
                     print_exc()
         finally:
@@ -203,15 +203,15 @@ class RawServer:
             for ss in self.single_sockets.values():
                 ss.close()
 
-    def close_dead(self):
+    def _close_dead(self):
         while len(self.dead_from_write) > 0:
             old = self.dead_from_write
             self.dead_from_write = []
             for s in old:
                 if s.socket is not None:
-                    self.close_socket(s)
+                    self._close_socket(s)
 
-    def close_socket(self, s):
+    def _close_socket(self, s):
         sock = s.socket.fileno()
         s.socket.close()
         self.poll.unregister(sock)

@@ -26,7 +26,7 @@ true = 1
 false = 0
 
 defaults = [
-    ('max_uploads', None, 3,
+    ('max_uploads', None, 4,
         "the maximum number of uploads to allow at once."),
     ('keepalive_interval', None, 120.0,
         'number of seconds to pause between sending keepalives'),
@@ -56,7 +56,7 @@ defaults = [
         "number of seconds to pause between changing who's choked"),
     ]
 
-t = compile_template({'hash': exact_length(20), 'piece length': 1, 
+t = compile_template({'piece length': 1, 
     'pieces': ListMarker(exact_length(20)),
     'peers': ListMarker({'ip': string_template, 'port': 1}), 'type': 'success',
     'length': 0, 'id': string_template, 'name': string_template, 
@@ -133,7 +133,7 @@ def download(params, filefunc, displayfunc, doneflag, cols):
             else:
                 displayfunc('Download Failed', 'Okay')
             doneflag.set()
-        blobs = SingleBlob(file, response['hash'], file_length, response['pieces'], 
+        blobs = SingleBlob(file, file_length, response['pieces'], 
             response['piece length'], finished, open, path.exists, path.getsize)
         if len(blobs.get_list_of_blobs_I_want()) == 0:
             displayfunc('that file has already been completely downloaded', 'Okay')
@@ -146,7 +146,8 @@ def download(params, filefunc, displayfunc, doneflag, cols):
         return false
     rawserver = RawServer(config['max_poll_period'], doneflag,
         config['timeout'])
-    choker = Choker(config['max_uploads'], rawserver.add_task, config['choke_interval'])
+    choker = Choker(config['max_uploads'], rawserver.add_task, config['choke_interval'],
+        lambda c: c.get_download().rate)
     def make_upload(connection, choker = choker, blobs = blobs):
         return Upload(connection, choker, blobs)
     dd = DownloaderData(blobs, config['download_slice_size'])
@@ -182,7 +183,7 @@ def download(params, filefunc, displayfunc, doneflag, cols):
         if response['type'] == 'failure':
             displayfunc("Couldn't announce - " + response['reason'], 'Okay')
             return false
-        DownloaderFeedback(connecter, rawserver.add_task, 
+        DownloaderFeedback(choker, rawserver.add_task, 
             listen_port, response['your ip'], displayfunc)
     except IOError, e:
         displayfunc("Couldn't announce - " + str(e), 'Okay')

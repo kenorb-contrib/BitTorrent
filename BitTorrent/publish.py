@@ -23,7 +23,7 @@ true = 1
 false = 0
 
 defaults = [
-    ('max_uploads', None, 10,
+    ('max_uploads', None, 4,
         "the maximum number of uploads to allow at once."),
     ('piece_size', None, 2 ** 20,
         "Size of individually hashed pieces of file to be published."),
@@ -70,7 +70,8 @@ def publish(params, cols):
     listen_port = config['port']
     rawserver = RawServer(config['max_poll_period'], Event(),
         config['timeout'])
-    choker = Choker(config['max_uploads'], rawserver.add_task, config['choke_interval'])
+    choker = Choker(config['max_uploads'], rawserver.add_task, config['choke_interval'], 
+        lambda c: c.get_upload().rate)
     piece_length = config['piece_size']
     blobs = MultiBlob(files, piece_length, open, getsize, exists, 
         split, getmtime, time, isfile)
@@ -83,8 +84,8 @@ def publish(params, cols):
 
     try:
         files = []
-        for name, hash, pieces, length in blobs.get_info():
-            files.append({'hash': hash, 'pieces': pieces, 'name': name, 
+        for name, pieces, length in blobs.get_info():
+            files.append({'pieces': pieces, 'name': name, 
                 'piece length': piece_length, 'length': length})
         message = {'type': 'publish', 'port': listen_port, 'files': files}
         if config['ip'] != '':
@@ -106,7 +107,7 @@ def publish(params, cols):
     except ValueError, e:
         print "got bad publication response - " + str(e)
         return
-    PublisherFeedback(connecter, rawserver.add_task, listen_port, response['your ip'])
+    PublisherFeedback(choker, rawserver.add_task, listen_port, response['your ip'])
     rawserver.start_listening(encrypter, listen_port, false)
 
 class DummyDownload:
