@@ -184,9 +184,9 @@ configDefinitions = [
     ]
 
 if __name__ == '__main__':
-    if len(argv) == 1:
-        print "usage: %s [options]" % argv[0]
-        print formatDefinitions(configDefinitions)
-    else:
+    try:
         config, files = parseargs(argv[1:], configDefinitions, 0, 0)
         track(config)
+    except ValueError, e:
+        print "usage: %s [options]" % argv[0]
+        print formatDefinitions(configDefinitions)
