@@ -76,7 +76,7 @@ class SingleSocket:
             self.raw_server.poll.register(self.socket, all)
 
 class RawServer:
-    def __init__(self, doneflag, timeout_check_interval, timeout, noisy = True, errorfunc = None):
+    def __init__(self, doneflag, timeout_check_interval, timeout, noisy = True, errorfunc = None, maxconnects = 55):
         self.timeout_check_interval = timeout_check_interval
         self.timeout = timeout
         self.poll = poll()
@@ -86,6 +86,7 @@ class RawServer:
         self.doneflag = doneflag
         self.noisy = noisy
         self.errorfunc = errorfunc
+        self.maxconnects = maxconnects
         self.funcs = []
         self.externally_added = []
         self.add_task(self.scan_for_timeouts, timeout_check_interval)
@@ -146,6 +147,9 @@ class RawServer:
                     try:
                         newsock, addr = self.server.accept()
                         newsock.setblocking(0)
+                        if len(self.single_sockets) >= self.maxconnects:
+                            newsock.close()
+                            continue
                         nss = SingleSocket(self, newsock, self.handler)
                         self.single_sockets[newsock.fileno()] = nss
                         self.poll.register(newsock, POLLIN)

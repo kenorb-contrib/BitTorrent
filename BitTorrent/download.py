@@ -72,8 +72,10 @@ defaults = [
         'minimum number of peers to not do rerequesting'),
     ('http_timeout', 60, 
         'number of seconds to wait before assuming that an http connection has timed out'),
-    ('max_initiate', 40,
+    ('max_initiate', 35,
         'number of peers at which to stop initiating new connections'),
+    ('max_allow_in', 55,
+        'maximum number of connections to allow, after this new incoming connections will be immediately closed'),
     ('check_hashes', 1,
         'whether to check hashes on disk'),
     ('max_upload_rate', 0,
@@ -187,7 +189,7 @@ def download(params, filefunc, statusfunc, finfunc, errorfunc, doneflag, cols, p
         doneflag.set()
         if reason is not None:
             errorfunc(reason)
-    rawserver = RawServer(doneflag, config['timeout_check_interval'], config['timeout'], errorfunc = errorfunc)
+    rawserver = RawServer(doneflag, config['timeout_check_interval'], config['timeout'], errorfunc = errorfunc, maxconnects = config['max_allow_in'])
     try:
         try:
             storage = Storage(files, open, path.exists, path.getsize)
