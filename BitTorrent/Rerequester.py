@@ -5,7 +5,7 @@ from zurllib import urlopen, quote
 from btformats import check_peers
 from bencode import bdecode
 from threading import Thread, Lock
-from socket import error
+from socket import error, gethostbyname
 from time import time
 from random import randrange
 from binascii import b2a_hex
@@ -18,8 +18,7 @@ class Rerequester:
         self.url = ('%s?info_hash=%s&peer_id=%s&port=%s&key=%s' %
             (url, quote(infohash), quote(myid), str(port),
             b2a_hex(''.join([chr(randrange(256)) for i in xrange(4)]))))
-        if ip != '':
-            self.url += '&ip=' + quote(ip)
+        self.ip = ip
         self.interval = interval
         self.last = None
         self.trackerid = None
@@ -60,6 +59,8 @@ class Rerequester:
         s = ('%s&uploaded=%s&downloaded=%s&left=%s' %
             (self.url, str(self.up()), str(self.down()), 
             str(self.amount_left())))
+        if self.ip:
+            s += '&ip=' + gethostbyname(self.ip)
         if self.last is not None:
             s += '&last=' + quote(str(self.last))
         if self.trackerid is not None:

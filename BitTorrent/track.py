@@ -45,6 +45,7 @@ defaults = [
     ('logfile', '', 'file to write the tracker logs, use - for stdout (default)'),
     ('allow_get', 0, 'use with allowed_dir; adds a /file?hash={hash} url that allows users to download the torrent file'),
     ('keep_dead', 0, 'keep dead torrents after they expire (so they still show up on your /scrape and web page)'),
+    ('scrape_allowed', 'full', 'scrape access allowed (can be none, specific or full)')
     ('max_give', 200, 'maximum number of peers to give with any one request'),
     ]
 
@@ -283,24 +284,37 @@ class Tracker:
             '</html>\n')
         return (200, 'OK', {'Content-Type': 'text/html; charset=iso-8859-1'}, s.getvalue())
 
+    def scrapedata(self, name, return_name = True):
+        l = self.downloads[name]
+        n = self.completed.get(name, 0)
+        c = len([1 for i in l.values() if i['left'] == 0])
+        d = len(l) - c
+        f = {'complete': c, 'incomplete': d, 'downloaded': n}
+        if ( return_name and self.show_names
+             and self.allowed is not None and self.allowed.has_key(name) ):
+            f['name'] = self.allowed[name]['name']
+        return (f)
+
     def get_scrape(self, paramslist):
         fs = {}
-        names = []
-        if params.has_key('info_hash'):
-            if self.downloads.has_key(params['info_hash']):
-                names = [ params['info_hash'] ]
-            # else return nothing
+        if paramslist.has_key('info_hash'):
+            if self.config['scrape_allowed'] not in ['specific', 'full']:
+                return (400, 'Not Authorized', {'Content-Type': 'text/plain', 'Pragma': 'no-cache'},
+                    bencode({'failure reason':
+                    'specific scrape function is not available with this tracker.'}))
+            for infohash in paramslist['info_hash']:
+                if infohash in self.downloads.keys():
+                    fs[infohash] = self.scrapedata(infohash)
         else:
+            if self.config['scrape_allowed'] != 'full':
+                return (400, 'Not Authorized', {'Content-Type': 'text/plain', 'Pragma': 'no-cache'},
+                    bencode({'failure reason':
+                    'full scrape function is not available with this tracker.'}))
             names = self.downloads.keys()
             names.sort()
-        for name in names:
-            l = self.downloads[name]
-            n = self.completed.get(name, 0)
-            c = len([1 for i in l.values() if type(i) == DictType and i['left'] == 0])
-            d = len(l) - c
-            fs[name] = {'complete': c, 'incomplete': d, 'downloaded': n}
-            if (self.allowed is not None) and self.allowed.has_key(name) and self.show_names:
-                fs[name]['name'] = self.allowed[name]['name']
+            for name in names:
+                fs[name] = self.scrapedata(name)
+
         return (200, 'OK', {'Content-Type': 'text/plain'}, bencode({'files': fs}))
 
     def get(self, connection, path, headers):
@@ -310,11 +324,15 @@ class Tracker:
                 path = path.replace('+',' ')
                 query = query.replace('+',' ')
             path = unquote(path)[1:]
+            paramslist = {}
             params = {}
             for s in query.split('&'):
                 if s != '':
                     i = s.index('=')
-                    params[unquote(s[:i])] = unquote(s[i+1:])
+                    kw = unquote(s[:i])
+                    key, value = unquote(s[:i]), unquote(s[i+1:])
+                    paramslist.setdefault(key, []).append(value)
+                    params[key] = value
         except ValueError, e:
             return (400, 'Bad Request', {'Content-Type': 'text/plain'}, 
                     'you sent me garbage - ' + str(e))
