@@ -39,9 +39,10 @@ class SingleDownload:
             if index not in lost:
                 lost.append(index)
         self.active_requests = []
-        for d in self.downloader.downloads:
-            if not d.choked:
-                d._request_more(lost)
+        ds = [d for d in self.downloader.downloads if not d.choked]
+        shuffle(ds)
+        for d in ds:
+            d._request_more(lost)
         for d in self.downloader.downloads:
             if d.choked and not d.interested:
                 for l in lost:
@@ -87,9 +88,10 @@ class SingleDownload:
         self.downloader.measurefunc(len(piece))
         self.downloader.downmeasure.update_rate(len(piece))
         if not self.downloader.storage.piece_came_in(index, begin, piece):
-            for d in self.downloader.downloads:
-                if not d.choked:
-                    d._request_more([index])
+            ds = [d for d in self.downloader.downloads if not d.choked]
+            shuffle(ds)
+            for d in ds:
+                d._request_more([index])
             for d in self.downloader.downloads:
                 if d.choked and not d.interested and d.have[index] and self.downloader.storage.do_I_have_requests(index):
                     d.interested = true
