@@ -58,7 +58,6 @@ def run(private_key, noncefunc, response, file, config):
         long(config.get('unthrottle_diff', str(2 ** 23))), 
         int(config.get('max_uploads', '2')), 
         int(config.get('max_downloads', '4')))
-    piece_length = long(config.get('piece_size', str(2 ** 20)))
     uploader = Uploader(throttler, blobs)
     downloader = Downloader(throttler, blobs, uploader, 
         long(config.get('download_chunk_size', '32768')), 

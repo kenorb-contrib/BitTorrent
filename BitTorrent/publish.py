@@ -1,8 +1,6 @@
 # Written by Bram Cohen
 # this file is public domain
 
-# hi BitTorrent!
-
 from urllib import urlopen
 from StreamEncrypter import make_encrypter
 from Throttler import Throttler
@@ -12,7 +10,6 @@ from DummyDownloader import DummyDownloader
 from Connecter import Connecter
 from Encrypter import Encrypter
 from RawServer import RawServer
-from Scheduler import Scheduler
 from PublisherFeedback import PublisherFeedback
 from threading import Condition
 from entropy import entropy
@@ -33,10 +30,7 @@ def publish(config, files):
     uploader = Uploader(throttler, blobs)
     downloader = DummyDownloader()
     lock = Condition()
-    scheduler = Scheduler(lock)
-    connecter = Connecter(uploader, downloader, scheduler.add_task, 
-        long(config.get('min_fast_reconnect', '60')), 
-        long(config.get('max_fast_reconnect', '180')))
+    connecter = Connecter(uploader, downloader, None, None, None)
     encrypter = Encrypter(connecter, noncefunc, private_key, 
         long(config.get('max_message_length', str(2 ** 20))))
     connecter.set_encrypter(encrypter)
