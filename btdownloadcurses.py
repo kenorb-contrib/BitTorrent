@@ -87,6 +87,7 @@ class CursesDisplayer:
         self.downTotal = '%s   down' % (fmtsize(0, 2))
         self.errors = []
         self.globalerrlist = mainerrlist
+        self.last_update_time = 0
 
     def finished(self):
         self.done = 1
@@ -111,6 +112,9 @@ class CursesDisplayer:
         self.display()
 
     def display(self, dict = {}):
+        if self.last_update_time + 0.1 > time() and d.get('fractionDone') not in (0.0, 1.0) and not d.has_key('activity'):
+            return
+        self.last_update_time = time()
         global mainkillflag
         fractionDone = dict.get('fractionDone', None)
         timeEst = dict.get('timeEst', None)

@@ -144,14 +144,13 @@ class DownloadInfoFrame:
             wxPostEvent(self.frame, InvokeEvent(func, args, kwargs))
 
     def updateStatus(self, d):
-        self.invokeLater(self.onUpdateStatus, [d])
+        if self.last_update_time + 0.1 < time() or d.get('fractionDone') in [0.0, 1.0] and d.has_key('activity'):
+            self.invokeLater(self.onUpdateStatus, [d])
 
     def onUpdateStatus(self, d):
       try:
         if d.has_key('spew'):
             print_spew(d['spew'])
-        if self.last_update_time + 0.01 > time() and d.get('fractionDone') not in [0.0, 1.0] and d.get('activity') is None:
-            return
         activity = d.get('activity')
         fractionDone = d.get('fractionDone')
         timeEst = d.get('timeEst')

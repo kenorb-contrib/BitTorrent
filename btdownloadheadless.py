@@ -36,6 +36,7 @@ class HeadlessDisplayer:
         self.downTotal = ''
         self.upTotal = ''
         self.errors = []
+        self.last_update_time = 0
 
     def finished(self):
         self.done = True
@@ -56,6 +57,9 @@ class HeadlessDisplayer:
         self.display({})
 
     def display(self, dict):
+        if self.last_update_time + 0.1 > time() and d.get('fractionDone') not in (0.0, 1.0) and not d.has_key('activity'):
+            return
+        self.last_update_time = time()
         if dict.has_key('spew'):
             print_spew(dict['spew'])
         if dict.has_key('fractionDone'):
