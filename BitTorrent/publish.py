@@ -46,7 +46,7 @@ def publish(config, files):
     connecter.set_encrypter(encrypter)
     listen_port = config['port']
     if listen_port == 0:
-        listenport = randrange(5000, 10000)
+        listen_port = randrange(5000, 10000)
 
     try:
         files = []

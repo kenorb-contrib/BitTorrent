@@ -22,6 +22,10 @@ def takesArgument(aDescription):
     else:
         return 0
 
+def usage(str, exitval = 1):
+    print 'error - ' + str
+    sys.exit(exitval)
+
 def combinedLineForm(longDescription, shortDescription):
     s = ""
     if longDescription:
