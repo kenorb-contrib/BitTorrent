@@ -8,7 +8,7 @@ false = 0
 
 class Upload:
     def __init__(self, connection, choker, storage, 
-            max_slice_length, max_rate_period, total_up = [0l]):
+            max_slice_length, max_rate_period, total_up, fudge):
         self.connection = connection
         self.choker = choker
         self.storage = storage
@@ -18,7 +18,7 @@ class Upload:
         self.choked = true
         self.interested = false
         self.buffer = []
-        self.ratesince = time() - 5.0
+        self.ratesince = time() - fudge
         self.lastout = self.ratesince
         self.rate = 0.0
         if storage.do_I_have_anything():
@@ -136,7 +136,7 @@ def test_skip_over_choke():
     dco = DummyConnection(events)
     dch = DummyChoker(events)
     ds = DummyStorage(events)
-    u = Upload(dco, dch, ds, 100, 20, [0])
+    u = Upload(dco, dch, ds, 100, 20, [0], 5.0)
     assert u.is_choked()
     assert not u.is_interested()
     u.got_interested()
@@ -152,7 +152,7 @@ def test_bad_piece():
     dco = DummyConnection(events)
     dch = DummyChoker(events)
     ds = DummyStorage(events)
-    u = Upload(dco, dch, ds, 100, 20, [0])
+    u = Upload(dco, dch, ds, 100, 20, [0], 5.0)
     assert u.is_choked()
     assert not u.is_interested()
     u.got_interested()
@@ -171,7 +171,7 @@ def test_still_rejected_after_unchoke():
     dco = DummyConnection(events)
     dch = DummyChoker(events)
     ds = DummyStorage(events)
-    u = Upload(dco, dch, ds, 100, 20, [0])
+    u = Upload(dco, dch, ds, 100, 20, [0], 5.0)
     assert u.is_choked()
     assert not u.is_interested()
     u.got_interested()
@@ -192,7 +192,7 @@ def test_sends_when_flushed():
     dco = DummyConnection(events)
     dch = DummyChoker(events)
     ds = DummyStorage(events)
-    u = Upload(dco, dch, ds, 100, 20, [0])
+    u = Upload(dco, dch, ds, 100, 20, [0], 5.0)
     u.unchoke()
     u.got_interested()
     u.got_request(0, 1, 3)
@@ -208,7 +208,7 @@ def test_sends_immediately():
     dco = DummyConnection(events)
     dch = DummyChoker(events)
     ds = DummyStorage(events)
-    u = Upload(dco, dch, ds, 100, 20, [0])
+    u = Upload(dco, dch, ds, 100, 20, [0], 5.0)
     u.unchoke()
     u.got_interested()
     dco.flushed = true
@@ -222,7 +222,7 @@ def test_clears_on_not_interested():
     dco = DummyConnection(events)
     dch = DummyChoker(events)
     ds = DummyStorage(events)
-    u = Upload(dco, dch, ds, 100, 20, [0])
+    u = Upload(dco, dch, ds, 100, 20, [0], 5.0)
     u.unchoke()
     u.got_interested()
     u.got_request(0, 1, 3)
@@ -238,7 +238,7 @@ def test_close_when_sends_on_not_interested():
     dco = DummyConnection(events)
     dch = DummyChoker(events)
     ds = DummyStorage(events)
-    u = Upload(dco, dch, ds, 100, 20, [0])
+    u = Upload(dco, dch, ds, 100, 20, [0], 5.0)
     u.got_request(0, 1, 3)
     assert events == ['do I have', 'get have list', 
         ('bitfield', [false, true]), 'closed']
@@ -248,7 +248,7 @@ def test_close_over_max_length():
     dco = DummyConnection(events)
     dch = DummyChoker(events)
     ds = DummyStorage(events)
-    u = Upload(dco, dch, ds, 100, 20, [0])
+    u = Upload(dco, dch, ds, 100, 20, [0], 5.0)
     u.got_interested()
     u.got_request(0, 1, 101)
     assert events == ['do I have', 'get have list', 
@@ -260,5 +260,5 @@ def test_no_bitfield_on_start_empty():
     dch = DummyChoker(events)
     ds = DummyStorage(events)
     ds.do_I_have_anything = lambda: false
-    u = Upload(dco, dch, ds, 100, 20, [0])
+    u = Upload(dco, dch, ds, 100, 20, [0], 5.0)
     assert events == []

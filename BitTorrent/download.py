@@ -61,6 +61,8 @@ defaults = [
         "maximum amount of time to guess the current rate estimate represents"),
     ('bind', None, '', 
         'ip to bind to locally'),
+    ('upload_rate_fudge', None, '', 
+        'time equivalent of writing to kernel-level TCP buffer, for rate adjustment'),
     ]
 
 def mult20(thing, verbose):
@@ -223,9 +225,9 @@ def download(params, filefunc, statusfunc, resultfunc, doneflag, cols):
             storagewrapper = storagewrapper, 
             max_slice_length = config['max_slice_length'],
             max_rate_period = config['max_rate_period'],
-            total_up = total_up):
+            total_up = total_up, fudge = config['upload_rate_fudge']):
         return Upload(connection, choker, storagewrapper, 
-            max_slice_length, max_rate_period, total_up = total_up)
+            max_slice_length, max_rate_period, total_up, fudge)
     ratemeasure = RateMeasure(storagewrapper.get_amount_left())
     downloader = Downloader(storagewrapper, 
         config['request_backlog'], config['max_rate_period'],
