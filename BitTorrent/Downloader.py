@@ -18,15 +18,7 @@ class SingleDownload:
         self.measure = Measure(downloader.max_rate_period)
         self.have = [false] * downloader.numpieces
         self.last = 0
-        self.have_list = []
-
-    def _add(self, i):
-        if self.have_list is not None and not self.downloader.storage.do_I_have(i):
-            self.have_list.append(i)
-            if len(self.have_list) > self.downloader.maxlistlen:
-                self.have_list = [x for x in self.have_list if not self.downloader.storage.do_I_have(x)]
-                if len(self.have_list) > self.downloader.maxlistlen * .66:
-                    self.have_list = None
+        self.example_interest = None
 
     def disconnected(self):
         self.downloader.downloads.remove(self)
@@ -38,11 +30,25 @@ class SingleDownload:
     def _letgo(self):
         if not self.active_requests:
             return
+        if self.downloader.storage.is_endgame():
+            self.active_requests = []
+            return
+        lost = []
         for index, begin, length in self.active_requests:
             self.downloader.storage.request_lost(index, begin, length)
+            if index not in lost:
+                lost.append(index)
         self.active_requests = []
         for d in self.downloader.downloads:
-            d.fix_download()
+            if not d.choked:
+                d._request_more(lost)
+        for d in self.downloader.downloads:
+            if d.choked and not d.interested:
+                for l in lost:
+                    if d.have[l] and self.downloader.storage.do_I_have_requests(l):
+                        d.interested = true
+                        d.connection.send_interested()
+                        break
 
     def got_choke(self):
         if not self.choked:
@@ -52,7 +58,8 @@ class SingleDownload:
     def got_unchoke(self):
         if self.choked:
             self.choked = false
-            self.fix_download()
+            if self.interested:
+                self._request_more()
 
     def is_choked(self):
         return self.choked
@@ -69,8 +76,10 @@ class SingleDownload:
             self.downloader.all_requests.remove((index, begin, len(piece)))
             for d in self.downloader.downloads:
                 try:
-                    d.active_requests.remove((index, begin, len(piece)))
-                    d.connection.send_cancel(index, begin, len(piece))
+                    if d is not self:
+                        d.active_requests.remove((index, begin, len(piece)))
+                        d.connection.send_cancel(index, begin, len(piece))
+                        d.fix_download_endgame()
                 except ValueError:
                     pass
         self.last = time()
@@ -79,59 +88,80 @@ class SingleDownload:
         self.downloader.downmeasure.update_rate(len(piece))
         if not self.downloader.storage.piece_came_in(index, begin, piece):
             for d in self.downloader.downloads:
-                d.fix_download()
-            return
+                if not d.choked:
+                    d._request_more([index])
+            for d in self.downloader.downloads:
+                if d.choked and not d.interested and d.have[index] and self.downloader.storage.do_I_have_requests(index):
+                    d.interested = true
+                    d.connection.send_interested()
         if self.downloader.storage.do_I_have(index):
             self.downloader.picker.complete(index)
-        self.fix_download()
-        if self.downloader.storage.is_endgame():
-            for d in self.downloader.downloads:
-                d.fix_download_endgame()
+        self._request_more()
         return self.downloader.storage.do_I_have(index)
 
-    def _want(self, piece):
-        return self.have[piece] and self.downloader.storage.do_I_have_requests(piece)
+    def _want(self, index):
+        return self.have[index] and self.downloader.storage.do_I_have_requests(index)
 
-    def fix_download(self):
+    def _request_more(self, indices = None):
+        assert not self.choked
         if len(self.active_requests) == self.downloader.backlog:
             return
         if self.downloader.storage.is_endgame():
             self.fix_download_endgame()
             return
-        piece = self.downloader.picker.next(self._want, self.have_list)
-        if piece is None:
-            if self.interested and len(self.active_requests) == 0:
-                self.interested = false
-                self.connection.send_not_interested()
-        else:
+        lost_interests = []
+        while len(self.active_requests) < self.downloader.backlog:
+            if indices is None:
+                for index, begin, length in self.active_requests:
+                    if self.downloader.storage.do_I_have_requests(index):
+                        interest = index
+                        break
+                else:
+                    interest = self.downloader.picker.next(self._want)
+            else:
+                interest = None
+                for i in indices:
+                    if self.have[i] and self.downloader.storage.do_I_have_requests(i):
+                        interest = i
+                        break
+            if interest is None:
+                break
             if not self.interested:
                 self.interested = true
                 self.connection.send_interested()
-            if self.choked:
-                return
-            hit = false
-            while piece is not None:
-                while len(self.active_requests) < self.downloader.backlog:
-                    begin, length = self.downloader.storage.new_request(piece)
-                    self.downloader.picker.requested(piece)
-                    self.active_requests.append((piece, begin, length))
-                    self.connection.send_request(piece, begin, length)
-                    if not self.downloader.storage.do_I_have_requests(piece):
-                        hit = true
+            self.example_interest = interest
+            begin, length = self.downloader.storage.new_request(interest)
+            self.downloader.picker.requested(interest)
+            self.active_requests.append((interest, begin, length))
+            self.connection.send_request(interest, begin, length)
+            if not self.downloader.storage.do_I_have_requests(interest):
+                lost_interests.append(interest)
+        if not self.active_requests and self.interested:
+            self.interested = false
+            self.connection.send_not_interested()
+        if lost_interests:
+            for d in self.downloader.downloads:
+                if d.active_requests or not d.interested:
+                    continue
+                if d.example_interest is not None and self.downloader.storage.do_I_have_requests(d.example_interest):
+                    continue
+                for lost in lost_interests:
+                    if d.have[lost]:
                         break
-                if len(self.active_requests) == self.downloader.backlog:
-                    break
-                piece = self.downloader.picker.next(self._want, self.have_list)
-            if self.downloader.storage.is_endgame():
-                all_requests = []
-                self.downloader.all_requests = all_requests
-                for d in self.downloader.downloads:
-                    for a in d.active_requests:
-                        if a not in all_requests:
-                            all_requests.append(a)
-            if hit or self.downloader.storage.is_endgame():
-                for d in self.downloader.downloads:
-                    d.fix_download()
+                else:
+                    continue
+                interest = self.downloader.picker.next(d._want)
+                if interest is None:
+                    d.interested = false
+                    d.connection.send_not_interested()
+                else:
+                    d.example_interest = interest
+        if self.downloader.storage.is_endgame():
+            self.downloader.all_requests = []
+            for d in self.downloader.downloads:
+                self.downloader.all_requests.extend(d.active_requests)
+            for d in self.downloader.downloads:
+                d.fix_download_endgame()
 
     def fix_download_endgame(self):
         want = [a for a in self.downloader.all_requests if self.have[a[0]] and a not in self.active_requests]
@@ -145,7 +175,7 @@ class SingleDownload:
         if self.choked:
             return
         shuffle(want)
-        want = want[:self.downloader.backlog - len(self.active_requests)]
+        del want[self.downloader.backlog - len(self.active_requests):]
         self.active_requests.extend(want)
         for piece, begin, length in want:
             self.connection.send_request(piece, begin, length)
@@ -154,18 +184,30 @@ class SingleDownload:
         if self.have[index]:
             return
         self.have[index] = true
-        self._add(index)
         self.downloader.picker.got_have(index)
         if self.downloader.storage.do_I_have_requests(index):
-            self.fix_download()
+            if not self.choked:
+                self._request_more([index])
+            else:
+                if not self.interested:
+                    self.interested = true
+                    self.connection.send_interested()
 
     def got_have_bitfield(self, have):
         self.have = have
+        if self.downloader.storage.is_endgame():
+            for piece, begin, length in self.downloader.all_requests:
+                if self.have[piece]:
+                    self.interested = true
+                    self.connection.send_interested()
+                    break
+            return
         for i in xrange(len(have)):
             if have[i]:
-                self._add(i)
                 self.downloader.picker.got_have(i)
-        self.fix_download()
+                if self.downloader.storage.do_I_have_requests(i) and not self.interested:
+                    self.interested = true
+                    self.connection.send_interested()
 
     def get_rate(self):
         return self.measure.get_rate()
@@ -196,7 +238,7 @@ class DummyPicker:
         self.stuff = range(num)
         self.r = r
 
-    def next(self, wantfunc, have_list):
+    def next(self, wantfunc):
         for i in self.stuff:
             if wantfunc(i):
                 return i

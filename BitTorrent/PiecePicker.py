@@ -41,7 +41,7 @@ class PiecePicker:
         except ValueError:
             pass
 
-    def next(self, havefunc, havelist = None):
+    def next(self, havefunc):
         if self.numgot >= self.rarest_first_cutoff:
             best = None
             bestnum = 2 ** 30
@@ -49,29 +49,18 @@ class PiecePicker:
                 if havefunc(i) and self.numinterests[i] < bestnum:
                     best = i
                     bestnum = self.numinterests[i]
-            if havelist is None:
-                for i in self.interests[1:bestnum]:
-                    for j in scramble(i):
-                        if havefunc(j):
-                            return j
-            else:
-                for i in scramble(havelist):
-                    if havefunc(i) and self.numinterests[i] < bestnum:
-                        best = i
-                        bestnum = self.numinterests[i]
+            for i in self.interests[1:bestnum]:
+                for j in scramble(i):
+                    if havefunc(j):
+                        return j
             return best
         else:
             for i in self.started:
                 if havefunc(i):
                     return i
-            if havelist is None:
-                for i in scramble(xrange(self.numpieces)):
-                    if havefunc(i):
-                        return i
-            else:
-                for i in scramble(havelist):
-                    if havefunc(i):
-                        return i
+            for i in scramble(xrange(self.numpieces)):
+                if havefunc(i):
+                    return i
             return None
 
 class scramble:
@@ -166,23 +155,12 @@ def test_rarer_in_started_takes_priority():
 def test_zero():
     assert _pull(PiecePicker(0)) == []
 
-def test_have_list():
-    p = PiecePicker(5)
-    p.requested(3)
-    x = _pull(p, [1, 2])
-    assert x[0] == 3
-    assert x[1:] == [1, 2] or x[1:] == [2, 1]
-    p.complete(4)
-    x = _pull(p, [1, 2])
-    assert x[0] == 3
-    assert x[1:] == [1, 2] or x[1:] == [2, 1]
-
-def _pull(pp, have_list = None):
+def _pull(pp):
     r = []
     def want(p, r = r):
         return p not in r
     while true:
-        n = pp.next(want, have_list)
+        n = pp.next(want)
         if n is None:
             break
         r.append(n)
