@@ -15,6 +15,7 @@ from RawServer import RawServer
 from Rerequester import Rerequester
 from DownloaderFeedback import DownloaderFeedback
 from RateMeasure import RateMeasure
+from CurrentRateMeasure import Measure
 from EndgameDownloader import EndgameDownloader
 from bencode import bencode, bdecode
 from sha import sha
@@ -186,23 +187,26 @@ def download(params, filefunc, statusfunc, finfunc, errorfunc, doneflag, cols):
 
     def preference(c, finflag = finflag):
         if finflag.isSet():
-            return c.get_upload().rate
-        return c.get_download().rate
-    choker = Choker(config['max_uploads'], rawserver.add_task, 
-        preference)
-    total_up = [0l]
-    total_down = [0l]
+            return c.get_upload().measure.get_rate()
+        return c.get_download().measure.get_rate()
+    choker = Choker(config['max_uploads'], rawserver.add_task, preference)
+    upmeasure = Measure(config['max_rate_period'], config['max_rate_recalculate_interval'],
+        config['upload_rate_fudge'])
+    downmeasure = Measure(config['max_rate_period'], config['max_rate_recalculate_interval'])
     def make_upload(connection, choker = choker, 
             storagewrapper = storagewrapper, 
+            upmeasure = upmeasure,
             max_slice_length = config['max_slice_length'],
             max_rate_period = config['max_rate_period'],
-            total_up = total_up, fudge = config['upload_rate_fudge']):
-        return Upload(connection, choker, storagewrapper, 
-            max_slice_length, max_rate_period, total_up, fudge)
+            fudge = config['upload_rate_fudge'],
+            max_pause = config['max_rate_recalculate_interval']):
+        return Upload(connection, choker, storagewrapper, upmeasure, 
+            max_slice_length, max_rate_period, fudge, max_pause)
     ratemeasure = RateMeasure(storagewrapper.get_amount_left())
     downloader = Downloader(storagewrapper, 
         config['request_backlog'], config['max_rate_period'],
-        len(pieces), total_down, ratemeasure.data_came_in)
+        config['max_rate_recalculate_interval'], 
+        len(pieces), downmeasure, ratemeasure.data_came_in)
     connecter = Connecter(make_upload, downloader, choker,
         len(pieces), storagewrapper.is_everything_pending, EndgameDownloader)
     infohash = sha(bencode(info)).digest()
@@ -213,10 +217,10 @@ def download(params, filefunc, statusfunc, finfunc, errorfunc, doneflag, cols):
         rawserver.add_task, connecter.how_many_connections, 
         config['min_peers'], encrypter.start_connection, 
         rawserver.external_add_task, storagewrapper.get_amount_left, 
-        total_up, total_down, listen_port, 
+        upmeasure.get_total, downmeasure.get_total, listen_port, 
         config['ip'], myid, infohash, config['http_timeout'], errorfunc)
     DownloaderFeedback(choker, rawserver.add_task, statusfunc, 
-        config['max_rate_recalculate_interval'], ratemeasure.get_time_left, 
+        upmeasure.get_rate, downmeasure.get_rate, ratemeasure.get_time_left, 
         ratemeasure.get_size_left, file_length, finflag,
         config['display_interval'])
 

@@ -45,7 +45,7 @@ class Rerequester:
 
     def announce(self, event = 3, callback = lambda: None):
         s = ('%s&uploaded=%s&downloaded=%s&left=%s' %
-            (self.url, str(self.up[0]), str(self.down[0]), 
+            (self.url, str(self.up()), str(self.down()), 
             str(self.amount_left())))
         if event != 3:
             s += '&event=' + ['started', 'completed', 'stopped'][event]

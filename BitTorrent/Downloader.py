@@ -3,6 +3,7 @@
 
 from time import time
 from PriorityBitField import PriorityBitField
+from CurrentRateMeasure import Measure
 from random import shuffle
 from copy import copy
 true = 1
@@ -16,9 +17,7 @@ class SingleDownload:
         self.interested = false
         self.active_requests = []
         self.want_priorities = PriorityBitField(downloader.numpieces)
-        self.ratesince = time()
-        self.lastin = self.ratesince
-        self.rate = 0.0
+        self.measure = Measure(downloader.max_rate_period, downloader.max_pause)
         self.have = [false] * downloader.numpieces
 
     def disconnected(self):
@@ -54,22 +53,14 @@ class SingleDownload:
     def is_interested(self):
         return self.interested
 
-    def update_rate(self, amount):
-        self.downloader.measurefunc(amount)
-        self.downloader.total_down[0] += amount
-        t = time()
-        self.rate = (self.rate * (self.lastin - self.ratesince) + 
-            amount) / (t - self.ratesince)
-        self.lastin = t
-        if self.ratesince < t - self.downloader.max_rate_period:
-            self.ratesince = t - self.downloader.max_rate_period
-
     def got_piece(self, index, begin, piece):
         try:
             self.active_requests.remove((index, begin, len(piece)))
         except ValueError:
             return false
-        self.update_rate(len(piece))
+        self.measure.update_rate(len(piece))
+        self.downloader.measurefunc(len(piece))
+        self.downloader.downmeasure.update_rate(len(piece))
         wanted_before = self.downloader.storage.do_I_have_requests(index)
         self.downloader.storage.piece_came_in(index, begin, piece)
         if self.downloader.change_interest(index, wanted_before):
@@ -118,12 +109,13 @@ class SingleDownload:
         self.downloader.adjust(self)
 
 class Downloader:
-    def __init__(self, storage, backlog, max_rate_period, numpieces, 
-            total_down = [0l], measurefunc = lambda x: None):
+    def __init__(self, storage, backlog, max_rate_period, max_pause, numpieces, 
+            downmeasure, measurefunc = lambda x: None):
         self.storage = storage
         self.backlog = backlog
         self.max_rate_period = max_rate_period
-        self.total_down = total_down
+        self.max_pause = max_pause
+        self.downmeasure = downmeasure
         self.numpieces = numpieces
         self.measurefunc = measurefunc
         self.index_to_priority = range(numpieces)
@@ -204,7 +196,7 @@ class DummyConnection:
 
 def test_stops_at_backlog():
     ds = DummyStorage([[(0, 2), (2, 2), (4, 2), (6, 2)]])
-    d = Downloader(ds, 2, 15, 1, [0])
+    d = Downloader(ds, 2, 15, 5, 1, Measure(15, 5))
     events = []
     sd = d.make_download(DummyConnection(events))
     assert events == []
@@ -228,7 +220,7 @@ def test_stops_at_backlog():
 
 def test_got_have_single():
     ds = DummyStorage([[(0, 2)]])
-    d = Downloader(ds, 2, 15, 1, [0])
+    d = Downloader(ds, 2, 15, 5, 1, Measure(15, 5))
     events = []
     sd = d.make_download(DummyConnection(events))
     assert events == []
@@ -246,7 +238,7 @@ def test_got_have_single():
 
 def test_choke_clears_active():
     ds = DummyStorage([[(0, 2)]])
-    d = Downloader(ds, 2, 15, 1, [0])
+    d = Downloader(ds, 2, 15, 5, 1, Measure(15, 5))
     events = []
     sd1 = d.make_download(DummyConnection(events))
     sd2 = d.make_download(DummyConnection(events))
@@ -276,7 +268,7 @@ def test_choke_clears_active():
     assert ds.active == [[]]
 
 def test_introspect_priority_list():
-    d = Downloader(None, 2, 15, 10, [0])
+    d = Downloader(None, 2, 15, 5, 10, Measure(15, 5))
     for i in xrange(10):
         for j in xrange(i):
             assert d.index_to_priority[i] != d.index_to_priority[j]

@@ -5,12 +5,13 @@ from time import time
 from cStringIO import StringIO
 
 class DownloaderFeedback:
-    def __init__(self, choker, add_task, statusfunc, max_pause, 
+    def __init__(self, choker, add_task, statusfunc, upfunc, downfunc,
             remainingfunc, leftfunc, file_length, finflag, interval):
         self.choker = choker
         self.add_task = add_task
         self.statusfunc = statusfunc
-        self.max_pause = max_pause
+        self.upfunc = upfunc
+        self.downfunc = downfunc
         self.remainingfunc = remainingfunc
         self.leftfunc = leftfunc
         self.file_length = file_length
@@ -28,7 +29,7 @@ class DownloaderFeedback:
             else:
                 s.write('r')
             u = c.get_upload()
-            s.write(' %10s ' % str(int(u.rate)))
+            s.write(' %10s ' % str(int(u.measure.get_rate())))
             if u.is_interested():
                 s.write('i')
             else:
@@ -39,7 +40,7 @@ class DownloaderFeedback:
                 s.write(' ')
 
             d = c.get_download()
-            s.write(' %10s ' % str(int(d.rate)))
+            s.write(' %10s ' % str(int(d.measure.get_rate())))
             if d.is_interested():
                 s.write('i')
             else:
@@ -53,37 +54,17 @@ class DownloaderFeedback:
 
     def display(self):
         self.add_task(self.display, self.interval)
-        t = time()
         #self.spew()
         if self.finflag.isSet():
-            upRate = 0
-            for c in self.choker.connections:
-                u = c.get_upload()
-                if u.lastout < t - self.max_pause:
-                    u.update_rate(0)
-                upRate += u.rate
-            self.statusfunc(upRate=upRate)
+            self.statusfunc(upRate = self.upfunc())
             return
         timeEst = self.remainingfunc()
-        downloadedSize = self.file_length - self.leftfunc()
 
-        fractionDone = downloadedSize / float(self.file_length)
+        fractionDone = (self.file_length - self.leftfunc()) / float(self.file_length)
         
-        downRate = 0
-        upRate = 0
-        for c in self.choker.connections:
-            u = c.get_upload()
-            if u.lastout < t - self.max_pause:
-                u.update_rate(0)
-            upRate += u.rate
-
-            d = c.get_download()
-            if d.lastin < t - self.max_pause:
-                d.update_rate(0)
-            downRate += d.rate
         if timeEst is not None:
-            self.statusfunc(timeEst=timeEst, fractionDone=fractionDone, 
-                downRate=downRate, upRate=upRate)
+            self.statusfunc(timeEst = timeEst, fractionDone = fractionDone, 
+                downRate = self.downfunc(), upRate = self.upfunc())
         else:
-            self.statusfunc(fractionDone=fractionDone, 
-                downRate=downRate, upRate=upRate)
+            self.statusfunc(fractionDone = fractionDone, 
+                downRate = self.downfunc(), upRate = self.upfunc())
