@@ -71,7 +71,7 @@ def statefiletemplate(x):
             if (type(cinfo) != DictType): # The 'completed' key is a dictionary of SHA hashes (torrent ids)
                 raise ValueError          # ... for keeping track of the total completions per torrent
             for y in cinfo.values():      # ... each torrent has an integer value
-                if type(y) != LongType:   # ... for the number of reported completions for that torrent
+                if type(y) is not LongType:   # ... for the number of reported completions for that torrent
                     raise ValueError
 
 def parseTorrents(dir):
@@ -353,7 +353,7 @@ class Tracker:
         if peers.has_key(myid):
             myinfo = peers[myid]
             if myinfo.has_key('key'):
-                if params.get('key') != myinfo[key]:
+                if params.get('key') != myinfo['key']:
                     return (403, 'Forbidden', {'Content-Type': 'text/plain', 'Pragma': 'no-cache'}, 
                         bencode({'failure reason': 'key did not match key supplied earlier'}))
             else:
