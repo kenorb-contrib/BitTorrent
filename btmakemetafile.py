@@ -98,7 +98,10 @@ def makeinfo(file, piece_length, flag, progress, progress_percent=1):
             p += piece_length
             if p > size:
                 p = size
-            progress(float(p) / size)
+            if progress_percent:
+                progress(float(p) / size)
+            else:
+                progress(min(piece_length, size - p))
         h.close()
         return {'pieces': ''.join(pieces), 
             'piece length': piece_length, 'length': size, 
