@@ -61,5 +61,9 @@ class DownloaderFeedback:
             s.write(' ' + str(d.rate) + '\n')
             downRate += d.rate
         #print s.getvalue()
-        self.statusfunc(timeEst=timeEst, fractionDone=fractionDone, 
-            downRate=downRate, upRate=upRate)
+        if timeEst is not None:
+            self.statusfunc(timeEst=timeEst, fractionDone=fractionDone, 
+                downRate=downRate, upRate=upRate)
+        else:
+            self.statusfunc(fractionDone=fractionDone, 
+                downRate=downRate, upRate=upRate)
