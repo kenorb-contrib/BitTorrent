@@ -356,13 +356,16 @@ class Tracker:
                 del ts[myid]
         data = {'interval': self.reannounce_interval}
         cache = self.cached.setdefault(infohash, [])
-        if len(cache) < rsize:
-            for key, value in self.downloads.setdefault(infohash, {}).items():
-                if type(value) == DictType and not value.get('nat'):
-                    cache.append(value['cache'])
-            shuffle(cache)
-        data['peers'] = cache[-rsize:]
-        del cache[-rsize:]
+        if rsize > 0:
+            if len(cache) < rsize:
+                for key, value in self.downloads.setdefault(infohash, {}).items():
+                    if type(value) == DictType and not value.get('nat'):
+                        cache.append(value['cache'])
+                shuffle(cache)
+            data['peers'] = cache[-rsize:]
+            del cache[-rsize:]
+        else:
+            data['peers'] = []
         connection.answer((200, 'OK', {'Content-Type': 'text/plain', 'Pragma': 'no-cache'}, bencode(data)))
 
     def connectback_result(self, result, downloadid, peerid, ip, port):
