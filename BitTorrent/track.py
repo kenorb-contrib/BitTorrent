@@ -376,20 +376,17 @@ class Tracker:
                 del peers[myid]
                 del ts[myid]
         data = {'interval': self.reannounce_interval}
-        cache1 = self.cache1.setdefault(infohash, [])
-        cache2 = self.cache2.setdefault(infohash, [])
-        if params.get('no_peer_id',0):
-            cache = cache2
-        else:
-            cache = cache1
         if rsize > 0:
+            if params.get('no_peer_id', 0):
+                cache = self.cache2.setdefault(infohash, [])
+                b = becache2
+            else:
+                cache = self.cache1.setdefault(infohash, [])
+                b = becache1
             if len(cache) < rsize:
-                del cache1[:]
-                cache1.extend(self.becache1.setdefault(infohash, {}).values())
-                shuffle(cache1)
-                del cache2[:]
-                cache2.extend(self.becache2.setdefault(infohash, {}).values())
-                shuffle(cache2)
+                del cache[:]
+                cache.extend(b.setdefault(infohash, {}).values())
+                shuffle(cache)
             data['peers'] = cache[-rsize:]
             del cache[-rsize:]
         else:
