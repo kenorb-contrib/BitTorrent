@@ -28,7 +28,7 @@
     }
     [cancelButton setEnabled:NO];
     PyEval_RestoreThread([[NSApp delegate] tstate]);
-    PyObject_CallFunction(flag, "set", NULL);
+    PyObject_CallMethod(flag, "set", NULL);
     [[NSApp delegate] setTstate:PyEval_SaveThread()];
 }
 
