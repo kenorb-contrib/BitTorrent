@@ -32,6 +32,7 @@
 		089C165CFE840E0CC02AAC07 = {
 			children = (
 				089C165DFE840E0CC02AAC07,
+				73EB9224052A92EB00D326AE,
 			);
 			isa = PBXVariantGroup;
 			name = InfoPlist.strings;
@@ -129,6 +130,13 @@
 			);
 			hasScannedForEncodings = 1;
 			isa = PBXProject;
+			knownRegions = (
+				English,
+				Japanese,
+				French,
+				German,
+				Dutch,
+			);
 			mainGroup = 29B97314FDCFA39411CA2CEA;
 			projectDirPath = "";
 			targets = (
@@ -178,7 +186,7 @@
 				F5D01D34027E0B0201A845D2,
 				F542E1960308BE0301AA9403,
 				089C165CFE840E0CC02AAC07,
-				7325C8A403BE3FCB004B4E79,
+				73EB921B052A845700D326AE,
 				73FFC7F50470806800010167,
 			);
 			isa = PBXGroup;
@@ -189,6 +197,8 @@
 		29B97318FDCFA39411CA2CEA = {
 			children = (
 				29B97319FDCFA39411CA2CEA,
+				73EB921E052A916200D326AE,
+				73EB921F052A929700D326AE,
 			);
 			isa = PBXVariantGroup;
 			name = MainMenu.nib;
@@ -280,7 +290,7 @@
 	<key>CFBundleExecutable</key>
 	<string>BitTorrent</string>
 	<key>CFBundleGetInfoString</key>
-	<string>BitTorrent 3.2.2 p2p file transfer application</string>
+	<string>BitTorrent 3.2.2</string>
 	<key>CFBundleIconFile</key>
 	<string>waterfall.icns</string>
 	<key>CFBundleIdentifier</key>
@@ -292,7 +302,7 @@
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
-	<string>BitTorrent 3.2.2</string>
+	<string>3.2.2</string>
 	<key>CFBundleSignature</key>
 	<string>BTBC</string>
 	<key>CFBundleVersion</key>
@@ -328,9 +338,9 @@
 				F5D01D36027E0B0201A845D2,
 				F56F7C3E02F3731501A845D2,
 				F542E1980308BE0401AA9403,
-				7325C8A503BE3FCB004B4E79,
 				73A43D3903C6C24A00000124,
 				73FFC7F70470806900010167,
+				73EB921D052A845700D326AE,
 			);
 			isa = PBXResourcesBuildPhase;
 			runOnlyForDeploymentPostprocessing = 0;
@@ -407,19 +417,6 @@
 //732
 //733
 //734
-		7325C8A403BE3FCB004B4E79 = {
-			fileEncoding = 30;
-			isa = PBXFileReference;
-			name = Localizable.strings;
-			path = English.lproj/Localizable.strings;
-			refType = 2;
-		};
-		7325C8A503BE3FCB004B4E79 = {
-			fileRef = 7325C8A403BE3FCB004B4E79;
-			isa = PBXBuildFile;
-			settings = {
-			};
-		};
 		73A43D3803C6C24900000124 = {
 			isa = PBXFileReference;
 			path = torrent.icns;
@@ -442,6 +439,77 @@
 			isa = PBXBuildFile;
 			settings = {
 			};
+		};
+		73EB921B052A845700D326AE = {
+			children = (
+				73EB921C052A845700D326AE,
+				73EB9225052A92F500D326AE,
+			);
+			isa = PBXVariantGroup;
+			name = Localizable.strings;
+			path = "";
+			refType = 4;
+		};
+		73EB921C052A845700D326AE = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			name = English;
+			path = English.lproj/Localizable.strings;
+			refType = 4;
+		};
+		73EB921D052A845700D326AE = {
+			fileRef = 73EB921B052A845700D326AE;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		73EB921E052A916200D326AE = {
+			isa = PBXFileReference;
+			name = Dutch;
+			path = Dutch.lproj/MainMenu.nib;
+			refType = 4;
+		};
+		73EB921F052A929700D326AE = {
+			isa = PBXFileReference;
+			name = French;
+			path = French.lproj/MainMenu.nib;
+			refType = 4;
+		};
+		73EB9220052A92CE00D326AE = {
+			isa = PBXFileReference;
+			name = Dutch;
+			path = Dutch.lproj/DLWindow.nib;
+			refType = 4;
+		};
+		73EB9221052A92D300D326AE = {
+			isa = PBXFileReference;
+			name = French;
+			path = French.lproj/DLWindow.nib;
+			refType = 4;
+		};
+		73EB9222052A92DA00D326AE = {
+			isa = PBXFileReference;
+			name = Dutch;
+			path = Dutch.lproj/Metainfo.nib;
+			refType = 4;
+		};
+		73EB9223052A92E200D326AE = {
+			isa = PBXFileReference;
+			name = French;
+			path = French.lproj/Metainfo.nib;
+			refType = 4;
+		};
+		73EB9224052A92EB00D326AE = {
+			isa = PBXFileReference;
+			name = Dutch;
+			path = Dutch.lproj/InfoPlist.strings;
+			refType = 4;
+		};
+		73EB9225052A92F500D326AE = {
+			isa = PBXFileReference;
+			name = Dutch;
+			path = Dutch.lproj/Localizable.strings;
+			refType = 4;
 		};
 		73EF07FB03BA9D8100000104 = {
 			fileRef = F5D01D41027E7D9D01A845D2;
@@ -519,6 +587,8 @@
 		F542E1960308BE0301AA9403 = {
 			children = (
 				F542E1970308BE0301AA9403,
+				73EB9222052A92DA00D326AE,
+				73EB9223052A92E200D326AE,
 			);
 			isa = PBXVariantGroup;
 			name = Metainfo.nib;
@@ -684,6 +754,8 @@
 		F5D01D34027E0B0201A845D2 = {
 			children = (
 				F5D01D35027E0B0201A845D2,
+				73EB9220052A92CE00D326AE,
+				73EB9221052A92D300D326AE,
 			);
 			isa = PBXVariantGroup;
 			name = DLWindow.nib;
