@@ -86,7 +86,7 @@ class NatCheck:
     def connection_lost(self, connection):
         if not self.closed:
             self.closed = true
-            self.resultfunc(false)
+            self.resultfunc(false, self.downloadid, self.peerid, self.ip, self.port)
 
     def connection_flushed(self, connection):
         pass
