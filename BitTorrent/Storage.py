@@ -15,8 +15,8 @@ class Storage:
     def __init__(self, files, open, exists, getsize, statusfunc, alloc_pause = 3):
         # can raise IOError and ValueError
         self.ranges = []
-        total = 0
-        so_far = 0
+        total = 0l
+        so_far = 0l
         for file, length in files:
             if length != 0:
                 self.ranges.append((total, total + length, file))
