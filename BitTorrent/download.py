@@ -150,7 +150,7 @@ def download(params, filefunc, statusfunc, finfunc, errorfunc, doneflag, cols):
     
     finflag = Event()
     ann = [None]
-    myid = sha(str(time()) + ' ' + str(getpid())).digest()
+    myid = sha(`time()` + ' ' + str(getpid())).digest()
     seed(myid)
     pieces = [info['pieces'][x:x+20] for x in xrange(0, 
         len(info['pieces']), 20)]
