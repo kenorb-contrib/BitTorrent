@@ -15,8 +15,7 @@ from RawServer import RawServer
 from PublisherFeedback import PublisherFeedback
 from threading import Condition, Event
 from entropy import entropy
-from bencode import bencode, bdecode
-from binascii import b2a_hex
+from readput import readput
 from btemplate import compile_template, string_template
 from os.path import split, getsize, exists, isfile, getmtime
 from random import randrange
@@ -38,8 +37,6 @@ defaults = [
         "ip to report you have to the publicist."),
     ('location', None, None,
         "The prefix url for announcing to the publicist."),
-    ('postlocation', None, '',
-        "post url for announcing to the publicist."),
     ('keepalive_interval', None, 120.0,
         'number of seconds to pause between sending keepalives'),
     ('timeout', None, 300.0,
@@ -101,11 +98,7 @@ def publish(params, cols):
         message = {'type': 'publish', 'port': listen_port, 'files': files}
         if config['ip'] != '':
             message['ip'] = config['ip']
-        h = urlopen(config['location'] + b2a_hex(bencode(message)) + 
-            config['postlocation'])
-        response = h.read()
-        h.close()
-        response = bdecode(response)
+        response = readput(config['location'], message)
         t = compile_template([{'type': 'success', 'your ip': string_template}, 
             {'type': 'failure', 'reason': string_template}])
         t(response)

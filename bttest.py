@@ -16,7 +16,7 @@ import btdownloadheadless
 import btdownloadlibrary
 
 def run():
-    testtest.try_all(['urllib', 'StringIO', 'random', 'urlparse', 'BaseHTTPServer'])
+    testtest.try_all(['urllib', 'StringIO', 'random', 'urlparse', 'BaseHTTPServer', 'httplib'])
 
 if __name__ == '__main__':
     run()

@@ -15,11 +15,10 @@ from Connecter import Connecter
 from Encrypter import Encrypter
 from RawServer import RawServer
 from DownloaderFeedback import DownloaderFeedback
-from threading import Condition
 from entropy import entropy
-from bencode import bencode, bdecode
+from readput import readput
+from bencode import bdecode
 from btemplate import compile_template, string_template, ListMarker, OptionMarker, exact_length
-from binascii import b2a_hex
 from os import path
 from parseargs import parseargs, formatDefinitions
 import socket
@@ -68,9 +67,8 @@ t = compile_template({'piece length': 1,
     'pieces': ListMarker(exact_length(20)),
     'peers': ListMarker({'ip': string_template, 'port': 1}), 'type': 'success',
     'length': 0, 'id': string_template, 'name': string_template, 
-    'announce': string_template, 'postannounce': OptionMarker(string_template),
-    'url': string_template, 'finish': OptionMarker(string_template), 
-    'postfinish': OptionMarker(string_template)})
+    'announce': string_template, 
+    'url': string_template, 'finish': OptionMarker(string_template)})
 
 t2 = compile_template([{'type': 'success', 'your ip': string_template}, 
     {'type': 'failure', 'reason': string_template}])
@@ -186,12 +184,8 @@ def download(params, filefunc, displayfunc, doneflag, cols):
             a['ip'] = config['ip']
         if resuming:
             a['remaining'] = left
-        url = urljoin(response['url'], response['announce'] + 
-            b2a_hex(bencode(a)) + response.get('postannounce', ''))
-        h = urlopen(url)
-        response = h.read()
-        h.close()
-        response = bdecode(response)
+        url = urljoin(response['url'], response['announce'])
+        response = readput(url, a)
         t2(response)
         if response['type'] == 'failure':
             displayfunc("Couldn't announce - " + response['reason'], 'Okay')
@@ -218,11 +212,8 @@ def download(params, filefunc, displayfunc, doneflag, cols):
                 a['result'] = 'success'
             else:
                 a['result'] = 'failure'
-            url = urljoin(response1['url'], response1['finish'] + 
-                b2a_hex(bencode(a)) + response1.get('postfinish', ''))
-            h = urlopen(url)
-            h.read()
-            h.close()
+            url = urljoin(response1['url'], response1['finish'])
+            readput(url, a)
         except IOError, e:
             pass
     return r[0]
