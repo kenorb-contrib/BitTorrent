@@ -31,7 +31,7 @@ defaults = [
         """Size of individually hashed pieces of file to be published."""),
     ('max_message_length', 'max-message-length=', None, 2 ** 23,
         """maximum length prefix encoding you'll accept over the wire - larger values get the connection dropped."""),
-    ('port', 'port=', 'p:', 0, """Port to listen on, zero indicates choose randomly."""),
+    ('port', 'port=', 'p:', None, """Port to listen on, zero indicates choose randomly."""),
     ('max_poll_period', 'max-poll-period=', None, 2.0,
         """Maximum number of seconds to block in calls to select()"""),
     ('ip', 'ip=', 'i:', '',
@@ -73,8 +73,6 @@ def publish(params, cols):
         config['max_message_length'])
     connecter.set_encrypter(encrypter)
     listen_port = config['port']
-    if listen_port == 0:
-        listen_port = randrange(5000, 10000)
 
     try:
         files = []
