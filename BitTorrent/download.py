@@ -88,16 +88,6 @@ def download(params, filefunc, statusfunc, finfunc, errorfunc, doneflag, cols):
         return
     
     try:
-        h = urlopen('http://bitconjurer.org/BitTorrent/status-downloader-02-09-04.txt')
-        status = h.read().strip()
-        h.close()
-        if status != 'current':
-            errorfunc('No longer the latest version - see http://bitconjurer.org/BitTorrent/download.html')
-            return
-    except IOError, e:
-        errorfunc("Couldn't check version number - " + str(e))
-
-    try:
         if config['responsefile'] != '':
             h = open(config['responsefile'], 'rb')
         else:

@@ -195,15 +195,6 @@ def track(args):
         print 'error: ' + str(e)
         print 'run with no arguments for parameter explanations'
         return
-    try:
-        h = urlopen('http://bitconjurer.org/BitTorrent/status-tracker-02-09-04.txt')
-        status = h.read().strip()
-        h.close()
-        if status != 'current':
-            print 'No longer the latest version - see http://bitconjurer.org/BitTorrent/download.html'
-            return
-    except IOError, e:
-        print "Couldn't check version number - " + str(e)
     r = RawServer(Event(), config['timeout_check_interval'], config['socket_timeout'])
     t = Tracker(config, r)
     r.bind(config['port'], config['bind'], true)
