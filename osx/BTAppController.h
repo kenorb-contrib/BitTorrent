@@ -18,7 +18,7 @@
 + (void)runWithDict:(NSDictionary *)dict;
 // application delegate messages
 - (BOOL)application:(NSApplication *)theApplication openFile:(NSString *)filename;
-- (void)applicationDidFinishLaunching:(NSNotification *)note;
+- init;
 - (NSNotificationCenter *)notificationCenter;
 - (PyThreadState *)tstate;
 - (void)setTstate:(PyThreadState *)nstate;

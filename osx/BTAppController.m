@@ -8,10 +8,12 @@ bt_ProxyObject *bt_getProxy(NSPort *receivePort, NSPort *sendPort);
 
 @implementation BTAppController
 
-- (void)applicationDidFinishLaunching:(NSNotification *)note
+- init
 {
+    [super init];
     PyRun_SimpleString("from threading import Event;from BitTorrent.download import download");
     tstate = PyEval_SaveThread();
+    return self;
 }
 
 - (PyThreadState *)tstate
