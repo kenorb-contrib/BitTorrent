@@ -24,7 +24,7 @@ class Choker:
             if not c.is_choked() and c.is_interested() and n < min:
                 min = n
                 minc = c
-        if maxc is not None:
+        if minc is not None:
             self.connections.remove(minc)
             self.connections.append(minc)
             self.rechoke()
@@ -58,35 +58,210 @@ class Choker:
     def not_interested(self, connection):
         self.rechoke()
 
-"""
+class DummyScheduler:
+    def __init__(self):
+        self.s = []
+
+    def schedule(self, func, delay):
+        self.s.append((func, delay))
+
+class DummyConnection:
+    def __init__(self):
+        self.interested = false
+        self.choked = false
+        self.v = 0.
+        
+    def choke(self):
+        self.choked = true
+        
+    def unchoke(self):
+        self.choked = false
+        
+    def is_choked(self):
+        return self.choked
+        
+    def is_interested(self):
+        return self.interested
 
 def test_round_robin_with_no_downloads():
-    start two
-    do round robin
-    just checking for no internal pukes
+    s = DummyScheduler()
+    ch = Choker(2, s.schedule, 3, lambda x: 0, false)
+    assert s.s == [(ch.round_robin, 3)]
+    c1 = DummyConnection()
+    c2 = DummyConnection()
+    ch.connection_made(c1)
+    ch.connection_made(c2)
+    del s.s[:]
+    ch.round_robin()
+    assert s.s == [(ch.round_robin, 3)]
+    assert not c1.choked
+    assert not c2.choked
 
 def test_choke_after_hits_max():
-    start three with max one
-    start middle downloading
-    assert first unchoked and third choked
-    assert both others unchoked
+    s = DummyScheduler()
+    ch = Choker(1, s.schedule, 3, lambda x: 0, false)
+    assert s.s == [(ch.round_robin, 3)]
+    c1 = DummyConnection()
+    c2 = DummyConnection()
+    c3 = DummyConnection()
+    ch.connection_made(c1)
+    ch.connection_made(c2)
+    ch.connection_made(c3)
+
+    c2.interested = true
+    ch.interested(c2)
+    assert not c1.choked
+    assert not c2.choked
+    assert c3.choked
 
 def test_unchokes_after_lost_interest():
-    start two with max one
-    start downloading one
-    lose interest, assert other unchoked
+    s = DummyScheduler()
+    ch = Choker(1, s.schedule, 3, lambda x: 0, false)
+    assert s.s == [(ch.round_robin, 3)]
+    c1 = DummyConnection()
+    c2 = DummyConnection()
+    ch.connection_made(c1)
+    ch.connection_made(c2)
+
+    c1.interested = true
+    ch.interested(c1)
+    assert not c1.choked
+    assert c2.choked
+
+    c1.interested = false
+    ch.not_interested(c1)
+    assert not c1.choked
+    assert not c2.choked
 
 def test_interrupt():
-    start two with second downloading
-    make first interested
-    assert second throttled
+    s = DummyScheduler()
+    ch = Choker(1, s.schedule, 3, lambda x: 0, false)
+    assert s.s == [(ch.round_robin, 3)]
+    c1 = DummyConnection()
+    c2 = DummyConnection()
+    ch.connection_made(c1)
+    ch.connection_made(c2)
 
-def test_skips_over_not_interested():
-    start two with first downloading and second not interested
-    do round robin
-    assert first still downloading
+    c2.interested = true
+    ch.interested(c2)
+    assert not c1.choked
+    assert not c2.choked
 
-def test_uses_measurefunc():
-    do second and fourth of five uploading choking with either one higher and equal
+    c1.interested = true
+    ch.interested(c1)
+    assert not c1.choked
+    assert c2.choked
 
-"""
+def test_choke_at_start():
+    s = DummyScheduler()
+    ch = Choker(1, s.schedule, 3, lambda x: 0, false)
+    assert s.s == [(ch.round_robin, 3)]
+    c1 = DummyConnection()
+    ch.connection_made(c1)
+
+    c1.interested = true
+    ch.interested(c1)
+    assert not c1.choked
+
+    c2 = DummyConnection()
+    ch.connection_made(c2)
+    assert not c1.choked
+    assert c2.choked
+
+def test_measurefunc():
+    s = DummyScheduler()
+    ch = Choker(2, s.schedule, 3, lambda x: x.v, false)
+    assert s.s == [(ch.round_robin, 3)]
+    c1 = DummyConnection()
+    c2 = DummyConnection()
+    c3 = DummyConnection()
+    c4 = DummyConnection()
+    c5 = DummyConnection()
+    ch.connection_made(c1)
+    ch.connection_made(c2)
+    ch.connection_made(c3)
+    ch.connection_made(c4)
+    ch.connection_made(c5)
+
+    c2.v = 1
+
+    c2.interested = true
+    ch.interested(c2)
+    assert not c1.choked
+    assert not c2.choked
+    assert not c3.choked
+    assert not c4.choked
+    assert not c5.choked
+
+    c4.interested = true
+    ch.interested(c4)
+    assert not c1.choked
+    assert not c2.choked
+    assert not c3.choked
+    assert not c4.choked
+    assert c5.choked
+
+    ch.round_robin()
+    assert not c1.choked
+    assert not c2.choked
+    assert not c3.choked
+    assert not c4.choked
+    assert not c5.choked
+
+    c5.interested = true
+    ch.interested(c5)
+    assert not c1.choked
+    assert not c2.choked
+    assert not c3.choked
+    assert c4.choked
+    assert not c5.choked
+
+def test_measurefunc2():
+    s = DummyScheduler()
+    ch = Choker(2, s.schedule, 3, lambda x: x.v, false)
+    assert s.s == [(ch.round_robin, 3)]
+    c1 = DummyConnection()
+    c2 = DummyConnection()
+    c3 = DummyConnection()
+    c4 = DummyConnection()
+    c5 = DummyConnection()
+    ch.connection_made(c1)
+    ch.connection_made(c2)
+    ch.connection_made(c3)
+    ch.connection_made(c4)
+    ch.connection_made(c5)
+
+    c4.v = 1
+
+    c2.interested = true
+    ch.interested(c2)
+    assert not c1.choked
+    assert not c2.choked
+    assert not c3.choked
+    assert not c4.choked
+    assert not c5.choked
+
+    c4.interested = true
+    ch.interested(c4)
+    assert not c1.choked
+    assert not c2.choked
+    assert not c3.choked
+    assert not c4.choked
+    assert c5.choked
+
+    ch.round_robin()
+    assert not c1.choked
+    assert not c2.choked
+    assert not c3.choked
+    assert not c4.choked
+    assert not c5.choked
+
+    c5.interested = true
+    ch.interested(c5)
+    assert not c1.choked
+    assert c2.choked
+    assert not c3.choked
+    assert not c4.choked
+    assert not c5.choked
+
+

@@ -4,10 +4,6 @@
 true = 1
 false = 0
 
-done_message = {'type': 'done'}
-
-interested_message = {'type': 'interested'}
-
 class Download:
     def __init__(self, connection, data, backlog):
         self.connection = connection
@@ -15,6 +11,38 @@ class Download:
         self.backlog = backlog
         self.choked = false
         self.interested = false
+
+    def adjust(self):
+        data = self.data
+        if self.choked:
+            if self.interested:
+                if not data.want_more(self):
+                    self.interested = false
+                    self.connection.send_message({'type': 'done'})
+            else:
+                if data.want_more(self):
+                    self.interested = true
+                    self.connection.send_message({'type': 'interested'})
+            return
+        f = {}
+        while true:
+            if data.num_current(self) >= self.backlog:
+                break
+            s = data.get_next(self)
+            if s is None:
+                if self.interested and data.num_current(self) == 0:
+                    self.interested = false
+                    self.connection.send_message({'type': 'done'})
+                break
+            blob, begin, length, full = s
+            self.interested = true
+            self.connection.send_message({'type': 'send', 
+                'blob': blob, 'begin': begin, 'length': length})
+            for x in full:
+                f[x] = 1
+        for x in f.keys():
+            if x is not self:
+                x.adjust()
 
     def got_choke(self):
         if self.choked:
@@ -28,38 +56,6 @@ class Download:
             return
         self.choked = false
         self.adjust()
-
-    def adjust(self):
-        data = self.data
-        if self.choked:
-            if self.interested:
-                if not data.want_more(self):
-                    self.interested = false
-                    self.connection.send_message(done_message)
-            else:
-                if data.want_more(self):
-                    self.interested = true
-                    self.connection.send_message(interested_message)
-            return
-        f = {}
-        while true:
-            if data.num_current(self) >= self.backlog:
-                break
-            s = data.get_next(self)
-            if s is None:
-                if self.interested and data.num_current(self) == 0:
-                    self.interested = false
-                    self.connection.send_message(done_message)
-                break
-            blob, begin, length, full = s
-            self.interested = true
-            self.connection.send_message({'type': 'send', 
-                'blob': blob, 'begin': begin, 'length': length})
-            for x in full:
-                f[x] = 1
-        for x in f.keys():
-            if x is not self:
-                x.adjust()
 
     def got_slice(self, message):
         complete, check = self.data.came_in(self, 
