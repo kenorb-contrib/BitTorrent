@@ -144,7 +144,7 @@ class TrackerHandler(BaseHTTPRequestHandler):
                 self.wfile.write('but alas, not here')
             else:
                 self.send_response(200)
-                self.send_header('Content-Type', 'bittorrent/redirect')
+                self.send_header('Content-Type', 'application/x-bittorrent')
                 publishers, blob, length, pieces, piece_length = published[f]
                 requesters = self.server.downloads.get(f, [])
                 requesters = publishers + requesters
@@ -160,7 +160,7 @@ class TrackerHandler(BaseHTTPRequestHandler):
 
 def track(config):
     try:
-        h = urlopen('http://bitconjurer.org/BitTorrent/status-publicist-02-04-00.txt')
+        h = urlopen('http://bitconjurer.org/BitTorrent/status-tracker-02-05-00.txt')
         status = h.read().strip()
         h.close()
         if status != 'current':

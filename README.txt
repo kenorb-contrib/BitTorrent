@@ -26,15 +26,17 @@ to build under windows -
     
     install wxPython - http://wxpython.org/
 
+    install py2exe - http://starship.python.net/crew/theller/py2exe/
+
     install the nullsoft installer - http://www.nullsoft.com/free/nsis/
 
     Copy the prebuilt crypto into root BitTorrent directory.
     You can get the prebuilt crypto at 
     http://bitconjurer.org/BitTorrent/_StreamEncrypter.pyd
 
-    Run setup.py and give it the command 'py2exe'.
+    in a shell, go to the root BitTorrent directory and run this command
     
-    python setup.py py2exe
+    python winsetup.py py2exe --windows
 
     change to the newly created subdirectory dist\btdownloadprefetched 
     and run nsis on bittorrent.nsi

@@ -52,7 +52,7 @@ def publish(params, cols):
         print formatDefinitions(defaults, cols)
         return
     try:
-        h = urlopen('http://bitconjurer.org/BitTorrent/status-publisher-02-04-00.txt')
+        h = urlopen('http://bitconjurer.org/BitTorrent/status-publisher-02-05-00.txt')
         status = h.read().strip()
         h.close()
         if status != 'current':

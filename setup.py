@@ -9,7 +9,7 @@ from distutils.core import setup, Extension
 
 setup(
     name = "BitTorrent",
-    version = "2.4.0",
+    version = "2.5.0",
     author = "Bram Cohen",
     author_email = "<bram@bitconjurer.org>",
     url = "http://www.bitconjurer.org/BitTorrent/",
