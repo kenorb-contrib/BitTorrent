@@ -74,7 +74,7 @@ t = compile_template({'info': [{'type': 'single',
     'protocol': string_template})
 
 states = ['started', 'downloading', 'finished', 
-    'uploading', 'stopped']
+    'uploading', 'stopped', 'started finished']
 
 def download(params, filefunc, statusfunc, resultfunc, doneflag, cols):
     if len(params) == 0:
@@ -235,7 +235,10 @@ def download(params, filefunc, statusfunc, resultfunc, doneflag, cols):
             'uploaded': up[0], 'downloaded': down[0], 'myid': myid,
             'left': blobs.get_amount_left(), 'status': states[status]}))
 
-    announce(0)
+    if finflag.isSet():
+        announce(5)
+    else:
+        announce(0)
     rawserver.listen_forever(encrypter)
     announce(4)
     return r[0]
