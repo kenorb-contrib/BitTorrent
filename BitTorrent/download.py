@@ -69,8 +69,8 @@ def mult20(thing, verbose):
         raise ValueError, 'must be multiple of 20'
 
 template = compile_template({'info': {'pieces': mult20, 'piece length': 1, 
-    'files': OptionMarker(ListMarker({'path': ListMarker(string_template)), 
-    'length': OptionMarker(0)}), 'name': string_template}, 
+    'files': OptionMarker(ListMarker({'path': ListMarker(string_template), 
+    'length': OptionMarker(0)})), 'name': string_template}, 
     'peers': ListMarker({'ip': string_template, 'port': 1, 
     'peer id': exact_length(20)}), 'file id': string_template, 
     'announce': string_template, 'interval': 1, 'url': string_template, 

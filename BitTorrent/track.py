@@ -84,12 +84,13 @@ class Tracker:
                 s.write('(no files published yet)')
             names.sort()
             for name in names:
-                s.write('<a href="' + name + '">' + name + '</a><p>\n\n')
+                s.write('<a href="' + name + '">' + name + '</a> (' + 
+                    str(len(self.downloads.get(name, []))) + ')<p>\n\n')
             return (200, 'OK', {'Content-Type': 'text/html'}, s.getvalue())
         if not self.published.has_key(path):
             return (404, 'Not Found', {'Content-Type': 'text/plain'}, alas)
         data = {'info': self.published[path], 'file id': path, 
-            'url': self.urlprefix + path, 'protocol': 'plaintext',
+            'url': self.urlprefix + path, 
             'announce': self.urlprefix + '/announce/', 'junk': None,
             'your ip': connection.get_ip(), 'interval': 30 * 60}
         if len(self.cached.get(path, [])) < 25:
