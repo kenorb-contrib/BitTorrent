@@ -15,6 +15,7 @@ except ImportError:
 from threading import Thread, Event
 from time import time, sleep
 import sys
+from random import randrange
 true = 1
 false = 0
 
@@ -27,6 +28,7 @@ class SingleSocket:
         self.handler = handler
         self.buffer = []
         self.last_hit = time()
+        self.fileno = sock.fileno()
         self.connected = false
         
     def get_ip(self):
@@ -39,7 +41,7 @@ class SingleSocket:
         sock = self.socket
         self.socket = None
         self.buffer = []
-        del self.raw_server.single_sockets[sock.fileno()]
+        del self.raw_server.single_sockets[self.fileno]
         self.raw_server.poll.unregister(sock)
         sock.close()
 
@@ -112,7 +114,6 @@ class RawServer:
         if reuse:
             server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         server.setblocking(0)
-        server.setsockopt(socket.IPPROTO_IP, socket.IP_TOS, 0x08)
         server.bind((bind, port))
         server.listen(5)
         self.poll.register(server, POLLIN)
@@ -129,7 +130,6 @@ class RawServer:
             raise
         except Exception, e:
             raise socket.error(str(e))
-        sock.setsockopt(socket.IPPROTO_IP, socket.IP_TOS, 0x08)
         self.poll.register(sock, POLLIN)
         s = SingleSocket(self, sock, handler)
         self.single_sockets[sock.fileno()] = s
@@ -278,21 +278,23 @@ def loop(rs):
     x.append(r)
     rs.add_task(r, .1)
 
+beginport = 5000 + randrange(10000)
+
 def test_starting_side_close():
     try:
-        da = DummyHandler()
         fa = Event()
+        fb = Event()
+        da = DummyHandler()
         sa = RawServer(fa, 100, 100)
         loop(sa)
-        sl(sa, da, 5000)
+        sl(sa, da, beginport)
         db = DummyHandler()
-        fb = Event()
         sb = RawServer(fb, 100, 100)
         loop(sb)
-        sl(sb, db, 5001)
+        sl(sb, db, beginport + 1)
 
         sleep(.5)
-        ca = sa.start_connection(('', 5001))
+        ca = sa.start_connection(('127.0.0.1', beginport + 1))
         sleep(1)
         
         assert da.external_made == []
@@ -350,15 +352,15 @@ def test_receiving_side_close():
         fa = Event()
         sa = RawServer(fa, 100, 100)
         loop(sa)
-        sl(sa, da, 5002)
+        sl(sa, da, beginport + 2)
         db = DummyHandler()
         fb = Event()
         sb = RawServer(fb, 100, 100)
         loop(sb)
-        sl(sb, db, 5003)
+        sl(sb, db, beginport + 3)
         
         sleep(.5)
-        ca = sa.start_connection(('', 5003))
+        ca = sa.start_connection(('127.0.0.1', beginport + 3))
         sleep(1)
         
         assert da.external_made == []
@@ -416,10 +418,10 @@ def test_connection_refused():
         fa = Event()
         sa = RawServer(fa, 100, 100)
         loop(sa)
-        sl(sa, da, 5006)
+        sl(sa, da, beginport + 6)
 
         sleep(.5)
-        ca = sa.start_connection(('', 5007))
+        ca = sa.start_connection(('127.0.0.1', beginport + 15))
         sleep(1)
         
         assert da.external_made == []
@@ -435,17 +437,17 @@ def test_both_close():
         fa = Event()
         sa = RawServer(fa, 100, 100)
         loop(sa)
-        sl(sa, da, 5004)
+        sl(sa, da, beginport + 4)
 
         sleep(1)
         db = DummyHandler()
         fb = Event()
         sb = RawServer(fb, 100, 100)
         loop(sb)
-        sl(sb, db, 5005)
+        sl(sb, db, beginport + 5)
 
         sleep(.5)
-        ca = sa.start_connection(('', 5005))
+        ca = sa.start_connection(('127.0.0.1', beginport + 5))
         sleep(1)
         
         assert da.external_made == []
@@ -502,7 +504,7 @@ def test_normal():
     f = Event()
     s = RawServer(f, 100, 100)
     loop(s)
-    sl(s, DummyHandler(), 5007)
+    sl(s, DummyHandler(), beginport + 7)
     s.add_task(lambda l = l: l.append('b'), 2)
     s.add_task(lambda l = l: l.append('a'), 1)
     s.add_task(lambda l = l: l.append('d'), 4)
@@ -517,7 +519,7 @@ def test_catch_exception():
     f = Event()
     s = RawServer(f, 100, 100, false)
     loop(s)
-    sl(s, DummyHandler(), 5009)
+    sl(s, DummyHandler(), beginport + 9)
     s.add_task(lambda l = l: l.append('b'), 2)
     s.add_task(lambda: 4/0, 1)
     sleep(3)
@@ -530,17 +532,17 @@ def test_closes_if_not_hit():
         fa = Event()
         sa = RawServer(fa, 2, 2)
         loop(sa)
-        sl(sa, da, 5012)
+        sl(sa, da, beginport + 14)
 
         sleep(1)
         db = DummyHandler()
         fb = Event()
         sb = RawServer(fb, 100, 100)
         loop(sb)
-        sl(sb, db, 5013)
+        sl(sb, db, beginport + 13)
         
         sleep(.5)
-        sa.start_connection(('', 5013))
+        sa.start_connection(('127.0.0.1', beginport + 13))
         sleep(1)
         
         assert da.external_made == []
@@ -561,21 +563,21 @@ def test_closes_if_not_hit():
 
 def test_does_not_close_if_hit():
     try:
-        da = DummyHandler()
         fa = Event()
+        fb = Event()
+        da = DummyHandler()
         sa = RawServer(fa, 2, 2)
         loop(sa)
-        sl(sa, da, 5012)
+        sl(sa, da, beginport + 12)
 
         sleep(1)
         db = DummyHandler()
-        fb = Event()
         sb = RawServer(fb, 100, 100)
         loop(sb)
-        sl(sb, db, 5013)
+        sl(sb, db, beginport + 13)
         
         sleep(.5)
-        sa.start_connection(('', 5013))
+        sa.start_connection(('127.0.0.1', beginport + 13))
         sleep(1)
         
         assert da.external_made == []
@@ -588,7 +590,7 @@ def test_does_not_close_if_hit():
         assert db.lost == []
 
         cb.write('bbb')
-        sleep(2)
+        sleep(.5)
         
         assert da.lost == []
         assert db.lost == []
