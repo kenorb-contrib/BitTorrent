@@ -13,24 +13,23 @@ false = 0
 
 ext = '.torrent'
 
-def dummy(*stuff, **dictstuff):
+def dummy(*args, **kwargs):
     pass
 
 def runmany(d, params):
     files = listdir(d)
     for file in files:
-        if file[-len(ext):] == ext and exists(file[:-len(ext)]):
-            Thread(target = runsingle, params = [join(d, file[:-len(ext)])]).start()
- 
+        if file[-len(ext):] == ext and file[:-len(ext)] in files:
+            Thread(target = runsingle, args = [join(d, file), params]).start()
+
 def runsingle(file, params):
     def err(msg, file = file):
         print 'error in' + file + ' - ' + msg
     def failed(file = file):
         print 'failed ' + file
-    def choose(self, default, size, saveas, dir, file = file):
-        return file
+    def choose(default, size, saveas, dir, file = file):
+        return file[:-len(ext)]
     download(params + ['--responsefile', file], choose, dummy, dummy, err, Event(), 80)
 
 if __name__ == '__main__':
     runmany(argv[1], argv[2:])
-
