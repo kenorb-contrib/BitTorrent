@@ -21,7 +21,25 @@ bt_ProxyObject *bt_getProxy(NSPort *receivePort, NSPort *sendPort);
     version = [[NSString stringWithCString:PyString_AsString(vers)] retain];
     tstate = PyEval_SaveThread();
     [[[[ICHelper alloc] init] installICHandler:self] autorelease];
+    
+    lastPoint.x = 0.0;
+    lastPoint.y = 0.0;
     return self;
+}
+
+- (id)loadDLWindow
+{
+    id controller = [[DLWindowController alloc] init];
+    [NSBundle loadNibNamed:@"DLWindow" owner:controller];
+    
+    if(lastPoint.x == 0.0 && lastPoint.y == 0.0) {
+	lastPoint.x = NSMinX([[controller window] frame]);
+	lastPoint.y = NSMaxY([[controller window] frame]);
+    }
+    lastPoint = [[controller window] cascadeTopLeftFromPoint:lastPoint];
+
+    [controller showWindow:self];
+    return controller;
 }
 
 - (PyThreadState *)tstate
@@ -50,19 +68,16 @@ bt_ProxyObject *bt_getProxy(NSPort *receivePort, NSPort *sendPort);
     NSOpenPanel *panel = [NSOpenPanel openPanel];
     id controller;
     if([panel runModalForTypes:[NSArray arrayWithObjects:[NSString stringWithCString:"torrent"]]]) {
-	controller = [[DLWindowController alloc] init];
-	[NSBundle loadNibNamed:@"DLWindow" owner:controller];
+	controller = [self loadDLWindow];
 	[self runWithStr:[NSString stringWithFormat:@"--responsefile=%@", [panel filename]] controller:controller];
     }
     
 }
 - (IBAction)takeUrl:(id)sender
 {
-    id controller = [[DLWindowController alloc] init];
-    
+    id controller;     
     [urlWindow orderOut:self];
-    [NSBundle loadNibNamed:@"DLWindow" owner:controller];
-    
+    controller = [self loadDLWindow];
     [self runWithStr:[NSString stringWithFormat:@"--url=%@", [url stringValue]] controller:controller];
 
 }
@@ -156,9 +171,7 @@ bt_ProxyObject *bt_getProxy(NSPort *receivePort, NSPort *sendPort);
 
 - (BOOL)application:(NSApplication *)theApplication openFile:(NSString *)filename
 {
-    id controller = [[DLWindowController alloc] init];
-    
-    [NSBundle loadNibNamed:@"DLWindow" owner:controller];
+    id controller = [self loadDLWindow];
     
     [self runWithStr:[NSString stringWithFormat:@"--responsefile=%@", filename] controller:controller];
     return TRUE;

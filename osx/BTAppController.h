@@ -9,6 +9,7 @@
     IBOutlet NSWindow *urlWindow, *aboutWindow;
     NSMutableArray *dlControllers;
     NSString *version;
+    NSPoint lastPoint;
 }
 - (IBAction)cancelUrl:(id)sender;
 - (IBAction)openURL:(id)sender;
