@@ -67,13 +67,13 @@ class Connection:
         return 20, self.read_peer_id
 
     def read_peer_id(self, s):
-        if self.id is None:
+        if not self.id:
             for v in self.encoder.connections.values():
                 if v.id == s:
                     return None
             self.id = s
             if self.locally_initiated:
-                connection.write(self.encoder.my_id)
+                self.connection.write(self.encoder.my_id)
             else:
                 self.encoder.everinc = True
         else:
@@ -159,11 +159,12 @@ class Encoder:
     def start_connection(self, dns, id):
         if len(self.connections) >= self.max_initiate:
             return
-        if id and id == self.my_id:
-            return
-        for v in self.connections.values():
-            if v.id == id:
+        if id:
+            if id == self.my_id:
                 return
+            for v in self.connections.values():
+                if v.id == id:
+                    return
         try:
             c = self.raw_server.start_connection(dns)
             self.connections[c] = Connection(self, c, id)
