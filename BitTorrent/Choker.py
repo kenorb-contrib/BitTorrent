@@ -6,8 +6,11 @@ true = 1
 false = 0
 
 class Choker:
-    def __init__(self, max_uploads, schedule, done = lambda: false):
+    def __init__(self, max_uploads, schedule, done = lambda: false, min_uploads = None):
         self.max_uploads = max_uploads
+        if min_uploads is None:
+            min_uploads = max_uploads
+        self.min_uploads = min_uploads
         self.schedule = schedule
         self.connections = []
         self.count = 0
@@ -45,15 +48,17 @@ class Choker:
         del preferred[self.max_uploads - 1:]
         preferred = [x[1] for x in preferred]
         count = len(preferred)
+        hit = false
         for c in self.connections:
             u = c.get_upload()
             if c in preferred:
                 u.unchoke()
             else:
-                if count < self.max_uploads:
+                if count < self.min_uploads or not hit:
                     u.unchoke()
                     if u.is_interested():
                         count += 1
+                        hit = true
                 else:
                     u.choke()
 

@@ -36,7 +36,7 @@ except ImportError:
         return 1
 
 defaults = [
-    ('max_uploads', 4,
+    ('max_uploads', 7,
         "the maximum number of uploads to allow at once."),
     ('keepalive_interval', 120.0,
         'number of seconds to pause between sending keepalives'),
@@ -84,12 +84,14 @@ defaults = [
         'maximum kB/s to upload at, 0 means no limit'),
     ('alloc_pause', 3.0,
         'seconds to wait before displaying allocation feedback'),
-    ('snub_time', 60.0,
+    ('snub_time', 30.0,
         "seconds to wait for data to come in over a connection before assuming it's semi-permanently choked"),
     ('spew', 0,
         "whether to display diagnostic info to stdout"),
     ('rarest_first_cutoff', 4,
         "number of downloads at which to switch from random to rarest first"),
+    ('min_uploads', 4,
+        "the number of uploads to fill out to with extra optimistic unchokes"),
     ]
 
 def download(params, filefunc, statusfunc, finfunc, errorfunc, doneflag, cols, pathFunc = None, paramfunc = None):
@@ -234,7 +236,8 @@ def download(params, filefunc, statusfunc, finfunc, errorfunc, doneflag, cols, p
         errorfunc("Couldn't listen - " + str(e))
         return
 
-    choker = Choker(config['max_uploads'], rawserver.add_task, finflag.isSet)
+    choker = Choker(config['max_uploads'], rawserver.add_task, finflag.isSet, 
+        config['min_uploads'])
     upmeasure = Measure(config['max_rate_period'], 
         config['upload_rate_fudge'])
     downmeasure = Measure(config['max_rate_period'])
