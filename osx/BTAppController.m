@@ -61,7 +61,7 @@ PyObject *getCookie(NSPort *receivePort, NSPort *sendPort);
     NSPort *left, *right;
     NSConnection *conn;
     
-    str = [NSString localizedStringWithFormat:@"from thread import start_new_thread;start_new_thread(cocoa.newDlWithUrl, ('%@', cookie, flag))", urlstr];
+    str = [NSString localizedStringWithFormat:@"cocoa.newDlWithUrl('%@', cookie, flag)", urlstr];
     left = [NSPort port];
     right = [NSPort port];
     conn = [[NSConnection alloc] initWithReceivePort:left sendPort:right];

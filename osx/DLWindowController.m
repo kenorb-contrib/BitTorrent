@@ -1,18 +1,12 @@
 #import "DLWindowController.h"
 #import "BTAppController.h"
-#import "messages.h"
 
 @implementation DLWindowController
 
 - (id)init
-{
-    id not = [NSNotificationCenter defaultCenter];
- 
+{ 
     [super init];
     finished = 0;
-    [not addObserver:self selector:@selector(chooseFile:) name:CHOOSE object:nil];
-    [not addObserver:self selector:@selector(display:) name:DISPLAY object:nil];
-    [not addObserver:self selector:@selector(finished:) name:FINISHED object:nil];
     timeEst = [@"" retain];
     return self;
 }
@@ -24,13 +18,11 @@
 
 - (IBAction)cancelDl:(id)sender
 {
-    id not = [NSNotificationCenter defaultCenter];
     if(!finished) {
 	[timeRemaining setStringValue:@"Download cancelled!"];
     }
     [cancelButton setEnabled:NO];
     [[NSApp delegate] setCancelFlag:flag];
-    [not removeObserver:self];
 }
 
 - (void)setFlag:(PyObject *)nflag
