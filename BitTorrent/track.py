@@ -62,7 +62,7 @@ def statefiletemplate(x):
                      if type(info.get('ip', '')) != StringType:
                          raise ValueError
                      port = info.get('port')
-                     if type(port) != LongType or port <= 0:
+                     if type(port) != LongType or port < 0:
                          raise ValueError
                      left = info.get('left')
                      if type(left) != LongType or left < 0:
