@@ -6,8 +6,9 @@ true = 1
 false = 0
 
 class PiecePicker:
-    def __init__(self, numpieces, rarest_first_cutoff = 1):
+    def __init__(self, numpieces, rarest_first_cutoff = 1, rarest_first_priority_cutoff = 3):
         self.rarest_first_cutoff = rarest_first_cutoff
+        self.rarest_first_priority_cutoff = rarest_first_priority_cutoff
         self.numpieces = numpieces
         self.interests = [range(numpieces)]
         self.pos_in_interests = range(numpieces)
@@ -78,11 +79,13 @@ class PiecePicker:
                 elif self.numinterests[i] == bestnum:
                     bests.append(i)
         if self.numgot >= self.rarest_first_cutoff:
-            for i in self.interests[1:bestnum]:
-                for j in i:
+            for i in xrange(1, min(bestnum, len(self.interests))):
+                if bests and i >= self.rarest_first_priority_cutoff:
+                    break
+                for j in self.interests[i]:
                     if havefunc(j):
                         return j
-                if i and bests:
+                if self.interests[i] and bests:
                     break
             if bests:
                 return choice(bests)

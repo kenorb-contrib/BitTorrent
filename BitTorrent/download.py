@@ -89,6 +89,8 @@ defaults = [
         "number of downloads at which to switch from random to rarest first"),
     ('min_uploads', 4,
         "the number of uploads to fill out to with extra optimistic unchokes"),
+    ('rarest_first_priority_cutoff', 3,
+        'the number of peers which need to have a piece before other partials take priority over rarest first'),
     ]
 
 def download(params, filefunc, statusfunc, finfunc, errorfunc, doneflag, cols, pathFunc = None, paramfunc = None):
@@ -247,7 +249,7 @@ def download(params, filefunc, statusfunc, finfunc, errorfunc, doneflag, cols, p
             max_slice_length, max_rate_period, fudge)
     ratemeasure = RateMeasure(storagewrapper.get_amount_left())
     rm[0] = ratemeasure.data_rejected
-    picker = PiecePicker(len(pieces), config['rarest_first_cutoff'])
+    picker = PiecePicker(len(pieces), config['rarest_first_cutoff'], config['rarest_first_priority_cutoff'])
     for i in xrange(len(pieces)):
         if storagewrapper.do_I_have(i):
             picker.complete(i)
