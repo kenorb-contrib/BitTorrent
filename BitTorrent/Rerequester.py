@@ -58,6 +58,8 @@ class Rerequester:
             s += '&trackerid=' + quote(str(self.trackerid))
         if self.howmany() >= self.maxpeers:
             s += '&numwant=0'
+        else:
+            s += '&no_peer_id=1'
         if event != 3:
             s += '&event=' + ['started', 'completed', 'stopped'][event]
         set = SetOnce().set
@@ -109,7 +111,7 @@ class Rerequester:
                         if r.get('num peers', 1000) > ps * 1.2:
                             self.last = None
                 for x in r['peers']:
-                    self.connect((x['ip'], x['port']), x['peer id'])
+                    self.connect((x['ip'], x['port']), x.get('peer id'))
         except ValueError, e:
             if data != '':
                 self.errorfunc('bad data from tracker - ' + str(e))
