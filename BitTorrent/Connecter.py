@@ -92,25 +92,18 @@ class Connection:
     def get_download(self):
         return self.download
 
-    def set_download(self, download):
-        self.download = download
-
 class Connecter:
     def __init__(self, make_upload, downloader, choker, numpieces,
-            is_everything_pending, make_endgame, totalup, max_upload_rate = 0, sched = None):
+            totalup, max_upload_rate = 0, sched = None):
         self.downloader = downloader
         self.make_upload = make_upload
         self.choker = choker
         self.numpieces = numpieces
-        self.is_everything_pending = is_everything_pending
         self.max_upload_rate = max_upload_rate
         self.sched = sched
         self.totalup = totalup
         self.rate_capped = false
-        self.make_endgame = make_endgame
         self.connections = {}
-        self.endgame = false
-        self.check_endgame()
 
     def _update_upload_rate(self, amount):
         self.totalup.update_rate(amount)
@@ -164,11 +157,6 @@ class Connecter:
     def connection_flushed(self, connection):
         self.connections[connection].upload.flushed()
 
-    def check_endgame(self):
-        if not self.endgame and self.is_everything_pending():
-            self.endgame = true
-            self.downloader = self.make_endgame(self.downloader)
-
     def got_message(self, connection, message):
         c = self.connections[connection]
         t = message[0]
@@ -184,7 +172,6 @@ class Connecter:
             c.download.got_choke()
         elif t == UNCHOKE:
             c.download.got_unchoke()
-            self.check_endgame()
         elif t == INTERESTED:
             c.upload.got_interested()
         elif t == NOT_INTERESTED:
@@ -198,14 +185,12 @@ class Connecter:
                 connection.close()
                 return
             c.download.got_have(i)
-            self.check_endgame()
         elif t == BITFIELD:
             b = bitfield_to_booleans(message[1:], self.numpieces)
             if b is None:
                 connection.close()
                 return
             c.download.got_have_bitfield(b)
-            self.check_endgame()
         elif t == REQUEST:
             if len(message) != 13:
                 connection.close()
@@ -237,7 +222,6 @@ class Connecter:
             if c.download.got_piece(i, toint(message[5:9]), message[9:]):
                 for co in self.connections.values():
                     co.send_have(i)
-            self.check_endgame()
         else:
             connection.close()
 
@@ -318,7 +302,7 @@ def test_operation():
     cs = []
     co = Connecter(lambda c, events = events: DummyUpload(events), 
         DummyDownloader(events), DummyChoker(events, cs), 3, 
-        lambda: false, None, Measure(10))
+        Measure(10))
     assert events == []
     assert cs == []
     

@@ -34,6 +34,7 @@ class StorageWrapper:
         self.numactive = [0] * len(hashes)
         self.inactive_requests = [[] for i in xrange(len(hashes))]
         self.total_inactive = 0
+        self.endgame = false
         self.have = [false] * len(hashes)
         self.waschecked = [check_hashes] * len(hashes)
         self.schedulefunc = schedulefunc
@@ -102,8 +103,8 @@ class StorageWrapper:
         l.append((x, length - x))
         self.total_inactive += 1
 
-    def is_everything_pending(self):
-        return self.total_inactive == 0
+    def is_endgame(self):
+        return self.endgame
 
     def get_have_list(self):
         return self.have
@@ -118,6 +119,8 @@ class StorageWrapper:
         # returns (begin, length)
         self.numactive[index] += 1
         self.total_inactive -= 1
+        if self.total_inactive == 0:
+            self.endgame = true
         rs = self.inactive_requests[index]
         r = min(rs)
         rs.remove(r)

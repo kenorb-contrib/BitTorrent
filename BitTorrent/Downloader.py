@@ -2,6 +2,7 @@
 # see LICENSE.txt for license information
 
 from CurrentRateMeasure import Measure
+from random import shuffle
 from time import time
 from math import sqrt
 true = 1
@@ -64,6 +65,14 @@ class SingleDownload:
             self.active_requests.remove((index, begin, len(piece)))
         except ValueError:
             return false
+        if self.downloader.storage.is_endgame():
+            self.downloader.all_requests.remove((index, begin, len(piece)))
+            for d in self.downloader.downloads:
+                try:
+                    d.active_requests.remove((index, begin, len(piece)))
+                    d.connection.send_cancel(index, begin, len(piece))
+                except ValueError:
+                    pass
         self.last = time()
         self.measure.update_rate(len(piece))
         self.downloader.measurefunc(len(piece))
@@ -72,6 +81,9 @@ class SingleDownload:
         if self.downloader.storage.do_I_have(index):
             self.downloader.picker.complete(index)
         self.fix_download()
+        if self.downloader.storage.is_endgame():
+            for d in self.downloader.downloads:
+                d.fix_download_endgame()
         return self.downloader.storage.do_I_have(index)
 
     def _want(self, piece):
@@ -79,6 +91,9 @@ class SingleDownload:
 
     def fix_download(self):
         if len(self.active_requests) == self.downloader.backlog:
+            return
+        if self.downloader.storage.is_endgame():
+            self.fix_download_endgame()
             return
         piece = self.downloader.picker.next(self._want, self.have_list)
         if piece is None:
@@ -104,9 +119,33 @@ class SingleDownload:
                 if len(self.active_requests) == self.downloader.backlog:
                     break
                 piece = self.downloader.picker.next(self._want, self.have_list)
-            if hit:
+            if self.downloader.storage.is_endgame():
+                all_requests = []
+                self.downloader.all_requests = all_requests
+                for d in self.downloader.downloads:
+                    for a in d.active_requests:
+                        if a not in all_requests:
+                            all_requests.append(a)
+            if hit or self.downloader.storage.is_endgame():
                 for d in self.downloader.downloads:
                     d.fix_download()
+
+    def fix_download_endgame(self):
+        want = [a for a in self.downloader.all_requests if self.have[a[0]] and a not in self.active_requests]
+        if self.interested and not self.active_requests and not want:
+            self.interested = false
+            self.connection.send_not_interested()
+            return
+        if not self.interested and want:
+            self.interested = true
+            self.connection.send_interested()
+        if self.choked:
+            return
+        shuffle(want)
+        want = want[:self.downloader.backlog - len(self.active_requests)]
+        self.active_requests.extend(want)
+        for piece, begin, length in want:
+            self.connection.send_request(piece, begin, length)
 
     def got_have(self, index):
         if self.have[index]:
@@ -174,9 +213,11 @@ class DummyPicker:
         self.r.append('complete')
 
 class DummyStorage:
-    def __init__(self, remaining):
+    def __init__(self, remaining, have_endgame = false, numpieces = 1):
         self.remaining = remaining
-        self.active = [[]]
+        self.active = [[] for i in xrange(numpieces)]
+        self.endgame = false
+        self.have_endgame = have_endgame
 
     def do_I_have_requests(self, index):
         return self.remaining[index] != []
@@ -196,9 +237,17 @@ class DummyStorage:
         
     def new_request(self, index):
         x = self.remaining[index].pop()
+        for i in self.remaining:
+            if i:
+                break
+        else:
+            self.endgame = true
         self.active[index].append(x)
         self.active[index].sort()
         return x
+
+    def is_endgame(self):
+        return self.have_endgame and self.endgame
 
 class DummyConnection:
     def __init__(self, events):
@@ -213,10 +262,13 @@ class DummyConnection:
     def send_request(self, index, begin, length):
         self.events.append(('request', index, begin, length))
 
+    def send_cancel(self, index, begin, length):
+        self.events.append(('cancel', index, begin, length))
+
 def test_stops_at_backlog():
     ds = DummyStorage([[(0, 2), (2, 2), (4, 2), (6, 2)]])
     events = []
-    d = Downloader(ds, DummyPicker(len(ds.active), events), 2, 15, 1, Measure(15), 10)
+    d = Downloader(ds, DummyPicker(len(ds.remaining), events), 2, 15, 1, Measure(15), 10)
     sd = d.make_download(DummyConnection(events))
     assert events == []
     assert ds.remaining == [[(0, 2), (2, 2), (4, 2), (6, 2)]]
@@ -240,7 +292,7 @@ def test_stops_at_backlog():
 def test_got_have_single():
     ds = DummyStorage([[(0, 2)]])
     events = []
-    d = Downloader(ds, DummyPicker(len(ds.active), events), 2, 15, 1, Measure(15), 10)
+    d = Downloader(ds, DummyPicker(len(ds.remaining), events), 2, 15, 1, Measure(15), 10)
     sd = d.make_download(DummyConnection(events))
     assert events == []
     assert ds.remaining == [[(0, 2)]]
@@ -260,7 +312,7 @@ def test_got_have_single():
 def test_choke_clears_active():
     ds = DummyStorage([[(0, 2)]])
     events = []
-    d = Downloader(ds, DummyPicker(len(ds.active), events), 2, 15, 1, Measure(15), 10)
+    d = Downloader(ds, DummyPicker(len(ds.remaining), events), 2, 15, 1, Measure(15), 10)
     sd1 = d.make_download(DummyConnection(events))
     sd2 = d.make_download(DummyConnection(events))
     assert events == []
@@ -288,3 +340,109 @@ def test_choke_clears_active():
     del events[:]
     assert ds.remaining == [[]]
     assert ds.active == [[]]
+
+def test_endgame():
+    ds = DummyStorage([[(0, 2)], [(0, 2)], [(0, 2)]], true, 3)
+    events = []
+    d = Downloader(ds, DummyPicker(len(ds.remaining), events), 10, 15, 3, Measure(15), 10)
+    ev1 = []
+    ev2 = []
+    ev3 = []
+    ev4 = []
+    sd1 = d.make_download(DummyConnection(ev1))
+    sd2 = d.make_download(DummyConnection(ev2))
+    sd3 = d.make_download(DummyConnection(ev3))
+    sd1.got_unchoke()
+    sd1.got_have(0)
+    assert ev1 == ['interested', ('request', 0, 0, 2)]
+    del ev1[:]
+    
+    sd2.got_unchoke()
+    sd2.got_have(0)
+    sd2.got_have(1)
+    assert ev2 == ['interested', ('request', 1, 0, 2)]
+    del ev2[:]
+    
+    sd3.got_unchoke()
+    sd3.got_have(0)
+    sd3.got_have(1)
+    sd3.got_have(2)
+    assert (ev3 == ['interested', ('request', 2, 0, 2), ('request', 0, 0, 2), ('request', 1, 0, 2)] or 
+        ev3 == ['interested', ('request', 2, 0, 2), ('request', 1, 0, 2), ('request', 0, 0, 2)])
+    del ev3[:]
+    assert ev2 == [('request', 0, 0, 2)]
+    del ev2[:]
+
+    sd2.got_piece(0, 0, 'ab')
+    assert ev1 == [('cancel', 0, 0, 2), 'not interested']
+    del ev1[:]
+    assert ev2 == []
+    assert ev3 == [('cancel', 0, 0, 2)]
+    del ev3[:]
+
+    sd3.got_choke()
+    assert ev1 == []
+    assert ev2 == []
+    assert ev3 == []
+
+    sd3.got_unchoke()
+    assert (ev3 == [('request', 2, 0, 2), ('request', 1, 0, 2)] or 
+        ev3 == [('request', 1, 0, 2), ('request', 2, 0, 2)])
+    del ev3[:]
+    assert ev1 == []
+    assert ev2 == []
+
+    sd4 = d.make_download(DummyConnection(ev4))
+    sd4.got_have_bitfield([true, true, true])
+    assert ev4 == ['interested']
+    del ev4[:]
+    sd4.got_unchoke()
+    assert (ev4 == [('request', 2, 0, 2), ('request', 1, 0, 2)] or 
+        ev4 == [('request', 1, 0, 2), ('request', 2, 0, 2)])
+    assert ev1 == []
+    assert ev2 == []
+    assert ev3 == []
+
+def test_stops_at_backlog_endgame():
+    ds = DummyStorage([[(2, 2), (0, 2)], [(2, 2), (0, 2)], [(0, 2)]], true, 3)
+    events = []
+    d = Downloader(ds, DummyPicker(len(ds.remaining), events), 3, 15, 3, Measure(15), 10)
+    ev1 = []
+    ev2 = []
+    ev3 = []
+    sd1 = d.make_download(DummyConnection(ev1))
+    sd2 = d.make_download(DummyConnection(ev2))
+    sd3 = d.make_download(DummyConnection(ev3))
+
+    sd1.got_unchoke()
+    sd1.got_have(0)
+    assert ev1 == ['interested', ('request', 0, 0, 2), ('request', 0, 2, 2)]
+    del ev1[:]
+
+    sd2.got_unchoke()
+    sd2.got_have(0)
+    assert ev2 == []
+    sd2.got_have(1)
+    assert ev2 == ['interested', ('request', 1, 0, 2), ('request', 1, 2, 2)]
+    del ev2[:]
+
+    sd3.got_unchoke()
+    sd3.got_have(2)
+    assert (ev2 == [('request', 0, 0, 2)] or 
+        ev2 == [('request', 0, 2, 2)])
+    n = ev2[0][2]
+    del ev2[:]
+
+    sd1.got_piece(0, n, 'ab')
+    assert ev1 == []
+    assert ev2 == [('cancel', 0, n, 2), ('request', 0, 2-n, 2)]
+
+# test piece flunking behavior
+# make backlog of 1, one piece with two subpieces
+# first connects, requests and gets part 1, requests part 2
+# second connects, does nothing
+# first gets part 2, flunks check, first requests part 1 and second requests part 2
+
+# test piece flunking behavior endgame
+# one piece, two sub-pieces, two peers
+# second sub-piece comes in, assert gets request for both sub-pieces from both peers
