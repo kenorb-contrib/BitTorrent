@@ -189,7 +189,7 @@ def download(params, filefunc, statusfunc, finfunc, errorfunc, doneflag, cols, p
     finflag = Event()
     ann = [None]
     myid = 'M' + version.replace('.', '-')
-    myid = myid + ('-' * (8 - len(myid))) + b2a_hex(sha(repr(time()) + ' ' + str(getpid())).digest()[-8:])
+    myid = myid + ('-' * (8 - len(myid))) + b2a_hex(sha(repr(time()) + ' ' + str(getpid())).digest()[-6:])
     seed(myid)
     pieces = [info['pieces'][x:x+20] for x in xrange(0, 
         len(info['pieces']), 20)]
