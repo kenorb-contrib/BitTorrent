@@ -14,6 +14,8 @@ from os import getcwd
 from wxPython.wx import *
 from time import strftime
 from webbrowser import open_new
+true = 1
+false = 0
 
 def hours(n):
     if n == -1:
