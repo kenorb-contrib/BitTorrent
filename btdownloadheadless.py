@@ -83,7 +83,7 @@ class HeadlessDisplayer:
         print 'upload rate:   ', self.upRate
         stdout.flush()
 
-    def chooseFile(self, default, size, saveas):
+    def chooseFile(self, default, size, saveas, dir):
         self.file = default + ' (' + mbfy(size) + ' MB)'
         if saveas != '':
             default = saveas

@@ -18,7 +18,7 @@ from entropy import entropy
 from readput import putqueue
 from bencode import bencode, bdecode
 from btemplate import compile_template, string_template, ListMarker, OptionMarker, exact_length
-from os import path
+from os import path, makedirs
 from parseargs import parseargs, formatDefinitions
 from socket import error as socketerror
 from random import randrange, seed
@@ -65,8 +65,9 @@ t = compile_template({'info': [{'type': 'single',
     'pieces': ListMarker(exact_length(20)),
     'piece length': 1, 'length': 0, 'name': string_template}, 
     {'type': 'multiple', 'pieces': ListMarker(exact_length(20)), 
-    'piece length': 1, 'files': ListMarker({'name': string_template, 
-    'length': 0})}], 'peers': ListMarker({'ip': string_template, 'port': 1}), 
+    'piece length': 1, 'files': ListMarker({'path': ListMarker(string_template), 
+    'length': 0}), 'name': string_template}], 
+    'peers': ListMarker({'ip': string_template, 'port': 1}), 
     'id': string_template, 'announce': string_template, 
     'url': string_template, 'your ip': string_template})
 
@@ -77,7 +78,7 @@ def download(params, filefunc, statusfunc, resultfunc, doneflag, cols):
     try:
         config, garbage = parseargs(params, defaults, 0, 0)
         if config['responsefile'] == '' and config['url'] == '':
-            raise ValueError('need responsefile, or url')
+            raise ValueError('need responsefile or url')
     except ValueError, e:
         resultfunc(false, 'error: ' + str(e) + '\nrun with no args for parameter explanations')
         return
@@ -88,7 +89,6 @@ def download(params, filefunc, statusfunc, resultfunc, doneflag, cols):
             response = h.read()
             h.close()
         except IOError, e:
-            print_exc()
             resultfunc(false, 'IO problem reading response file - ' + str(e))
             return
     else:
@@ -97,7 +97,6 @@ def download(params, filefunc, statusfunc, resultfunc, doneflag, cols):
             response = h.read()
             h.close()
         except IOError, e:
-            print_exc()
             resultfunc(false, 'IO problem in initial http request - ' + str(e))
             return false
 
@@ -118,15 +117,26 @@ def download(params, filefunc, statusfunc, resultfunc, doneflag, cols):
         resultfunc(false, "got bad publication response - " + str(e))
         return
     info = response['info']
-    file_length = info['length']
-    file = filefunc(info['name'], file_length, config['saveas'])
-    if file is None:
-        return
-    if path.exists(file):
-        resuming = true
+    if info['type'] == 'single':
+        file_length = info['length']
+        file = filefunc(info['name'], file_length, config['saveas'], false)
+        if file is None:
+            return
+        files = [(file, info['length'])]
     else:
-        resuming = false
-    r = [0]
+        file_length = 0
+        for x in info['files']:
+            file_length += x['length']
+        file = filefunc(info['name'], file_length, config['saveas'], true)
+        if file is None:
+            return
+        files = []
+        for x in info['files']:
+            n = file
+            for i in x['path']:
+                n = path.join(n, i)
+            files.append((n, x['length']))
+    r = [false]
     finflag = Event()
     def finished(result, errormsg = None, fatal = false, 
             resultfunc = resultfunc, finflag = finflag, 
@@ -138,9 +148,14 @@ def download(params, filefunc, statusfunc, resultfunc, doneflag, cols):
         if fatal:
             doneflag.set()
         resultfunc(result, errormsg)
-    blobs = SingleBlob(file, file_length, info['pieces'], 
+    def make(f):
+        try:
+            makedirs(path.split(f)[0])
+        except OSError:
+            pass
+    blobs = SingleBlob(files, info['pieces'], 
         info['piece length'], finished, open, path.exists, 
-        path.getsize, doneflag, statusfunc)
+        path.getsize, doneflag, statusfunc, make)
     if doneflag.isSet():
         return
     left = blobs.get_amount_left()
@@ -203,7 +218,7 @@ def download(params, filefunc, statusfunc, resultfunc, doneflag, cols):
             'contact': {'ip': response['your ip'], 'port': listen_port}}
     if config['ip'] != '':
         a['contact']['ip'] = config['ip']
-    if resuming:
+    if blobs.was_preexisting():
         a['left'] = left
     q.addrequest(bencode(a))
 

@@ -8,6 +8,8 @@ assert version >= '2', "Install Python 2.0 or greater"
 
 from BitTorrent.download import download
 from threading import Event, Thread
+from os.path import join
+from os import getcwd
 from wxPython.wx import *
 
 def kify(n):
@@ -43,13 +45,14 @@ def EVT_CHOOSE_FILE(win, func):
     win.Connect(-1, -1, wxEVT_CHOOSE_FILE, func)
 
 class ChooseFileEvent(wxPyEvent):
-    def __init__(self, default, bucket, flag, size):
+    def __init__(self, default, bucket, flag, size, dir):
         wxPyEvent.__init__(self)
         self.SetEventType(wxEVT_CHOOSE_FILE)
         self.default = default
         self.bucket = bucket
         self.flag = flag
         self.size = size
+        self.dir = dir
 
 wxEVT_UPDATE_STATUS = wxNewId()
 
@@ -178,15 +181,18 @@ class DownloadInfoFrame(wxFrame):
             dlg.Center()
             dlg.ShowModal()
 
-    def chooseFile(self, default, size, saveas):
+    def chooseFile(self, default, size, saveas, dir):
         f = Event()
         bucket = [None]
-        wxPostEvent(self, ChooseFileEvent(default, bucket, f, size))
+        wxPostEvent(self, ChooseFileEvent(default, bucket, f, size, dir))
         f.wait()
         return bucket[0]
     
     def onChooseFile(self, event):
-        dl = wxFileDialog(self, 'Choose file to save as, pick a partial download to resume', '.', event.default, '*.*', wxSAVE)
+        if event.dir:
+            dl = wxDirDialog(self, 'Choose a directory to save to, pick a partial download to resume', join(getcwd(), event.default))
+        else:
+            dl = wxFileDialog(self, 'Choose file to save as, pick a partial download to resume', '', event.default, '*.*', wxSAVE)
         if dl.ShowModal() != wxID_OK:
             self.done(None)
         else:

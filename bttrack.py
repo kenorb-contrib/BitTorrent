@@ -23,8 +23,8 @@ infotemplate = compile_template([{'type': 'single',
     'pieces': ListMarker(exact_length(20)),
     'piece length': 1, 'length': 0, 'name': string_template}, 
     {'type': 'multiple', 'pieces': ListMarker(exact_length(20)), 
-    'piece length': 1, 'files': ListMarker({'name': string_template, 
-    'length': 0})}])
+    'piece length': 1, 'files': ListMarker({'path': ListMarker(string_template), 
+    'length': 0}), 'name': string_template}])
 
 contact = {'ip': string_template, 
     'port': 1}
@@ -137,15 +137,14 @@ class TrackerHandler(BaseHTTPRequestHandler):
             infotemplate(message)
             published = self.server.published
             if published.has_key(path):
-                for key, value in published[path].items():
-                    if message.has_key(key) and message.get(key) != value:
-                        self.answer('incompatible data for key ' + key,
-                            code = 400)
-                        return
-            published[path] = message
-            h = open(self.server.file, 'wb')
-            h.write(bencode(published))
-            h.close()
+                if published[path] != message:
+                    self.answer('incompatible existing information', code = 400)
+                    return
+            else:
+                published[path] = message
+                h = open(self.server.file, 'wb')
+                h.write(bencode(published))
+                h.close()
         self.answer('Thanks! Love, Kerensa.')
 
     def do_GET(self, head = false):
