@@ -69,7 +69,7 @@ class EncryptedConnection:
         else:
             if s != self.id:
                 return None
-        self.complete = self.encrypter.got_id(self):
+        self.complete = self.encrypter.got_id(self)
         return 4, self.read_len
 
     def read_len(self, s):
