@@ -6,11 +6,12 @@ true = 1
 false = 0
 
 class Choker:
-    def __init__(self, max_uploads, schedule):
+    def __init__(self, max_uploads, schedule, done = lambda: false):
         self.max_uploads = max_uploads
         self.schedule = schedule
         self.connections = []
         self.count = 0
+        self.done = done
         schedule(self._round_robin, 10)
     
     def _round_robin(self):
@@ -27,13 +28,23 @@ class Choker:
                 c.get_upload().set_not_hit()
         else:
             self._rechoke()
-    
+
+    def _snubbed(self, c):
+        if self.done():
+            return false
+        return c.get_download().is_snubbed()
+
+    def _rate(self, c):
+        if self.done():
+            return c.get_upload().get_rate()
+        else:
+            return c.get_download().get_rate()
+
     def _rechoke(self):
         preferred = []
         for c in self.connections:
-            d = c.get_download()
-            if not d.is_snubbed() and c.get_upload().is_interested():
-                preferred.append((d.get_rate(), c))
+            if not self._snubbed(c) and c.get_upload().is_interested():
+                preferred.append((self._rate(c), c))
         preferred.sort()
         preferred.reverse()
         del preferred[self.max_uploads - 1:]

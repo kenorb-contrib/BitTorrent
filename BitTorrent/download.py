@@ -213,7 +213,7 @@ def download(params, filefunc, statusfunc, finfunc, errorfunc, doneflag, cols, p
         errorfunc("Couldn't listen - " + str(e))
         return
 
-    choker = Choker(config['max_uploads'], rawserver.add_task)
+    choker = Choker(config['max_uploads'], rawserver.add_task, finflag.isSet)
     upmeasure = Measure(config['max_rate_period'], 
         config['upload_rate_fudge'])
     downmeasure = Measure(config['max_rate_period'])
