@@ -2,8 +2,14 @@
 # see LICENSE.txt for license information
 
 from cStringIO import StringIO
+import time
 true = 1
 false = 0
+
+weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+
+months = [None, 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
 class HTTPConnection:
     def __init__(self, handler, connection):
@@ -58,6 +64,7 @@ class HTTPConnection:
                 self.amount, self.next_func = x
 
     def read_type(self, data):
+        self.header = data.strip()
         words = data.split()
         if len(words) == 3:
             self.command, self.path, garbage = words
@@ -100,6 +107,11 @@ class HTTPConnection:
         return 500, self.read_bitbucket
 
     def answer(self, (responsecode, responsestring, headers, data)):
+        year, month, day, hour, minute, second, a, b, c = time.localtime(time.time())
+        print '%s - - [%02d/%3s/%04d:%02d:%02d:%02d] "%s" %i %i' % (
+            self.connection.get_ip(), day, months[month], year, hour, minute, 
+            second, self.header, responsecode, len(data))
+
         r = StringIO()
         r.write('HTTP/1.0 ' + str(responsecode) + ' ' + 
             responsestring + '\r\n')
