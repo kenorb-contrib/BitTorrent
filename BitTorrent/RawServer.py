@@ -131,8 +131,8 @@ class RawServer:
         for sock, event in events:
             if sock == self.server.fileno():
                 if event & (POLLHUP | POLLERR) != 0:
-                    self.server.close()
                     self.poll.unregister(self.server)
+                    self.server.close()
                     print "lost server socket"
                 else:
                     newsock, addr = self.server.accept()
