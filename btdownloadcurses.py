@@ -143,7 +143,7 @@ def run(mainerrlist, params):
         d.failed()
 
 def prepare_display():
-    scrwin.border(124,124,45,45,20,20,20,20)
+    scrwin.border(ord('|'),ord('|'),ord('-'),ord('-'),ord(' '),ord(' '),ord(' '),ord(' '))
     labelwin.addstr(0, 0, 'file:')
     labelwin.addstr(1, 0, 'size:')
     labelwin.addstr(2, 0, 'dest:')

@@ -251,7 +251,7 @@ class SingleCursesDisplayer:
 
 def prepare_display():
     global mainwinw, scrwin, headerwin, totalwin
-    scrwin.border(124,124,45,45,20,20,20,20)
+    scrwin.border(ord('|'),ord('|'),ord('-'),ord('-'),ord(' '),ord(' '),ord(' '),ord(' '))
     headerwin.addnstr(0, 0, 'Filename', mainwinw - 25, curses.A_BOLD)
     headerwin.addnstr(0, mainwinw - 24, 'Size', 4);
     headerwin.addnstr(0, mainwinw - 18, 'Download', 8);
