@@ -6,7 +6,7 @@
 from BitTorrent.download import download
 from threading import Thread, Event
 from os import listdir
-from os.path import join
+from os.path import join, exists
 from sys import argv
 true = 1
 false = 0
