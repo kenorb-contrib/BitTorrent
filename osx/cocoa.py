@@ -31,6 +31,11 @@ class DLManager:
 	self.flags[id] = flag
 	prox = CallbackProxy(id, callbacks.chooseFile, callbacks.display, callbacks.finished)
 	start_new_thread(download, (['--url=%s' % url], prox.chooseFile, prox.display, prox.finished, flag, 80))
+    def newDlWithFile(self, id, file):
+	flag = Event()
+	self.flags[id] = flag
+	prox = CallbackProxy(id, callbacks.chooseFile, callbacks.display, callbacks.finished)
+	start_new_thread(download, (['--responsefile=%s' % file], prox.chooseFile, prox.display, prox.finished, flag, 80))
 	
     def cancelDlWithId(self, id):
 	self.flags[id].set()

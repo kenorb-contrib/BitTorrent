@@ -13,4 +13,9 @@
 - (IBAction)cancelUrl:(id)sender;
 - (IBAction)openURL:(id)sender;
 - (IBAction)takeUrl:(id)sender;
+- (void)runWithFile:(NSString *)filename;
+- (void)runWithUrl:(NSString *)url;
+
+// application delegate messages
+- (BOOL)application:(NSApplication *)theApplication openFile:(NSString *)filename;
 @end

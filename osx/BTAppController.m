@@ -26,17 +26,42 @@ static PyThreadState *tstate;
 - (IBAction)takeUrl:(id)sender
 {
     id controller = [[DLWindowController alloc] initWithDlId:dlid];
-    NSString *str, *urlstr;
     
     [urlWindow orderOut:self];
     [NSBundle loadNibNamed:@"DLWindow" owner:controller];
     
-    PyEval_RestoreThread(tstate);
-    urlstr = [url stringValue];
-    str = [NSString localizedStringWithFormat:@"dlmgr.newDlWithUrl(%d, '%@')", dlid, urlstr];
-    PyRun_SimpleString([str cString]);
+    [self runWithUrl:[url stringValue]];
     dlid++;
+
+}
+
+- (void)runWithUrl:(NSString *)urlstr
+{
+    NSString *str;
+    str = [NSString localizedStringWithFormat:@"dlmgr.newDlWithUrl(%d, '%@')", dlid, urlstr];
+    PyEval_RestoreThread(tstate);
+    PyRun_SimpleString([str cString]);
     tstate = PyEval_SaveThread();
 }
 
+- (void)runWithFile:(NSString *)filename
+{
+    NSString *str;
+    str = [NSString localizedStringWithFormat:@"dlmgr.newDlWithFile(%d, '%@')", dlid, filename];
+    PyEval_RestoreThread(tstate);
+    PyRun_SimpleString([str cString]);
+    tstate = PyEval_SaveThread();
+    
+}
+
+- (BOOL)application:(NSApplication *)theApplication openFile:(NSString *)filename
+{
+    id controller = [[DLWindowController alloc] initWithDlId:dlid];
+    
+    [NSBundle loadNibNamed:@"DLWindow" owner:controller];
+    
+    [self runWithFile:filename];
+    dlid++;
+    return TRUE;
+}
 @end
