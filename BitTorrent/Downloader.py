@@ -76,14 +76,6 @@ class SingleDownload:
             return false
         if self.downloader.storage.is_endgame():
             self.downloader.all_requests.remove((index, begin, len(piece)))
-            for d in self.downloader.downloads:
-                try:
-                    if d is not self:
-                        d.active_requests.remove((index, begin, len(piece)))
-                        d.connection.send_cancel(index, begin, len(piece))
-                        d.fix_download_endgame()
-                except ValueError:
-                    pass
         self.last = time()
         self.measure.update_rate(len(piece))
         self.downloader.measurefunc(len(piece))
@@ -104,7 +96,17 @@ class SingleDownload:
             return false
         if self.downloader.storage.do_I_have(index):
             self.downloader.picker.complete(index)
-        self._request_more()
+        if self.downloader.storage.is_endgame():
+            for d in self.downloader.downloads:
+                try:
+                    if d is not self:
+                        d.active_requests.remove((index, begin, len(piece)))
+                        d.connection.send_cancel(index, begin, len(piece))
+                        d.fix_download_endgame()
+                except ValueError:
+                    pass
+        else:
+            self._request_more()
         if self.downloader.picker.am_I_complete():
             for d in [i for i in self.downloader.downloads if i.unhave == 0]:
                 d.connection.close()
