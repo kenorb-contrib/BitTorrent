@@ -43,7 +43,8 @@ defaults = [
         "Maximum number of seconds to block in calls to select()"),
     ('ip', 'i', '',
         "ip to report you have to the tracker."),
-    ('port', None, 0, 'port to listen on, 0 means scan up from 6881'),
+    ('minport', None, 6881, 'minimum port to listen on, counts up if unavailable'),
+    ('maxport', None, 6889, 'maximum port to listen on'),
     ('responsefile', None, '',
         'file the server response was stored in, alternative to response and url'),
     ('url', None, '',
@@ -201,11 +202,7 @@ def download(params, filefunc, statusfunc, resultfunc, doneflag, cols):
         config['max_rate_recalculate_interval'], ratemeasure.get_time_left, 
         ratemeasure.get_size_left, file_length, finflag)
 
-    if config['port'] == 0:
-        r = xrange(6881, 6890)
-    else:
-        r = [config['port']]
-    for listen_port in r:
+    for listen_port in xrange(config['minport'], config['maxport'] + 1):
         try:
             rawserver.bind(listen_port, config['bind'])
             break
