@@ -1,7 +1,7 @@
 # Written by Bram Cohen
 # see LICENSE.txt for license information
 
-from urllib import urlopen, quote
+from urllib import urlopen
 from urlparse import urljoin
 from btformats import check_message
 from Choker import Choker
@@ -66,19 +66,22 @@ defaults = [
         'time to wait between requesting more peers'),
     ('min_peers', None, 10, 
         'minimum number of peers to not do rerequesting'),
+    ('http_timeout', None, 60, 
+        'number of seconds to wait before assuming that an http connection has timed out'),
+    ('max_initiate', None, 40,
+        'number of peers at which to stop initiating new connections'),
     ]
 
-def download(params, filefunc, statusfunc, resultfunc, doneflag, cols):
+def download(params, filefunc, statusfunc, finfunc, errorfunc, doneflag, cols):
     if len(params) == 0:
-        resultfunc(false, 'arguments are -\n' + formatDefinitions(defaults, cols))
+        errorfunc('arguments are -\n' + formatDefinitions(defaults, cols))
         return
     try:
         config, garbage = parseargs(params, defaults, 0, 0)
         if (config['responsefile'] == '') == (config['url'] == ''):
             raise ValueError, 'need responsefile or url'
     except ValueError, e:
-        print_exc()
-        resultfunc(false, 'error: ' + str(e) + '\nrun with no args for parameter explanations')
+        errorfunc('error: ' + str(e) + '\nrun with no args for parameter explanations')
         return
     
     try:
@@ -86,10 +89,10 @@ def download(params, filefunc, statusfunc, resultfunc, doneflag, cols):
         status = h.read().strip()
         h.close()
         if status != 'current':
-            resultfunc(false, 'No longer the latest version - see http://bitconjurer.org/BitTorrent/download.html')
+            errorfunc('No longer the latest version - see http://bitconjurer.org/BitTorrent/download.html')
             return
     except IOError, e:
-        print "Couldn't check version number - " + str(e)
+        errorfunc("Couldn't check version number - " + str(e))
 
     try:
         if config['responsefile'] != '':
@@ -99,92 +102,91 @@ def download(params, filefunc, statusfunc, resultfunc, doneflag, cols):
         response = h.read()
         h.close()
     except IOError, e:
-        resultfunc(false, 'problem getting response info - ' + str(e))
+        errorfunc('problem getting response info - ' + str(e))
         return
 
     try:
         response = bdecode(response)
         check_message(response)
     except ValueError, e:
-        print_exc()
-        resultfunc(false, "got bad file info - " + str(e))
+        errorfunc("got bad file info - " + str(e))
         return
     
-    def make(f, forcedir = false, resultfunc = resultfunc):
-        try:
+    try:
+        def make(f, forcedir = false):
             if not forcedir:
                 f = path.split(f)[0]
             if f != '' and not path.exists(f):
                 makedirs(f)
-            return true
-        except OSError, e:
-            resultfunc(false, "Couldn't allocate dir - " + str(e))
-            return false
-    info = response['info']
-    if info.has_key('length'):
-        file_length = info['length']
-        file = filefunc(info['name'], file_length, config['saveas'], false)
-        if file is None:
-            return
-        if not make(file):
-            return
-        files = [(file, file_length)]
-    else:
-        file_length = 0
-        for x in info['files']:
-            file_length += x['length']
-        file = filefunc(info['name'], file_length, config['saveas'], true)
-        if file is None:
-            return
-        if not make(file, true):
-            return
-        files = []
-        for x in info['files']:
-            n = file
-            for i in x['path']:
-                n = path.join(n, i)
-            files.append((n, x['length']))
-            if not make(n):
+        info = response['info']
+        if info.has_key('length'):
+            file_length = info['length']
+            file = filefunc(info['name'], file_length, config['saveas'], false)
+            if file is None:
                 return
-    r = [false]
+            make(file)
+            files = [(file, file_length)]
+        else:
+            file_length = 0
+            for x in info['files']:
+                file_length += x['length']
+            file = filefunc(info['name'], file_length, config['saveas'], true)
+            if file is None:
+                return
+            make(file, true)
+            files = []
+            for x in info['files']:
+                n = file
+                for i in x['path']:
+                    n = path.join(n, i)
+                files.append((n, x['length']))
+                make(n)
+    except OSError, e:
+        errorfunc("Couldn't allocate dir - " + str(e))
+        return
+    
     finflag = Event()
     ann = [None]
-    ip = response['your ip']
-    if config['ip'] != '':
-        ip = config['ip']
-    myid = sha(str(time()) + ' ' + ip).digest()
+    myid = sha(str(time())).digest()
     seed(myid)
     pieces = [info['pieces'][x:x+20] for x in xrange(0, 
         len(info['pieces']), 20)]
+    def failed(reason, errorfunc = errorfunc, doneflag = doneflag):
+        doneflag.set()
+        if reason is not None:
+            errorfunc(reason)
     try:
         storage = Storage(files, open, path.exists, 
             path.getsize, statusfunc)
-        def finished(result, errormsg = None, fatal = false, 
-                resultfunc = resultfunc, finflag = finflag, 
-                doneflag = doneflag, r = r, ann = ann, storage = storage):
-            r[0] = result
-            if doneflag.isSet():
-                return
+        def finished(finfunc = finfunc, finflag = finflag, 
+                ann = ann, storage = storage):
             finflag.set()
-            if fatal:
-                doneflag.set()
-            if result:
-                storage.set_readonly()
-                if ann[0] is not None:
-                    ann[0](1)
-            resultfunc(result, errormsg)
+            storage.set_readonly()
+            if ann[0] is not None:
+                ann[0](1)
+            finfunc()
         storagewrapper = StorageWrapper(storage, 
             config['download_slice_size'], pieces, 
-            info['piece length'], finished, statusfunc, doneflag)
+            info['piece length'], finished, failed, 
+            statusfunc, doneflag)
     except ValueError, e:
-        finished(false, str(e), true)
-        return
+        failed('bad data - ' + str(e))
     except IOError, e:
-        finished(false, str(e), true)
-        return
+        failed('IOError - ' + str(e))
     if doneflag.isSet():
         return
+
     rawserver = RawServer(doneflag, config['timeout'])
+    for listen_port in xrange(config['minport'], config['maxport'] + 1):
+        try:
+            rawserver.bind(listen_port, config['bind'])
+            break
+        except socketerror, e:
+            pass
+    else:
+        errorfunc("Couldn't listen - " + str(e))
+        return
+
     def preference(c, finflag = finflag):
         if finflag.isSet():
             return c.get_upload().rate
@@ -206,61 +208,23 @@ def download(params, filefunc, statusfunc, resultfunc, doneflag, cols):
         len(pieces), total_down, ratemeasure.data_came_in)
     connecter = Connecter(make_upload, downloader.make_download, choker,
         len(pieces))
+    infohash = sha(bencode(info)).digest()
     encrypter = Encrypter(connecter, rawserver, 
         myid, config['max_message_length'], rawserver.add_task, 
-        config['keepalive_interval'], sha(bencode(info)).digest())
-    url = response['url']
-    if response.has_key('peer url'):
-        url = response['peer url']
-    Rerequester(url, config['rerequest_interval'], rawserver.add_task,
-        connecter.how_many_connections, config['min_peers'],
-        encrypter.start_connection, rawserver.external_add_task,
-        storagewrapper.get_amount_left, downloader.close_finished)
-    DownloaderFeedback(choker, rawserver.add_task, ip, statusfunc, 
+        config['keepalive_interval'], infohash, config['max_initiate'])
+    rerequest = Rerequester(response['announce'], config['rerequest_interval'], 
+        rawserver.add_task, connecter.how_many_connections, 
+        config['min_peers'], encrypter.start_connection, 
+        rawserver.external_add_task, storagewrapper.get_amount_left, 
+        downloader.close_finished, total_up, total_down, listen_port, 
+        config['ip'], myid, infohash, config['http_timeout'], errorfunc)
+    DownloaderFeedback(choker, rawserver.add_task, statusfunc, 
         config['max_rate_recalculate_interval'], ratemeasure.get_time_left, 
         ratemeasure.get_size_left, file_length, finflag,
         config['display_interval'])
 
-    for listen_port in xrange(config['minport'], config['maxport'] + 1):
-        try:
-            rawserver.bind(listen_port, config['bind'])
-            break
-        except socketerror, e:
-            pass
-    else:
-        resultfunc(false, "Couldn't listen - " + str(e))
-        return
-    for x in response['peers']:
-        encrypter.start_connection((x['ip'], x['port']), x['peer id'])
-
-    if not finflag.isSet():
-        statusfunc(activity = 'connecting to peers')
-    def announce(event = 3, url = response['announce'], 
-            fileid = response['file id'], myid = myid, 
-            ip = ip, port = listen_port, 
-            up = total_up, down = total_down, 
-            storage = storagewrapper):
-        s = (('%s?ip=%s&file_id=%s&peer_id=%s&port=%s&event=%s' +
-            '&uploaded=%s&downloaded=%s&left=%s') %
-            (url, quote(ip), quote(fileid), quote(myid), str(port), 
-            ['started', 'completed', 'stopped', ''][event], 
-            str(up[0]), str(down[0]), str(storage.get_amount_left())))
-        Thread(target = urlopen, args = [s]).start()
-    ann[0] = announce
-
-    announce(0)
-    regannounce(announce, rawserver.add_task, response['interval'])
+    statusfunc(activity = 'connecting to peers')
+    ann[0] = rerequest.announce
+    rerequest.d(0)
     rawserver.listen_forever(encrypter)
-    announce(2)
-    return r[0]
-
-class regannounce:
-    def __init__(self, announce, sched, interval):
-        self.announce = announce
-        self.sched = sched
-        self.interval = interval
-        sched(self.c, interval)
-
-    def c(self):
-        self.sched(self.c, self.interval)
-        self.announce()
+    rerequest.announce(2)

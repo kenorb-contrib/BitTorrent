@@ -47,34 +47,41 @@ class HeadlessDisplayer:
         self.downloadTo = ''
         self.downRate = ''
         self.upRate = ''
+        self.errors = []
 
-    def finished(self, fin, errormsg = None):
+    def finished(self):
         self.done = true
-        if fin:
-            self.percentDone = '100'
-            self.timeEst = 'Download Succeeded!'
-        else:
-            if errormsg is None:
-                self.timeEst = 'Download Failed!'
-            else:
-                self.timeEst = 'failed - ' + errormsg
+        self.percentDone = '100'
+        self.timeEst = 'Download Succeeded!'
         self.downRate = ''
+        self.display()
+
+    def failed(self):
+        self.done = true
+        self.percentDone = '0'
+        self.timeEst = 'Download Failed!'
+        self.downRate = ''
+        self.display()
+
+    def error(self, errormsg):
+        self.errors.append(errormsg)
         self.display()
 
     def display(self, fractionDone = None, timeEst = None, 
             downRate = None, upRate = None, activity = None):
-        assert activity is None or not self.done
         if fractionDone is not None:
             self.percentDone = str(float(int(fractionDone * 1000)) / 10)
         if timeEst is not None:
             self.timeEst = hours(timeEst)
-        if activity is not None:
+        if activity is not None and not self.done:
             self.timeEst = activity
         if downRate is not None:
             self.downRate = kify(downRate) + ' K/s'
         if upRate is not None:
             self.upRate = kify(upRate) + ' K/s'
         print '\n\n\n\n'
+        for err in self.errors:
+            print 'ERROR:\n' + err + '\n'
         print 'saving:        ', self.file
         print 'percent done:  ', self.percentDone
         print 'time left:     ', self.timeEst
@@ -100,7 +107,9 @@ def run(params):
         cols = 80
 
     h = HeadlessDisplayer()
-    download(params, h.chooseFile, h.display, h.finished, Event(), cols)
+    download(params, h.chooseFile, h.display, h.finished, h.error, Event(), cols)
+    if not h.done:
+        h.failed()
 
 if __name__ == '__main__':
     run(argv[1:])

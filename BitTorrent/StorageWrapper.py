@@ -11,7 +11,7 @@ def dummy_status(fractionDone = None, activity = None):
 
 class StorageWrapper:
     def __init__(self, storage, request_size, hashes, 
-            piece_length, callback, 
+            piece_length, finished, failed, 
             statusfunc = dummy_status, flag = Event()):
         self.storage = storage
         self.request_size = request_size
@@ -23,12 +23,13 @@ class StorageWrapper:
             raise ValueError, 'bad data from tracker - total too small'
         if self.total_length > piece_length * len(hashes):
             raise ValueError, 'bad data from tracker - total too big'
-        self.callback = callback
+        self.finished = finished
+        self.failed = failed
         self.numactive = [0] * len(hashes)
         self.inactive_requests = [[] for i in xrange(len(hashes))]
         self.have = [false] * len(hashes)
         if len(hashes) == 0:
-            callback(true)
+            finished()
             return
         if storage.was_preexisting():
             statusfunc(activity = 'checking existing file', 
@@ -59,7 +60,7 @@ class StorageWrapper:
             self.have[index] = true
             self.amount_left -= length
             if self.amount_left == 0:
-                self.callback(true)
+                self.finished()
         else:
             l = self.inactive_requests[index]
             x = 0
@@ -86,7 +87,7 @@ class StorageWrapper:
         try:
             self._piece_came_in(index, begin, piece)
         except IOError, e:
-            self.callback(false, 'IO Error ' + str(e), true)
+            self.failed('IO Error ' + str(e), true)
 
     def _piece_came_in(self, index, begin, piece):
         self.storage.write(index * self.piece_length + begin, piece)
@@ -103,7 +104,7 @@ class StorageWrapper:
         try:
             return self._get_piece(index, begin, length)
         except IOError, e:
-            self.callback(false, 'IO Error ' + str(e), true)
+            self.failed('IO Error ' + str(e), true)
             return None
 
     def _get_piece(self, index, begin, length):
@@ -133,13 +134,12 @@ class DummyStorage:
     def write(self, begin, piece):
         self.s = self.s[:begin] + piece + self.s[begin + len(piece):]
 
-    def callback(self, result):
-        assert result
+    def finished(self):
         self.done = true
 
 def test_basic():
     ds = DummyStorage(3)
-    sw = StorageWrapper(ds, 2, [sha('abc').digest()], 4, ds.callback)
+    sw = StorageWrapper(ds, 2, [sha('abc').digest()], 4, ds.finished, None)
     assert sw.get_amount_left() == 3
     assert not sw.do_I_have_anything()
     assert sw.get_have_list() == [false]
@@ -177,7 +177,7 @@ def test_basic():
 def test_two_pieces():
     ds = DummyStorage(4)
     sw = StorageWrapper(ds, 3, [sha('abc').digest(),
-        sha('d').digest()], 3, ds.callback)
+        sha('d').digest()], 3, ds.finished, None)
     assert sw.get_amount_left() == 4
     assert not sw.do_I_have_anything()
     assert sw.get_have_list() == [false, false]
@@ -218,7 +218,7 @@ def test_two_pieces():
 
 def test_hash_fail():
     ds = DummyStorage(4)
-    sw = StorageWrapper(ds, 4, [sha('abcd').digest()], 4, ds.callback)
+    sw = StorageWrapper(ds, 4, [sha('abcd').digest()], 4, ds.finished, None)
     assert sw.get_amount_left() == 4
     assert not sw.do_I_have_anything()
     assert sw.get_have_list() == [false]
@@ -243,7 +243,7 @@ def test_hash_fail():
 def test_preexisting():
     ds = DummyStorage(4, true)
     sw = StorageWrapper(ds, 2, [sha('qq').digest(), 
-        sha('ab').digest()], 2, ds.callback)
+        sha('ab').digest()], 2, ds.finished, None)
     assert sw.get_amount_left() == 2
     assert sw.do_I_have_anything()
     assert sw.get_have_list() == [true, false]
@@ -263,7 +263,7 @@ def test_total_too_short():
     ds = DummyStorage(4)
     try:
         sw = StorageWrapper(ds, 4, [sha('qqqq').digest(),
-            sha('qqqq').digest()], 4, ds.callback)
+            sha('qqqq').digest()], 4, ds.finished, None)
         raise 'fail'
     except ValueError:
         pass
@@ -272,19 +272,19 @@ def test_total_too_big():
     ds = DummyStorage(9)
     try:
         sw = StorageWrapper(ds, 4, [sha('qqqq').digest(),
-            sha('qqqq').digest()], 4, ds.callback)
+            sha('qqqq').digest()], 4, ds.finished, None)
         raise 'fail'
     except ValueError:
         pass
 
 def test_end_above_total_length():
     ds = DummyStorage(3, true)
-    sw = StorageWrapper(ds, 4, [sha('qqq').digest()], 4, ds.callback)
+    sw = StorageWrapper(ds, 4, [sha('qqq').digest()], 4, ds.finished, None)
     assert sw.get_piece(0, 0, 4) == None
 
 def test_end_past_piece_end():
     ds = DummyStorage(4, true)
     sw = StorageWrapper(ds, 4, [sha('qq').digest(), 
-        sha('qq').digest()], 2, ds.callback)
+        sha('qq').digest()], 2, ds.finished, None)
     assert ds.done
     assert sw.get_piece(0, 0, 3) == None

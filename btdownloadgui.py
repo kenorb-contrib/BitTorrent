@@ -77,10 +77,29 @@ def EVT_FINISH_STATUS(win, func):
     win.Connect(-1, -1, wxEVT_FINISH_STATUS, func)
 
 class FinishEvent(wxPyEvent):
-    def __init__(self, finished, errormsg):
+    def __init__(self):
         wxPyEvent.__init__(self)
         self.SetEventType(wxEVT_FINISH_STATUS)
-        self.finished = finished
+
+wxEVT_FAIL_STATUS = wxNewId()
+
+def EVT_FAIL_STATUS(win, func):
+    win.Connect(-1, -1, wxEVT_FAIL_STATUS, func)
+
+class FailEvent(wxPyEvent):
+    def __init__(self):
+        wxPyEvent.__init__(self)
+        self.SetEventType(wxEVT_FAIL_STATUS)
+
+wxEVT_ERROR_STATUS = wxNewId()
+
+def EVT_ERROR_STATUS(win, func):
+    win.Connect(-1, -1, wxEVT_FINISH_STATUS, func)
+
+class ErrorEvent(wxPyEvent):
+    def __init__(self, errormsg):
+        wxPyEvent.__init__(self)
+        self.SetEventType(wxEVT_ERROR_STATUS)
         self.errormsg = errormsg
 
 class DownloadInfoFrame(wxFrame):
@@ -96,6 +115,8 @@ class DownloadInfoFrame(wxFrame):
         EVT_CHOOSE_FILE(self, self.onChooseFile)
         EVT_UPDATE_STATUS(self, self.onUpdateStatus)
         EVT_FINISH_STATUS(self, self.onFinishEvent)
+        EVT_FAIL_STATUS(self, self.onFailEvent)
+        EVT_ERROR_STATUS(self, self.onErrorEvent)
         
     def drawGUI(self):
         panel = wxPanel(self, -1)
@@ -152,34 +173,44 @@ class DownloadInfoFrame(wxFrame):
             self.gauge.SetValue(int(event.fractionDone * 1000))
         if event.timeEst is not None:
             self.timeEstText.SetLabel(hours(event.timeEst))
-        if event.activity is not None:
+        if event.activity is not None and not self.fin:
             self.timeEstText.SetLabel(event.activity)
         if event.downRate is not None:
             self.downRateText.SetLabel('%s kB/s' % kify(event.downRate))
         if event.upRate is not None:
             self.upRateText.SetLabel('%s kB/s' % kify(event.upRate))
 
-    def finished(self, finished, errormsg = None):
+    def finished(self):
         self.fin = true
-        wxPostEvent(self, FinishEvent(finished, errormsg))
+        wxPostEvent(self, FinishEvent())
+
+    def failed(self)
+        self.fin = true
+        wxPostEvent(self, FailEvent())
+
+    def error(self, errormsg):
+        wxPostEvent(self, ErrorEvent(errormsg))
 
     def onFinishEvent(self, event):
-        if event.finished:
-            self.timeEstText.SetLabel('Download Succeeded!')
-            self.cancelButton.SetLabel('Finish')
-            self.gauge.SetValue(1000)
-        else:
-            self.timeEstText.SetLabel('Download Failed!')
-            self.cancelButton.SetLabel('Close')
+        self.timeEstText.SetLabel('Download Succeeded!')
+        self.cancelButton.SetLabel('Finish')
+        self.gauge.SetValue(1000)
         self.downRateText.SetLabel('')
-        if event.errormsg:
-            if not self.shown:
-                self.Show(true)
-            dlg = wxMessageDialog(self, message = event.errormsg, 
-                caption = 'Download Error', style = wxOK | wxICON_ERROR)
-            dlg.Fit()
-            dlg.Center()
-            dlg.ShowModal()
+
+    def onFailEvent(self, event):
+        self.timeEstText.SetLabel('Failed!')
+        self.cancelButton.SetLabel('Close')
+        self.gauge.SetValue(0)
+        self.downRateText.SetLabel('')
+
+    def onErrorEvent(self, event):
+        if not self.shown:
+            self.Show(true)
+        dlg = wxMessageDialog(self, message = event.errormsg, 
+            caption = 'Download Error', style = wxOK | wxICON_ERROR)
+        dlg.Fit()
+        dlg.Center()
+        dlg.ShowModal()
 
     def chooseFile(self, default, size, saveas, dir):
         f = Event()
@@ -228,7 +259,9 @@ def run(params):
     app.MainLoop()
 
 def next(params, d, doneflag):
-    download(params, d.chooseFile, d.updateStatus, d.finished, doneflag, 100)
+    download(params, d.chooseFile, d.updateStatus, d.finished, d.error, doneflag, 100)
+    if not d.fin:
+        d.failed()
 
 if __name__ == '__main__':
     run(argv[1:])

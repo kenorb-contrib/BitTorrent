@@ -121,7 +121,8 @@ class EncryptedConnection:
 
 class Encrypter:
     def __init__(self, connecter, raw_server, my_id, max_len,
-            schedulefunc, keepalive_delay, download_id):
+            schedulefunc, keepalive_delay, download_id, 
+            max_initiate = 40):
         self.raw_server = raw_server
         self.connecter = connecter
         self.my_id = my_id
@@ -129,6 +130,7 @@ class Encrypter:
         self.schedulefunc = schedulefunc
         self.keepalive_delay = keepalive_delay
         self.download_id = download_id
+        self.max_initiate = max_initiate
         self.connections = {}
         schedulefunc(self.send_keepalives, keepalive_delay)
 
@@ -139,6 +141,8 @@ class Encrypter:
                 c.send_message('')
 
     def start_connection(self, dns, id):
+        if len(self.connections) >= self.max_initiate:
+            return
         if id == self.my_id:
             return
         for v in self.connections.values():

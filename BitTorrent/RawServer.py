@@ -87,7 +87,7 @@ class RawServer:
     def add_task(self, func, delay):
         insort(self.funcs, (time() + delay, func))
 
-    def external_add_task(self, func, delay):
+    def external_add_task(self, func, delay = 0):
         self.externally_added.append((func, delay))
 
     def scan_for_timeouts(self):
@@ -206,9 +206,9 @@ class RawServer:
                 except:
                     print_exc()
         finally:
-            self.server.close()
             for ss in self.single_sockets.values():
                 ss.close()
+            self.server.close()
 
     def _close_dead(self):
         while len(self.dead_from_write) > 0:

@@ -6,9 +6,7 @@
 from BitTorrent import testtest
 import bttrack
 import btpublish
-import btdownloadgui
 import btdownloadheadless
-import btdownloadlibrary
 
 def run():
     testtest.try_all(['urllib', 'StringIO', 'random', 'urlparse', 

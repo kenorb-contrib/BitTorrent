@@ -45,6 +45,17 @@ def check_info(info):
                 if files[i]['path'] == files[j]['path']:
                     raise ValueError
 
+def check_message(message):
+    if type(message) != DictType:
+        raise ValueError
+    if message.has_key('failure reason'):
+        if type(message['failure reason']) != StringType:
+            raise ValueError
+        return
+    check_info(message.get('info'))
+    if type(message.get('announce')) != StringType:
+        raise ValueError
+
 def check_peers(message):
     if type(message) != DictType:
         raise ValueError
@@ -62,23 +73,7 @@ def check_peers(message):
         id = p.get('peer id')
         if type(id) != StringType or len(id) != 20:
             raise ValueError
-
-def check_message(message):
-    if type(message) != DictType:
-        raise ValueError
-    check_info(message.get('info'))
-    check_peers(message)
-    if type(message.get('file id')) != StringType:
-        raise ValueError
-    if type(message.get('announce')) != StringType:
-        raise ValueError
     interval = message.get('interval')
     if type(interval) != LongType or interval <= 0:
-        raise ValueError
-    if type(message.get('url')) != StringType:
-        raise ValueError
-    if message.has_key('peer url') and type(message['peer url']) != StringType:
-        raise ValueError
-    if type(message.get('your ip')) != StringType:
         raise ValueError
     

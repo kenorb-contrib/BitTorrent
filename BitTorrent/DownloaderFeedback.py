@@ -5,11 +5,10 @@ from time import time
 from cStringIO import StringIO
 
 class DownloaderFeedback:
-    def __init__(self, choker, add_task, ip, statusfunc, max_pause, 
+    def __init__(self, choker, add_task, statusfunc, max_pause, 
             remainingfunc, leftfunc, file_length, finflag, interval):
         self.choker = choker
         self.add_task = add_task
-        self.ip = ip
         self.statusfunc = statusfunc
         self.max_pause = max_pause
         self.remainingfunc = remainingfunc

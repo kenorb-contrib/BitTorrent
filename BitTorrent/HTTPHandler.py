@@ -15,8 +15,7 @@ class HTTPConnection:
     def __init__(self, handler, connection):
         self.handler = handler
         self.connection = connection
-        self.buf = StringIO()
-        self.amount = None
+        self.buf = ''
         self.closed = false
         self.done = false
         self.next_func = self.read_type
@@ -24,44 +23,22 @@ class HTTPConnection:
     def get_ip(self):
         return self.connection.get_ip()
 
-    def close(self):
-        self.closed = true
-        del self.next_func
-        c = self.connection
-        del self.connection
-        del self.handler.connections[c]
-        c.close()
-        
     def data_came_in(self, data):
+        if self.done:
+            return true
+        self.buf += data
         while true:
-            if self.closed:
+            try:
+                i = self.buf.index('\n')
+            except ValueError:
+                return true
+            val = self.buf[:i]
+            self.buf = self.buf[i+1:]
+            self.next_func = self.next_func(val)
+            if self.done:
+                return true
+            if self.next_func is None or self.closed:
                 return false
-            if self.amount is None:
-                try:
-                    i = data.index('\n')
-                except ValueError:
-                    self.buf.write(data)
-                    return true
-                self.buf.write(data[:i])
-                data = data[i+1:]
-                val = self.buf.getvalue()
-                self.buf.reset()
-                self.buf.truncate()
-                x = self.next_func(val)
-                if x is None:
-                    return false
-                self.amount, self.next_func = x
-            else:
-                self.buf.write(data)
-                if self.buf.tell() < self.amount:
-                    return true
-                val = self.buf.getvalue()
-                data = val[self.amount:]
-                val = val[:self.amount]
-                x = self.next_func(val)
-                if x is None:
-                    return false
-                self.amount, self.next_func = x
 
     def read_type(self, data):
         self.header = data.strip()
@@ -76,35 +53,22 @@ class HTTPConnection:
                 return None
         else:
             return None
-        if self.command not in ('HEAD', 'GET', 'PUT'):
+        if self.command not in ('HEAD', 'GET'):
             return None
         self.headers = {}
-        return None, self.read_header
+        return self.read_header
 
     def read_header(self, data):
         data = data.strip()
         if data == '':
-            if self.command == 'PUT':
-                try:
-                    return long(self.headers.get('content-length')), self.read_data
-                except ValueError:
-                    return None
-            else:
-                self.answer(self.handler.getfunc(self, self.path, self.headers))
-                return 500, self.read_bitbucket
+            self.answer(self.handler.getfunc(self, self.path, self.headers))
+            return None
         try:
             i = data.index(':')
         except ValueError:
             return None
         self.headers[data[:i].strip().lower()] = data[i+1:].strip()
-        return None, self.read_header
-
-    def read_data(self, data):
-        self.answer(self.handler.putfunc(self, self.path, self.headers, data))
-        return 500, self.read_bitbucket
-
-    def read_bitbucket(self, data):
-        return 500, self.read_bitbucket
+        return self.read_header
 
     def answer(self, (responsecode, responsestring, headers, data)):
         year, month, day, hour, minute, second, a, b, c = time.localtime(time.time())
@@ -124,14 +88,13 @@ class HTTPConnection:
             r.write(data)
         self.connection.write(r.getvalue())
         if self.connection.is_flushed():
-            self.close()
+            self.connection.close()
         self.done = true
 
 class HTTPHandler:
-    def __init__(self, getfunc, putfunc):
+    def __init__(self, getfunc):
         self.connections = {}
         self.getfunc = getfunc
-        self.putfunc = putfunc
 
     def external_connection_made(self, connection):
         self.connections[connection] = HTTPConnection(self, connection)
@@ -151,6 +114,5 @@ class HTTPHandler:
     def data_came_in(self, connection, data):
         c = self.connections[connection]
         if not c.data_came_in(data) and not c.closed:
-            c.connection.close()
-            self.connection_lost(connection)
+            c.close()
 

@@ -2,7 +2,6 @@
 # see LICENSE.txt for license information
 
 from parseargs import parseargs, formatDefinitions
-from btformats import check_info
 from RawServer import RawServer
 from HTTPHandler import HTTPHandler
 from threading import Event
@@ -20,8 +19,6 @@ false = 0
 
 defaults = [
     ('port', 'p', 80, "Port to listen on."),
-    ('ip', 'i', None, "ip to report you have to downloaders."),
-    ('file', 's', None, 'file to store state in'),
     ('dfile', 'd', None, 'file to store recent downloader info in'),
     ('bind', None, '', 'ip to bind to locally'),
     ('socket_timeout', None, 30, 'timeout for closing connections'),
@@ -30,12 +27,6 @@ defaults = [
     ('reannounce_interval', None, 30 * 60, 'seconds downloaders should wait between reannouncements'),
     ('response_size', None, 25, 'number of peers to send in an info message'),
     ]
-
-def infofiletemplate(x):
-    if type(x) != DictType:
-        raise ValueError
-    for y in x.values():
-        check_info(y)
 
 def downloaderfiletemplate(x):
     if type(x) != DictType:
@@ -48,7 +39,7 @@ def downloaderfiletemplate(x):
                 raise ValueError
             if type(info) != DictType:
                 raise ValueError
-            if type(info.get('ip')) != StringType:
+            if type(info.get('ip', '')) != StringType:
                 raise ValueError
             port = info.get('port')
             if type(port) != LongType or port <= 0:
@@ -59,24 +50,12 @@ def downloaderfiletemplate(x):
 
 alas = 'your file may exist elsewhere in the universe\n\nbut alas, not here'
 
-thanks = (200, 'OK', {'Content-Type': 'text/plain'}, 
-    'Thanks! Love, Kerensa.')
-
 class Tracker:
     def __init__(self, config, rawserver):
         self.response_size = config['response_size']
-        self.urlprefix = 'http://' + config['ip'] + ':' + str(config['port']) + '/'
-        self.statefile = config['file']
         self.dfile = config['dfile']
         self.rawserver = rawserver
         self.cached = {}
-        self.published = {}
-        if exists(self.statefile):
-            h = open(self.statefile, 'rb')
-            r = h.read()
-            h.close()
-            self.published = bdecode(r)
-            infofiletemplate(self.published)
         self.downloads = {}
         self.times = {}
         if exists(self.dfile):
@@ -106,95 +85,60 @@ class Tracker:
                 params[unquote(s[:i])] = unquote(s[i+1:])
         if path == '' or path == 'index.html':
             s = StringIO()
-            s.write('<head><title>Published BitTorrent files</title></head>Published BitTorrent files<p>\n')
-            names = self.published.keys()
+            s.write('<head><title>BitTorrent download info</title></head>BitTorrent download info<p>\n')
+            names = self.downloads.keys()
             if names == []:
-                s.write('(no files published yet)')
+                s.write('(not tracking any files yet)')
             names.sort()
             for name in names:
-                l = self.downloads.get(name, {})
-                s.write('<a href="' + name + '">' + name + '</a> (' + 
-                    str(len([1 for i in l.values() if i['left'] == 0])) + '/' + 
+                l = self.downloads[name]
+                s.write(hex(name) + ' (' + str(len([1 for i in 
+                    l.values() if i['left'] == 0])) + '/' + 
                     str(len(l)) + ')<p>\n\n')
             return (200, 'OK', {'Content-Type': 'text/html'}, s.getvalue())
-        if path == 'announce/':
-            try:
-                if not params.has_key('file_id'):
-                    raise ValueError, 'no file_id'
-                fileid = params['file_id']
-                if not params.has_key('ip'):
-                    raise ValueError, 'no ip'
-                print params.get('event')
-                if params.get('event', '') not in ['', 'started', 'completed', 'stopped']:
-                    raise ValueError, 'invalid event'
-                port = long(params.get('port', ''))
-                uploaded = long(params.get('uploaded', ''))
-                downloaded = long(params.get('downloaded', ''))
-                left = long(params.get('left', ''))
-                if left < 0:
-                    raise ValueError, 'left must be nonnegative'
-                peers = self.downloads.setdefault(fileid, {})
-                myid = params.get('peer_id', '')
-                if len(myid) != 20:
-                    raise ValueError, 'id not of length 20'
-            except ValueError, e:
-                return (400, 'Bad Request', {'Content-Type': 'text/plain'}, 
-                    'you sent me garbage - ' + `e`)
-            if params.get('event', '') != 'stopped':
-                self.times.setdefault(fileid, {})[myid] = time()
-                if not peers.has_key(myid):
-                    peers[myid] = {'ip': params['ip'], 'port': port, 'left': left}
-                else:
-                    peers[myid]['left'] = left
-            else:
-                if peers.has_key(myid):
-                    del peers[myid]
-                    del self.times[fileid][myid]
-            return thanks
-        if not self.published.has_key(path):
+        if path != 'announce/':
             return (404, 'Not Found', {'Content-Type': 'text/plain'}, alas)
-        data = {}
-        if params.get('rerequest') != '1':
-            data = {'info': self.published[path], 'file id': path, 
-                'url': self.urlprefix + path, 
-                'peer url': self.urlprefix + path + '?rerequest=1',
-                'announce': self.urlprefix + 'announce/', 'junk': None,
-                'your ip': connection.get_ip(), 'interval': self.reannounce_interval}
-        if len(self.cached.get(path, [])) < self.response_size:
-            self.cached[path] = [{'peer id': key, 'ip': value['ip'], 
-                'port': value['port']} for key, value in 
-                self.downloads.setdefault(path, {}).items()]
-            shuffle(self.cached[path])
-        data['peers'] = self.cached[path][-self.response_size:]
-        del self.cached[path][-self.response_size:]
-        return (200, 'OK', {'Content-Type': 'application/x-bittorrent', 
-            'Pragma': 'no-cache'}, bencode(data))
-
-    def put(self, connection, path, headers, data):
         try:
-            return self.realput(connection, path, headers, data)
+            if not params.has_key('info_hash'):
+                raise ValueError, 'no info hash'
+            infohash = params['info_hash']
+            ip = connection.get_ip()
+            if params.has_key('ip'):
+                ip = params['ip']
+            if params.get('event', '') not in ['', 'started', 'completed', 'stopped']:
+                raise ValueError, 'invalid event'
+            port = long(params.get('port', ''))
+            uploaded = long(params.get('uploaded', ''))
+            downloaded = long(params.get('downloaded', ''))
+            left = long(params.get('left', ''))
+            peers = self.downloads.setdefault(infohash, {})
+            myid = params.get('peer_id', '')
+            if len(myid) != 20:
+                raise ValueError, 'id not of length 20'
         except ValueError, e:
-            print_exc()
             return (400, 'Bad Request', {'Content-Type': 'text/plain'}, 
-                'you sent me garbage - ' + `e`)
-
-    def realput(self, connection, path, headers, data):
-        path = unquote(path)[1:]
-        message = bdecode(data)
-        check_info(message)
-        if headers.get('content-type') != 'application/x-bittorrent':
-            return (403, 'forbidden', {'Content-Type': 'text/plain'},
-                'only accepting puts of content-type application/x-bittorrent')
-        if self.published.has_key(path):
-            if self.published[path] != message:
-                return (403, 'forbidden', {'Content-Type': 'text/plain'},
-                    'incompatible existing information')
+                'you sent me garbage - ' + str(e))
+        if params.get('event', '') != 'stopped':
+            self.times.setdefault(infohash, {})[myid] = time()
+            if not peers.has_key(myid):
+                peers[myid] = {'ip': ip, 'port': port, 'left': left}
+            else:
+                peers[myid]['left'] = left
         else:
-            self.published[path] = message
-            h = open(self.statefile, 'wb')
-            h.write(bencode(self.published))
-            h.close()
-        return thanks
+            if peers.has_key(myid) and peers[myid]['ip'] == ip:
+                del peers[myid]
+                del self.times[infohash][myid]
+        data = {'interval': self.reannounce_interval}
+        cache = self.cached.setdefault(infohash, [])
+        if len(cache) < self.response_size:
+            for key, value in self.downloads.setdefault(
+                    infohash, {}).items():
+                cache.append({'peer id': key, 'ip': value['ip'], 
+                    'port': value['port']})
+            shuffle(cache)
+        data['peers'] = cache[-self.response_size:]
+        del cache[-self.response_size:]
+        return (200, 'OK', {'Pragma': 'no-cache'}, bencode(data))
 
     def save_dfile(self):
         self.rawserver.add_task(self.save_dfile, self.save_dfile_interval)
@@ -214,11 +158,13 @@ class Tracker:
 def track(args):
     if len(args) == 0:
         print formatDefinitions(defaults, 80)
+        return
     try:
         config, files = parseargs(args, defaults, 0, 0)
     except ValueError, e:
         print 'error: ' + str(e)
         print 'run with no arguments for parameter explanations'
+        return
     try:
         h = urlopen('http://bitconjurer.org/BitTorrent/status-tracker-02-08-00.txt')
         status = h.read().strip()
@@ -231,6 +177,6 @@ def track(args):
     r = RawServer(Event(), config['socket_timeout'])
     t = Tracker(config, r)
     r.bind(config['port'], config['bind'])
-    r.listen_forever(HTTPHandler(t.get, t.put))
+    r.listen_forever(HTTPHandler(t.get))
 
 
