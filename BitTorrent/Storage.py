@@ -23,14 +23,10 @@ class Storage:
                 if exists(file):
                     l = getsize(file)
                     if l > length:
-                        raise ValueError, 'existing file %s too large' % file
+                        l = length
                     so_far += l
-            else:
-                if exists(file):
-                    if getsize(file) > 0:
-                        raise ValueError, 'existing file %s too large' % file
-                else:
-                    open(file, 'wb').close()
+            elif not exists(file):
+                open(file, 'wb').close()
         self.total_length = total
         self.handles = {}
         self.whandles = {}
@@ -50,6 +46,11 @@ class Storage:
                 l = 0
                 if exists(file):
                     l = getsize(file)
+                    if l > length:
+                        self.handles[file] = open(file, 'rb+')
+                        self.whandles[file] = 1
+                        self.handles[file].truncate(length)
+                        continue
                     if l == length:
                         continue
                 if self.preexisting:
