@@ -9,10 +9,12 @@ InstallDir "$PROGRAMFILES\BitTorrent\"
 Section "Install"
   SetOutPath $INSTDIR
   WriteUninstaller "$INSTDIR\uninstall.exe"
-  File dist\btdownloadgui\btdownloadgui.exe
-  File dist\btdownloadgui\*.pyd
-  File dist\btdownloadgui\*.dll
+  File dist\*.exe
+  File dist\*.pyd
+  File dist\*.dll
+  File dist\library.zip
   File redirdonate.html
+  File bittorrent.ico
   WriteRegStr HKCR .torrent "" bittorrent
   WriteRegStr HKCR .torrent "Content Type" application/x-bittorrent
   WriteRegStr HKCR "MIME\Database\Content Type\application/x-bittorrent" Extension .torrent
@@ -24,7 +26,7 @@ Section "Install"
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\BitTorrent" "UninstallString" '"$INSTDIR\uninstall.exe"'
   ExecShell open "$INSTDIR\redirdonate.html"
   Sleep 2000
-  MessageBox MB_OK "BitTorrent has been successfully installed!"
+  MessageBox MB_OK "BitTorrent has been successfully installed!$\r$\n$\r$\nTo use BitTorrent, find a web site which uses it and click on the appropriate links."
   BringToFront
 SectionEnd
 

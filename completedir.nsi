@@ -8,9 +8,12 @@ InstallDir "$PROGRAMFILES\completedir\"
 Section "Install"
   SetOutPath $INSTDIR
   WriteUninstaller "$INSTDIR\uninstall.exe"
-  File btcompletedirgui.exe
-  File *.pyd
-  File *.dll
+  File dist\btcompletedirgui.exe
+  File dist\*.exe
+  File dist\*.pyd
+  File dist\*.dll
+  File dist\library.zip
+  File bittorrent.ico
   CreateShortCut "$STARTMENU\Programs\completedir.lnk" "$INSTDIR\btcompletedirgui.exe"
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\CompleteDir" "DisplayName" "BitTorrent complete dir 1.0.1"
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\CompleteDir" "UninstallString" '"$INSTDIR\uninstall.exe"'

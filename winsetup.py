@@ -6,4 +6,4 @@
 from distutils.core import setup
 import py2exe
 
-setup(name='download', scripts=['btdownloadgui.py'])
+setup(windows=['btdownloadgui.py'])
