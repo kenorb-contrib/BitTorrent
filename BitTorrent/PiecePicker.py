@@ -1,40 +1,66 @@
 # Written by Bram Cohen
 # see LICENSE.txt for license information
 
-from random import randrange
+from random import randrange, shuffle
 true = 1
 false = 0
 
 class PiecePicker:
     def __init__(self, numpieces, rarest_first_cutoff = 1):
+        self.rarest_first_cutoff = rarest_first_cutoff
         self.numpieces = numpieces
         self.interests = [range(numpieces)]
+        self.pos_in_interests = range(numpieces)
         self.numinterests = [0] * numpieces
         self.started = []
         self.numgot = 0
-        self.rarest_first_cutoff = rarest_first_cutoff
+        self.scrambled = range(numpieces)
+        shuffle(self.scrambled)
 
     def got_have(self, piece):
-        if self.numinterests[piece] is not None:
-            self.interests[self.numinterests[piece]].remove(piece)
-            self.numinterests[piece] += 1
-            if self.numinterests[piece] == len(self.interests):
-                self.interests.append([])
-            self.interests[self.numinterests[piece]].append(piece)
+        if self.numinterests[piece] is None:
+            return
+        numint = self.numinterests[piece]
+        if numint == len(self.interests) - 1:
+            self.interests.append([])
+        self.numinterests[piece] += 1
+        self._shift_over(piece, self.interests[numint], self.interests[numint + 1])
 
     def lost_have(self, piece):
-        if self.numinterests[piece] is not None:
-            self.interests[self.numinterests[piece]].remove(piece)
-            self.numinterests[piece] -= 1
-            self.interests[self.numinterests[piece]].append(piece)
+        if self.numinterests[piece] is None:
+            return
+        numint = self.numinterests[piece]
+        self.numinterests[piece] -= 1
+        self._shift_over(piece, self.interests[numint], self.interests[numint - 1])
+
+    def _shift_over(self, piece, l1, l2):
+        p = self.pos_in_interests[piece]
+        l1[p] = l1[-1]
+        self.pos_in_interests[l1[-1]] = p
+        del l1[-1]
+        newp = randrange(len(l2) + 1)
+        if newp == len(l2):
+            self.pos_in_interests[piece] = len(l2)
+            l2.append(piece)
+        else:
+            old = l2[newp]
+            self.pos_in_interests[old] = len(l2)
+            l2.append(old)
+            l2[newp] = piece
+            self.pos_in_interests[piece] = newp
 
     def requested(self, piece):
         if piece not in self.started:
             self.started.append(piece)
 
     def complete(self, piece):
+        assert self.numinterests[piece] is not None
         self.numgot += 1
-        self.interests[self.numinterests[piece]].remove(piece)
+        l = self.interests[self.numinterests[piece]]
+        p = self.pos_in_interests[piece]
+        l[p] = l[-1]
+        self.pos_in_interests[l[-1]] = p
+        del l[-1]
         self.numinterests[piece] = None
         try:
             self.started.remove(piece)
@@ -50,7 +76,7 @@ class PiecePicker:
                     best = i
                     bestnum = self.numinterests[i]
             for i in self.interests[1:bestnum]:
-                for j in scramble(i):
+                for j in i:
                     if havefunc(j):
                         return j
             return best
@@ -58,32 +84,10 @@ class PiecePicker:
             for i in self.started:
                 if havefunc(i):
                     return i
-            for i in scramble(xrange(self.numpieces)):
+            for i in self.scrambled:
                 if havefunc(i):
                     return i
             return None
-
-class scramble:
-    def __init__(self, mylist):
-        self.mylist = mylist
-        if mylist:
-            self.s = randrange(len(mylist))
-        else:
-            self.s = 0
-        self.d = len(mylist)
-        if len(mylist) > 1:
-            while gcd(self.d, len(mylist)) > 1:
-                self.d = randrange(1, len(mylist))
-
-    def __getitem__(self, n):
-        if n >= len(self.mylist):
-            raise IndexError
-        return self.mylist[(self.s + self.d * n) % len(self.mylist)]
-
-def gcd(a,b):
-    while b:
-        a, b = b, a%b
-    return a
 
 def test_requested():
     p = PiecePicker(9)
