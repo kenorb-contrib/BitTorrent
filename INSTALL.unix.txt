@@ -15,6 +15,8 @@ To integrate with your web browser, copy the contents of
 the file named 'torrent' into your /etc/mailcap file. 
 Under Debian you can do this with 
 cp torrent /usr/lib/mime/packages;update-mime
+(some unixes don't have a mailcap file, if you get it working 
+on one which doesn't, please let me know how)
 
 You may have to restart your web browser for it to start 
 using BitTorrent.

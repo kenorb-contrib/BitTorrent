@@ -12,9 +12,8 @@ Instructions for making the installer are in BUILD.windows.txt
 
 Instructions for Unix installation are in INSTALL.unix.txt
 
-BitTorrent consists of three parts - tracker, which acts as a 
-web server, publisher, which acts as an always-up peer, and the 
-client portion which acts as a web helper app.
+BitTorrent consists of two parts - tracker, which acts as a 
+web server, and the downloader, which acts as a web helper app.
 
 To run a tracker, execute the command bttrack.py Here is an 
 example -
@@ -34,18 +33,33 @@ is a weblog. You can get a list of published files by doing an http
 request in it's base directory (it will of course be an empty 
 list at first)
 
-To publish, execute the command btpublish.py Here is an example -
+To publish, first run the publish script to let the tracker know about 
+a file, then run a downloader which already has the complete file to 
+make it available. Here's the publish command -
 
-btpublish.py --ip 69.69.69.69 --port 5989 \
-    --location http://69.69.69.69:8080/publish/ mymovie.mpeg
+btpublish.py myfile.ext http://my.tracker/somename.ext
 
-The ip argument is optional but autodetection doesn't work right if 
-the tracker and publisher are on the same machine.
+This command will finish quickly, hopefully reporting that it worked.
 
-port can be any number you can bind to.
+Next run a downloader, here's an example -
 
-location is where you're running the tracker. The subdirectory 
-has to be /publish/ including the trailing slash.
+btdownloadheadless.py --url http://my.tracker/somename.ext --saveas \
+    myfile.ext --permanent 1
+
+Make sure the saveas argument points to the complete file.
+
+The 'permanent' argument is strongly suggested to make the tracker not 
+forget the permanent publisher when a bunch more people start 
+downloading. The need for it will go away in a future release.
+
+BitTorrent defaults to port 6881. If it can't use 6881, (probably because 
+another download is happening) it tries 6882, then 6883, etc. It gives up 
+after 6889.
+
+BitTorrent can also publish whole directories - simply point at the 
+directory with files in it, they'll be published as one unit. All files 
+in subdirectories will be included, although files and directories named 
+'CVS' and 'core' are ignored.
 
 If you have any questions, try the web site or mailing list -
 
