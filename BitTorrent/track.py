@@ -307,7 +307,7 @@ class Tracker:
                     'Requested download is not authorized for use with this tracker.'}))
             ip = connection.get_ip()
             if params.has_key('ip'):
-                if not self.only_local_override_ip or ip[:3] == '10.' or ip[:4] in ('192.', '169.', '127.'):
+                if not self.only_local_override_ip or is_local_ip(ip):
                     ip = params['ip']
             if params.has_key('event') and params['event'] not in ['started', 'completed', 'stopped']:
                 raise ValueError, 'invalid event'
@@ -319,8 +319,8 @@ class Tracker:
             if len(myid) != 20:
                 raise ValueError, 'id not of length 20'
             rsize = self.response_size
-            if params.has_key('num want'):
-                rsize = int(params['num want'])
+            if params.has_key('numwant'):
+                rsize = int(params['numwant'])
         except ValueError, e:
             return (400, 'Bad Request', {'Content-Type': 'text/plain'}, 
                 'you sent me garbage - ' + str(e))
@@ -384,7 +384,17 @@ class Tracker:
                     del self.times[key]
                     del self.downloads[key]
         self.rawserver.add_task(self.expire_downloaders, self.timeout_downloaders_interval)
-        
+
+def is_local_ip(ip):
+    try:
+        v = [long(x) for x in '.'.split(ip)]
+        if v[0] == 10 or v[:1] in ([192, 168], [169, 254]):
+            return 1
+        if v[0] == 172 and v[1] >= 16 and v[1] <= 31:
+            return 1
+    except ValueError:
+        return 0
+
 def track(args):
     if len(args) == 0:
         print formatDefinitions(defaults, 80)
