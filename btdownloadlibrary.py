@@ -11,13 +11,12 @@ def dummydisplay(fractionDone = None, timeEst = None,
         downRate = None, upRate = None, activity = None):
     pass
 
+def dummyerror(message):
+    pass
+
 def download(url, file):
     ev = Event()
-    w = Event()
-    def fin(worked, errormsg, ev = ev, w = w):
+    def fin(ev = ev):
         ev.set()
-        if worked:
-            w.set()
     BitTorrent.download.download(['--url', url, '--saveas', file], 
-        dummychoose, dummydisplay, fin, ev, 80)
-    return w.isSet()
+        dummychoose, dummydisplay, fin, dummyerror, ev, 80)
