@@ -145,7 +145,7 @@ class StorageWrapper:
             if self.places.has_key(n):
                 oldpos = self.places[n]
                 old = self.storage.read(self.piece_size * oldpos, self._piecelen(n))
-                if sha(old).digest() != self.hashes[n]:
+                if self.have[n] and sha(old).digest() != self.hashes[n]:
                     self.failed('data corrupted on disk - maybe you have two copies running?')
                     return True
                 self.storage.write(self.piece_size * n, old)
