@@ -9,6 +9,7 @@ from btcompletedir import completedir
 from threading import Event, Thread
 from os.path import join
 from wxPython.wx import *
+from traceback import print_exc
 
 wxEVT_INVOKE = wxNewEventType()
 
@@ -98,8 +99,6 @@ class DownloadInfo:
         except:
             print_exc()
             sleep(50000)
-from time import sleep
-from traceback import print_exc
 
 class CompleteDir:
     def __init__(self, d, a, pl):
