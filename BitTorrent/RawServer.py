@@ -1,18 +1,19 @@
 # Written by Bram Cohen
 # this file is public domain
 
+from bisect import insort
 import socket
 from cStringIO import StringIO
 from traceback import print_exc
 from errno import EWOULDBLOCK, EINTR
 try:
     from select import poll, error, POLLIN, POLLOUT, POLLERR, POLLHUP
-    timemult = 1
+    timemult = 1000
 except ImportError:
     from selectpoll import poll, error, POLLIN, POLLOUT, POLLERR, POLLHUP
-    timemult = .001
-import threading
-import time
+    timemult = 1
+from threading import Thread
+from time import time, sleep
 import sys
 true = 1
 false = 0
@@ -64,28 +65,34 @@ class SingleSocket:
             self.raw_server.poll.register(self.socket, all)
 
 class RawServer:
-    def __init__(self, port, encrypter, lock, poll_period):
-        self.port = port
-        self.encrypter = encrypter
-        self.lock = lock
-        self.poll_period = poll_period * timemult
+    def __init__(self, max_poll_period, noisy = true):
+        self.max_poll_period = max_poll_period
         self.poll = poll()
         # {socket: SingleSocket}
         self.single_sockets = {}
         self.dead_from_write = []
         self.running = true
+        self.noisy = noisy
+        self.funcs = []
 
     def shutdown(self):
         self.running = false
 
-    def start_listening(self):
+    def add_task(self, func, delay, args = []):
+        insort(self.funcs, (time() + delay, func, args))
+
+    def start_listening(self, handler, port, ret = true):
+        self.handler = handler
         self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.server.setblocking(0)
-        self.server.bind(('', self.port))
+        self.server.bind(('', port))
         self.server.listen(5)
         self.poll.register(self.server, POLLIN)
-        threading.Thread(target = self.listen_forever).start()
+        if ret:
+            Thread(target = self.listen_forever).start()
+        else:
+            self.listen_forever()
     
     def start_connection(self, dns):
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -109,7 +116,7 @@ class RawServer:
                     nss = SingleSocket(self, newsock)
                     self.single_sockets[newsock.fileno()] = nss
                     self.poll.register(newsock, POLLIN)
-                    self.encrypter.external_connection_made(nss)
+                    self.handler.external_connection_made(nss)
             else:
                 if sock == self.server.fileno():
                     continue
@@ -127,7 +134,7 @@ class RawServer:
                             self.close_socket(s)
                             hit = true
                         else:
-                            self.encrypter.data_came_in(s, data)
+                            self.handler.data_came_in(s, data)
                     except socket.error, e:
                         code, msg = e
                         if code != EWOULDBLOCK:
@@ -139,29 +146,46 @@ class RawServer:
                     s.try_write()
 
     def listen_forever(self):
-        while self.running:
-            try:
-                events = self.poll.poll(self.poll_period)
+        try:
+            while self.running:
                 try:
-                    self.lock.acquire()
+                    if len(self.funcs) == 0:
+                        period = self.max_poll_period
+                    else:
+                        period = self.funcs[0][0] - time()
+                        if period > self.max_poll_period:
+                            period = self.max_poll_period
+                    if period < 0:
+                        period = 0
+                    events = self.poll.poll(period * timemult)
+                    if not self.running:
+                        return
+                    while len(self.funcs) > 0 and self.funcs[0][0] <= time():
+                        garbage, func, args = self.funcs[0]
+                        del self.funcs[0]
+                        try:
+                            func(*args)
+                        except KeyboardInterrupt:
+                            raise
+                        except:
+                            if self.noisy:
+                                print_exc()
                     self.close_dead()
                     self.handle_events(events)
                     self.close_dead()
-                finally:
-                    self.lock.release()
-            except error, e:
-                a, b = e
-                if a == EINTR:
+                except error, e:
+                    if not self.running:
+                        return
+                    else:
+                        print_exc()
+                except KeyboardInterrupt:
                     return
-                else:
+                except:
                     print_exc()
-            except KeyboardInterrupt:
-                return
-            except:
-                print_exc()
-        self.server.close()
-        for ss in self.single_sockets.values():
-            ss.close()
+        finally:
+            self.server.close()
+            for ss in self.single_sockets.values():
+                ss.close()
 
     def close_dead(self):
         while len(self.dead_from_write) > 0:
@@ -177,11 +201,11 @@ class RawServer:
         self.poll.unregister(sock)
         del self.single_sockets[sock]
         s.socket = None
-        self.encrypter.connection_lost(s)
+        self.handler.connection_lost(s)
 
 # everything below is for testing
 
-class DummyEncrypter:
+class DummyHandler:
     def __init__(self):
         self.external_made = []
         self.data_in = []
@@ -198,16 +222,15 @@ class DummyEncrypter:
 
 def test_starting_side_close():
     try:
-        lock = threading.Condition()
-        da = DummyEncrypter()
-        sa = RawServer(5000, da, lock, 100)
-        sa.start_listening()
-        db = DummyEncrypter()
-        sb = RawServer(5001, db, lock, 100)
-        sb.start_listening()
+        da = DummyHandler()
+        sa = RawServer(.1)
+        sa.start_listening(da, 5000)
+        db = DummyHandler()
+        sb = RawServer(.1)
+        sb.start_listening(db, 5001)
 
         ca = sa.start_connection(('', 5001))
-        time.sleep(1)
+        sleep(1)
         
         assert da.external_made == []
         assert da.data_in == []
@@ -220,7 +243,7 @@ def test_starting_side_close():
 
         ca.write('aaa')
         cb.write('bbb')
-        time.sleep(1)
+        sleep(1)
         
         assert da.external_made == []
         assert da.data_in == [(ca, 'bbb')]
@@ -233,7 +256,7 @@ def test_starting_side_close():
 
         ca.write('ccc')
         cb.write('ddd')
-        time.sleep(1)
+        sleep(1)
         
         assert da.external_made == []
         assert da.data_in == [(ca, 'ddd')]
@@ -245,7 +268,7 @@ def test_starting_side_close():
         assert db.lost == []
 
         ca.close()
-        time.sleep(1)
+        sleep(1)
 
         assert da.external_made == []
         assert da.data_in == []
@@ -260,16 +283,15 @@ def test_starting_side_close():
 
 def test_receiving_side_close():
     try:
-        lock = threading.Condition()
-        da = DummyEncrypter()
-        sa = RawServer(5002, da, lock, 100)
-        sa.start_listening()
-        db = DummyEncrypter()
-        sb = RawServer(5003, db, lock, 100)
-        sb.start_listening()
+        da = DummyHandler()
+        sa = RawServer(.1)
+        sa.start_listening(da, 5002)
+        db = DummyHandler()
+        sb = RawServer(.1)
+        sb.start_listening(db, 5003)
         
         ca = sa.start_connection(('', 5003))
-        time.sleep(1)
+        sleep(1)
         
         assert da.external_made == []
         assert da.data_in == []
@@ -282,7 +304,7 @@ def test_receiving_side_close():
 
         ca.write('aaa')
         cb.write('bbb')
-        time.sleep(1)
+        sleep(1)
         
         assert da.external_made == []
         assert da.data_in == [(ca, 'bbb')]
@@ -295,7 +317,7 @@ def test_receiving_side_close():
 
         ca.write('ccc')
         cb.write('ddd')
-        time.sleep(1)
+        sleep(1)
         
         assert da.external_made == []
         assert da.data_in == [(ca, 'ddd')]
@@ -307,7 +329,7 @@ def test_receiving_side_close():
         assert db.lost == []
 
         cb.close()
-        time.sleep(1)
+        sleep(1)
 
         assert da.external_made == []
         assert da.data_in == []
@@ -322,13 +344,12 @@ def test_receiving_side_close():
 
 def test_connection_refused():
     try:
-        lock = threading.Condition()
-        da = DummyEncrypter()
-        sa = RawServer(5006, da, lock, 100)
-        sa.start_listening()
+        da = DummyHandler()
+        sa = RawServer(.1)
+        sa.start_listening(da, 5006)
         
         ca = sa.start_connection(('', 5007))
-        time.sleep(1)
+        sleep(1)
         
         assert da.external_made == []
         assert da.data_in == []
@@ -339,18 +360,17 @@ def test_connection_refused():
 
 def test_both_close():
     try:
-        lock = threading.Condition()
-        da = DummyEncrypter()
-        sa = RawServer(5004, da, lock, 100)
-        sa.start_listening()
+        da = DummyHandler()
+        sa = RawServer(.1)
+        sa.start_listening(da, 5004)
 
-        time.sleep(1)
-        db = DummyEncrypter()
-        sb = RawServer(5005, db, lock, 100)
-        sb.start_listening()
+        sleep(1)
+        db = DummyHandler()
+        sb = RawServer(.1)
+        sb.start_listening(db, 5005)
         
         ca = sa.start_connection(('', 5005))
-        time.sleep(1)
+        sleep(1)
         
         assert da.external_made == []
         assert da.data_in == []
@@ -363,7 +383,7 @@ def test_both_close():
 
         ca.write('aaa')
         cb.write('bbb')
-        time.sleep(1)
+        sleep(1)
         
         assert da.external_made == []
         assert da.data_in == [(ca, 'bbb')]
@@ -376,7 +396,7 @@ def test_both_close():
 
         ca.write('ccc')
         cb.write('ddd')
-        time.sleep(1)
+        sleep(1)
         
         assert da.external_made == []
         assert da.data_in == [(ca, 'ddd')]
@@ -387,13 +407,9 @@ def test_both_close():
         del db.data_in[:]
         assert db.lost == []
 
-        try:
-            lock.acquire()
-            ca.close()
-            cb.close()
-        finally:
-            lock.release()
-        time.sleep(1)
+        ca.close()
+        cb.close()
+        sleep(1)
 
         assert da.external_made == []
         assert da.data_in == []
@@ -404,3 +420,37 @@ def test_both_close():
     finally:
         sa.shutdown()
         sb.shutdown()
+
+def test_normal():
+    l = []
+    s = RawServer(5)
+    s.start_listening(DummyHandler(), 5007)
+    s.add_task(lambda l = l: l.append('b'), 2)
+    s.add_task(lambda l = l: l.append('a'), 1)
+    s.add_task(lambda l = l: l.append('d'), 4)
+    sleep(1.5)
+    s.add_task(lambda l = l: l.append('c'), 1.5)
+    sleep(3)
+    assert l == ['a', 'b', 'c', 'd']
+    s.shutdown()
+
+def test_args():
+    l = []
+    def func(a, l = l):
+        l.append(a)
+    s = RawServer(5)
+    s.start_listening(DummyHandler(), 5008)
+    s.add_task(lambda a, l = l: l.append(a), 1, [3])
+    sleep(1.5)
+    assert l == [3]
+    s.shutdown()
+
+def test_catch_exception():
+    l = []
+    s = RawServer(5, false)
+    s.start_listening(DummyHandler(), 5009)
+    s.add_task(lambda l = l: l.append('b'), 2)
+    s.add_task(lambda: 4/0, 1)
+    sleep(3)
+    assert l == ['b']
+    s.shutdown()

@@ -17,8 +17,20 @@ from bencode import bencode, bdecode
 from binascii import b2a_hex
 from btemplate import compile_template, string_template
 from os.path import split
+true = 1
+false = 0
 
 def publish(config, files):
+    try:
+        h = urlopen('http://bitconjurer.org/BitTorrent/status-publisher-02-04-00.txt')
+        status = h.read().strip()
+        h.close()
+        if status != 'current':
+            print 'No longer the latest version - see http://bitconjurer.org/BitTorrent/download.html'
+            return
+    except IOError, e:
+        print "Couldn't check version number - " + str(e)
+
     private_key = entropy(20)
     noncefunc = lambda e = entropy: e(20)
     throttler = Throttler(long(config.get('rethrottle_diff', str(2 ** 20))), 
@@ -29,16 +41,12 @@ def publish(config, files):
     blobs = MultiBlob(files, piece_length)
     uploader = Uploader(throttler, blobs)
     downloader = DummyDownloader()
-    lock = Condition()
     connecter = Connecter(uploader, downloader, None, None, None)
-    encrypter = Encrypter(connecter, noncefunc, private_key, 
+    rawserver = RawServer(float(config.get('max_poll_period', '2')))
+    encrypter = Encrypter(connecter, rawserver, noncefunc, private_key, 
         long(config.get('max_message_length', str(2 ** 20))))
     connecter.set_encrypter(encrypter)
     listen_port = long(config.get('port', '6881'))
-    rawserver = RawServer(listen_port, encrypter, 
-        lock, long(config.get('socket_poll_period', '100')))
-    encrypter.set_raw_server(rawserver)
-    rawserver.start_listening()
 
     try:
         files = []
@@ -59,9 +67,12 @@ def publish(config, files):
         t(response)
         if response['type'] == 'failure':
             print "Couldn't publish - " + response['reason']
-        else:
-            PublisherFeedback(uploader, lock, listen_port, response['your ip'], blobs.blobs)
+            return
     except IOError, e:
         print "Couldn't publish - " + str(e)
+        return
     except ValueError, e:
         print "got bad publication response - " + str(e)
+        return
+    PublisherFeedback(uploader, rawserver.add_task, listen_port, response['your ip'], blobs.blobs)
+    rawserver.start_listening(encrypter, listen_port, false)

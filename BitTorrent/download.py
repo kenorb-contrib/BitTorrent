@@ -11,7 +11,6 @@ from Downloader import Downloader
 from Connecter import Connecter
 from Encrypter import Encrypter
 from RawServer import RawServer
-from Scheduler import Scheduler
 from DownloaderFeedback import DownloaderFeedback
 from threading import Condition
 from entropy import entropy
@@ -20,6 +19,8 @@ from btemplate import compile_template, string_template, ListMarker, OptionMarke
 from binascii import b2a_hex
 from Tkinter import Tk
 from tkFileDialog import asksaveasfilename
+true = 1
+false = 0
 
 def len20(s, verbose):
     if ((type(s) != type('')) or (len(s) != 20)):
@@ -62,36 +63,24 @@ def run(private_key, noncefunc, response, file, config):
     downloader = Downloader(throttler, blobs, uploader, 
         long(config.get('download_chunk_size', '32768')), 
         long(config.get('request_backlog', '5')))
-    lock = Condition()
-    scheduler = Scheduler(lock)
-    connecter = Connecter(uploader, downloader, scheduler.add_task, 
+    rawserver = RawServer(float(config.get('max_poll_period', '2')))
+    connecter = Connecter(uploader, downloader, rawserver.add_task, 
         long(config.get('min_fast_reconnect', '60')), 
         long(config.get('max_fast_reconnect', '180')))
-    encrypter = Encrypter(connecter, noncefunc, private_key, 
+    encrypter = Encrypter(connecter, rawserver, noncefunc, private_key, 
         long(config.get('max_message_length', str(2 ** 20))))
     connecter.set_encrypter(encrypter)
     listen_port = long(config.get('port', '6880'))
-    rawserver = RawServer(listen_port, encrypter, 
-        lock, long(config.get('socket_poll_period', '100')))
-    encrypter.set_raw_server(rawserver)
-    rawserver.start_listening()
-    doneflag = []
     
-    def finished(result, rawserver = rawserver, scheduler = scheduler, doneflag = doneflag):
+    def finished(result, rawserver = rawserver):
         if result:
             print 'download succeeded'
         else:
             print 'download failed'
         rawserver.shutdown()
-        scheduler.shutdown()
-        doneflag.append(1)
     blobs.callback = finished
 
-    try:
-        lock.acquire()
-        connecter.start_connecting([(x['ip'], x['port']) for x in response['peers']])
-    finally:
-        lock.release()
+    connecter.start_connecting([(x['ip'], x['port']) for x in response['peers']])
 
     try:
         a = {'type': 'announce', 'id': response['id'], 'port': listen_port}
@@ -106,22 +95,39 @@ def run(private_key, noncefunc, response, file, config):
         t2(response)
         if response['type'] == 'failure':
             print "Couldn't announce - " + response['reason']
-        else:
-            DownloaderFeedback(uploader, downloader, throttler, lock, 
-                listen_port, response['your ip'], doneflag, file_length)
+            return
+        DownloaderFeedback(uploader, downloader, throttler, rawserver.add_task, 
+            listen_port, response['your ip'], file_length)
     except IOError, e:
         print "Couldn't announce - " + str(e)
         return
     except ValueError, e:
         print "got bad announcement response - " + str(e)
         return
+    rawserver.start_listening(encrypter, listen_port, false)
+
+def checkversion():
+    try:
+        h = urlopen('http://bitconjurer.org/BitTorrent/status-downloader-02-04-00.txt')
+        status = h.read().strip()
+        h.close()
+        if status != 'current':
+            print 'No longer the latest version - see http://bitconjurer.org/BitTorrent/download.html'
+            return false
+    except IOError, e:
+        print "Couldn't check version number - " + str(e)
+    return true
 
 def download(response, filename, config):
+    if not checkversion():
+        return
     private_key = entropy(20)
     noncefunc = lambda e = entropy: e(20)
     run(private_key, noncefunc, response, filename, config)
 
 def downloadurl(url, filename, config):
+    if not checkversion():
+        return
     try:
         h = urlopen(url)
         response = h.read()
