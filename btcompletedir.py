@@ -3,20 +3,34 @@
 # Written by Bram Cohen
 # see LICENSE.txt for license information
 
+from BitTorrent import PSYCO
+if PSYCO.psyco:
+    try:
+        import psyco
+        assert psyco.__version__ >= 0x010100f0
+        psyco.full()
+    except:
+        pass
+
 from os import listdir
 from os.path import join, split
 from threading import Event
 from traceback import print_exc
 from sys import argv
-from btmakemetafile import calcsize, make_meta_file, ignore
+from btmakemetafile import defaults, calcsize, make_meta_file, ignore, print_announcelist_details
+from BitTorrent.parseargs import parseargs, formatDefinitions
 
 def dummy(x):
     pass
 
-def completedir(dir, url, flag = Event(), vc = dummy, fc = dummy, piece_len_pow2 = None):
+def completedir(dir, url, params = {}, flag = Event(), vc = dummy, fc = dummy):
     files = listdir(dir)
     files.sort()
     ext = '.torrent'
+    if params.has_key('target'):
+        target = params['target']
+    else:
+        target = ''
 
     togen = []
     for f in files:
@@ -34,9 +48,11 @@ def completedir(dir, url, flag = Event(), vc = dummy, fc = dummy, piece_len_pow2
     for i in togen:
         fc(i)
         try:
-            t = split(i)[-1] 
+            t = split(i)[-1]
             if t not in ignore and t[0] != '.':
-                make_meta_file(i, url, flag = flag, progress = callback, progress_percent=0, piece_len_exp = piece_len_pow2)
+                if target != '':
+                    params['target'] = join(target,t+ext)
+                make_meta_file(i, url, params, flag, progress = callback, progress_percent = 0)
         except ValueError:
             print_exc()
 
@@ -44,4 +60,20 @@ def dc(v):
     print v
 
 if __name__ == '__main__':
-    completedir(argv[1], argv[2], fc = dc)
+    if len(argv) < 3:
+        a,b = split(argv[0])
+        print 'Usage: ' + b + ' <trackerurl> <dir> [dir...] [params...]'
+        print 'makes a .torrent file for every file or directory present in each dir.'
+        print
+        print formatDefinitions(defaults, 80)
+        print_announcelist_details()
+        print ('')
+        exit(2)
+
+    try:
+        config, args = parseargs(argv[1:], defaults, 2, None)
+        for dir in args[1:]:
+            completedir(dir, args[0], config)
+    except ValueError, e:
+        print 'error: ' + str(e)
+        print 'run with no args for parameter explanations'

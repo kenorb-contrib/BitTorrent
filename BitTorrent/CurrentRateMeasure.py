@@ -2,6 +2,8 @@
 # see LICENSE.txt for license information
 
 from time import time
+true = 1
+false = 0
 
 class Measure:
     def __init__(self, max_rate_period, fudge = 1):
@@ -15,7 +17,7 @@ class Measure:
         self.total += amount
         t = time()
         self.rate = (self.rate * (self.last - self.ratesince) + 
-            amount) / (t - self.ratesince)
+            amount) / (t - self.ratesince + 0.0001)
         self.last = t
         if self.ratesince < t - self.max_rate_period:
             self.ratesince = t - self.max_rate_period

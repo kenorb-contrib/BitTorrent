@@ -1,7 +1,13 @@
 # Written by Petru Paler
 # see LICENSE.txt for license information
 
+from types import IntType, LongType, StringType, ListType, TupleType, DictType
+try:
+    from types import BooleanType
+except ImportError:
+    BooleanType = IntType
 from re import compile
+from cStringIO import StringIO
 
 int_filter = compile('(0|-?[1-9][0-9]*)e')
 
@@ -202,46 +208,52 @@ def test_bdecode():
     except ValueError:
         pass
 
-class Bencached(object):
-    __slots__ = ['bencoded']
+bencached_marker = []
 
+class Bencached:
     def __init__(self, s):
+        self.marker = bencached_marker
         self.bencoded = s
 
-def bencode_rec(x, r):
+BencachedType = type(Bencached('')) # insufficient, but good as a filter
+
+def bencode_rec(x, r,
+            IntType=IntType,LongType=LongType,BooleanType=BooleanType,StringType=StringType,
+            ListType=ListType,TupleType=TupleType,DictType=DictType,type=type,
+            BencachedType=BencachedType,bencached_marker=bencached_marker):
     t = type(x)
-    if t in (int, long, bool):
+    if t is BencachedType:
+        assert x.marker == bencached_marker
+        r.append(x.bencoded)
+    elif t in (IntType, LongType, BooleanType):
         r.append('i%de' % x)
-    elif t is str:
+    elif t is StringType:
         r.append('%d:%s' % (len(x), x))
-    elif t in (list, tuple):
+    elif t in (ListType, TupleType):
         r.append('l')
         for e in x:
             bencode_rec(e, r)
         r.append('e')
-    elif t is dict:
+    elif t is DictType:
         r.append('d')
         ilist = x.items()
         ilist.sort()
-        for k, v in ilist:
+        for k,v in ilist:
+#            assert type(k) is StringType
             r.append('%d:%s' % (len(k), k))
             if type(v) is str:
                 r.append('%d:%s' % (len(v), v))
             else:
                 bencode_rec(v, r)
         r.append('e')
-    elif t is Bencached:
-        r.append(x.bencoded)
     else:
-        assert 0, "could not encode type %s (value: %s)" % (t, x)
+        print "*** error *** could not encode type %s (value: %s)" % (t, x)
+        assert 0
 
 def bencode(x):
-    try:
-        r = []
-        bencode_rec(x, r)
-        return ''.join(r)
-    except TypeError, e:
-        assert 0, str(e)
+    r = []
+    bencode_rec(x, r)
+    return ''.join(r)
 
 def test_bencode():
     assert bencode(4) == 'i4e'
@@ -259,7 +271,7 @@ def test_bencode():
     assert bencode({'spam.mp3': {'author': 'Alice', 'length': 100000}}) == 'd8:spam.mp3d6:author5:Alice6:lengthi100000eee'
     try:
         bencode({1: 'foo'})
+        assert 0
     except AssertionError:
-        return
-    assert 0
+        pass
 

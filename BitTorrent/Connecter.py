@@ -2,8 +2,11 @@
 # see LICENSE.txt for license information
 
 from bitfield import bitfield_to_booleans, booleans_to_bitfield
+from traceback import print_exc
 from binascii import b2a_hex
 from CurrentRateMeasure import Measure
+true = 1
+false = 0
 
 def toint(s):
     return long(b2a_hex(s), 16)
@@ -31,7 +34,7 @@ class Connection:
     def __init__(self, connection, connecter):
         self.connection = connection
         self.connecter = connecter
-        self.got_anything = False
+        self.got_anything = false
 
     def get_ip(self):
         return self.connection.get_ip()
@@ -44,7 +47,7 @@ class Connection:
 
     def is_flushed(self):
         if self.connecter.rate_capped:
-            return False
+            return false
         return self.connection.is_flushed()
 
     def is_locally_initiated(self):
@@ -89,27 +92,31 @@ class Connection:
     def get_download(self):
         return self.download
 
+    def set_download(self, download):
+        self.download = download
+
 class Connecter:
     def __init__(self, make_upload, downloader, choker, numpieces,
-            totalup, max_upload_rate = 0, sched = None):
+            totalup, config, sched = None):
         self.downloader = downloader
         self.make_upload = make_upload
         self.choker = choker
         self.numpieces = numpieces
-        self.max_upload_rate = max_upload_rate
+        self.config = config
         self.sched = sched
         self.totalup = totalup
-        self.rate_capped = False
+        self.rate_capped = false
         self.connections = {}
+        self.external_connection_made = 0
 
     def _update_upload_rate(self, amount):
         self.totalup.update_rate(amount)
-        if self.max_upload_rate > 0 and self.totalup.get_rate_noupdate() > self.max_upload_rate:
-            self.rate_capped = True
-            self.sched(self._uncap, self.totalup.time_until_rate(self.max_upload_rate))
+        if self.config['max_upload_rate'] > 0 and self.totalup.get_rate_noupdate() > self.config['max_upload_rate']:
+            self.rate_capped = true
+            self.sched(self._uncap, self.totalup.time_until_rate(self.config['max_upload_rate']))
 
     def _uncap(self):
-        self.rate_capped = False
+        self.rate_capped = false
         while not self.rate_capped:
             up = None
             minrate = None
@@ -122,18 +129,9 @@ class Connecter:
             if up is None:
                 break
             up.flushed()
-            if self.totalup.get_rate_noupdate() > self.max_upload_rate:
+            if self.totalup.get_rate_noupdate() > self.config['max_upload_rate']:
                 break
 
-    def change_max_upload_rate(self, newval):
-        def foo(self=self, newval=newval):
-            self._change_max_upload_rate(newval)
-        self.sched(foo, 0);
-        
-    def _change_max_upload_rate(self, newval):
-        self.max_upload_rate = newval
-        self._uncap()
-        
     def how_many_connections(self):
         return len(self.connections)
 
@@ -154,13 +152,17 @@ class Connecter:
     def connection_flushed(self, connection):
         self.connections[connection].upload.flushed()
 
+    def got_piece(self, i):
+        for co in self.connections.values():
+            co.send_have(i)
+
     def got_message(self, connection, message):
         c = self.connections[connection]
         t = message[0]
         if t == BITFIELD and c.got_anything:
             connection.close()
             return
-        c.got_anything = True
+        c.got_anything = true
         if (t in [CHOKE, UNCHOKE, INTERESTED, NOT_INTERESTED] and 
                 len(message) != 1):
             connection.close()
@@ -217,8 +219,7 @@ class Connecter:
                 connection.close()
                 return
             if c.download.got_piece(i, toint(message[5:9]), message[9:]):
-                for co in self.connections.values():
-                    co.send_have(i)
+                self.got_piece(i)
         else:
             connection.close()
 
@@ -318,7 +319,7 @@ def test_operation():
     co.got_message(dc, PIECE + tobinary(1) + tobinary(0) + 'abc')
     co.got_message(dc, PIECE + tobinary(1) + tobinary(3) + 'def')
     co.connection_flushed(dc)
-    cc.send_bitfield([False, True, True])
+    cc.send_bitfield([false, true, true])
     cc.send_interested()
     cc.send_not_interested()
     cc.send_choke()
@@ -329,7 +330,7 @@ def test_operation():
     cc.send_piece(1, 2, 'abc')
     co.connection_lost(dc)
     x = ['made upload', 'made download', 'made', 
-        ('bitfield', [True, True, False]), 'choke', 'unchoke',
+        ('bitfield', [true, true, false]), 'choke', 'unchoke',
         'interested', 'not interested', ('have', 2), 
         ('request', 1, 5, 6), ('cancel', 2, 3, 4),
         ('piece', 1, 0, 'abc'), ('piece', 1, 3, 'def'), 

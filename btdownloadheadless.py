@@ -3,19 +3,31 @@
 # Written by Bram Cohen
 # see LICENSE.txt for license information
 
+from BitTorrent import PSYCO
+if PSYCO.psyco:
+    try:
+        import psyco
+        assert psyco.__version__ >= 0x010100f0
+        psyco.full()
+    except:
+        pass
+    
 from BitTorrent.download import download
 from threading import Event
 from os.path import abspath
-from sys import argv, stdout
-from cStringIO import StringIO
+from sys import argv, version, stdout
+import sys
 from time import time
+assert version >= '2', "Install Python 2.0 or greater"
+true = 1
+false = 0
 
 def hours(n):
     if n == -1:
         return '<unknown>'
     if n == 0:
         return 'complete!'
-    n = long(n)
+    n = int(n)
     h, r = divmod(n, 60 * 60)
     m, sec = divmod(r, 60)
     if h > 1000000:
@@ -27,71 +39,75 @@ def hours(n):
 
 class HeadlessDisplayer:
     def __init__(self):
-        self.done = False
+        self.done = false
         self.file = ''
         self.percentDone = ''
         self.timeEst = ''
         self.downloadTo = ''
         self.downRate = ''
         self.upRate = ''
-        self.downTotal = ''
-        self.upTotal = ''
+        self.shareRating = ''
+        self.seedStatus = ''
+        self.peerStatus = ''
         self.errors = []
         self.last_update_time = 0
 
     def finished(self):
-        self.done = True
+        self.done = true
         self.percentDone = '100'
         self.timeEst = 'Download Succeeded!'
         self.downRate = ''
-        self.display({})
+        self.display()
 
     def failed(self):
-        self.done = True
+        self.done = true
         self.percentDone = '0'
         self.timeEst = 'Download Failed!'
         self.downRate = ''
-        self.display({})
+        self.display()
 
     def error(self, errormsg):
         self.errors.append(errormsg)
-        self.display({})
+        self.display()
 
-    def display(self, dict):
-        if self.last_update_time + 0.1 > time() and dict.get('fractionDone') not in (0.0, 1.0) and not dict.has_key('activity'):
+    def display(self, fractionDone = None, timeEst = None, 
+            downRate = None, upRate = None, activity = None,
+            statistics = None,  **kws):
+        if self.last_update_time + 0.1 > time() and fractionDone not in (0.0, 1.0) and activity is not None:
             return
-        self.last_update_time = time()
-        if dict.has_key('spew'):
-            print_spew(dict['spew'])
-        if dict.has_key('fractionDone'):
-            self.percentDone = str(float(int(dict['fractionDone'] * 1000)) / 10)
-        if dict.has_key('timeEst'):
-            self.timeEst = hours(dict['timeEst'])
-        if dict.has_key('activity') and not self.done:
-            self.timeEst = dict['activity']
-        if dict.has_key('downRate'):
-            self.downRate = '%.2f kB/s' % (float(dict['downRate']) / (1 << 10))
-        if dict.has_key('upRate'):
-            self.upRate = '%.2f kB/s' % (float(dict['upRate']) / (1 << 10))
-        if dict.has_key('upTotal'):
-            self.upTotal = '%.1f MiB' % (dict['upTotal'])
-        if dict.has_key('downTotal'):
-            self.downTotal = '%.1f MiB' % (dict['downTotal'])
-        print '\n\n'
+        self.last_update_time = time()        
+        if fractionDone is not None:
+            self.percentDone = str(float(int(fractionDone * 1000)) / 10)
+        if timeEst is not None:
+            self.timeEst = hours(timeEst)
+        if activity is not None and not self.done:
+            self.timeEst = activity
+        if downRate is not None:
+            self.downRate = '%.1f kB/s' % (float(downRate) / (1 << 10))
+        if upRate is not None:
+            self.upRate = '%.1f kB/s' % (float(upRate) / (1 << 10))
+        if statistics is not None:
+           if (statistics.shareRating < 0) or (statistics.shareRating > 100):
+               self.shareRating = 'oo  (%.1f MB up / %.1f MB down)' % (float(statistics.upTotal) / (1<<20), float(statistics.downTotal) / (1<<20))
+           else:
+               self.shareRating = '%.3f  (%.1f MB up / %.1f MB down)' % (statistics.shareRating, float(statistics.upTotal) / (1<<20), float(statistics.downTotal) / (1<<20))
+           if not self.done:
+              self.seedStatus = '%d seen now, plus %.3f distributed copies' % (statistics.numSeeds,0.001*int(1000*statistics.numCopies))
+           else:
+              self.seedStatus = '%d seen recently, plus %.3f distributed copies' % (statistics.numOldSeeds,0.001*int(1000*statistics.numCopies))
+           self.peerStatus = '%d seen now, %.1f%% done at %.1f kB/s' % (statistics.numPeers,statistics.percentDone,float(statistics.torrentRate) / (1 << 10))
+        print '\n\n\n\n'
         for err in self.errors:
             print 'ERROR:\n' + err + '\n'
         print 'saving:        ', self.file
         print 'percent done:  ', self.percentDone
         print 'time left:     ', self.timeEst
         print 'download to:   ', self.downloadTo
-        if self.downRate != '':
-            print 'download rate: ', self.downRate
-        if self.upRate != '':
-            print 'upload rate:   ', self.upRate
-        if self.downTotal != '':
-            print 'download total:', self.downTotal
-        if self.upTotal != '':
-            print 'upload total:  ', self.upTotal
+        print 'download rate: ', self.downRate
+        print 'upload rate:   ', self.upRate
+        print 'share rating:  ', self.shareRating
+        print 'seed status:   ', self.seedStatus
+        print 'peer status:   ', self.peerStatus
         stdout.flush()
 
     def chooseFile(self, default, size, saveas, dir):
@@ -103,47 +119,6 @@ class HeadlessDisplayer:
 
     def newpath(self, path):
         self.downloadTo = path
-
-def print_spew(spew):
-    s = StringIO()
-    s.write('\n\n\n')
-    for c in spew:
-        s.write('%20s ' % c['ip'])
-        if c['initiation'] == 'local':
-            s.write('l')
-        else:
-            s.write('r')
-        rate, interested, choked = c['upload']
-        s.write(' %10s ' % str(int(rate)))
-        if c['is_optimistic_unchoke']:
-            s.write('*')
-        else:
-            s.write(' ')
-        if interested:
-            s.write('i')
-        else:
-            s.write(' ')
-        if choked:
-            s.write('c')
-        else:
-            s.write(' ')
-
-        rate, interested, choked, snubbed = c['download']
-        s.write(' %10s ' % str(int(rate)))
-        if interested:
-            s.write('i')
-        else:
-            s.write(' ')
-        if choked:
-            s.write('c')
-        else:
-            s.write(' ')
-        if snubbed:
-            s.write('s')
-        else:
-            s.write(' ')
-        s.write('\n')
-    print s.getvalue()
 
 def run(params):
     try:
@@ -160,4 +135,7 @@ def run(params):
         h.failed()
 
 if __name__ == '__main__':
+    if argv[1:] == ['--version']:
+        print version
+        sys.exit(0)
     run(argv[1:])

@@ -3,36 +3,51 @@
 
 from CurrentRateMeasure import Measure
 
+true = 1
+false = 0
+
 class Upload:
-    def __init__(self, connection, choker, storage, 
+    def __init__(self, connection, choker, storage, picker,
             max_slice_length, max_rate_period, fudge):
         self.connection = connection
         self.choker = choker
         self.storage = storage
+        self.picker = picker
         self.max_slice_length = max_slice_length
         self.max_rate_period = max_rate_period
-        self.choked = True
-        self.interested = False
+        self.choked = true
+        self.interested = false
         self.buffer = []
         self.measure = Measure(max_rate_period, fudge)
-        if storage.do_I_have_anything():
-            connection.send_bitfield(storage.get_have_list())
+        self.was_ever_interested = false
+        if storage.get_amount_left() == 0 and choker.super_seed:
+            self.super_seeding = true   # flag, and don't send bitfield
+            self.seed_have_list = []         # set from piecepicker
+            self.skipped_count = 0
+        else:
+            self.super_seeding = false
+            if storage.do_I_have_anything():
+                connection.send_bitfield(storage.get_have_list())
 
     def got_not_interested(self):
         if self.interested:
-            self.interested = False
+            self.interested = false
             del self.buffer[:]
             self.choker.not_interested(self.connection)
 
     def got_interested(self):
         if not self.interested:
-            self.interested = True
+            self.interested = true
+            self.was_ever_interested = true
             self.choker.interested(self.connection)
 
     def flushed(self):
         while len(self.buffer) > 0 and self.connection.is_flushed():
             index, begin, length = self.buffer[0]
             del self.buffer[0]
+            if self.super_seeding and not index in self.seed_have_list:
+                self.connection.close()
+                return
             piece = self.storage.get_piece(index, begin, length)
             if piece is None:
                 self.connection.close()
@@ -56,13 +71,13 @@ class Upload:
 
     def choke(self):
         if not self.choked:
-            self.choked = True
+            self.choked = true
             del self.buffer[:]
             self.connection.send_choke()
 
     def unchoke(self):
         if self.choked:
-            self.choked = False
+            self.choked = false
             self.connection.send_unchoke()
         
     def is_choked(self):
@@ -77,10 +92,11 @@ class Upload:
     def get_rate(self):
         return self.measure.get_rate()
 
+
 class DummyConnection:
     def __init__(self, events):
         self.events = events
-        self.flushed = False
+        self.flushed = false
 
     def send_bitfield(self, bitfield):
         self.events.append(('bitfield', bitfield))
@@ -116,11 +132,11 @@ class DummyStorage:
 
     def do_I_have_anything(self):
         self.events.append('do I have')
-        return True
+        return true
 
     def get_have_list(self):
         self.events.append('get have list')
-        return [False, True]
+        return [false, true]
 
     def get_piece(self, index, begin, length):
         self.events.append(('get piece', index, begin, length))
@@ -139,10 +155,10 @@ def test_skip_over_choke():
     u.got_interested()
     assert u.is_interested()
     u.got_request(0, 0, 3)
-    dco.flushed = True
+    dco.flushed = true
     u.flushed()
     assert events == ['do I have', 'get have list', 
-        ('bitfield', [False, True]), 'interested']
+        ('bitfield', [false, true]), 'interested']
 
 def test_bad_piece():
     events = []
@@ -157,10 +173,10 @@ def test_bad_piece():
     u.unchoke()
     assert not u.is_choked()
     u.got_request(0, 0, 4)
-    dco.flushed = True
+    dco.flushed = true
     u.flushed()
     assert events == ['do I have', 'get have list', 
-        ('bitfield', [False, True]), 'interested', 'unchoke', 
+        ('bitfield', [false, true]), 'interested', 'unchoke', 
         ('get piece', 0, 0, 4), 'closed']
 
 def test_still_rejected_after_unchoke():
@@ -178,10 +194,10 @@ def test_still_rejected_after_unchoke():
     u.got_request(0, 0, 3)
     u.choke()
     u.unchoke()
-    dco.flushed = True
+    dco.flushed = true
     u.flushed()
     assert events == ['do I have', 'get have list', 
-        ('bitfield', [False, True]), 'interested', 'unchoke', 
+        ('bitfield', [false, true]), 'interested', 'unchoke', 
         'choke', 'unchoke']
 
 def test_sends_when_flushed():
@@ -193,11 +209,11 @@ def test_sends_when_flushed():
     u.unchoke()
     u.got_interested()
     u.got_request(0, 1, 3)
-    dco.flushed = True
+    dco.flushed = true
     u.flushed()
     u.flushed()
     assert events == ['do I have', 'get have list', 
-        ('bitfield', [False, True]), 'unchoke', 'interested', 
+        ('bitfield', [false, true]), 'unchoke', 'interested', 
         ('get piece', 0, 1, 3), ('piece', 0, 1, 'aaa')]
 
 def test_sends_immediately():
@@ -208,10 +224,10 @@ def test_sends_immediately():
     u = Upload(dco, dch, ds, 100, 20, 5)
     u.unchoke()
     u.got_interested()
-    dco.flushed = True
+    dco.flushed = true
     u.got_request(0, 1, 3)
     assert events == ['do I have', 'get have list', 
-        ('bitfield', [False, True]), 'unchoke', 'interested', 
+        ('bitfield', [false, true]), 'unchoke', 'interested', 
         ('get piece', 0, 1, 3), ('piece', 0, 1, 'aaa')]
 
 def test_cancel():
@@ -226,9 +242,9 @@ def test_cancel():
     u.got_cancel(0, 1, 3)
     u.got_cancel(0, 1, 2)
     u.flushed()
-    dco.flushed = True
+    dco.flushed = true
     assert events == ['do I have', 'get have list', 
-        ('bitfield', [False, True]), 'unchoke', 'interested']
+        ('bitfield', [false, true]), 'unchoke', 'interested']
 
 def test_clears_on_not_interested():
     events = []
@@ -240,10 +256,10 @@ def test_clears_on_not_interested():
     u.got_interested()
     u.got_request(0, 1, 3)
     u.got_not_interested()
-    dco.flushed = True
+    dco.flushed = true
     u.flushed()
     assert events == ['do I have', 'get have list', 
-        ('bitfield', [False, True]), 'unchoke', 'interested', 
+        ('bitfield', [false, true]), 'unchoke', 'interested', 
         'not interested']
 
 def test_close_when_sends_on_not_interested():
@@ -254,7 +270,7 @@ def test_close_when_sends_on_not_interested():
     u = Upload(dco, dch, ds, 100, 20, 5)
     u.got_request(0, 1, 3)
     assert events == ['do I have', 'get have list', 
-        ('bitfield', [False, True]), 'closed']
+        ('bitfield', [false, true]), 'closed']
 
 def test_close_over_max_length():
     events = []
@@ -265,13 +281,13 @@ def test_close_over_max_length():
     u.got_interested()
     u.got_request(0, 1, 101)
     assert events == ['do I have', 'get have list', 
-        ('bitfield', [False, True]), 'interested', 'closed']
+        ('bitfield', [false, true]), 'interested', 'closed']
 
 def test_no_bitfield_on_start_empty():
     events = []
     dco = DummyConnection(events)
     dch = DummyChoker(events)
     ds = DummyStorage(events)
-    ds.do_I_have_anything = lambda: False
+    ds.do_I_have_anything = lambda: false
     u = Upload(dco, dch, ds, 100, 20, 5)
     assert events == []

@@ -12,7 +12,7 @@ from urllib import *
 from urllib2 import *
 from gzip import GzipFile
 from StringIO import StringIO
-from __init__ import version
+from __init__ import version_short
 import pprint
 
 
@@ -25,7 +25,7 @@ class HTTPContentEncodingHandler(HTTPHandler):
         # add the Accept-Encoding header to the request
         # support gzip encoding (identity is assumed)
         req.add_header("Accept-Encoding","gzip")
-        req.add_header('User-Agent', 'BitTorrent/' + version)
+        req.add_header('User-agent', 'BitTorrent/' + version_short)
         if DEBUG: 
             print "Sending:" 
             print req.headers

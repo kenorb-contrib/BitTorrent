@@ -3,6 +3,15 @@
 # Written by Bram Cohen
 # see LICENSE.txt for license information
 
+from BitTorrent import PSYCO
+if PSYCO.psyco:
+    try:
+        import psyco
+        assert psyco.__version__ >= 0x010100f0
+        psyco.full()
+    except:
+        pass
+
 from sys import argv, version
 
 from btcompletedir import completedir
@@ -64,7 +73,7 @@ class DownloadInfo:
         border.Add(b2, 0, wxALIGN_CENTER | wxSOUTH, 20)
         EVT_BUTTON(frame, b2.GetId(), self.complete)
         panel.SetSizer(border)
-        panel.SetAutoLayout(True)
+        panel.SetAutoLayout(true)
 
     def select(self, x):
         dl = wxDirDialog(self.frame, style = wxDD_DEFAULT_STYLE | wxDD_NEW_DIR_BUTTON)
@@ -114,16 +123,17 @@ class CompleteDir:
         g2.AddGrowableRow(0)
         g2.AddGrowableCol(0)
         panel.SetSizer(g2)
-        panel.SetAutoLayout(True)
+        panel.SetAutoLayout(true)
         EVT_BUTTON(frame, self.button.GetId(), self.done)
         EVT_CLOSE(frame, self.done)
         EVT_INVOKE(frame, self.onInvoke)
-        frame.Show(True)
+        frame.Show(true)
         Thread(target = self.complete).start()
 
     def complete(self):
+        params = {'piece_size_pow2': self.pl}
         try:
-            completedir(self.d, self.a, self.flag, self.valcallback, self.filecallback, self.pl)
+            completedir(self.d, self.a, params, self.flag, self.valcallback, self.filecallback)
             if not self.flag.isSet():
                 self.currentLabel.SetLabel('Done!')
                 self.gauge.SetValue(1000)
@@ -163,9 +173,9 @@ class CompleteDir:
 class btWxApp(wxApp):
     def OnInit(self):
         d = DownloadInfo()
-        d.frame.Show(True)
+        d.frame.Show(true)
         self.SetTopWindow(d.frame)
-        return True
+        return true
 
 if __name__ == '__main__':
     btWxApp().MainLoop()

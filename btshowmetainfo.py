@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 # Written by Henry 'Pi' James and Loring Holden
+# modified for multitracker display by John Hoffman
 # see LICENSE.txt for license information
 
 from sys import *
@@ -9,7 +10,7 @@ from sha import *
 from BitTorrent.bencode import *
 
 NAME, EXT = splitext(basename(argv[0]))
-VERSION = '20021207'
+VERSION = '20030621'
 
 print '%s %s - decode BitTorrent metainfo files' % (NAME, VERSION)
 print
@@ -22,7 +23,7 @@ if len(argv) == 1:
 for metainfo_name in argv[1:]:
     metainfo_file = open(metainfo_name, 'rb')
     metainfo = bdecode(metainfo_file.read())
-    announce = metainfo['announce']
+#    print metainfo
     info = metainfo['info']
     info_hash = sha(bencode(info))
 
@@ -51,5 +52,27 @@ for metainfo_name in argv[1:]:
     piece_number, last_piece_length = divmod(file_length, piece_length)
     print '%s %i (%i * %i + %i)' \
           % (name,file_length, piece_number, piece_length, last_piece_length)
-    print 'announce url..: %s' % announce
-    print
+    print 'announce url..: %s' % metainfo['announce']
+    if metainfo.has_key('announce-list'):
+        list = []
+        for tier in metainfo['announce-list']:
+            for tracker in tier:
+                list+=[tracker,',']
+            del list[-1]
+            list+=['|']
+        del list[-1]
+        liststring = ''
+        for i in list:
+            liststring+=i
+        print 'announce-list.: %s' % liststring
+    if metainfo.has_key('httpseeds'):
+        list = []
+        for seed in metainfo['httpseeds']:
+            list += [seed,'|']
+        del list[-1]
+        liststring = ''
+        for i in list:
+            liststring+=i
+        print 'http seeds....: %s' % liststring
+    if metainfo.has_key('comment'):
+        print 'comment.......: %s' % metainfo['comment']
