@@ -18,6 +18,7 @@ class SingleDownload:
             self.interested = false
             self.have = [false] * downloader.numpieces
             self.measure = Measure(downloader.max_rate_period)
+            self.last = 0
         else:
             self.connection = old.connection
             self.connection.set_download(self)
@@ -25,6 +26,7 @@ class SingleDownload:
             self.have = old.have
             self.interested = old.interested
             self.measure = old.measure
+            self.last = old.last
             shuffle(downloader.requests)
             for h in self.have:
                 if h:
@@ -56,6 +58,9 @@ class SingleDownload:
     def is_interested(self):
         return self.interested
 
+    def is_snubbed(self):
+        return time() - self.last > self.downloader.snub_time
+
     def send_request(self, index, begin, length):
         if not self.interested:
             self.interested = true
@@ -67,6 +72,7 @@ class SingleDownload:
             self.downloader.requests.remove((index, begin, len(piece)))
         except ValueError:
             return false
+        self.last = time()
         self.measure.update_rate(len(piece))
         self.downloader.downmeasure.update_rate(len(piece))
         self.downloader.measurefunc(len(piece))
