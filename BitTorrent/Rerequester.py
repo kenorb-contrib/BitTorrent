@@ -7,14 +7,17 @@ from bencode import bdecode
 from threading import Thread, Lock
 from socket import error
 from time import time
+from random import randrange
+from binascii import b2a_hex
 
 class Rerequester:
     def __init__(self, url, interval, sched, howmany, minpeers, 
             connect, externalsched, amount_left, up, down,
             port, ip, myid, infohash, timeout, errorfunc, maxpeers, doneflag,
             upratefunc, downratefunc, ever_got_incoming):
-        self.url = ('%s?info_hash=%s&peer_id=%s&port=%s' %
-            (url, quote(infohash), quote(myid), str(port)))
+        self.url = ('%s?info_hash=%s&peer_id=%s&port=%s&key=%s' %
+            (url, quote(infohash), quote(myid), str(port),
+            b2a_hex(''.join([chr(randrange(256)) for i in xrange(4)]))))
         if ip != '':
             self.url += '&ip=' + quote(ip)
         self.interval = interval
