@@ -20,14 +20,10 @@ class Choker:
         if self.count % 3 == 0:
             for i in xrange(len(self.connections)):
                 u = self.connections[i].get_upload()
-                if u.get_hit() or u.is_choked():
+                if u.is_choked() and u.is_interested():
                     self.connections = self.connections[i:] + self.connections[:i]
                     break
-            self._rechoke()
-            for c in self.connections:
-                c.get_upload().set_not_hit()
-        else:
-            self._rechoke()
+        self._rechoke()
 
     def _snubbed(self, c):
         if self.done():
@@ -48,30 +44,24 @@ class Choker:
         preferred.sort()
         preferred.reverse()
         del preferred[self.max_uploads - 1:]
-        if self.max_uploads == 0:
-            preferred = []
         preferred = [x[1] for x in preferred]
         for c in preferred:
             c.get_upload().unchoke()
         count = len(preferred)
         for c in self.connections:
-            if c in preferred:
-                continue
-            u = c.get_upload()
-            if count < self.max_uploads:
-                u.unchoke()
-                if u.is_interested():
-                    count += 1
-            else:
-                u.choke()
+            if c not in preferred:
+                u = c.get_upload()
+                if count < self.max_uploads:
+                    u.unchoke()
+                    if u.is_interested():
+                        count += 1
+                else:
+                    u.choke()
 
     def connection_made(self, connection, p = None):
         if p is None:
             p = randrange(-2, len(self.connections) + 1)
-        if p <= 0:
-            self.connections.insert(0, connection)
-        else:
-            self.connections.insert(p, connection)
+        self.connections.insert(max(p, 0), connection)
         self._rechoke()
 
     def connection_lost(self, connection):
@@ -121,29 +111,20 @@ class DummyUploader:
     def __init__(self):
         self.i = false
         self.c = true
-        self.hit = true
 
     def choke(self):
         if not self.c:
             self.c = true
-            self.hit = true
-        
+
     def unchoke(self):
         if self.c:
             self.c = false
-            self.hit = true
 
     def is_choked(self):
         return self.c
 
     def is_interested(self):
         return self.i
-
-    def set_not_hit(self):
-        self.hit = false
-
-    def get_hit(self):
-        return self.hit
 
 def test_round_robin_with_no_downloads():
     s = DummyScheduler()
@@ -248,18 +229,23 @@ def test_robin_interest():
     choker.connection_lost(c1)
     assert not c2.u.c
 
-def test_interrupt_by_connection_lost():
+def test_skip_not_interested():
     s = DummyScheduler()
     choker = Choker(1, s)
     c1 = DummyConnection(0)
     c2 = DummyConnection(1)
     c3 = DummyConnection(2)
     c1.u.i = true
-    c2.u.i = true
     c3.u.i = true
-    choker.connection_made(c1)
-    choker.connection_made(c2, 1)
+    choker.connection_made(c2)
+    assert not c2.u.c
+    choker.connection_made(c1, 0)
+    assert not c1.u.c
+    assert c2.u.c
     choker.connection_made(c3, 2)
+    assert not c1.u.c
+    assert c2.u.c
+    assert c3.u.c
     f = s.s[0][0]
     f()
     assert not c1.u.c
@@ -270,23 +256,9 @@ def test_interrupt_by_connection_lost():
     assert c2.u.c
     assert c3.u.c
     f()
-    assert not c1.u.c
+    assert c1.u.c
     assert c2.u.c
-    assert c3.u.c
-    f()
-    assert not c1.u.c
-    assert c2.u.c
-    assert c3.u.c
-    f()
-    assert not c1.u.c
-    assert c2.u.c
-    assert c3.u.c
-    choker.connection_lost(c1)
-    assert not c2.u.c
-    assert c3.u.c
-    f()
-    assert not c2.u.c
-    assert c3.u.c
+    assert not c3.u.c
 
 def test_connection_lost_no_interrupt():
     s = DummyScheduler()
@@ -310,59 +282,25 @@ def test_connection_lost_no_interrupt():
     assert c2.u.c
     assert c3.u.c
     f()
-    assert not c1.u.c
-    assert c2.u.c
+    assert c1.u.c
+    assert not c2.u.c
     assert c3.u.c
+    f()
+    assert c1.u.c
+    assert not c2.u.c
+    assert c3.u.c
+    f()
+    assert c1.u.c
+    assert not c2.u.c
+    assert c3.u.c
+    choker.connection_lost(c3)
+    assert c1.u.c
+    assert not c2.u.c
     f()
     assert not c1.u.c
     assert c2.u.c
-    assert c3.u.c
-    f()
-    assert not c1.u.c
-    assert c2.u.c
-    assert c3.u.c
     choker.connection_lost(c2)
     assert not c1.u.c
-    assert c3.u.c
-    f()
-    assert c1.u.c
-    assert not c3.u.c
-
-def test_interrupt_by_connection_made():
-    s = DummyScheduler()
-    choker = Choker(1, s)
-    c1 = DummyConnection(0)
-    c2 = DummyConnection(1)
-    c3 = DummyConnection(2)
-    c1.u.i = true
-    c2.u.i = true
-    c3.u.i = true
-    choker.connection_made(c1)
-    choker.connection_made(c2, 1)
-    f = s.s[0][0]
-    f()
-    assert not c1.u.c
-    assert c2.u.c
-    f()
-    assert not c1.u.c
-    assert c2.u.c
-    f()
-    assert not c1.u.c
-    assert c2.u.c
-    f()
-    assert not c1.u.c
-    assert c2.u.c
-    f()
-    assert not c1.u.c
-    assert c2.u.c
-    choker.connection_made(c3, 0)
-    assert c1.u.c
-    assert c2.u.c
-    assert not c3.u.c
-    f()
-    assert c1.u.c
-    assert c2.u.c
-    assert not c3.u.c
 
 def test_connection_made_no_interrupt():
     s = DummyScheduler()
@@ -376,13 +314,6 @@ def test_connection_made_no_interrupt():
     choker.connection_made(c1)
     choker.connection_made(c2, 1)
     f = s.s[0][0]
-    f()
-    assert not c1.u.c
-    assert c2.u.c
-    f()
-    assert not c1.u.c
-    assert c2.u.c
-    f()
     assert not c1.u.c
     assert c2.u.c
     f()
@@ -410,13 +341,6 @@ def test_round_robin():
     choker.connection_made(c1)
     choker.connection_made(c2, 1)
     f = s.s[0][0]
-    f()
-    assert not c1.u.c
-    assert c2.u.c
-    f()
-    assert not c1.u.c
-    assert c2.u.c
-    f()
     assert not c1.u.c
     assert c2.u.c
     f()
@@ -484,15 +408,4 @@ def test_multi():
     assert not c10.u.c
     assert c11.u.c
 
-    #uninterested
-    #interested snubbed, 
-    #uninterested, 
-    #interested first priority, 
-    #uninterested, 
-    #interested snubbed, 
-    #uninterested, 
-    #interested third priority snubbed, 
-    #uninterested zeroth priority, 
-    #interested second priority
-    #uninterested
 
