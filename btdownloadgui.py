@@ -106,9 +106,6 @@ class DownloadInfoFrame(wxFrame):
         gridSizer.Add(self.upRateText, 1)
 
         colSizer.Add(gridSizer, 0, wxALIGN_LEFT|wxTOP, 7)
-
-        self.closeAfterCheckbox = wxCheckBox(self, -1, 'Close this dialog box when download completes')
-        colSizer.Add(self.closeAfterCheckbox, 0, wxALIGN_LEFT|wxTOP, 7)
         
         rowSizer = wxBoxSizer(wxHORIZONTAL)
 #        self.openButton = wxButton(self, -1, 'Open', size = (93, -1))
@@ -202,8 +199,6 @@ def run(params):
 
 def next(params, d, doneflag):
     download(params, d.chooseFile, d.updateStatus, d.downloadError, doneflag, 100)
-
-    d.done(None)
 
 if __name__ == '__main__':
     run(argv[1:])
