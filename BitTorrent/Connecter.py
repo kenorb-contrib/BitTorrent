@@ -41,13 +41,6 @@ class Connecter:
         self.connections = {}
 
     def connection_made(self, connection):
-        for c in self.connections.keys():
-            if c.get_id() == connection.get_id():
-                connection.close()
-                return
-        self._make_connection(connection)
-
-    def _make_connection(self, connection):
         c = Connection(connection)
         upload = self.make_upload(c)
         download = self.make_download(c)
@@ -59,10 +52,13 @@ class Connecter:
 
     def connection_lost(self, connection):
         c = self.connections[connection]
+        u = c.upload
+        d = c.download
+        del c.upload
+        del c.download
         del self.connections[connection]
-        c.upload.disconnected()
-        c.download.disconnected()
-        del c.connection
+        u.disconnected()
+        d.disconnected()
         self.choker.connection_lost(c)
 
     def connection_flushed(self, connection):
@@ -265,24 +261,3 @@ def test_bifurcation():
     assert events == ['slice', ('received', 'b' * 20)]
     del events[:]
 
-def test_close_duplicate():
-    events = []
-    downloadMaker = DummyDownloadMaker(events)
-    uploadMaker = DummyUploadMaker(events)
-    choker = DummyChoker(events)
-    connecter = Connecter(uploadMaker.make, downloadMaker.make, choker)
-    connection = DummyConnection('a' * 20, events)
-    connecter.connection_made(connection)
-
-    assert events[0][0] == 'made upload'
-    up = events[0][1]
-    assert events[1][0] == 'made download'
-    down = events[1][1]
-    assert events[2][0] == 'made'
-    c = events[2][1]
-    assert events[3] == 'intro'
-    del events[:]
-
-    connection2 = DummyConnection('a' * 20, events)
-    connecter.connection_made(connection2)
-    assert events == ['close']

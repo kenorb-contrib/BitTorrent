@@ -3,7 +3,6 @@
 
 from urllib import urlopen
 from urlparse import urljoin
-from StreamEncrypter import make_encrypter
 from Choker import Choker
 from SingleBlob import SingleBlob
 from Uploader import Upload
@@ -14,7 +13,6 @@ from Encrypter import Encrypter
 from RawServer import RawServer
 from DownloaderFeedback import DownloaderFeedback
 from RateMeasure import RateMeasure
-from entropy import entropy
 from readput import putqueue
 from bencode import bencode, bdecode
 from btemplate import compile_template, string_template, ListMarker, OptionMarker, exact_length
@@ -22,7 +20,7 @@ from sha import sha
 from os import path, makedirs
 from parseargs import parseargs, formatDefinitions
 from socket import error as socketerror
-from random import randrange, seed
+from random import seed
 from traceback import print_exc
 from threading import Event
 true = 1
@@ -71,9 +69,10 @@ t = compile_template({'info': [{'type': 'single',
     {'type': 'multiple', 'pieces': ListMarker(exact_length(20)), 
     'piece length': 1, 'files': ListMarker({'path': ListMarker(string_template), 
     'length': 0}), 'name': string_template}], 
-    'peers': ListMarker({'ip': string_template, 'port': 1}), 
+    'peers': ListMarker({'ip': string_template, 'port': 1, 'id': exact_length(20)}), 
     'id': string_template, 'announce': string_template, 
-    'url': string_template, 'your ip': string_template})
+    'url': string_template, 'your ip': string_template,
+    'protocol': string_template})
 
 def download(params, filefunc, statusfunc, resultfunc, doneflag, cols):
     if len(params) == 0:
@@ -120,6 +119,10 @@ def download(params, filefunc, statusfunc, resultfunc, doneflag, cols):
     except ValueError, e:
         resultfunc(false, "got bad publication response - " + str(e))
         return
+    if response['protocol'] != 'plaintext':
+        resultfunc(false, "protocol I don't know specified - " + 
+            str(response['protocol']))
+        return
     info = response['info']
     if info['type'] == 'single':
         file_length = info['length']
@@ -162,6 +165,8 @@ def download(params, filefunc, statusfunc, resultfunc, doneflag, cols):
             makedirs(path.split(f)[0])
         except OSError:
             pass
+    myid = sha(str(time) + ' ' + response['your ip']).digest()
+    seed(myid)
     blobs = SingleBlob(files, info['pieces'], 
         info['piece length'], finished, open, path.exists, 
         path.getsize, doneflag, statusfunc, make)
@@ -178,7 +183,7 @@ def download(params, filefunc, statusfunc, resultfunc, doneflag, cols):
         preference)
     total_up = [0l]
     total_down = [0l]
-    def make_upload(connection, choker = choker, blobs = blobs, 
+    def upload(connection, choker = choker, blobs = blobs, 
             max_slice_length = config['max_slice_length'],
             max_rate_period = config['max_rate_period'],
             total_up = total_up):
@@ -193,9 +198,8 @@ def download(params, filefunc, statusfunc, resultfunc, doneflag, cols):
         return Download(connection, data, backlog, max_rate_period,
             total_down = total_down)
     connecter = Connecter(make_upload, make_download, choker)
-    seed(entropy(20))
-    encrypter = Encrypter(connecter, rawserver, lambda e = entropy: e(20),
-        entropy(20), config['max_message_length'], rawserver.add_task, 
+    encrypter = Encrypter(connecter, rawserver, 
+        myid, config['max_message_length'], rawserver.add_task, 
         config['keepalive_interval'], sha(bencode(info)).digest())
     DownloaderFeedback(choker, rawserver.add_task, 
         response['your ip'], statusfunc, 
@@ -212,12 +216,11 @@ def download(params, filefunc, statusfunc, resultfunc, doneflag, cols):
         resultfunc(false, "Couldn't listen - " + str(e))
         return
     for x in response['peers']:
-        encrypter.start_connection((x['ip'], x['port']))
+        encrypter.start_connection((x['ip'], x['port']), x['id'])
 
     if not finflag.isSet():
         statusfunc(activity = 'connecting to peers')
     q = putqueue(response['announce'])
-    myid = encrypter.get_id()
     a = {'type': 'announce', 'id': response['id'], 'myid': myid,
             'contact': {'ip': response['your ip'], 'port': listen_port}}
     if config['permanent']:

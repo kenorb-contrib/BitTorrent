@@ -1,44 +1,29 @@
 # Written by Bram Cohen
 # see LICENSE.txt for license information
 
-from sha import sha
 from cStringIO import StringIO
 from binaryint import int_to_binary, binary_to_int
-from StreamEncrypter import make_encrypter
-import socket
+from socket import error as socketerror
 from traceback import print_exc
 true = 1
 false = 0
 
-protocol_name = 'BitTorrent by Bram Cohen protocol version 1.0'
+protocol_name = 'BitTorrent plaintext protocol'
 
-# see http://www.ietf.org/ids.by.wg/ipsec.html
-# This prime is: 2^2048 - 2^1984 - 1 + 2^64 * { [2^1918 pi] + 124476 }
-p = long(''.join([c for c in 
-        'FFFFFFFF FFFFFFFF C90FDAA2 2168C234 C4C6628B 80DC1CD1' +
-        '29024E08 8A67CC74 020BBEA6 3B139B22 514A0879 8E3404DD' +
-        'EF9519B3 CD3A431B 302B0A6D F25F1437 4FE1356D 6D51C245' +
-        'E485B576 625E7EC6 F44C42E9 A637ED6B 0BFF5CB6 F406B7ED' +
-        'EE386BFB 5A899FA5 AE9F2411 7C4B1FE6 49286651 ECE45B3D' +
-        'C2007CB8 A163BF05 98DA4836 1C55D39A 69163FA8 FD24CF5F' +
-        '83655D23 DCA3AD96 1C62F356 208552BB 9ED52907 7096966D' +
-        '670C354E 4ABC9804 F1746C08 CA18217C 32905E46 2E36CE3B' +
-        'E39E772C 180E8603 9B2783A2 EC07A28F B5C55DF0 6F4C52C9' +
-        'DE2BCBF6 95581718 3995497C EA956AE5 15D22618 98FA0510' +
-        '15728E5A 8AACAA68 FFFFFFFF FFFFFFFF' if c != ' ']), 16)
+# header, reserved, download id, my id, [length, message]
 
 class EncryptedConnection:
-    def __init__(self, encrypter, connection):
+    def __init__(self, encrypter, connection, id):
         self.encrypter = encrypter
         self.connection = connection
+        self.id = id
         self.complete = false
-        self.nonce = encrypter.noncefunc()
-        self.buffer = StringIO()
         self.closed = false
+        self.buffer = StringIO()
         self.next_len = 1
         self.next_func = self.read_header_len
         connection.write(chr(len(protocol_name)) + protocol_name + 
-            (chr(0) * 8) + encrypter.public_key + self.nonce)
+            (chr(0) * 8) + encrypter.download_id + encrypter.my_id)
 
     def get_ip(self):
         return self.connection.get_ip()
@@ -54,175 +39,114 @@ class EncryptedConnection:
     def read_header(self, s):
         if s != protocol_name:
             return None
-        return 284, self.read_crypto
+        return 8, self.read_reserved
 
-    def read_crypto(self, s):
-        otherres = s[:8]
-        self.otherres = otherres
-        s = s[8:]
-        otherpk = binary_to_int(s[:256])
-        if otherpk >= p - 1 or otherpk <= 1:
-            return None
-        if s[:256] == self.encrypter.public_key:
-            return None
-        self.id = sha(s[:256]).digest()
-        shared_key = int_to_binary(pow(otherpk, self.encrypter.private_key, p), 256)
-        self.shared_key = shared_key
-        othernonce = s[256:]
-        self.othernonce = othernonce
-        if othernonce == self.nonce:
-            return None
-        self.encrypt = make_encrypter(sha(chr(len(protocol_name)) + 
-            protocol_name + chr(0) * 8 + otherres + self.nonce + 
-            othernonce + shared_key).digest()[:16])
-        self.decrypt = make_encrypter(sha(chr(len(protocol_name)) + 
-            protocol_name + otherres + chr(0) * 8 + othernonce + 
-            self.nonce + shared_key).digest()[:16])
-        self.connection.write(self.encrypt(chr(0) * 18))
-        return 10, self.read_auth
+    def read_reserved(self, s):
+        return 20, self.read_download_id
 
-    def read_auth(self, s):
-        if self.decrypt(s) != chr(0) * 10:
+    def read_download_id(self, s):
+        if s != self.encrypter.download_id:
             return None
-        return 8, self.read_reserved2
+        return 20, self.read_peer_id
 
-    def read_reserved2(self, s):
-        reserved2 = self.decrypt(s)
-        self.hashout = sha()
-        self.hashin = sha()
-        self.hashout.update(chr(len(protocol_name)) + protocol_name + 
-            chr(0) * 8 + self.otherres + chr(0) * 8 + reserved2 + 
-            self.encrypter.download_id + self.nonce + self.othernonce + 
-            self.shared_key)
-        self.hashin.update(chr(len(protocol_name)) + protocol_name + 
-            self.otherres + chr(0) * 8 + reserved2 + chr(0) * 8 +
-            self.encrypter.download_id + self.othernonce + self.nonce + 
-            self.shared_key)
-        self.connection.write(self.encrypt(self.hashout.digest()[:10]))
-        return 10, self.read_first_hash
-
-    def read_first_hash(self, s):
-        if self.decrypt(s) != self.hashin.digest()[:10]:
-            return None
-        self.hashout.update(chr(0) * 8)
-        self.connection.write(self.encrypt(chr(0) * 8))
-        self.connection.write(self.encrypt(self.hashout.digest()[:10]))
-        self.complete = true
+    def read_peer_id(self, s):
+        if self.id is None:
+            self.complete = true
+            self.id = s
+            for v in self.encrypter.connections.values():
+                if v is not self and v.id == self.id:
+                    v.close()
+        else:
+            if s != self.id:
+                return None
+            self.complete = true
         self.encrypter.connecter.connection_made(self)
-        return 18, self.read_reserved3
-
-    def read_reserved3(self, s):
-        s = self.decrypt(s)
-        self.hashin.update(s[:8])
-        if self.hashin.digest()[:10] != s[8:]:
-            return None
-        return 14, self.read_len
+        return 4, self.read_len
 
     def read_len(self, s):
-        s = self.decrypt(s)
-        l = binary_to_int(s[:4])
+        l = binary_to_int(s)
         if l > self.encrypter.max_len:
-            return None
-        self.hashin.update(s[:4])
-        if self.hashin.digest()[:10] != s[4:]:
             return None
         return l, self.read_message
 
     def read_message(self, s):
-        s = self.decrypt(s)
-        self.message = s
-        self.hashin.update(s)
-        return 10, self.read_message_hash
-
-    def read_message_hash(self, s):
-        s = self.decrypt(s)
-        if self.hashin.digest()[:10] != s:
-            return None
         try:
-            if self.message != '':
-                self.encrypter.connecter.got_message(self, self.message)
-        except KeyboardInterrupt:
+            if s != '':
+                self.encrypter.connecter.got_message(self, s)
+        except KeyboardError, e:
             raise
         except:
             print_exc()
-        return 14, self.read_len
+        return 4, self.read_len
 
     def close(self):
+        if not self.closed:
+            self.sever()
+            self.connection.close()
+
+    def sever(self):
         self.closed = true
-        del self.next_func
-        c = self.connection
-        del self.connection
-        del self.encrypter.connections[c]
-        c.close()
-        
-    def get_id(self):
-        assert self.complete
-        return self.id
-        
+        del self.encrypter.connections[self.connection]
+        if self.complete:
+            self.encrypter.connecter.connection_lost(self)
+
     def send_message(self, message):
-        l = int_to_binary(len(message), 4)
-        self.hashout.update(l)
-        self.connection.write(self.encrypt(l + self.hashout.digest()[:10]))
-        self.hashout.update(message)
-        self.connection.write(self.encrypt(message))
-        self.connection.write(self.encrypt(self.hashout.digest()[:10]))
+        self.connection.write(int_to_binary(len(message), 4))
+        self.connection.write(message)
 
     def data_came_in(self, s):
-        i = self.next_len - self.buffer.tell()
-        if i > len(s):
-            self.buffer.write(s)
-            return 1
-        self.buffer.write(s[:i])
-        x = self.next_func(self.buffer.getvalue())
-        if x is None or self.closed:
-            return 0
-        self.next_len, self.next_func = x
-        while self.next_len + i <= len(s):
-            n = i + self.next_len
-            x = self.next_func(s[i:n])
-            if x is None or self.closed:
-                return 0
+        while true:
+            if self.closed:
+                return
+            i = self.next_len - self.buffer.tell()
+            if i > len(s):
+                self.buffer.write(s)
+                return
+            self.buffer.write(s[:i])
+            s = s[i:]
+            m = self.buffer.getvalue()
+            self.buffer.reset()
+            self.buffer.truncate()
+            x = self.next_func(m)
+            if x is None:
+                self.close()
+                return
             self.next_len, self.next_func = x
-            i = n
-        self.buffer.reset()
-        self.buffer.truncate()
-        self.buffer.write(s[i:])
-        return 1
 
 class Encrypter:
-    def __init__(self, connecter, raw_server, noncefunc, private_key, max_len,
-            schedulefunc, keepalive_delay, download_id = chr(0) * 20):
+    def __init__(self, connecter, raw_server, my_id, max_len,
+            schedulefunc, keepalive_delay, download_id):
         self.raw_server = raw_server
         self.connecter = connecter
-        self.noncefunc = noncefunc
+        self.my_id = my_id
         self.max_len = max_len
         self.schedulefunc = schedulefunc
         self.keepalive_delay = keepalive_delay
         self.download_id = download_id
         self.connections = {}
-        assert len(private_key) == 20
-        self.private_key = binary_to_int(private_key)
-        self.public_key = int_to_binary(pow(2, self.private_key, p), 256)
         schedulefunc(self.send_keepalives, keepalive_delay)
 
     def send_keepalives(self):
         self.schedulefunc(self.send_keepalives, self.keepalive_delay)
-        for e in self.connections.values():
-            if e.complete:
-                e.send_message('')
+        for c in self.connections.values():
+            if c.complete:
+                c.send_message('')
 
-    def get_id(self):
-        return sha(self.public_key).digest()
-
-    def start_connection(self, dns):
+    def start_connection(self, dns, id):
+        if id == self.my_id:
+            return
+        for v in self.connections.values():
+            if v.id == id:
+                return
         try:
             c = self.raw_server.start_connection(dns)
-            self.connections[c] = EncryptedConnection(self, c)
-        except socket.error:
+            self.connections[c] = EncryptedConnection(self, c, id)
+        except socketerror:
             pass
         
     def external_connection_made(self, connection):
-        self.connections[connection] = EncryptedConnection(self, connection)
+        self.connections[connection] = EncryptedConnection(self, 
+            connection, None)
 
     def connection_flushed(self, connection):
         c = self.connections[connection]
@@ -230,37 +154,29 @@ class Encrypter:
             self.connecter.connection_flushed(c)
 
     def connection_lost(self, connection):
-        ec = self.connections[connection]
-        ec.closed = true
-        del ec.connection
-        del ec.next_func
-        del self.connections[connection]
-        if ec.complete:
-            self.connecter.connection_lost(ec)
+        self.connections[connection].sever()
         
     def data_came_in(self, connection, data):
-        c = self.connections[connection]
-        if not c.data_came_in(data) and not c.closed:
-            c.connection.close()
-            self.connection_lost(connection)
+        self.connections[connection].data_came_in(data)
 
 # everything below is for testing
 
 class DummyConnecter:
     def __init__(self):
-        self.c_made = []
-        self.c_lost = []
-        self.m_rec = []
+        self.log = []
         self.close_next = false
     
     def connection_made(self, connection):
-        self.c_made.append(connection)
+        self.log.append(('made', connection))
         
     def connection_lost(self, connection):
-        self.c_lost.append(connection)
-        
+        self.log.append(('lost', connection))
+
+    def connection_flushed(self, connection):
+        self.log.append(('flushed', connection))
+
     def got_message(self, connection, message):
-        self.m_rec.append((connection, message))
+        self.log.append(('got', connection, message))
         if self.close_next:
             connection.close()
 
@@ -270,16 +186,20 @@ class DummyRawServer:
     
     def start_connection(self, dns):
         c = DummyRawConnection()
-        self.connects.append((dns[0], dns[1], c))
+        self.connects.append((dns, c))
         return c
 
 class DummyRawConnection:
     def __init__(self):
         self.closed = false
         self.data = []
+        self.flushed = true
 
     def get_ip(self):
         return 'fake.ip'
+
+    def is_flushed(self):
+        return self.flushed
 
     def write(self, data):
         assert not self.closed
@@ -289,843 +209,435 @@ class DummyRawConnection:
         assert not self.closed
         self.closed = true
 
-def flush(c1, e1, c2, e2):
-    while len(c1.data) > 0 or len(c2.data) > 0:
-        s1 = ''.join(c1.data)
-        del c1.data[:]
-        e2.data_came_in(c2, s1)
-        s2 = ''.join(c2.data)
-        del c2.data[:]
-        e1.data_came_in(c1, s2)
+    def pop(self):
+        r = ''.join(self.data)
+        del self.data[:]
+        return r
 
-def flush2(c1, e1, c2, e2):
-    while len(c1.data) > 0 or len(c2.data) > 0:
-        s1 = ''.join(c1.data)
-        del c1.data[:]
-        i = 0
-        while i <= len(s1):
-            e2.data_came_in(c2, s1[i:i+5])
-            i += 5
-        s2 = ''.join(c2.data)
-        del c2.data[:]
-        i = 0
-        while i <= len(s1):
-            e1.data_came_in(c1, s2[i:i+5])
-            i += 5
+def dummyschedule(a, b):
+    pass
 
-def test_proper_communication_initiating_side_close():
-    dc1 = DummyConnecter()
-    rs1 = DummyRawServer()
-    e1 = Encrypter(dc1, rs1, lambda: 'a' * 20, 'b' * 20, 500, lambda a, b: None, 1000)
-    assert dc1.c_made == []
-    assert dc1.c_lost == []
-    assert dc1.m_rec == []
-
-    assert rs1.connects == []
-    assert dc1.c_made == []
-    assert dc1.c_lost == []
-    assert dc1.m_rec == []
-
-    rs2 = DummyRawServer()
-    dc2 = DummyConnecter()
-    e2 = Encrypter(dc2, rs2, lambda: 'c' * 20, 'd' * 20, 500, lambda a, b: None, 1000)
-    assert dc2.c_made == []
-    assert dc2.c_lost == []
-    assert dc2.m_rec == []
-
-    assert rs2.connects == []
-    assert dc2.c_made == []
-    assert dc2.c_lost == []
-    assert dc2.m_rec == []
-
-    e1.start_connection(('spam.com', 69))
-    assert len(rs1.connects) == 1 and rs1.connects[0][0] == 'spam.com' and rs1.connects[0][1] == 69
-    c1 = rs1.connects[0][2]
-    del rs1.connects[:]
-    assert not c1.closed
-    assert dc1.c_made == []
-    assert dc1.c_lost == []
-    assert dc1.m_rec == []
-
-    c2 = DummyRawConnection()
-    e2.external_connection_made(c2)
-    assert not c2.closed
-    assert rs2.connects == []
-    assert dc2.c_made == []
-    assert dc2.c_lost == []
-    assert dc2.m_rec == []
-
-    flush(c1, e1, c2, e2)
-    assert not c1.closed
-    assert rs1.connects == []
-    assert len(dc1.c_made) == 1
-    ec1 = dc1.c_made[0]
-    del dc1.c_made[:]
-    assert ec1.get_id() == e2.get_id()
-    assert dc1.c_lost == []
-    assert dc1.m_rec == []
-    assert not c2.closed
-    assert rs2.connects == []
-    assert len(dc2.c_made) == 1
-    ec2 = dc2.c_made[0]
-    assert ec2.get_id() == e1.get_id()
-    del dc2.c_made[:]
-    assert dc2.c_lost == []
-    assert dc2.m_rec == []
-
-    ec1.send_message('message 0')
-    flush(c1, e1, c2, e2)
-    assert not c1.closed
-    assert rs1.connects == []
-    assert dc1.c_made == []
-    assert dc1.c_lost == []
-    assert dc1.m_rec == []
-    assert not c2.closed
-    assert rs2.connects == []
-    assert dc2.c_made == []
-    assert dc2.c_lost == []
-    assert dc2.m_rec == [(ec2, 'message 0')]
-    del dc2.m_rec[:]
-
-    ec1.send_message('message 1')
-    ec1.send_message('message 2')
-    ec2.send_message('message 3')
-    ec2.send_message('message 4')
-    flush(c1, e1, c2, e2)
-    assert not c1.closed
-    assert rs1.connects == []
-    assert dc1.c_made == []
-    assert dc1.c_lost == []
-    assert dc1.m_rec == [(ec1, 'message 3'), (ec1, 'message 4')]
-    del dc1.m_rec[:]
-    assert not c2.closed
-    assert rs2.connects == []
-    assert dc2.c_made == []
-    assert dc2.c_lost == []
-    assert dc2.m_rec == [(ec2, 'message 1'), (ec2, 'message 2')]
-    del dc2.m_rec[:]
-        
-    ec1.close()
-    assert c1.closed
-    assert rs1.connects == []
-    assert dc1.c_made == []
-    assert dc1.c_lost == []
-    assert dc1.m_rec == []
-
-    e2.connection_lost(c2)
-    assert not c2.closed
-    assert rs2.connects == []
-    assert dc2.c_made == []
-    assert dc2.c_lost == [ec2]
-    del dc2.c_lost[:]
-    assert dc2.m_rec == []
-
-def test_reconstruction():
-    dc1 = DummyConnecter()
-    rs1 = DummyRawServer()
-    e1 = Encrypter(dc1, rs1, lambda: 'a' * 20, 'b' * 20, 500, lambda a, b: None, 1000)
-    assert dc1.c_made == []
-    assert dc1.c_lost == []
-    assert dc1.m_rec == []
-
-    assert rs1.connects == []
-    assert dc1.c_made == []
-    assert dc1.c_lost == []
-    assert dc1.m_rec == []
-
-    dc2 = DummyConnecter()
-    rs2 = DummyRawServer()
-    e2 = Encrypter(dc2, rs2, lambda: 'c' * 20, 'd' * 20, 500, lambda a, b: None, 1000)
-    assert dc2.c_made == []
-    assert dc2.c_lost == []
-    assert dc2.m_rec == []
-
-    assert rs2.connects == []
-    assert dc2.c_made == []
-    assert dc2.c_lost == []
-    assert dc2.m_rec == []
-
-    e1.start_connection(('spam.com', 69))
-    assert len(rs1.connects) == 1 and rs1.connects[0][0] == 'spam.com' and rs1.connects[0][1] == 69
-    c1 = rs1.connects[0][2]
-    del rs1.connects[:]
-    assert not c1.closed
-    assert dc1.c_made == []
-    assert dc1.c_lost == []
-    assert dc1.m_rec == []
-
-    c2 = DummyRawConnection()
-    e2.external_connection_made(c2)
-    assert not c2.closed
-    assert rs2.connects == []
-    assert dc2.c_made == []
-    assert dc2.c_lost == []
-    assert dc2.m_rec == []
-
-    flush(c1, e1, c2, e2)
-    assert not c1.closed
-    assert rs1.connects == []
-    assert len(dc1.c_made) == 1
-    ec1 = dc1.c_made[0]
-    del dc1.c_made[:]
-    assert ec1.get_id() == e2.get_id()
-    assert dc1.c_lost == []
-    assert dc1.m_rec == []
-    assert not c2.closed
-    assert rs2.connects == []
-    assert len(dc2.c_made) == 1
-    ec2 = dc2.c_made[0]
-    assert ec2.get_id() == e1.get_id()
-    del dc2.c_made[:]
-    assert dc2.c_lost == []
-    assert dc2.m_rec == []
-
-    ec1.send_message('message 0')
-    flush2(c1, e1, c2, e2)
-    assert not c1.closed
-    assert rs1.connects == []
-    assert dc1.c_made == []
-    assert dc1.c_lost == []
-    assert dc1.m_rec == []
-    assert not c2.closed
-    assert rs2.connects == []
-    assert dc2.c_made == []
-    assert dc2.c_lost == []
-    assert dc2.m_rec == [(ec2, 'message 0')]
-    del dc2.m_rec[:]
-
-    ec1.send_message('message 1')
-    ec1.send_message('message 2')
-    ec2.send_message('message 3')
-    ec2.send_message('message 4')
-    flush2(c1, e1, c2, e2)
-    assert not c1.closed
-    assert rs1.connects == []
-    assert dc1.c_made == []
-    assert dc1.c_lost == []
-    assert dc1.m_rec == [(ec1, 'message 3'), (ec1, 'message 4')]
-    del dc1.m_rec[:]
-    assert not c2.closed
-    assert rs2.connects == []
-    assert dc2.c_made == []
-    assert dc2.c_lost == []
-    assert dc2.m_rec == [(ec2, 'message 1'), (ec2, 'message 2')]
-    del dc2.m_rec[:]
-        
-    ec1.close()
-    assert c1.closed
-    assert rs1.connects == []
-    assert dc1.c_made == []
-    assert dc1.c_lost == []
-    assert dc1.m_rec == []
-
-    e2.connection_lost(c2)
-    assert not c2.closed
-    assert rs2.connects == []
-    assert dc2.c_made == []
-    assert dc2.c_lost == [ec2]
-    del dc2.c_lost[:]
-    assert dc2.m_rec == []
-
-def test_proper_communication_receiving_side_close():
-    dc1 = DummyConnecter()
-    rs1 = DummyRawServer()
-    e1 = Encrypter(dc1, rs1, lambda: 'a' * 20, 'b' * 20, 500, lambda a, b: None, 1000)
-    assert dc1.c_made == []
-    assert dc1.c_lost == []
-    assert dc1.m_rec == []
-
-    assert rs1.connects == []
-    assert dc1.c_made == []
-    assert dc1.c_lost == []
-    assert dc1.m_rec == []
-
-    dc2 = DummyConnecter()
-    rs2 = DummyRawServer()
-    e2 = Encrypter(dc2, rs2, lambda: 'c' * 20, 'd' * 20, 500, lambda a, b: None, 1000)
-    assert dc2.c_made == []
-    assert dc2.c_lost == []
-    assert dc2.m_rec == []
-
-    assert rs2.connects == []
-    assert dc2.c_made == []
-    assert dc2.c_lost == []
-    assert dc2.m_rec == []
-
-    e1.start_connection(('spam.com', 69))
-    assert len(rs1.connects) == 1 and rs1.connects[0][0] == 'spam.com' and rs1.connects[0][1] == 69
-    c1 = rs1.connects[0][2]
-    del rs1.connects[:]
-    assert not c1.closed
-    assert dc1.c_made == []
-    assert dc1.c_lost == []
-    assert dc1.m_rec == []
-
-    c2 = DummyRawConnection()
-    e2.external_connection_made(c2)
-    assert not c2.closed
-    assert rs2.connects == []
-    assert dc2.c_made == []
-    assert dc2.c_lost == []
-    assert dc2.m_rec == []
-
-    flush(c1, e1, c2, e2)
-    assert not c1.closed
-    assert rs1.connects == []
-    assert len(dc1.c_made) == 1
-    ec1 = dc1.c_made[0]
-    del dc1.c_made[:]
-    assert ec1.get_id() == e2.get_id()
-    assert dc1.c_lost == []
-    assert dc1.m_rec == []
-    assert not c2.closed
-    assert rs2.connects == []
-    assert len(dc2.c_made) == 1
-    ec2 = dc2.c_made[0]
-    assert ec2.get_id() == e1.get_id()
-    del dc2.c_made[:]
-    assert dc2.c_lost == []
-    assert dc2.m_rec == []
-
-    ec1.send_message('message 0')
-    flush(c1, e1, c2, e2)
-    assert not c1.closed
-    assert rs1.connects == []
-    assert dc1.c_made == []
-    assert dc1.c_lost == []
-    assert dc1.m_rec == []
-    assert not c2.closed
-    assert rs2.connects == []
-    assert dc2.c_made == []
-    assert dc2.c_lost == []
-    assert dc2.m_rec == [(ec2, 'message 0')]
-    del dc2.m_rec[:]
-
-    ec1.send_message('message 1')
-    ec1.send_message('message 2')
-    ec2.send_message('message 3')
-    ec2.send_message('message 4')
-    flush(c1, e1, c2, e2)
-    assert not c1.closed
-    assert rs1.connects == []
-    assert dc1.c_made == []
-    assert dc1.c_lost == []
-    assert dc1.m_rec == [(ec1, 'message 3'), (ec1, 'message 4')]
-    del dc1.m_rec[:]
-    assert not c2.closed
-    assert rs2.connects == []
-    assert dc2.c_made == []
-    assert dc2.c_lost == []
-    assert dc2.m_rec == [(ec2, 'message 1'), (ec2, 'message 2')]
-    del dc2.m_rec[:]
-        
-    ec2.close()
-    assert c2.closed
-    assert rs2.connects == []
-    assert dc2.c_made == []
-    assert dc2.c_lost == []
-    assert dc2.m_rec == []
-
-    e1.connection_lost(c1)
-    assert not c1.closed
-    assert rs1.connects == []
-    assert dc1.c_made == []
-    assert dc1.c_lost == [ec1]
-    del dc1.c_lost[:]
-    assert dc1.m_rec == []
-
-def test_garbage_data_before_completion():
-    dc1 = DummyConnecter()
-    rs1 = DummyRawServer()
-    e1 = Encrypter(dc1, rs1, lambda: 'a' * 20, 'b' * 20, 500, lambda a, b: None, 1000)
-    assert dc1.c_made == []
-    assert dc1.c_lost == []
-    assert dc1.m_rec == []
-
-    assert rs1.connects == []
-    assert dc1.c_made == []
-    assert dc1.c_lost == []
-    assert dc1.m_rec == []
-
+def test_messages_in_and_out():
+    c = DummyConnecter()
+    rs = DummyRawServer()
+    e = Encrypter(c, rs, 'a' * 20, 500, dummyschedule, 30, 'd' * 20)
     c1 = DummyRawConnection()
-    e1.external_connection_made(c1)
-    e1.data_came_in(c1, chr(2))
+    e.external_connection_made(c1)
+    assert c1.pop() == chr(len(protocol_name)) + protocol_name + \
+        chr(0) * 8 + 'd' * 20 + 'a' * 20
+    assert c.log == []
+    assert rs.connects == []
+    assert not c1.closed
 
-    assert rs1.connects == []
-    assert dc1.c_made == []
-    assert dc1.c_lost == []
-    assert dc1.m_rec == []
+    e.data_came_in(c1, chr(len(protocol_name)) + protocol_name + \
+        chr(0) * 8 + 'd' * 20)
+    assert c1.pop() == ''
+    assert c.log == []
+    assert rs.connects == []
+    assert not c1.closed
+
+    e.data_came_in(c1, 'b' * 20)
+    assert c1.pop() == ''
+    assert len(c.log) == 1
+    assert c.log[0][0] == 'made'
+    ch = c.log[0][1]
+    del c.log[:]
+    assert rs.connects == []
+    assert not c1.closed
+    assert ch.get_ip() == 'fake.ip'
+    
+    ch.send_message('abc')
+    assert c1.pop() == chr(0) * 3 + chr(3) + 'abc'
+    assert c.log == []
+    assert rs.connects == []
+    assert not c1.closed
+    
+    e.data_came_in(c1, chr(0) * 3 + chr(3) + 'def')
+    assert c1.pop() == ''
+    assert c.log == [('got', ch, 'def')]
+    del c.log[:]
+    assert rs.connects == []
+    assert not c1.closed
+
+def test_flushed():
+    c = DummyConnecter()
+    rs = DummyRawServer()
+    e = Encrypter(c, rs, 'a' * 20, 500, dummyschedule, 30, 'd' * 20)
+    c1 = DummyRawConnection()
+    e.external_connection_made(c1)
+    assert c1.pop() == chr(len(protocol_name)) + protocol_name + \
+        chr(0) * 8 + 'd' * 20 + 'a' * 20
+    assert c.log == []
+    assert rs.connects == []
+    assert not c1.closed
+
+    e.data_came_in(c1, chr(len(protocol_name)) + protocol_name + \
+        chr(0) * 8 + 'd' * 20)
+    assert c1.pop() == ''
+    assert c.log == []
+    assert rs.connects == []
+    assert not c1.closed
+    
+    e.connection_flushed(c1)
+    assert c1.pop() == ''
+    assert c.log == []
+    assert rs.connects == []
+    assert not c1.closed
+
+    e.data_came_in(c1, 'b' * 20)
+    assert c1.pop() == ''
+    assert len(c.log) == 1
+    assert c.log[0][0] == 'made'
+    ch = c.log[0][1]
+    del c.log[:]
+    assert rs.connects == []
+    assert not c1.closed
+    assert ch.is_flushed()
+    
+    e.connection_flushed(c1)
+    assert c1.pop() == ''
+    assert c.log == [('flushed', ch)]
+    assert rs.connects == []
+    assert not c1.closed
+    
+    c1.flushed = false
+    assert not ch.is_flushed()
+    
+def test_wrong_header_length():
+    c = DummyConnecter()
+    rs = DummyRawServer()
+    e = Encrypter(c, rs, 'a' * 20, 500, dummyschedule, 30, 'd' * 20)
+    c1 = DummyRawConnection()
+    e.external_connection_made(c1)
+    assert c1.pop() == chr(len(protocol_name)) + protocol_name + \
+        chr(0) * 8 + 'd' * 20 + 'a' * 20
+    assert c.log == []
+    assert rs.connects == []
+    assert not c1.closed
+
+    e.data_came_in(c1, chr(5) * 30)
+    assert c.log == []
     assert c1.closed
 
-def test_rejected_data_after_completion():
-    dc1 = DummyConnecter()
-    rs1 = DummyRawServer()
-    e1 = Encrypter(dc1, rs1, lambda: 'a' * 20, 'b' * 20, 5, lambda a, b: None, 1000)
-    assert dc1.c_made == []
-    assert dc1.c_lost == []
-    assert dc1.m_rec == []
-
-    assert rs1.connects == []
-    assert dc1.c_made == []
-    assert dc1.c_lost == []
-    assert dc1.m_rec == []
-
-    dc2 = DummyConnecter()
-    rs2 = DummyRawServer()
-    e2 = Encrypter(dc2, rs2, lambda: 'c' * 20, 'd' * 20, 5, lambda a, b: None, 1000)
-    assert dc2.c_made == []
-    assert dc2.c_lost == []
-    assert dc2.m_rec == []
-
-    assert rs2.connects == []
-    assert dc2.c_made == []
-    assert dc2.c_lost == []
-    assert dc2.m_rec == []
-
-    e1.start_connection(('spam.com', 69))
-    assert len(rs1.connects) == 1 and rs1.connects[0][0] == 'spam.com' and rs1.connects[0][1] == 69
-    c1 = rs1.connects[0][2]
-    del rs1.connects[:]
+def test_wrong_header():
+    c = DummyConnecter()
+    rs = DummyRawServer()
+    e = Encrypter(c, rs, 'a' * 20, 500, dummyschedule, 30, 'd' * 20)
+    c1 = DummyRawConnection()
+    e.external_connection_made(c1)
+    assert c1.pop() == chr(len(protocol_name)) + protocol_name + \
+        chr(0) * 8 + 'd' * 20 + 'a' * 20
+    assert c.log == []
+    assert rs.connects == []
     assert not c1.closed
-    assert dc1.c_made == []
-    assert dc1.c_lost == []
-    assert dc1.m_rec == []
+
+    e.data_came_in(c1, chr(len(protocol_name)) + 'a' * len(protocol_name))
+    assert c.log == []
+    assert c1.closed
+    
+def test_wrong_download_id():
+    c = DummyConnecter()
+    rs = DummyRawServer()
+    e = Encrypter(c, rs, 'a' * 20, 500, dummyschedule, 30, 'd' * 20)
+    c1 = DummyRawConnection()
+    e.external_connection_made(c1)
+    assert c1.pop() == chr(len(protocol_name)) + protocol_name + \
+        chr(0) * 8 + 'd' * 20 + 'a' * 20
+    assert c.log == []
+    assert rs.connects == []
+    assert not c1.closed
+
+    e.data_came_in(c1, chr(len(protocol_name)) + protocol_name + 
+        chr(0) * 8 + 'e' * 20)
+    assert c.log == []
+    assert c1.closed
+
+def test_wrong_other_id():
+    c = DummyConnecter()
+    rs = DummyRawServer()
+    e = Encrypter(c, rs, 'a' * 20, 500, dummyschedule, 30, 'd' * 20)
+    e.start_connection('dns', 'o' * 20)
+    assert c.log == []
+    assert len(rs.connects) == 1
+    assert rs.connects[0][0] == 'dns'
+    c1 = rs.connects[0][1]
+    del rs.connects[:]
+    assert c1.pop() == chr(len(protocol_name)) + protocol_name + \
+        chr(0) * 8 + 'd' * 20 + 'a' * 20
+    assert not c1.closed
+
+    e.data_came_in(c1, chr(len(protocol_name)) + protocol_name + 
+        chr(0) * 8 + 'd' * 20 + 'b' * 20)
+    assert c.log == []
+    assert c1.closed
+
+def test_close_redundant_locally_initiated():
+    c = DummyConnecter()
+    rs = DummyRawServer()
+    e = Encrypter(c, rs, 'a' * 20, 500, dummyschedule, 30, 'd' * 20)
+    e.start_connection('dns', 'o' * 20)
+    assert c.log == []
+    assert len(rs.connects) == 1
+    assert rs.connects[0][0] == 'dns'
+    c1 = rs.connects[0][1]
+    del rs.connects[:]
+    assert c1.pop() == chr(len(protocol_name)) + protocol_name + \
+        chr(0) * 8 + 'd' * 20 + 'a' * 20
+    assert not c1.closed
+
+    e.data_came_in(c1, chr(len(protocol_name)) + protocol_name + 
+        chr(0) * 8 + 'd' * 20 + 'o' * 20)
+    assert len(c.log) == 1 and c.log[0][0] == 'made'
+    ch = c.log[0][1]
+    del c.log[:]
+    assert not c1.closed
 
     c2 = DummyRawConnection()
-    e2.external_connection_made(c2)
-    assert not c2.closed
-    assert rs2.connects == []
-    assert dc2.c_made == []
-    assert dc2.c_lost == []
-    assert dc2.m_rec == []
+    e.external_connection_made(c2)
+    e.data_came_in(c2, chr(len(protocol_name)) + protocol_name + 
+        chr(0) * 8 + 'd' * 20 + 'o' * 20)
+    assert c1.closed
+    assert len(c.log) == 2
+    assert c.log[0] == ('lost', ch)
+    assert c.log[1][0] == 'made'
 
-    flush(c1, e1, c2, e2)
+def test_close_redundant_connection():
+    c = DummyConnecter()
+    rs = DummyRawServer()
+    e = Encrypter(c, rs, 'a' * 20, 500, dummyschedule, 30, 'd' * 20)
+    c1 = DummyRawConnection()
+    e.external_connection_made(c1)
+    assert c1.pop() == chr(len(protocol_name)) + protocol_name + \
+        chr(0) * 8 + 'd' * 20 + 'a' * 20
+    assert c.log == []
+    assert rs.connects == []
     assert not c1.closed
-    assert rs1.connects == []
-    assert len(dc1.c_made) == 1
-    ec1 = dc1.c_made[0]
-    del dc1.c_made[:]
-    assert ec1.get_id() == e2.get_id()
-    assert dc1.c_lost == []
-    assert dc1.m_rec == []
-    assert not c2.closed
-    assert rs2.connects == []
-    assert len(dc2.c_made) == 1
-    ec2 = dc2.c_made[0]
-    assert ec2.get_id() == e1.get_id()
-    del dc2.c_made[:]
-    assert dc2.c_lost == []
-    assert dc2.m_rec == []
 
-    ec1.send_message('m0')
-    flush(c1, e1, c2, e2)
+    e.data_came_in(c1, chr(len(protocol_name)) + protocol_name + 
+        chr(0) * 8 + 'd' * 20 + 'o' * 20)
+    assert len(c.log) == 1 and c.log[0][0] == 'made'
+    ch = c.log[0][1]
+    del c.log[:]
     assert not c1.closed
-    assert rs1.connects == []
-    assert dc1.c_made == []
-    assert dc1.c_lost == []
-    assert dc1.m_rec == []
-    assert not c2.closed
-    assert rs2.connects == []
-    assert dc2.c_made == []
-    assert dc2.c_lost == []
-    assert dc2.m_rec == [(ec2, 'm0')]
-    del dc2.m_rec[:]
-
-    ec1.send_message('message 1')
-    flush(c1, e1, c2, e2)
-    assert not c1.closed
-    assert rs1.connects == []
-    assert dc1.c_made == []
-    assert dc1.c_lost == []
-    assert dc1.m_rec == []
-    assert c2.closed
-    assert rs2.connects == []
-    assert dc2.c_made == []
-    assert dc2.c_lost == [ec2]
-    del dc2.c_lost[:]
-    assert dc2.m_rec == []
-
-def test_local_close_in_data_received():
-    dc1 = DummyConnecter()
-    rs1 = DummyRawServer()
-    e1 = Encrypter(dc1, rs1, lambda: 'a' * 20, 'b' * 20, 5, lambda a, b: None, 1000)
-    assert dc1.c_made == []
-    assert dc1.c_lost == []
-    assert dc1.m_rec == []
-
-    assert rs1.connects == []
-    assert dc1.c_made == []
-    assert dc1.c_lost == []
-    assert dc1.m_rec == []
-
-    dc2 = DummyConnecter()
-    rs2 = DummyRawServer()
-    e2 = Encrypter(dc2, rs2, lambda: 'c' * 20, 'd' * 20, 5, lambda a, b: None, 1000)
-    assert dc2.c_made == []
-    assert dc2.c_lost == []
-    assert dc2.m_rec == []
-
-    assert rs2.connects == []
-    assert dc2.c_made == []
-    assert dc2.c_lost == []
-    assert dc2.m_rec == []
-
-    e1.start_connection(('spam.com', 69))
-    assert len(rs1.connects) == 1 and rs1.connects[0][0] == 'spam.com' and rs1.connects[0][1] == 69
-    c1 = rs1.connects[0][2]
-    del rs1.connects[:]
-    assert not c1.closed
-    assert dc1.c_made == []
-    assert dc1.c_lost == []
-    assert dc1.m_rec == []
 
     c2 = DummyRawConnection()
-    e2.external_connection_made(c2)
-    assert not c2.closed
-    assert rs2.connects == []
-    assert dc2.c_made == []
-    assert dc2.c_lost == []
-    assert dc2.m_rec == []
-
-    flush(c1, e1, c2, e2)
+    e.external_connection_made(c2)
+    e.data_came_in(c2, chr(len(protocol_name)) + protocol_name + 
+        chr(0) * 8 + 'd' * 20 + 'o' * 20)
+    assert c1.closed
+    assert len(c.log) == 2
+    assert c.log[0] == ('lost', ch)
+    assert c.log[1][0] == 'made'
+    
+def test_over_max_len():
+    c = DummyConnecter()
+    rs = DummyRawServer()
+    e = Encrypter(c, rs, 'a' * 20, 500, dummyschedule, 30, 'd' * 20)
+    c1 = DummyRawConnection()
+    e.external_connection_made(c1)
+    assert c1.pop() == chr(len(protocol_name)) + protocol_name + \
+        chr(0) * 8 + 'd' * 20 + 'a' * 20
+    assert c.log == []
+    assert rs.connects == []
     assert not c1.closed
-    assert rs1.connects == []
-    assert len(dc1.c_made) == 1
-    ec1 = dc1.c_made[0]
-    del dc1.c_made[:]
-    assert ec1.get_id() == e2.get_id()
-    assert dc1.c_lost == []
-    assert dc1.m_rec == []
-    assert not c2.closed
-    assert rs2.connects == []
-    assert len(dc2.c_made) == 1
-    ec2 = dc2.c_made[0]
-    assert ec2.get_id() == e1.get_id()
-    del dc2.c_made[:]
-    assert dc2.c_lost == []
-    assert dc2.m_rec == []
 
-    ec1.send_message('m0')
-    flush(c1, e1, c2, e2)
+    e.data_came_in(c1, chr(len(protocol_name)) + protocol_name + 
+        chr(0) * 8 + 'd' * 20 + 'o' * 20)
+    assert len(c.log) == 1 and c.log[0][0] == 'made'
+    ch = c.log[0][1]
+    del c.log[:]
     assert not c1.closed
-    assert rs1.connects == []
-    assert dc1.c_made == []
-    assert dc1.c_lost == []
-    assert dc1.m_rec == []
-    assert not c2.closed
-    assert rs2.connects == []
-    assert dc2.c_made == []
-    assert dc2.c_lost == []
-    assert dc2.m_rec == [(ec2, 'm0')]
-    del dc2.m_rec[:]
 
-    dc2.close_next = true
-    ec1.send_message('m1')
-    flush(c1, e1, c2, e2)
-    assert not c1.closed
-    assert rs1.connects == []
-    assert dc1.c_made == []
-    assert dc1.c_lost == []
-    assert dc1.m_rec == []
-    assert c2.closed
-    assert rs2.connects == []
-    assert dc2.c_made == []
-    assert dc2.c_lost == []
-    assert dc2.m_rec == [(ec2, 'm1')]
-    del dc2.m_rec[:]
-
-def test_local_close_and_extra_data():
-    dc1 = DummyConnecter()
-    rs1 = DummyRawServer()
-    e1 = Encrypter(dc1, rs1, lambda: 'a' * 20, 'b' * 20, 5, lambda a, b: None, 1000)
-    assert dc1.c_made == []
-    assert dc1.c_lost == []
-    assert dc1.m_rec == []
-
-    assert rs1.connects == []
-    assert dc1.c_made == []
-    assert dc1.c_lost == []
-    assert dc1.m_rec == []
-
-    dc2 = DummyConnecter()
-    rs2 = DummyRawServer()
-    e2 = Encrypter(dc2, rs2, lambda: 'c' * 20, 'd' * 20, 5, lambda a, b: None, 1000)
-    assert dc2.c_made == []
-    assert dc2.c_lost == []
-    assert dc2.m_rec == []
-
-    assert rs2.connects == []
-    assert dc2.c_made == []
-    assert dc2.c_lost == []
-    assert dc2.m_rec == []
-
-    e1.start_connection(('spam.com', 69))
-    assert len(rs1.connects) == 1 and rs1.connects[0][0] == 'spam.com' and rs1.connects[0][1] == 69
-    c1 = rs1.connects[0][2]
-    del rs1.connects[:]
-    assert not c1.closed
-    assert dc1.c_made == []
-    assert dc1.c_lost == []
-    assert dc1.m_rec == []
-
-    c2 = DummyRawConnection()
-    e2.external_connection_made(c2)
-    assert not c2.closed
-    assert rs2.connects == []
-    assert dc2.c_made == []
-    assert dc2.c_lost == []
-    assert dc2.m_rec == []
-
-    flush(c1, e1, c2, e2)
-    assert not c1.closed
-    assert rs1.connects == []
-    assert len(dc1.c_made) == 1
-    ec1 = dc1.c_made[0]
-    del dc1.c_made[:]
-    assert ec1.get_id() == e2.get_id()
-    assert dc1.c_lost == []
-    assert dc1.m_rec == []
-    assert not c2.closed
-    assert rs2.connects == []
-    assert len(dc2.c_made) == 1
-    ec2 = dc2.c_made[0]
-    assert ec2.get_id() == e1.get_id()
-    del dc2.c_made[:]
-    assert dc2.c_lost == []
-    assert dc2.m_rec == []
-
-    ec1.send_message('m0')
-    flush(c1, e1, c2, e2)
-    assert not c1.closed
-    assert rs1.connects == []
-    assert dc1.c_made == []
-    assert dc1.c_lost == []
-    assert dc1.m_rec == []
-    assert not c2.closed
-    assert rs2.connects == []
-    assert dc2.c_made == []
-    assert dc2.c_lost == []
-    assert dc2.m_rec == [(ec2, 'm0')]
-    del dc2.m_rec[:]
-
-    dc2.close_next = true
-    ec1.send_message('m1')
-    ec1.send_message('m2')
-    flush(c1, e1, c2, e2)
-    assert not c1.closed
-    assert rs1.connects == []
-    assert dc1.c_made == []
-    assert dc1.c_lost == []
-    assert dc1.m_rec == []
-    assert c2.closed
-    assert rs2.connects == []
-    assert dc2.c_made == []
-    assert dc2.c_lost == []
-    assert dc2.m_rec == [(ec2, 'm1')]
-    del dc2.m_rec[:]
-
-def test_local_close_and_rejected_data():
-    dc1 = DummyConnecter()
-    rs1 = DummyRawServer()
-    e1 = Encrypter(dc1, rs1, lambda: 'a' * 20, 'b' * 20, 5, lambda a, b: None, 1000)
-    assert dc1.c_made == []
-    assert dc1.c_lost == []
-    assert dc1.m_rec == []
-
-    assert rs1.connects == []
-    assert dc1.c_made == []
-    assert dc1.c_lost == []
-    assert dc1.m_rec == []
-
-    dc2 = DummyConnecter()
-    rs2 = DummyRawServer()
-    e2 = Encrypter(dc2, rs2, lambda: 'c' * 20, 'd' * 20, 5, lambda a, b: None, 1000)
-    assert dc2.c_made == []
-    assert dc2.c_lost == []
-    assert dc2.m_rec == []
-
-    assert rs2.connects == []
-    assert dc2.c_made == []
-    assert dc2.c_lost == []
-    assert dc2.m_rec == []
-
-    e1.start_connection(('spam.com', 69))
-    assert len(rs1.connects) == 1 and rs1.connects[0][0] == 'spam.com' and rs1.connects[0][1] == 69
-    c1 = rs1.connects[0][2]
-    del rs1.connects[:]
-    assert not c1.closed
-    assert dc1.c_made == []
-    assert dc1.c_lost == []
-    assert dc1.m_rec == []
-
-    c2 = DummyRawConnection()
-    e2.external_connection_made(c2)
-    assert not c2.closed
-    assert rs2.connects == []
-    assert dc2.c_made == []
-    assert dc2.c_lost == []
-    assert dc2.m_rec == []
-
-    flush(c1, e1, c2, e2)
-    assert not c1.closed
-    assert rs1.connects == []
-    assert len(dc1.c_made) == 1
-    ec1 = dc1.c_made[0]
-    del dc1.c_made[:]
-    assert ec1.get_id() == e2.get_id()
-    assert dc1.c_lost == []
-    assert dc1.m_rec == []
-    assert not c2.closed
-    assert rs2.connects == []
-    assert len(dc2.c_made) == 1
-    ec2 = dc2.c_made[0]
-    assert ec2.get_id() == e1.get_id()
-    del dc2.c_made[:]
-    assert dc2.c_lost == []
-    assert dc2.m_rec == []
-
-    ec1.send_message('m0')
-    flush(c1, e1, c2, e2)
-    assert not c1.closed
-    assert rs1.connects == []
-    assert dc1.c_made == []
-    assert dc1.c_lost == []
-    assert dc1.m_rec == []
-    assert not c2.closed
-    assert rs2.connects == []
-    assert dc2.c_made == []
-    assert dc2.c_lost == []
-    assert dc2.m_rec == [(ec2, 'm0')]
-    del dc2.m_rec[:]
-
-    dc2.close_next = true
-    ec1.send_message('m1')
-    ec1.send_message('message 2')
-    flush(c1, e1, c2, e2)
-    assert not c1.closed
-    assert rs1.connects == []
-    assert dc1.c_made == []
-    assert dc1.c_lost == []
-    assert dc1.m_rec == []
-    assert c2.closed
-    assert rs2.connects == []
-    assert dc2.c_made == []
-    assert dc2.c_lost == []
-    assert dc2.m_rec == [(ec2, 'm1')]
-    del dc2.m_rec[:]
+    e.data_came_in(c1, chr(1) + chr(0) * 3)
+    assert c.log == [('lost', ch)]
+    assert c1.closed
 
 def test_keepalive():
-    dc1 = DummyConnecter()
-    rs1 = DummyRawServer()
-    e1 = Encrypter(dc1, rs1, lambda: 'a' * 20, 'b' * 20, 500, lambda a, b: None, 1000)
-    assert dc1.c_made == []
-    assert dc1.c_lost == []
-    assert dc1.m_rec == []
-
-    assert rs1.connects == []
-    assert dc1.c_made == []
-    assert dc1.c_lost == []
-    assert dc1.m_rec == []
-
-    dc2 = DummyConnecter()
-    rs2 = DummyRawServer()
-    sched = []
-    e2 = Encrypter(dc2, rs2, lambda: 'c' * 20, 'd' * 20, 500, lambda a, b, sched = sched: sched.append((a, b)), 1000)
-    assert dc2.c_made == []
-    assert dc2.c_lost == []
-    assert dc2.m_rec == []
-
-    assert rs2.connects == []
-    assert dc2.c_made == []
-    assert dc2.c_lost == []
-    assert dc2.m_rec == []
-
-    e1.start_connection(('spam.com', 69))
-    assert len(rs1.connects) == 1 and rs1.connects[0][0] == 'spam.com' and rs1.connects[0][1] == 69
-    c1 = rs1.connects[0][2]
-    del rs1.connects[:]
+    s = []
+    def sched(interval, thing, s = s):
+        s.append((interval, thing))
+    c = DummyConnecter()
+    rs = DummyRawServer()
+    e = Encrypter(c, rs, 'a' * 20, 500, sched, 30, 'd' * 20)
+    assert len(s) == 1
+    assert s[0][1] == 30
+    kfunc = s[0][0]
+    del s[:]
+    c1 = DummyRawConnection()
+    e.external_connection_made(c1)
+    assert c1.pop() == chr(len(protocol_name)) + protocol_name + \
+        chr(0) * 8 + 'd' * 20 + 'a' * 20
+    assert c.log == []
     assert not c1.closed
-    assert dc1.c_made == []
-    assert dc1.c_lost == []
-    assert dc1.m_rec == []
 
-    c2 = DummyRawConnection()
-    e2.external_connection_made(c2)
-    assert not c2.closed
-    assert rs2.connects == []
-    assert dc2.c_made == []
-    assert dc2.c_lost == []
-    assert dc2.m_rec == []
-
-    assert len(sched) == 1 and sched[0][1] == 1000
-    f = sched[0][0]
-    del sched[0]
-    f()
-    flush(c1, e1, c2, e2)
-    assert len(sched) == 1 and sched[0][1] == 1000
-
-    flush(c1, e1, c2, e2)
+    kfunc()
+    assert c1.pop() == ''
+    assert c.log == []
     assert not c1.closed
-    assert rs1.connects == []
-    assert len(dc1.c_made) == 1
-    ec1 = dc1.c_made[0]
-    del dc1.c_made[:]
-    assert ec1.get_id() == e2.get_id()
-    assert dc1.c_lost == []
-    assert dc1.m_rec == []
-    assert not c2.closed
-    assert rs2.connects == []
-    assert len(dc2.c_made) == 1
-    ec2 = dc2.c_made[0]
-    assert ec2.get_id() == e1.get_id()
-    del dc2.c_made[:]
-    assert dc2.c_lost == []
-    assert dc2.m_rec == []
+    assert s == [(kfunc, 30)]
+    del s[:]
 
-    ec1.send_message('message 0')
-    flush(c1, e1, c2, e2)
+    e.data_came_in(c1, chr(len(protocol_name)) + protocol_name + 
+        chr(0) * 8 + 'd' * 20 + 'o' * 20)
+    assert len(c.log) == 1 and c.log[0][0] == 'made'
+    ch = c.log[0][1]
+    del c.log[:]
+    assert c1.pop() == ''
     assert not c1.closed
-    assert rs1.connects == []
-    assert dc1.c_made == []
-    assert dc1.c_lost == []
-    assert dc1.m_rec == []
-    assert not c2.closed
-    assert rs2.connects == []
-    assert dc2.c_made == []
-    assert dc2.c_lost == []
-    assert dc2.m_rec == [(ec2, 'message 0')]
-    del dc2.m_rec[:]
 
-    ec1.send_message('message 1')
-    ec1.send_message('message 2')
-    ec2.send_message('message 3')
-    ec2.send_message('message 4')
-    flush(c1, e1, c2, e2)
+    kfunc()
+    assert c1.pop() == chr(0) * 4
+    assert c.log == []
     assert not c1.closed
-    assert rs1.connects == []
-    assert dc1.c_made == []
-    assert dc1.c_lost == []
-    assert dc1.m_rec == [(ec1, 'message 3'), (ec1, 'message 4')]
-    del dc1.m_rec[:]
-    assert not c2.closed
-    assert rs2.connects == []
-    assert dc2.c_made == []
-    assert dc2.c_lost == []
-    assert dc2.m_rec == [(ec2, 'message 1'), (ec2, 'message 2')]
-    del dc2.m_rec[:]
-        
-    ec2.close()
-    assert c2.closed
-    assert rs2.connects == []
-    assert dc2.c_made == []
-    assert dc2.c_lost == []
-    assert dc2.m_rec == []
 
-    e1.connection_lost(c1)
+def test_swallow_keepalive():
+    c = DummyConnecter()
+    rs = DummyRawServer()
+    e = Encrypter(c, rs, 'a' * 20, 500, dummyschedule, 30, 'd' * 20)
+    c1 = DummyRawConnection()
+    e.external_connection_made(c1)
+    assert c1.pop() == chr(len(protocol_name)) + protocol_name + \
+        chr(0) * 8 + 'd' * 20 + 'a' * 20
+    assert c.log == []
+    assert rs.connects == []
     assert not c1.closed
-    assert rs1.connects == []
-    assert dc1.c_made == []
-    assert dc1.c_lost == [ec1]
-    del dc1.c_lost[:]
-    assert dc1.m_rec == []
+
+    e.data_came_in(c1, chr(len(protocol_name)) + protocol_name + 
+        chr(0) * 8 + 'd' * 20 + 'o' * 20)
+    assert len(c.log) == 1 and c.log[0][0] == 'made'
+    ch = c.log[0][1]
+    del c.log[:]
+    assert not c1.closed
+
+    e.data_came_in(c1, chr(0) * 4)
+    assert c.log == []
+    assert not c1.closed
+
+def test_local_close():
+    c = DummyConnecter()
+    rs = DummyRawServer()
+    e = Encrypter(c, rs, 'a' * 20, 500, dummyschedule, 30, 'd' * 20)
+    c1 = DummyRawConnection()
+    e.external_connection_made(c1)
+    assert c1.pop() == chr(len(protocol_name)) + protocol_name + \
+        chr(0) * 8 + 'd' * 20 + 'a' * 20
+    assert c.log == []
+    assert rs.connects == []
+    assert not c1.closed
+
+    e.data_came_in(c1, chr(len(protocol_name)) + protocol_name + 
+        chr(0) * 8 + 'd' * 20 + 'o' * 20)
+    assert len(c.log) == 1 and c.log[0][0] == 'made'
+    ch = c.log[0][1]
+    del c.log[:]
+    assert not c1.closed
+
+    ch.close()
+    assert c.log == [('lost', ch)]
+    del c.log[:]
+    assert c1.closed
+
+def test_local_close_in_message_receive():
+    c = DummyConnecter()
+    rs = DummyRawServer()
+    e = Encrypter(c, rs, 'a' * 20, 500, dummyschedule, 30, 'd' * 20)
+    c1 = DummyRawConnection()
+    e.external_connection_made(c1)
+    assert c1.pop() == chr(len(protocol_name)) + protocol_name + \
+        chr(0) * 8 + 'd' * 20 + 'a' * 20
+    assert c.log == []
+    assert rs.connects == []
+    assert not c1.closed
+
+    e.data_came_in(c1, chr(len(protocol_name)) + protocol_name + 
+        chr(0) * 8 + 'd' * 20 + 'o' * 20)
+    assert len(c.log) == 1 and c.log[0][0] == 'made'
+    ch = c.log[0][1]
+    del c.log[:]
+    assert not c1.closed
+
+    c.close_next = true
+    e.data_came_in(c1, chr(0) * 3 + chr(4) + 'abcd')
+    assert c.log == [('got', ch, 'abcd'), ('lost', ch)]
+    assert c1.closed
+
+def test_remote_close():
+    c = DummyConnecter()
+    rs = DummyRawServer()
+    e = Encrypter(c, rs, 'a' * 20, 500, dummyschedule, 30, 'd' * 20)
+    c1 = DummyRawConnection()
+    e.external_connection_made(c1)
+    assert c1.pop() == chr(len(protocol_name)) + protocol_name + \
+        chr(0) * 8 + 'd' * 20 + 'a' * 20
+    assert c.log == []
+    assert rs.connects == []
+    assert not c1.closed
+
+    e.data_came_in(c1, chr(len(protocol_name)) + protocol_name + 
+        chr(0) * 8 + 'd' * 20 + 'o' * 20)
+    assert len(c.log) == 1 and c.log[0][0] == 'made'
+    ch = c.log[0][1]
+    del c.log[:]
+    assert not c1.closed
+
+    e.connection_lost(c1)
+    assert c.log == [('lost', ch)]
+    assert not c1.closed
+
+def test_partial_data_in():
+    c = DummyConnecter()
+    rs = DummyRawServer()
+    e = Encrypter(c, rs, 'a' * 20, 500, dummyschedule, 30, 'd' * 20)
+    c1 = DummyRawConnection()
+    e.external_connection_made(c1)
+    assert c1.pop() == chr(len(protocol_name)) + protocol_name + \
+        chr(0) * 8 + 'd' * 20 + 'a' * 20
+    assert c.log == []
+    assert rs.connects == []
+    assert not c1.closed
+
+    e.data_came_in(c1, chr(len(protocol_name)) + protocol_name + 
+        chr(0) * 4)
+    e.data_came_in(c1, chr(0) * 4 + 'd' * 20 + 'c' * 10)
+    e.data_came_in(c1, 'c' * 10)
+    assert len(c.log) == 1 and c.log[0][0] == 'made'
+    ch = c.log[0][1]
+    del c.log[:]
+    assert not c1.closed
+    
+def test_ignore_connect_of_extant():
+    c = DummyConnecter()
+    rs = DummyRawServer()
+    e = Encrypter(c, rs, 'a' * 20, 500, dummyschedule, 30, 'd' * 20)
+    c1 = DummyRawConnection()
+    e.external_connection_made(c1)
+    assert c1.pop() == chr(len(protocol_name)) + protocol_name + \
+        chr(0) * 8 + 'd' * 20 + 'a' * 20
+    assert c.log == []
+    assert rs.connects == []
+    assert not c1.closed
+
+    e.data_came_in(c1, chr(len(protocol_name)) + protocol_name + 
+        chr(0) * 8 + 'd' * 20 + 'o' * 20)
+    assert len(c.log) == 1 and c.log[0][0] == 'made'
+    ch = c.log[0][1]
+    del c.log[:]
+    assert not c1.closed
+
+    e.start_connection('dns', 'o' * 20)
+    assert c.log == []
+    assert rs.connects == []
+    assert not c1.closed
+
+def test_ignore_connect_to_self():
+    c = DummyConnecter()
+    rs = DummyRawServer()
+    e = Encrypter(c, rs, 'a' * 20, 500, dummyschedule, 30, 'd' * 20)
+    c1 = DummyRawConnection()
+
+    e.start_connection('dns', 'a' * 20)
+    assert c.log == []
+    assert rs.connects == []
+    assert not c1.closed
+
 

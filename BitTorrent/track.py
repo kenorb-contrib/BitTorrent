@@ -10,6 +10,7 @@ from urllib import urlopen, quote, unquote
 from os.path import exists
 from cStringIO import StringIO
 from traceback import print_exc
+from copy import deepcopy
 true = 1
 false = 0
 
@@ -88,12 +89,14 @@ class Tracker:
         if not published.has_key(path):
             return (404, 'Not Found', {'Content-Type': 'text/plain'}, alas)
         p = self.downloaders.get(path)
-        if p is None:
-            peers = []
-        else:
-            peers = [x['contact'] for x in (p['permanent'] + p['temporary'])]
+        peers = []
+        if p is not None:
+            for x in (p['permanent'] + p['temporary']):
+                y = deepcopy(x['contact'])
+                y['id'] = x['myid']
+                peers.append(y)
         data = bencode({'info': published[path], 'id': path, 
-            'url': self.urlprefix + path,
+            'url': self.urlprefix + path, 'protocol': 'plaintext',
             'announce': self.urlprefix + '/announce/',
             'your ip': connection.get_ip(), 'peers': peers})
         return (200, 'OK', {'Content-Type': 'application/x-bittorrent', 
