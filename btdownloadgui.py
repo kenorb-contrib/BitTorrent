@@ -12,7 +12,7 @@ from threading import Event, Thread
 from os.path import join
 from os import getcwd
 from wxPython.wx import *
-from time import strftime
+from time import strftime, time
 from webbrowser import open_new
 true = 1
 false = 0
@@ -52,6 +52,7 @@ class DownloadInfoFrame:
         self.flag = flag
         self.uiflag = Event()
         self.fin = false
+        self.last_update_time = 0
 
         panel = wxPanel(frame, -1)
         colSizer = wxFlexGridSizer(cols = 1, vgap = 3)
@@ -148,11 +149,15 @@ class DownloadInfoFrame:
         self.invokeLater(self.onUpdateStatus, [dict])
 
     def onUpdateStatus(self, dict):
+        activity = dict.get('activity', None);
+        if activity is not None and not self.fin:
+            self.timeEstText.SetLabel(activity)
+        if self.last_update_time + 0.01 > time(): # updating wayyy too fast
+            return
         fractionDone = dict.get('fractionDone', None);
         timeEst = dict.get('timeEst', None);
         downRate = dict.get('downRate', None);
         upRate = dict.get('upRate', None);
-        activity = dict.get('activity', None);
         downTotal = dict.get('downTotal', None);
         upTotal = dict.get('upTotal', None);
         if fractionDone is not None and not self.fin:
@@ -160,8 +165,6 @@ class DownloadInfoFrame:
             self.frame.SetTitle('%d%% %s - BitTorrent %s' % (int(fractionDone*100), self.filename, version))
         if timeEst is not None:
             self.timeEstText.SetLabel(hours(dict['timeEst']))
-        if activity is not None and not self.fin:
-            self.timeEstText.SetLabel(activity)
         if downRate is not None:
             self.downRateText.SetLabel('%.0f KiB/s' % (float(downRate) / (1 << 10)))
         if upRate is not None:
@@ -170,6 +173,7 @@ class DownloadInfoFrame:
             self.downTotalText.SetLabel('%.1f MiB/s' % (downTotal))
         if upTotal is not None:
             self.upTotalText.SetLabel('%.1f MiB/s' % (upTotal))
+        self.last_update_time = time()
 
     def finished(self):
         self.fin = true
