@@ -219,13 +219,13 @@ class StatusUpdater:
             self.activity = fmttime(timeEst)
         if fractionDone is not None: 
             self.myinfo['status'] = '%s %.0f%%' % (self.activity, fractionDone * 100)
-            if fractionDone == 1 and self.checking:
-                # we finished checking our files. 
-                filecheck.release()
-                self.checking = 0
-                self.myinfo['checking'] = 0
         else:
             self.myinfo['status'] = self.activity
+        if self.activity != 'checking existing file' and self.checking:
+            # we finished checking our files. 
+            filecheck.release()
+            self.checking = 0
+            self.myinfo['checking'] = 0
         if dict.has_key('upRate'):
             self.myinfo['uprate'] = dict['upRate']
         if dict.has_key('downRate'):
