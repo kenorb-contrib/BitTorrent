@@ -6,10 +6,9 @@
 from sys import argv, version
 assert version >= '2', "Install Python 2.0 or greater"
 
-from BitTorrent.download import download, downloadurl
-from BitTorrent.parseargs import parseargs
+from BitTorrent.download import download, downloadurl, defaults
+from BitTorrent.parseargs import parseargs, formatDefinitions
 from threading import Event, Thread
-from btdownloadheadless import configDefinitions
 from wxPython.wx import *
 from threading import Thread
 
@@ -75,5 +74,9 @@ def next(files, prefetched, getname, d, doneflag, configDictionary):
         d.Destroy()
 
 if __name__ == '__main__':
-    config, files = parseargs(argv[1:], configDefinitions, 1, 1) 
-    run(config, files)
+    if len(argv) == 1:
+        print "usage: %s [options] <url> <file>" % argv[0]
+        print formatDefinitions(configDefinitions)
+    else:
+        config, files = parseargs(argv[1:], defaults, 1, 1) 
+        run(config, files)
