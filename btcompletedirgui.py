@@ -8,7 +8,6 @@ from sys import argv, version
 from btcompletedir import completedir
 from threading import Event, Thread
 from os.path import join
-from os import getcwd
 from wxPython.wx import *
 
 wxEVT_INVOKE = wxNewEventType()
@@ -39,9 +38,13 @@ class DownloadInfo:
         b = wxBoxSizer(wxHORIZONTAL)
         b.Add(self.dirCtl, 1, wxEXPAND)
         b.Add(10, 10, 0, wxEXPAND)
-        button = wxButton(panel, -1, 'select')
+        button = wxButton(panel, -1, 'add file')
         b.Add(button, 0, wxEXPAND)
         EVT_BUTTON(frame, button.GetId(), self.select)
+        b.Add(5, 5, 0, wxEXPAND)
+        c = wxButton(panel, -1, 'add dir')
+        b.Add(c, 0, wxEXPAND)
+        EVT_BUTTON(frame, c.GetId(), self.selectdir)
 
         gridSizer.Add(b, 0, wxEXPAND)
 
@@ -67,9 +70,20 @@ class DownloadInfo:
         panel.SetAutoLayout(True)
 
     def select(self, x):
-        dl = wxFileDialog(self.frame, "Choose files", getcwd(), "", '*.*', wxOPEN | wxMULTIPLE)
+        dl = wxFileDialog(self.frame, "Choose files", '/', "", '*.*', wxOPEN | wxMULTIPLE)
         if dl.ShowModal() == wxID_OK:
-            self.dirCtl.SetValue(';'.join(dl.GetPaths()))
+            x = self.dirCtl.GetValue() + ';' + ';'.join(dl.GetPaths())
+            if x[0] == ';':
+                x = x[1:]
+            self.dirCtl.SetValue(x)
+
+    def selectdir(self, x):
+        dl = wxDirDialog(self.frame, 'Choose directories', '/')
+        if dl.ShowModal() == wxID_OK:
+            x = self.dirCtl.GetValue() + ';' + dl.GetPath()
+            if x[0] == ';':
+                x = x[1:]
+            self.dirCtl.SetValue(x)
 
     def complete(self, x):
         if self.dirCtl.GetValue() == '':
@@ -83,7 +97,8 @@ class DownloadInfo:
             CompleteDir(self.dirCtl.GetValue().split(';'), self.annCtl.GetValue(), ps)
         except:
             print_exc()
-
+            sleep(50000)
+from time import sleep
 from traceback import print_exc
 
 class CompleteDir:
