@@ -99,6 +99,14 @@ class PiecePicker:
     def am_I_complete(self):
         return self.numgot == self.numpieces
 
+    def bump(self, piece):
+        l = self.interests[self.numinterests[piece]]
+        pos = self.pos_in_interests[piece]
+        del l[pos]
+        l.append(piece)
+        for i in range(pos,len(l)):
+            self.pos_in_interests[l[i]] = i
+
 def test_requested():
     p = PiecePicker(9)
     p.complete(8)

@@ -93,6 +93,8 @@ class SingleDownload:
                 while self.downloader.storage.do_I_have_requests(index):
                     nb, nl = self.downloader.storage.new_request(index)
                     self.downloader.all_requests.append((index, nb, nl))
+            else:
+                self.downloader.picker.bump(index)
             ds = [d for d in self.downloader.downloads if not d.choked]
             shuffle(ds)
             for d in ds:
@@ -270,6 +272,9 @@ class DummyPicker:
 
     def am_I_complete(self):
         return false
+
+    def bump(self, i):
+        pass
 
 class DummyStorage:
     def __init__(self, remaining, have_endgame = false, numpieces = 1):
