@@ -81,7 +81,6 @@ from traceback import print_exc
 
 class CompleteDir:
     def __init__(self, d, a):
-        print 'a'
         self.d = d
         self.a = a
         self.flag = Event()
