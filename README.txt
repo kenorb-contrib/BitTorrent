@@ -42,9 +42,11 @@ about the files it's currently serving by getting its index page.
 To generate a metainfo file, run the publish btmakemetafile and give 
 it the file you want metainfo for and the url of the tracker
 
-./btmakemetafile.py myfile.ext http://my.tracker/announce
+./btmakemetafile.py myfile.ext http://my.tracker:6969/announce
 
 This will generate a file called myfile.ext.torrent
+
+Make sure to include the port number in the tracker url if it isn't 80.
 
 This command may take a while to scan over the whole file hashing it.
 
