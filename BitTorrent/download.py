@@ -44,7 +44,7 @@ defaults = [
     ('ip', 'i', '',
         "ip to report you have to the tracker."),
     ('minport', None, 6881, 'minimum port to listen on, counts up if unavailable'),
-    ('maxport', None, 6889, 'maximum port to listen on'),
+    ('maxport', None, 6999, 'maximum port to listen on'),
     ('responsefile', None, '',
         'file the server response was stored in, alternative to url'),
     ('url', None, '',
