@@ -96,3 +96,32 @@ class Connecter:
                         c.received_blob(blob)
         except ValueError:
             print_exc()
+
+"""
+
+def test_connect_and_disconnect():
+    connect something
+    send a message
+    call get_ip(), get_upload(), get_download(), is_local, send_message()
+    call disconnect
+
+def test_flunk_not_transfer():
+    connect something
+    send first message other than transfer()
+    assert disconnected
+
+def test_remote_disconnect():
+    connect something
+    remote disconnect, check reports up
+
+def test_flushed():
+    connect something
+    check is_flushed true and false
+    assert flush callback bubbles up
+
+def test_bifurcation():
+    connect something
+    send each type of message
+    do a got_slice with blob return
+
+"""

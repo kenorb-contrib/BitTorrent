@@ -146,8 +146,6 @@ class Encrypter:
         assert len(private_key) == 20
         self.private_key = binary_to_int(private_key)
         self.public_key = int_to_binary(pow(2, self.private_key, p), 192)
-        self.schedulefunc = schedulefunc
-        self.keepalive_delay = keepalive_delay
         schedulefunc(self.send_keepalives, keepalive_delay)
 
     def send_keepalives(self):

@@ -46,25 +46,6 @@ defaults = [
         "number of seconds to pause between changing who's choked"),
     ]
 
-class DummyDownload:
-    def __init__(self, connection):
-        pass
-
-    def got_choke(self, message):
-        pass
-    
-    def got_unchoke(self, message):
-        pass
-    
-    def got_slice(self, message):
-        pass
-    
-    def got_I_have(self, message):
-        pass
-
-    def disconnected(self):
-        pass
-
 def publish(params, cols):
     try:
         config, files = parseargs(params, defaults, 1, 10000)
@@ -127,3 +108,22 @@ def publish(params, cols):
         return
     PublisherFeedback(uploader, rawserver.add_task, listen_port, response['your ip'], blobs.blobs)
     rawserver.start_listening(encrypter, listen_port, false)
+
+class DummyDownload:
+    def __init__(self, connection):
+        pass
+
+    def got_choke(self, message):
+        pass
+    
+    def got_unchoke(self, message):
+        pass
+    
+    def got_slice(self, message):
+        pass
+    
+    def got_I_have(self, message):
+        pass
+
+    def disconnected(self):
+        pass

@@ -1,3 +1,6 @@
+# Written by Bram Cohen
+# this file is public domain
+
 true = 1
 false = 0
 

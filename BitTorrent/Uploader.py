@@ -85,3 +85,23 @@ class Upload:
         del self.connection
         del self.choker
         del self.blobs
+
+"""
+
+def test_skip_over_choke():
+    queue requests, choke and unchoke, flush
+    assert requests still sent
+    send another, asserts gets through immediately
+
+def test_transitions_clockwise():
+    make thing
+    transition to interested, choked, uninterested, unchoked
+
+def test_transitions_counterclockwise():
+    make thing
+    transition to choked, interested, unchoked, uninterested
+
+def test_received_blob():
+    call received_blob
+
+"""

@@ -96,9 +96,25 @@ class Download:
 
 # everything below is just for testing
 
-class DummyConnection:
-    def __init__(self):
-        self.messages = []
+"""
 
-    def send_message(self, message):
-        self.messages.append(message)
+def test_choke():
+    make eight things, put two in each state, one want more one not and one extraneous
+    choke remaining one, return all others to check
+    assert correct behavior
+
+def test_I_have():
+    assert does not adjust if has_blobs returns false
+    assert adjusts if interested on I have, otherwise not
+
+def test_disconnected():
+    assert adjusts all in response from disconnected()
+
+def test_unchoke():
+    assert adjusts after unchoke
+
+def test_halts_at_backlog():
+    assert stops requesting at backlog, resets to zero when chocked, and 
+    requests exactly one more after one comes in
+
+"""
