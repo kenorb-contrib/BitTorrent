@@ -90,6 +90,9 @@ def check_peers(message):
     npeers = message.get('num peers', 0)
     if type(npeers) not in ints or npeers < 0:
         raise ValueError
+    dpeers = message.get('done peers', 0)
+    if type(dpeers) not in ints or dpeers < 0:
+        raise ValueError
     last = message.get('last', 0)
     if type(last) not in ints or last < 0:
         raise ValueError

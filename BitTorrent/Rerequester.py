@@ -12,7 +12,7 @@ false = 0
 class Rerequester:
     def __init__(self, url, interval, sched, howmany, minpeers, 
             connect, externalsched, amount_left, up, down,
-            port, ip, myid, infohash, timeout, errorfunc, maxpeers):
+            port, ip, myid, infohash, timeout, errorfunc, maxpeers, doneflag):
         self.url = ('%s?info_hash=%s&peer_id=%s&port=%s' %
             (url, quote(infohash), quote(myid), str(port)))
         if ip != '':
@@ -32,6 +32,7 @@ class Rerequester:
         self.timeout = timeout
         self.errorfunc = errorfunc
         self.maxpeers = maxpeers
+        self.doneflag = doneflag
         self.last_failed = true
         self.sched(self.c, interval / 2)
 
@@ -99,8 +100,13 @@ class Rerequester:
                 self.trackerid = r.get('tracker id', self.trackerid)
                 self.last = r.get('last')
                 ps = len(r['peers']) + self.howmany()
-                if ps < self.maxpeers and r.get('num peers', 1000) > ps * 1.2:
-                    self.last = None
+                if ps < self.maxpeers:
+                    if self.doneflag.isSet():
+                        if r.get('num peers', 1000) - r.get('done peers', 0) > ps * 1.2:
+                            self.last = None
+                    else:
+                        if r.get('num peers', 1000) > ps * 1.2:
+                            self.last = None
                 for x in r['peers']:
                     self.connect((x['ip'], x['port']), x['peer id'])
         except ValueError, e:
