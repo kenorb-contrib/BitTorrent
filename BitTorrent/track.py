@@ -277,11 +277,8 @@ class Tracker:
                 '</html>\n')
             return (200, 'OK', {'Content-Type': 'text/html; charset=iso-8859-1'}, s.getvalue())
         elif path == 'scrape':
-            names = self.downloads.keys()
-            names.sort()
             fs = {}
-            for name in names:
-                l = self.downloads[name]
+            for name, l in self.downloads.items():
                 n = self.completed.get(name, 0)
                 c = len([1 for i in l.values() if type(i) == DictType and i['left'] == 0])
                 d = len(l) - c
