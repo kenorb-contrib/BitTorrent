@@ -12,7 +12,7 @@ try:
 except ImportError:
     from selectpoll import poll, error, POLLIN, POLLOUT, POLLERR, POLLHUP
     timemult = 1
-from threading import Thread
+from threading import Thread, Event
 from time import time, sleep
 import sys
 true = 1
@@ -220,10 +220,12 @@ class DummyHandler:
 def test_starting_side_close():
     try:
         da = DummyHandler()
-        sa = RawServer(.1)
+        fa = Event()
+        sa = RawServer(.1, fa)
         sa.start_listening(da, 5000)
         db = DummyHandler()
-        sb = RawServer(.1)
+        fb = Event()
+        sb = RawServer(.1, fb)
         sb.start_listening(db, 5001)
 
         ca = sa.start_connection(('', 5001))
@@ -275,16 +277,18 @@ def test_starting_side_close():
         assert db.lost == [cb]
         del db.lost[:]
     finally:
-        sa.shutdown()
-        sb.shutdown()
+        fa.set()
+        fb.set()
 
 def test_receiving_side_close():
     try:
         da = DummyHandler()
-        sa = RawServer(.1)
+        fa = Event()
+        sa = RawServer(.1, fa)
         sa.start_listening(da, 5002)
         db = DummyHandler()
-        sb = RawServer(.1)
+        fb = Event()
+        sb = RawServer(.1, fb)
         sb.start_listening(db, 5003)
         
         ca = sa.start_connection(('', 5003))
@@ -336,13 +340,14 @@ def test_receiving_side_close():
         assert db.data_in == []
         assert db.lost == []
     finally:
-        sa.shutdown()
-        sb.shutdown()
+        fa.set()
+        fb.set()
 
 def test_connection_refused():
     try:
         da = DummyHandler()
-        sa = RawServer(.1)
+        fa = Event()
+        sa = RawServer(.1, fa)
         sa.start_listening(da, 5006)
         
         ca = sa.start_connection(('', 5007))
@@ -353,17 +358,19 @@ def test_connection_refused():
         assert da.lost == [ca]
         del da.lost[:]
     finally:
-        sa.shutdown()
+        fa.set()
 
 def test_both_close():
     try:
         da = DummyHandler()
-        sa = RawServer(.1)
+        fa = Event()
+        sa = RawServer(.1, fa)
         sa.start_listening(da, 5004)
 
         sleep(1)
         db = DummyHandler()
-        sb = RawServer(.1)
+        fb = Event()
+        sb = RawServer(.1, fb)
         sb.start_listening(db, 5005)
         
         ca = sa.start_connection(('', 5005))
@@ -415,12 +422,13 @@ def test_both_close():
         assert db.data_in == []
         assert db.lost == []
     finally:
-        sa.shutdown()
-        sb.shutdown()
+        fa.set()
+        fb.set()
 
 def test_normal():
     l = []
-    s = RawServer(5)
+    f = Event()
+    s = RawServer(5, f)
     s.start_listening(DummyHandler(), 5007)
     s.add_task(lambda l = l: l.append('b'), 2)
     s.add_task(lambda l = l: l.append('a'), 1)
@@ -429,14 +437,15 @@ def test_normal():
     s.add_task(lambda l = l: l.append('c'), 1.5)
     sleep(3)
     assert l == ['a', 'b', 'c', 'd']
-    s.shutdown()
+    f.set()
 
 def test_catch_exception():
     l = []
-    s = RawServer(5, false)
+    f = Event()
+    s = RawServer(5, f, false)
     s.start_listening(DummyHandler(), 5009)
     s.add_task(lambda l = l: l.append('b'), 2)
     s.add_task(lambda: 4/0, 1)
     sleep(3)
     assert l == ['b']
-    s.shutdown()
+    f.set()
