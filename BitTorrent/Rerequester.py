@@ -16,7 +16,7 @@ class Rerequester:
         self.url = ('%s?info_hash=%s&peer_id=%s&port=%s' %
             (url, quote(infohash), quote(myid), str(port)))
         if ip != '':
-            sellf.url += '&ip=' + quote(ip)
+            self.url += '&ip=' + quote(ip)
         self.interval = interval
         self.announce_interval = 30 * 60
         self.sched = sched
