@@ -148,8 +148,8 @@
 		29B97315FDCFA39411CA2CEA = {
 			children = (
 				29B97316FDCFA39411CA2CEA,
+				F506F6C40287AE7901A845D2,
 				F5D01D41027E7D9D01A845D2,
-				F504D09B0280653201A845D2,
 			);
 			isa = PBXGroup;
 			name = "Other Sources";
@@ -224,7 +224,8 @@
 				HEADER_SEARCH_PATHS = "";
 				INSTALL_PATH = "$(HOME)/Applications";
 				LIBRARY_SEARCH_PATHS = "";
-				OTHER_CFLAGS = "";
+				OPTIMIZATION_CFLAGS = "-O2";
+				OTHER_CFLAGS = "-Wall";
 				OTHER_LDFLAGS = "";
 				PRODUCT_NAME = BitTorrent;
 				SECTORDER_FLAGS = "";
@@ -270,7 +271,7 @@
 			files = (
 				F5D01D39027E0FE201A845D2,
 				F5D01D3F027E224601A845D2,
-				F504D09C0280653301A845D2,
+				F506F6C50287AE7901A845D2,
 			);
 			isa = PBXHeadersBuildPhase;
 			name = Headers;
@@ -354,13 +355,13 @@
 //F52
 //F53
 //F54
-		F504D09B0280653201A845D2 = {
+		F506F6C40287AE7901A845D2 = {
 			isa = PBXFileReference;
-			path = messages.h;
+			path = BTCallbacks.h;
 			refType = 4;
 		};
-		F504D09C0280653301A845D2 = {
-			fileRef = F504D09B0280653201A845D2;
+		F506F6C50287AE7901A845D2 = {
+			fileRef = F506F6C40287AE7901A845D2;
 			isa = PBXBuildFile;
 			settings = {
 			};

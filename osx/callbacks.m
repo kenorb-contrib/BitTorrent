@@ -9,9 +9,7 @@
 #import <Cocoa/Cocoa.h>
 
 #import <python2.2/Python.h>
-#import "DLWindowController.h"
-
-#import "messages.h"
+#import "BTCallbacks.h"
 
 
 //  python type, this one to hold the ports for connecting the worker thread to it's DL window manager
@@ -49,9 +47,11 @@ static PyTypeObject bt_CookieType = {
 };
 
 
+// this is the proxy object that has the callbacks for each DL
+// encapsulates a connection to the it's DL Window controller
 typedef struct {
     PyObject_HEAD
-    id dlController;
+    id dlController;  // NSProxy connection
 } bt_ProxyObject;
 
 
@@ -64,13 +64,14 @@ static PyObject *chooseFile(bt_ProxyObject *self, PyObject *args)
     int dir;
     PyObject *res;
     NSString *str;
+
     if (!PyArg_ParseTuple(args, "slsi", &def, &size, &saveas, &dir))
 	return NULL;
     
     Py_BEGIN_ALLOW_THREADS
     str = [self->dlController chooseFile:[NSString stringWithCString:def] size:size isDirectory:dir];
-    res = PyString_FromString([str cString]);
     Py_END_ALLOW_THREADS
+    res = PyString_FromString([str cString]);
     [pool release];
     return res;
 }
@@ -90,18 +91,17 @@ static PyObject *display(bt_ProxyObject *self, PyObject *args, PyObject *keywds)
      if (!PyArg_ParseTupleAndKeywords(args, keywds, "|ffffs", kwlist, 
 					&fractionDone, &timeEst, &upRate, &downRate, &activity))
         return NULL;
-    
+	
+    Py_BEGIN_ALLOW_THREADS
     [dict setObject:[NSNumber numberWithFloat:fractionDone] forKey:@"fractionDone"];
     [dict setObject:[NSNumber numberWithFloat:timeEst] forKey:@"timeEst"];
     [dict setObject:[NSNumber numberWithFloat:upRate] forKey:@"upRate"];
     [dict setObject:[NSNumber numberWithFloat:downRate] forKey:@"downRate"];
     [dict setObject:[NSString stringWithCString:activity] forKey:@"activity"];
-
-
-    Py_BEGIN_ALLOW_THREADS
     [self->dlController display:dict];
-    Py_END_ALLOW_THREADS
     [pool release];
+    Py_END_ALLOW_THREADS
+        
     Py_INCREF(Py_None);
     return Py_None;
 }
@@ -185,10 +185,11 @@ static PyObject *getProxy(PyObject *self, PyObject *args)
     foo = (id)[[NSConnection connectionWithReceivePort:cookie->receivePort
 					sendPort:cookie->sendPort]
 			    rootProxy];
-    Py_END_ALLOW_THREADS
+    [foo setProtocolForProxy:@protocol(BTCallbacks)];
     [foo retain];
     proxy->dlController = foo;
     [pool release];
+    Py_END_ALLOW_THREADS
     return (PyObject *)proxy;
 }
 
