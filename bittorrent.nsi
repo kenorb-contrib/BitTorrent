@@ -17,7 +17,7 @@ Section "Install"
   File redirdonate.html
   File LICENSE.txt
   WriteRegStr HKCR .torrent "" bittorrent
-  WriteRegStr HKCR .torrent "Content Type" application/x-bittorrent
+  DeleteRegKey HKCR ".torrent\Content Type"
   WriteRegStr HKCR "MIME\Database\Content Type\application/x-bittorrent" Extension .torrent
   WriteRegStr HKCR bittorrent "" "TORRENT File"
   WriteRegBin HKCR bittorrent EditFlags 00000100
