@@ -43,7 +43,7 @@ PyObject *bt_getProxy(NSPort *receivePort, NSPort *sendPort);
 {
     NSOpenPanel *panel = [NSOpenPanel openPanel];
     id controller;
-    if([panel runModalForTypes:nil]) {
+    if([panel runModalForTypes:[NSArray arrayWithObjects:[NSString stringWithCString:"torrent"]]]) {
 	controller = [[DLWindowController alloc] init];
 	[NSBundle loadNibNamed:@"DLWindow" owner:controller];
 	[self runWithStr:[NSString stringWithFormat:@"--responsefile=%@", [panel filename]] controller:controller];
@@ -106,7 +106,7 @@ PyObject *bt_getProxy(NSPort *receivePort, NSPort *sendPort);
     NSAutoreleasePool *pool;
     PyObject *proxy;
     NSString *str;
-    PyObject *chooseFile, *finished, *display, *mm, *md, *dl, *flag;
+    PyObject *chooseFile, *finished, *display, *nerror, *mm, *md, *dl, *flag, *ret;
     PyThreadState *ts;
     
     pool = [[NSAutoreleasePool alloc] init];
@@ -127,10 +127,11 @@ PyObject *bt_getProxy(NSPort *receivePort, NSPort *sendPort);
     chooseFile = PyObject_GetAttrString(proxy, "chooseFile");
     display = PyObject_GetAttrString(proxy, "display");
     finished = PyObject_GetAttrString(proxy, "finished");
+    nerror = PyObject_GetAttrString(proxy, "nerror");
     [[dict objectForKey:@"flag"] getBytes:&flag];
 
     // do the download!
-    PyObject_CallFunction(dl, "[s]OOOOi", [str cString], chooseFile, display, finished, flag, 80);
+    ret = PyObject_CallFunction(dl, "[s]OOOOOi", [str cString], chooseFile, display, finished, nerror, flag, 80);
  
     // clean up
     Py_DECREF(mm);

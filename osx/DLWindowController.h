@@ -22,6 +22,7 @@
 - (IBAction)cancelDl:(id)sender;
 - (id)init;
 - (void)finished:(NSDictionary *)dict;
+- (void)error:(NSString *)str;
 - (void)display:(NSDictionary *)dict;
 - (NSString *)chooseFile:(NSString *)defaultFile size:(long)size isDirectory:(int)dir;
 - (void)setFlag:(PyObject *)nflag;

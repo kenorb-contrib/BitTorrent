@@ -94,6 +94,28 @@ static PyObject *finished(bt_ProxyObject *self, PyObject *args)
     return Py_None;
 }
 
+static PyObject *nerror(bt_ProxyObject *self, PyObject *args)
+{
+    char *errmsg = NULL;
+    char *BTerr = NULL;
+    NSString *str;
+    NSAutoreleasePool *pool =[[NSAutoreleasePool alloc] init];
+
+    if(!PyArg_ParseTuple(args, "s", &BTerr, &errmsg))
+	return NULL;
+    if(errmsg)
+	str = [NSString stringWithCString:errmsg];
+    else
+	str = [NSString stringWithCString:BTerr];
+
+    Py_BEGIN_ALLOW_THREADS
+    [self->dlController error:str];
+    Py_END_ALLOW_THREADS
+    [pool release];
+    Py_INCREF(Py_None);
+    return Py_None;
+}
+
 
 // first up is a PythonType to hold the proxy to the DL window
 
@@ -109,6 +131,7 @@ static struct PyMethodDef reg_methods[] = {
 	{"display",	(PyCFunction)display, METH_VARARGS|METH_KEYWORDS},
 	{"chooseFile",	(PyCFunction)chooseFile, METH_VARARGS},
 	{"finished",	(PyCFunction)finished, METH_VARARGS},
+	{"nerror",	(PyCFunction)nerror, METH_VARARGS},
 	{NULL,		NULL}		/* sentinel */
 };
 

@@ -146,6 +146,10 @@
     [percentCompleted setStringValue:[NSString localizedStringWithFormat:@"%2.1f%%", frac * 100]];
 }
 
+- (void)error:(NSString *)str
+{
+    
+}
 - (void)dealloc
 {
     [conn release];

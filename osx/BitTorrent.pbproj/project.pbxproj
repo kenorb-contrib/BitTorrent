@@ -166,7 +166,7 @@
 				29B97318FDCFA39411CA2CEA,
 				F5D01D34027E0B0201A845D2,
 				089C165CFE840E0CC02AAC07,
-				F5D01D46027E88A401A845D2,
+				F565958302DD36FB01A845D2,
 			);
 			isa = PBXGroup;
 			name = Resources;
@@ -244,7 +244,14 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>English</string>
 	<key>CFBundleDocumentTypes</key>
-	<array/>
+	<array>
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>BTin</string>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+		</dict>
+	</array>
 	<key>CFBundleExecutable</key>
 	<string>BitTorrent</string>
 	<key>CFBundleIconFile</key>
@@ -281,7 +288,7 @@
 			files = (
 				080E96DCFE201CFB7F000001,
 				F5D01D36027E0B0201A845D2,
-				F5D01D47027E88A401A845D2,
+				F565958402DD36FB01A845D2,
 			);
 			isa = PBXResourcesBuildPhase;
 			name = "Bundle Resources";
@@ -360,6 +367,18 @@
 		};
 		F506F6C50287AE7901A845D2 = {
 			fileRef = F506F6C40287AE7901A845D2;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		F565958302DD36FB01A845D2 = {
+			isa = PBXFolderReference;
+			name = BitTorrent;
+			path = /Volumes/Burris/drue/burris/wa/BitTorrent/BitTorrent;
+			refType = 0;
+		};
+		F565958402DD36FB01A845D2 = {
+			fileRef = F565958302DD36FB01A845D2;
 			isa = PBXBuildFile;
 			settings = {
 			};
@@ -448,18 +467,6 @@
 		};
 		F5D01D42027E7D9D01A845D2 = {
 			fileRef = F5D01D41027E7D9D01A845D2;
-			isa = PBXBuildFile;
-			settings = {
-			};
-		};
-		F5D01D46027E88A401A845D2 = {
-			isa = PBXFolderReference;
-			name = BitTorrent;
-			path = ../BitTorrent;
-			refType = 2;
-		};
-		F5D01D47027E88A401A845D2 = {
-			fileRef = F5D01D46027E88A401A845D2;
 			isa = PBXBuildFile;
 			settings = {
 			};
