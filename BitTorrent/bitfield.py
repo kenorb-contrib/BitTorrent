@@ -1,4 +1,4 @@
-# Written by Bram Cohen, Uoti Urpala, and John Hoffman
+# Written by Bram Cohen
 # see LICENSE.txt for license information
 
 from array import array
@@ -8,20 +8,16 @@ class Bitfield:
     def __init__(self, length, bitstring = None):
         self.length = length
         rlen, extra = divmod(length, 8)
+        if extra:
+            rlen += 1
         if bitstring is None:
             self.numfalse = length
-            if extra:
-                self.bits = array('B', chr(0) * (rlen + 1))
-            else:
-                self.bits = array('B', chr(0) * rlen)
+            self.bits = array('B', chr(0) * rlen)
         else:
+            if len(bitstring) != rlen:
+                raise ValueError
             if extra:
-                if len(bitstring) != rlen + 1:
-                    raise ValueError
                 if (ord(bitstring[-1]) << extra) & 0xFF != 0:
-                    raise ValueError
-            else:
-                if len(bitstring) != rlen:
                     raise ValueError
             c = counts
             self.numfalse = length - sum([c[ord(i)] for i in bitstring])
