@@ -111,7 +111,10 @@ class TrackerHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         try:
             self.server.lock.acquire()
-            self.get(false)
+            try:
+                self.get(false)
+            except IOError:
+                print_exc()
         finally:
             self.server.lock.release()
     
