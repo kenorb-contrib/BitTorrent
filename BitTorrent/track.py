@@ -304,7 +304,7 @@ class Tracker:
                 c = len([1 for i in l.values() if type(i) == DictType and i['left'] == 0])
                 d = len(l) - c
                 fs[name] = {'complete': c, 'incomplete': d, 'downloaded': n}
-                if (self.allowed is not None) and self.allowed.has_key(name):
+                if (self.allowed is not None) and self.allowed.has_key(name) and self.show_names:
                     fs[name]['name'] = self.allowed[name]['name']
             r = {'files': fs}
             return (200, 'OK', {'Content-Type': 'text/plain'}, bencode(r))
