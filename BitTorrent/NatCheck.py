@@ -17,6 +17,7 @@ class NatCheck:
         self.downloadid = downloadid
         self.peerid = peerid
         self.ip = ip
+        self.port = port
         self.closed = false
         self.buffer = StringIO()
         self.next_len = 1
