@@ -14,6 +14,7 @@ from cStringIO import StringIO
 from traceback import print_exc
 from time import time
 from random import shuffle
+from sha import sha
 from types import StringType, LongType, ListType, DictType
 from binascii import b2a_hex
 true = 1
@@ -34,6 +35,8 @@ defaults = [
         'whether to check back and ban downloaders behind NAT'),
     ('min_time_between_log_flushes', None, 3.0,
         'minimum time it must have been since the last flush to do another one'),
+    ('allowed_dir', None, '', 'only allow downloads for .torrents in this dir'),
+    ('parse_allowed_interval', None, 15, 'minutes between reloading of allowed_dir'),
     ]
 
 def downloaderfiletemplate(x):
@@ -55,6 +58,16 @@ def downloaderfiletemplate(x):
             left = info.get('left')
             if type(left) != LongType or left < 0:
                 raise ValueError
+
+def parseTorrents(dir):
+    import os
+    a = {}
+    for f in os.listdir(dir):
+	if f[-8:] == '.torrent':
+	    d = bdecode(open(os.path.join(dir,f)).read())
+	    h = sha(bencode(d['info'])).digest()
+	    a[h] = 1
+    return a
 
 alas = 'your file may exist elsewhere in the universe\n\nbut alas, not here'
 
@@ -83,6 +96,12 @@ class Tracker:
         self.prevtime = time()
         self.timeout_downloaders_interval = config['timeout_downloaders_interval']
         rawserver.add_task(self.expire_downloaders, self.timeout_downloaders_interval)
+	if config['allowed_dir'] != '':
+	    self.allowed_dir = config['allowed_dir']
+	    self.parse_allowed_interval = config['parse_allowed_interval']
+	    self.parse_allowed()
+	else:
+	    self.allowed = None
 
     def get(self, connection, path, headers):
         try:
@@ -115,6 +134,10 @@ class Tracker:
             if not params.has_key('info_hash'):
                 raise ValueError, 'no info hash'
             infohash = params['info_hash']
+	    if self.allowed != None:
+		if not self.allowed.has_key(infohash):
+		    return (400, 'Not Authorized', {'Content-Type': 'text/plain'}, bencode({'failure reason':
+                    'Requested download is not authorized for use with this tracker.'}))
             ip = connection.get_ip()
             if params.has_key('ip'):
                 ip = params['ip']
@@ -172,6 +195,10 @@ class Tracker:
         h.write(bencode(self.downloads))
         h.close()
 
+    def parse_allowed(self):
+	self.rawserver.add_task(self.parse_allowed, self.parse_allowed_interval * 60)
+	self.allowed = parseTorrents(self.allowed_dir)
+	
     def expire_downloaders(self):
         for x in self.times.keys():
             for myid, t in self.times[x].items():
