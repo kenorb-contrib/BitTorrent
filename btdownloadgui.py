@@ -106,9 +106,14 @@ class DownloadInfoFrame:
         
         colSizer.Add(gridSizer, 0, wxEXPAND)
         colSizer.Add(rategridSizer, 0, wxEXPAND)
-        self.errorText = wxStaticText(panel, -1, '', style = wxALIGN_LEFT)
+        errorTextSizer = wxFlexGridSizer(cols = 1)
+        self.errorText = wxStaticText(panel, -1, ' ', style = wxALIGN_LEFT)
         self.errorText.SetForegroundColour('Red')
-        colSizer.Add(self.errorText, 0, wxEXPAND)
+        errorTextSizer.Add(self.errorText, 0, wxEXPAND)
+        minsize = self.errorText.GetBestSize()
+        minsize.SetHeight(2*self.errorText.GetBestSize().GetHeight())   # big enough for 2 lines
+        errorTextSizer.SetMinSize(minsize)
+        colSizer.Add(errorTextSizer, 0, wxEXPAND)
         self.cancelButton = wxButton(panel, -1, 'Cancel')
         colSizer.Add(self.cancelButton, 0, wxALIGN_CENTER)
         colSizer.AddGrowableCol(0)
