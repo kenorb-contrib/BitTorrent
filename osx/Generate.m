@@ -106,7 +106,7 @@
     PyObject *mm, *md;
     PyObject *mmf, *res, *enc, *be;
     FILE *desc;
-    NSString *f, *url, *fname;
+    NSString *f, *url, *filename;
     PyThreadState *ts;
     NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
     id foo;
@@ -114,7 +114,7 @@
     PyEval_RestoreThread(ts);    
 
     f = [dict objectForKey:@"f"];
-    fname = [dict objectForKey:@"fname"];
+    filename = [dict objectForKey:@"fname"];
     url = [dict objectForKey:@"url"];
     
     mm = PyImport_ImportModule("btmakemetafile");
@@ -124,8 +124,9 @@
     md = PyModule_GetDict(mm);
     be = PyDict_GetItemString(md, "bencode");
 
-    res = PyObject_CallFunction(mmf, "si", [fname cString],  pow(2,20));
-    enc = PyObject_CallFunction(be, "{s:O,s:s}", "info", res, "announce", [url cString]);
+    res = PyObject_CallFunction(mmf, "si", [filename cString],  1048576);
+    if(res)
+	enc = PyObject_CallFunction(be, "{s:O,s:s}", "info", res, "announce", [url cString]);
     if(PyErr_Occurred())
 	PyErr_Print();
     else {

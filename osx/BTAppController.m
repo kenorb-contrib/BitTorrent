@@ -68,7 +68,7 @@ bt_ProxyObject *bt_getProxy(NSPort *receivePort, NSPort *sendPort);
 {
     NSOpenPanel *panel = [NSOpenPanel openPanel];
     id controller;
-    if([panel runModalForTypes:[NSArray arrayWithObjects:[NSString stringWithCString:"torrent"]]]) {
+    if([panel runModalForTypes:[NSArray arrayWithObjects:@"torrent", nil]]) {
 	controller = [self loadDLWindow];
 	[self runWithStr:[NSString stringWithFormat:@"--responsefile=%@", [panel filename]] controller:controller];
     }

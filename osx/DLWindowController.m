@@ -3,12 +3,23 @@
 
 @implementation DLWindowController
 
+#define LASTDIR @"LastSaveDir"
+
 - (id)init
 { 
+    NSUserDefaults *defaults; 
+    NSMutableDictionary *appDefaults;
+    
     [super init];
     timeEst = [@"" retain];
     conn = nil;
     done = 0;
+    
+    defaults = [NSUserDefaults standardUserDefaults];
+    appDefaults = [NSMutableDictionary
+	dictionaryWithObject:NSHomeDirectory() forKey:LASTDIR];
+    [defaults registerDefaults:appDefaults];
+
     return self;
 }
 
@@ -73,7 +84,7 @@
     if(!dir) {
 	panel = [NSSavePanel savePanel];
 	[panel setTitle:@"Save, choose an existing file to resume."];
-	if([panel runModalForDirectory:NSHomeDirectory() file:defaultFile]) {
+	if([panel runModalForDirectory:[[NSUserDefaults standardUserDefaults] objectForKey:LASTDIR] file:defaultFile]) {
 	    fname = [panel filename];
 	}
     }
@@ -83,13 +94,14 @@
 	[panel setCanChooseDirectories:YES];
 	[panel setTitle:@"Choose directory, choose existing directory to resume."];
 	[panel setPrompt:@"Save"];
-	if([panel runModalForDirectory:NSHomeDirectory() file:defaultFile]) {
+	if([panel runModalForDirectory:[[NSUserDefaults standardUserDefaults] objectForKey:LASTDIR] file:defaultFile]) {
 	    fname = [panel filename];
 	}
     }
     if(fname) {
 	[file setStringValue:[NSString stringWithFormat:@"%@ (%1.1f MB)", [fname lastPathComponent], size / 1048576.0]];
 	[[self window] setTitleWithRepresentedFilename:fname];
+	[[NSUserDefaults standardUserDefaults] setObject:[panel directory] forKey:LASTDIR];
 	return fname;
     }
     // user cancelled

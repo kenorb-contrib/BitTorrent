@@ -7,7 +7,7 @@
 //
 
 #import <Cocoa/Cocoa.h>
-#import <Python/Python.h>
+#import <python2.2/Python.h>
 
 // external function, registers Python module containing BT callbacks
 void init_callbacks();

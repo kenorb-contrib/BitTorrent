@@ -8,7 +8,7 @@
 
 #import <Cocoa/Cocoa.h>
 
-#import <Python/Python.h>
+#import <python2.2/Python.h>
 #import "BTCallbacks.h"
 #import "pystructs.h"
 

@@ -1,4 +1,4 @@
-#import <Python/Python.h>
+#import <python2.2/Python.h>
 
 // this is the proxy object that has the callbacks for each DL
 // encapsulates a connection to the it's DL Window controller
