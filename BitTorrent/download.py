@@ -139,7 +139,7 @@ def download(params, filefunc, statusfunc, errorfunc, doneflag, cols):
         def finished(result, statusfunc = statusfunc, errorfunc = errorfunc, doneflag = doneflag, r = r):
             if result:
                 r[0] = 1
-                statusfunc(timeEst = 'Download Succeeded!')
+                statusfunc(timeEst = 'Download Succeeded!', percentDone = 100)
             else:
                 statusfunc(timeEst = 'Download Failed')
             doneflag.set()
