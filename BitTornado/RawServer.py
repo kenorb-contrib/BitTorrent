@@ -8,7 +8,8 @@ from cStringIO import StringIO
 from traceback import print_exc
 from select import error
 from threading import Thread, Event
-from time import time, sleep
+from time import sleep
+from clock import clock
 import sys
 try:
     True
@@ -44,7 +45,7 @@ READSIZE = 100000
 class RawServer:
     def __init__(self, doneflag, timeout_check_interval, timeout, noisy = True,
                  ipv6_enable = True, failfunc = lambda x: None, errorfunc = None,
-                 sockethandler = None):
+                 sockethandler = None, excflag = Event()):
         self.timeout_check_interval = timeout_check_interval
         self.timeout = timeout
         self.servers = {}
@@ -59,13 +60,18 @@ class RawServer:
         self.externally_added = []
         self.finished = Event()
         self.tasks_to_kill = []
+        self.excflag = excflag
+        
         if sockethandler is None:
             sockethandler = SocketHandler(timeout, ipv6_enable, READSIZE)
         self.sockethandler = sockethandler
         self.add_task(self.scan_for_timeouts, timeout_check_interval)
 
+    def get_exception_flag(self):
+        return self.excflag
+
     def add_task(self, func, delay, id = None):
-        insort(self.funcs, (time() + delay, func, id))
+        insort(self.funcs, (clock() + delay, func, id))
 
     def external_add_task(self, func, delay = 0, id = None):
         self.externally_added.append((func, delay, id))
@@ -89,6 +95,9 @@ class RawServer:
     def start_connection(self, dns, handler = None, randomize = False):
         return self.sockethandler.start_connection(dns, handler, randomize)
 
+    def get_stats(self):
+        return self.sockethandler.get_stats()
+
     def pop_external(self):
         while self.externally_added:
             (a, b, c) = self.externally_added.pop(0)
@@ -103,7 +112,7 @@ class RawServer:
                     self.pop_external()
                     self._kill_tasks()
                     if self.funcs:
-                        period = self.funcs[0][0] - time()
+                        period = self.funcs[0][0] - clock()
                     else:
                         period = 2 ** 30
                     if period < 0:
@@ -111,11 +120,12 @@ class RawServer:
                     events = self.sockethandler.do_poll(period)
                     if self.doneflag.isSet():
                         return
-                    while self.funcs and self.funcs[0][0] <= time():
+                    while self.funcs and self.funcs[0][0] <= clock():
                         garbage1, func, id = self.funcs.pop(0)
                         if id in self.tasks_to_kill:
                             pass
                         try:
+#                            print func.func_name
                             func()
                         except (SystemError, MemoryError), e:
                             self.failfunc(str(e))
@@ -157,9 +167,9 @@ class RawServer:
     def _kill_tasks(self):
         if self.tasks_to_kill:
             new_funcs = []
-            for (time, func, id) in self.funcs:
+            for (t, func, id) in self.funcs:
                 if id not in self.tasks_to_kill:
-                    new_funcs.append((time, func, id))
+                    new_funcs.append((t, func, id))
             self.funcs = new_funcs
             self.tasks_to_kill = []
 
@@ -167,6 +177,8 @@ class RawServer:
         self.tasks_to_kill.append(id)
 
     def exception(self, kbint = False):
+        if not kbint:
+            self.excflag.set()
         self.exccount += 1
         if self.errorfunc is None:
             print_exc()

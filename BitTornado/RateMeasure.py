@@ -1,57 +1,71 @@
 # Written by Bram Cohen
 # see LICENSE.txt for license information
 
-from time import time
+from clock import clock
 try:
     True
 except:
     True = 1
     False = 0
 
+FACTOR = 0.999
+
 class RateMeasure:
-    def __init__(self, left):
-        self.start = None
+    def __init__(self):
         self.last = None
-        self.rate = 0
+        self.time = 1.0
+        self.got = 0.0
         self.remaining = None
-        self.left = left
         self.broke = False
         self.got_anything = False
+        self.last_checked = None
+        self.rate = 0
 
     def data_came_in(self, amount):
         if not self.got_anything:
             self.got_anything = True
-            self.start = time() - 2
-            self.last = self.start
-            self.left -= amount
+            self.last = clock()
             return
-        self.update(time(), amount)
+        self.update(amount)
 
     def data_rejected(self, amount):
-        self.left += amount
+        pass
 
-    def get_time_left(self):
+    def get_time_left(self, left):
+        t = clock()
         if not self.got_anything:
             return None
-        t = time()
         if t - self.last > 15:
-            self.update(t, 0)
-        return self.remaining
-
-    def get_size_left(self):
-        return self.left
-
-    def update(self, t, amount):
-        self.left -= amount
+            self.update(0)
         try:
-            self.rate = ((self.rate * (self.last - self.start)) + amount) / (t - self.start)
-            self.last = t
-            self.remaining = self.left / self.rate
-            if self.start < self.last - self.remaining:
-                self.start = self.last - self.remaining
+            remaining = left/self.rate
+            delta = max(remaining/20,2)
+            if self.remaining is None:
+                self.remaining = remaining
+            elif abs(self.remaining-remaining) > delta:
+                self.remaining = remaining
+            else:
+                self.remaining -= t - self.last_checked
         except ZeroDivisionError:
             self.remaining = None
-        if self.broke and self.last - self.start < 20:
-            self.start = self.last - 20
-        if self.last - self.start > 20:
-            self.broke = True
+        if self.remaining is not None and self.remaining < 0.1:
+            self.remaining = 0.1
+        self.last_checked = t
+        return self.remaining
+
+    def update(self, amount):
+        t = clock()
+        t1 = int(t)
+        l1 = int(self.last)
+        for i in xrange(l1,t1):
+            self.time *= FACTOR
+            self.got *= FACTOR
+        self.got += amount
+        if t - self.last < 20:
+            self.time += t - self.last
+        self.last = t
+        try:
+            rate = self.rate
+            self.rate = self.got / self.time
+        except ZeroDivisionError:
+            self.rate = rate

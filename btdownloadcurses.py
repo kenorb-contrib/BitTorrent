@@ -19,6 +19,7 @@ from BitTornado.RawServer import RawServer
 from random import seed
 from socket import error as socketerror
 from BitTornado.bencode import bencode
+from BitTornado.natpunch import UPnP_test
 from threading import Event
 from os.path import abspath
 from signal import signal, SIGWINCH
@@ -26,7 +27,9 @@ from sha import sha
 from sys import argv, exit
 import sys
 from time import time, strftime
+from BitTornado.clock import clock
 from BitTornado import createPeerID
+from BitTornado.ConfigDir import ConfigDir
 
 try:
     import curses
@@ -187,9 +190,9 @@ class CursesDisplayer:
             self.activity = fmttime(timeEst)
         if self.changeflag.isSet():
             return
-        if self.last_update_time + 0.1 > time() and fractionDone not in (0.0, 1.0) and activity is not None:
+        if self.last_update_time + 0.1 > clock() and fractionDone not in (0.0, 1.0) and activity is not None:
             return
-        self.last_update_time = time()
+        self.last_update_time = clock()
         if fractionDone is not None:
             blocknum = int(self.fieldw * fractionDone)
             self.progress = blocknum * '#' + (self.fieldw - blocknum) * '_'
@@ -244,8 +247,8 @@ class CursesDisplayer:
             self.spewwin.addnstr(2, 0, "  #     IP                 Upload           Download     Completed  Speed", self.speww, curses.A_BOLD)
 
 
-            if self.spew_scroll_time + SPEW_SCROLL_RATE < time():
-                self.spew_scroll_time = time()
+            if self.spew_scroll_time + SPEW_SCROLL_RATE < clock():
+                self.spew_scroll_time = clock()
                 if len(spew) > self.spewh-5 or self.spew_scroll_pos > 0:
                     self.spew_scroll_pos += 1
             if self.spew_scroll_pos > len(spew):
@@ -304,14 +307,24 @@ def run(scrwin, errlist, params):
     d = CursesDisplayer(scrwin, errlist, doneflag)
     try:
         while 1:
+            configdir = ConfigDir('downloadcurses')
+            defaultsToIgnore = ['responsefile', 'url', 'priority']
+            configdir.setDefaults(defaults,defaultsToIgnore)
+            configdefaults = configdir.loadConfig()
+            defaults.append(('save_options',0,
+             "whether to save the current options as the new default configuration " +
+             "(only for btdownloadcurses.py)"))
             try:
-                config = parse_params(params)
+                config = parse_params(params, configdefaults)
             except ValueError, e:
                 d.error('error: ' + str(e) + '\nrun with no args for parameter explanations')
                 break
             if not config:
-                d.error(get_usage(cols=fieldw))
+                d.error(get_usage(defaults, d.fieldw, configdefaults))
                 break
+            if config['save_options']:
+                configdir.saveConfig(config)
+            configdir.deleteOldCacheData(config['expire_cache_data'])
 
             myid = createPeerID()
             seed(myid)
@@ -320,10 +333,13 @@ def run(scrwin, errlist, params):
                                   config['timeout'], ipv6_enable = config['ipv6_enabled'],
                                   failfunc = d.failed, errorfunc = d.error)
 
+            upnp = config['upnp_nat_access']
+            if upnp and not UPnP_test():
+                upnp = False
             try:
                 listen_port = rawserver.find_and_bind(config['minport'], config['maxport'],
                                 config['bind'], ipv6_socket_style = config['ipv6_binds_v4'],
-                                upnp = config['upnp_nat_access'])
+                                upnp = upnp)
             except socketerror, e:
                 d.error("Couldn't listen - " + str(e))
                 break
@@ -335,7 +351,8 @@ def run(scrwin, errlist, params):
             infohash = sha(bencode(response['info'])).digest()
             
             dow = BT1Download(d.display, d.finished, d.error, d.error, doneflag,
-                            config, response, infohash, myid, rawserver, listen_port)
+                            config, response, infohash, myid, rawserver, listen_port,
+                            configdir)
             
             if not dow.saveAs(d.chooseFile):
                 break
@@ -343,11 +360,13 @@ def run(scrwin, errlist, params):
             if not dow.initFiles(old_style = True):
                 break
             if not dow.startEngine():
+                dow.shutdown()
                 break
             dow.startRerequester()
             dow.autoStats()
 
-            d.display(activity = 'connecting to peers')
+            if not dow.am_I_finished():
+                d.display(activity = 'connecting to peers')
             rawserver.listen_forever(dow.getPortHandler())
             d.display(activity = 'shutting down')
             dow.shutdown()

@@ -2,17 +2,15 @@
 # see LICENSE.txt for license information
 
 from BitTornado.bitfield import Bitfield
-from traceback import print_exc
 from binascii import b2a_hex
-from BitTornado.CurrentRateMeasure import Measure
-from time import time
-from cStringIO import StringIO
 
 try:
     True
 except:
     True = 1
     False = 0
+
+DEBUG = False
 
 def toint(s):
     return long(b2a_hex(s), 16)
@@ -45,6 +43,7 @@ class Connection:
         self.outqueue = []
         self.partial_message = None
         self.download = None
+        self.send_choke_queued = False
 
     def get_ip(self, real=False):
         return self.connection.get_ip(real)
@@ -56,6 +55,8 @@ class Connection:
         return self.connection.get_readable_id()
 
     def close(self):
+        if DEBUG:
+            print 'connection closed'
         self.connection.close()
 
     def is_locally_initiated(self):
@@ -68,18 +69,30 @@ class Connection:
         self._send_message(NOT_INTERESTED)
 
     def send_choke(self):
-        self._send_message(CHOKE)
+        if self.partial_message:
+            self.send_choke_queued = True
+        else:
+            self._send_message(CHOKE)
 
     def send_unchoke(self):
-        self._send_message(UNCHOKE)
+        if self.send_choke_queued:
+            self.send_choke_queued = False
+            if DEBUG:
+                print 'CHOKE SUPPRESSED'
+        else:
+            self._send_message(UNCHOKE)
 
     def send_request(self, index, begin, length):
         self._send_message(REQUEST + tobinary(index) + 
             tobinary(begin) + tobinary(length))
+        if DEBUG:
+            print 'sent request: '+str(index)+': '+str(begin)+'-'+str(begin+length)
 
     def send_cancel(self, index, begin, length):
         self._send_message(CANCEL + tobinary(index) + 
             tobinary(begin) + tobinary(length))
+        if DEBUG:
+            print 'sent cancel: '+str(index)+': '+str(begin)+'-'+str(begin+length)
 
     def send_bitfield(self, bitfield):
         self._send_message(BITFIELD + bitfield)
@@ -87,12 +100,15 @@ class Connection:
     def send_have(self, index):
         self._send_message(HAVE + tobinary(index))
 
+    def send_keepalive(self):
+        self._send_message('')
+
     def _send_message(self, s):
         s = tobinary(len(s))+s
-        if not self.partial_message:
-            self.connection.send_message(s)
-        else:
+        if self.partial_message:
             self.outqueue.append(s)
+        else:
+            self.connection.send_message_raw(s)
 
     def send_partial(self, bytes):
         if self.connection.closed:
@@ -105,18 +121,23 @@ class Connection:
             self.partial_message = ''.join((
                             tobinary(len(piece) + 9), PIECE,
                             tobinary(index), tobinary(begin), piece ))
+            if DEBUG:
+                print 'sending chunk: '+str(index)+': '+str(begin)+'-'+str(begin+len(piece))
 
         if bytes < len(self.partial_message):
-            self.connection.send_message(self.partial_message[:bytes])
+            self.connection.send_message_raw(self.partial_message[:bytes])
             self.partial_message = self.partial_message[bytes:]
             return bytes
 
         q = [self.partial_message]
-        q.extend(self.outqueue)
-        q = ''.join(q)
-        self.connection.send_message(q)
         self.partial_message = None
+        if self.send_choke_queued:
+            self.send_choke_queued = False
+            self.outqueue.append(tobinary(1)+CHOKE)
+        q.extend(self.outqueue)
         self.outqueue = []
+        q = ''.join(q)
+        self.connection.send_message_raw(q)
         return len(q)
 
     def get_upload(self):
@@ -158,6 +179,7 @@ class Connecter:
         c.upload = self.make_upload(c, self.ratelimiter, self.totalup)
         c.download = self.downloader.make_download(c)
         self.choker.connection_made(c)
+        return c
 
     def connection_lost(self, connection):
         c = self.connections[connection]
@@ -243,127 +265,3 @@ class Connecter:
                 self.got_piece(i)
         else:
             connection.close()
-
-class DummyUpload:
-    def __init__(self, events):
-        self.events = events
-        events.append('made upload')
-
-    def flushed(self):
-        self.events.append('flushed')
-
-    def got_interested(self):
-        self.events.append('interested')
-        
-    def got_not_interested(self):
-        self.events.append('not interested')
-
-    def got_request(self, index, begin, length):
-        self.events.append(('request', index, begin, length))
-
-    def got_cancel(self, index, begin, length):
-        self.events.append(('cancel', index, begin, length))
-
-class DummyDownload:
-    def __init__(self, events):
-        self.events = events
-        events.append('made download')
-        self.hit = 0
-
-    def disconnected(self):
-        self.events.append('disconnected')
-
-    def got_choke(self):
-        self.events.append('choke')
-
-    def got_unchoke(self):
-        self.events.append('unchoke')
-
-    def got_have(self, i):
-        self.events.append(('have', i))
-
-    def got_have_bitfield(self, bitfield):
-        self.events.append(('bitfield', bitfield.tostring()))
-
-    def got_piece(self, index, begin, piece):
-        self.events.append(('piece', index, begin, piece))
-        self.hit += 1
-        return self.hit > 1
-
-class DummyDownloader:
-    def __init__(self, events):
-        self.events = events
-
-    def make_download(self, connection):
-        return DummyDownload(self.events)
-
-class DummyConnection:
-    def __init__(self, events):
-        self.events = events
-
-    def send_message(self, message):
-        self.events.append(('m', message))
-
-class DummyChoker:
-    def __init__(self, events, cs):
-        self.events = events
-        self.cs = cs
-
-    def connection_made(self, c):
-        self.events.append('made')
-        self.cs.append(c)
-
-    def connection_lost(self, c):
-        self.events.append('lost')
-
-def test_operation():
-    events = []
-    cs = []
-    co = Connecter(lambda c, events = events: DummyUpload(events), 
-        DummyDownloader(events), DummyChoker(events, cs), 3, 
-        Measure(10))
-    assert events == []
-    assert cs == []
-    
-    dc = DummyConnection(events)
-    co.connection_made(dc)
-    assert len(cs) == 1
-    cc = cs[0]
-    co.got_message(dc, BITFIELD + chr(0xc0))
-    co.got_message(dc, CHOKE)
-    co.got_message(dc, UNCHOKE)
-    co.got_message(dc, INTERESTED)
-    co.got_message(dc, NOT_INTERESTED)
-    co.got_message(dc, HAVE + tobinary(2))
-    co.got_message(dc, REQUEST + tobinary(1) + tobinary(5) + tobinary(6))
-    co.got_message(dc, CANCEL + tobinary(2) + tobinary(3) + tobinary(4))
-    co.got_message(dc, PIECE + tobinary(1) + tobinary(0) + 'abc')
-    co.got_message(dc, PIECE + tobinary(1) + tobinary(3) + 'def')
-    co.connection_flushed(dc)
-    cc.send_bitfield([False, True, True])
-    cc.send_interested()
-    cc.send_not_interested()
-    cc.send_choke()
-    cc.send_unchoke()
-    cc.send_have(4)
-    cc.send_request(0, 2, 1)
-    cc.send_cancel(1, 2, 3)
-    cc.send_piece(1, 2, 'abc')
-    co.connection_lost(dc)
-    x = ['made upload', 'made download', 'made', 
-        ('bitfield', [True, True, False]), 'choke', 'unchoke',
-        'interested', 'not interested', ('have', 2), 
-        ('request', 1, 5, 6), ('cancel', 2, 3, 4),
-        ('piece', 1, 0, 'abc'), ('piece', 1, 3, 'def'), 
-        ('m', HAVE + tobinary(1)),
-        'flushed', ('m', BITFIELD + chr(0x60)), ('m', INTERESTED), 
-        ('m', NOT_INTERESTED), ('m', CHOKE), ('m', UNCHOKE), 
-        ('m', HAVE + tobinary(4)), ('m', REQUEST + tobinary(0) + 
-        tobinary(2) + tobinary(1)), ('m', CANCEL + tobinary(1) + 
-        tobinary(2) + tobinary(3)), ('m', PIECE + tobinary(1) + 
-        tobinary(2) + 'abc'), 'disconnected', 'lost']
-    for a, b in zip (events, x):
-        assert a == b, repr((a, b))
-
-def test_conversion():
-    assert toint(tobinary(50000)) == 50000

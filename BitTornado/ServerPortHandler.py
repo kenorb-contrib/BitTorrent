@@ -77,6 +77,9 @@ class SingleRawServer:
     def is_finished(self):
         return self.finished
 
+    def get_exception_flag(self):
+        return self.rawserver.get_exception_flag()
+
 
 class NewSocketHandler:     # hand a new socket off where it belongs
     def __init__(self, multihandler, connection):
@@ -85,7 +88,19 @@ class NewSocketHandler:     # hand a new socket off where it belongs
         connection.set_handler(self)
         self.closed = False
         self.buffer = StringIO()
+        self.complete = False
         self.next_len, self.next_func = 1, self.read_header_len
+        self.multihandler.rawserver.external_add_task(self._auto_close, 15)
+
+    def _auto_close(self):
+        if not self.complete:
+            self.close()
+        
+    def close(self):
+        if not self.closed:
+            self.connection.close()
+            self.closed = True
+
         
 #   header format:
 #        connection.write(chr(len(protocol_name)) + protocol_name + 
@@ -130,11 +145,12 @@ class NewSocketHandler:     # hand a new socket off where it belongs
                 self.next_len, self.next_func = 1, self.read_dead
                 raise
             if x is None:
-                self.connection.close()
+                self.close()
                 return
             if x == True:       # ready to process
                 self.multihandler.singlerawservers[m]._external_connection_made(
                         self.connection, self.options, s)
+                self.complete = True
                 return
             self.next_len, self.next_func = x
 

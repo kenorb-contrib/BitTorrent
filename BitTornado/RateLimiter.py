@@ -3,7 +3,7 @@
 
 from traceback import print_exc
 from binascii import b2a_hex
-from time import time
+from clock import clock
 from cStringIO import StringIO
 
 try:
@@ -23,7 +23,7 @@ class RateLimiter:
         if rate == 0:
             rate = 10e10
         self.upload_rate = rate * 1000
-        self.lasttime = time()
+        self.lasttime = clock()
         self.bytes_sent = 0
 
     def queue(self, conn):
@@ -38,7 +38,7 @@ class RateLimiter:
             self.last = conn
 
     def try_send(self, check_time = False):
-        t = time()
+        t = clock()
         self.bytes_sent -= (t - self.lasttime) * self.upload_rate
         self.lasttime = t
         if check_time:

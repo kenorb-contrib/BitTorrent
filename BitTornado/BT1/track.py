@@ -17,6 +17,7 @@ from os.path import exists, isfile
 from cStringIO import StringIO
 from traceback import print_exc
 from time import time, gmtime, strftime, localtime
+from BitTornado.clock import clock
 from random import shuffle, seed, randrange
 from sha import sha
 from types import StringType, LongType, ListType, DictType
@@ -248,7 +249,7 @@ class Tracker:
         self.save_dfile_interval = config['save_dfile_interval']
         self.show_names = config['show_names']
         rawserver.add_task(self.save_dfile, self.save_dfile_interval)
-        self.prevtime = time()
+        self.prevtime = clock()
         self.timeout_downloaders_interval = config['timeout_downloaders_interval']
         rawserver.add_task(self.expire_downloaders, self.timeout_downloaders_interval)
         self.logfile = None
@@ -347,97 +348,105 @@ class Tracker:
 
 
     def get_infopage(self):
-        if not self.config['show_infopage']:
-            return (404, 'Not Found', {'Content-Type': 'text/plain', 'Pragma': 'no-cache'}, alas)
-        red = self.config['infopage_redirect']
-        if red != '':
-            return (302, 'Found', {'Content-Type': 'text/html', 'Location': red},
-                    '<A HREF="'+red+'">Click Here</A>')
-        
-        s = StringIO()
-        s.write('<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">\n' \
-            '<html><head><title>BitTorrent download info</title>\n')
-        if self.favicon != None:
-            s.write('<link rel="shortcut icon" href="/favicon.ico">\n')
-        s.write('</head>\n<body>\n' \
-            '<h3>BitTorrent download info</h3>\n'\
-            '<ul>\n'
-            '<li><strong>tracker version:</strong> %s</li>\n' \
-            '<li><strong>server time:</strong> %s</li>\n' \
-            '</ul>\n' % (version, isotime()))
-        names = self.downloads.keys()
-        if not names:
-            s.write('<p>not tracking any files yet...</p>\n')
-        else:
-            names.sort()
-            tn = 0
-            tc = 0
-            td = 0
-            tt = 0  # Total transferred
-            ts = 0  # Total size
-            nf = 0  # Number of files displayed
+        try:
+            if not self.config['show_infopage']:
+                return (404, 'Not Found', {'Content-Type': 'text/plain', 'Pragma': 'no-cache'}, alas)
+            red = self.config['infopage_redirect']
+            if red != '':
+                return (302, 'Found', {'Content-Type': 'text/html', 'Location': red},
+                        '<A HREF="'+red+'">Click Here</A>')
+            
+            s = StringIO()
+            s.write('<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">\n' \
+                '<html><head><title>BitTorrent download info</title>\n')
+            if self.favicon != None:
+                s.write('<link rel="shortcut icon" href="/favicon.ico">\n')
+            s.write('</head>\n<body>\n' \
+                '<h3>BitTorrent download info</h3>\n'\
+                '<ul>\n'
+                '<li><strong>tracker version:</strong> %s</li>\n' \
+                '<li><strong>server time:</strong> %s</li>\n' \
+                '</ul>\n' % (version, isotime()))
             if self.allowed != None and self.show_names:
-                s.write('<table summary="files" border="1">\n' \
-                    '<tr><th>info hash</th><th>torrent name</th><th align="right">size</th><th align="right">complete</th><th align="right">downloading</th><th align="right">downloaded</th><th align="right">transferred</th></tr>\n')
+                names = [ (self.allowed[hash]['name'],hash)
+                          for hash in self.downloads.keys() ]
             else:
-                s.write('<table summary="files">\n' \
-                    '<tr><th>info hash</th><th align="right">complete</th><th align="right">downloading</th><th align="right">downloaded</th></tr>\n')
-            for name in names:
-                l = self.downloads[name]
-                n = self.completed.get(name, 0)
-                tn = tn + n
-                c = self.seedcount[name]
-                tc = tc + c
-                d = len(l) - c
-                td = td + d
+                names = [ (None,hash) for hash in self.downloads.keys() ]
+            if not names:
+                s.write('<p>not tracking any files yet...</p>\n')
+            else:
+                names.sort()
+                tn = 0
+                tc = 0
+                td = 0
+                tt = 0  # Total transferred
+                ts = 0  # Total size
+                nf = 0  # Number of files displayed
                 if self.allowed != None and self.show_names:
-                    if self.allowed.has_key(name):
-                        nf = nf + 1
-                        sz = self.allowed[name]['length']  # size
-                        ts = ts + sz
-                        szt = sz * n   # Transferred for this torrent
-                        tt = tt + szt
-                        if self.allow_get == 1:
-                            linkname = '<a href="/file?info_hash=' + quote(name) + '">' + self.allowed[name]['name'] + '</a>'
-                        else:
-                            linkname = self.allowed[name]['name']
-                        s.write('<tr><td><code>%s</code></td><td>%s</td><td align="right">%s</td><td align="right">%i</td><td align="right">%i</td><td align="right">%i</td><td align="right">%s</td></tr>\n' \
-                            % (b2a_hex(name), linkname, size_format(sz), c, d, n, size_format(szt)))
+                    s.write('<table summary="files" border="1">\n' \
+                        '<tr><th>info hash</th><th>torrent name</th><th align="right">size</th><th align="right">complete</th><th align="right">downloading</th><th align="right">downloaded</th><th align="right">transferred</th></tr>\n')
                 else:
-                    s.write('<tr><td><code>%s</code></td><td align="right"><code>%i</code></td><td align="right"><code>%i</code></td><td align="right"><code>%i</code></td></tr>\n' \
-                        % (b2a_hex(name), c, d, n))
-            ttn = 0
-            for i in self.completed.values():
-                ttn = ttn + i
-            if self.allowed != None and self.show_names:
-                s.write('<tr><td align="right" colspan="2">%i files</td><td align="right">%s</td><td align="right">%i</td><td align="right">%i</td><td align="right">%i/%1</td><td align="right">%s</td></tr>\n'
-                        % (nf, size_format(ts), tc, td, tn, ttn, size_format(tt)))
-            else:
-                s.write('<tr><td align="right">%i files</td><td align="right">%i</td><td align="right">%i</td><td align="right">%i/%i</td></tr>\n'
-                        % (nf, tc, td, tn, ttn))
-            s.write('</table>\n' \
-                '<ul>\n' \
-                '<li><em>info hash:</em> SHA1 hash of the "info" section of the metainfo (*.torrent)</li>\n' \
-                '<li><em>complete:</em> number of connected clients with the complete file</li>\n' \
-                '<li><em>downloading:</em> number of connected clients still downloading</li>\n' \
-                '<li><em>downloaded:</em> reported complete downloads (total: current/all)</li>\n' \
-                '<li><em>transferred:</em> torrent size * total downloaded (does not include partial transfers)</li>\n' \
-                '</ul>\n')
+                    s.write('<table summary="files">\n' \
+                        '<tr><th>info hash</th><th align="right">complete</th><th align="right">downloading</th><th align="right">downloaded</th></tr>\n')
+                for name,hash in names:
+                    l = self.downloads[hash]
+                    n = self.completed.get(hash, 0)
+                    tn = tn + n
+                    c = self.seedcount[hash]
+                    tc = tc + c
+                    d = len(l) - c
+                    td = td + d
+                    if self.allowed != None and self.show_names:
+                        if self.allowed.has_key(hash):
+                            nf = nf + 1
+                            sz = self.allowed[hash]['length']  # size
+                            ts = ts + sz
+                            szt = sz * n   # Transferred for this torrent
+                            tt = tt + szt
+                            if self.allow_get == 1:
+                                linkname = '<a href="/file?info_hash=' + quote(hash) + '">' + name + '</a>'
+                            else:
+                                linkname = name
+                            s.write('<tr><td><code>%s</code></td><td>%s</td><td align="right">%s</td><td align="right">%i</td><td align="right">%i</td><td align="right">%i</td><td align="right">%s</td></tr>\n' \
+                                % (b2a_hex(hash), linkname, size_format(sz), c, d, n, size_format(szt)))
+                    else:
+                        s.write('<tr><td><code>%s</code></td><td align="right"><code>%i</code></td><td align="right"><code>%i</code></td><td align="right"><code>%i</code></td></tr>\n' \
+                            % (b2a_hex(hash), c, d, n))
+                ttn = 0
+                for i in self.completed.values():
+                    ttn = ttn + i
+                if self.allowed != None and self.show_names:
+                    s.write('<tr><td align="right" colspan="2">%i files</td><td align="right">%s</td><td align="right">%i</td><td align="right">%i</td><td align="right">%i/%i</td><td align="right">%s</td></tr>\n'
+                            % (nf, size_format(ts), tc, td, tn, ttn, size_format(tt)))
+                else:
+                    s.write('<tr><td align="right">%i files</td><td align="right">%i</td><td align="right">%i</td><td align="right">%i/%i</td></tr>\n'
+                            % (nf, tc, td, tn, ttn))
+                s.write('</table>\n' \
+                    '<ul>\n' \
+                    '<li><em>info hash:</em> SHA1 hash of the "info" section of the metainfo (*.torrent)</li>\n' \
+                    '<li><em>complete:</em> number of connected clients with the complete file</li>\n' \
+                    '<li><em>downloading:</em> number of connected clients still downloading</li>\n' \
+                    '<li><em>downloaded:</em> reported complete downloads (total: current/all)</li>\n' \
+                    '<li><em>transferred:</em> torrent size * total downloaded (does not include partial transfers)</li>\n' \
+                    '</ul>\n')
 
-        s.write('</body>\n' \
-            '</html>\n')
-        return (200, 'OK', {'Content-Type': 'text/html; charset=iso-8859-1'}, s.getvalue())
+            s.write('</body>\n' \
+                '</html>\n')
+            return (200, 'OK', {'Content-Type': 'text/html; charset=iso-8859-1'}, s.getvalue())
+        except:
+            print_exc()
+            return (500, 'Internal Server Error', {'Content-Type': 'text/html; charset=iso-8859-1'}, 'Server Error')
 
 
-    def scrapedata(self, name, return_name = True):
-        l = self.downloads[name]
-        n = self.completed.get(name, 0)
-        c = self.seedcount[name]
+    def scrapedata(self, hash, return_name = True):
+        l = self.downloads[hash]
+        n = self.completed.get(hash, 0)
+        c = self.seedcount[hash]
         d = len(l) - c
         f = {'complete': c, 'incomplete': d, 'downloaded': n}
         if ( return_name and self.show_names
-             and self.allowed is not None and self.allowed.has_key(name) ):
-            f['name'] = self.allowed[name]['name']
+             and self.allowed is not None and self.allowed.has_key(hash) ):
+            f['name'] = self.allowed[hash]['name']
         return (f)
 
     def get_scrape(self, paramslist):
@@ -447,18 +456,17 @@ class Tracker:
                 return (400, 'Not Authorized', {'Content-Type': 'text/plain', 'Pragma': 'no-cache'},
                     bencode({'failure reason':
                     'specific scrape function is not available with this tracker.'}))
-            for infohash in paramslist['info_hash']:
-                if infohash in self.downloads.keys():
-                    fs[infohash] = self.scrapedata(infohash)
+            for hash in paramslist['info_hash']:
+                if self.downloads.has_key(hash):
+                    fs[hash] = self.scrapedata(hash)
         else:
             if self.config['scrape_allowed'] != 'full':
                 return (400, 'Not Authorized', {'Content-Type': 'text/plain', 'Pragma': 'no-cache'},
                     bencode({'failure reason':
                     'full scrape function is not available with this tracker.'}))
-            names = self.downloads.keys()
-            names.sort()
-            for name in names:
-                fs[name] = self.scrapedata(name)
+            hashes = self.downloads.keys()
+            for hash in hashes:
+                fs[hash] = self.scrapedata(hash)
 
         return (200, 'OK', {'Content-Type': 'text/plain'}, bencode({'files': fs}))
 
@@ -557,7 +565,7 @@ class Tracker:
                 self.delete_peer(infohash,myid)
         
         elif not peer:
-            ts[myid] = time()
+            ts[myid] = clock()
             peer = {'ip': ip, 'port': port, 'left': left}
             if mykey:
                 peer['key'] = mykey
@@ -582,13 +590,14 @@ class Tracker:
             if not auth:
                 return rsize    # return w/o changing stats
 
-            ts[myid] = time()
-            if not left and peer['left'] and not peer.get('nat', -1):
+            ts[myid] = clock()
+            if not left and peer['left']:
                 self.completed[infohash] += 1
                 self.seedcount[infohash] += 1
-                for bc in self.becache[infohash]:
-                    bc[1][myid] = bc[0][myid]
-                    del bc[0][myid]
+                if not peer.get('nat', -1):
+                    for bc in self.becache[infohash]:
+                        bc[1][myid] = bc[0][myid]
+                        del bc[0][myid]
             if peer['left']:
                 peer['left'] = left
 
@@ -610,6 +619,11 @@ class Tracker:
             if port and self.natcheck:
                 if recheck:
                     if peer.has_key('nat'):
+                        if not peer['nat']:
+                            l = self.becache[infohash]
+                            y = not peer['left']
+                            for x in l:
+                                del x[y][myid]
                         del peer['nat'] # restart NAT testing
                 else:
                     natted = peer.get('nat', -1)
@@ -638,9 +652,9 @@ class Tracker:
                 return data
             cache = self.cached_t.setdefault(infohash, None)
             if ( not cache or len(cache[1]) < rsize
-                 or cache[0] + self.config['min_time_between_cache_refreshes'] < time() ):
+                 or cache[0] + self.config['min_time_between_cache_refreshes'] < clock() ):
                 bc = self.becache.setdefault(infohash,[[{}, {}], [{}, {}], [{}, {}]])
-                cache = [ time(), bc[0][0].values() + bc[0][1].values() ]
+                cache = [ clock(), bc[0][0].values() + bc[0][1].values() ]
                 self.cached_t[infohash] = cache
                 shuffle(cache[1])
                 cache = cache[1]
@@ -663,7 +677,7 @@ class Tracker:
         l_get_size = int(float(rsize)*(len_l)/(len_l+len_s))
         cache = self.cached.setdefault(infohash,[None,None,None])[return_type]
         if cache:
-            if cache[0] + self.config['min_time_between_cache_refreshes'] < time():
+            if cache[0] + self.config['min_time_between_cache_refreshes'] < clock():
                 cache = None
             else:
                 if ( (is_seed and len(cache[1]) < rsize)
@@ -677,7 +691,7 @@ class Tracker:
                     vv[0].append({'ip': ip, 'port': port, 'peer id': key})
                     vv[1].append({'ip': ip, 'port': port})
                     vv[2].append(compact_peer_info(y['ip'], y['port']))
-            cache = [ time(),
+            cache = [ clock(),
                       bc[return_type][0].values()+vv[return_type],
                       bc[return_type][1].values() ]
             shuffle(cache[1])
@@ -880,7 +894,7 @@ class Tracker:
             for myid, t in self.times[x].items():
                 if t < self.prevtime:
                     self.delete_peer(x,myid)
-        self.prevtime = time()
+        self.prevtime = clock()
         if (self.keep_dead != 1):
             for key, value in self.downloads.items():
                 if len(value) == 0:

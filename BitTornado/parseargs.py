@@ -4,7 +4,7 @@
 from types import *
 from cStringIO import StringIO
 
-def formatDefinitions(options, COLS):
+def formatDefinitions(options, COLS, presets = {}):
     s = StringIO()
     indent = " " * 10
     width = COLS - 11
@@ -15,6 +15,12 @@ def formatDefinitions(options, COLS):
 
     for (longname, default, doc) in options:
         s.write('--' + longname + ' <arg>\n')
+        default = presets.get(longname, default)
+        if type(default) == LongType:
+            try:
+                default = int(default)
+            except:
+                pass
         if default is not None:
             doc += ' (defaults to ' + repr(default) + ')'
         i = 0
@@ -36,10 +42,11 @@ def usage(str):
 
 
 def defaultargs(options):
-    list = {}
+    l = {}
     for (longname, default, doc) in options:
-        list[longname] = default
-    return list
+        if default is not None:
+            l[longname] = default
+    return l
         
 
 def parseargs(argv, options, minargs = None, maxargs = None, presets = {}):

@@ -2,7 +2,7 @@
 # see LICENSE.txt for license information
 
 from random import randrange, shuffle
-from time import time
+from BitTornado.clock import clock
 try:
     True
 except:
@@ -16,7 +16,7 @@ class Choker:
         self.picker = picker
         self.connections = []
         self.last_preferred = 0
-        self.last_round_robin = time()
+        self.last_round_robin = clock()
         self.done = done
         self.super_seed = False
         schedule(self._round_robin, 5)
@@ -40,8 +40,8 @@ class Choker:
                 count -= 1
             for c in to_close:
                 c.close()
-        if self.last_round_robin + self.config['round_robin_period'] < time():
-            self.last_round_robin = time()
+        if self.last_round_robin + self.config['round_robin_period'] < clock():
+            self.last_round_robin = clock()
             for i in xrange(1, len(self.connections)):
                 c = self.connections[i]
                 u = c.get_upload()

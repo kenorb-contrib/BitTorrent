@@ -13,8 +13,8 @@ if PSYCO.psyco:
         pass
 
 from sys import argv, version
-
-from btcompletedir import completedir
+assert version >= '2', "Install Python 2.0 or greater"
+from BitTornado.BT1.makemetafile import completedir
 from threading import Event, Thread
 import sys
 from os import getcwd
@@ -58,7 +58,7 @@ class DownloadInfo:
 
         b = wxBoxSizer(wxHORIZONTAL)
         b.Add(self.dirCtl, 1, wxEXPAND)
-        b.Add(10, 10, 0, wxEXPAND)
+#        b.Add(10, 10, 0, wxEXPAND)
         button = wxButton(panel, -1, 'select')
         b.Add(button, 0, wxEXPAND)
         EVT_BUTTON(frame, button.GetId(), self.select)
@@ -80,7 +80,7 @@ class DownloadInfo:
         border = wxBoxSizer(wxVERTICAL)
         border.Add(gridSizer, 0, wxEXPAND | wxNORTH | wxEAST | wxWEST, 25)
         b2 = wxButton(panel, -1, 'make')
-        border.Add(10, 10, 1, wxEXPAND)
+#        border.Add(10, 10, 1, wxEXPAND)
         border.Add(b2, 0, wxALIGN_CENTER | wxSOUTH, 20)
         EVT_BUTTON(frame, b2.GetId(), self.complete)
         panel.SetSizer(border)

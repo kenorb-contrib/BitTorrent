@@ -21,11 +21,12 @@ def _int_to_booleans(x):
         x <<= 1
     return tuple(r)
 
-lookup_table = [_int_to_booleans(i) for i in xrange(256)]
-
+lookup_table = []
 reverse_lookup_table = {}
 for i in xrange(256):
-    reverse_lookup_table[lookup_table[i]] = chr(i)
+    x = _int_to_booleans(i)
+    lookup_table.append(x)
+    reverse_lookup_table[x] = chr(i)
 
 
 class Bitfield:

@@ -1,5 +1,6 @@
+product_name = 'BitTornado'
 
-version = "T-0.2.0 (BitTornado)"
+version = "T-0.3.1 (BitTornado)"
 
 version_short = version.split(' ')[0]
 
@@ -7,7 +8,7 @@ report_email = version_short+"@degreez.net"
 
 from types import StringType
 from sha import sha
-from time import time
+from time import time, clock
 try:
     from os import getpid
 except ImportError:
@@ -27,8 +28,8 @@ def resetPeerIDs():
         x = ''
 
     l1 = 0
-    t = time()
-    while t == time():
+    t = clock()
+    while t == clock():
         l1 += 1
     l2 = 0
     t = long(time()*100)
@@ -37,7 +38,7 @@ def resetPeerIDs():
     l3 = 0
     if l2 < 1000:
         t = long(time()*10)
-        while t == long(time()*10):
+        while t == long(clock()*10):
             l3 += 1
     x += ( repr(time()) + '/' + str(time()) + '/'
            + str(l1) + '/' + str(l2) + '/' + str(l3) + '/'

@@ -13,9 +13,9 @@ if PSYCO.psyco:
     except:
         pass
 
-from sys import argv, platform
-
-from btmakemetafile import make_meta_file
+from sys import argv, platform, version
+assert version >= '2', "Install Python 2.0 or greater"
+from BitTornado.BT1.makemetafile import make_meta_file
 from threading import Event, Thread, Lock
 from BitTornado.bencode import bencode,bdecode
 import sys, os, shutil

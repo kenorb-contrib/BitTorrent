@@ -9,9 +9,12 @@ try:
 except ImportError:
     from selectpoll import poll, error, POLLIN, POLLOUT, POLLERR, POLLHUP
     timemult = 1
-from time import time, sleep
+from time import sleep
+from clock import clock
 import sys
 from random import shuffle
+from natpunch import UPnP_open_port, UPnP_close_port
+# from BT1.StreamCheck import StreamCheck
 try:
     True
 except:
@@ -26,9 +29,10 @@ class SingleSocket:
         self.socket = sock
         self.handler = handler
         self.buffer = []
-        self.last_hit = time()
+        self.last_hit = clock()
         self.fileno = sock.fileno()
         self.connected = False
+#        self.check = StreamCheck()
         try:
             self.ip = self.socket.getpeername()[0]
         except:
@@ -60,6 +64,7 @@ class SingleSocket:
         return not self.buffer
 
     def write(self, s):
+#        self.check.write(s)
         assert self.socket is not None
         self.buffer.append(s)
         if len(self.buffer) == 1:
@@ -102,9 +107,10 @@ class SocketHandler:
         self.single_sockets = {}
         self.dead_from_write = []
         self.max_connects = 1000
+        self.port_forwarded = None
 
     def scan_for_timeouts(self):
-        t = time() - self.timeout
+        t = clock() - self.timeout
         tokill = []
         for s in self.single_sockets.values():
             if s.last_hit < t:
@@ -117,6 +123,7 @@ class SocketHandler:
         port = int(port)
         addrinfos = []
         self.servers = {}
+        self.interfaces = []
         # if bind != "" thread it as a comma seperated list and bind to all
         # addresses (can be ips or hostnames) else bind to default ipv6 and
         # ipv4 address
@@ -145,6 +152,8 @@ class SocketHandler:
                 server.setblocking(0)
                 server.bind(addrinfo[4])
                 self.servers[server.fileno()] = server
+                if bind:
+                    self.interfaces.append(server.getsockname()[0])
                 server.listen(5)
                 self.poll.register(server, POLLIN)
             except socket.error, e:
@@ -158,6 +167,18 @@ class SocketHandler:
                 raise socket.error(str(e))
         if not self.servers:
             raise socket.error('unable to open server port')
+        if upnp:
+            if not UPnP_open_port(port):
+                for server in self.servers.values():
+                    try:
+                        server.close()
+                    except:
+                        pass
+                    self.servers = None
+                    self.interfaces = None
+                raise socket.error('unable to forward port via UPnP')
+            self.port_forwarded = port
+        self.port = port
 
     def find_and_bind(self, minport, maxport, bind = '', reuse = False,
                                           ipv6_socket_style = 1, upnp = 0):
@@ -256,7 +277,7 @@ class SocketHandler:
                     continue
                 if (event & POLLIN):
                     try:
-                        s.last_hit = time()
+                        s.last_hit = clock()
                         data = s.socket.recv(100000)
                         if not data:
                             self._close_socket(s)
@@ -296,8 +317,13 @@ class SocketHandler:
             for sock in closelist:
                 self._close_socket(sock)
             return []
-        return r
-            
+        return r     
+
+    def get_stats(self):
+        return { 'interfaces': self.interfaces,
+                 'port': self.port,
+                 'upnp': self.port_forwarded is not None }
+
 
     def shutdown(self):
         for ss in self.single_sockets.values():
@@ -310,3 +336,6 @@ class SocketHandler:
                 server.close()
             except:
                 pass
+        if self.port_forwarded is not None:
+            UPnP_close_port(self.port_forwarded)
+

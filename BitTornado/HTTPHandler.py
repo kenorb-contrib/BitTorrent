@@ -4,6 +4,7 @@
 from cStringIO import StringIO
 from sys import stdout
 import time
+from clock import clock
 from gzip import GzipFile
 try:
     True
@@ -132,7 +133,7 @@ class HTTPConnection:
         print '%s %s %s [%02d/%3s/%04d:%02d:%02d:%02d] "%s" %i %i "%s" "%s"' % (
             self.connection.get_ip(), ident, username, day, months[month], year, hour,
             minute, second, self.header, responsecode, len(data), referer, useragent)
-        t = time.time()
+        t = clock()
         if t - self.handler.lastflush > self.handler.minflush:
             self.handler.lastflush = t
             stdout.flush()
@@ -157,7 +158,7 @@ class HTTPHandler:
         self.connections = {}
         self.getfunc = getfunc
         self.minflush = minflush
-        self.lastflush = time.time()
+        self.lastflush = clock()
 
     def external_connection_made(self, connection):
         self.connections[connection] = HTTPConnection(self, connection)

@@ -63,9 +63,10 @@ def parsedir(dir, parsed, files, blocked,
             else:
                 to_add.append(p)    # try adding anyway, to stimulate an error
             continue
-        if NOISY:
-            errfunc('removing '+p+' (will re-add)')
-        removed[h] = parsed[h]
+        if parsed.has_key(h):
+            if NOISY:
+                errfunc('removing '+p+' (will re-add)')
+            removed[h] = parsed[h]
         to_add.append(p)
 
     to_add.sort()    
@@ -77,7 +78,6 @@ def parsedir(dir, parsed, files, blocked,
         try:
             ff = open(p, 'rb')
             d = bdecode(ff.read())
-            ff.close()
             check_info(d['info'])
             h = sha(bencode(d['info'])).digest()
             if new_parsed.has_key(h):
@@ -119,6 +119,10 @@ def parsedir(dir, parsed, files, blocked,
                 errfunc('**warning** '+p+' has errors')
             new_blocked[p] = v
             continue
+        try:
+            ff.close()
+        except:
+            pass
         if NOISY:
             errfunc('... successful')
         new_file[1] = h

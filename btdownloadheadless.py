@@ -17,13 +17,16 @@ from BitTornado.RawServer import RawServer
 from random import seed
 from socket import error as socketerror
 from BitTornado.bencode import bencode
+from BitTornado.natpunch import UPnP_test
 from threading import Event
 from os.path import abspath
 from sys import argv, version, stdout
 import sys
 from sha import sha
-from time import time, strftime
+from time import strftime
+from BitTornado.clock import clock
 from BitTornado import createPeerID
+from BitTornado.ConfigDir import ConfigDir
 
 assert version >= '2', "Install Python 2.0 or greater"
 try:
@@ -62,7 +65,7 @@ class HeadlessDisplayer:
         self.seedStatus = ''
         self.peerStatus = ''
         self.errors = []
-        self.last_update_time = 0
+        self.last_update_time = -1
 
     def finished(self):
         self.done = True
@@ -85,9 +88,9 @@ class HeadlessDisplayer:
     def display(self, fractionDone = None, timeEst = None, 
             downRate = None, upRate = None, activity = None,
             statistics = None,  **kws):
-        if self.last_update_time + 0.1 > time() and fractionDone not in (0.0, 1.0) and activity is not None:
+        if self.last_update_time + 0.1 > clock() and fractionDone not in (0.0, 1.0) and activity is not None:
             return
-        self.last_update_time = time()        
+        self.last_update_time = clock()        
         if fractionDone is not None:
             self.percentDone = str(float(int(fractionDone * 1000)) / 10)
         if timeEst is not None:
@@ -143,14 +146,24 @@ def run(params):
 
     h = HeadlessDisplayer()
     while 1:
-        try:            
-            config = parse_params(params)
+        configdir = ConfigDir('downloadheadless')
+        defaultsToIgnore = ['responsefile', 'url', 'priority']
+        configdir.setDefaults(defaults,defaultsToIgnore)
+        configdefaults = configdir.loadConfig()
+        defaults.append(('save_options',0,
+         "whether to save the current options as the new default configuration " +
+         "(only for btdownloadheadless.py)"))
+        try:
+            config = parse_params(params, configdefaults)
         except ValueError, e:
             print 'error: ' + str(e) + '\nrun with no args for parameter explanations'
             break
         if not config:
-            print get_usage()
+            print get_usage(defaults, 80, configdefaults)
             break
+        if config['save_options']:
+            configdir.saveConfig(config)
+        configdir.deleteOldCacheData(config['expire_cache_data'])
 
         myid = createPeerID()
         seed(myid)
@@ -161,11 +174,13 @@ def run(params):
         rawserver = RawServer(doneflag, config['timeout_check_interval'],
                               config['timeout'], ipv6_enable = config['ipv6_enabled'],
                               failfunc = h.failed, errorfunc = disp_exception)
-
+        upnp = config['upnp_nat_access']
+        if upnp and not UPnP_test():
+            upnp = False
         try:
             listen_port = rawserver.find_and_bind(config['minport'], config['maxport'],
                             config['bind'], ipv6_socket_style = config['ipv6_binds_v4'],
-                            upnp = config['upnp_nat_access'])
+                            upnp = upnp)
         except socketerror, e:
             print "error: Couldn't listen - " + str(e)
             break
@@ -177,7 +192,8 @@ def run(params):
         infohash = sha(bencode(response['info'])).digest()
 
         dow = BT1Download(h.display, h.finished, h.error, disp_exception, doneflag,
-                        config, response, infohash, myid, rawserver, listen_port)
+                        config, response, infohash, myid, rawserver, listen_port,
+                        configdir)
         
         if not dow.saveAs(h.chooseFile, h.newpath):
             break
@@ -185,11 +201,13 @@ def run(params):
         if not dow.initFiles(old_style = True):
             break
         if not dow.startEngine():
+            dow.shutdown()
             break
         dow.startRerequester()
         dow.autoStats()
 
-        h.display(activity = 'connecting to peers')
+        if not dow.am_I_finished():
+            h.display(activity = 'connecting to peers')
         rawserver.listen_forever(dow.getPortHandler())
         h.display(activity = 'shutting down')
         dow.shutdown()

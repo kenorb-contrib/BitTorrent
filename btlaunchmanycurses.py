@@ -22,6 +22,7 @@ from sys import argv, exit
 from time import time, localtime, strftime
 import sys, os
 from BitTornado import version, report_email
+from BitTornado.ConfigDir import ConfigDir
 
 try:
     import curses
@@ -283,12 +284,22 @@ if __name__ == '__main__':
           "whether to display the full path or the torrent contents for each torrent" ),
     ] )
     try:
-        if len(argv) <= 1:
-            print "Usage: btlaunchmany.py <directory> <global options>\n"
+        configdir = ConfigDir('launchmanycurses')
+        defaultsToIgnore = ['responsefile', 'url', 'priority']
+        configdir.setDefaults(defaults,defaultsToIgnore)
+        configdefaults = configdir.loadConfig()
+        defaults.append(('save_options',0,
+         "whether to save the current options as the new default configuration " +
+         "(only for btlaunchmanycurses.py)"))
+        if len(argv) < 2:
+            print "Usage: btlaunchmanycurses.py <directory> <global options>\n"
             print "<directory> - directory to look for .torrent files (semi-recursive)"
-            print get_usage(defaults)
+            print get_usage(defaults, 80, configdefaults)
             exit(1)
-        config, args = parseargs(argv[1:], defaults, 1, 1)
+        config, args = parseargs(argv[1:], defaults, 1, 1, configdefaults)
+        if config['save_options']:
+            configdir.saveConfig(config)
+        configdir.deleteOldCacheData(config['expire_cache_data'])
         if not os.path.isdir(args[0]):
             raise ValueError("Warning: "+args[0]+" is not a directory")
         config['torrent_dir'] = args[0]

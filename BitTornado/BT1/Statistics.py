@@ -1,7 +1,6 @@
 # Written by Edward Keyes
 # see LICENSE.txt for license information
 
-from time import time
 from copy import copy
 try:
     True
@@ -106,7 +105,7 @@ class Statistics:
         self.discarded = self.downloader.discarded
         self.numSeeds += self.httpdl.seedsfound
         self.numOldSeeds += self.httpdl.seedsfound
-        if self.numPeers==0:
+        if self.numPeers == 0 or self.picker.numpieces == 0:
             self.percentDone = 0.0
         else:
             self.percentDone = 100.0*(float(self.picker.totalcount)/self.picker.numpieces)/self.numPeers
@@ -115,9 +114,11 @@ class Statistics:
         self.storage_active = len(self.storage.stat_active)
         self.storage_new = len(self.storage.stat_new)
         self.storage_dirty = len(self.storage.dirty)
-        self.storage_numcomplete = self.storage.stat_numfound + self.storage.stat_numdownloaded
-        self.storage_justdownloaded = self.storage.stat_numdownloaded
+        numdownloaded = self.storage.stat_numdownloaded
+        self.storage_justdownloaded = numdownloaded
+        self.storage_numcomplete = self.storage.stat_numfound + numdownloaded
         self.storage_numflunked = self.storage.stat_numflunked
+        self.storage_isendgame = self.downloader.endgamemode
 
         self.peers_kicked = self.downloader.kicked.items()
         self.peers_banned = self.downloader.banned.items()

@@ -16,17 +16,24 @@ if PSYCO.psyco:
 from sys import argv, version
 assert version >= '2', "Install Python 2.0 or greater"
 
+try:
+    from wxPython.wx import *
+except:
+    print 'wxPython is either not installed or has not been installed properly.'
+    sys.exit(1)
 from BitTornado.download_bt1 import BT1Download, defaults, parse_params, get_usage, get_response
 from BitTornado.RawServer import RawServer
 from random import seed
 from socket import error as socketerror
 from BitTornado.ConnChoice import *
 from BitTornado.ConfigReader import configReader
-from BitTornado.bencode import bencode
+from BitTornado.bencode import bencode, bdecode
+from BitTornado.natpunch import UPnP_test
 from threading import Event, Thread
 from os.path import *
 from os import getcwd
 from time import strftime, time, localtime
+from BitTornado.clock import clock
 from webbrowser import open_new
 from traceback import print_exc
 from StringIO import StringIO
@@ -34,11 +41,6 @@ from sha import sha
 import re
 import sys, os
 from BitTornado import version, createPeerID, report_email
-try:
-    from wxPython.wx import *
-except:
-    print 'wxPython is either not installed or has not been installed properly.'
-    sys.exit(1)
 
 try:
     True
@@ -47,14 +49,15 @@ except:
     False = 0
 
 PROFILER = False
+WXPROFILER = False
 
-basepath=os.path.abspath(os.path.dirname(os.path.realpath(sys.argv[0])))
+# Note to packagers: edit OLDICONPATH in BitTornado/ConfigDir.py
 
 def hours(n):
     if n == -1:
         return '<unknown>'
     if n == 0:
-        return 'complete!'
+        return 'download complete'
     n = int(n)
     h, r = divmod(n, 60 * 60)
     m, sec = divmod(r, 60)
@@ -84,6 +87,18 @@ def comma_format(s):
         r = r[:i]+','+r[i:]
     return(r)
 
+hexchars = '0123456789abcdef'
+hexmap = []
+for i in xrange(256):
+    x = hexchars[(i&0xF0)/16]+hexchars[i&0x0F]
+    hexmap.append(x)
+
+def tohex(s):
+    r = []
+    for c in s:
+        r.append(hexmap[ord(c)])
+    return ''.join(r)
+
 wxEVT_INVOKE = wxNewEventType()
 
 def EVT_INVOKE(win, func):
@@ -104,12 +119,12 @@ def pr(event):
 class DownloadInfoFrame:
     def __init__(self, flag, configfile):
         try:
-            self.FONT = configfile.configfileargs['gui_font']
+            self.FONT = configfile.config['gui_font']
             self.default_font = wxFont(self.FONT, wxDEFAULT, wxNORMAL, wxNORMAL, False)
             frame = wxFrame(None, -1, 'BitTorrent ' + version + ' download')
             self.flag = flag
             self.configfile = configfile
-            self.configfileargs = configfile.configfileargs
+            self.configfileargs = configfile.config
             self.uiflag = Event()
             self.fin = False
             self.aboutBox = None
@@ -121,7 +136,7 @@ class DownloadInfoFrame:
             self.spinlock = 0
             self.scrollock = 0
             self.lastError = 0
-            self.spewwait = time()
+            self.spewwait = clock()
             self.config = None
             self.updateSpinnerFlag = 0
             self.updateSliderFlag = 0
@@ -134,13 +149,19 @@ class DownloadInfoFrame:
             self.shuttingdown = False
             self.ispaused = False
             self.bgalloc_periods = 0
-            self.gui_lastupdate = time()
+            self.gui_lastupdate = clock()
             self.gui_fractiondone = None
             self.fileList = None
             self.lastexternalannounce = ''
             self.refresh_details = False
             self._errorwindow = None
             self.lastuploadsettings = 0
+            self.old_download = 0
+            self.old_upload = 0
+            self.old_ratesettings = None
+            self.current_ratesetting = None
+            self.gaugemode = None
+            
             self.filename = None
             self.dow = None
             if sys.platform == 'win32':
@@ -148,31 +169,33 @@ class DownloadInfoFrame:
                 self.invokeLaterList = []
 
             wxInitAllImageHandlers()
+            self.basepath = self.configfile.getIconDir()
             self.statusIcons={
-                'startup':wxIcon(os.path.join(basepath,'white.ico'), wxBITMAP_TYPE_ICO),
-                'disconnected':wxIcon(os.path.join(basepath,'black.ico'), wxBITMAP_TYPE_ICO),
-                'noconnections':wxIcon(os.path.join(basepath,'red.ico'), wxBITMAP_TYPE_ICO),
-                'nocompletes':wxIcon(os.path.join(basepath,'blue.ico'), wxBITMAP_TYPE_ICO),
-                'noincoming':wxIcon(os.path.join(basepath,'yellow.ico'), wxBITMAP_TYPE_ICO),
-                'allgood':wxIcon(os.path.join(basepath,'green.ico'), wxBITMAP_TYPE_ICO)
+                'startup':wxIcon(os.path.join(self.basepath,'white.ico'), wxBITMAP_TYPE_ICO),
+                'disconnected':wxIcon(os.path.join(self.basepath,'black.ico'), wxBITMAP_TYPE_ICO),
+                'noconnections':wxIcon(os.path.join(self.basepath,'red.ico'), wxBITMAP_TYPE_ICO),
+                'nocompletes':wxIcon(os.path.join(self.basepath,'blue.ico'), wxBITMAP_TYPE_ICO),
+                'noincoming':wxIcon(os.path.join(self.basepath,'yellow.ico'), wxBITMAP_TYPE_ICO),
+                'allgood':wxIcon(os.path.join(self.basepath,'green.ico'), wxBITMAP_TYPE_ICO)
                 }
 
             self.filestatusIcons = wxImageList(16, 16)
-            self.filestatusIcons.Add(wxBitmap(os.path.join(basepath,'black1.ico'),wxBITMAP_TYPE_ICO))
-            self.filestatusIcons.Add(wxBitmap(os.path.join(basepath,'yellow1.ico'), wxBITMAP_TYPE_ICO))
-            self.filestatusIcons.Add(wxBitmap(os.path.join(basepath,'green1.ico'), wxBITMAP_TYPE_ICO))
+            self.filestatusIcons.Add(wxBitmap(os.path.join(self.basepath,'black1.ico'),wxBITMAP_TYPE_ICO))
+            self.filestatusIcons.Add(wxBitmap(os.path.join(self.basepath,'yellow1.ico'), wxBITMAP_TYPE_ICO))
+            self.filestatusIcons.Add(wxBitmap(os.path.join(self.basepath,'green1.ico'), wxBITMAP_TYPE_ICO))
 
-            self.allocbuttonBitmap = wxBitmap(os.path.join(basepath,'alloc.gif'), wxBITMAP_TYPE_GIF)
+            self.allocbuttonBitmap = wxBitmap(os.path.join(self.basepath,'alloc.gif'), wxBITMAP_TYPE_GIF)
 
             if (sys.platform == 'win32'):
-                self.icon = wxIcon(os.path.join(basepath,'icon_bt.ico'), wxBITMAP_TYPE_ICO)
-            self.starttime = time ()
+                self.icon = wxIcon(os.path.join(self.basepath,'icon_bt.ico'), wxBITMAP_TYPE_ICO)
+            self.starttime = clock()
 
             self.frame = frame
             if (sys.platform == 'win32'):
                 self.frame.SetIcon(self.icon)
 
             panel = wxPanel(frame, -1)
+            self.bgcolor = panel.GetBackgroundColour()
 
             def StaticText(text, font = self.FONT, underline = False, color = None, panel = panel):
                 x = wxStaticText(panel, -1, text, style = wxALIGN_LEFT)
@@ -379,6 +402,14 @@ class DownloadInfoFrame:
             self.unlimitedLabel = StaticText('0 kB/s means unlimited. Tip: your download rate is proportional to your upload rate', self.FONT-2)
             colSizer.Add(self.unlimitedLabel, 0, wxALIGN_CENTER)
 
+            self.priorityIDs = [wxNewId(),wxNewId(),wxNewId(),wxNewId()]
+#            self.prioritycolors = [wxLIGHT_GREY, wxRED, wxBLACK, wxBLUE]
+            self.prioritycolors = [ wxColour(160,160,160),
+                                    wxColour(255,64,0),
+                                    wxColour(0,0,0),
+                                    wxColour(64,64,255) ]
+
+
             EVT_LEFT_DOWN(aboutText, self.about)
             EVT_LEFT_DOWN(fileDetails, self.details)
             EVT_LEFT_DOWN(self.statusIconPtr,self.statusIconHelp)
@@ -451,7 +482,7 @@ class DownloadInfoFrame:
 
     def setStatusIcon(self, name):
         if name != self.statusIconValue:
-            self.statusIconValue = name;
+            self.statusIconValue = name
             statidata = wxMemoryDC()
             statidata.SelectObject(self.statusIcon)
             statidata.BeginDrawing()
@@ -466,15 +497,33 @@ class DownloadInfoFrame:
         bbdata = wxMemoryDC()
         bbdata.SelectObject(iconbuffer)
         bbdata.SetPen(wxTRANSPARENT_PEN)
-        bbdata.SetBrush(wxBrush(wxSystemSettings_GetColour(wxSYS_COLOUR_MENU),wxSOLID))
+        bbdata.SetBrush(wxBrush(self.bgcolor,wxSOLID))
         bbdata.DrawRectangle(0,0,32,32)
         bbdata.DrawIcon(self.statusIcons[name],0,0)
         return iconbuffer
 
 
+    def setgaugemode(self, selection):
+        if selection is None:
+            selection = self.gaugemode
+        elif selection == self.gaugemode:
+            return
+        else:
+            self.gaugemode = selection
+        if selection < 0:
+            self.gauge.SetForegroundColour(self.configfile.getcheckingcolor())
+            self.gauge.SetBackgroundColour(wxSystemSettings_GetColour(wxSYS_COLOUR_MENU))
+        elif selection == 0:
+            self.gauge.SetForegroundColour(self.configfile.getdownloadcolor())
+            self.gauge.SetBackgroundColour(wxSystemSettings_GetColour(wxSYS_COLOUR_MENU))
+        else:
+            self.gauge.SetForegroundColour(self.configfile.getseedingcolor())
+            self.gauge.SetBackgroundColour(self.configfile.getdownloadcolor())
+
+
     def onIconify(self, evt):
         try:
-            if self.configfile.configfileargs['win32_taskbar_icon']:
+            if self.configfileargs['win32_taskbar_icon']:
                 self.frame.tbicon.SetIcon(self.icon, "BitTorrent")
                 self.frame.Hide()
                 self.taskbaricon = True
@@ -574,6 +623,15 @@ class DownloadInfoFrame:
         except:
             self.exception()
 
+    def onDownRateSpinner(self, event=None):
+        try:
+            if not self._try_get_config():
+                return
+            spinnerValue = self.downrateSpinner.GetValue()
+            self.dow.setDownloadRate(self.downrateSpinner.GetValue())
+        except:
+            self.exception()
+
     def onConnSpinner(self, event):
         try:
             if not self._try_get_config():
@@ -583,7 +641,7 @@ class DownloadInfoFrame:
         except:
             self.exception()
 
-    def onConnChoice(self, event):
+    def onConnChoice(self, event, cons=None, rate=None):
         try:
             if not self._try_get_config():
                 return
@@ -594,22 +652,26 @@ class DownloadInfoFrame:
                 self.connChoice.SetSelection(num)
                 return
             self.lastuploadsettings = num
+            self.current_ratesetting = self.connChoice.GetStringSelection()
+            if rate is None:
+                rate = connChoices[num]['rate']['def']
             self.rateSpinner.SetRange (connChoices[num]['rate']['min'],
                                    connChoices[num]['rate']['max'])
-            self.rateSpinner.SetValue (connChoices[num]['rate']['def'])
+            self.rateSpinner.SetValue (rate)
             self.rateslider.SetRange (
                 connChoices[num]['rate']['min']/connChoices[num]['rate'].get('div',1),
                 connChoices[num]['rate']['max']/connChoices[num]['rate'].get('div',1))
-            self.rateslider.SetValue (
-                connChoices[num]['rate']['def']/connChoices[num]['rate'].get('div',1))
+            self.rateslider.SetValue (rate/connChoices[num]['rate'].get('div',1))
             self.rateLowerText.SetLabel ('  %d' % (connChoices[num]['rate']['min']))
             self.rateUpperText.SetLabel ('%d' % (connChoices[num]['rate']['max']))
+            if cons is None:
+                cons = connChoices[num]['conn']['def']
             self.connSpinner.SetRange (connChoices[num]['conn']['min'],
                                        connChoices[num]['conn']['max'])
-            self.connSpinner.SetValue (connChoices[num]['conn']['def'])
+            self.connSpinner.SetValue (cons)
             self.connslider.SetRange (connChoices[num]['conn']['min'],
                                       connChoices[num]['conn']['max'])
-            self.connslider.SetValue (connChoices[num]['conn']['def'])
+            self.connslider.SetValue (cons)
             self.connLowerText.SetLabel ('  %d' % (connChoices[num]['conn']['min']))
             self.connUpperText.SetLabel ('%d' % (connChoices[num]['conn']['max']))
             self.onConnScroll (0)
@@ -735,7 +797,7 @@ class DownloadInfoFrame:
             else:
                 announce_list = None
             info = metainfo['info']
-            info_hash = sha(bencode(info))
+            info_hash = self.dow.infohash
             piece_length = info['piece length']
 
             if (self.detailBox is not None):
@@ -769,6 +831,7 @@ class DownloadInfoFrame:
             detailSizer = wxFlexGridSizer(cols = 2, vgap = 6)
 
             if info.has_key('length'):
+                fileListID = None
                 detailSizer.Add(StaticText('file name :'))
                 detailSizer.Add(StaticText(info['name']))
                 if info.has_key('md5sum'):
@@ -786,14 +849,18 @@ class DownloadInfoFrame:
                         frame.dow.storagewrapper.bgalloc()
                 EVT_BUTTON(self.detailBox, bgallocButton.GetId(), bgalloc)
 
-                bgallocbuttonSizer = wxFlexGridSizer(cols = 3, hgap = 4, vgap = 0)
+                bgallocbuttonSizer = wxFlexGridSizer(cols = 4, hgap = 4, vgap = 0)
+                bgallocbuttonSizer.Add(StaticText('(right-click to set priority)',self.FONT-1),0,wxALIGN_BOTTOM)
                 bgallocbuttonSizer.Add(StaticText('(finish allocation)'), -1, wxALIGN_CENTER_VERTICAL)
                 bgallocbuttonSizer.Add(bgallocButton, -1, wxALIGN_CENTER)
-                colSizer.Add(bgallocbuttonSizer, -1, wxALIGN_RIGHT)
+                bgallocbuttonSizer.AddGrowableCol(0)
+                colSizer.Add(bgallocbuttonSizer, -1, wxEXPAND)
 
                 file_length = 0
 
-                fileList = wxListCtrl(panel, -1, wxPoint(-1,-1), (325,100), wxLC_REPORT)
+                fileListID = wxNewId()
+                fileList = wxListCtrl(panel, fileListID,
+                                      wxPoint(-1,-1), (325,100), wxLC_REPORT)
                 self.fileList = fileList
                 fileList.SetImageList(self.filestatusIcons, wxIMAGE_LIST_SMALL)
 
@@ -802,10 +869,12 @@ class DownloadInfoFrame:
                 fileList.InsertColumn(1, "", format=wxLIST_FORMAT_RIGHT, width=55)
                 fileList.InsertColumn(2, "")
 
+#                self.fileListItems = []
                 for i in range(len(info['files'])):
                     x = wxListItem()
 #                x.SetFont(self.default_font)
                     fileList.InsertItem(x)
+#                    self.fileListItems.append(x)
 
                 x = 0
                 for file in info['files']:
@@ -818,6 +887,10 @@ class DownloadInfoFrame:
                     fileList.SetStringItem(x, 0, path)
                     if file.has_key('md5sum'):
                         fileList.SetStringItem(x, 2, '    [' + str(file['md5sum']) + ']')
+                    p = self.dow.fileselector[x]
+                    item = self.fileList.GetItem(x)
+                    item.SetTextColour(self.prioritycolors[p+1])
+                    fileList.SetItem(item)
                     x += 1
                     file_length += file['length']
                 fileList.SetColumnWidth(0,wxLIST_AUTOSIZE)
@@ -828,7 +901,7 @@ class DownloadInfoFrame:
                 colSizer.AddGrowableRow(3)
 
             detailSizer.Add(StaticText('info_hash :'),0,wxALIGN_CENTER_VERTICAL)
-            detailSizer.Add(wxTextCtrl(panel, -1, info_hash.hexdigest(), size = (325, -1), style = wxTE_READONLY))
+            detailSizer.Add(wxTextCtrl(panel, -1, tohex(info_hash), size = (325, -1), style = wxTE_READONLY))
             num_pieces = int((file_length+piece_length-1)/piece_length)
             detailSizer.Add(StaticText(name + ' : '))
             detailSizer.Add(StaticText('%s (%s bytes)' % (size_format(file_length), comma_format(file_length))))
@@ -903,7 +976,7 @@ class DownloadInfoFrame:
             colSizer.Add(okButton, 0, wxALIGN_RIGHT)
             colSizer.AddGrowableCol(0)
 
-            if not self.configfile.configfileargs['gui_stretchwindow']:
+            if not self.configfileargs['gui_stretchwindow']:
                 aboutTitle.SetSize((400,-1))
             else:
                 panel.SetAutoLayout(True)
@@ -913,19 +986,70 @@ class DownloadInfoFrame:
             panel.SetSizer(border)
             panel.SetAutoLayout(True)
 
-            def closeDetail(self, frame = self):
-                frame.detailBox.Close ()
+            if fileListID:
+                def onRightClick(evt, self = self):
+#                    s = evt.GetIndex()
+                    s = []
+                    i = -1
+                    while True:
+                        i = self.fileList.GetNextItem(i,state=wxLIST_STATE_SELECTED)
+                        if i == -1:
+                            break
+                        s.append(i)
+                    if not s:   # just in case
+                        return
+                    oldstate = self.dow.fileselector[s[0]]
+                    kind=wxITEM_RADIO
+                    for i in s[1:]:
+                        if self.dow.fileselector[i] != oldstate:
+                            oldstate = None
+                            kind = wxITEM_NORMAL
+                            break
+                    menu = wxMenu()
+                    menu.Append(self.priorityIDs[1], "download first", kind=kind)
+                    menu.Append(self.priorityIDs[2], "download normally", kind=kind)
+                    menu.Append(self.priorityIDs[3], "download later", kind=kind)
+                    menu.Append(self.priorityIDs[0], "download never", kind=kind)
+                    if oldstate is not None:
+                        menu.Check(self.priorityIDs[oldstate+1], True)
+
+                    def onSelection(evt, self = self, s = s):
+                        p = evt.GetId()
+                        priorities = self.dow.fileselector.get_priorities()
+                        for i in xrange(len(self.priorityIDs)):
+                            if p == self.priorityIDs[i]:
+                                for ss in s:
+                                    priorities[ss] = i-1
+                                    item = self.fileList.GetItem(ss)
+                                    item.SetTextColour(self.prioritycolors[i])
+                                    self.fileList.SetItem(item)
+                                self.dow.fileselector.set_priorities(priorities)
+                                self.fileList.Refresh()
+                                self.refresh_details = True
+                                break
+                        
+                    for id in self.priorityIDs:
+                        EVT_MENU(self.detailBox, id, onSelection)
+
+                    self.detailBox.PopupMenu(menu, evt.GetPoint())
+                        
+                EVT_LIST_ITEM_RIGHT_CLICK(self.detailBox, fileListID, onRightClick)
+
+            def closeDetail(evt, self = self):
+                self.detailBox.Close ()
             EVT_BUTTON(self.detailBox, okButton.GetId(), closeDetail)
-            def kill(self, frame = self):
-                frame.detailBox.Destroy()
-                frame.detailBox = None
-                frame.fileList = None
-                frame.dow.filedatflag.clear()
+            def kill(evt, self = self):
+                self.detailBox.Destroy()
+                self.detailBox = None
+                self.fileList = None
+                self.dow.filedatflag.clear()
             EVT_CLOSE(self.detailBox, kill)
 
             def trackerurl(self, turl = turl):
-                Thread(target = open_new(turl)).start()
-
+                try:
+                    Thread(target = open_new(turl)).start()
+                except:
+                    pass
             EVT_LEFT_DOWN(trackerUrl, trackerurl)
 
             self.detailBox.Show ()
@@ -1179,6 +1303,25 @@ class DownloadInfoFrame:
             self.storagestats2 = StaticText('')
             colSizer.Add(self.storagestats1, -1, wxEXPAND)
             colSizer.Add(self.storagestats2, -1, wxEXPAND)
+            spinnerSizer = wxFlexGridSizer(cols=4,vgap=0,hgap=0)
+            cstats = '          Listening on '
+            if self.connection_stats['interfaces']:
+                cstats += ', '.join(self.connection_stats['interfaces']) + ' on '
+            cstats += 'port ' + str(self.connection_stats['port'])
+            if self.connection_stats['upnp']:
+                cstats += ', UPnP port forwarded'
+            spinnerSizer.Add(StaticText(cstats), -1, wxEXPAND)
+            spinnerSizer.AddGrowableCol(0)
+            spinnerSizer.Add(StaticText('Max download rate (kB/s) '),0,wxALIGN_CENTER_VERTICAL)
+            self.downrateSpinner = wxSpinCtrl (panel, -1, "", (-1,-1), (50, -1))
+            self.downrateSpinner.SetFont(self.default_font)
+            self.downrateSpinner.SetRange(0,5000)
+            self.downrateSpinner.SetValue(self.config['max_download_rate'])
+            spinnerSizer.Add (self.downrateSpinner, 0)
+            EVT_SPINCTRL(self.downrateSpinner, -1, self.onDownRateSpinner)
+            spinnerSizer.Add(StaticText(' (0 = unlimited)  '),0,wxALIGN_CENTER_VERTICAL)
+            colSizer.Add(spinnerSizer,0,wxEXPAND)
+
             colSizer.Add(StaticText(''))
 
             buttonSizer = wxFlexGridSizer (cols = 5, hgap = 20)
@@ -1226,8 +1369,8 @@ class DownloadInfoFrame:
             spewList.InsertColumn(14, "Peer Download Speed", format=wxLIST_FORMAT_RIGHT, width=fw*6)
 
             def reannounce(self, frame = self):
-                if (time () - frame.reannouncelast > 60):
-                    frame.reannouncelast = time ()
+                if (clock() - frame.reannouncelast > 60):
+                    frame.reannouncelast = clock()
                     frame.dow.reannounce()
             EVT_BUTTON(self.advBox, reannounceButton.GetId(), reannounce)
 
@@ -1278,8 +1421,8 @@ class DownloadInfoFrame:
                     special = frame.advexturl.GetValue()
                     if special:
                         frame.lastexternalannounce = special
-                        if (time () - frame.reannouncelast > 60):
-                            frame.reannouncelast = time ()
+                        if (clock() - frame.reannouncelast > 60):
+                            frame.reannouncelast = clock()
                             frame.dow.reannounce(special)
                     frame.advextannouncebox.Close()
                 EVT_BUTTON(frame.advextannouncebox, okButton.GetId(), ok)
@@ -1304,18 +1447,19 @@ class DownloadInfoFrame:
                     frame.dow.storagewrapper.bgalloc()
             EVT_BUTTON(self.advBox, bgallocButton.GetId(), bgalloc)
 
-            def closeAdv(self, frame = self):
-                frame.advBox.Close ()
-            def killAdv(self, frame = self):
-                frame.dow.spewflag.clear()
-                frame.advBox.Destroy()
-                frame.advBox = None
-                if (frame.advextannouncebox is not None):
+            def closeAdv(evt, self = self):
+                self.advBox.Close ()
+            def killAdv(evt, self = self):
+                self.onDownRateSpinner()
+                self.dow.spewflag.clear()
+                self.advBox.Destroy()
+                self.advBox = None
+                if (self.advextannouncebox is not None):
                     try:
-                        frame.advextannouncebox.Close ()
+                        self.advextannouncebox.Close ()
                     except wxPyDeadObjectError, e:
                         pass
-                    frame.advextannouncebox = None
+                    self.advextannouncebox = None
             EVT_BUTTON(self.advBox, okButton.GetId(), closeAdv)
             EVT_CLOSE(self.advBox, killAdv)
 
@@ -1370,26 +1514,32 @@ class DownloadInfoFrame:
             **kws):
         if activity is not None:
             self.activity = activity
-        if fractionDone is not None:
-            self.gui_fractiondone = fractionDone
-        if self.gui_lastupdate + 0.05 > time():   # refreshing too fast, skip it
+        self.gui_fractiondone = fractionDone
+        if self.gui_lastupdate + 0.05 > clock():   # refreshing too fast, skip it
             return
         if not self.ispaused:
             self.invokeLater(self.onUpdateStatus,
                      [timeEst, downRate, upRate, statistics, spew, sizeDone])
 
     def onUpdateStatus(self, timeEst, downRate, upRate, statistics, spew, sizeDone):
-        if self.gui_lastupdate + 0.05 > time():   # refreshing too fast, skip it
+        if self.gui_lastupdate + 0.05 > clock():   # refreshing too fast, skip it
             return
-
         if self.firstupdate:
-            self.connChoice.SetStringSelection(self.configfile.configfileargs['gui_ratesettingsdefault'])
-            self.onConnChoice(0)         # force config selection for default value
-            self.gauge.SetForegroundColour(self.configfile.checkingcolor)
+            if not self.old_ratesettings:
+                self.old_ratesettings = {}
+            self.connChoice.SetStringSelection(
+                self.old_ratesettings.get('rate setting',
+                                  self.configfileargs['gui_ratesettingsdefault']))
+            self.onConnChoice(0,
+                              self.old_ratesettings.get('uploads'),
+                              self.old_ratesettings.get('max upload rate'))
+            if self.old_ratesettings.has_key('max download rate'):
+                self.dow.setDownloadRate(self.old_ratesettings['max download rate'])
+                if self.advBox:
+                    self.downrateSpinner.SetValue(self.old_ratesettings['max download rate'])
             self.firstupdate = False
             if self.advBox:
                 self.dow.spewflag.set()
-
         if statistics is None:
             self.setStatusIcon('startup')
         elif statistics.numPeers + statistics.numSeeds + statistics.numOldSeeds == 0:
@@ -1398,14 +1548,22 @@ class DownloadInfoFrame:
             else:
                 self.setStatusIcon('noconnections')
         elif ( not statistics.external_connection_made
-            and not self.configfile.configfileargs['gui_forcegreenonfirewall'] ):
+            and not self.configfileargs['gui_forcegreenonfirewall'] ):
             self.setStatusIcon('noincoming')
         elif ( (statistics.numSeeds + statistics.numOldSeeds == 0)
                and ( (self.fin and statistics.numCopies < 1)
                     or (not self.fin and statistics.numCopies2 < 1) ) ):
             self.setStatusIcon('nocompletes')
+        elif timeEst == 0 and sizeDone < self.torrentsize:
+            self.setStatusIcon('nocompletes')
         else:
             self.setStatusIcon('allgood')
+        if statistics is None:
+            self.setgaugemode(-1)
+        elif self.gui_fractiondone == None or self.gui_fractiondone == 1.0:
+            self.setgaugemode(1)
+        else:
+            self.setgaugemode(0)
 
         if self.updateSliderFlag == 1:
             self.updateSliderFlag = 0
@@ -1431,20 +1589,19 @@ class DownloadInfoFrame:
             gaugelevel = int(self.gui_fractiondone * 1000)
             self.gauge.SetValue(gaugelevel)
             if statistics is not None and statistics.downTotal is not None:
-                if self.configfile.configfileargs['gui_displaymiscstats']:
+                if self.configfileargs['gui_displaymiscstats']:
                     self.frame.SetTitle('%.1f%% (%.2f MiB) %s - BitTorrent %s' % (float(gaugelevel)/10, float(sizeDone) / (1<<20), self.filename, version))
                 else:
                     self.frame.SetTitle('%.1f%% %s - BitTorrent %s' % (float(gaugelevel)/10, self.filename, version))
-                self.gauge.SetForegroundColour(self.configfile.downloadcolor)
             else:
                 self.frame.SetTitle('%.0f%% %s - BitTorrent %s' % (float(gaugelevel)/10, self.filename, version))
         if timeEst is not None:
-            self.timeText.SetLabel(hours(time () - self.starttime) + ' / ' + hours(timeEst))
+            self.timeText.SetLabel(hours(clock() - self.starttime) + ' / ' + hours(timeEst))
         else:
             if self.fin:
                 self.timeText.SetLabel(self.activity)
             else:
-                self.timeText.SetLabel(hours(time () - self.starttime) + ' / ' + self.activity)
+                self.timeText.SetLabel(hours(clock() - self.starttime) + ' / ' + self.activity)
         if downRate is not None:
             self.downRateText.SetLabel('%.0f kB/s' % (float(downRate) / 1000))
         if upRate is not None:
@@ -1466,39 +1623,49 @@ class DownloadInfoFrame:
             except:
                 pass
         if statistics is not None:
-            if self.configfile.configfileargs['gui_displaymiscstats']:
-                self.downText.SetLabel('%.2f MiB' % (float(statistics.downTotal) / (1 << 20)))
-                self.upText.SetLabel('%.2f MiB' % (float(statistics.upTotal) / (1 << 20)))
-            if (statistics.shareRating < 0) or (statistics.shareRating > 1000):
-                self.shareRatingText.SetLabel('oo :-D')
-                self.shareRatingText.SetForegroundColour('Forest Green')
-            else:
-                shareSmiley = ''
-                color = 'Black'
-                if ((statistics.shareRating >= 0) and (statistics.shareRating < 0.5)):
+            downtotal = statistics.downTotal + self.old_download
+            uptotal = statistics.upTotal + self.old_upload
+            if self.configfileargs['gui_displaymiscstats']:
+                self.downText.SetLabel('%.2f MiB' % (float(downtotal) / (1 << 20)))
+                self.upText.SetLabel('%.2f MiB' % (float(uptotal) / (1 << 20)))
+            if downtotal > 0:
+                sharerating = float(uptotal)/downtotal
+                if sharerating == 0:
+                    shareSmiley = ''
+                    color = 'Black'
+                elif sharerating < 0.5:
                     shareSmiley = ':-('
                     color = 'Red'
+                elif sharerating < 1.0:
+                    shareSmiley = ':-|'
+                    color = 'Orange'
                 else:
-                    if ((statistics.shareRating >= 0.5) and (statistics.shareRating < 1.0)):
-                        shareSmiley = ':-|'
-                        color = 'Orange'
-                    else:
-                        if (statistics.shareRating >= 1.0):
-                            shareSmiley = ':-)'
-                            color = 'Forest Green'
-                self.shareRatingText.SetLabel('%.3f %s' % (statistics.shareRating, shareSmiley))
-                self.shareRatingText.SetForegroundColour(color)
+                    shareSmiley = ':-)'
+                    color = 'Forest Green'
+            elif uptotal == 0:
+                sharerating = None
+                shareSmiley = ''
+                color = 'Black'
+            else:
+                sharerating = None
+                shareSmiley = '00 :-D'
+                color = 'Forest Green'
+            if sharerating is None:
+                self.shareRatingText.SetLabel(shareSmiley)
+            else:
+                self.shareRatingText.SetLabel('%.3f %s' % (sharerating, shareSmiley))
+            self.shareRatingText.SetForegroundColour(color)
 
-            if self.configfile.configfileargs['gui_displaystats']:
+            if self.configfileargs['gui_displaystats']:
                 if not self.fin:
                     self.seedStatusText.SetLabel('connected to %d seeds; also seeing %.3f distributed copies' % (statistics.numSeeds,0.001*int(1000*statistics.numCopies2)))
                 else:
                     self.seedStatusText.SetLabel('%d seeds seen recently; also seeing %.3f distributed copies' % (statistics.numOldSeeds,0.001*int(1000*statistics.numCopies)))
                 self.peerStatusText.SetLabel('connected to %d peers with an average of %.1f%% completed (total speed %.0f kB/s)' % (statistics.numPeers,statistics.percentDone,float(statistics.torrentRate) / (1000)))
-        if ((time () - self.lastError) > 300):
+        if ((clock() - self.lastError) > 300):
             self.errorText.SetLabel('')
 
-        if ( self.configfile.configfileargs['gui_displaymiscstats']
+        if ( self.configfileargs['gui_displaymiscstats']
             and statistics is not None and statistics.backgroundallocating ):
             self.bgalloc_periods += 1
             if self.bgalloc_periods > 3:
@@ -1510,9 +1677,9 @@ class DownloadInfoFrame:
             self.bgallocText.SetLabel('')
 
 
-        if spew is not None and (time()-self.spewwait>1):
+        if spew is not None and (clock()-self.spewwait>1):
             if (self.advBox is not None):
-                self.spewwait = time()
+                self.spewwait = clock()
                 spewList = self.spewList
                 spewlen = len(spew)+2
                 if statistics is not None:
@@ -1628,42 +1795,50 @@ class DownloadInfoFrame:
                             spewList.SetStringItem(x, i, '')
 
                 if statistics is not None:
-                    self.storagestats1.SetLabel(
+                    l1 = (
                         '          currently downloading %d pieces (%d just started), %d pieces partially retrieved'
                                         % ( statistics.storage_active,
                                             statistics.storage_new,
                                             statistics.storage_dirty ) )
-                    self.storagestats2.SetLabel(
-                        '          %d of %d pieces complete (%d just downloaded), %d failed hash check, %s redundant data discarded'
+                    if statistics.storage_isendgame:
+                        l1 += ', endgame mode'
+                    self.storagestats2.SetLabel(l1)
+                    self.storagestats1.SetLabel(
+                        '          %d of %d pieces complete (%d just downloaded), %d failed hash check, %sKiB redundant data discarded'
                                         % ( statistics.storage_numcomplete,
                                             statistics.storage_totalpieces,
                                             statistics.storage_justdownloaded,
                                             statistics.storage_numflunked,
-                                            size_format(statistics.discarded) ) )
+                                            comma_format(int(statistics.discarded/1024)) ) )
 
         if ( self.fileList is not None and statistics is not None
                 and (statistics.filelistupdated or self.refresh_details) ):
             self.refresh_details = False
             statistics.filelistupdated = False
             for i in range(len(statistics.filecomplete)):
-                if statistics.fileinplace[i]:
+                if self.dow.fileselector[i] == -1:
+                    self.fileList.SetItemImage(i,0,0)
+                    self.fileList.SetStringItem(i,1,'')
+                elif statistics.fileinplace[i]:
                     self.fileList.SetItemImage(i,2,2)
                     self.fileList.SetStringItem(i,1,"done")
                 elif statistics.filecomplete[i]:
                     self.fileList.SetItemImage(i,1,1)
                     self.fileList.SetStringItem(i,1,"100%")
                 else:
+                    self.fileList.SetItemImage(i,0,0)
                     frac = int((len(statistics.filepieces2[i])-len(statistics.filepieces[i]))*100
                             /len(statistics.filepieces2[i]))
-                    if frac > 0:
+                    if frac:
                         self.fileList.SetStringItem(i,1,'%d%%' % (frac))
+                    else:
+                        self.fileList.SetStringItem(i,1,'')
 
-        if self.configfile.configReset:     # whoopee!  Set everything invisible! :-)
-            self.configfile.configReset = False
+        if self.configfile.configReset():     # whoopee!  Set everything invisible! :-)
 
-            self.dow.config['security'] = self.configfile.configfileargs['security']
+            self.dow.config['security'] = self.configfileargs['security']
 
-            statsdisplayflag = self.configfile.configfileargs['gui_displaymiscstats']
+            statsdisplayflag = self.configfileargs['gui_displaymiscstats']
             self.downTextLabel.Show(statsdisplayflag)
             self.upTextLabel.Show(statsdisplayflag)
             self.fileDestLabel.Show(statsdisplayflag)
@@ -1675,7 +1850,7 @@ class DownloadInfoFrame:
             self.seedStatusText.SetLabel('')
             self.peerStatusText.SetLabel('')
 
-            ratesettingsmode = self.configfile.configfileargs['gui_ratesettingsmode']
+            ratesettingsmode = self.configfileargs['gui_ratesettingsmode']
             ratesettingsflag1 = True    #\ settings
             ratesettingsflag2 = False   #/ for 'basic'
             if ratesettingsmode == 'none':
@@ -1696,20 +1871,12 @@ class DownloadInfoFrame:
             self.connslider.Show(ratesettingsflag2)
             self.unlimitedLabel.Show(ratesettingsflag2)
 
-            if statistics is None or statistics.downTotal is None:
-                self.gauge.SetForegroundColour(self.configfile.checkingcolor)
-                self.gauge.SetBackgroundColour(wxSystemSettings_GetColour(wxSYS_COLOUR_MENU))
-            elif self.fin:
-                self.gauge.SetForegroundColour(self.configfile.seedingcolor)
-                self.gauge.SetBackgroundColour(self.configfile.downloadcolor)
-            else:
-                self.gauge.SetForegroundColour(self.configfile.downloadcolor)
-                self.gauge.SetBackgroundColour(wxSystemSettings_GetColour(wxSYS_COLOUR_MENU))
+            self.setgaugemode(None)
 
         self.frame.Layout()
         self.frame.Refresh()
 
-        self.gui_lastupdate = time()
+        self.gui_lastupdate = clock()
         self.gui_fractiondone = None
 
 
@@ -1725,14 +1892,12 @@ class DownloadInfoFrame:
         self.invokeLater(self.onErrorEvent, [errormsg])
 
     def onFinishEvent(self):
-        self.activity = hours(time () - self.starttime) + ' / ' +'Download Succeeded!'
+        self.activity = hours(clock() - self.starttime) + ' / ' +'Download Succeeded!'
         self.cancelButton.SetLabel('Finish')
-        self.gauge.SetBackgroundColour(self.configfile.downloadcolor)
         self.gauge.SetValue(0)
-        self.gauge.SetForegroundColour(self.configfile.seedingcolor)
         self.frame.SetTitle('%s - Upload - BitTorrent %s' % (self.filename, version))
         if (sys.platform == 'win32'):
-            self.icon = wxIcon(os.path.join(basepath,'icon_done.ico'), wxBITMAP_TYPE_ICO)
+            self.icon = wxIcon(os.path.join(self.basepath,'icon_done.ico'), wxBITMAP_TYPE_ICO)
             self.frame.SetIcon(self.icon)
         if self.taskbaricon:
             self.frame.tbicon.SetIcon(self.icon, "BitTorrent - Finished")
@@ -1740,7 +1905,7 @@ class DownloadInfoFrame:
 
     def onFailEvent(self):
         if not self.shuttingdown:
-            self.timeText.SetLabel(hours(time () - self.starttime) + ' / ' +'Failed!')
+            self.timeText.SetLabel(hours(clock() - self.starttime) + ' / ' +'Failed!')
             self.activity = 'Failed!'
             self.cancelButton.SetLabel('Close')
             self.gauge.SetValue(0)
@@ -1750,10 +1915,10 @@ class DownloadInfoFrame:
     def onErrorEvent(self, errormsg):
         if errormsg[:2] == '  ':    # indent at least 2 spaces means a warning message
             self.errorText.SetLabel(errormsg)
-            self.lastError = time ()
+            self.lastError = clock()
         else:
             self.errorText.SetLabel(strftime('ERROR (%I:%M %p) -\n') + errormsg)
-            self.lastError = time ()
+            self.lastError = clock()
 
 
     def chooseFile(self, default, size, saveas, dir):
@@ -1765,10 +1930,10 @@ class DownloadInfoFrame:
 
     def onChooseFile(self, default, bucket, f, size, dir, saveas):
         if saveas == '':
-            if self.configfile.configfileargs['gui_default_savedir'] != '':
-                start_dir = self.configfile.configfileargs['gui_default_savedir']
+            if self.configfileargs['gui_default_savedir'] != '':
+                start_dir = self.configfileargs['gui_default_savedir']
             else:
-                start_dir = self.configfile.configfileargs['last_saved']
+                start_dir = self.configfileargs['last_saved']
             if not isdir(start_dir):    # if it's not set properly
                 start_dir = '/'    # yes, this hack does work in Windows
             if dir:
@@ -1802,15 +1967,24 @@ class DownloadInfoFrame:
             bucket[0] = saveas
             default = basename(saveas)
 
-        self.fileNameText.SetLabel('%s' % (default))
+        self.onChooseFileDone(default, size)
+        f.set()
+
+    def ChooseFileDone(self, name, size):
+        self.invokeLater(self.onChooseFileDone, [name, size])
+
+    def onChooseFileDone(self, name, size):
+        self.torrentsize = size
+        lname = basename(name)
+        self.filename = lname
+        self.fileNameText.SetLabel('%s' % (lname))
         self.fileSizeText.SetLabel('(%.2f MiB)' % (float(size) / (1 << 20)))
-        self.timeText.SetLabel(hours(time () - self.starttime) + ' / ' + self.activity)
-        self.fileDestText.SetLabel(bucket[0])
-        self.filename = default
-        self.frame.SetTitle(default + '- BitTorrent ' + version)
+        self.timeText.SetLabel(hours(clock() - self.starttime) + ' / ' + self.activity)
+        self.fileDestText.SetLabel(name)
+        self.frame.SetTitle(lname + '- BitTorrent ' + version)
 
         minsize = self.fileNameText.GetBestSize()
-        if (not self.configfile.configfileargs['gui_stretchwindow'] or
+        if (not self.configfileargs['gui_stretchwindow'] or
                             minsize.GetWidth() < self.addwidth):
             minsize.SetWidth(self.addwidth)
         self.fnsizer.SetMinSize (minsize)
@@ -1828,7 +2002,6 @@ class DownloadInfoFrame:
         self.colSizer.Fit(self.frame)
         self.frame.Layout()
         self.frame.Refresh()
-        f.set()
 
     def newpath(self, path):
         self.invokeLater(self.onNewpath, [path])
@@ -1906,13 +2079,12 @@ class DownloadInfoFrame:
         if self._errorwindow is None:
             w = wxFrame(None, -1, 'BITTORRENT ERROR', size = (1,1))
             panel = wxPanel(w, -1)
-            sizer = wxFlexGridSizer(cols = 1)
 
+            sizer = wxFlexGridSizer(cols = 1)
             t = ( 'BitTorrent ' + version + '\n' +
                   'OS: ' + sys.platform + '\n' +
                   'Python version: ' + sys.version + '\n' +
                   'wxWindows version: ' + wxVERSION_STRING + '\n' )
-
             try:
                 t += 'Psyco version: ' + hex(psyco.__version__)[2:] + '\n'
             except:
@@ -1924,7 +2096,6 @@ class DownloadInfoFrame:
                 t += '\n'
             except:
                 pass
-
             sizer.Add(wxTextCtrl(panel, -1, t + '\n' + err,
                                 size = (500,300), style = wxTE_READONLY|wxTE_MULTILINE))
 
@@ -1956,7 +2127,7 @@ class DownloadInfoFrame:
 class btWxApp(wxApp):
     def __init__(self, x, params):
         self.params = params
-        self.configfile = configReader(defaults)
+        self.configfile = configReader()
         wxApp.__init__(self, x)
 
     def OnInit(self):
@@ -1977,6 +2148,20 @@ class btWxApp(wxApp):
         return 1
 
 def run(params):
+    if WXPROFILER:
+        import profile, pstats
+        p = profile.Profile()
+        p.runcall(_run, params)
+        log = open('profile_data_wx.'+strftime('%y%m%d%H%M%S')+'.txt','a')
+        normalstdout = sys.stdout
+        sys.stdout = log
+#        pstats.Stats(p).strip_dirs().sort_stats('cumulative').print_stats()
+        pstats.Stats(p).strip_dirs().sort_stats('time').print_stats()
+        sys.stdout = normalstdout
+    else:
+        _run(params)
+        
+def _run(params):
     app = btWxApp(0, params)
     app.MainLoop()
 
@@ -1998,12 +2183,12 @@ def _next(params, d, doneflag, configfile):
     try:
         while 1:
             try:            
-                config = parse_params(params, configfile.configfileargs)
+                config = parse_params(params, configfile.config)
             except ValueError, e:
                 d.error('error: ' + str(e) + '\nrun with no args for parameter explanations')
                 break
             if not config:
-                d.displayUsage(get_usage())
+                d.displayUsage(get_usage(presets = configfile.config))
                 break
 
             myid = createPeerID()
@@ -2013,13 +2198,17 @@ def _next(params, d, doneflag, configfile):
                                   config['timeout'], ipv6_enable = config['ipv6_enabled'],
                                   failfunc = d.error, errorfunc = d.errorwindow)
 
+            upnp = config['upnp_nat_access']
+            if upnp and not UPnP_test():
+                upnp = False
             try:
                 listen_port = rawserver.find_and_bind(config['minport'], config['maxport'],
                                 config['bind'], ipv6_socket_style = config['ipv6_binds_v4'],
-                                upnp = config['upnp_nat_access'])
+                                upnp = upnp)
             except socketerror, e:
                 d.error("Couldn't listen - " + str(e))
                 break
+            d.connection_stats = rawserver.get_stats()
 
             response = get_response(config['responsefile'], config['url'], d.error)
             if not response:
@@ -2027,23 +2216,68 @@ def _next(params, d, doneflag, configfile):
 
             infohash = sha(bencode(response['info'])).digest()
             
+            torrentdata = configfile.getTorrentData(infohash)
+            if torrentdata:
+                oldsave = torrentdata.get('saved as')
+                d.old_ratesettings = torrentdata.get('rate settings')
+                s = torrentdata.get('stats')
+                if s:
+                    d.old_upload = s['uploaded']
+                    d.old_download = s['downloaded']
+            else:
+                oldsave = None
+
             dow = BT1Download(d.updateStatus, d.finished, d.error, d.errorwindow, doneflag,
-                            config, response, infohash, myid, rawserver, listen_port)
+                            config, response, infohash, myid, rawserver, listen_port,
+                            configfile.getConfigDir())
             d.dow = dow
-            
-            if not dow.saveAs(d.chooseFile, d.newpath):
+
+            if config['gui_saveas_ask'] == 1:
+                oldsave = None
+            if oldsave:
+                if not dow.checkSaveLocation(oldsave):
+                    oldsave = None
+            if oldsave:
+                def choosefile(default, size, saveas, dir, oldsave = oldsave):
+                    d.ChooseFileDone(oldsave, size)
+                    return oldsave
+            elif config['gui_saveas_ask'] == 0:
+                def choosefile(default, size, saveas, dir,
+                               spot = config['gui_default_savedir']):
+                    spot = os.path.join(spot,default)
+                    d.ChooseFileDone(spot, size)
+                    return spot
+            else:
+                choosefile = d.chooseFile
+            savedas = dow.saveAs(choosefile, d.newpath)
+            if not savedas: 
                 break
 
             if not dow.initFiles(old_style = True):
                 break
             if not dow.startEngine():
+                dow.shutdown()
                 break
             dow.startRerequester()
             dow.autoStats()
 
-            d.updateStatus(activity = 'connecting to peers')
+            if not dow.am_I_finished():
+                d.updateStatus(activity = 'connecting to peers')
             rawserver.listen_forever(dow.getPortHandler())
-            dow.shutdown()
+
+            torrentdata = {'saved as': savedas}
+            torrentdata['rate settings'] = {
+                    'rate setting': d.current_ratesetting,
+                    'uploads': config['min_uploads'],
+                    'max upload rate': config['max_upload_rate'],
+                    'max download rate': config['max_download_rate']
+                }
+            up, dn = dow.get_transfer_stats()
+            torrentdata['stats'] = {
+                    'uploaded': up + d.old_upload,
+                    'downloaded': dn + d.old_download
+                }
+            dow.shutdown(torrentdata)
             break
     except:
         data = StringIO()
@@ -2052,6 +2286,7 @@ def _next(params, d, doneflag, configfile):
         d.errorwindow(data.getvalue())
     if not d.fin:
         d.failed()
+    
 
 
 if __name__ == '__main__':

@@ -5,7 +5,7 @@ from types import IntType, LongType, StringType, ListType, TupleType, DictType
 try:
     from types import BooleanType
 except ImportError:
-    BooleanType = IntType
+    BooleanType = None
 from cStringIO import StringIO
 
 def decode_int(x, f):
@@ -230,6 +230,9 @@ def encode_bencached(x,r):
 def encode_int(x,r):
     r.extend(('i',str(x),'e'))
 
+def encode_bool(x,r):
+    encode_int(int(x),r)
+
 def encode_string(x,r):    
     r.extend((str(len(x)),':',x))
 
@@ -252,11 +255,12 @@ encode_func = {}
 encode_func[BencachedType] = encode_bencached
 encode_func[IntType] = encode_int
 encode_func[LongType] = encode_int
-encode_func[BooleanType] = encode_int
 encode_func[StringType] = encode_string
 encode_func[ListType] = encode_list
 encode_func[TupleType] = encode_list
 encode_func[DictType] = encode_dict
+if BooleanType:
+    encode_func[BooleanType] = encode_bool
     
 def bencode(x):
     r = []

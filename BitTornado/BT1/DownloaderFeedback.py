@@ -1,7 +1,6 @@
 # Written by Bram Cohen
 # see LICENSE.txt for license information
 
-from time import time
 from cStringIO import StringIO
 from urllib import quote
 
@@ -13,14 +12,14 @@ except:
 
 class DownloaderFeedback:
     def __init__(self, choker, httpdl, add_task, upfunc, downfunc,
-            remainingfunc, leftfunc, file_length, finflag, sp, statistics,
+            ratemeasure, leftfunc, file_length, finflag, sp, statistics,
             statusfunc = None, interval = None):
         self.choker = choker
         self.httpdl = httpdl
         self.add_task = add_task
         self.upfunc = upfunc
         self.downfunc = downfunc
-        self.remainingfunc = remainingfunc
+        self.ratemeasure = ratemeasure
         self.leftfunc = leftfunc
         self.file_length = file_length
         self.finflag = finflag
@@ -109,13 +108,17 @@ class DownloaderFeedback:
             s['done'] = self.file_length
             return s
         s['down'] = self.downfunc()
-        s['time'] = self.remainingfunc()
-        done = self.file_length - self.leftfunc()
-        s['done'] = done
-        if self.file_length > 0:
-            s['frac'] = done / float(self.file_length)
+        obtained, desired = self.leftfunc()
+        s['done'] = obtained
+        s['wanted'] = desired
+        if desired > 0:
+            s['frac'] = float(obtained)/desired
         else:
             s['frac'] = 1.0
+        if desired == obtained:
+            s['time'] = 0
+        else:
+            s['time'] = self.ratemeasure.get_time_left(desired-obtained)
         return s        
 
 

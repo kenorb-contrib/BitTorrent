@@ -18,13 +18,12 @@ setup(
     
     packages = ["BitTornado","BitTornado.BT1"],
 
-    scripts = ["btdownloadgui.py", "btdownloadheadless.py", "btdownloadlibrary.py", 
+    scripts = ["btdownloadgui.py", "btdownloadheadless.py", 
         "bttrack.py", "btmakemetafile.py", "btlaunchmany.py", "btcompletedir.py",
         "btdownloadcurses.py", "btcompletedirgui.py", "btlaunchmanycurses.py", 
         "btmakemetafile.py", "btreannounce.py", "btrename.py", "btshowmetainfo.py",
         "bttest.py",
-        'btmaketorrentgui.py', 'btcopyannounce.py', 'btsethttpseeds.py', 'bt-t-make.py',
-        'alloc.gif','black1.ico','black.ico','blue.ico','green1.ico','green.ico',
-        'icon_bt.ico','icon_done.ico','red.ico','white.ico',
-        'yellow1.ico','yellow.ico']
+        'btmaketorrentgui.py', 'btcopyannounce.py', 'btsethttpseeds.py',
+        'bt-t-make.py',
+        ]
     )

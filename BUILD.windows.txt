@@ -16,7 +16,7 @@ and the gifs and icons into that directory, and run nsis on it.
 cd dist
 copy ..\bittorrent.nsi .
 copy ..\*.gif .
-copy ..\*.ico .
+copy ..\icon*.ico .
 c:\progra~1\nsis\makensis.exe bittorrent.nsi
 
 This will create an installer called bittornado-x.x.x.w32install.exe

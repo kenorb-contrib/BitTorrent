@@ -2,14 +2,12 @@
 # see LICENSE.txt for license information
 
 from BitTornado.CurrentRateMeasure import Measure
-from random import shuffle, randint
-from time import time
-from math import sqrt
+from random import randint
 from urlparse import urlparse
 from httplib import HTTPConnection
 from urllib import quote
 from threading import Thread
-from BitTornado.__init__ import version_short
+from BitTornado.__init__ import product_name,version_short
 try:
     True
 except:
@@ -17,6 +15,8 @@ except:
     False = 0
 
 EXPIRE_TIME = 60 * 60
+
+VERSION = product_name+'/'+version_short
 
 class haveComplete:
     def complete(self):
@@ -62,6 +62,7 @@ class SingleDownload:
         self.errorcount = 0
         self.goodseed = False
         self.active = False
+        self.cancelled = False
         self.resched(randint(2,10))
 
     def resched(self, len = None):
@@ -78,6 +79,7 @@ class SingleDownload:
             return self.downloader.storage.is_unstarted(index)
 
     def download(self):
+        self.cancelled = False
         if self.downloader.picker.am_I_complete():
             self.downloader.downloads.remove(self)
             return
@@ -108,7 +110,7 @@ class SingleDownload:
         self.received_data = None
         try:
             self.connection.request('GET',self.url, None,
-                                {'User-Agent': 'BitTorrent/' + version_short})
+                                {'User-Agent': VERSION})
             r = self.connection.getresponse()
             self.connection_status = r.status
             self.received_data = r.read()
@@ -161,6 +163,8 @@ class SingleDownload:
         self.measure.update_rate(len(self.received_data))
         self.downloader.measurefunc(len(self.received_data))
         self.downloader.downmeasure.update_rate(len(self.received_data))
+        if self.cancelled:
+            return False
         if not self._fulfill_requests():
             return False
         if not self.goodseed:
@@ -184,13 +188,13 @@ class SingleDownload:
     def _fulfill_requests(self):
         start = 0L
         success = True
-        for begin, length in self.requests:
+        while self.requests:
+            begin, length = self.requests.pop(0)
             if not self.downloader.storage.piece_came_in(self.index, begin,
                             self.received_data[start:start+length]):
                 success = False
                 break
             start += length
-        self.requests = []
         return success
 
     def _release_requests(self):
@@ -243,3 +247,8 @@ class HTTPDownloader:
         if self.finflag.isSet():
             return []
         return self.downloads
+
+    def cancel_piece_download(self, pieces):
+        for d in self.downloads:
+            if d.active and d.index in pieces:
+                d.cancelled = True
