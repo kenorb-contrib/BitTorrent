@@ -76,7 +76,7 @@ class HTTPConnection:
             # this eventually needs to support multple acceptable types
             # q-values and all that fancy HTTP crap
             # for now assume we're only communicating with our own client
-            if ae == 'gzip':
+            if ae.find('gzip') != -1:
                 self.encoding = 'gzip'
             else:
                 #default to identity. 
