@@ -81,10 +81,14 @@ class RawServer:
         self.doneflag = doneflag
         self.noisy = noisy
         self.funcs = []
+        self.externally_added = []
         self.add_task(self.scan_for_timeouts, timeout)
 
     def add_task(self, func, delay):
         insort(self.funcs, (time() + delay, func))
+
+    def external_add_task(self, func, delay):
+        self.externally_added.append((func, delay))
 
     def scan_for_timeouts(self):
         self.add_task(self.scan_for_timeouts, self.timeout)
@@ -154,11 +158,20 @@ class RawServer:
                     if s.is_flushed():
                         self.handler.connection_flushed(s)
 
+    def pop_external(self):
+        try:
+            while true:
+                (a, b) = self.externally_added.pop()
+                self.add_task(a, b)
+        except IndexError:
+            pass
+
     def listen_forever(self, handler):
         self.handler = handler
         try:
             while not self.doneflag.isSet():
                 try:
+                    self.pop_external()
                     if len(self.funcs) == 0:
                         period = 2 ** 30
                     else:

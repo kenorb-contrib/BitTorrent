@@ -65,7 +65,7 @@ thanks = (200, 'OK', {'Content-Type': 'text/plain'},
 class Tracker:
     def __init__(self, config, rawserver):
         self.response_size = config['response_size']
-        self.urlprefix = 'http://' + config['ip'] + ':' + str(config['port'])
+        self.urlprefix = 'http://' + config['ip'] + ':' + str(config['port']) + '/'
         self.statefile = config['file']
         self.dfile = config['dfile']
         self.rawserver = rawserver
@@ -153,10 +153,13 @@ class Tracker:
             return thanks
         if not self.published.has_key(path):
             return (404, 'Not Found', {'Content-Type': 'text/plain'}, alas)
-        data = {'info': self.published[path], 'file id': path, 
-            'url': self.urlprefix + path, 
-            'announce': self.urlprefix + '/announce/', 'junk': None,
-            'your ip': connection.get_ip(), 'interval': self.reannounce_interval}
+        data = {}
+        if params.get('rerequest') != '1':
+            data = {'info': self.published[path], 'file id': path, 
+                'url': self.urlprefix + path, 
+                'peer url': self.urlprefix + path + '?rerequest=1',
+                'announce': self.urlprefix + 'announce/', 'junk': None,
+                'your ip': connection.get_ip(), 'interval': self.reannounce_interval}
         if len(self.cached.get(path, [])) < self.response_size:
             self.cached[path] = [{'peer id': key, 'ip': value['ip'], 
                 'port': value['port']} for key, value in 

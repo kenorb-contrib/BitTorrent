@@ -91,6 +91,9 @@ class Connecter:
         self.numpieces = numpieces
         self.connections = {}
 
+    def how_many_connections(self):
+        return len(self.connections)
+
     def connection_made(self, connection):
         c = Connection(connection)
         self.connections[connection] = c

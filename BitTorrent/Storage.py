@@ -41,7 +41,7 @@ class Storage:
             else:
                 self.handles[file] = open(file, 'wb+')
         if total > so_far:
-            interval = max(2 ** 20, total / 100)
+            interval = max(2 ** 20, long(total / 100))
             statusfunc(activity = 'allocating', 
                 fractionDone = float(so_far)/total)
             for file, length in files:

@@ -12,6 +12,7 @@ from Downloader import Downloader
 from Connecter import Connecter
 from Encrypter import Encrypter
 from RawServer import RawServer
+from Rerequester import Rerequester
 from DownloaderFeedback import DownloaderFeedback
 from RateMeasure import RateMeasure
 from bencode import bencode, bdecode
@@ -61,6 +62,10 @@ defaults = [
         'time equivalent of writing to kernel-level TCP buffer, for rate adjustment'),
     ('display_interval', None, .1,
         'time between updates of displayed information'),
+    ('rerequest_interval', None, 5 * 60,
+        'time to wait between requesting more peers'),
+    ('min_peers', None, 10, 
+        'minimum number of peers to not do rerequesting'),
     ]
 
 def download(params, filefunc, statusfunc, resultfunc, doneflag, cols):
@@ -204,6 +209,12 @@ def download(params, filefunc, statusfunc, resultfunc, doneflag, cols):
     encrypter = Encrypter(connecter, rawserver, 
         myid, config['max_message_length'], rawserver.add_task, 
         config['keepalive_interval'], sha(bencode(info)).digest())
+    url = response['url']
+    if response.has_key('peer url'):
+        url = response['peer url']
+    Rerequester(url, config['rerequest_interval'], rawserver.add_task,
+        connecter.how_many_connections, config['min_peers'],
+        encrypter.start_connection, rawserver.external_add_task)
     DownloaderFeedback(choker, rawserver.add_task, ip, statusfunc, 
         config['max_rate_recalculate_interval'], ratemeasure.get_time_left, 
         ratemeasure.get_size_left, file_length, finflag,
