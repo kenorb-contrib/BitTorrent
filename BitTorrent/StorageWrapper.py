@@ -416,3 +416,48 @@ def test_alloc_random():
     for i in xrange(100):
         assert sw.get_piece(i, 0, 1) == chr(i)
     assert ds.s[:100] == ''.join([chr(i) for i in xrange(100)])
+
+def test_alloc_resume():
+    ds = DummyStorage(101)
+    sw = StorageWrapper(ds, 1, [sha(chr(i)).digest() for i in xrange(101)], 1, ds.finished, None)
+    for i in xrange(100):
+        assert sw.new_request(i) == (0, 1)
+    r = range(100)
+    shuffle(r)
+    for i in r[:50]:
+        sw.piece_came_in(i, 0, chr(i))
+    assert ds.s[50:] == chr(0xFF) * 51
+    ds.ranges = [(0, 50)]
+    sw = StorageWrapper(ds, 1, [sha(chr(i)).digest() for i in xrange(101)], 1, ds.finished, None)
+    for i in r[50:]:
+        sw.piece_came_in(i, 0, chr(i))
+    assert ds.s[:100] == ''.join([chr(i) for i in xrange(100)])
+
+def test_last_piece_pre():
+    ds = DummyStorage(3, ranges = [(2, 1)])
+    ds.s = chr(0xFF) + chr(0xFF) + 'c'
+    sw = StorageWrapper(ds, 2, [sha('ab').digest(), sha('c').digest()], 2, ds.finished, None)
+    assert not sw.do_I_have_requests(1)
+    assert sw.do_I_have_requests(0)
+
+def test_not_last_pre():
+    ds = DummyStorage(3, ranges = [(1, 1)])
+    ds.s = chr(0xFF) + 'a' + chr(0xFF)
+    sw = StorageWrapper(ds, 1, [sha('a').digest()] * 3, 1, ds.finished, None)
+    assert not sw.do_I_have_requests(1)
+    assert sw.do_I_have_requests(0)
+    assert sw.do_I_have_requests(2)
+
+def test_last_piece_not_pre():
+    ds = DummyStorage(51, ranges = [(50, 1)])
+    sw = StorageWrapper(ds, 2, [sha('aa').digest()] * 25 + [sha('b').digest()], 2, ds.finished, None)
+    for i in xrange(25):
+        assert sw.new_request(i) == (0, 2)
+    assert sw.new_request(25) == (0, 1)
+    sw.piece_came_in(25, 0, 'b')
+    r = range(25)
+    shuffle(r)
+    for i in r:
+        sw.piece_came_in(i, 0, 'aa')
+    assert ds.done
+    assert ds.s == 'a' * 50 + 'b'
