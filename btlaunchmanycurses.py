@@ -90,7 +90,7 @@ def dropdir_mainloop(d, params):
             # dealing with files that dissapear
             if file not in files:
                 status = 'Gone torrent: %s' % file
-                if threadinfo['timeout'] == -1:
+                if threadinfo.get('timeout', -1) == -1:
                     threadinfo['kill'].set()
                     threadinfo['thread'].join()
                 del threads[file]
