@@ -8,8 +8,10 @@ a test fails if it raises an exception, otherwise it passes
 functions are try_all and try_single
 """
 
-# written March 2001 by Bram Cohen, bram@gawth.com
-# this file is public domain
+# Written by Bram Cohen
+# This file is public domain
+# The authors disclaim all liability for any damages resulting from
+# any use of this software.
 
 import traceback
 import sys

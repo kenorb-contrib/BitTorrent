@@ -1,0 +1,23 @@
+install Python, version 2.0 or later - http://python.org/
+
+install wxPython - http://wxpython.org/
+
+untar and cd to the root BitTorrent directory and 
+enter the following commands (you may have to be root 
+to execute some of them)
+
+./setup.py install
+cp bittorrent /usr/lib/mime/packages
+update-mime
+
+and web browse! You can start with this page - 
+
+http://bitconjurer.org/BitTorrent/demo.html
+
+To run a tracker, execute the command bttrack.py (it will be in 
+your path, and give help information when you run it)
+
+To publish, execute the command btpublish.py and point it at your 
+tracker. Note that the default location is 
+http://tracker.ip/publish/ and that the tracker has a default index 
+page which links to everything published on it.

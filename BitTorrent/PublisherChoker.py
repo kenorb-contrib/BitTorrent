@@ -1,5 +1,7 @@
-# written by Bram Cohen
-# this file is public domain
+# Written by Bram Cohen
+# This file is public domain
+# The authors disclaim all liability for any damages resulting from
+# any use of this software.
 
 from random import randrange
 true = 1

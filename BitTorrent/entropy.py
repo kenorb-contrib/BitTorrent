@@ -1,5 +1,7 @@
 # Written by Bram Cohen
-# this file is public domain
+# This file is public domain
+# The authors disclaim all liability for any damages resulting from
+# any use of this software.
 
 """
 A PRNG kernel which behaves properly - only reseeds when enough 

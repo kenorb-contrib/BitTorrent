@@ -1,3 +1,8 @@
+# Written by Bram Cohen
+# This file is public domain
+# The authors disclaim all liability for any damages resulting from
+# any use of this software.
+
 import BitTorrent.download
 from threading import Event
 

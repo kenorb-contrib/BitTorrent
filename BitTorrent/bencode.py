@@ -64,6 +64,8 @@ docstrings for more detail.
 # originally written for Mojo Nation, by Bram Cohen, based on an earlier version by Bryce Wilcox,
 # with some speedups by Greg P. Smith
 # all subsequent changes are by Bram Cohen and are public domain
+# The authors disclaim all liability for any damages resulting from
+# any use of this software.
 
 from types import *
 from cStringIO import StringIO

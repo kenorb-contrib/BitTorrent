@@ -1,7 +1,9 @@
 #!/usr/bin/env python
 
 # Written by Bram Cohen
-# this file is public domain
+# This file is public domain
+# The authors disclaim all liability for any damages resulting from
+# any use of this software.
 
 import sys
 assert sys.version >= '2', "Install Python 2.0 or greater"
