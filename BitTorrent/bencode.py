@@ -256,7 +256,7 @@ def encode_dict(x,r):
     r.append('e')
 
 encode_func = {}
-encode_func[type(Bencached)] = encode_bencached
+encode_func[type(Bencached(0))] = encode_bencached
 encode_func[IntType] = encode_int
 encode_func[LongType] = encode_int
 encode_func[StringType] = encode_string
@@ -289,6 +289,7 @@ def test_bencode():
     assert bencode({}) == 'de'
     assert bencode({'age': 25, 'eyes': 'blue'}) == 'd3:agei25e4:eyes4:bluee'
     assert bencode({'spam.mp3': {'author': 'Alice', 'length': 100000}}) == 'd8:spam.mp3d6:author5:Alice6:lengthi100000eee'
+    assert bencode(Bencached(bencode(3))) == 'i3e'
     try:
         bencode({1: 'foo'})
     except TypeError:
