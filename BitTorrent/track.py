@@ -14,6 +14,7 @@ from traceback import print_exc
 from time import time
 from random import shuffle
 from types import StringType, LongType, ListType, DictType
+from binascii import b2a_hex
 true = 1
 false = 0
 
@@ -92,7 +93,7 @@ class Tracker:
             names.sort()
             for name in names:
                 l = self.downloads[name]
-                s.write(hex(name) + ' (' + str(len([1 for i in 
+                s.write(b2a_hex(name) + ' (' + str(len([1 for i in 
                     l.values() if i['left'] == 0])) + '/' + 
                     str(len(l)) + ')<p>\n\n')
             return (200, 'OK', {'Content-Type': 'text/html'}, s.getvalue())
@@ -111,15 +112,16 @@ class Tracker:
             uploaded = long(params.get('uploaded', ''))
             downloaded = long(params.get('downloaded', ''))
             left = long(params.get('left', ''))
-            peers = self.downloads.setdefault(infohash, {})
             myid = params.get('peer_id', '')
             if len(myid) != 20:
                 raise ValueError, 'id not of length 20'
         except ValueError, e:
             return (400, 'Bad Request', {'Content-Type': 'text/plain'}, 
                 'you sent me garbage - ' + str(e))
+        peers = self.downloads.setdefault(infohash, {})
+        ts = self.times.setdefault(infohash, {})
         if params.get('event', '') != 'stopped':
-            self.times.setdefault(infohash, {})[myid] = time()
+            ts[myid] = time()
             if not peers.has_key(myid):
                 peers[myid] = {'ip': ip, 'port': port, 'left': left}
             else:
@@ -127,7 +129,7 @@ class Tracker:
         else:
             if peers.has_key(myid) and peers[myid]['ip'] == ip:
                 del peers[myid]
-                del self.times[infohash][myid]
+                del ts[myid]
         data = {'interval': self.reannounce_interval}
         cache = self.cached.setdefault(infohash, [])
         if len(cache) < self.response_size:
@@ -153,6 +155,10 @@ class Tracker:
                     del self.times[x][myid]
                     del self.downloads[x][myid]
         self.prevtime = time()
+        for key, value in self.downloads.items():
+            if len(value) == 0:
+                del self.times[key]
+                del self.downloads[key]
         self.rawserver.add_task(self.expire_downloaders, self.timeout_downloaders_interval)
 
 def track(args):

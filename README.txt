@@ -12,40 +12,43 @@ Instructions for making the installer are in BUILD.windows.txt
 
 Instructions for Unix installation are in INSTALL.unix.txt
 
-BitTorrent consists of two parts - tracker, which acts as a 
-web server, and the downloader, which acts as a web helper app.
+BitTorrent consists of two parts - downloaders, which acts as 
+a web helper app, and trackers, which coordinate between them.
+You only need to run one tracker.
 
 To run a tracker, execute the command bttrack.py Here is an 
 example -
 
-./bttrack.py --port 8080 --ip 69.69.69.69 --file btstate \
-    --dfile dstate --logfile logfile
+./bttrack.py --port 8080 --dfile dstate
 
-You should substitute your own ip for 69.69.69.69. You can use 
-a dns name instead of an ip number, although that results in clients 
-having to do an extra dns lookup.
+dfile is where the information about current downloaders is saved 
+periodically. An empty one will be created if it doesn't exist 
+already.
 
-This command will read in previously generated files called btstate 
-and dstate or generate new ones if they don't exist already. That's 
-where persistent tracker information is kept.
+The tracker outputs web logs to standard out. You can get information 
+about the files it's currently serving by getting its index page. 
 
-The tracker won't give any immediate feedback. You can get a list 
-of published files by doing an http request in it's base directory.
+To generate a metainfo file, run the publish script and give it the 
+file you want metainfo for and the url of the tracker
 
-To publish, first run the publish script to let the tracker know about 
-a file, then run a downloader which already has the complete file to 
-make it available. Here's the publish command -
+./btpublish.py myfile.ext http://my.tracker/announce/
 
-./btpublish.py myfile.ext http://my.tracker/somename.ext
+This command may take a while to scan over the whole file hashing it.
 
-This command will take some time to scan over the file, then report 
-the information to the tracker and complete. It will report the 
-tracker's response.
+The announce/ path is special and hard-coded into the tracker. 
+Make sure to give the domain or ip your tracker is on instead of 
+my.tracker.
 
-Next run a downloader, here's an example -
+This will generate a file called myfile.ext.torrent. Now you must 
+associate the .torrent exension with mimetype application/x-bittorrent
+on your web server and put the .torrent file on it. You can hyperlink 
+to it like any other file.
 
-./btdownloadheadless.py --url http://my.tracker/somename.ext --saveas \
-    myfile.ext
+Next you have to run a downloader which already has the complete file, 
+so new downloaders have a place to get it from. Here's an example -
+
+./btdownloadheadless.py --saveas myfile.ext --responsefile \
+    myfile.ext.torrent
 
 Make sure the saveas argument points to the already complete file.
 
