@@ -247,7 +247,11 @@ def download(params, filefunc, statusfunc, finfunc, errorfunc, doneflag, cols, p
             max_slice_length, max_rate_period, fudge)
     ratemeasure = RateMeasure(storagewrapper.get_amount_left())
     rm[0] = ratemeasure.data_rejected
-    downloader = Downloader(storagewrapper, PiecePicker(len(pieces), config['rarest_first_cutoff']),
+    picker = PiecePicker(len(pieces), config['rarest_first_cutoff'])
+    for i in xrange(len(pieces)):
+        if storagewrapper.do_I_have(i):
+            picker.complete(i)
+    downloader = Downloader(storagewrapper, picker,
         config['request_backlog'], config['max_rate_period'],
         len(pieces), downmeasure, config['snub_time'], 
         ratemeasure.data_came_in)
