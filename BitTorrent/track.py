@@ -452,7 +452,7 @@ class Tracker:
         for x in self.times.keys():
             for myid, t in self.times[x].items():
                 if t < self.prevtime:
-                    if self.becache1[x].has_key(myid):
+                    if self.becache1.get(x, {}).has_key(myid):
                         del self.becache1[x][myid]
                         del self.becache2[x][myid]
                     del self.times[x][myid]
