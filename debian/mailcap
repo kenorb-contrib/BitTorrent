@@ -1,2 +1,2 @@
-application/x-bittorrent; /usr/bin/btdownloadprefetched.py %s; test=test -n "$DISPLAY"
+application/x-bittorrent; /usr/bin/python2.1 /usr/bin/btdownloadprefetched.py %s; test=test -n "$DISPLAY"
 application/x-bittorrent; /usr/bin/btdownloadheadless.py --responsefile=%s; test=test -z "$DISPLAY"; needsterminal

@@ -22,7 +22,7 @@ binary-indep: build
 	ln -s ../man7/undocumented.7.gz debian/bittorrent/usr/share/man/man1/btmakemetafile.py.gz
 	ln -s ../man7/undocumented.7.gz debian/bittorrent/usr/share/man/man1/bttrack.py.gz
 	cp LICENSE.txt debian/bittorrent/usr/share/doc/bittorrent/copyright
-	cd debian/bittorrent/usr/share/doc ; gzip -9 changelog.Debian
+	cd debian/bittorrent/usr/share/doc/bittorrent ; gzip -9 changelog.Debian
 	cd debian/bittorrent ; find usr -type f -exec md5sum {} \; > DEBIAN/md5sums
 	dpkg-gencontrol -ldebian/changelog -isp -pbittorrent -Pdebian/bittorrent
 	dpkg --build debian/bittorrent ..
