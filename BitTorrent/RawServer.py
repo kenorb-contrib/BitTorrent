@@ -237,6 +237,9 @@ class DummyHandler:
     def connection_lost(self, s):
         self.lost.append(s)
 
+    def connection_flushed(self, s):
+        pass
+
 def test_starting_side_close():
     try:
         da = DummyHandler()

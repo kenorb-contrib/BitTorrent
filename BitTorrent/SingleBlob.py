@@ -40,15 +40,20 @@ class SingleBlob:
         self.want_list = self.want.keys()
         shuffle(self.want_list)
         if exists(file):
-            if getsize(file) != file_length:
-                raise ValueError, 'existing file is of incorrect length'
+            size = getsize(file)
+            if size > file_length:
+                raise ValueError, 'existing file size too large'
             self.h = self.open(file, 'rb+')
+            if size < file_length:
+                self.h.seek(file_length - 1)
+                self.h.write(chr(1))
+                self.h.flush()
             for blob in self.want.keys():
                 self.check_blob(blob)
         else:
             self.h = self.open(file, 'wb+')
             self.h.seek(file_length - 1)
-            self.h.write(chr(0))
+            self.h.write(chr(1))
             self.h.flush()
 
     def get_size(self, blob):
@@ -266,6 +271,18 @@ def test_repeat_piece():
     b = sha('abc').digest()
     r = []
     f = FakeOpen()
+    sb = SingleBlob('test', 6, [b, b], 3, r.append, 
+        f.open, f.exists, f.getsize)
+    assert r == []
+    
+    sb.save_slice(b, 0, 'abc')
+    assert sb.check_blob(b)
+    assert r == [true]
+
+def test_resume_partial():
+    b = sha('abc').digest()
+    r = []
+    f = FakeOpen({'test': 'a'})
     sb = SingleBlob('test', 6, [b, b], 3, r.append, 
         f.open, f.exists, f.getsize)
     assert r == []
