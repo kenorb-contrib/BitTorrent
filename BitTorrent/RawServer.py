@@ -141,14 +141,17 @@ class RawServer:
                 if event & (POLLHUP | POLLERR) != 0:
                     self.poll.unregister(self.server)
                     self.server.close()
-                    print "lost server socket"
+                    self.errorfunc('lost server socket')
                 else:
-                    newsock, addr = self.server.accept()
-                    newsock.setblocking(0)
-                    nss = SingleSocket(self, newsock, self.handler)
-                    self.single_sockets[newsock.fileno()] = nss
-                    self.poll.register(newsock, POLLIN)
-                    self.handler.external_connection_made(nss)
+                    try:
+                        newsock, addr = self.server.accept()
+                        newsock.setblocking(0)
+                        nss = SingleSocket(self, newsock, self.handler)
+                        self.single_sockets[newsock.fileno()] = nss
+                        self.poll.register(newsock, POLLIN)
+                        self.handler.external_connection_made(nss)
+                    except socket.error:
+                        sleep(1)
             else:
                 s = self.single_sockets.get(sock)
                 if s is None:
