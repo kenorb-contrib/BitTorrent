@@ -1,6 +1,7 @@
 # Written by Bram Cohen
 # see LICENSE.txt for license information
 
+from CurrentRateMeasure import Measure
 from time import time
 from random import shuffle
 from copy import copy
@@ -16,18 +17,14 @@ class SingleDownload:
             self.choked = true
             self.interested = false
             self.have = [false] * downloader.numpieces
-            self.ratesince = time()
-            self.lastin = self.ratesince
-            self.rate = 0.0
+            self.measure = Measure(downloader.max_rate_period, downloader.max_pause)
         else:
             self.connection = old.connection
             self.connection.set_download(self)
             self.choked = old.choked
             self.have = old.have
-            self.ratesince = old.ratesince
-            self.lastin = old.lastin
-            self.rate = old.rate
             self.interested = old.interested
+            self.measure = old.measure
             shuffle(downloader.requests)
             for h in self.have:
                 if h:
@@ -59,16 +56,6 @@ class SingleDownload:
     def is_interested(self):
         return self.interested
 
-    def update_rate(self, amount):
-        self.downloader.measurefunc(amount)
-        self.downloader.total_down[0] += amount
-        t = time()
-        self.rate = (self.rate * (self.lastin - self.ratesince) + 
-            amount) / (t - self.ratesince)
-        self.lastin = t
-        if self.ratesince < t - self.downloader.max_rate_period:
-            self.ratesince = t - self.downloader.max_rate_period
-
     def send_request(self, index, begin, length):
         if not self.interested:
             self.interested = true
@@ -80,7 +67,9 @@ class SingleDownload:
             self.downloader.requests.remove((index, begin, len(piece)))
         except ValueError:
             return false
-        self.update_rate(len(piece))
+        self.measure.update_rate(len(piece))
+        self.downloader.downmeasure.update_rate(len(piece))
+        self.downloader.measurefunc(len(piece))
         storage = self.downloader.storage
         storage.piece_came_in(index, begin, piece)
         if storage.do_I_have_requests(index):
@@ -147,8 +136,9 @@ class EndgameDownloader:
         self.storage = old.storage
         self.backlog = old.backlog
         self.max_rate_period = old.max_rate_period
+        self.max_pause = old.max_pause
         self.numpieces = old.numpieces
-        self.total_down = old.total_down
+        self.downmeasure = old.downmeasure
         self.measurefunc = old.measurefunc
         self.requests = []
         for d in old.downloads:
@@ -211,17 +201,16 @@ class DummyDownload:
         self.interested = interested
         self.have = have
         self.active_requests = active_requests
-        self.ratesince = 0
-        self.lastin = 0
-        self.rate = 0
+        self.measure = Measure(15, 5)
 
 class DummyDownloader:
     def __init__(self, storage, numpieces, downloads):
         self.storage = storage
         self.backlog = 5
         self.max_rate_period = 50
+        self.max_pause = 10
         self.numpieces = numpieces
-        self.total_down = [0]
+        self.downmeasure = Measure(15, 5)
         self.measurefunc = lambda x: None
         self.downloads = downloads
 
@@ -252,6 +241,7 @@ def test_piece_came_in_no_interest_lost():
     assert events == []
     d4.got_have_bitfield([true])
     assert events == [(c4, 'interested'), (c4, 'request', 0, 0, 2)]
+    assert d.downmeasure.get_total() == 1
 
 def test_piece_came_in_lost_interest():
     events = []
