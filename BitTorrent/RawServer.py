@@ -228,16 +228,16 @@ class RawServer:
                     if self.doneflag.isSet():
                         return
                     self._close_dead()
-                except error:
+                except error, e:
                     if self.doneflag.isSet():
                         return
                     # I can't find a coherent explanation for what the behavior should be here,
                     # and people report conflicting behavior, so I'll just try all the possibilities
                     try:
-                        code, msg, desc = error
+                        code, msg, desc = e
                     except:
                         try:
-                            code, msg = error
+                            code, msg = e
                         except:
                             code = ENOBUFS
                     if code == ENOBUFS:

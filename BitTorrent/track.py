@@ -403,7 +403,7 @@ class Tracker:
             else:
                 record['nat'] += 1
         if result:
-            self.becache1.setdefault(downloadid,{})[peerid] = Bencached(bencode({'ip': ip, 'port': port, 'peer id': myid}))
+            self.becache1.setdefault(downloadid,{})[peerid] = Bencached(bencode({'ip': ip, 'port': port, 'peer id': peerid}))
             self.becache2.setdefault(downloadid,{})[peerid] = Bencached(bencode({'ip': ip, 'port': port}))
 
     def save_dfile(self):
