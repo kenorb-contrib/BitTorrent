@@ -91,6 +91,8 @@ defaults = [
         "the number of uploads to fill out to with extra optimistic unchokes"),
     ('rarest_first_priority_cutoff', 3,
         'the number of peers which need to have a piece before other partials take priority over rarest first'),
+    ('report_hash_failures', 0,
+        "whether to inform the user that hash failures occur. They're non-fatal."),
     ]
 
 def download(params, filefunc, statusfunc, finfunc, errorfunc, doneflag, cols, pathFunc = None, paramfunc = None, spewflag = Event()):
@@ -208,10 +210,11 @@ def download(params, filefunc, statusfunc, finfunc, errorfunc, doneflag, cols, p
                 ann[0](1)
             finfunc()
         rm = [None]
-        def data_flunked(amount, rm = rm, errorfunc = errorfunc):
+        def data_flunked(amount, rm = rm, errorfunc = errorfunc, report_hash_failures = config['report_hash_failures']):
             if rm[0] is not None:
                 rm[0](amount)
-            errorfunc('a piece failed hash check, re-downloading it')
+            if report_hash_failures:
+                errorfunc('a piece failed hash check, re-downloading it')
         storagewrapper = StorageWrapper(storage, 
             config['download_slice_size'], pieces, 
             info['piece length'], finished, failed, 
