@@ -37,3 +37,6 @@ class Measure:
 
     def get_total(self):
         return self.total
+
+    def get_total_megs(self):
+        return self.total / 1048576.0

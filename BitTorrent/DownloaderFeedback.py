@@ -5,13 +5,15 @@ from time import time
 from cStringIO import StringIO
 
 class DownloaderFeedback:
-    def __init__(self, choker, add_task, statusfunc, upfunc, downfunc,
+    def __init__(self, choker, add_task, statusfunc, upfunc, downfunc, uptotal, downtotal,
             remainingfunc, leftfunc, file_length, finflag, interval, sp):
         self.choker = choker
         self.add_task = add_task
         self.statusfunc = statusfunc
         self.upfunc = upfunc
         self.downfunc = downfunc
+        self.uptotal = uptotal
+        self.downtotal = downtotal
         self.remainingfunc = remainingfunc
         self.leftfunc = leftfunc
         self.file_length = file_length
@@ -103,7 +105,7 @@ class DownloaderFeedback:
         else:
             spew = self.collect_spew()
         if self.finflag.isSet():
-            self.statusfunc({"upRate" : self.upfunc(), "spew" : spew})
+            self.statusfunc({"upRate" : self.upfunc(), "spew" : spew, "upTotal" : self.uptotal()})
             return
         timeEst = self.remainingfunc()
 
@@ -114,11 +116,15 @@ class DownloaderFeedback:
                                 "fractionDone" : fractionDone, 
                                 "downRate" : self.downfunc(), 
                                 "upRate" : self.upfunc(),
-                                "spew" : spew
+                                "spew" : spew,
+                                "upTotal" : self.uptotal(),
+                                "downTotal" : self.downtotal()
                             })
         else:
             self.statusfunc({	"fractionDone" : fractionDone, 
                                 "downRate" : self.downfunc(), 
                                 "upRate" : self.upfunc(),
-                                "spew" : spew
+                                "spew" : spew,
+                                "upTotal" : self.uptotal(),
+                                "downTotal" : self.downtotal()
                             })

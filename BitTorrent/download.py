@@ -259,18 +259,20 @@ def download(params, filefunc, statusfunc, finfunc, errorfunc, doneflag, cols, p
         config['ip'], myid, infohash, config['http_timeout'], errorfunc, 
         config['max_initiate'], doneflag)
     DownloaderFeedback(choker, rawserver.add_task, statusfunc, 
-        upmeasure.get_rate, downmeasure.get_rate, ratemeasure.get_time_left, 
+        upmeasure.get_rate, downmeasure.get_rate, 
+        upmeasure.get_total_megs, downmeasure.get_total_megs, ratemeasure.get_time_left, 
         ratemeasure.get_size_left, file_length, finflag,
         config['display_interval'], config['spew'])
 
-    # paramfunc
+
+    # useful info and functions for the UI
     if paramfunc:
-        paramfunc({ 'max_upload_rate' : connecter.change_max_upload_rate,
-                    'max_uploads': choker.change_max_uploads,
-                    'listen_port' : listen_port,
-                    'peer_id' : myid,
-                    'info_hash' : infohash,
-                    'start_connection' : encrypter.start_connection
+        paramfunc({ 'max_upload_rate' : connecter.change_max_upload_rate,  # change_max_upload_rate(<int KiB/sec>)
+                    'max_uploads': choker.change_max_uploads, # change_max_uploads(<int max uploads>)
+                    'listen_port' : listen_port, # int
+                    'peer_id' : myid, # string
+                    'info_hash' : infohash, # string
+                    'start_connection' : encrypter._start_connection # start_connection((<string ip>, <int port>), <peer id>)
                     })
     
     statusfunc({"activity" : 'connecting to peers'})
