@@ -84,7 +84,7 @@ class EncryptedConnection:
         return 4, self.read_len
 
     def read_dead(self, s):
-        return 1000, self.read_dead
+        return None
 
     def close(self):
         if not self.closed:
@@ -116,7 +116,7 @@ class EncryptedConnection:
             try:
                 x = self.next_func(m)
             except:
-                self.next_len, self.next_func = 1000, self.read_dead
+                self.next_len, self.next_func = 1, self.read_dead
                 raise
             if x is None:
                 self.close()
