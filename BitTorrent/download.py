@@ -128,9 +128,11 @@ def downloadurl(url, filefunc, displayfunc, doneflag, config):
     if not checkversion():
         return
     try:
-        h = urlopen(url)
-        response = h.read()
-        h.close()
+        response = config.get('prefetched')
+        if response is None:
+            h = urlopen(url)
+            response = h.read()
+            h.close()
         download(response, filefunc, displayfunc, doneflag, config)
     except IOError, e:
         displayfunc('IO problem reading file - ' + str(e), 'Okay')

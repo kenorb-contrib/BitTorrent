@@ -39,10 +39,7 @@ configDefinitions = [
     (None, 'help', 'h', None, """Display the command line help.""")
     ]
 
-if __name__ == '__main__':
-    usageHeading = "usage: %s [options] <url>" % argv[0]
-    # require 1 and only 1 file
-    configDictionary, files = parseargs(argv[1:], usageHeading, configDefinitions, 1, 1) 
+def run(configDictionary, files):
     root = Tk()
     root.withdraw()
     root.title('BitTorrent')
@@ -65,4 +62,10 @@ if __name__ == '__main__':
         l.config(text = a)
         button.config(text = b)
     Thread(target = root.mainloop).start()
+    configDictionary['prefetched'] = prefetched
     downloadurl(files[0], getname, displayfunc, doneflag, configDictionary)
+
+if __name__ == '__main__':
+    usageHeading = "usage: %s [options] <url>" % argv[0]
+    config, files = parseargs(argv[1:], usageHeading, configDefinitions, 1, 1) 
+    run(config, files)

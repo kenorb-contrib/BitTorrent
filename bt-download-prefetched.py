@@ -3,21 +3,28 @@
 # Written by Bram Cohen
 # this file is public domain
 
-from BitTorrent.download import download
-from BitTorrent.parseargs import parseargs
-from Tkinter import Tk
-from tkFileDialog import asksaveasfilename
+"""
+You're probably wondering 'what the hell is prefetched there for anyway?'
+well, you see, the dorks making Internet Explorer are were incapable of 
+making a mapping from mimetypes to applications, so instead they created 
+a mapping from mimetypes to file extensions, and take the contents of 
+an http return with a funny mimetype and create a temporary file with 
+the listed extension, then 'invoke' that file, which hopefully results 
+in invoking the correct application. 
+
+Needless to say, this prevents passing any other useful information to the 
+invoked application - like, say, the original url, which is why the 
+publicist requires you give it it's own ip. 
+
+bt-download-preftched is the file to get executed by Internet Explorer.
+"""
+
 from sys import argv, version
 assert version >= '2', "Install Python 2.0 or greater"
-
-def getname(default):
-    root = Tk()
-    root.withdraw()
-    return asksaveasfilename(initialfile = default)
+from bt-download import run
 
 if __name__ == '__main__':
-    config, files = parseargs(argv[1:])
     h = open(files[0])
-    r = h.read()
+    prefetched = h.read()
     h.close()
-    download(r, getname, config)
+    run({'prefetched': prefetched}, ['garbage'])
