@@ -15,7 +15,6 @@ from BitTorrent.btformats import check_info
 from threading import Event
 
 ignore = ['core', 'CVS'] # ignoring these files could be trouble
-ignore += ['.DS_Store'] # fricking macintrash
 
 def dummy(v):
     pass
@@ -114,7 +113,7 @@ def subfiles(d):
         p, n = stack.pop()
         if isdir(n):
             for s in listdir(n):
-                if s not in ignore:
+                if s not in ignore and s[0] != '.':
                     stack.append((copy(p) + [s], join(n, s)))
         else:
             r.append((p, n))

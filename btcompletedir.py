@@ -4,11 +4,11 @@
 # see LICENSE.txt for license information
 
 from os import listdir
-from os.path import join
+from os.path import join, split
 from threading import Event
 from traceback import print_exc
 from sys import argv
-from btmakemetafile import calcsize, make_meta_file
+from btmakemetafile import calcsize, make_meta_file, ignore
 
 def dummy(x):
     pass
@@ -34,7 +34,9 @@ def completedir(dir, url, flag = Event(), vc = dummy, fc = dummy):
     for i in togen:
         fc(i)
         try:
-            make_meta_file(i, url, flag = flag, progress = callback, progress_percent=0)
+            t = split(i)[-1] 
+            if t not in ignore and t[0] != '.':
+                make_meta_file(i, url, flag = flag, progress = callback, progress_percent=0)
         except ValueError:
             print_exc()
 

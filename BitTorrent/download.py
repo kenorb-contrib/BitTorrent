@@ -83,7 +83,7 @@ defaults = [
         "seconds to wait for data to come in over a connection before assuming it's semi-permanently choked"),
     ]
 
-def download(params, filefunc, statusfunc, finfunc, errorfunc, doneflag, cols):
+def download(params, filefunc, statusfunc, finfunc, errorfunc, doneflag, cols, pathFunc = None):
     if len(params) == 0:
         errorfunc('arguments are -\n' + formatDefinitions(defaults, cols))
         return
@@ -119,6 +119,7 @@ def download(params, filefunc, statusfunc, finfunc, errorfunc, doneflag, cols):
                 f = path.split(f)[0]
             if f != '' and not path.exists(f):
                 makedirs(f)
+                
         info = response['info']
         if info.has_key('length'):
             file_length = info['length']
@@ -134,7 +135,23 @@ def download(params, filefunc, statusfunc, finfunc, errorfunc, doneflag, cols):
             file = filefunc(info['name'], file_length, config['saveas'], true)
             if file is None:
                 return
+  
+            # if this path exists, and no files from the info dict exist, we assume it's a new download and 
+            # the user wants to create a new directory with the default name
+            existing = 0
+            if path.exists(file):
+                for x in info['files']:
+                    if path.exists(path.join(file, x['path'][0])):
+                        existing = 1
+                if not existing:
+                    file = path.join(file, info['name'])
+                    
             make(file, true)
+            
+            # alert the UI to any possible change in path
+            if pathFunc != None:
+                pathFunc(file)
+                
             files = []
             for x in info['files']:
                 n = file
