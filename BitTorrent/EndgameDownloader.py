@@ -145,6 +145,7 @@ class EndgameDownloader:
         self.numpieces = old.numpieces
         self.downmeasure = old.downmeasure
         self.measurefunc = old.measurefunc
+        self.snub_time = old.snub_time
         self.requests = []
         for d in old.downloads:
             self.requests.extend(d.active_requests)
@@ -207,6 +208,7 @@ class DummyDownload:
         self.have = have
         self.active_requests = active_requests
         self.measure = Measure(15)
+        self.last = 0
 
 class DummyDownloader:
     def __init__(self, storage, numpieces, downloads):
@@ -217,6 +219,7 @@ class DummyDownloader:
         self.downmeasure = Measure(15)
         self.measurefunc = lambda x: None
         self.downloads = downloads
+        self.snub_time = 60
 
 def test_piece_came_in_no_interest_lost():
     events = []
