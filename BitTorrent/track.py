@@ -21,12 +21,10 @@ def mult20(thing, verbose):
     if len(thing) % 20 != 0:
         raise ValueError, 'must be multiple of 20'
 
-infotemplate = compile_template([{'type': 'single', 
-    'pieces': mult20, 'piece length': 1, 'length': 0, 
-    'name': string_template}, 
-    {'type': 'multiple', 'pieces': mult20, 
-    'piece length': 1, 'files': ListMarker({'path': ListMarker(string_template), 
-    'length': 0}), 'name': string_template}])
+infotemplate = compile_template({'pieces': mult20, 
+    'piece length': 1, 'files': OptionMarker(ListMarker({
+    'path': ListMarker(string_template), 'length': 0})), 
+    'name': string_template, 'length': OptionMarker(0)})
 
 infofiletemplate = compile_template(ValuesMarker(infotemplate))
 

@@ -68,15 +68,13 @@ def mult20(thing, verbose):
     if len(thing) % 20 != 0:
         raise ValueError, 'must be multiple of 20'
 
-template = compile_template({'info': [{'type': 'single', 
-    'pieces': mult20, 'piece length': 1, 'length': 0, 
-    'name': string_template}, 
-    {'type': 'multiple', 'pieces': mult20, 'piece length': 1, 
-    'files': ListMarker({'path': ListMarker(string_template), 
-    'length': 0}), 'name': string_template}], 
-    'peers': ListMarker({'ip': string_template, 'port': 1, 'peer id': exact_length(20)}), 
-    'file id': string_template, 'announce': string_template, 'interval': 1,
-    'url': string_template, 'your ip': string_template})
+template = compile_template({'info': {'pieces': mult20, 'piece length': 1, 
+    'files': OptionMarker(ListMarker({'path': ListMarker(string_template)), 
+    'length': OptionMarker(0)}), 'name': string_template}, 
+    'peers': ListMarker({'ip': string_template, 'port': 1, 
+    'peer id': exact_length(20)}), 'file id': string_template, 
+    'announce': string_template, 'interval': 1, 'url': string_template, 
+    'your ip': string_template})
 
 def download(params, filefunc, statusfunc, resultfunc, doneflag, cols):
     if len(params) == 0:
@@ -114,6 +112,8 @@ def download(params, filefunc, statusfunc, resultfunc, doneflag, cols):
     try:
         response = bdecode(response)
         template(response)
+        if response['info'].has_key('files') == response['info'].has_key('length'):
+            raise ValueError, 'single/multiple file mix'
     except ValueError, e:
         resultfunc(false, "got bad file info - " + str(e))
         return
@@ -128,14 +128,14 @@ def download(params, filefunc, statusfunc, resultfunc, doneflag, cols):
             resultfunc(false, "Couldn't allocate dir - " + str(e))
             return false
     info = response['info']
-    if info['type'] == 'single':
+    if info.has_key('length'):
         file_length = info['length']
         file = filefunc(info['name'], file_length, config['saveas'], false)
         if file is None:
             return
         if not make(file):
             return
-        files = [(file, info['length'])]
+        files = [(file, file_length)]
     else:
         file_length = 0
         for x in info['files']:
