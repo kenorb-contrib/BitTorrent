@@ -150,6 +150,7 @@
 				29B97316FDCFA39411CA2CEA,
 				F506F6C40287AE7901A845D2,
 				F5D01D41027E7D9D01A845D2,
+				F5F1BAA602F0842B01A845D2,
 			);
 			isa = PBXGroup;
 			name = "Other Sources";
@@ -246,20 +247,32 @@
 	<key>CFBundleDocumentTypes</key>
 	<array>
 		<dict>
+			<key>CFBundleTypeExtensions</key>
+			<array>
+				<string>torrent</string>
+			</array>
 			<key>CFBundleTypeName</key>
-			<string>BTin</string>
+			<string>BTMI</string>
 			<key>CFBundleTypeRole</key>
 			<string>Viewer</string>
 		</dict>
 	</array>
 	<key>CFBundleExecutable</key>
 	<string>BitTorrent</string>
+	<key>CFBundleGetInfoString</key>
+	<string>BitTorrent Peer To Peer Download Application</string>
 	<key>CFBundleIconFile</key>
 	<string></string>
+	<key>CFBundleIdentifier</key>
+	<string>BitTorrent</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>BitTorrent</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>BitTorrent</string>
 	<key>CFBundleSignature</key>
 	<string>BTBC</string>
 	<key>CFBundleVersion</key>
@@ -279,6 +292,7 @@
 				F5D01D39027E0FE201A845D2,
 				F5D01D3F027E224601A845D2,
 				F506F6C50287AE7901A845D2,
+				F5F1BAA702F0842B01A845D2,
 			);
 			isa = PBXHeadersBuildPhase;
 			name = Headers;
@@ -374,8 +388,8 @@
 		F565958302DD36FB01A845D2 = {
 			isa = PBXFolderReference;
 			name = BitTorrent;
-			path = /Volumes/Burris/drue/burris/wa/BitTorrent/BitTorrent;
-			refType = 0;
+			path = ../BitTorrent;
+			refType = 2;
 		};
 		F565958402DD36FB01A845D2 = {
 			fileRef = F565958302DD36FB01A845D2;
@@ -467,6 +481,17 @@
 		};
 		F5D01D42027E7D9D01A845D2 = {
 			fileRef = F5D01D41027E7D9D01A845D2;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		F5F1BAA602F0842B01A845D2 = {
+			isa = PBXFileReference;
+			path = pystructs.h;
+			refType = 4;
+		};
+		F5F1BAA702F0842B01A845D2 = {
+			fileRef = F5F1BAA602F0842B01A845D2;
 			isa = PBXBuildFile;
 			settings = {
 			};
