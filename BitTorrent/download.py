@@ -17,8 +17,6 @@ from entropy import entropy
 from bencode import bencode, bdecode
 from btemplate import compile_template, string_template, ListMarker, OptionMarker
 from binascii import b2a_hex
-from Tkinter import Tk
-from tkFileDialog import asksaveasfilename
 true = 1
 false = 0
 
@@ -42,12 +40,10 @@ def run(private_key, noncefunc, response, file, config):
     except ValueError, e:
         print "got bad publication response - " + str(e)
         return
-    if file is None:
-        root = Tk()
-	root.withdraw()
-	file = asksaveasfilename(initialfile=response['name'])
-	if file == '':
-	    return
+    if callable(file):
+        file = file(response['name'])
+        if file == '':
+            return
     try:
         file_length = response['length']
         blobs = SingleBlob(file, response['hash'], file_length, response['pieces'], 
@@ -118,21 +114,21 @@ def checkversion():
         print "Couldn't check version number - " + str(e)
     return true
 
-def download(response, filename, config):
+def download(response, file, config):
     if not checkversion():
         return
     private_key = entropy(20)
     noncefunc = lambda e = entropy: e(20)
-    run(private_key, noncefunc, response, filename, config)
+    run(private_key, noncefunc, response, file, config)
 
-def downloadurl(url, filename, config):
+def downloadurl(url, file, config):
     if not checkversion():
         return
     try:
         h = urlopen(url)
         response = h.read()
         h.close()
-        download(response, filename, config)
+        download(response, file, config)
     except IOError, e:
         print "Couldn't download - " + str(e)
 
