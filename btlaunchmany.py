@@ -95,6 +95,9 @@ def dropdir_mainloop(d, params):
                 if threadinfo.get('timeout', -1) == -1:
                     threadinfo['kill'].set()
                     threadinfo['thread'].join()
+                # if this thread was filechecking, open it up
+                if threadinfo.get('checking', -1) == 1: 
+                    filecheck.release()
                 del threads[file]
         for file in deadfiles:
             # if the file dissapears, remove it from our dead list
@@ -177,6 +180,7 @@ class StatusUpdater:
             while (not filecheck.acquire(0) and not self.myinfo['kill'].isSet()):
                 self.myinfo['status'] = 'disk wait'
                 sleep(0.1)
+            self.myinfo['checking'] = 1
             self.checking = 1
         return self.file[:-len(ext)]
     
@@ -202,6 +206,7 @@ class StatusUpdater:
                 # we finished checking our files. 
                 filecheck.release()
                 self.checking = 0
+                self.myinfo['checking'] = 0
         else:
             self.myinfo['status'] = self.activity
         if downRate is None: 
