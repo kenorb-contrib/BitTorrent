@@ -51,8 +51,6 @@ class SingleSocket:
         try:
             while self.buffer != []:
                 amount = self.socket.send(self.buffer[0])
-                if amount != 0:
-                    self.hit = true
                 if amount != len(self.buffer[0]):
                     if amount != 0:
                         self.buffer[0] = self.buffer[0][amount:]
@@ -141,11 +139,10 @@ class RawServer:
                     continue
                 if (event & POLLIN) != 0:
                     try:
-                        hit = false
+                        s.hit = true
                         data = s.socket.recv(100000)
                         if data == '':
                             self.close_socket(s)
-                            hit = true
                         else:
                             self.handler.data_came_in(s, data)
                     except socket.error, e:
@@ -153,8 +150,6 @@ class RawServer:
                         if code != EWOULDBLOCK:
                             self.close_socket(s)
                             continue
-                    if hit:
-                        continue
                 if (event & POLLOUT) != 0 and s.socket is not None:
                     s.try_write()
 
@@ -465,3 +460,70 @@ def test_catch_exception():
     sleep(3)
     assert l == ['b']
     f.set()
+
+def test_closes_if_not_hit():
+    try:
+        da = DummyHandler()
+        fa = Event()
+        sa = RawServer(.1, fa, 2)
+        sa.start_listening(da, 5012)
+
+        sleep(1)
+        db = DummyHandler()
+        fb = Event()
+        sb = RawServer(.1, fb, 100)
+        sb.start_listening(db, 5013)
+        
+        ca = sa.start_connection(('', 5013))
+        sleep(1)
+        
+        assert da.external_made == []
+        assert da.data_in == []
+        assert da.lost == []
+        assert len(db.external_made) == 1
+        cb = db.external_made[0]
+        del db.external_made[:]
+        assert db.data_in == []
+        assert db.lost == []
+
+        sleep(3.1)
+        
+        assert len(da.lost) == 1
+        assert len(db.lost) == 1
+    finally:
+        fa.set()
+        fb.set()
+
+def test_does_not_close_if_hit():
+    try:
+        da = DummyHandler()
+        fa = Event()
+        sa = RawServer(.1, fa, 2)
+        sa.start_listening(da, 5012)
+
+        sleep(1)
+        db = DummyHandler()
+        fb = Event()
+        sb = RawServer(.1, fb, 100)
+        sb.start_listening(db, 5013)
+        
+        ca = sa.start_connection(('', 5013))
+        sleep(1)
+        
+        assert da.external_made == []
+        assert da.data_in == []
+        assert da.lost == []
+        assert len(db.external_made) == 1
+        cb = db.external_made[0]
+        del db.external_made[:]
+        assert db.data_in == []
+        assert db.lost == []
+
+        cb.write('bbb')
+        sleep(2)
+        
+        assert da.lost == []
+        assert db.lost == []
+    finally:
+        fa.set()
+        fb.set()

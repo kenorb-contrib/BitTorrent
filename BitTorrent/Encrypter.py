@@ -945,5 +945,117 @@ def test_local_close_and_rejected_data():
     assert dc2.m_rec == [(ec2, 'm1')]
     del dc2.m_rec[:]
 
+def test_keepalive():
+    dc1 = DummyConnecter()
+    rs1 = DummyRawServer()
+    e1 = Encrypter(dc1, rs1, lambda: 'a' * 20, 'b' * 20, 500, lambda a, b: None, 1000)
+    assert dc1.c_made == []
+    assert dc1.c_lost == []
+    assert dc1.m_rec == []
 
+    assert rs1.connects == []
+    assert dc1.c_made == []
+    assert dc1.c_lost == []
+    assert dc1.m_rec == []
+
+    dc2 = DummyConnecter()
+    rs2 = DummyRawServer()
+    sched = []
+    e2 = Encrypter(dc2, rs2, lambda: 'c' * 20, 'd' * 20, 500, lambda a, b, sched = sched: sched.append((a, b)), 1000)
+    assert dc2.c_made == []
+    assert dc2.c_lost == []
+    assert dc2.m_rec == []
+
+    assert rs2.connects == []
+    assert dc2.c_made == []
+    assert dc2.c_lost == []
+    assert dc2.m_rec == []
+
+    e1.start_connection(('spam.com', 69))
+    assert len(rs1.connects) == 1 and rs1.connects[0][0] == 'spam.com' and rs1.connects[0][1] == 69
+    c1 = rs1.connects[0][2]
+    del rs1.connects[:]
+    assert not c1.closed
+    assert dc1.c_made == []
+    assert dc1.c_lost == []
+    assert dc1.m_rec == []
+
+    c2 = DummyRawConnection()
+    e2.external_connection_made(c2)
+    assert not c2.closed
+    assert rs2.connects == []
+    assert dc2.c_made == []
+    assert dc2.c_lost == []
+    assert dc2.m_rec == []
+
+    assert len(sched) == 1 and sched[0][1] == 1000
+    f = sched[0][0]
+    del sched[0]
+    f()
+    flush(c1, e1, c2, e2)
+    assert len(sched) == 1 and sched[0][1] == 1000
+
+    flush(c1, e1, c2, e2)
+    assert not c1.closed
+    assert rs1.connects == []
+    assert len(dc1.c_made) == 1
+    ec1 = dc1.c_made[0]
+    del dc1.c_made[:]
+    assert ec1.get_id() == e2.get_id()
+    assert dc1.c_lost == []
+    assert dc1.m_rec == []
+    assert not c2.closed
+    assert rs2.connects == []
+    assert dc2.c_made == []
+    assert dc2.c_lost == []
+    assert dc2.m_rec == []
+
+    ec1.send_message('message 0')
+    flush(c1, e1, c2, e2)
+    assert not c1.closed
+    assert rs1.connects == []
+    assert dc1.c_made == []
+    assert dc1.c_lost == []
+    assert dc1.m_rec == []
+    assert not c2.closed
+    assert rs2.connects == []
+    assert dc2.c_made == []
+    assert dc2.c_lost == []
+    assert len(dc2.m_rec) == 1 and dc2.m_rec[0][1] == 'message 0'
+    ec2 = dc2.m_rec[0][0]
+    assert ec2.get_id() == e1.get_id()
+    del dc2.m_rec[:]
+
+    ec1.send_message('message 1')
+    ec1.send_message('message 2')
+    ec2.send_message('message 3')
+    ec2.send_message('message 4')
+    flush(c1, e1, c2, e2)
+    assert not c1.closed
+    assert rs1.connects == []
+    assert dc1.c_made == []
+    assert dc1.c_lost == []
+    assert dc1.m_rec == [(ec1, 'message 3'), (ec1, 'message 4')]
+    del dc1.m_rec[:]
+    assert not c2.closed
+    assert rs2.connects == []
+    assert dc2.c_made == []
+    assert dc2.c_lost == []
+    assert dc2.m_rec == [(ec2, 'message 1'), (ec2, 'message 2')]
+    del dc2.m_rec[:]
+        
+    ec2.close()
+    assert c2.closed
+    assert rs2.connects == []
+    assert dc2.c_made == []
+    assert dc2.c_lost == []
+    assert dc2.m_rec == []
+
+    e1.connection_lost(c1)
+    assert not c1.closed
+    assert rs1.connects == []
+    assert dc1.c_made == []
+    assert dc1.c_lost == [ec1]
+    del dc1.c_lost[:]
+    assert dc1.m_rec == []
 
