@@ -67,7 +67,7 @@ def parseTorrents(dir):
     for f in os.listdir(dir):
         if f[-8:] == '.torrent':
             try:
-                d = bdecode(open(os.path.join(dir,f)).read())
+                d = bdecode(open(os.path.join(dir,f), 'rb').read())
                 h = sha(bencode(d['info'])).digest()
                 a[h] = d['info'].get('name', f)
             except:
