@@ -123,9 +123,7 @@
 
     if(!done) {   
         activity = [dict objectForKey:@"activity"];
-        if ([[dict objectForKey:@"fractionDone"] floatValue] != 0.0) {
-            frac = [[dict objectForKey:@"fractionDone"] floatValue];
-        }
+        frac = [[dict objectForKey:@"fractionDone"] floatValue];
         
         // format dict timeEst here and put in ivar timeEst
         est = [[dict objectForKey:@"timeEst"] longValue];
@@ -172,6 +170,7 @@
 {
     [lastError setStringValue:str];
 }
+
 - (void)dealloc
 {
     [conn release];
