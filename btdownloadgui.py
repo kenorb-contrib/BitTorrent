@@ -36,12 +36,9 @@ def EVT_INVOKE(win, func):
     win.Connect(-1, -1, wxEVT_INVOKE, func)
 
 class InvokeEvent(wxPyEvent):
-    def __init__(self, func, args, kwargs):
+    def __init__(self):
         wxPyEvent.__init__(self)
         self.SetEventType(wxEVT_INVOKE)
-        self.func = func
-        self.args = args
-        self.kwargs = kwargs
 
 class DownloadInfoFrame:
     def __init__(self, flag):
@@ -52,6 +49,8 @@ class DownloadInfoFrame:
         self.fin = False
         self.last_update_time = 0
         self.showing_error = False
+        self.event = InvokeEvent()
+        self.funclist = []
 
         panel = wxPanel(frame, -1)
         colSizer = wxFlexGridSizer(cols = 1, vgap = 3)
@@ -130,12 +129,14 @@ class DownloadInfoFrame:
         open_new('http://bitconjurer.org/BitTorrent/donate.html')
 
     def onInvoke(self, event):
-        if not self.uiflag.isSet():
-            apply(event.func, event.args, event.kwargs)
+        while not self.uiflag.isSet() and self.funclist:
+            func, args, kwargs = self.funclist.pop(0)
+            apply(func, args, kwargs)
 
     def invokeLater(self, func, args = [], kwargs = {}):
         if not self.uiflag.isSet():
-            wxPostEvent(self.frame, InvokeEvent(func, args, kwargs))
+            self.funclist.append((func, args, kwargs))
+            wxPostEvent(self.frame, self.event)
 
     def updateStatus(self, d):
         if (self.last_update_time + 0.1 < time() and not self.showing_error) or d.get('fractionDone') in (0.0, 1.0) or d.has_key('activity'):
