@@ -21,7 +21,7 @@ class SingleDownload:
         self.have = [false] * downloader.numpieces
 
     def disconnected(self):
-        self.downloader.downloaders.remove(self)
+        self.downloader.downloads.remove(self)
         self.letgo()
 
     def letgo(self):

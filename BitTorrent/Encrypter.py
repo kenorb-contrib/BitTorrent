@@ -80,7 +80,7 @@ class EncryptedConnection:
         try:
             if s != '':
                 self.encrypter.connecter.got_message(self, s)
-        except KeyboardError, e:
+        except KeyboardInterrupt, e:
             raise
         except:
             print_exc()

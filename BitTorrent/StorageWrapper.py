@@ -38,6 +38,7 @@ class StorageWrapper:
                 statusfunc(fractionDone = float(i)/len(hashes))
                 if flag.isSet():
                     return
+            statusfunc(fractionDone = 1)
         else:
             for i in xrange(len(hashes)):
                 self._check_single(i, false)

@@ -195,8 +195,9 @@ def download(params, filefunc, statusfunc, resultfunc, doneflag, cols):
     ratemeasure = RateMeasure(storagewrapper.get_amount_left())
     downloader = Downloader(storagewrapper, 
         config['download_slice_size'], config['max_rate_period'],
-        len(info['pieces'], total_down))
-    connecter = Connecter(make_upload, downloader.make_download, choker)
+        len(info['pieces']), total_down)
+    connecter = Connecter(make_upload, downloader.make_download, choker,
+        len(info['pieces']))
     encrypter = Encrypter(connecter, rawserver, 
         myid, config['max_message_length'], rawserver.add_task, 
         config['keepalive_interval'], sha(bencode(info)).digest())
@@ -222,12 +223,13 @@ def download(params, filefunc, statusfunc, resultfunc, doneflag, cols):
     def announce(event = None, q = putqueue(response['announce']), 
             id = response['id'], myid = myid, 
             ip = response['your ip'], port = listen_port, 
-            up = total_up, down = total_down, storage = storage):
+            up = total_up, down = total_down, 
+            storage = storagewrapper):
         a = {'ip': ip, 'port': port, 'id': id,
             'uploaded': up[0], 'downloaded': down[0], 'myid': myid,
             'left': storage.get_amount_left()}
         if event is not None:
-            a['event'] = ['started', 'completed', 'finished'][event]
+            a['event'] = ['started', 'completed', 'stopped'][event]
         q.addrequest(bencode(a))
 
     announce(0)

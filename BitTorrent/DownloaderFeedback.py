@@ -19,7 +19,7 @@ class DownloaderFeedback:
         self.add_task(self.display, .1)
 
     def display(self):
-        self.add_task(self.display, .1)
+        self.add_task(self.display, 1)
         t = time()
         if self.finflag.isSet():
             upRate = 0

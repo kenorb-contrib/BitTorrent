@@ -138,7 +138,7 @@ class Connecter:
             if b is None:
                 connection.close()
                 return
-            c.download.got_bitfield(b)
+            c.download.got_have_bitfield(b)
         elif t == REQUEST:
             if len(message) != 13:
                 connection.close()
@@ -198,7 +198,7 @@ class DummyDownload:
     def got_have(self, i):
         self.events.append(('have', i))
 
-    def got_bitfield(self, bitfield):
+    def got_have_bitfield(self, bitfield):
         self.events.append(('bitfield', bitfield))
 
     def got_piece(self, index, begin, piece):

@@ -4,7 +4,7 @@
 # see LICENSE.txt for license information
 
 from sys import argv
-from BitTorrent.parseargs import parseargs
+from BitTorrent.parseargs import parseargs, formatDefinitions
 from BitTorrent.track import track
 
 defaults = [
