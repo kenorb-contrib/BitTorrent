@@ -29,7 +29,7 @@ defaults = [
     ('save_dfile_interval', None, 5 * 60, 'seconds between saving dfile'),
     ('timeout_downloaders_interval', None, 45 * 60, 'seconds between expiring downloaders'),
     ('reannounce_interval', None, 30 * 60, 'seconds downloaders should wait between reannouncements'),
-    ('response_size', None, 25, 'number of peers to send in an info message'),
+    ('response_size', None, 50, 'number of peers to send in an info message'),
     ('timeout_check_interval', None, 5,
         'time to wait between checking if any connections have timed out'),
     ('nat_check', None, 0,

@@ -17,7 +17,7 @@ from threading import Event
 def dummy(v):
     pass
 
-def make_meta_file(file, url, piece_length = 2 ** 20, 
+def make_meta_file(file, url, piece_length = 2 ** 18, 
         flag = Event(), progress = dummy):
     a, b = split(file)
     if b == '':

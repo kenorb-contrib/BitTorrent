@@ -35,7 +35,7 @@ defaults = [
         "the maximum number of uploads to allow at once."),
     ('keepalive_interval', None, 120.0,
         'number of seconds to pause between sending keepalives'),
-    ('download_slice_size', None, 2 ** 15,
+    ('download_slice_size', None, 2 ** 14,
         "How many bytes to query for per request."),
     ('request_backlog', None, 5,
         "how many requests to keep in a single pipe at once."),
