@@ -75,8 +75,12 @@ class SingleSocket:
         else:
             self.raw_server.poll.register(self.socket, all)
 
+def default_error_handler(x):
+    print x
+
 class RawServer:
-    def __init__(self, doneflag, timeout_check_interval, timeout, noisy = True, errorfunc = None, maxconnects = 55):
+    def __init__(self, doneflag, timeout_check_interval, timeout, noisy = True,
+            errorfunc = default_error_handler, maxconnects = 55):
         self.timeout_check_interval = timeout_check_interval
         self.timeout = timeout
         self.poll = poll()

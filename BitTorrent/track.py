@@ -148,9 +148,9 @@ class Tracker:
             for y, dat in dl.items():
                 self.times[x][y] = 0
                 if not dat.get('nat',1):
-                    self.becache1.setdefault(downloadid,{})[y] = Bencached(bencode({'ip': dat['ip'], 
+                    self.becache1.setdefault(x,{})[y] = Bencached(bencode({'ip': dat['ip'], 
                         'port': dat['port'], 'peer id': y}))
-                    self.becache2.setdefault(downloadid,{})[y] = Bencached(bencode({'ip': dat['ip'], 
+                    self.becache2.setdefault(x,{})[y] = Bencached(bencode({'ip': dat['ip'], 
                         'port': dat['port']}))
         self.reannounce_interval = config['reannounce_interval']
         self.save_dfile_interval = config['save_dfile_interval']
@@ -380,10 +380,10 @@ class Tracker:
         if rsize > 0:
             if len(cache) < rsize:
                 del cache1[:]
-                cache1.extend(self.becache1[infohash].values())
+                cache1.extend(self.becache1.setdefault(infohash, {}).values())
                 shuffle(cache1)
                 del cache2[:]
-                cache2.extend(self.becache2[infohash].values())
+                cache2.extend(self.becache2.setdefault(infohash, {}).values())
                 shuffle(cache2)
             data['peers'] = cache[-rsize:]
             del cache[-rsize:]
