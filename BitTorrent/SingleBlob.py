@@ -9,7 +9,8 @@ false = 0
 csize = 2 ** 20
 
 class SingleBlob:
-    def __init__(self, file, file_hash, file_length, pieces, piece_length, callback, open, exists, getsize):
+    def __init__(self, file, file_hash, file_length, pieces, 
+            piece_length, callback, open, exists, getsize, displayfunc):
         self.open = open
         self.piece_length = piece_length
         self.file_hash = file_hash
@@ -45,6 +46,7 @@ class SingleBlob:
         self.want_list = self.want.keys()
         shuffle(self.want_list)
         if exists(file):
+            displayfunc('scanning partial download...', 'Cancel')
             self.already_existed = true
             if getsize(file) != file_length:
                 raise ValueError, 'existing file is of incorrect length'
@@ -68,6 +70,7 @@ class SingleBlob:
                                 self.h.write(b)
                         break
         else:
+            displayfunc('allocating new file...', 'Cancel')
             self.already_existed = false
             self.h = self.open(file, 'wb+')
             self.h.seek(file_length - 1)
@@ -151,14 +154,17 @@ class SingleBlob:
 
 from fakeopen import FakeOpen
 
+def dummy(a, b):
+    pass
+
 def test_normal():
     s = 'abc' * 5
     a = sha(s[:10]).digest()
     b = sha(s[10:]).digest()
     r = []
     f = FakeOpen()
-    sb = SingleBlob('test', sha(s).digest(), 
-        15, [a, b], 10, r.append, f.open, f.exists, f.getsize)
+    sb = SingleBlob('test', sha(s).digest(), 15, [a, b], 10, 
+        r.append, f.open, f.exists, f.getsize, dummy)
     assert r == []
     x = sb.get_list_of_files_I_want()
     assert x == [a, b] or x == [b, a]
@@ -201,8 +207,8 @@ def test_even():
     b = sha(s[10:]).digest()
     r = []
     f = FakeOpen()
-    sb = SingleBlob('test', sha(s).digest(), 
-        20, [a, b], 10, r.append, f.open, f.exists, f.getsize)
+    sb = SingleBlob('test', sha(s).digest(), 20, [a, b], 10, 
+        r.append, f.open, f.exists, f.getsize, dummy)
     assert r == []
     x = sb.get_list_of_files_I_want()
     assert x == [a, b] or x == [b, a]
@@ -244,8 +250,8 @@ def test_short():
     a = sha(s).digest()
     r = []
     f = FakeOpen()
-    sb = SingleBlob('test', a, 
-        8, [a], 10, r.append, f.open, f.exists, f.getsize)
+    sb = SingleBlob('test', a, 8, [a], 10, r.append, 
+        f.open, f.exists, f.getsize, dummy)
     assert r == []
     assert sb.get_list_of_files_I_want() == [a]
     assert sb.get_slice(a, 0, 2) == None
@@ -272,8 +278,8 @@ def test_short():
 def test_zero_length():
     r = []
     f = FakeOpen()
-    sb = SingleBlob('test', sha('').digest(), 
-        0, [], 10, r.append, f.open, f.exists, f.getsize)
+    sb = SingleBlob('test', sha('').digest(), 0, [], 10, 
+        r.append, f.open, f.exists, f.getsize, dummy)
     assert r == []
     assert sb.get_amount_left() == 0
 
@@ -283,8 +289,8 @@ def test_too_big():
     r = []
     f = FakeOpen()
     try:
-        sb = SingleBlob('test', a, 
-            11, [a], 10, r.append, f.open, f.exists, f.getsize)
+        sb = SingleBlob('test', a, 11, [a], 10, r.append, 
+            f.open, f.exists, f.getsize, dummy)
         assert false
     except ValueError:
         pass
@@ -295,8 +301,8 @@ def test_too_small():
     r = []
     f = FakeOpen()
     try:
-        sb = SingleBlob('test', sha('x').digest(), 
-            8, [a, b], 10, r.append, f.open, f.exists, f.getsize)
+        sb = SingleBlob('test', sha('x').digest(), 8, [a, b], 
+            10, r.append, f.open, f.exists, f.getsize, dummy)
         assert false
     except ValueError:
         pass
@@ -306,8 +312,8 @@ def test_repeat_piece():
     b = sha('abc').digest()
     r = []
     f = FakeOpen()
-    sb = SingleBlob('test', a, 
-        6, [b, b], 3, r.append, f.open, f.exists, f.getsize)
+    sb = SingleBlob('test', a, 6, [b, b], 3, r.append, 
+        f.open, f.exists, f.getsize, dummy)
     assert r == []
     
     assert sb.save_slice(b, 0, 'abc')
@@ -319,8 +325,8 @@ def test_resume_with_repeat_piece_present():
     c = sha('q').digest()
     r = []
     f = FakeOpen({'test': 'aaaabcf'})
-    sb = SingleBlob('test', a, 
-        7, [b, b, c], 3, r.append, f.open, f.exists, f.getsize)
+    sb = SingleBlob('test', a, 7, [b, b, c], 3, r.append, 
+        f.open, f.exists, f.getsize, dummy)
     assert r == []
     assert sb.get_amount_left() == 1
 
@@ -332,8 +338,8 @@ def test_flunk_repeat_with_different_sizes():
     r = []
     f = FakeOpen()
     try:
-        sb = SingleBlob('test', sha('x').digest(), 
-            15, [a, a], 10, r.append, f.open, f.exists, f.getsize)
+        sb = SingleBlob('test', sha('x').digest(), 15, [a, a], 
+            10, r.append, f.open, f.exists, f.getsize, dummy)
         assert false
     except ValueError:
         pass

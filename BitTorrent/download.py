@@ -123,7 +123,7 @@ def download(params, filefunc, displayfunc, doneflag, cols):
     try:
         file_length = response['length']
         blobs = SingleBlob(file, response['hash'], file_length, response['pieces'], 
-            response['piece length'], None, open, path.exists, path.getsize)
+            response['piece length'], None, open, path.exists, path.getsize, displayfunc)
         if len(blobs.get_list_of_files_I_want()) == 0:
             displayfunc('that file has already been completely downloaded', 'Okay')
             return true

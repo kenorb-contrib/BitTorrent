@@ -54,6 +54,25 @@ class DownloaderFeedback:
         self.totalin += sumin
         self.ratein = (self.ratein * 19.0 + sumin) / 20.0
 
+        s.write('listening on port ' + str(self.port) + ' of ' + self.ip + '\n')
+        s.write('total sent ' + str(self.totalout) + '\n')
+        s.write('sending rate (kilobytes/sec) '+ str(kify(self.rateout)) + '\n')
+        s.write('total received ' + str(self.totalin) + '\n')
+        s.write('receiving rate (kilobytes/sec) ' + str(kify(self.ratein)) + '\n')
+        s.write('file size: ' + str(self.filesize) + '\n')
+        s.write('bytes remaining ' + str(self.amount_left - self.totalin) + '\n')
+        s.write('estimated time remaining: ')
+        if self.ratein < 128:
+            s.write('----')
+        else:
+            t = long((self.amount_left - self.totalin) / self.ratein)
+            h, r = divmod(t, 60 * 60)
+            m, sec = divmod(r, 60)
+            if h > 0:
+                s.write(str(h) + ':' + ex(m) + ':' + ex(sec))
+            else:
+                s.write(str(m) + ':' + ex(sec))
+
         d = {}
         for x in self.uploader.uploads.keys():
             d[x] = 1
@@ -62,6 +81,7 @@ class DownloaderFeedback:
         k = d.keys()
         k.sort()
         for x in k:
+            s.write('\n\n')
             u = self.uploader.uploads.get(x)
             d = self.downloader.downloads.get(x)
             m = u
@@ -69,10 +89,9 @@ class DownloaderFeedback:
                 m = d
             s.write(m.get_ip() + ' ')
             if m.connection.is_locally_initiated():
-                s.write('L ')
+                s.write('local\n')
             else:
-                s.write('R ')
-            s.write(str(self.throttler.balances[x]) + '\n')
+                s.write('remote\n')
             
             if u is not None:
                 if u.is_throttled():
@@ -93,24 +112,4 @@ class DownloaderFeedback:
                 if d.last is not None:
                     s.write(b2a_hex(d.last[:2]) + ' ')
                     s.write(str(d.total) + ' ' + str(kify(d.rate)))
-            s.write('\n')
-            s.write('\n')                        
-        s.write('listening on port ' + str(self.port) + ' of ' + self.ip + '\n')
-        s.write('total sent ' + str(self.totalout) + '\n')
-        s.write('sending rate (kilobytes/sec) '+ str(kify(self.rateout)) + '\n')
-        s.write('total received ' + str(self.totalin) + '\n')
-        s.write('receiving rate (kilobytes/sec) ' + str(kify(self.ratein)) + '\n')
-        s.write('file size: ' + str(self.filesize) + '\n')
-        s.write('bytes remaining ' + str(self.amount_left - self.totalin) + '\n')
-        s.write('estimated time remaining: ')
-        if self.ratein < 128:
-            s.write('----')
-        else:
-            t = long((self.amount_left - self.totalin) / self.ratein)
-            h, r = divmod(t, 60 * 60)
-            m, sec = divmod(r, 60)
-            if h > 0:
-                s.write(str(h) + ':' + ex(m) + ':' + ex(sec))
-            else:
-                s.write(str(m) + ':' + ex(sec))
         self.displayfunc(s.getvalue(), 'Cancel')

@@ -67,18 +67,18 @@ class TrackerHandler(BaseHTTPRequestHandler):
                         if n not in published[name][0]:
                             published[name][0].append(n)
                 self.send_response(200)
-                self.send_header('content-type', 'text/plain')
+                self.send_header('Content-Type', 'text/plain')
                 self.end_headers()
                 self.wfile.write(bencode({'type': 'success', 'your ip': ip}))
             except ValueError, e:
                 print_exc()
                 self.send_response(400)
-                self.send_header('content-type', 'text/plain')
+                self.send_header('Content-Type', 'text/plain')
                 self.end_headers()
                 self.wfile.write('you sent me garbage - ' + str(e))
         elif path[:len(prefix3)] == prefix3:
             self.send_response(200)
-            self.send_header('content-type', 'text/plain')
+            self.send_header('Content-Type', 'text/plain')
             self.end_headers()
             self.wfile.write('Thank you for your feedback! Love, Nina')
         elif path[:len(prefix2)] == prefix2:
@@ -115,14 +115,13 @@ class TrackerHandler(BaseHTTPRequestHandler):
             f = path[1:]
             if not published.has_key(f):
                 self.send_response(404)
-                self.send_header('content-type', 'text/plain')
+                self.send_header('Content-Type', 'text/plain')
                 self.end_headers()
                 self.wfile.write('your file may exist elsewhere in the universe\n\n')
                 self.wfile.write('but alas, not here')
             else:
                 self.send_response(200)
-                self.send_header('content-type', 'bittorrent/redirect')
-                self.end_headers()
+                self.send_header('Content-Type', 'bittorrent/redirect')
                 publishers, requesters, blob, length, pieces, piece_length = published[f]
                 if self.client_address[0] in self.server.ips:
                     requesters = publishers + requesters
@@ -134,7 +133,11 @@ class TrackerHandler(BaseHTTPRequestHandler):
                     'peers': requesters, 'type': 'success', 'finish': prefix3,
                     'length': length, 'id': f, 'name': f, 'announce': prefix2,
                     'url': 'http://' + self.server.ip + ':' + str(self.server.port) + '/' + quote(f)}
-                self.wfile.write(bencode(response))
+                r = bencode(response)
+                self.send_header('Content-Length', str(len(r)))
+                self.send_header('Pragma', 'no-cache')
+                self.end_headers()
+                self.wfile.write(r)
 
 def track(config):
     try:
