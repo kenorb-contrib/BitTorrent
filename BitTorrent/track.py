@@ -74,7 +74,6 @@ def statefiletemplate(x):
                 if type(y) != LongType:   # ... for the number of reported completions for that torrent
                     raise ValueError
 
-
 def parseTorrents(dir):
     import os
     a = {}
@@ -118,6 +117,10 @@ class Tracker:
         self.dfile = config['dfile']
         self.natcheck = config['nat_check']
         self.max_give = config['max_give']
+        self.reannounce_interval = config['reannounce_interval']
+        self.save_dfile_interval = config['save_dfile_interval']
+        self.show_names = config['show_names']
+        self.only_local_override_ip = config['only_local_override_ip']
         favicon = config['favicon']
         self.favicon = None
         if favicon:
@@ -153,13 +156,13 @@ class Tracker:
             for y, dat in dl.items():
                 self.times[x][y] = 0
                 if not dat.get('nat',1):
-                    self.becache1.setdefault(x,{})[y] = Bencached(bencode({'ip': dat['ip'], 
+                    ip = dat['ip']
+                    gip = dat.get('given ip')
+                    if gip and is_valid_ipv4(gip) and (not self.only_local_override_ip or is_local_ip(ip)):
+                        ip = gip
+                    self.becache1.setdefault(x,{})[y] = Bencached(bencode({'ip': ip, 
                         'port': dat['port'], 'peer id': y}))
-                    self.becache2.setdefault(x,{})[y] = compact_peer_info(dat['ip'], dat['port'])
-        self.reannounce_interval = config['reannounce_interval']
-        self.save_dfile_interval = config['save_dfile_interval']
-        self.show_names = config['show_names']
-        self.only_local_override_ip = config['only_local_override_ip']
+                    self.becache2.setdefault(x,{})[y] = compact_peer_info(ip, dat['port'])
         rawserver.add_task(self.save_dfile, self.save_dfile_interval)
         self.prevtime = time()
         self.timeout_downloaders_interval = config['timeout_downloaders_interval']
@@ -325,13 +328,10 @@ class Tracker:
                     return (400, 'Not Authorized', {'Content-Type': 'text/plain', 'Pragma': 'no-cache'}, bencode({'failure reason':
                     'Requested download is not authorized for use with this tracker.'}))
             ip = connection.get_ip()
-            local_override = 0
-            if params.has_key('ip'):
-                is_local = is_local_ip(ip)
-                if not self.only_local_override_ip or is_local:
-                    ip = params['ip']
-                    if is_local:
-                        local_override = 1
+            ip_override = 0
+            if params.has_key('ip') and is_valid_ipv4(params['ip']) and (
+                    not self.only_local_override_ip or is_local_ip(ip)):
+                ip_override = 1
             if params.has_key('event') and params['event'] not in ['started', 'completed', 'stopped']:
                 raise ValueError, 'invalid event'
             port = long(params.get('port', ''))
@@ -353,20 +353,22 @@ class Tracker:
         if params.get('event', '') != 'stopped':
             ts[myid] = time()
             if not peers.has_key(myid):
-                if local_override:
-                    peers[myid] = {'ip': ip, 'port': port, 'left': left, "local_override" : local_override}
-                else:
-                    peers[myid] = {'ip': ip, 'port': port, 'left': left}
-                if not self.natcheck or local_override:
-                    self.becache1.setdefault(infohash,{})[myid] = Bencached(bencode({'ip': ip, 'port': port, 'peer id': myid}))
-                    self.becache2.setdefault(infohash,{})[myid] = compact_peer_info(ip, port)
+                peers[myid] = {'ip': ip, 'port': port, 'left': left}
+                if params.has_key('ip') and is_valid_ipv4(params['ip']):
+                    peers[myid]['given ip'] = params['ip']
+                mip = ip
+                if ip_override:
+                    mip = params['ip']
+                if not self.natcheck or ip_override:
+                    self.becache1.setdefault(infohash,{})[myid] = Bencached(bencode({'ip': mip, 'port': port, 'peer id': myid}))
+                    self.becache2.setdefault(infohash,{})[myid] = compact_peer_info(mip, port)
             else:
                 peers[myid]['left'] = left
             if params.get('event', '') == 'completed':
                 self.completed[infohash] = 1 + self.completed[infohash]
             if port == 0:
                 peers[myid]['nat'] = 2**30
-            elif self.natcheck and not peers[myid].get("local_override", 0):
+            elif self.natcheck and not ip_override:
                 to_nat = peers[myid].get('nat', -1)
                 if to_nat and to_nat < self.natcheck:
                     NatCheck(self.connectback_result, infohash, myid, ip, port, self.rawserver)
