@@ -209,8 +209,6 @@ class RawServer:
                 except error:
                     if self.doneflag.isSet():
                         return
-                    else:
-                        print_exc()
                 except KeyboardInterrupt:
                     print_exc()
                     return
