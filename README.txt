@@ -49,7 +49,7 @@ btdownloadheadless.py --url http://my.tracker/somename.ext --saveas \
 Make sure the saveas argument points to the complete file.
 
 The 'permanent' argument is strongly suggested to make the tracker not 
-forget the permanent publisher when a bunch more people start 
+forget the permanent downloader when a bunch more people start 
 downloading. The need for it will go away in a future release.
 
 BitTorrent defaults to port 6881. If it can't use 6881, (probably because 

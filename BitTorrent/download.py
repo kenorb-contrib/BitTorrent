@@ -28,6 +28,8 @@ from threading import Event
 true = 1
 false = 0
 
+version = '2.7'
+
 defaults = [
     ('max_uploads', None, 4,
         "the maximum number of uploads to allow at once."),
@@ -102,7 +104,7 @@ def download(params, filefunc, statusfunc, resultfunc, doneflag, cols):
             return false
 
     try:
-        h = urlopen('http://bitconjurer.org/BitTorrent/status-downloader-02-06-01.txt')
+        h = urlopen('http://bitconjurer.org/BitTorrent/status-downloader-02-07-00.txt')
         status = h.read().strip()
         h.close()
         if status != 'current':
