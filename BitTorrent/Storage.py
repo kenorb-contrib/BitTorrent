@@ -53,6 +53,9 @@ class Storage:
                     l = getsize(file)
                     if l == length:
                         continue
+                if self.preexisting:
+                    self.handles[file] = open(file,'rb+')
+                    self.whandles[file] = 1
                 h = self.handles[file]
                 for i in range(l, length, interval)[1:] + [length-1]:
                     h.seek(i)
