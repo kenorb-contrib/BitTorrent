@@ -124,4 +124,6 @@ def test_bifurcation():
     send each type of message
     do a got_slice with blob return
 
+def test_close_duplicate():
+    connect two with same id, assert second closed
 """

@@ -6,24 +6,28 @@ true = 1
 false = 0
 
 class Choker:
-    def __init__(self, max_uploads, schedule, interval, rand = true):
+    def __init__(self, max_uploads, schedule, interval, measurefunc, rand = true):
         self.max_uploads = max_uploads
         self.schedule = schedule
         self.interval = interval
+        self.measurefunc = measurefunc
         self.rand = rand
         self.connections = []
         schedule(self.round_robin, interval)
     
     def round_robin(self):
         self.schedule(self.round_robin, self.interval)
+        min = 1000000000
+        minc = None
         for c in self.connections:
-            if c.is_choked():
-                return
-            if c.is_interested():
-                self.connections.remove(c)
-                self.connections.append(c)
-                self.rechoke()
-                return
+            n = self.measurefunc(c)
+            if not c.is_choked() and c.is_interested() and n < min:
+                min = n
+                minc = c
+        if maxc is not None:
+            self.connections.remove(minc)
+            self.connections.append(minc)
+            self.rechoke()
     
     def rechoke(self):
         count = 0
@@ -76,5 +80,13 @@ def test_interrupt():
     start two with second downloading
     make first interested
     assert second throttled
+
+def test_skips_over_not_interested():
+    start two with first downloading and second not interested
+    do round robin
+    assert first still downloading
+
+def test_uses_measurefunc():
+    do second and fourth of five uploading choking with either one higher and equal
 
 """
