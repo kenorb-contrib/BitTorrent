@@ -10,9 +10,9 @@ from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler
 from types import StringType
 from threading import Thread
 from binascii import a2b_hex
-from btemplate import compile_template, ListMarker, string_template, OptionMarker
-from bencode import bencode, bdecode
-from parseargs import parseargs
+from BitTorrent.btemplate import compile_template, ListMarker, string_template, OptionMarker
+from BitTorrent.bencode import bencode, bdecode
+from BitTorrent.parseargs import parseargs
 from sys import argv
 from urllib import urlopen, quote, unquote
 from traceback import print_exc
@@ -170,5 +170,14 @@ def publicize(config):
     Thread(target = clear_ips).start()
     Thread(target = s.serve_forever).start()
 
+configDefinitions = [
+    ('port', 'port=', 'p:', 6800, """Port to listen on.  Defaults to 6800.  Will be random in the future."""),
+    ('ip', 'ip=', 'i:', None,
+     """ip to report you have to the publicist."""),
+    (None, 'help', 'h', None, """Display the command line help.""")
+]
+
 if __name__ == '__main__':
-    publicize(parseargs(argv[1:])[0])
+    usageHeading = "usage: %s [options]" % argv[0]
+    configDictionary, files = parseargs(argv[1:], usageHeading, configDefinitions, 0, 0, requiredConfig = ['ip'])
+    publicize(configDictionary)
