@@ -17,6 +17,7 @@ from entropy import entropy
 from bencode import bencode, bdecode
 from btemplate import compile_template, string_template, ListMarker, OptionMarker
 from binascii import b2a_hex
+import socket
 true = 1
 false = 0
 
@@ -33,23 +34,22 @@ t = compile_template({'hash': len20, 'piece length': 1, 'pieces': ListMarker(len
 t2 = compile_template([{'type': 'success', 'your ip': string_template}, 
     {'type': 'failure', 'reason': string_template}])
 
-def run(private_key, noncefunc, response, file, config):
+def run(private_key, noncefunc, response, filefunc, displayfunc, doneflag, config):
     try:
         response = bdecode(response)
         t(response)
     except ValueError, e:
-        print "got bad publication response - " + str(e)
+        displayfunc("got bad publication response - " + str(e), "Okay")
         return
-    if callable(file):
-        file = file(response['name'])
-        if file == '':
-            return
+    file = filefunc(response['name'])
+    if file == '':
+        return
     try:
         file_length = response['length']
         blobs = SingleBlob(file, response['hash'], file_length, response['pieces'], 
             response['piece length'], None)
     except ValueError, e:
-        print str(e)
+        displayfunc('bad data for making blob store - ' + str(e), 'Okay')
         return
     throttler = Throttler(long(config.get('rethrottle_diff', str(2 ** 20))), 
         long(config.get('unthrottle_diff', str(2 ** 23))), 
@@ -59,7 +59,7 @@ def run(private_key, noncefunc, response, file, config):
     downloader = Downloader(throttler, blobs, uploader, 
         long(config.get('download_chunk_size', '32768')), 
         long(config.get('request_backlog', '5')))
-    rawserver = RawServer(float(config.get('max_poll_period', '2')))
+    rawserver = RawServer(float(config.get('max_poll_period', '2')), doneflag)
     connecter = Connecter(uploader, downloader, rawserver.add_task, 
         long(config.get('min_fast_reconnect', '60')), 
         long(config.get('max_fast_reconnect', '180')))
@@ -68,12 +68,12 @@ def run(private_key, noncefunc, response, file, config):
     connecter.set_encrypter(encrypter)
     listen_port = long(config.get('port', '6880'))
     
-    def finished(result, rawserver = rawserver):
+    def finished(result, displayfunc = displayfunc, doneflag = doneflag):
         if result:
-            print 'download succeeded'
+            displayfunc('download succeeded', 'Okay')
         else:
-            print 'download failed'
-        rawserver.shutdown()
+            displayfunc('download failed', 'Okay')
+        doneflag.set()
     blobs.callback = finished
 
     connecter.start_connecting([(x['ip'], x['port']) for x in response['peers']])
@@ -90,17 +90,20 @@ def run(private_key, noncefunc, response, file, config):
         response = bdecode(response)
         t2(response)
         if response['type'] == 'failure':
-            print "Couldn't announce - " + response['reason']
+            displayfunc("Couldn't announce - " + response['reason'], 'Okay')
             return
         DownloaderFeedback(uploader, downloader, throttler, rawserver.add_task, 
-            listen_port, response['your ip'], file_length)
+            listen_port, response['your ip'], file_length, displayfunc)
     except IOError, e:
-        print "Couldn't announce - " + str(e)
+        displayfunc("Couldn't announce - " + str(e), 'Okay')
         return
     except ValueError, e:
-        print "got bad announcement response - " + str(e)
+        displayfunc("got bad announcement response - " + str(e), 'Okay')
         return
-    rawserver.start_listening(encrypter, listen_port, false)
+    try:
+        rawserver.start_listening(encrypter, listen_port, false)
+    except socket.error, e:
+        displayfunc("Couldn't listen - " + str(e), 'Okay')
 
 def checkversion():
     try:
@@ -108,27 +111,27 @@ def checkversion():
         status = h.read().strip()
         h.close()
         if status != 'current':
-            print 'No longer the latest version - see http://bitconjurer.org/BitTorrent/download.html'
             return false
     except IOError, e:
         print "Couldn't check version number - " + str(e)
     return true
 
-def download(response, file, config):
+def download(response, filefunc, displayfunc, doneflag, config):
     if not checkversion():
+        displayfunc('No longer the latest version - see http://bitconjurer.org/BitTorrent/download.html', 'Okay')
         return
     private_key = entropy(20)
     noncefunc = lambda e = entropy: e(20)
-    run(private_key, noncefunc, response, file, config)
+    run(private_key, noncefunc, response, filefunc, displayfunc, doneflag, config)
 
-def downloadurl(url, file, config):
+def downloadurl(url, filefunc, displayfunc, doneflag, config):
     if not checkversion():
         return
     try:
         h = urlopen(url)
         response = h.read()
         h.close()
-        download(response, file, config)
+        download(response, filefunc, displayfunc, doneflag, config)
     except IOError, e:
-        print "Couldn't download - " + str(e)
+        displayfunc('IO problem reading file - ' + str(e), 'Okay')
 

@@ -65,18 +65,15 @@ class SingleSocket:
             self.raw_server.poll.register(self.socket, all)
 
 class RawServer:
-    def __init__(self, max_poll_period, noisy = true):
+    def __init__(self, max_poll_period, doneflag, noisy = true):
         self.max_poll_period = max_poll_period
         self.poll = poll()
         # {socket: SingleSocket}
         self.single_sockets = {}
         self.dead_from_write = []
-        self.running = true
+        self.doneflag = doneflag
         self.noisy = noisy
         self.funcs = []
-
-    def shutdown(self):
-        self.running = false
 
     def add_task(self, func, delay):
         insort(self.funcs, (time() + delay, func))
@@ -147,7 +144,7 @@ class RawServer:
 
     def listen_forever(self):
         try:
-            while self.running:
+            while not self.doneflag.isSet():
                 try:
                     if len(self.funcs) == 0:
                         period = self.max_poll_period
@@ -158,7 +155,7 @@ class RawServer:
                     if period < 0:
                         period = 0
                     events = self.poll.poll(period * timemult)
-                    if not self.running:
+                    if self.doneflag.isSet():
                         return
                     while len(self.funcs) > 0 and self.funcs[0][0] <= time():
                         garbage, func = self.funcs[0]
@@ -174,7 +171,7 @@ class RawServer:
                     self.handle_events(events)
                     self.close_dead()
                 except error, e:
-                    if not self.running:
+                    if self.doneflag.isSet():
                         return
                     else:
                         print_exc()

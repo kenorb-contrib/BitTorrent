@@ -19,7 +19,7 @@ def ex(n):
         return '0' + str(n)
 
 class DownloaderFeedback:
-    def __init__(self, uploader, downloader, throttler, add_task, port, ip, filesize):
+    def __init__(self, uploader, downloader, throttler, add_task, port, ip, filesize, displayfunc):
         self.add_task = add_task
         self.uploader = uploader
         self.downloader = downloader
@@ -27,6 +27,7 @@ class DownloaderFeedback:
         self.port = port
         self.ip = ip
         self.filesize = filesize
+        self.displayfunc = displayfunc
         self.totalin = 0
         self.totalout = 0
         self.ratein = 0
@@ -36,7 +37,6 @@ class DownloaderFeedback:
     def display(self):
         self.add_task(self.display, 1)
         s = StringIO()
-        s.write('\n\n\n\n')
         sumout = 0
         for u in self.uploader.uploads.values():
             sumout += u.sent_since_checkpoint
@@ -83,7 +83,7 @@ class DownloaderFeedback:
                 if u.last_sent is not None:
                     s.write(b2a_hex(u.last_sent[:2]) + ' ')
                     s.write(str(u.total) + ' ' + str(kify(u.rate)))
-                s.write('\n')
+            s.write('\n')
             if d is not None:
                 if d.is_throttled():
                     s.write('T ')
@@ -92,7 +92,7 @@ class DownloaderFeedback:
                 if d.last is not None:
                     s.write(b2a_hex(d.last[:2]) + ' ')
                     s.write(str(d.total) + ' ' + str(kify(d.rate)))
-                s.write('\n')
+            s.write('\n')
             s.write('\n')                        
         s.write('listening on port ' + str(self.port) + ' of ' + self.ip + '\n')
         s.write('total sent ' + str(self.totalout) + '\n')
@@ -111,4 +111,4 @@ class DownloaderFeedback:
                 s.write(str(h) + ':' + ex(m) + ':' + ex(sec))
             else:
                 s.write(str(m) + ':' + ex(sec))
-        print s.getvalue()
+        self.displayfunc(s.getvalue(), 'Cancel')

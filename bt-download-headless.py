@@ -5,6 +5,7 @@
 
 from BitTorrent.download import downloadurl
 from BitTorrent.parseargs import parseargs
+from threading import Event
 from sys import argv, version
 assert version >= '2', "Install Python 2.0 or greater"
 
@@ -36,7 +37,10 @@ configDefinitions = [
     (None, 'help', 'h', None, """Display the command line help.""")
     ]
 
+def display(text, type):
+    print '\n\n\n\n' + text
+
 if __name__ == '__main__':
     usageHeading = "usage: %s [options] <url> <file>" % argv[0]
     configDictionary, files = parseargs(argv[1:], usageHeading, configDefinitions, 2, 2) 
-    downloadurl(files[0], files[1], configDictionary)
+    downloadurl(files[0], lambda x: files[1], display, Event(), configDictionary)

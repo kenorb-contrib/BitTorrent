@@ -11,7 +11,7 @@ from Connecter import Connecter
 from Encrypter import Encrypter
 from RawServer import RawServer
 from PublisherFeedback import PublisherFeedback
-from threading import Condition
+from threading import Condition, Event
 from entropy import entropy
 from bencode import bencode, bdecode
 from binascii import b2a_hex
@@ -42,7 +42,7 @@ def publish(config, files):
     uploader = Uploader(throttler, blobs)
     downloader = DummyDownloader()
     connecter = Connecter(uploader, downloader, None, None, None)
-    rawserver = RawServer(float(config.get('max_poll_period', '2')))
+    rawserver = RawServer(float(config.get('max_poll_period', '2')), Event())
     encrypter = Encrypter(connecter, rawserver, noncefunc, private_key, 
         long(config.get('max_message_length', str(2 ** 20))))
     connecter.set_encrypter(encrypter)
