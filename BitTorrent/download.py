@@ -119,7 +119,12 @@ def download(params, filefunc, statusfunc, finfunc, errorfunc, doneflag, cols, p
         response = h.read()
         h.close()
     except IOError, e:
-        errorfunc('problem getting response info - ' + str(e))
+        if config['responsefile'] != '' and config['responsefile'].find('Temporary Internet Files') != -1:
+            errorfunc('BitTorrent was passed a filename that doesn\'t exist.  ' +
+                'Either clear your Temporary Internet Files or right-click the link ' + 
+                'and save the .torrent to disk first.'
+        else:
+            errorfunc('problem getting response info - ' + str(e))
         return
 
     try:
