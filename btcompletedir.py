@@ -37,4 +37,4 @@ def dc(v):
     print v
 
 if __name__ == '__main__':
-    completedir(argv[1], argv[2], dc)
+    completedir(argv[1], argv[2], fc = dc)
