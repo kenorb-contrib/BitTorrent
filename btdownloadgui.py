@@ -30,7 +30,8 @@ def EVT_UPDATE_STATUS(win, func):
 
 class UpdateStatusEvent(wxPyEvent):
     def __init__(self, fileName = None, percentDone = None, 
-        timeEst = None, fileDest = None, downRate = None, upRate = None):
+        timeEst = None, fileDest = None, downRate = None, upRate = None,
+        cancelText = None):
         
         wxPyEvent.__init__(self)
         self.SetEventType(wxEVT_UPDATE_STATUS)
@@ -40,6 +41,7 @@ class UpdateStatusEvent(wxPyEvent):
         self.fileDest = fileDest
         self.downRate = downRate
         self.upRate = upRate
+        self.cancelText = cancelText
 
 wxEVT_DOWNLOAD_ERROR = wxNewId()
 
@@ -60,8 +62,6 @@ class DownloadInfoFrame(wxFrame):
         self.errorDlgShown.set()
         self.flag = flag
         self.drawGUI()
-#        self.openButton.Enable(false)
-#        self.openFolderButton.Enable(false)
 
         EVT_CLOSE(self, self.done)
         EVT_BUTTON(self, self.cancelButton.GetId(), self.done)
@@ -73,9 +73,6 @@ class DownloadInfoFrame(wxFrame):
         superSizer = wxBoxSizer(wxVERTICAL)
         
         colSizer = wxBoxSizer(wxVERTICAL)
-        
-#        self.animatedImage = wxStaticBitmap(self, -1, wxEmptyBitmap(350, 50), size = (350, 50))
-#        colSizer.Add(self.animatedImage, 0, wxALIGN_CENTER_HORIZONTAL)
 
         colSizer.Add(wxStaticText(self, -1, 'Saving:'), 0, wxALIGN_LEFT|wxTOP, 7)
 
@@ -108,10 +105,6 @@ class DownloadInfoFrame(wxFrame):
         colSizer.Add(gridSizer, 0, wxALIGN_LEFT|wxTOP, 7)
         
         rowSizer = wxBoxSizer(wxHORIZONTAL)
-#        self.openButton = wxButton(self, -1, 'Open', size = (93, -1))
-#        rowSizer.Add(self.openButton, 0, wxALIGN_RIGHT|wxLEFT, 62)
-#        self.openFolderButton = wxButton(self, -1, 'Open Folder', size = (93, -1))
-#        rowSizer.Add(self.openFolderButton, 0, wxALIGN_RIGHT|wxLEFT, 5)
         rowSizer.Add(258, 1, 1, wxEXPAND)
         self.cancelButton = wxButton(self, -1, 'Cancel', size = (93, -1))
         rowSizer.Add(self.cancelButton, 0, wxALIGN_RIGHT|wxLEFT, 5)
@@ -124,9 +117,10 @@ class DownloadInfoFrame(wxFrame):
         superSizer.Fit(self)
         
     def updateStatus(self, fileName = None, percentDone = None,
-        timeEst = None, fileDest = None, downRate = None, upRate = None):
+        timeEst = None, fileDest = None, downRate = None, upRate = None,
+        cancelText = None):
         
-        wxPostEvent(self, UpdateStatusEvent(fileName, percentDone, timeEst, fileDest, downRate, upRate))
+        wxPostEvent(self, UpdateStatusEvent(fileName, percentDone, timeEst, fileDest, downRate, upRate, cancelText))
 
     def onUpdateStatus(self, event):
         if event.fileName:
@@ -143,6 +137,8 @@ class DownloadInfoFrame(wxFrame):
             self.downRateText.SetLabel(event.downRate)
         if event.upRate:
             self.upRateText.SetLabel(event.upRate)
+        if event.cancelText:
+            self.cancelButton.SetLabel(event.cancelText)
 
     def downloadError(self, errorMsg):
         self.errorDlgShown.clear()

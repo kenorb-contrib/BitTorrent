@@ -38,10 +38,10 @@ class DownloaderFeedback:
         self.remainingfunc = remainingfunc
         self.leftfunc = leftfunc
         self.file_length = file_length
-        self.add_task(self.display, 1)
+        self.add_task(self.display, .1)
 
     def display(self):
-        self.add_task(self.display, 1)
+        self.add_task(self.display, .1)
         t = time()
         s = StringIO()
         s.write('listening on ' + self.ip + ':' + str(self.port) + '\n')

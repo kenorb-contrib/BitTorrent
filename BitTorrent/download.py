@@ -139,9 +139,10 @@ def download(params, filefunc, statusfunc, errorfunc, doneflag, cols):
         def finished(result, statusfunc = statusfunc, errorfunc = errorfunc, doneflag = doneflag, r = r):
             if result:
                 r[0] = 1
-                statusfunc(timeEst = 'Download Succeeded!', percentDone = 100)
+                statusfunc(timeEst = 'Download Succeeded!', percentDone = 100,
+                    cancelText='Finish')
             else:
-                statusfunc(timeEst = 'Download Failed')
+                statusfunc(timeEst = 'Download Failed', cancelText='Finish')
             doneflag.set()
         blobs = SingleBlob(file, file_length, response['pieces'], 
             response['piece length'], finished, open, path.exists, path.getsize)
@@ -210,6 +211,7 @@ def download(params, filefunc, statusfunc, errorfunc, doneflag, cols):
         errorfunc("got bad announcement response - " + str(e))
         return false
     try:
+        statusfunc(timeEst = 'connecting to peers...')
         rawserver.start_listening(encrypter, listen_port, false)
     except socket.error, e:
         print_exc()
