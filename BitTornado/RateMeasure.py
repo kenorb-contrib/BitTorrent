@@ -65,7 +65,6 @@ class RateMeasure:
             self.time += t - self.last
         self.last = t
         try:
-            rate = self.rate
             self.rate = self.got / self.time
         except ZeroDivisionError:
-            self.rate = rate
+            pass

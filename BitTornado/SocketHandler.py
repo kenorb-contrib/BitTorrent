@@ -177,7 +177,7 @@ class SocketHandler:
                 self.servers[server.fileno()] = server
                 if bind:
                     self.interfaces.append(server.getsockname()[0])
-                server.listen(5)
+                server.listen(64)
                 self.poll.register(server, POLLIN)
             except socket.error, e:
                 for server in self.servers.values():

@@ -176,15 +176,16 @@ class DownloadInfoFrame:
 
             wxInitAllImageHandlers()
             self.basepath = self.configfile.getIconDir()
-            self.statusIcons={
-                'startup':wxIcon(os.path.join(self.basepath,'white.ico'), wxBITMAP_TYPE_ICO),
-                'disconnected':wxIcon(os.path.join(self.basepath,'black.ico'), wxBITMAP_TYPE_ICO),
-                'noconnections':wxIcon(os.path.join(self.basepath,'red.ico'), wxBITMAP_TYPE_ICO),
-                'nocompletes':wxIcon(os.path.join(self.basepath,'blue.ico'), wxBITMAP_TYPE_ICO),
-                'noincoming':wxIcon(os.path.join(self.basepath,'yellow.ico'), wxBITMAP_TYPE_ICO),
-                'allgood':wxIcon(os.path.join(self.basepath,'green.ico'), wxBITMAP_TYPE_ICO)
+            self.icon = wxIcon(os.path.join(self.basepath,'icon_bt.ico'), wxBITMAP_TYPE_ICO)
+            self.statusIconFiles={
+                'startup':os.path.join(self.basepath,'white.ico'),
+                'disconnected':os.path.join(self.basepath,'black.ico'),
+                'noconnections':os.path.join(self.basepath,'red.ico'),
+                'nocompletes':os.path.join(self.basepath,'blue.ico'),
+                'noincoming':os.path.join(self.basepath,'yellow.ico'),
+                'allgood':os.path.join(self.basepath,'green.ico'),
                 }
-
+            self.statusIcons={}
             self.filestatusIcons = wxImageList(16, 16)
             self.filestatusIcons.Add(wxBitmap(os.path.join(self.basepath,'black1.ico'),wxBITMAP_TYPE_ICO))
             self.filestatusIcons.Add(wxBitmap(os.path.join(self.basepath,'yellow1.ico'), wxBITMAP_TYPE_ICO))
@@ -192,13 +193,13 @@ class DownloadInfoFrame:
 
             self.allocbuttonBitmap = wxBitmap(os.path.join(self.basepath,'alloc.gif'), wxBITMAP_TYPE_GIF)
 
-            if (sys.platform == 'win32'):
-                self.icon = wxIcon(os.path.join(self.basepath,'icon_bt.ico'), wxBITMAP_TYPE_ICO)
             self.starttime = clock()
 
             self.frame = frame
-            if (sys.platform == 'win32'):
+            try:
                 self.frame.SetIcon(self.icon)
+            except:
+                pass
 
             panel = wxPanel(frame, -1)
             self.bgcolor = panel.GetBackgroundColour()
@@ -272,7 +273,6 @@ class DownloadInfoFrame:
 
             self.gauge = wxGauge(panel, -1, range = 1000, style = wxGA_SMOOTH)
             colSizer.Add(self.gauge, 0, wxEXPAND)
-#        self.gauge.SetForegroundColour(wxSystemSettings_GetColour(wxSYS_COLOUR_3DSHADOW))
 
             timeSizer = wxFlexGridSizer(cols = 2)
             timeSizer.Add(StaticText('Time elapsed / estimated : '))
@@ -340,11 +340,9 @@ class DownloadInfoFrame:
 
             cancelSizer=wxGridSizer(cols = 2, hgap = 40)
             self.pauseButton = wxButton(panel, -1, 'Pause')
-#        self.pauseButton.SetFont(self.default_font)
             cancelSizer.Add(self.pauseButton, 0, wxALIGN_CENTER)
 
             self.cancelButton = wxButton(panel, -1, 'Cancel')
-#        self.cancelButton.SetFont(self.default_font)
             cancelSizer.Add(self.cancelButton, 0, wxALIGN_CENTER)
             colSizer.Add(cancelSizer, 0, wxALIGN_CENTER)
 
@@ -409,7 +407,6 @@ class DownloadInfoFrame:
             colSizer.Add(self.unlimitedLabel, 0, wxALIGN_CENTER)
 
             self.priorityIDs = [wxNewId(),wxNewId(),wxNewId(),wxNewId()]
-#            self.prioritycolors = [wxLIGHT_GREY, wxRED, wxBLACK, wxBLUE]
             self.prioritycolors = [ wxColour(160,160,160),
                                     wxColour(255,64,0),
                                     wxColour(0,0,0),
@@ -486,16 +483,33 @@ class DownloadInfoFrame:
                 wxPostEvent(self.frame, InvokeEvent(func, args, kwargs))
 
 
+    def getStatusIcon(self, name, bitmap=False):
+        if self.statusIcons.has_key(name):
+            i = self.statusIcons[name]
+            if type(i)  == type(self.icon) and not bitmap:
+                return i
+        if bitmap:
+            i = wxBitmap(self.statusIconFiles[name], wxBITMAP_TYPE_ICO)
+        else:
+            i = wxIcon(self.statusIconFiles[name], wxBITMAP_TYPE_ICO)
+        self.statusIcons[name] = i
+        return i
+
+
     def setStatusIcon(self, name):
-        if name != self.statusIconValue:
-            self.statusIconValue = name
-            statidata = wxMemoryDC()
-            statidata.SelectObject(self.statusIcon)
-            statidata.BeginDrawing()
-            statidata.DrawIcon(self.statusIcons[name],0,0)
-            statidata.EndDrawing()
-            statidata.SelectObject(wxNullBitmap)
-            self.statusIconPtr.Refresh()
+        if name == self.statusIconValue:
+            return
+        self.statusIconValue = name
+        statidata = wxMemoryDC()
+        statidata.SelectObject(self.statusIcon)
+        statidata.BeginDrawing()
+        try:
+            statidata.DrawIcon(self.getStatusIcon(name),0,0)
+        except:
+            statidata.DrawBitmap(self.getStatusIcon(name,True),0,0,True)
+        statidata.EndDrawing()
+        statidata.SelectObject(wxNullBitmap)
+        self.statusIconPtr.Refresh()
 
 
     def createStatusIcon(self, name):
@@ -505,7 +519,10 @@ class DownloadInfoFrame:
         bbdata.SetPen(wxTRANSPARENT_PEN)
         bbdata.SetBrush(wxBrush(self.bgcolor,wxSOLID))
         bbdata.DrawRectangle(0,0,32,32)
-        bbdata.DrawIcon(self.statusIcons[name],0,0)
+        try:
+            bbdata.DrawIcon(self.getStatusIcon(name),0,0)
+        except:
+            bbdata.DrawBitmap(self.getStatusIcon(name,True),0,0,True)
         return iconbuffer
 
 
@@ -560,6 +577,8 @@ class DownloadInfoFrame:
                 self.frame.Raise()
             self.frame.tbicon.RemoveIcon()
             self.taskbaricon = False
+        except wxPyDeadObjectError:
+            pass
         except:
             self.exception()
 
@@ -717,8 +736,10 @@ class DownloadInfoFrame:
 
             self.aboutBox = wxFrame(None, -1, 'About BitTorrent', size = (1,1),
                             style = wxDEFAULT_FRAME_STYLE|wxFULL_REPAINT_ON_RESIZE)
-            if (sys.platform == 'win32'):
+            try:
                 self.aboutBox.SetIcon(self.icon)
+            except:
+                pass
 
             panel = wxPanel(self.aboutBox, -1)
 
@@ -767,7 +788,6 @@ class DownloadInfoFrame:
             colSizer.Add (babble6)
 
             okButton = wxButton(panel, -1, 'Ok')
-#        okButton.SetFont(self.default_font)
             colSizer.Add(okButton, 0, wxALIGN_RIGHT)
             colSizer.AddGrowableCol(0)
 
@@ -835,8 +855,10 @@ class DownloadInfoFrame:
 
             self.detailBox = wxFrame(None, -1, 'Torrent Details ', size = wxSize(405,230),
                             style = wxDEFAULT_FRAME_STYLE|wxFULL_REPAINT_ON_RESIZE)
-            if (sys.platform == 'win32'):
+            try:
                 self.detailBox.SetIcon(self.icon)
+            except:
+                pass
 
             panel = wxPanel(self.detailBox, -1, size = wxSize (400,220))
 
@@ -897,12 +919,9 @@ class DownloadInfoFrame:
                 fileList.InsertColumn(1, "", format=wxLIST_FORMAT_RIGHT, width=55)
                 fileList.InsertColumn(2, "")
 
-#                self.fileListItems = []
                 for i in range(len(info['files'])):
                     x = wxListItem()
-#                x.SetFont(self.default_font)
                     fileList.InsertItem(x)
-#                    self.fileListItems.append(x)
 
                 x = 0
                 for file in info['files']:
@@ -952,12 +971,10 @@ class DownloadInfoFrame:
                 for tier in range(len(announce_list)):
                     for t in range(len(announce_list[tier])):
                         i = wxListItem()
-#                    i.SetFont(self.default_font)
                         trackerList.InsertItem(i)
                 if announce is not None:
                     for l in [1,2]:
                         i = wxListItem()
-#                    i.SetFont(self.default_font)
                         trackerList.InsertItem(i)
 
                 x = 0
@@ -1000,7 +1017,6 @@ class DownloadInfoFrame:
             colSizer.Add (detailSizer, 1, wxEXPAND)
 
             okButton = wxButton(panel, -1, 'Ok')
-#        okButton.SetFont(self.default_font)
             colSizer.Add(okButton, 0, wxALIGN_RIGHT)
             colSizer.AddGrowableCol(0)
 
@@ -1016,7 +1032,6 @@ class DownloadInfoFrame:
 
             if fileListID:
                 def onRightClick(evt, self = self):
-#                    s = evt.GetIndex()
                     s = []
                     i = -1
                     while True:
@@ -1100,8 +1115,10 @@ class DownloadInfoFrame:
 
             self.creditsBox = wxFrame(None, -1, 'Credits', size = (1,1),
                             style = wxDEFAULT_FRAME_STYLE|wxFULL_REPAINT_ON_RESIZE)
-            if (sys.platform == 'win32'):
+            try:
                 self.creditsBox.SetIcon(self.icon)
+            except:
+                pass
 
             panel = wxPanel(self.creditsBox, -1)        
 
@@ -1161,7 +1178,6 @@ class DownloadInfoFrame:
               'Micah Anderson'))
             colSizer.Add (creditSizer, flag = wxALIGN_CENTER_HORIZONTAL)
             okButton = wxButton(panel, -1, 'Ok')
-#        okButton.SetFont(self.default_font)
             colSizer.Add(okButton, 0, wxALIGN_RIGHT)
             colSizer.AddGrowableCol(0)
 
@@ -1195,8 +1211,10 @@ class DownloadInfoFrame:
 
             self.statusIconHelpBox = wxFrame(None, -1, 'Help with the BitTorrent Status Light', size = (1,1),
                             style = wxDEFAULT_FRAME_STYLE|wxFULL_REPAINT_ON_RESIZE)
-            if (sys.platform == 'win32'):
+            try:
                 self.statusIconHelpBox.SetIcon(self.icon)
+            except:
+                pass
 
             panel = wxPanel(self.statusIconHelpBox, -1)
 
@@ -1263,7 +1281,6 @@ class DownloadInfoFrame:
             colsizer2.Add(colspacer)
 
             okButton = wxButton(panel, -1, 'Ok')
-#        okButton.SetFont(self.default_font)
             colsizer2.Add(okButton, 0, wxALIGN_CENTER)
             fullsizer.Add(colsizer2, 0, wxALIGN_CENTER)
 
@@ -1304,8 +1321,10 @@ class DownloadInfoFrame:
 
             self.advBox = wxFrame(None, -1, 'BitTorrent Advanced', size = wxSize(200,200),
                             style = wxDEFAULT_FRAME_STYLE|wxFULL_REPAINT_ON_RESIZE)
-            if (sys.platform == 'win32'):
+            try:
                 self.advBox.SetIcon(self.icon)
+            except:
+                pass
 
             panel = wxPanel(self.advBox, -1, size = wxSize (200,200))
 
@@ -1359,25 +1378,20 @@ class DownloadInfoFrame:
             buttonSizer = wxFlexGridSizer (cols = 5, hgap = 20)
 
             reannounceButton = wxButton(panel, -1, 'Manual Announce')
-#        reannounceButton.SetFont(self.default_font)
             buttonSizer.Add (reannounceButton)
 
             extannounceButton = wxButton(panel, -1, 'External Announce')
-#        extannounceButton.SetFont(self.default_font)
             buttonSizer.Add (extannounceButton)
 
             bgallocButton = wxButton(panel, -1, 'Finish Allocation')
-#        bgallocButton.SetFont(self.default_font)
             buttonSizer.Add (bgallocButton)
 
             buttonSizer.Add(StaticText(''))
 
             okButton = wxButton(panel, -1, 'Ok')
-#        okButton.SetFont(self.default_font)
             buttonSizer.Add (okButton)
 
             colSizer.Add (buttonSizer, 0, wxALIGN_CENTER)
-#        colSizer.SetMinSize ((578,350))
             colSizer.AddGrowableCol(0)
             colSizer.AddGrowableRow(1)
 
@@ -1416,8 +1430,10 @@ class DownloadInfoFrame:
 
                 frame.advextannouncebox = wxFrame(None, -1, 'External Announce', size = (1,1),
                             style = wxDEFAULT_FRAME_STYLE|wxFULL_REPAINT_ON_RESIZE)
-                if (sys.platform == 'win32'):
+                try:
                     frame.advextannouncebox.SetIcon(frame.icon)
+                except:
+                    pass
 
                 panel = wxPanel(frame.advextannouncebox, -1)
 
@@ -1435,11 +1451,9 @@ class DownloadInfoFrame:
                 buttonSizer = wxFlexGridSizer (cols = 2, hgap = 10)
 
                 okButton = wxButton(panel, -1, 'OK')
-#            okButton.SetFont(frame.default_font)
                 buttonSizer.Add (okButton)
 
                 cancelButton = wxButton(panel, -1, 'Cancel')
-#            cancelButton.SetFont(frame.default_font)
                 buttonSizer.Add (cancelButton)
 
                 fullsizer.Add (buttonSizer, 0, wxALIGN_CENTER)
@@ -1549,8 +1563,7 @@ class DownloadInfoFrame:
         if activity is not None:
             self.activity = activity
         self.gui_fractiondone = fractionDone
-        if not self.ispaused:
-            self.invokeLater(self.onUpdateStatus,
+        self.invokeLater(self.onUpdateStatus,
                  [dpflag, timeEst, downRate, upRate, statistics, spew, sizeDone])
 
     def onUpdateStatus(self, dpflag, timeEst, downRate, upRate,
@@ -1571,7 +1584,7 @@ class DownloadInfoFrame:
             self.firstupdate = False
             if self.advBox:
                 self.dow.spewflag.set()
-        if statistics is None:
+        if self.ispaused or statistics is None:
             self.setStatusIcon('startup')
         elif statistics.numPeers + statistics.numSeeds + statistics.numOldSeeds == 0:
             if statistics.last_failed:
@@ -1633,10 +1646,11 @@ class DownloadInfoFrame:
                 self.timeText.SetLabel(self.activity)
             else:
                 self.timeText.SetLabel(hours(clock() - self.starttime) + ' / ' + self.activity)
-        if downRate is not None:
-            self.downRateText.SetLabel('%.0f kB/s' % (float(downRate) / 1000))
-        if upRate is not None:
-            self.upRateText.SetLabel('%.0f kB/s' % (float(upRate) / 1000))
+        if not self.ispaused:
+            if downRate is not None:
+                self.downRateText.SetLabel('%.0f kB/s' % (float(downRate) / 1000))
+            if upRate is not None:
+                self.upRateText.SetLabel('%.0f kB/s' % (float(upRate) / 1000))
         if self.taskbaricon:
             icontext='BitTorrent '
             if self.gui_fractiondone is not None and not self.fin:
@@ -1725,7 +1739,6 @@ class DownloadInfoFrame:
                     kickbanlen = 0
                 for x in range(spewlen-spewList.GetItemCount()):
                     i = wxListItem()
-#                   i.SetFont(self.default_font)
                     spewList.InsertItem(i)
                 for x in range(spewlen,spewList.GetItemCount()):
                     spewList.DeleteItem(len(spew)+1)
@@ -1931,9 +1944,11 @@ class DownloadInfoFrame:
         self.cancelButton.SetLabel('Finish')
         self.gauge.SetValue(0)
         self.frame.SetTitle('%s - Upload - BitTorrent %s' % (self.filename, version))
-        if (sys.platform == 'win32'):
-            self.icon = wxIcon(os.path.join(self.basepath,'icon_done.ico'), wxBITMAP_TYPE_ICO)
+        self.icon = wxIcon(os.path.join(self.basepath,'icon_done.ico'), wxBITMAP_TYPE_ICO)
+        try:
             self.frame.SetIcon(self.icon)
+        except:
+            pass
         if self.taskbaricon:
             self.frame.tbicon.SetIcon(self.icon, "BitTorrent - Finished")
         self.downRateText.SetLabel('')
@@ -1952,7 +1967,7 @@ class DownloadInfoFrame:
             self.errorText.SetLabel(errormsg)
             self.lastError = clock()
         else:
-            self.errorText.SetLabel(strftime('ERROR (%I:%M %p) -\n') + errormsg)
+            self.errorText.SetLabel(strftime('ERROR (%x %X) -\n') + errormsg)
             self.lastError = clock()
 
 
@@ -2060,8 +2075,6 @@ class DownloadInfoFrame:
                 self.pauseButton.SetLabel('Resume')
                 self.downRateText.SetLabel(' ')
                 self.upRateText.SetLabel(' ')
-                self.seedStatusText.SetLabel(' ')
-                self.peerStatusText.SetLabel(' ')
                 self.setStatusIcon('startup')
 
     def done(self, event):
@@ -2070,8 +2083,10 @@ class DownloadInfoFrame:
         self.shuttingdown = True
         if self.taskbaricon:
             self.frame.tbicon.RemoveIcon()
-        if self.ispaused:
-            self.dow.Unpause()
+            try:
+                self.frame.tbicon.Destroy()
+            except:
+                pass
         if (self.detailBox is not None):
             try:
                 self.detailBox.Close ()

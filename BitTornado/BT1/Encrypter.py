@@ -221,6 +221,7 @@ class Encoder:
         self.connections = {}
         self.banned = {}
         self.to_connect = []
+        self.paused = False
         if self.config['max_connections'] == 0:
             self.max_connections = 2 ** 30
         else:
@@ -229,6 +230,8 @@ class Encoder:
 
     def send_keepalives(self):
         self.schedulefunc(self.send_keepalives, self.keepalive_delay)
+        if self.paused:
+            return
         for c in self.connections.values():
             c.keepalive()
 
@@ -245,7 +248,7 @@ class Encoder:
         cons = len(self.connections)
         if cons >= self.max_connections or cons >= max_initiate:
             delay = 60
-        elif incompletecounter.toomany():
+        elif self.paused or incompletecounter.toomany():
             delay = 1
         else:
             delay = 0
@@ -255,11 +258,10 @@ class Encoder:
             self.raw_server.external_add_task(self._start_connection_from_queue, delay)
 
     def start_connection(self, dns, id):
-        if len(self.connections) >= self.max_connections:
-            return True
-        if id == self.my_id:
-            return True
-        if self.banned.has_key(dns[0]):
+        if ( self.paused
+             or len(self.connections) >= self.max_connections
+             or id == self.my_id
+             or self.banned.has_key(dns[0]) ):
             return True
         for v in self.connections.values():
             if v is None:
@@ -300,7 +302,7 @@ class Encoder:
         return True
 
     def external_connection_made(self, connection):
-        if len(self.connections) >= self.max_connections:
+        if self.paused or len(self.connections) >= self.max_connections:
             connection.close()
             return False
         con = Connection(self, connection, None)
@@ -309,7 +311,7 @@ class Encoder:
         return True
 
     def externally_handshaked_connection_made(self, connection, options, already_read):
-        if len(self.connections) >= self.max_connections:
+        if self.paused or len(self.connections) >= self.max_connections:
             connection.close()
             return False
         con = Connection(self, connection, None, True)
@@ -330,3 +332,5 @@ class Encoder:
     def ban(self, ip):
         self.banned[ip] = 1
 
+    def pause(self, flag):
+        self.paused = flag

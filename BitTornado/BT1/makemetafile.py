@@ -91,6 +91,7 @@ def make_meta_file(file, url, params = {}, flag = Event(),
             piece_len_exp = 15          #   32K pieces
     piece_length = 2 ** piece_len_exp
 
+    encoding = None
     if params.has_key('filesystem_encoding'):
         encoding = params['filesystem_encoding']
     if not encoding:

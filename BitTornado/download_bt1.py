@@ -157,9 +157,13 @@ defaults = [
 argslistheader = 'Arguments are:\n\n'
 
 
+def _failfunc(x):
+    print x
+
 # old-style downloader
-def download(self, params, filefunc, statusfunc, finfunc, errorfunc, doneflag, cols,
-             pathFunc = None, presets = {}, exchandler = None):
+def download(params, filefunc, statusfunc, finfunc, errorfunc, doneflag, cols,
+             pathFunc = None, presets = {}, exchandler = None,
+             failed = _failfunc, paramfunc = None):
 
     try:
         config = parse_params(params, presets)
@@ -251,7 +255,7 @@ def get_usage(defaults = defaults, cols = 100, presets = {}):
     return (argslistheader + formatDefinitions(defaults, cols, presets))
 
 
-def get_response(file, url, failfunc):
+def get_response(file, url, errorfunc):
     try:
         if file:
             h = open(file, 'rb')
@@ -261,7 +265,7 @@ def get_response(file, url, failfunc):
                 assert front[0] == 'd'
                 int(front[1:])
             except:
-                failfunc(file+' is not a valid responsefile')
+                errorfunc(file+' is not a valid responsefile')
                 return None
             try:
                 h.seek(0)
@@ -275,22 +279,26 @@ def get_response(file, url, failfunc):
             try:
                 h = urlopen(url)
             except:
-                failfunc(url+' bad url')
+                errorfunc(url+' bad url')
                 return None
         response = h.read()
     
     except IOError, e:
-        failfunc('problem getting response info - ' + str(e))
+        errorfunc('problem getting response info - ' + str(e))
         return None
     try:    
         h.close()
     except:
         pass
     try:
-        response = bdecode(response)
+        try:
+            response = bdecode(response)
+        except:
+            errorfunc("warning: bad data in responsefile")
+            response = bdecode(response, sloppy=1)
         check_message(response)
     except ValueError, e:
-        failfunc("got bad file info - " + str(e))
+        errorfunc("got bad file info - " + str(e))
         return None
 
     return response
@@ -319,6 +327,7 @@ class BT1Download:
         self.argslistheader = argslistheader
         self.unpauseflag = Event()
         self.unpauseflag.set()
+        self.downloader = None
         self.storagewrapper = None
         self.fileselector = None
         self.super_seeding_active = False
@@ -651,7 +660,8 @@ class BT1Download:
             self.upmeasure.get_total, self.downmeasure.get_total, self.port, self.config['ip'],
             self.myid, self.infohash, self.config['http_timeout'],
             self.errorfunc, self.excfunc, self.config['max_initiate'],
-            self.doneflag, self.upmeasure.get_rate, self.downmeasure.get_rate)
+            self.doneflag, self.upmeasure.get_rate, self.downmeasure.get_rate,
+            self.unpauseflag )
 
         self.rerequest.start()
 
@@ -738,10 +748,10 @@ class BT1Download:
             pass
 
     def startConnection(self, ip, port, id):
-        self.encrypter._start_connection((ip, port), id)
+        self.encoder._start_connection((ip, port), id)
       
     def _startConnection(self, ipandport, id):
-        self.encrypter._start_connection(ipandport, id)
+        self.encoder._start_connection(ipandport, id)
         
     def setInitiate(self, initiate):
         try:
@@ -777,25 +787,53 @@ class BT1Download:
         except:
             return None
 
+#    def Pause(self):
+#        try:
+#            if self.storagewrapper:
+#                self.rawserver.external_add_task(self._pausemaker, 0)
+#        except:
+#            return False
+#        self.unpauseflag.clear()
+#        return True
+#
+#    def _pausemaker(self):
+#        self.whenpaused = clock()
+#        self.unpauseflag.wait()   # sticks a monkey wrench in the main thread
+#
+#    def Unpause(self):
+#        self.unpauseflag.set()
+#        if self.whenpaused and clock()-self.whenpaused > 60:
+#            def r(self = self):
+#                self.rerequest.announce(3)      # rerequest automatically if paused for >60 seconds
+#            self.rawserver.external_add_task(r)
+
     def Pause(self):
-        try:
-            if self.storagewrapper:
-                self.rawserver.external_add_task(self._pausemaker, 0)
-        except:
+        if not self.storagewrapper:
             return False
         self.unpauseflag.clear()
+        self.rawserver.external_add_task(self.onPause)
         return True
 
-    def _pausemaker(self):
+    def onPause(self):
         self.whenpaused = clock()
-        self.unpauseflag.wait()   # sticks a monkey wrench in the main thread
-
+        if not self.downloader:
+            return
+        self.downloader.pause(True)
+        self.encoder.pause(True)
+        self.choker.pause(True)
+    
     def Unpause(self):
         self.unpauseflag.set()
-        if self.whenpaused and clock()-self.whenpaused > 60:
-            def r(self = self):
-                self.rerequest.announce(3)      # rerequest automatically if paused for >60 seconds
-            self.rawserver.external_add_task(r)
+        self.rawserver.external_add_task(self.onUnpause)
+
+    def onUnpause(self):
+        if not self.downloader:
+            return
+        self.downloader.pause(False)
+        self.encoder.pause(False)
+        self.choker.pause(False)
+        if self.rerequest and self.whenpaused and clock()-self.whenpaused > 60:
+            self.rerequest.announce(3)      # rerequest automatically if paused for >60 seconds
 
     def set_super_seed(self):
         try:

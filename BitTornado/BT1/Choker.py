@@ -20,6 +20,7 @@ class Choker:
         self.last_round_robin = clock()
         self.done = done
         self.super_seed = False
+        self.paused = False
         schedule(self._round_robin, 5)
 
     def set_round_robin_period(self, x):
@@ -57,6 +58,10 @@ class Choker:
     def _rechoke(self):
         preferred = []
         maxuploads = self.config['max_uploads']
+        if self.paused:
+            for c in self.connections:
+                c.get_upload().choke()
+            return
         if maxuploads > 1:
             for c in self.connections:
                 u = c.get_upload()
@@ -117,3 +122,7 @@ class Choker:
             self.connections[0].close()
         self.picker.set_superseed()
         self.super_seed = True
+
+    def pause(self, flag):
+        self.paused = flag
+        self._rechoke()

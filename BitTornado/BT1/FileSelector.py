@@ -53,9 +53,9 @@ class FileSelector:
 #           print_exc()            
             return False
         try:
-            for i in xrange(self.numfiles):
-                if new_priority[i] < 0:
-                    self.storage.disable_file(i)
+            for f in xrange(self.numfiles):
+                if new_priority[f] < 0:
+                    self.storage.disable_file(f)
             self.new_priority = new_priority
         except (IOError, OSError), e:
             self.failfunc("can't open partial file for "

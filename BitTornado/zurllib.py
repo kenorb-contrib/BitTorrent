@@ -1,7 +1,7 @@
 # Written by John Hoffman
 # see LICENSE.txt for license information
 
-from httplib import HTTPConnection
+from httplib import HTTPConnection, HTTPException
 from urlparse import urlparse
 import socket
 from gzip import GzipFile
@@ -11,6 +11,16 @@ from __init__ import product_name, version_short
 
 VERSION = product_name+'/'+version_short
 MAX_REDIRECTS = 10
+
+
+class btHTTPcon(HTTPConnection): # attempt to add automatic connection timeout
+    def connect(self):
+        HTTPConnection.connect(self)
+        try:
+            self.sock.settimeout(30)
+        except:
+            pass
+
 
 class urlopen:
     def __init__(self, url):
@@ -31,11 +41,14 @@ class urlopen:
         if query:
             url += '?'+query
 #        if fragment:
-        self.connection = HTTPConnection(netloc)
-        self.connection.request('GET', url, None,
+        try:
+            self.connection = btHTTPcon(netloc)
+            self.connection.request('GET', url, None,
                                 { 'User-Agent': VERSION,
                                   'Accept-Encoding': 'gzip' } )
-        self.response = self.connection.getresponse()
+            self.response = self.connection.getresponse()
+        except HTTPException, e:
+            raise IOError, ('http error', str(e))
         status = self.response.status
         if status in (301,302):
             try:

@@ -43,12 +43,20 @@ def get_key(tracker):
         add_key(tracker)
         return "&key="+keys[tracker]
 
+class fakeflag:
+    def __init__(self, state=False):
+        self.state = state
+    def wait(self):
+        pass
+    def isSet(self):
+        return self.state
 
 class Rerequester:
     def __init__(self, trackerlist, interval, sched, howmany, minpeers, 
             connect, externalsched, amount_left, up, down,
             port, ip, myid, infohash, timeout, errorfunc, excfunc,
-            maxpeers, doneflag, upratefunc, downratefunc):
+            maxpeers, doneflag, upratefunc, downratefunc,
+            unpauseflag = fakeflag(True)):
 
         self.excfunc = excfunc
         newtrackerlist = []        
@@ -81,6 +89,7 @@ class Rerequester:
         self.doneflag = doneflag
         self.upratefunc = upratefunc
         self.downratefunc = downratefunc
+        self.unpauseflag = unpauseflag
         self.last_failed = True
         self.never_succeeded = True
         self.errorcodes = {}
@@ -95,7 +104,7 @@ class Rerequester:
     def c(self):
         if self.stopped:
             return
-        if self.howmany() < self.minpeers:
+        if not self.unpauseflag.isSet() and self.howmany() < self.minpeers:
             self.announce(3, self._c)
         else:
             self._c()
@@ -105,6 +114,9 @@ class Rerequester:
 
     def d(self, event = 3):
         if self.stopped:
+            return
+        if not self.unpauseflag.isSet():
+            self._d()
             return
         self.announce(event, self._d)
 
@@ -326,6 +338,7 @@ class Rerequester:
                 if r.get('num peers', 1000) > ps * 1.2:
                     self.last = None
         if peers:
+            shuffle(peers)
             self.connect(peers)
         callback()
 

@@ -75,13 +75,14 @@ decode_func['8'] = decode_string
 decode_func['9'] = decode_string
 #decode_func['u'] = decode_unicode
   
-def bdecode(x):
+def bdecode(x, sloppy = 0):
     try:
         r, l = decode_func[x[0]](x, 0)
-    except (IndexError, KeyError):
-        raise ValueError
-    if l != len(x):
-        raise ValueError
+#    except (IndexError, KeyError):
+    except (IndexError, KeyError, ValueError):
+        raise ValueError, "bad bencoded data"
+    if not sloppy and l != len(x):
+        raise ValueError, "bad bencoded data"
     return r
 
 def test_bdecode():

@@ -1,27 +1,29 @@
 # Written by John Hoffman
 # see LICENSE.txt for license information
 
-# reads/writes a Windows-style INI file
-# format:
-#
-#   aa = "bb"
-#   cc = 11
-#
-#   [eee]
-#   ff = "gg"
-#
-# decodes to:
-# d = { '': {'aa':'bb','cc':'11'}, 'eee': {'ff':'gg'} }
-#
-# the encoder can also take this as input:
-#
-# d = { 'aa': 'bb, 'cc': 11, 'eee': {'ff':'gg'} }
-#
-# though it will only decode in the above format.  Keywords must be strings.
-# Values that are strings are written surrounded by quotes, and the decoding
-# routine automatically strips any.
-# Booleans are written as integers.  Anything else aside from string/int/float
-# may have unpredictable results.
+'''
+reads/writes a Windows-style INI file
+format:
+
+  aa = "bb"
+  cc = 11
+
+  [eee]
+  ff = "gg"
+
+decodes to:
+d = { '': {'aa':'bb','cc':'11'}, 'eee': {'ff':'gg'} }
+
+the encoder can also take this as input:
+
+d = { 'aa': 'bb, 'cc': 11, 'eee': {'ff':'gg'} }
+
+though it will only decode in the above format.  Keywords must be strings.
+Values that are strings are written surrounded by quotes, and the decoding
+routine automatically strips any.
+Booleans are written as integers.  Anything else aside from string/int/float
+may have unpredictable results.
+'''
 
 from cStringIO import StringIO
 from traceback import print_exc

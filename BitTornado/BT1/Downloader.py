@@ -102,6 +102,8 @@ class SingleDownload:
             lost[index] = 1
         lost = lost.keys()
         self.active_requests = []
+        if self.downloader.paused:
+            return
         ds = [d for d in self.downloader.downloads if not d.choked]
         shuffle(ds)
         for d in ds:
@@ -184,6 +186,8 @@ class SingleDownload:
         if self.downloader.endgamemode:
             self.fix_download_endgame(new_unchoke)
             return
+        if self.downloader.paused:
+            return
         if len(self.active_requests) >= self._backlog(new_unchoke):
             if not (self.active_requests or self.backlog):
                 self.downloader.queued_out[self] = 1
@@ -232,6 +236,8 @@ class SingleDownload:
 
 
     def fix_download_endgame(self, new_unchoke = False):
+        if self.downloader.paused:
+            return
         if len(self.active_requests) >= self._backlog(new_unchoke):
             if not (self.active_requests or self.backlog) and not self.choked:
                 self.downloader.queued_out[self] = 1
@@ -270,7 +276,8 @@ class SingleDownload:
                 return
         if self.downloader.endgamemode:
             self.fix_download_endgame()
-        elif ( not self.downloader.picker.is_blocked(index)
+        elif ( not self.downloader.paused
+               and not self.downloader.picker.is_blocked(index)
                and self.downloader.storage.do_I_have_requests(index) ):
             if not self.choked:
                 self._request_more()
@@ -278,7 +285,7 @@ class SingleDownload:
                 self.send_interested()
 
     def _check_interests(self):
-        if self.interested:
+        if self.interested or self.downloader.paused:
             return
         for i in xrange(len(self.have)):
             if ( self.have[i] and not self.downloader.picker.is_blocked(i)
@@ -301,7 +308,7 @@ class SingleDownload:
             for i in xrange(len(have)):
                 if have[i]:
                     self.downloader.picker.got_have(i)
-        if self.downloader.endgamemode:
+        if self.downloader.endgamemode and not self.downloader.paused:
             for piece, begin, length in self.downloader.all_requests:
                 if self.have[piece]:
                     self.send_interested()
@@ -354,6 +361,7 @@ class Downloader:
         self.last_time = clock()
         self.queued_out = {}
         self.requeueing = False
+        self.paused = False
 
     def set_download_rate(self, rate):
         self.download_rate = rate * 1000
@@ -396,6 +404,8 @@ class Downloader:
         return d
 
     def piece_flunked(self, index):
+        if self.paused:
+            return
         if self.endgamemode:
             if self.downloads:
                 while self.storage.do_I_have_requests(index):
@@ -562,3 +572,20 @@ class Downloader:
                 self.all_requests.append(request)
         for d in self.downloads:
             d.fix_download_endgame()
+
+    def pause(self, flag):
+        self.paused = flag
+        if flag:
+            for d in self.downloads:
+                for index, begin, length in d.active_requests:
+                    d.connection.send_cancel(index, begin, length)
+                d._letgo()
+                d.send_not_interested()
+            if self.endgamemode:
+                self._reset_endgame()
+        else:
+            shuffle(self.downloads)
+            for d in self.downloads:
+                d._check_interests()
+                if d.interested and not d.choked:
+                    d._request_more()

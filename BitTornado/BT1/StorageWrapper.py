@@ -3,7 +3,6 @@
 
 from BitTornado.bitfield import Bitfield
 from sha import sha
-from threading import Event
 from BitTornado.clock import clock
 from traceback import print_exc
 try:
@@ -55,13 +54,21 @@ class Olist:
         if self.d.has_key(i):
             del self.d[i]
 
+class fakeflag:
+    def __init__(self, state=False):
+        self.state = state
+    def wait(self):
+        pass
+    def isSet(self):
+        return self.state
+
 
 class StorageWrapper:
     def __init__(self, storage, request_size, hashes, 
             piece_size, finished, failed, 
-            statusfunc = dummy_status, flag = Event(), check_hashes = True,
+            statusfunc = dummy_status, flag = fakeflag(), check_hashes = True,
             data_flunked = lambda x: None, backfunc = None,
-            config = {}, unpauseflag = None):
+            config = {}, unpauseflag = fakeflag(True) ):
         self.storage = storage
         self.request_size = long(request_size)
         self.hashes = hashes
@@ -161,6 +168,10 @@ class StorageWrapper:
         self.backfunc(self._initialize)
 
     def _initialize(self):
+        if not self.unpauseflag.isSet():
+            self.backfunc(self._initialize, 1)
+            return
+        
         if self.initialize_next:
             x = self.initialize_next()
             if x is None:

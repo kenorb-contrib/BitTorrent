@@ -133,14 +133,11 @@ class IP_List:
 
 
     def read_fieldlist(self, file):   # reads a list from a file in the format 'ip/len <whatever>'
-        try:
-            f = open(file, 'r')
-            lines = f.readlines()
-            f.close()
-        except:
-            print '*** ERROR *** could not read IP range file'
-            return
-        for line in lines:
+        f = open(file, 'r')
+        while True:
+            line = f.readline()
+            if not line:
+                break
             line = line.strip().expandtabs()
             if not line or line[0] == '#':
                 continue
@@ -163,6 +160,7 @@ class IP_List:
                 self.append(ip,depth)
             except:
                 print '*** WARNING *** could not parse IP range: '+line
+        f.close()
 
 
     def set_intranet_addresses(self):
@@ -214,5 +212,5 @@ def is_valid_ip(ip):
             return True
         to_bitfield_ipv6(ip)
         return True
-    except ValueError:
+    except:
         return False

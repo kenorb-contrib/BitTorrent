@@ -6,6 +6,7 @@ from zlib import compress
 from binascii import b2a_base64
 from traceback import print_exc
 import sys
+from os.path import join
 from BitTornado import version
 
 icons = [ 'icon_bt.ico', 'icon_done.ico',
@@ -30,7 +31,7 @@ try:
     print 'icons = {'
     for icon in icons:
         print '    "'+icon+'":'
-        ff = open(icon,'rb')
+        ff = open(join('icons',icon),'rb')
         d = b2a_base64(compress(ff.read())).strip()
         ff.close()
         while d:
