@@ -281,7 +281,7 @@ def next(params, d, doneflag):
                     open(p, 'wb').close()
                 except IOError, e:
                     dlg = wxMessageDialog(d.frame, "Sorry, but I couldn't set the flag to not ask you for donations in the future - " + str(e),
-                        'Sorry!', wxOK)
+                        'Sorry!', wxOK | wxICON_ERROR)
                     dlg.ShowModal()
                     dlg.Destroy()
             else:

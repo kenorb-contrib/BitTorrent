@@ -9,9 +9,10 @@ InstallDir "$PROGRAMFILES\BitTorrent\"
 Section "Install"
   WriteUninstaller "$INSTDIR\uninstall.exe"
   SetOutPath $INSTDIR
-  File btdownloadgui.exe
-  File *.pyd
-  File *.dll
+  File dist\btdownloadgui\btdownloadgui.exe
+  File dist\btdownloadgui\*.pyd
+  File dist\btdownloadgui\*.dll
+  File redirdonate.html
   WriteRegStr HKCR .torrent "" bittorrent
   WriteRegStr HKCR .torrent "Content Type" application/x-bittorrent
   WriteRegStr HKCR "MIME\Database\Content Type\application/x-bittorrent" Extension .torrent
@@ -19,10 +20,9 @@ Section "Install"
   WriteRegBin HKCR bittorrent EditFlags 00000100
   WriteRegStr HKCR "bittorrent\shell" "" open
   WriteRegStr HKCR "bittorrent\shell\open\command" "" `"$INSTDIR\btdownloadgui.exe" --responsefile "%1"`
-  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\BitTorrent" "DisplayName" "BitTorrent 3.2.1"
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\BitTorrent" "DisplayName" "BitTorrent 3.3"
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\BitTorrent" "UninstallString" '"$INSTDIR\uninstall.exe"'
-  NSISdl::download /TIMEOUT=30000 "http://bitconjurer.org/BitTorrent/donate.html" "$TEMP\donate.html"
-  ExecShell open "$TEMP\donate.html"
+  ExecShell open "$INSTDIR\redirdonate.html"
   Sleep 2000
   MessageBox MB_OK "BitTorrent has been successfully installed!"
   BringToFront
