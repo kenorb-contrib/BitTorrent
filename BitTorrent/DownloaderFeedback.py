@@ -7,10 +7,10 @@ true = 1
 false = 0
 
 def kify(n):
-    return str(long((n / (2 ** 10)) * 10) / 10.0)
+    return str(long((float(n) / (2 ** 10)) * 10) / 10.0)
 
 def mbfy(n):
-    return str(long((n / (2 ** 20)) * 10) / 10.0)
+    return str(long((float(n) / (2 ** 20)) * 10) / 10.0)
 
 def ex(n):
     if n >= 10:
