@@ -147,7 +147,6 @@ def download(params, filefunc, statusfunc, errorfunc, doneflag, cols):
         blobs = SingleBlob(file, file_length, response['pieces'], 
             response['piece length'], finished, open, path.exists, path.getsize)
         if len(blobs.get_list_of_blobs_I_want()) == 0:
-            errorfunc('that file has already been completely downloaded')
             return true
         left = blobs.get_amount_left()
     except ValueError, e:

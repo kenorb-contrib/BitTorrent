@@ -128,8 +128,6 @@ class DownloadInfoFrame(wxFrame):
         if event.percentDone:
             self.gauge.SetValue(event.percentDone)
         if event.timeEst:
-            if event.timeEst == 'Download Succeeded!':
-                self.cancelButton.SetLabel('Finished')
             self.timeEstText.SetLabel(event.timeEst)
         if event.fileDest:
             self.fileDestText.SetLabel(event.fileDest)
