@@ -58,6 +58,9 @@ class SingleDownload:
     def is_interested(self):
         return self.interested
 
+    def get_rate(self):
+        return self.measure.get_rate()
+
     def is_snubbed(self):
         return time() - self.last > self.downloader.snub_time
 
