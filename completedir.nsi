@@ -4,6 +4,7 @@
 Outfile completedir.exe
 Name completedir
 SilentInstall silent
+SetCompressor lzma
 InstallDir "$PROGRAMFILES\completedir\"
 Section "Install"
   SetOutPath $INSTDIR

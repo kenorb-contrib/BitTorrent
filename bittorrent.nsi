@@ -4,7 +4,7 @@
 Outfile bittorrent.exe
 Name BitTorrent
 SilentInstall silent
-SetCompressor bzip2
+SetCompressor lzma
 InstallDir "$PROGRAMFILES\BitTorrent\"
 Section "Install"
   SetOutPath $INSTDIR
