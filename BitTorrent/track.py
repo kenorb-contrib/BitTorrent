@@ -64,10 +64,14 @@ def parseTorrents(dir):
     import os
     a = {}
     for f in os.listdir(dir):
-        if f[-8:] == '.torrent':
-            d = bdecode(open(os.path.join(dir,f)).read())
-            h = sha(bencode(d['info'])).digest()
-            a[h] = 1
+	if f[-8:] == '.torrent':
+	    try:
+		d = bdecode(open(os.path.join(dir,f)).read())
+		h = sha(bencode(d['info'])).digest()
+		a[h] = d['info'].get('name', f)
+	    except:
+		# what now, boss?
+		print "Error parsing " + f
     return a
 
 alas = 'your file may exist elsewhere in the universe\nbut alas, not here\n'
@@ -134,14 +138,23 @@ class Tracker:
             names = self.downloads.keys()
             if names:
                 names.sort()
-                s.write('<table summary="files">\n' \
-                    '<tr><th>info hash</th><th align="right">complete</th><th align="right">downloading</th></tr>\n')
+		if self.allowed != None:
+		    s.write('<table summary="files">\n' \
+			'<tr><th>info hash</th><th>torrent name</th><th align="right">complete</th><th align="right">downloading</th></tr>\n')
+		else:
+		    s.write('<table summary="files">\n' \
+			'<tr><th>info hash</th><th align="right">complete</th><th align="right">downloading</th></tr>\n')
                 for name in names:
                     l = self.downloads[name]
                     c = len([1 for i in l.values() if i['left'] == 0])
                     d = len(l) - c
-                    s.write('<tr><td><code>%s</code></td><td align="right"><code>%i</code></td><td align="right"><code>%i</code></td></tr>\n' \
-                        % (b2a_hex(name), c, d))
+		    if self.allowed != None and self.allowed.has_key(name):
+			s.write('<tr><td><code>%s</code></td><td><code>%s</code></td><td align="right"><code>%i</code></td><td align="right"><code>%i</code></td></tr>\n' \
+			    % (b2a_hex(name), self.allowed[name], c, d))
+
+		    elif self.allowed == None:
+			s.write('<tr><td><code>%s</code></td><td align="right"><code>%i</code></td><td align="right"><code>%i</code></td></tr>\n' \
+			    % (b2a_hex(name), c, d))
                 s.write('</table>\n' \
                     '<ul>\n' \
                     '<li><em>info hash:</em> SHA1 hash of the "info" section of the metainfo (*.torrent)</li>\n' \
