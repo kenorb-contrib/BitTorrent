@@ -6,18 +6,18 @@ def decode_int(x, f):
     n = long(x[f:newf])
     if x[f] == '0' and n != 0:
         raise ValueError
-    if n == 0 and newf != f+1:
+    if x[f:newf] != str(n):
         raise ValueError
     return (n, newf+1)
 
 def decode_string(x, f):
     colon = x.index(':', f)
     n = long(x[f:colon])
-    if x[f] == '0' and n != 0:
+    if n < 0:
         raise ValueError
-    if n == 0 and colon != f + 1:
+    if x[f:colon] != str(n):
         raise ValueError
-    colon = colon + 1
+    colon += 1
     return (x[colon:colon+n], colon+n)
 
 def decode_list(x, f):
@@ -202,6 +202,16 @@ def test_bdecode():
         pass
     try:
         bdecode('00:')
+        assert 0
+    except ValueError:
+        pass
+    try:
+        bdecode('l-3:e')
+        assert 0
+    except ValueError:
+        pass
+    try:
+        bdecode('i-03e')
         assert 0
     except ValueError:
         pass
