@@ -326,7 +326,7 @@ class Tracker:
             local_override = 0
             if params.has_key('ip'):
                 is_local = is_local_ip(ip)
-                if not self.only_local_override_ip or is_local:
+                if (not self.only_local_override_ip or is_local) and is_valid_ipv4(params['ip']):
                     ip = params['ip']
                     if is_local:
                         local_override = 1
@@ -443,6 +443,14 @@ class Tracker:
                     del self.times[key]
                     del self.downloads[key]
         self.rawserver.add_task(self.expire_downloaders, self.timeout_downloaders_interval)
+
+def is_valid_ipv4(ip):
+    try:
+        x = compact_peer_info(x, 0)
+        if len(x) != 6:
+            return False
+    except ValueError:
+        return False
 
 def is_local_ip(ip):
     try:
