@@ -2,58 +2,68 @@
 # see LICENSE.txt for license information
 
 def decode_int(x, f):
+    f += 1
     newf = x.index('e', f)
     n = long(x[f:newf])
-    if x[f] == '0' and n != 0:
-        raise ValueError
-    if x[f:newf] != str(n):
+    try:
+        n = int(x[f:newf])
+    except (OverflowError, ValueError):
+        n = long(x[f:newf])
+    if x[f] == '-':
+        if x[f + 1] == '0':
+            raise ValueError
+    elif x[f] == '0' and newf != f+1:
         raise ValueError
     return (n, newf+1)
 
 def decode_string(x, f):
     colon = x.index(':', f)
-    n = long(x[f:colon])
-    if n < 0:
-        raise ValueError
-    if x[f:colon] != str(n):
+    try:
+        n = int(x[f:colon])
+    except (OverflowError, ValueError):
+        n = long(x[f:colon])
+    if x[f] == '0' and colon != f+1:
         raise ValueError
     colon += 1
     return (x[colon:colon+n], colon+n)
 
 def decode_list(x, f):
-    r = []
+    r, f = [], f+1
     while x[f] != 'e':
-        v, f = bdecode_rec(x, f)
+        v, f = decode_func[x[f]](x, f)
         r.append(v)
     return (r, f + 1)
 
 def decode_dict(x, f):
-    r = {}
+    r, f = {}, f+1
     lastkey = None
     while x[f] != 'e':
         k, f = decode_string(x, f)
-        if lastkey is not None and lastkey >= k:
+        if lastkey >= k:
             raise ValueError
         lastkey = k
-        v, f = bdecode_rec(x, f)
-        r[k] = v
+        r[k], f = decode_func[x[f]](x, f)
     return (r, f + 1)
 
-def bdecode_rec(x, f):
-    t = x[f]
-    if t == 'i':
-        return decode_int(x, f + 1)
-    elif t == 'l':
-        return decode_list(x, f + 1)
-    elif t == 'd':
-        return decode_dict(x, f + 1)
-    else:
-        return decode_string(x, f)
+decode_func = {}
+decode_func['l'] = decode_list
+decode_func['d'] = decode_dict
+decode_func['i'] = decode_int
+decode_func['0'] = decode_string
+decode_func['1'] = decode_string
+decode_func['2'] = decode_string
+decode_func['3'] = decode_string
+decode_func['4'] = decode_string
+decode_func['5'] = decode_string
+decode_func['6'] = decode_string
+decode_func['7'] = decode_string
+decode_func['8'] = decode_string
+decode_func['9'] = decode_string
 
 def bdecode(x):
     try:
-        r, l = bdecode_rec(x, 0)
-    except IndexError:
+        r, l = decode_func[x[0]](x, 0)
+    except (IndexError, KeyError):
         raise ValueError
     if l != len(x):
         raise ValueError
@@ -215,6 +225,7 @@ def test_bdecode():
         assert 0
     except ValueError:
         pass
+    bdecode('d0:i3ee')
 
 class Bencached(object):
     __slots__ = ['bencoded']
@@ -277,3 +288,9 @@ def test_bencode():
         return
     assert 0
 
+try:
+    import psyco
+    psyco.bind(bdecode)
+    psyco.bind(bencode)
+except ImportError:
+    pass
