@@ -40,6 +40,7 @@ defaults = [
     ('parse_allowed_interval', None, 15, 'minutes between reloading of allowed_dir'),
     ('show_names', None, 1, 'whether to display names from allowed dir'),
     ('favicon', None, '', 'file containing x-icon data to return when browser requests favicon.ico'),
+    ('only_local_override_ip', None, 1, "ignore the ip GET parameter from machines which aren't on local network IPs")
     ]
 
 def downloaderfiletemplate(x):
@@ -112,6 +113,7 @@ class Tracker:
         self.reannounce_interval = config['reannounce_interval']
         self.save_dfile_interval = config['save_dfile_interval']
         self.show_names = config['show_names']
+        self.only_local_override_ip = config['only_local_override_ip']
         rawserver.add_task(self.save_dfile, self.save_dfile_interval)
         self.prevtime = time()
         self.timeout_downloaders_interval = config['timeout_downloaders_interval']
@@ -204,7 +206,8 @@ class Tracker:
                     'Requested download is not authorized for use with this tracker.'}))
             ip = connection.get_ip()
             if params.has_key('ip'):
-                ip = params['ip']
+                if not self.only_local_override_ip or ip[:3] == '10:' or ip[:4] in ('192.', '169.', '127.', '172.'):
+                    ip = params['ip']
             if params.has_key('event') and params['event'] not in ['started', 'completed', 'stopped']:
                 raise ValueError, 'invalid event'
             port = long(params.get('port', ''))
