@@ -182,7 +182,7 @@ void gkey(BYTE *key, WORD *fkey)
  * Instead of just one ftable[], there could be 4, the other     *
  * 3 pre-rotated to save the ROTL8, ROTL16 and ROTL24 overhead */ 
 
-void inline encrypt(BYTE *source, BYTE *buff, WORD *fkey)
+void __inline encrypt(BYTE *source, BYTE *buff, WORD *fkey)
 {
     int i,j,k,m;
     WORD a[8],b[8],*x,*y,*t;
