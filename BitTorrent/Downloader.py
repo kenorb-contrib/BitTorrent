@@ -15,7 +15,7 @@ class Download:
         self.interested = false
         self.max_rate_period = max_rate_period
         self.total_down = total_down
-        self.ratesince = time() - 5.0
+        self.ratesince = time()
         self.lastin = self.ratesince
         self.rate = 0.0
         data.connected(self)
