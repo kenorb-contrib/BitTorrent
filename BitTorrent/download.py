@@ -195,7 +195,7 @@ def download(params, filefunc, statusfunc, resultfunc, doneflag, cols):
     ratemeasure = RateMeasure(storagewrapper.get_amount_left())
     downloader = Downloader(storagewrapper, 
         config['download_slice_size'], config['max_rate_period'],
-        len(info['pieces']), total_down)
+        len(info['pieces']), total_down, ratemeasure.data_came_in)
     connecter = Connecter(make_upload, downloader.make_download, choker,
         len(info['pieces']))
     encrypter = Encrypter(connecter, rawserver, 

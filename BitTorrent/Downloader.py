@@ -54,6 +54,7 @@ class SingleDownload:
         return self.interested
 
     def update_rate(self, amount):
+        self.downloader.measurefunc(amount)
         self.downloader.total_down[0] += amount
         t = time()
         self.rate = (self.rate * (self.lastin - self.ratesince) + 
@@ -116,13 +117,14 @@ class SingleDownload:
         self.downloader.adjust(self)
 
 class Downloader:
-    def __init__(self, storage, backlog, 
-            max_rate_period, numpieces, total_down = [0l]):
+    def __init__(self, storage, backlog, max_rate_period, numpieces, 
+            total_down = [0l], measurefunc = lambda x: None):
         self.storage = storage
         self.backlog = backlog
         self.max_rate_period = max_rate_period
         self.total_down = total_down
         self.numpieces = numpieces
+        self.measurefunc = measurefunc
         self.index_to_priority = range(numpieces)
         shuffle(self.index_to_priority)
         self.priority_to_index = [None] * numpieces
