@@ -73,7 +73,8 @@ t = compile_template({'piece length': 1,
 t2 = compile_template([{'type': 'success', 'your ip': string_template}, 
     {'type': 'failure', 'reason': string_template}])
 
-def download(params, filefunc, statusfunc, errorfunc, doneflag, cols):
+def download(params, filefunc, statusfunc, errorfunc, doneflag, cols,
+        close_at_end = false):
     try:
         config, garbage = parseargs(params, defaults, 0, 0)
         if config['response'] == '' and config['responsefile'] == '' and config['url'] == '':
@@ -136,14 +137,17 @@ def download(params, filefunc, statusfunc, errorfunc, doneflag, cols):
             statusfunc(timeEst = 'allocating new file...')
             resuming = false
         r = [0]
-        def finished(result, statusfunc = statusfunc, errorfunc = errorfunc, doneflag = doneflag, r = r):
+        def finished(result, statusfunc = statusfunc, 
+                errorfunc = errorfunc, doneflag = doneflag, 
+                r = r, close_at_end = close_at_end):
             if result:
                 r[0] = 1
                 statusfunc(timeEst = 'Download Succeeded!', percentDone = 100,
                     cancelText='Finish')
             else:
-                statusfunc(timeEst = 'Download Failed', cancelText='Finish')
-            doneflag.set()
+                statusfunc(timeEst = 'Download Failed', cancelText='Close')
+            if close_at_end:
+                doneflag.set()
         blobs = SingleBlob(file, file_length, response['pieces'], 
             response['piece length'], finished, open, path.exists, path.getsize)
         if len(blobs.get_list_of_blobs_I_want()) == 0:
