@@ -30,11 +30,12 @@ def completedir(files, url, flag = Event(), vc = dummy, fc = dummy, piece_len_po
         subtotal[0] += x
         vc(float(subtotal[0]) / total)
     for i in togen:
+        t = split(i)
+        if t[1] == '':
+            i = t[0]
         fc(i)
         try:
-            t = split(i)[-1] 
-            if t not in ignore and t[0] != '.':
-                make_meta_file(i, url, flag = flag, progress = callback, progress_percent=0, piece_len_exp = piece_len_pow2)
+            make_meta_file(i, url, flag = flag, progress = callback, progress_percent=0, piece_len_exp = piece_len_pow2)
         except ValueError:
             print_exc()
 
