@@ -1,7 +1,7 @@
 # Written by Bram Cohen
 # see LICENSE.txt for license information
 
-from random import shuffle
+from random import randrange
 true = 1
 false = 0
 
@@ -49,10 +49,12 @@ class PiecePicker:
                     best = i
                     bestnum = self.numinterests[i]
             for i in self.interests[1:bestnum]:
-                shuffle(i)
+                r = []
                 for j in i:
                     if havefunc(j):
-                        return j
+                        r.append(j)
+                if r:
+                    return r[randrange(len(r))]
             return best
         else:
             for i in self.started:
@@ -61,10 +63,12 @@ class PiecePicker:
             x = []
             for i in self.interests[1:]:
                 x.extend(i)
-            shuffle(x)
+            r = []
             for j in x:
                 if havefunc(j):
-                    return j
+                    r.append(j)
+            if r:
+                return r[randrange(len(r))]
             return None
 
 def test_requested():
