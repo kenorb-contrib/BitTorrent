@@ -74,6 +74,8 @@ class Connection:
             self.id = s
             if self.locally_initiated:
                 connection.write(self.encoder.my_id)
+            else:
+                self.encoder.everinc = True
         else:
             if s != self.id:
                 return None
@@ -185,7 +187,6 @@ class Encoder:
         return self.everinc
 
     def external_connection_made(self, connection):
-        self.everinc = True
         self.connections[connection] = Connection(self, 
             connection, None)
 
