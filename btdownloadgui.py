@@ -52,7 +52,6 @@ class DownloadInfoFrame:
         self.frame = frame
         self.flag = flag
         self.fin = false
-        self.shown = false
 
         panel = wxPanel(frame, -1)
         colSizer = wxFlexGridSizer(cols = 1, vgap = 3)
@@ -108,6 +107,7 @@ class DownloadInfoFrame:
         EVT_CLOSE(frame, self.done)
         EVT_BUTTON(frame, self.cancelButton.GetId(), self.done)
         EVT_INVOKE(frame, self.onInvoke)
+        self.frame.Show()
 
     def donate(self, event):
         Thread(target = self.donate2).start()
@@ -166,8 +166,6 @@ class DownloadInfoFrame:
         self.downRateText.SetLabel('')
 
     def onErrorEvent(self, errormsg):
-        if not self.shown:
-            self.frame.Show(true)
         self.errorText.SetLabel(strftime('ERROR (%I:%M %p) -\n') + errormsg)
 
     def chooseFile(self, default, size, saveas, dir):
@@ -192,8 +190,6 @@ class DownloadInfoFrame:
             self.fileDestText.SetLabel(dl.GetPath())
             self.filename = default
             self.frame.SetTitle(default + '- BitTorrent ' + version)
-            self.shown = true
-            self.frame.Show(true)
         f.set()
 
     def newpath(self, path):
