@@ -31,7 +31,7 @@ class StorageWrapper:
         self.finished = finished
         self.failed = failed
         self.numactive = [0] * len(hashes)
-        self.inactive_requests = [None] * len(hashes)
+        self.inactive_requests = [1] * len(hashes)
         self.amount_inactive = self.total_length
         self.endgame = false
         self.have = [false] * len(hashes)
@@ -56,7 +56,7 @@ class StorageWrapper:
             self.have[piece] = true
             self.amount_left -= self._piecelen(piece)
             self.amount_inactive -= self._piecelen(piece)
-            self.inactive_requests[piece] = 0
+            self.inactive_requests[piece] = None
             self.waschecked[piece] = check_hashes
         lastlen = self._piecelen(len(hashes) - 1)
         for i in xrange(len(hashes)):
@@ -120,11 +120,11 @@ class StorageWrapper:
         return self.have[index]
 
     def do_I_have_requests(self, index):
-        return self.inactive_requests[index] not in ([], 0)
+        return not not self.inactive_requests[index]
 
     def new_request(self, index):
         # returns (begin, length)
-        if self.inactive_requests[index] is None:
+        if self.inactive_requests[index] == 1:
             self._make_inactive(index)
         self.numactive[index] += 1
         rs = self.inactive_requests[index]
@@ -176,14 +176,14 @@ class StorageWrapper:
         if not self.inactive_requests[index] and not self.numactive[index]:
             if sha(self.storage.read(self.piece_size * self.places[index], self._piecelen(index))).digest() == self.hashes[index]:
                 self.have[index] = true
-                self.inactive_requests[index] = 0
+                self.inactive_requests[index] = None
                 self.waschecked[index] = true
                 self.amount_left -= self._piecelen(index)
                 if self.amount_left == 0:
                     self.finished()
             else:
                 self.data_flunked(self._piecelen(index))
-                self.inactive_requests[index] = None
+                self.inactive_requests[index] = 1
                 self.amount_inactive += self._piecelen(index)
                 return false
         return true
@@ -246,7 +246,6 @@ def test_basic():
     assert sw.get_amount_left() == 3
     assert not sw.do_I_have_anything()
     assert sw.get_have_list() == [false]
-    print sw.amount_left, sw.inactive_requests
     assert sw.do_I_have_requests(0)
     x = []
     x.append(sw.new_request(0))
