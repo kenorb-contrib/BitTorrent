@@ -137,7 +137,7 @@ class StorageWrapper:
 
     def piece_came_in(self, index, begin, piece):
         try:
-            self._piece_came_in(index, begin, piece)
+            return self._piece_came_in(index, begin, piece)
         except IOError, e:
             self.failed('IO Error ' + str(e))
 
