@@ -12,17 +12,22 @@ from copy import copy
 from string import strip
 from BitTorrent.bencode import bencode
 from BitTorrent.btformats import check_info
+from BitTorrent.parseargs import parseargs, formatDefinitions
 from threading import Event
+
+defaults = [
+    ('piece_size_pow2', None, 18,
+        "which power of 2 to set the piece size to"),
+    ]
 
 ignore = ['core', 'CVS'] # ignoring these files could be trouble
 
 def dummy(v):
     pass
 
-def make_meta_file(file, url, piece_length = None, 
+def make_meta_file(file, url, piece_len_exp = 18, 
         flag = Event(), progress = dummy, progress_percent=1):
-    if piece_length is None:
-        piece_length = 2 ** 18
+    piece_length = 2 ** piece_len_exp
     a, b = split(file)
     if b == '':
         f = a + '.torrent'
@@ -125,4 +130,15 @@ def prog(amount):
     print '%.1f%% complete\r' % (amount * 100),
 
 if __name__ == '__main__':
-    make_meta_file(argv[1], argv[2], progress = prog)
+    if len(argv) < 3:
+        print 'usage is -'
+        print argv[0] + ' file trackerurl [params]'
+        print
+        print formatDefinitions(defaults, 80)
+    else:
+        try:
+            config, args = parseargs(argv[3:], defaults, 0, 0)
+            make_meta_file(argv[1], argv[2], config['piece_size_pow2'], progress = prog)
+        except ValueError, e:
+            print 'error: ' + str(e)
+            print 'run with no args for parameter explanations'
