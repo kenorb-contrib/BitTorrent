@@ -69,8 +69,7 @@ class EncryptedConnection:
         else:
             if s != self.id:
                 return None
-        self.complete = true
-        self.encrypter.connecter.connection_made(self)
+        self.complete = self.encrypter.got_id(self):
         return 4, self.read_len
 
     def read_len(self, s):
@@ -156,7 +155,21 @@ class Encrypter:
             self.connections[c] = EncryptedConnection(self, c, id)
         except socketerror:
             pass
+    
+    def _start_connection(self, dns, id):
+        def foo(self=self, dns=dns, id=id):
+            self.start_connection(dns, id)
         
+        self.schedulefunc(foo, 0)
+        
+    def got_id(self, connection):
+        for v in self.connections.values():
+            if connection is not v and connection.id == v.id:
+                connection.close()
+                return false
+        self.connecter.connection_made(connection)
+        return true
+
     def external_connection_made(self, connection):
         self.connections[connection] = EncryptedConnection(self, 
             connection, None)
