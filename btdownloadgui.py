@@ -170,9 +170,9 @@ class DownloadInfoFrame:
         if upRate is not None:
             self.upRateText.SetLabel('%.0f KiB/s' % (float(upRate) / (1 << 10)))
         if downTotal is not None:
-            self.downTotalText.SetLabel('%.1f MiB/s' % (downTotal))
+            self.downTotalText.SetLabel('%.1f M' % (downTotal))
         if upTotal is not None:
-            self.upTotalText.SetLabel('%.1f MiB/s' % (upTotal))
+            self.upTotalText.SetLabel('%.1f M' % (upTotal))
         self.last_update_time = time()
 
     def finished(self):
