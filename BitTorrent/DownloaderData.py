@@ -19,12 +19,24 @@ class DownloaderData:
         self.downloads = {}
         
     def cleared(self, d):
+        all = {}
         for blob, begin, length in self.downloads[d][0]:
             active, inactive = self.priority_dict[blob]
             active.remove((begin, length))
             inactive.append((begin, length))
+            all[blob] = 1
         del self.downloads[d][0][:]
-        return self.downloads.keys()
+        affected = []
+        all = all.keys()
+        for download, stuff in self.downloads.items():
+            if download is d:
+                continue
+            have = stuff[1]
+            for b in all:
+                if have.has_key(b):
+                    affected.append(download)
+                    break
+        return affected
         
     def do_I_want_more(self, d):
         have = self.downloads[d][1]
@@ -119,9 +131,9 @@ class DownloaderData:
         self.downloads[d] = ([], {})
         
     def disconnected(self, d):
-        self.cleared(d)
+        r = self.cleared(d)
         del self.downloads[d]
-        return self.downloads.keys()
+        return r
 
 class DummyBlobs:
     def __init__(self, blobs, prefs = None):
@@ -234,7 +246,8 @@ def test_normal():
     assert not dd.do_I_want_more(b)
     assert not dd.do_I_want_more(c)
 
-    dd.disconnected(a)
+    r = dd.disconnected(a)
+    assert r == [b, c] or r == [c, b]
 
     assert dd.do_I_want_more(b)
     assert dd.do_I_want_more(c)
