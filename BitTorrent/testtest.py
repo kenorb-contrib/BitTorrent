@@ -15,14 +15,21 @@ import traceback
 import sys
 import types
 
-def try_all(excludes = []):
+def try_all(excludes = [], excluded_paths=[]):
     """
     tests all imported modules
-    
-    takes an optional list of module names and/or module objects to skip over
+
+    takes an optional list of module names and/or module objects to skip over.
+    modules from files under under any of excluded_paths are also skipped.
     """
     failed = []
     for modulename, module in sys.modules.items():
+        # skip builtins
+        if not hasattr(module, '__file__'):
+            continue
+        # skip modules under any of excluded_paths
+        if [p for p in excluded_paths if module.__file__.startswith(p)]:
+            continue
         if modulename not in excludes and module not in excludes:
             try_module(module, modulename, failed)
     print_failed(failed)
