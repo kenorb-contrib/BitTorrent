@@ -108,6 +108,7 @@ class RawServer:
                 self._close_socket(k)
 
     def bind(self, port, bind = '', reuse = False):
+        self.bindaddr = bind
         server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         if reuse:
             server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -122,6 +123,8 @@ class RawServer:
             handler = self.handler
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.setblocking(0)
+        here_host, here_port = sock.getsockname()
+        sock.bind((self.bindaddr, here_port))
         try:
             sock.connect_ex(dns)
         except socket.error:

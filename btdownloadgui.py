@@ -120,6 +120,7 @@ class DownloadInfoFrame:
         EVT_CLOSE(frame, self.done)
         EVT_BUTTON(frame, self.cancelButton.GetId(), self.done)
         EVT_INVOKE(frame, self.onInvoke)
+        self.frame.SetIcon(wxIcon(join(split(argv[0])[0], 'bittorrent.ico'), wxBITMAP_TYPE_ICO))
         self.frame.Show()
 
     def donate(self, event):
