@@ -38,6 +38,7 @@ defaults = [
         'minimum time it must have been since the last flush to do another one'),
     ('allowed_dir', None, '', 'only allow downloads for .torrents in this dir'),
     ('parse_allowed_interval', None, 15, 'minutes between reloading of allowed_dir'),
+    ('show_names', None, 1, 'whether to display names from allowed dir'),
     ]
 
 def downloaderfiletemplate(x):
@@ -102,6 +103,7 @@ class Tracker:
                     self.times[x][y] = 0
         self.reannounce_interval = config['reannounce_interval']
         self.save_dfile_interval = config['save_dfile_interval']
+        self.show_names = config['show_names']
         rawserver.add_task(self.save_dfile, self.save_dfile_interval)
         self.prevtime = time()
         self.timeout_downloaders_interval = config['timeout_downloaders_interval']
@@ -148,7 +150,7 @@ class Tracker:
                     l = self.downloads[name]
                     c = len([1 for i in l.values() if i['left'] == 0])
                     d = len(l) - c
-                    if self.allowed != None and self.allowed.has_key(name):
+                    if self.allowed != None and self.show_names and self.allowed.has_key(name):
                         s.write('<tr><td><code>%s</code></td><td><code>%s</code></td><td align="right"><code>%i</code></td><td align="right"><code>%i</code></td></tr>\n' \
                             % (b2a_hex(name), self.allowed[name], c, d))
 
