@@ -1,25 +1,24 @@
 # Written by Petru Paler
 # see LICENSE.txt for license information
 
-from re import compile
-
-int_filter = compile('(0|-?[1-9][0-9]*)e')
-
 def decode_int(x, f):
-    m = int_filter.match(x, f)
-    if m is None:
+    newf = x.index('e', f)
+    n = long(x[f:newf])
+    if x[f] == '0' and n != 0:
         raise ValueError
-    return (long(m.group(1)), m.end())
-
-string_filter = compile('(0|[1-9][0-9]*):')
+    if n == 0 and newf != f+1:
+        raise ValueError
+    return (n, newf+1)
 
 def decode_string(x, f):
-    m = string_filter.match(x, f)
-    if m is None:
+    colon = x.index(':', f)
+    n = long(x[f:colon])
+    if x[f] == '0' and n != 0:
         raise ValueError
-    l = int(m.group(1))
-    s = m.end()
-    return (x[s:s+l], s + l)
+    if n == 0 and colon != f + 1:
+        raise ValueError
+    colon = colon + 1
+    return (x[colon:colon+n], colon+n)
 
 def decode_list(x, f):
     r = []
@@ -198,6 +197,11 @@ def test_bdecode():
         pass
     try:
         bdecode('d0:')
+        assert 0
+    except ValueError:
+        pass
+    try:
+        bdecode('00:')
         assert 0
     except ValueError:
         pass
