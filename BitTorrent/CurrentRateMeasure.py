@@ -6,9 +6,8 @@ true = 1
 false = 0
 
 class Measure:
-    def __init__(self, max_rate_period, max_pause, fudge = 1):
+    def __init__(self, max_rate_period, fudge = 1):
         self.max_rate_period = max_rate_period
-        self.max_pause = max_pause
         self.ratesince = time() - fudge
         self.last = self.ratesince
         self.rate = 0.0
@@ -24,8 +23,7 @@ class Measure:
             self.ratesince = t - self.max_rate_period
 
     def get_rate(self):
-        if time() - self.last > self.max_pause:
-            self.update_rate(0)
+        self.update_rate(0)
         return self.rate
 
     def get_rate_noupdate(self):

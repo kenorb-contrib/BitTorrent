@@ -308,7 +308,7 @@ def test_operation():
     cs = []
     co = Connecter(lambda c, events = events: DummyUpload(events), 
         DummyDownloader(events), DummyChoker(events, cs), 3, 
-        lambda: false, None, Measure(10, 5))
+        lambda: false, None, Measure(10))
     assert events == []
     assert cs == []
     

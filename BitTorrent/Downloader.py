@@ -17,7 +17,7 @@ class SingleDownload:
         self.interested = false
         self.active_requests = []
         self.want_priorities = PriorityBitField(downloader.numpieces)
-        self.measure = Measure(downloader.max_rate_period, downloader.max_pause)
+        self.measure = Measure(downloader.max_rate_period)
         self.have = [false] * downloader.numpieces
 
     def disconnected(self):
@@ -109,12 +109,11 @@ class SingleDownload:
         self.downloader.adjust(self)
 
 class Downloader:
-    def __init__(self, storage, backlog, max_rate_period, max_pause, numpieces, 
+    def __init__(self, storage, backlog, max_rate_period, numpieces, 
             downmeasure, measurefunc = lambda x: None):
         self.storage = storage
         self.backlog = backlog
         self.max_rate_period = max_rate_period
-        self.max_pause = max_pause
         self.downmeasure = downmeasure
         self.numpieces = numpieces
         self.measurefunc = measurefunc
@@ -196,7 +195,7 @@ class DummyConnection:
 
 def test_stops_at_backlog():
     ds = DummyStorage([[(0, 2), (2, 2), (4, 2), (6, 2)]])
-    d = Downloader(ds, 2, 15, 5, 1, Measure(15, 5))
+    d = Downloader(ds, 2, 15, 1, Measure(15))
     events = []
     sd = d.make_download(DummyConnection(events))
     assert events == []
@@ -220,7 +219,7 @@ def test_stops_at_backlog():
 
 def test_got_have_single():
     ds = DummyStorage([[(0, 2)]])
-    d = Downloader(ds, 2, 15, 5, 1, Measure(15, 5))
+    d = Downloader(ds, 2, 15, 1, Measure(15))
     events = []
     sd = d.make_download(DummyConnection(events))
     assert events == []
@@ -238,7 +237,7 @@ def test_got_have_single():
 
 def test_choke_clears_active():
     ds = DummyStorage([[(0, 2)]])
-    d = Downloader(ds, 2, 15, 5, 1, Measure(15, 5))
+    d = Downloader(ds, 2, 15, 1, Measure(15))
     events = []
     sd1 = d.make_download(DummyConnection(events))
     sd2 = d.make_download(DummyConnection(events))
@@ -268,7 +267,7 @@ def test_choke_clears_active():
     assert ds.active == [[]]
 
 def test_introspect_priority_list():
-    d = Downloader(None, 2, 15, 5, 10, Measure(15, 5))
+    d = Downloader(None, 2, 15, 10, Measure(15))
     for i in xrange(10):
         for j in xrange(i):
             assert d.index_to_priority[i] != d.index_to_priority[j]

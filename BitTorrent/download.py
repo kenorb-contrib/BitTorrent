@@ -56,8 +56,6 @@ defaults = [
         'time to wait between checking if any connections have timed out'),
     ('max_slice_length', None, 2 ** 17,
         "maximum length slice to send to peers, larger requests are ignored"),
-    ('max_rate_recalculate_interval', None, 5.0,
-        "maximum amount of time to let a connection pause before reducing it's rate"),
     ('max_rate_period', None, 20.0,
         "maximum amount of time to guess the current rate estimate represents"),
     ('bind', None, '', 
@@ -194,21 +192,19 @@ def download(params, filefunc, statusfunc, finfunc, errorfunc, doneflag, cols):
             return c.get_upload().measure.get_rate()
         return c.get_download().measure.get_rate()
     choker = Choker(config['max_uploads'], rawserver.add_task, preference)
-    upmeasure = Measure(config['max_rate_period'], config['max_rate_recalculate_interval'],
+    upmeasure = Measure(config['max_rate_period'], 
         config['upload_rate_fudge'])
-    downmeasure = Measure(config['max_rate_period'], config['max_rate_recalculate_interval'])
+    downmeasure = Measure(config['max_rate_period'])
     def make_upload(connection, choker = choker, 
             storagewrapper = storagewrapper, 
             max_slice_length = config['max_slice_length'],
             max_rate_period = config['max_rate_period'],
-            fudge = config['upload_rate_fudge'],
-            max_pause = config['max_rate_recalculate_interval']):
+            fudge = config['upload_rate_fudge']):
         return Upload(connection, choker, storagewrapper, 
-            max_slice_length, max_rate_period, fudge, max_pause)
+            max_slice_length, max_rate_period, fudge)
     ratemeasure = RateMeasure(storagewrapper.get_amount_left())
     downloader = Downloader(storagewrapper, 
         config['request_backlog'], config['max_rate_period'],
-        config['max_rate_recalculate_interval'], 
         len(pieces), downmeasure, ratemeasure.data_came_in)
     connecter = Connecter(make_upload, downloader, choker,
         len(pieces), storagewrapper.is_everything_pending, EndgameDownloader,

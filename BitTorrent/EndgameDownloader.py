@@ -17,7 +17,7 @@ class SingleDownload:
             self.choked = true
             self.interested = false
             self.have = [false] * downloader.numpieces
-            self.measure = Measure(downloader.max_rate_period, downloader.max_pause)
+            self.measure = Measure(downloader.max_rate_period)
         else:
             self.connection = old.connection
             self.connection.set_download(self)
@@ -136,7 +136,6 @@ class EndgameDownloader:
         self.storage = old.storage
         self.backlog = old.backlog
         self.max_rate_period = old.max_rate_period
-        self.max_pause = old.max_pause
         self.numpieces = old.numpieces
         self.downmeasure = old.downmeasure
         self.measurefunc = old.measurefunc
@@ -201,16 +200,15 @@ class DummyDownload:
         self.interested = interested
         self.have = have
         self.active_requests = active_requests
-        self.measure = Measure(15, 5)
+        self.measure = Measure(15)
 
 class DummyDownloader:
     def __init__(self, storage, numpieces, downloads):
         self.storage = storage
         self.backlog = 5
         self.max_rate_period = 50
-        self.max_pause = 10
         self.numpieces = numpieces
-        self.downmeasure = Measure(15, 5)
+        self.downmeasure = Measure(15)
         self.measurefunc = lambda x: None
         self.downloads = downloads
 
