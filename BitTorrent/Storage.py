@@ -12,7 +12,7 @@ def dummy_status(fractionDone = None, activity = None):
     pass
 
 class Storage:
-    def __init__(self, files, open, exists, getsize, statusfunc):
+    def __init__(self, files, open, exists, getsize, statusfunc, alloc_pause = 3):
         # can raise IOError and ValueError
         self.ranges = []
         total = 0
@@ -55,7 +55,7 @@ class Storage:
                 for i in range(l, length, interval)[1:] + [length-1]:
                     h.seek(i)
                     h.write(chr(1))
-                    if time() - tstart > 7:
+                    if time() - tstart > alloc_pause:
                         if not hit:
                             statusfunc(activity = 'allocating')
                             hit = true

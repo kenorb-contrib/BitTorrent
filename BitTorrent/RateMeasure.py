@@ -7,17 +7,26 @@ false = 0
 
 class RateMeasure:
     def __init__(self, left):
-        self.start = time()
-        self.last = self.start
+        self.start = None
+        self.last = None
         self.rate = 0
         self.remaining = None
         self.left = left
         self.broke = false
+        self.got_anything = false
 
     def data_came_in(self, amount):
+        if not self.got_anything:
+            self.got_anything = true
+            self.start = time() - 2
+            self.last = self.start
+            self.left -= amount
+            return
         self.update(time(), amount)
 
     def get_time_left(self):
+        if not self.got_anything:
+            return None
         t = time()
         if t - self.last > 15:
             self.update(t, 0)

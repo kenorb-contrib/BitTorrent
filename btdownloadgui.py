@@ -42,7 +42,7 @@ class InvokeEvent(wxPyEvent):
 
 class DownloadInfoFrame:
     def __init__(self, flag):
-        frame = wxFrame(None, -1, 'BitTorrent download', size = wxSize(550, 300))
+        frame = wxFrame(None, -1, 'BitTorrent download', size = wxSize(350, 200))
         self.frame = frame
         self.flag = flag
         self.fin = false
@@ -50,7 +50,7 @@ class DownloadInfoFrame:
         self.showing_error = false
 
         panel = wxPanel(frame, -1)
-        colSizer = wxFlexGridSizer(cols = 1, vgap = 7)
+        colSizer = wxFlexGridSizer(cols = 1, vgap = 3)
 
         colSizer.Add(wxStaticText(panel, -1, 'Saving:'), 0, wxEXPAND)
 
@@ -60,7 +60,7 @@ class DownloadInfoFrame:
         self.gauge = wxGauge(panel, -1, range = 1000, style = wxGA_SMOOTH)
         colSizer.Add(self.gauge, 0, wxEXPAND)
 
-        gridSizer = wxFlexGridSizer(cols = 2, vgap = 7, hgap = 8)
+        gridSizer = wxFlexGridSizer(cols = 2, vgap = 3, hgap = 8)
         
         gridSizer.Add(wxStaticText(panel, -1, 'Estimated time left:'))
         self.timeEstText = wxStaticText(panel, -1, '')
@@ -88,7 +88,7 @@ class DownloadInfoFrame:
         colSizer.AddGrowableRow(4)
 
         border = wxBoxSizer(wxHORIZONTAL)
-        border.Add(colSizer, 1, wxEXPAND | wxALL, 25)
+        border.Add(colSizer, 1, wxEXPAND | wxALL, 4)
         panel.SetSizer(border)
         panel.SetAutoLayout(true)
         
@@ -117,9 +117,9 @@ class DownloadInfoFrame:
         if activity is not None and not self.fin:
             self.timeEstText.SetLabel(activity)
         if downRate is not None:
-            self.downRateText.SetLabel('%.1f kB/s' % (float(downRate) / (1 << 10)))
+            self.downRateText.SetLabel('%.0f kB/s' % (float(downRate) / (1 << 10)))
         if upRate is not None:
-            self.upRateText.SetLabel('%.1f kB/s' % (float(upRate) / (1 << 10)))
+            self.upRateText.SetLabel('%.0f kB/s' % (float(upRate) / (1 << 10)))
 
     def finished(self):
         self.fin = true
