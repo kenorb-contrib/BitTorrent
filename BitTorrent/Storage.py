@@ -75,17 +75,6 @@ class Storage:
             p += 1
         return r
 
-    def _intervals2(self, pos, amount):
-        r = []
-        stop = pos + amount
-        for begin, end, file in self.ranges:
-            if end <= pos:
-                continue
-            if begin >= stop:
-                break
-            r.append((file, max(pos, begin) - begin, min(end, stop) - begin))
-        return r
-
     def read(self, pos, amount):
         r = StringIO()
         for file, pos, end in self._intervals(pos, amount):
