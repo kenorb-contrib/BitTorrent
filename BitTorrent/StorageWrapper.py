@@ -59,13 +59,13 @@ class StorageWrapper:
                 self._make_inactive(i)
             self.alloclimit = 0
             self.places = {}
-            self.schedulefunc(self._background_allocate, 0)
+            self.schedulefunc(self._background_allocate, .01)
 
     def _background_allocate(self):
         if self.alloclimit < len(self.hashes):
             self._bg()
             self.places[self.alloclimit - 1] = self.alloclimit - 1
-            self.schedulefunc(self._background_allocate, 0)
+            self.schedulefunc(self._background_allocate, .01)
 
     def _bg(self):
         l = min(self.piece_size, self.total_length - self.piece_size * self.alloclimit)
