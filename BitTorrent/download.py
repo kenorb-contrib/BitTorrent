@@ -10,7 +10,7 @@ from StorageWrapper import StorageWrapper
 from Uploader import Upload
 from Downloader import Downloader
 from Connecter import Connecter
-from Encrypter import Encrypter
+from Encrypter import Encoder
 from RawServer import RawServer
 from Rerequester import Rerequester
 from DownloaderFeedback import DownloaderFeedback
@@ -260,12 +260,12 @@ def download(params, filefunc, statusfunc, finfunc, errorfunc, doneflag, cols, p
     connecter = Connecter(make_upload, downloader, choker,
         len(pieces), upmeasure, config['max_upload_rate'] * 1024, rawserver.add_task)
     infohash = sha(bencode(info)).digest()
-    encrypter = Encrypter(connecter, rawserver, 
+    encoder = Encoder(connecter, rawserver, 
         myid, config['max_message_length'], rawserver.add_task, 
         config['keepalive_interval'], infohash, config['max_initiate'])
     rerequest = Rerequester(response['announce'], config['rerequest_interval'], 
         rawserver.add_task, connecter.how_many_connections, 
-        config['min_peers'], encrypter.start_connection, 
+        config['min_peers'], encoder.start_connection, 
         rawserver.external_add_task, storagewrapper.get_amount_left, 
         upmeasure.get_total, downmeasure.get_total, listen_port, 
         config['ip'], myid, infohash, config['http_timeout'], errorfunc, 
@@ -284,12 +284,12 @@ def download(params, filefunc, statusfunc, finfunc, errorfunc, doneflag, cols, p
                     'listen_port' : listen_port, # int
                     'peer_id' : myid, # string
                     'info_hash' : infohash, # string
-                    'start_connection' : encrypter._start_connection # start_connection((<string ip>, <int port>), <peer id>)
+                    'start_connection' : encoder._start_connection # start_connection((<string ip>, <int port>), <peer id>)
                     })
     
     statusfunc({"activity" : 'connecting to peers'})
     ann[0] = rerequest.announce
     rerequest.d(0)
-    rawserver.listen_forever(encrypter)
+    rawserver.listen_forever(encoder)
     storage.close()
     rerequest.announce(2)

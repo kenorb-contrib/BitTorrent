@@ -19,9 +19,9 @@ def tobinary(i):
 
 # header, reserved, download id, my id, [length, message]
 
-class EncryptedConnection:
-    def __init__(self, encrypter, connection, id):
-        self.encrypter = encrypter
+class Connection:
+    def __init__(self, Encoder, connection, id):
+        self.Encoder = Encoder
         self.connection = connection
         self.id = id
         self.locally_initiated = (id != None)
@@ -30,8 +30,9 @@ class EncryptedConnection:
         self.buffer = StringIO()
         self.next_len = 1
         self.next_func = self.read_header_len
-        connection.write(chr(len(protocol_name)) + protocol_name + 
-            (chr(0) * 8) + encrypter.download_id + encrypter.my_id)
+        if self.locally_initiated:
+            connection.write(chr(len(protocol_name)) + protocol_name + 
+                (chr(0) * 8) + self.Encoder.download_id + self.Encoder.my_id)
 
     def get_ip(self):
         return self.connection.get_ip()
@@ -59,8 +60,11 @@ class EncryptedConnection:
         return 20, self.read_download_id
 
     def read_download_id(self, s):
-        if s != self.encrypter.download_id:
+        if s != self.Encoder.download_id:
             return None
+        if not self.locally_initiated:
+            self.connection.write(chr(len(protocol_name)) + protocol_name + 
+                (chr(0) * 8) + self.Encoder.download_id + self.Encoder.my_id)
         return 20, self.read_peer_id
 
     def read_peer_id(self, s):
@@ -69,18 +73,18 @@ class EncryptedConnection:
         else:
             if s != self.id:
                 return None
-        self.complete = self.encrypter.got_id(self)
+        self.complete = self.Encoder.got_id(self)
         return 4, self.read_len
 
     def read_len(self, s):
         l = toint(s)
-        if l > self.encrypter.max_len:
+        if l > self.Encoder.max_len:
             return None
         return l, self.read_message
 
     def read_message(self, s):
         if s != '':
-            self.encrypter.connecter.got_message(self, s)
+            self.Encoder.connecter.got_message(self, s)
         return 4, self.read_len
 
     def read_dead(self, s):
@@ -93,9 +97,9 @@ class EncryptedConnection:
 
     def sever(self):
         self.closed = true
-        del self.encrypter.connections[self.connection]
+        del self.Encoder.connections[self.connection]
         if self.complete:
-            self.encrypter.connecter.connection_lost(self)
+            self.Encoder.connecter.connection_lost(self)
 
     def send_message(self, message):
         self.connection.write(tobinary(len(message)) + message)
@@ -123,7 +127,7 @@ class EncryptedConnection:
                 return
             self.next_len, self.next_func = x
 
-class Encrypter:
+class Encoder:
     def __init__(self, connecter, raw_server, my_id, max_len,
             schedulefunc, keepalive_delay, download_id, 
             max_initiate = 40):
@@ -154,7 +158,7 @@ class Encrypter:
                 return
         try:
             c = self.raw_server.start_connection(dns)
-            self.connections[c] = EncryptedConnection(self, c, id)
+            self.connections[c] = Connection(self, c, id)
         except socketerror:
             pass
     
@@ -173,7 +177,7 @@ class Encrypter:
         return true
 
     def external_connection_made(self, connection):
-        self.connections[connection] = EncryptedConnection(self, 
+        self.connections[connection] = Connection(self, 
             connection, None)
 
     def connection_flushed(self, connection):
@@ -248,18 +252,18 @@ def dummyschedule(a, b):
 def test_messages_in_and_out():
     c = DummyConnecter()
     rs = DummyRawServer()
-    e = Encrypter(c, rs, 'a' * 20, 500, dummyschedule, 30, 'd' * 20)
+    e = Encoder(c, rs, 'a' * 20, 500, dummyschedule, 30, 'd' * 20)
     c1 = DummyRawConnection()
     e.external_connection_made(c1)
-    assert c1.pop() == chr(len(protocol_name)) + protocol_name + \
-        chr(0) * 8 + 'd' * 20 + 'a' * 20
+    assert c1.pop() == ''
     assert c.log == []
     assert rs.connects == []
     assert not c1.closed
 
     e.data_came_in(c1, chr(len(protocol_name)) + protocol_name + \
         chr(0) * 8 + 'd' * 20)
-    assert c1.pop() == ''
+    assert c1.pop() == chr(len(protocol_name)) + protocol_name + \
+        chr(0) * 8 + 'd' * 20 + 'a' * 20
     assert c.log == []
     assert rs.connects == []
     assert not c1.closed
@@ -290,17 +294,18 @@ def test_messages_in_and_out():
 def test_flushed():
     c = DummyConnecter()
     rs = DummyRawServer()
-    e = Encrypter(c, rs, 'a' * 20, 500, dummyschedule, 30, 'd' * 20)
+    e = Encoder(c, rs, 'a' * 20, 500, dummyschedule, 30, 'd' * 20)
     c1 = DummyRawConnection()
     e.external_connection_made(c1)
-    assert c1.pop() == chr(len(protocol_name)) + protocol_name + \
-        chr(0) * 8 + 'd' * 20 + 'a' * 20
+    assert c1.pop() == ''
     assert c.log == []
     assert rs.connects == []
     assert not c1.closed
 
     e.data_came_in(c1, chr(len(protocol_name)) + protocol_name + \
         chr(0) * 8 + 'd' * 20)
+    assert c1.pop() == chr(len(protocol_name)) + protocol_name + \
+        chr(0) * 8 + 'd' * 20 + 'a' * 20
     assert c1.pop() == ''
     assert c.log == []
     assert rs.connects == []
@@ -334,11 +339,10 @@ def test_flushed():
 def test_wrong_header_length():
     c = DummyConnecter()
     rs = DummyRawServer()
-    e = Encrypter(c, rs, 'a' * 20, 500, dummyschedule, 30, 'd' * 20)
+    e = Encoder(c, rs, 'a' * 20, 500, dummyschedule, 30, 'd' * 20)
     c1 = DummyRawConnection()
     e.external_connection_made(c1)
-    assert c1.pop() == chr(len(protocol_name)) + protocol_name + \
-        chr(0) * 8 + 'd' * 20 + 'a' * 20
+    assert c1.pop() == ''
     assert c.log == []
     assert rs.connects == []
     assert not c1.closed
@@ -350,11 +354,10 @@ def test_wrong_header_length():
 def test_wrong_header():
     c = DummyConnecter()
     rs = DummyRawServer()
-    e = Encrypter(c, rs, 'a' * 20, 500, dummyschedule, 30, 'd' * 20)
+    e = Encoder(c, rs, 'a' * 20, 500, dummyschedule, 30, 'd' * 20)
     c1 = DummyRawConnection()
     e.external_connection_made(c1)
-    assert c1.pop() == chr(len(protocol_name)) + protocol_name + \
-        chr(0) * 8 + 'd' * 20 + 'a' * 20
+    assert c1.pop() == ''
     assert c.log == []
     assert rs.connects == []
     assert not c1.closed
@@ -366,24 +369,24 @@ def test_wrong_header():
 def test_wrong_download_id():
     c = DummyConnecter()
     rs = DummyRawServer()
-    e = Encrypter(c, rs, 'a' * 20, 500, dummyschedule, 30, 'd' * 20)
+    e = Encoder(c, rs, 'a' * 20, 500, dummyschedule, 30, 'd' * 20)
     c1 = DummyRawConnection()
     e.external_connection_made(c1)
-    assert c1.pop() == chr(len(protocol_name)) + protocol_name + \
-        chr(0) * 8 + 'd' * 20 + 'a' * 20
+    assert c1.pop() == ''
     assert c.log == []
     assert rs.connects == []
     assert not c1.closed
 
     e.data_came_in(c1, chr(len(protocol_name)) + protocol_name + 
         chr(0) * 8 + 'e' * 20)
+    assert c1.pop() == ''
     assert c.log == []
     assert c1.closed
 
 def test_wrong_other_id():
     c = DummyConnecter()
     rs = DummyRawServer()
-    e = Encrypter(c, rs, 'a' * 20, 500, dummyschedule, 30, 'd' * 20)
+    e = Encoder(c, rs, 'a' * 20, 500, dummyschedule, 30, 'd' * 20)
     e.start_connection('dns', 'o' * 20)
     assert c.log == []
     assert len(rs.connects) == 1
@@ -402,17 +405,18 @@ def test_wrong_other_id():
 def test_over_max_len():
     c = DummyConnecter()
     rs = DummyRawServer()
-    e = Encrypter(c, rs, 'a' * 20, 500, dummyschedule, 30, 'd' * 20)
+    e = Encoder(c, rs, 'a' * 20, 500, dummyschedule, 30, 'd' * 20)
     c1 = DummyRawConnection()
     e.external_connection_made(c1)
-    assert c1.pop() == chr(len(protocol_name)) + protocol_name + \
-        chr(0) * 8 + 'd' * 20 + 'a' * 20
+    assert c1.pop() == ''
     assert c.log == []
     assert rs.connects == []
     assert not c1.closed
 
     e.data_came_in(c1, chr(len(protocol_name)) + protocol_name + 
         chr(0) * 8 + 'd' * 20 + 'o' * 20)
+    assert c1.pop() == chr(len(protocol_name)) + protocol_name + \
+        chr(0) * 8 + 'd' * 20 + 'a' * 20
     assert len(c.log) == 1 and c.log[0][0] == 'made'
     ch = c.log[0][1]
     del c.log[:]
@@ -428,15 +432,14 @@ def test_keepalive():
         s.append((interval, thing))
     c = DummyConnecter()
     rs = DummyRawServer()
-    e = Encrypter(c, rs, 'a' * 20, 500, sched, 30, 'd' * 20)
+    e = Encoder(c, rs, 'a' * 20, 500, sched, 30, 'd' * 20)
     assert len(s) == 1
     assert s[0][1] == 30
     kfunc = s[0][0]
     del s[:]
     c1 = DummyRawConnection()
     e.external_connection_made(c1)
-    assert c1.pop() == chr(len(protocol_name)) + protocol_name + \
-        chr(0) * 8 + 'd' * 20 + 'a' * 20
+    assert c1.pop() == ''
     assert c.log == []
     assert not c1.closed
 
@@ -451,7 +454,8 @@ def test_keepalive():
         chr(0) * 8 + 'd' * 20 + 'o' * 20)
     assert len(c.log) == 1 and c.log[0][0] == 'made'
     del c.log[:]
-    assert c1.pop() == ''
+    assert c1.pop() == chr(len(protocol_name)) + protocol_name + \
+        chr(0) * 8 + 'd' * 20 + 'a' * 20
     assert not c1.closed
 
     kfunc()
@@ -462,17 +466,18 @@ def test_keepalive():
 def test_swallow_keepalive():
     c = DummyConnecter()
     rs = DummyRawServer()
-    e = Encrypter(c, rs, 'a' * 20, 500, dummyschedule, 30, 'd' * 20)
+    e = Encoder(c, rs, 'a' * 20, 500, dummyschedule, 30, 'd' * 20)
     c1 = DummyRawConnection()
     e.external_connection_made(c1)
-    assert c1.pop() == chr(len(protocol_name)) + protocol_name + \
-        chr(0) * 8 + 'd' * 20 + 'a' * 20
+    assert c1.pop() == ''
     assert c.log == []
     assert rs.connects == []
     assert not c1.closed
 
     e.data_came_in(c1, chr(len(protocol_name)) + protocol_name + 
         chr(0) * 8 + 'd' * 20 + 'o' * 20)
+    assert c1.pop() == chr(len(protocol_name)) + protocol_name + \
+        chr(0) * 8 + 'd' * 20 + 'a' * 20
     assert len(c.log) == 1 and c.log[0][0] == 'made'
     del c.log[:]
     assert not c1.closed
@@ -484,17 +489,18 @@ def test_swallow_keepalive():
 def test_local_close():
     c = DummyConnecter()
     rs = DummyRawServer()
-    e = Encrypter(c, rs, 'a' * 20, 500, dummyschedule, 30, 'd' * 20)
+    e = Encoder(c, rs, 'a' * 20, 500, dummyschedule, 30, 'd' * 20)
     c1 = DummyRawConnection()
     e.external_connection_made(c1)
-    assert c1.pop() == chr(len(protocol_name)) + protocol_name + \
-        chr(0) * 8 + 'd' * 20 + 'a' * 20
+    assert c1.pop() == ''
     assert c.log == []
     assert rs.connects == []
     assert not c1.closed
 
     e.data_came_in(c1, chr(len(protocol_name)) + protocol_name + 
         chr(0) * 8 + 'd' * 20 + 'o' * 20)
+    assert c1.pop() == chr(len(protocol_name)) + protocol_name + \
+        chr(0) * 8 + 'd' * 20 + 'a' * 20
     assert len(c.log) == 1 and c.log[0][0] == 'made'
     ch = c.log[0][1]
     del c.log[:]
@@ -508,17 +514,18 @@ def test_local_close():
 def test_local_close_in_message_receive():
     c = DummyConnecter()
     rs = DummyRawServer()
-    e = Encrypter(c, rs, 'a' * 20, 500, dummyschedule, 30, 'd' * 20)
+    e = Encoder(c, rs, 'a' * 20, 500, dummyschedule, 30, 'd' * 20)
     c1 = DummyRawConnection()
     e.external_connection_made(c1)
-    assert c1.pop() == chr(len(protocol_name)) + protocol_name + \
-        chr(0) * 8 + 'd' * 20 + 'a' * 20
+    assert c1.pop() == ''
     assert c.log == []
     assert rs.connects == []
     assert not c1.closed
 
     e.data_came_in(c1, chr(len(protocol_name)) + protocol_name + 
         chr(0) * 8 + 'd' * 20 + 'o' * 20)
+    assert c1.pop() == chr(len(protocol_name)) + protocol_name + \
+        chr(0) * 8 + 'd' * 20 + 'a' * 20
     assert len(c.log) == 1 and c.log[0][0] == 'made'
     ch = c.log[0][1]
     del c.log[:]
@@ -532,17 +539,18 @@ def test_local_close_in_message_receive():
 def test_remote_close():
     c = DummyConnecter()
     rs = DummyRawServer()
-    e = Encrypter(c, rs, 'a' * 20, 500, dummyschedule, 30, 'd' * 20)
+    e = Encoder(c, rs, 'a' * 20, 500, dummyschedule, 30, 'd' * 20)
     c1 = DummyRawConnection()
     e.external_connection_made(c1)
-    assert c1.pop() == chr(len(protocol_name)) + protocol_name + \
-        chr(0) * 8 + 'd' * 20 + 'a' * 20
+    assert c1.pop() == ''
     assert c.log == []
     assert rs.connects == []
     assert not c1.closed
 
     e.data_came_in(c1, chr(len(protocol_name)) + protocol_name + 
         chr(0) * 8 + 'd' * 20 + 'o' * 20)
+    assert c1.pop() == chr(len(protocol_name)) + protocol_name + \
+        chr(0) * 8 + 'd' * 20 + 'a' * 20
     assert len(c.log) == 1 and c.log[0][0] == 'made'
     ch = c.log[0][1]
     del c.log[:]
@@ -555,11 +563,10 @@ def test_remote_close():
 def test_partial_data_in():
     c = DummyConnecter()
     rs = DummyRawServer()
-    e = Encrypter(c, rs, 'a' * 20, 500, dummyschedule, 30, 'd' * 20)
+    e = Encoder(c, rs, 'a' * 20, 500, dummyschedule, 30, 'd' * 20)
     c1 = DummyRawConnection()
     e.external_connection_made(c1)
-    assert c1.pop() == chr(len(protocol_name)) + protocol_name + \
-        chr(0) * 8 + 'd' * 20 + 'a' * 20
+    assert c1.pop() == ''
     assert c.log == []
     assert rs.connects == []
     assert not c1.closed
@@ -568,6 +575,8 @@ def test_partial_data_in():
         chr(0) * 4)
     e.data_came_in(c1, chr(0) * 4 + 'd' * 20 + 'c' * 10)
     e.data_came_in(c1, 'c' * 10)
+    assert c1.pop() == chr(len(protocol_name)) + protocol_name + \
+        chr(0) * 8 + 'd' * 20 + 'a' * 20
     assert len(c.log) == 1 and c.log[0][0] == 'made'
     del c.log[:]
     assert not c1.closed
@@ -575,17 +584,18 @@ def test_partial_data_in():
 def test_ignore_connect_of_extant():
     c = DummyConnecter()
     rs = DummyRawServer()
-    e = Encrypter(c, rs, 'a' * 20, 500, dummyschedule, 30, 'd' * 20)
+    e = Encoder(c, rs, 'a' * 20, 500, dummyschedule, 30, 'd' * 20)
     c1 = DummyRawConnection()
     e.external_connection_made(c1)
-    assert c1.pop() == chr(len(protocol_name)) + protocol_name + \
-        chr(0) * 8 + 'd' * 20 + 'a' * 20
+    assert c1.pop() == ''
     assert c.log == []
     assert rs.connects == []
     assert not c1.closed
 
     e.data_came_in(c1, chr(len(protocol_name)) + protocol_name + 
         chr(0) * 8 + 'd' * 20 + 'o' * 20)
+    assert c1.pop() == chr(len(protocol_name)) + protocol_name + \
+        chr(0) * 8 + 'd' * 20 + 'a' * 20
     assert len(c.log) == 1 and c.log[0][0] == 'made'
     del c.log[:]
     assert not c1.closed
@@ -598,7 +608,7 @@ def test_ignore_connect_of_extant():
 def test_ignore_connect_to_self():
     c = DummyConnecter()
     rs = DummyRawServer()
-    e = Encrypter(c, rs, 'a' * 20, 500, dummyschedule, 30, 'd' * 20)
+    e = Encoder(c, rs, 'a' * 20, 500, dummyschedule, 30, 'd' * 20)
     c1 = DummyRawConnection()
 
     e.start_connection('dns', 'a' * 20)
