@@ -9,6 +9,7 @@ from os.path import getsize, split, join, abspath, isdir
 from os import listdir
 from sha import sha
 from copy import copy
+from string import strip
 from BitTorrent.bencode import bencode
 from BitTorrent.btformats import check_info
 from threading import Event
@@ -28,7 +29,7 @@ def make_meta_file(file, url, piece_length = 2 ** 20,
         return
     check_info(info)
     h = open(f, 'wb')
-    h.write(bencode({'info': info, 'announce': url}))
+    h.write(bencode({'info': info, 'announce': strip(url)}))
     h.close()
 
 def calcsize(file):
