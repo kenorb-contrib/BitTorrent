@@ -111,6 +111,7 @@ class RawServer:
         if reuse:
             server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         server.setblocking(0)
+        server.setsockopt(socket.IPPROTO_IP, socket.IP_TOS, 0x08)
         server.bind((bind, port))
         server.listen(5)
         self.poll.register(server, POLLIN)
@@ -122,6 +123,7 @@ class RawServer:
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.setblocking(0)
         sock.connect_ex(dns)
+        sock.setsockopt(socket.IPPROTO_IP, socket.IP_TOS, 0x08)
         self.poll.register(sock, POLLIN)
         s = SingleSocket(self, sock, handler)
         self.single_sockets[sock.fileno()] = s
