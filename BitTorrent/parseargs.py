@@ -60,7 +60,7 @@ def parseargs(argv, options, minargs = None, maxargs = None):
                 t = type(config[longname])
                 if t is NoneType or t is StringType:
                     config[longname] = value
-                elif t is IntType or t is LongType:
+                elif t in (IntType, LongType):
                     config[longname] = long(value)
                 elif t is FloatType:
                     config[longname] = float(value)

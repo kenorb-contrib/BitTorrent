@@ -4,7 +4,10 @@
 def decode_int(x, f):
     f += 1
     newf = x.index('e', f)
-    n = long(x[f:newf])
+    try:
+        n = int(x[f:newf])
+    except (OverflowError, ValueError):
+        n = long(x[f:newf])
     if x[f] == '-':
         if x[f + 1] == '0':
             raise ValueError

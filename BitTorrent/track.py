@@ -15,7 +15,7 @@ from cStringIO import StringIO
 from time import time, gmtime, strftime
 from random import shuffle
 from sha import sha
-from types import StringType, LongType, ListType, DictType
+from types import StringType, IntType, LongType, ListType, DictType
 from binascii import b2a_hex, a2b_hex, a2b_base64
 import sys
 from __init__ import version
@@ -62,16 +62,16 @@ def statefiletemplate(x):
                      if type(info.get('ip', '')) != StringType:
                          raise ValueError
                      port = info.get('port')
-                     if type(port) != LongType or port < 0:
+                     if type(port) not in (IntType, LongType) or port < 0:
                          raise ValueError
                      left = info.get('left')
-                     if type(left) != LongType or left < 0:
+                     if type(left) not in (IntType, LongType) or left < 0:
                          raise ValueError
         elif cname == 'completed':
             if (type(cinfo) != DictType): # The 'completed' key is a dictionary of SHA hashes (torrent ids)
                 raise ValueError          # ... for keeping track of the total completions per torrent
             for y in cinfo.values():      # ... each torrent has an integer value
-                if type(y) is not LongType:   # ... for the number of reported completions for that torrent
+                if type(y) not in (IntType, LongType):   # ... for the number of reported completions for that torrent
                     raise ValueError
 
 def parseTorrents(dir):
