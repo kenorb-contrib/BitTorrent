@@ -64,14 +64,14 @@ def parseTorrents(dir):
     import os
     a = {}
     for f in os.listdir(dir):
-	if f[-8:] == '.torrent':
-	    try:
-		d = bdecode(open(os.path.join(dir,f)).read())
-		h = sha(bencode(d['info'])).digest()
-		a[h] = d['info'].get('name', f)
-	    except:
-		# what now, boss?
-		print "Error parsing " + f
+        if f[-8:] == '.torrent':
+            try:
+                d = bdecode(open(os.path.join(dir,f)).read())
+                h = sha(bencode(d['info'])).digest()
+                a[h] = d['info'].get('name', f)
+            except:
+                # what now, boss?
+                print "Error parsing " + f
     return a
 
 alas = 'your file may exist elsewhere in the universe\nbut alas, not here\n'
@@ -138,23 +138,23 @@ class Tracker:
             names = self.downloads.keys()
             if names:
                 names.sort()
-		if self.allowed != None:
-		    s.write('<table summary="files">\n' \
-			'<tr><th>info hash</th><th>torrent name</th><th align="right">complete</th><th align="right">downloading</th></tr>\n')
-		else:
-		    s.write('<table summary="files">\n' \
-			'<tr><th>info hash</th><th align="right">complete</th><th align="right">downloading</th></tr>\n')
+                if self.allowed != None:
+                    s.write('<table summary="files">\n' \
+                        '<tr><th>info hash</th><th>torrent name</th><th align="right">complete</th><th align="right">downloading</th></tr>\n')
+                else:
+                    s.write('<table summary="files">\n' \
+                        '<tr><th>info hash</th><th align="right">complete</th><th align="right">downloading</th></tr>\n')
                 for name in names:
                     l = self.downloads[name]
                     c = len([1 for i in l.values() if i['left'] == 0])
                     d = len(l) - c
-		    if self.allowed != None and self.allowed.has_key(name):
-			s.write('<tr><td><code>%s</code></td><td><code>%s</code></td><td align="right"><code>%i</code></td><td align="right"><code>%i</code></td></tr>\n' \
-			    % (b2a_hex(name), self.allowed[name], c, d))
+                    if self.allowed != None and self.allowed.has_key(name):
+                        s.write('<tr><td><code>%s</code></td><td><code>%s</code></td><td align="right"><code>%i</code></td><td align="right"><code>%i</code></td></tr>\n' \
+                            % (b2a_hex(name), self.allowed[name], c, d))
 
-		    elif self.allowed == None:
-			s.write('<tr><td><code>%s</code></td><td align="right"><code>%i</code></td><td align="right"><code>%i</code></td></tr>\n' \
-			    % (b2a_hex(name), c, d))
+                    elif self.allowed == None:
+                        s.write('<tr><td><code>%s</code></td><td align="right"><code>%i</code></td><td align="right"><code>%i</code></td></tr>\n' \
+                            % (b2a_hex(name), c, d))
                 s.write('</table>\n' \
                     '<ul>\n' \
                     '<li><em>info hash:</em> SHA1 hash of the "info" section of the metainfo (*.torrent)</li>\n' \
@@ -166,6 +166,19 @@ class Tracker:
             s.write('</body>\n' \
                 '</html>\n')
             return (200, 'OK', {'Content-Type': 'text/html; charset=iso-8859-1'}, s.getvalue())
+        if path == 'scrape':
+            names = self.downloads.keys()
+            names.sort()
+            fs = {}
+            for name in names:
+                l = self.downloads[name]
+                c = len([1 for i in l.values() if i['left'] == 0])
+                d = len(l) - c
+                fs[name] = {'complete': c, 'incomplete': d}
+                if self.allowed is not None:
+                    fs[name]['name'] = self.allowed[name]
+            r = {'files': fs}
+            return (200, 'OK', {'Content-Type': 'text/plain'}, bencode(r))
         if path != 'announce':
             return (404, 'Not Found', {'Content-Type': 'text/plain'}, alas)
         try:
