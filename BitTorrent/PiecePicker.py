@@ -1,7 +1,7 @@
 # Written by Bram Cohen
 # see LICENSE.txt for license information
 
-from random import randrange, shuffle
+from random import randrange, shuffle, choice
 true = 1
 false = 0
 
@@ -68,22 +68,26 @@ class PiecePicker:
             pass
 
     def next(self, havefunc):
-        if self.numgot >= self.rarest_first_cutoff:
-            best = None
-            bestnum = 2 ** 30
-            for i in self.started:
-                if havefunc(i) and self.numinterests[i] < bestnum:
-                    best = i
+        bests = None
+        bestnum = 2 ** 30
+        for i in self.started:
+            if havefunc(i):
+                if self.numinterests[i] < bestnum:
+                    bests = [i]
                     bestnum = self.numinterests[i]
+                elif self.numinterests[i] == bestnum:
+                    bests.append(i)
+        if self.numgot >= self.rarest_first_cutoff:
             for i in self.interests[1:bestnum]:
                 for j in i:
                     if havefunc(j):
                         return j
-            return best
+            if bests:
+                return choice(bests)
+            return None
         else:
-            for i in self.started:
-                if havefunc(i):
-                    return i
+            if bests:
+                return choice(bests)
             for i in self.scrambled:
                 if havefunc(i):
                     return i
