@@ -18,7 +18,7 @@ from sha import sha
 from types import StringType, LongType, ListType, DictType
 from binascii import b2a_hex, a2b_hex, a2b_base64
 import sys
-import __init__
+from __init__ import version
 
 defaults = [
     ('port', 80, "Port to listen on."),

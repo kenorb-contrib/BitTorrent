@@ -148,6 +148,7 @@ class Encoder:
         self.max_initiate = max_initiate
         self.everinc = False
         self.connections = {}
+        self.spares = []
         schedulefunc(self.send_keepalives, keepalive_delay)
 
     def send_keepalives(self):
@@ -157,14 +158,16 @@ class Encoder:
                 c.send_message('')
 
     def start_connection(self, dns, id):
-        if len(self.connections) >= self.max_initiate:
-            return
         if id:
             if id == self.my_id:
                 return
             for v in self.connections.values():
                 if v.id == id:
                     return
+        if len(self.connections) >= self.max_initiate:
+            if len(self.spares) < self.max_initiate and dns not in self.spares:
+                self.spares.append(dns)
+            return
         try:
             c = self.raw_server.start_connection(dns)
             self.connections[c] = Connection(self, c, id, True)
@@ -198,7 +201,9 @@ class Encoder:
 
     def connection_lost(self, connection):
         self.connections[connection].sever()
-        
+        while len(self.connections) < self.max_initiate and self.spares:
+            self.start_connection(self.spares.pop(), None)
+
     def data_came_in(self, connection, data):
         self.connections[connection].data_came_in(data)
 
