@@ -165,10 +165,13 @@ class DownloadInfoFrame(wxFrame):
     def updateStatus(self, fractionDone = None,
             timeEst = None, downRate = None, upRate = None,
             activity=None):
-        assert activity is None or not self.fin
+        if self.flag.isSet():
+            return
         wxPostEvent(self, UpdateStatusEvent(fractionDone, timeEst, downRate, upRate, activity))
 
     def onUpdateStatus(self, event):
+        if self.flag.isSet():
+            return
         if event.fractionDone is not None:
             self.gauge.SetValue(int(event.fractionDone * 1000))
         if event.timeEst is not None:
@@ -181,29 +184,41 @@ class DownloadInfoFrame(wxFrame):
             self.upRateText.SetLabel('%s kB/s' % kify(event.upRate))
 
     def finished(self):
+        if self.flag.isSet():
+            return
         self.fin = true
         wxPostEvent(self, FinishEvent())
 
     def failed(self):
+        if self.flag.isSet():
+            return
         self.fin = true
         wxPostEvent(self, FailEvent())
 
     def error(self, errormsg):
+        if self.flag.isSet():
+            return
         wxPostEvent(self, ErrorEvent(errormsg))
 
     def onFinishEvent(self, event):
+        if self.flag.isSet():
+            return
         self.timeEstText.SetLabel('Download Succeeded!')
         self.cancelButton.SetLabel('Finish')
         self.gauge.SetValue(1000)
         self.downRateText.SetLabel('')
 
     def onFailEvent(self, event):
+        if self.flag.isSet():
+            return
         self.timeEstText.SetLabel('Failed!')
         self.cancelButton.SetLabel('Close')
         self.gauge.SetValue(0)
         self.downRateText.SetLabel('')
 
     def onErrorEvent(self, event):
+        if self.flag.isSet():
+            return
         if not self.shown:
             self.Show(true)
         dlg = wxMessageDialog(self, message = event.errormsg, 
@@ -213,6 +228,8 @@ class DownloadInfoFrame(wxFrame):
         dlg.ShowModal()
 
     def chooseFile(self, default, size, saveas, dir):
+        if self.flag.isSet():
+            return ''
         f = Event()
         bucket = [None]
         wxPostEvent(self, ChooseFileEvent(default, bucket, f, size, dir))
@@ -220,6 +237,8 @@ class DownloadInfoFrame(wxFrame):
         return bucket[0]
     
     def onChooseFile(self, event):
+        if self.flag.isSet():
+            return
         if event.dir:
             dl = wxDirDialog(self, 'Choose a directory to save to, pick a partial download to resume', join(getcwd(), event.default))
         else:

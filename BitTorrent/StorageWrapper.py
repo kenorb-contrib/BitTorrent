@@ -37,10 +37,9 @@ class StorageWrapper:
                 fractionDone = 0)
             for i in xrange(len(hashes)):
                 self._check_single(i)
-                statusfunc(fractionDone = float(i)/len(hashes))
                 if flag.isSet():
                     return
-            statusfunc(fractionDone = 1)
+                statusfunc(fractionDone = float(i+1)/len(hashes))
         else:
             for i in xrange(len(hashes)):
                 self._check_single(i, false)
