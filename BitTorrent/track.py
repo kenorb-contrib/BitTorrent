@@ -204,5 +204,6 @@ def track(args):
     t = Tracker(config, r)
     r.bind(config['port'], config['bind'], true)
     r.listen_forever(HTTPHandler(t.get, config['min_time_between_log_flushes']))
+    t.save_dfile()
 
 

@@ -76,6 +76,8 @@ class HTTPConnection:
         return self.read_header
 
     def answer(self, (responsecode, responsestring, headers, data)):
+        if self.closed:
+            return
         year, month, day, hour, minute, second, a, b, c = time.localtime(time.time())
         print '%s - - [%02d/%3s/%04d:%02d:%02d:%02d] "%s" %i %i' % (
             self.connection.get_ip(), day, months[month], year, hour, minute, 

@@ -8,4 +8,4 @@ assert version >= '2', "Install Python 2.0 or greater"
 from btdownloadgui import run
 
 if __name__ == '__main__':
-    run(['--responsefile=' + argv[1]])
+    run(['--responsefile', ' '.join(argv[1:])])
