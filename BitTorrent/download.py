@@ -183,6 +183,7 @@ def download(params, filefunc, statusfunc, finfunc, errorfunc, doneflag, cols):
         return
 
     rawserver = RawServer(doneflag, config['timeout_check_interval'], config['timeout'])
+    e = 'maxport less than minport - no ports to check'
     for listen_port in xrange(config['minport'], config['maxport'] + 1):
         try:
             rawserver.bind(listen_port, config['bind'])

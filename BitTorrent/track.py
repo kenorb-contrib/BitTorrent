@@ -114,7 +114,7 @@ class Tracker:
             ip = connection.get_ip()
             if params.has_key('ip'):
                 ip = params['ip']
-            if params.get('event', '') not in ['', 'started', 'completed', 'stopped']:
+            if params.has_key('event') and params['event'] not in ['started', 'completed', 'stopped']:
                 raise ValueError, 'invalid event'
             port = long(params.get('port', ''))
             uploaded = long(params.get('uploaded', ''))
