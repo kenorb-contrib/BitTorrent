@@ -3,6 +3,7 @@
 
 from time import time
 from PriorityBitField import PriorityBitField
+from random import shuffle
 true = 1
 false = 0
 
@@ -88,7 +89,7 @@ class SingleDownload:
             return false
         hit = false
         while (not self.want_priorities.is_empty() and 
-                len(self.active_requests) < self.downloader.max_requests):
+                len(self.active_requests) < self.downloader.backlog):
             i = self.downloader.priority_to_index[self.want_priorities.get_first()]
             begin, length = self.downloader.storage.new_request(i)
             self.active_requests.append((i, begin, length))
@@ -101,22 +102,23 @@ class SingleDownload:
         if self.have[index]:
             return
         self.have[index] = true
-        if self.connecter.storage.do_I_have_requests(index):
-            self.want_priorities.insert(
+        if self.downloader.storage.do_I_have_requests(index):
+            self.want_priorities.insert_strict(
                 self.downloader.index_to_priority[index])
             self.downloader.adjust(self)
 
     def got_have_bitfield(self, have):
         self.have = have
         for i in xrange(len(have)):
-            if have[i] and self.connecter.storage.do_I_have_requests(i):
-                self.want_priorities.insert(
+            if have[i] and self.downloader.storage.do_I_have_requests(i):
+                self.want_priorities.insert_strict(
                     self.downloader.index_to_priority[i])
         self.downloader.adjust(self)
 
 class Downloader:
     def __init__(self, storage, backlog, 
             max_rate_period, numpieces, total_down = [0l]):
+        self.storage = storage
         self.backlog = backlog
         self.max_rate_period = max_rate_period
         self.total_down = total_down
@@ -134,50 +136,147 @@ class Downloader:
         p = self.index_to_priority[index]
         r = false
         if not before and after:
-            for c in self.d:
+            for c in self.downloads:
                 if c.have[index]:
                     r = true
-                    c.want_priorities.insert(p)
+                    c.want_priorities.insert_strict(p)
         elif before and not after:
-            for c in self.d:
+            for c in self.downloads:
                 if c.have[index]:
                     r = true
-                    c.want_priorities.remove(p)
+                    c.want_priorities.remove_strict(p)
         return r
 
     def adjust(self, c = None):
         if c is None:
-            d = self.d
+            d = self.downloads
         else:
             d = [c]
         while true in [c.adjust() for c in d]:
-            d = self.d
+            d = self.downloads
 
     def make_download(self, connection):
         self.downloads.insert(0, SingleDownload(self, connection))
         return self.downloads[0]
 
+class DummyStorage:
+    def __init__(self, remaining):
+        self.remaining = remaining
+        self.active = [[]]
+
+    def do_I_have_requests(self, index):
+        return self.remaining[index] != []
+        
+    def request_lost(self, index, begin, length):
+        x = (begin, length)
+        self.active[index].remove(x)
+        self.remaining[index].append(x)
+        self.remaining[index].sort()
+        
+    def piece_came_in(self, index, begin, piece):
+        self.active[index].remove((begin, len(piece)))
+        
+    def do_I_have(self, index):
+        return (self.remaining[index] == [] and 
+            self.active[index] == [])
+        
+    def new_request(self, index):
+        x = self.remaining[index].pop()
+        self.active[index].append(x)
+        self.active[index].sort()
+        return x
+
+class DummyConnection:
+    def __init__(self, events):
+        self.events = events
+
+    def send_interested(self):
+        self.events.append('interested')
+        
+    def send_not_interested(self):
+        self.events.append('not interested')
+        
+    def send_request(self, index, begin, length):
+        self.events.append(('request', index, begin, length))
+
 def test_stops_at_backlog():
-    assert false
-    #booga make multiple available, assert stops querying at max
-    #booga make one come in, assert queries for exactly one more
+    ds = DummyStorage([[(0, 2), (2, 2), (4, 2), (6, 2)]])
+    d = Downloader(ds, 2, 15, 1, [0])
+    events = []
+    sd = d.make_download(DummyConnection(events))
+    assert events == []
+    assert ds.remaining == [[(0, 2), (2, 2), (4, 2), (6, 2)]]
+    assert ds.active == [[]]
+    sd.got_have_bitfield([true])
+    assert events == ['interested']
+    del events[:]
+    assert ds.remaining == [[(0, 2), (2, 2), (4, 2), (6, 2)]]
+    assert ds.active == [[]]
+    sd.got_unchoke()
+    assert events == [('request', 0, 6, 2), ('request', 0, 4, 2)]
+    del events[:]
+    assert ds.remaining == [[(0, 2), (2, 2)]]
+    assert ds.active == [[(4, 2), (6, 2)]]
+    sd.got_piece(0, 4, 'ab')
+    assert events == [('request', 0, 2, 2)]
+    del events[:]
+    assert ds.remaining == [[(0, 2)]]
+    assert ds.active == [[(2, 2), (6, 2)]]
 
 def test_got_have_single():
-    assert false
-    #booga have a have single come in, assert gains interest
-
-def test_download_after_unchoke():
-    assert false
-    #booga make thing which is interested, unchoke after bitfield
+    ds = DummyStorage([[(0, 2)]])
+    d = Downloader(ds, 2, 15, 1, [0])
+    events = []
+    sd = d.make_download(DummyConnection(events))
+    assert events == []
+    assert ds.remaining == [[(0, 2)]]
+    assert ds.active == [[]]
+    sd.got_unchoke()
+    assert events == []
+    assert ds.remaining == [[(0, 2)]]
+    assert ds.active == [[]]
+    sd.got_have(0)
+    assert events == ['interested', ('request', 0, 0, 2)]
+    del events[:]
+    assert ds.remaining == [[]]
+    assert ds.active == [[(0, 2)]]
 
 def test_choke_clears_active():
-    assert false
-    #booga start two things, both of which want the same thing
-    #booga assert downloads for second connected
-    #booga choke second, assert downloads first
-    #booga receive on first, completing
-    #booga assert loses interest on both
+    ds = DummyStorage([[(0, 2)]])
+    d = Downloader(ds, 2, 15, 1, [0])
+    events = []
+    sd1 = d.make_download(DummyConnection(events))
+    sd2 = d.make_download(DummyConnection(events))
+    assert events == []
+    assert ds.remaining == [[(0, 2)]]
+    assert ds.active == [[]]
+    sd1.got_unchoke()
+    sd1.got_have(0)
+    assert events == ['interested', ('request', 0, 0, 2)]
+    del events[:]
+    assert ds.remaining == [[]]
+    assert ds.active == [[(0, 2)]]
+    sd2.got_unchoke()
+    sd2.got_have(0)
+    assert events == []
+    assert ds.remaining == [[]]
+    assert ds.active == [[(0, 2)]]
+    sd1.got_choke()
+    assert events == ['interested', ('request', 0, 0, 2), 'not interested']
+    del events[:]
+    assert ds.remaining == [[]]
+    assert ds.active == [[(0, 2)]]
+    sd2.got_piece(0, 0, 'ab')
+    assert events == ['not interested']
+    del events[:]
+    assert ds.remaining == [[]]
+    assert ds.active == [[]]
 
 def test_introspect_priority_list():
-    assert false
-    #booga manually verify index_to_priority and priority_to_index
+    d = Downloader(None, 2, 15, 10, [0])
+    for i in xrange(10):
+        for j in xrange(i):
+            assert d.index_to_priority[i] != d.index_to_priority[j]
+            assert d.priority_to_index[i] != d.priority_to_index[j]
+    for i in xrange(10):
+        assert d.index_to_priority[d.priority_to_index[i]] == i

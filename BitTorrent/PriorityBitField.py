@@ -18,11 +18,19 @@ class PriorityBitField:
     def get_first(self):
         return self.vals[1]
 
+    def insert_strict(self, index):
+        assert self.vals[index + self.p] > index
+        self.insert(index)
+
     def insert(self, index):
         i = index + self.p
         while i > 0 and self.vals[i] > index:
             self.vals[i] = index
             i = int(i / 2)
+
+    def remove_strict(self, index):
+        assert self.vals[index + self.p] == index
+        self.remove(index)
 
     def remove(self, index):
         i = index + self.p
