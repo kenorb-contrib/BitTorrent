@@ -4,7 +4,6 @@
 def decode_int(x, f):
     f += 1
     newf = x.index('e', f)
-    n = long(x[f:newf])
     try:
         n = int(x[f:newf])
     except (OverflowError, ValueError):
@@ -227,46 +226,58 @@ def test_bdecode():
         pass
     bdecode('d0:i3ee')
 
+from types import StringType, IntType, LongType, BooleanType, DictType, ListType, TupleType
+
 class Bencached(object):
     __slots__ = ['bencoded']
 
     def __init__(self, s):
         self.bencoded = s
 
-def bencode_rec(x, r):
-    t = type(x)
-    if t in (int, long, bool):
-        r.append('i%de' % x)
-    elif t is str:
-        r.append('%d:%s' % (len(x), x))
-    elif t in (list, tuple):
-        r.append('l')
-        for e in x:
-            bencode_rec(e, r)
-        r.append('e')
-    elif t is dict:
-        r.append('d')
-        ilist = x.items()
-        ilist.sort()
-        for k, v in ilist:
-            r.append('%d:%s' % (len(k), k))
-            if type(v) is str:
-                r.append('%d:%s' % (len(v), v))
-            else:
-                bencode_rec(v, r)
-        r.append('e')
-    elif t is Bencached:
-        r.append(x.bencoded)
-    else:
-        assert 0, "could not encode type %s (value: %s)" % (t, x)
+def encode_bencached(x,r):
+    r.append(x.bencoded)
+
+def encode_int(x,r):
+    r.append('i%de' % x)
+
+def encode_string(x,r):
+    r.append('%d:%s' % (len(x), x))
+
+def encode_list(x,r):
+    r.append('l')
+    for e in x:
+        encode_func[type(e)](e, r)
+    r.append('e')
+
+def encode_dict(x,r):
+    r.append('d')
+    ilist = x.items()
+    ilist.sort()
+    for k,v in ilist:
+        assert type(k) is StringType
+        r.append('%d:%s' % (len(k), k))
+        if type(v) is str:
+            r.append('%d:%s' % (len(v), v))
+        else:
+            encode_func[type(v)](v, r)
+    r.append('e')
+
+encode_func = {}
+encode_func[type(Bencached)] = encode_bencached
+encode_func[IntType] = encode_int
+encode_func[LongType] = encode_int
+encode_func[BooleanType] = encode_int
+encode_func[StringType] = encode_string
+encode_func[ListType] = encode_list
+encode_func[TupleType] = encode_list
+encode_func[DictType] = encode_dict
+
+from traceback import print_exc
 
 def bencode(x):
-    try:
-        r = []
-        bencode_rec(x, r)
-        return ''.join(r)
-    except TypeError, e:
-        assert 0, str(e)
+    r = []
+    encode_func[type(x)](x, r)
+    return ''.join(r)
 
 def test_bencode():
     assert bencode(4) == 'i4e'
