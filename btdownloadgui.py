@@ -43,9 +43,6 @@ class InvokeEvent(wxPyEvent):
         self.args = args
         self.kwargs = kwargs
 
-def pr(event):
-    print 'augh!'
-
 class DownloadInfoFrame:
     def __init__(self, flag):
         frame = wxFrame(None, -1, 'BitTorrent ' + version + ' download', size = wxSize(400, 250))
