@@ -47,6 +47,7 @@ class DownloadInfoFrame:
         self.flag = flag
         self.fin = false
         self.shown = false
+        self.showing_error = false
 
         panel = wxPanel(frame, -1)
         colSizer = wxFlexGridSizer(cols = 1, vgap = 7)
@@ -144,12 +145,16 @@ class DownloadInfoFrame:
         self.downRateText.SetLabel('')
 
     def onErrorEvent(self, errormsg):
+        if self.showing_error:
+            return
+        self.showing_error = true
         if not self.shown:
             self.frame.Show(true)
         dlg = wxMessageDialog(self.frame, message = errormsg, 
             caption = 'Download Error', style = wxOK | wxICON_ERROR)
         dlg.ShowModal()
         dlg.Destroy()
+        self.showing_error = false
 
     def chooseFile(self, default, size, saveas, dir):
         f = Event()
