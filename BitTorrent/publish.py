@@ -31,7 +31,7 @@ defaults = [
         """Size of individually hashed pieces of file to be published."""),
     ('max_message_length', 'max-message-length=', None, 2 ** 23,
         """maximum length prefix encoding you'll accept over the wire - larger values get the connection dropped."""),
-    ('port', 'port=', 'p:', None, """Port to listen on, zero indicates choose randomly."""),
+    ('port', 'port=', 'p:', 0, """Port to listen on, zero indicates choose randomly."""),
     ('max_poll_period', 'max-poll-period=', None, 2.0,
         """Maximum number of seconds to block in calls to select()"""),
     ('ip', 'ip=', 'i:', '',
@@ -45,6 +45,8 @@ defaults = [
 def publish(params, cols):
     try:
         config, files = parseargs(params, defaults, 1, 10000)
+        if config['port'] == 0:
+            raise ValueError, 'port required'
     except ValueError, e:
         print 'error: ' + str(e)
         print formatDefinitions(defaults, cols)
