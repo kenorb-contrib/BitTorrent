@@ -26,7 +26,7 @@ class HTTPConnection:
         return self.connection.get_ip()
 
     def data_came_in(self, data):
-        if self.donereading:
+        if self.donereading or self.next_func is None:
             return true
         self.buf += data
         while true:
@@ -124,5 +124,5 @@ class HTTPHandler:
     def data_came_in(self, connection, data):
         c = self.connections[connection]
         if not c.data_came_in(data) and not c.closed:
-            c.shutdown(1)
+            c.connection.shutdown(1)
 
