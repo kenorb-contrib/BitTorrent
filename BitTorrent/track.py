@@ -372,7 +372,7 @@ class Tracker:
         if record is None or record['ip'] != ip or record['port'] != port:
             return
         if not record.has_key('nat'):
-            record['nat'] = not result
+            record['nat'] = int(not result)
         if result:
             record['nat'] = 0
 

@@ -4,6 +4,7 @@
 from sha import sha
 from cStringIO import StringIO
 from time import time
+from bisect import bisect_right
 true = 1
 false = 0
 
@@ -27,6 +28,7 @@ class Storage:
                     so_far += l
             elif not exists(file):
                 open(file, 'wb').close()
+        self.begins = [i[0] for i in self.ranges]
         self.total_length = total
         self.handles = {}
         self.whandles = {}
@@ -64,6 +66,16 @@ class Storage:
         return self.total_length
 
     def _intervals(self, pos, amount):
+        r = []
+        stop = pos + amount
+        p = bisect_right(self.begins, pos) - 1
+        while p < len(self.ranges) and self.ranges[p][0] < stop:
+            begin, end, file = self.ranges[p]
+            r.append((file, max(pos, begin) - begin, min(end, stop) - begin))
+            p += 1
+        return r
+
+    def _intervals2(self, pos, amount):
         r = []
         stop = pos + amount
         for begin, end, file in self.ranges:
