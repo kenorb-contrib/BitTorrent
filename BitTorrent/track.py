@@ -140,8 +140,8 @@ class Tracker:
             names = self.downloads.keys()
             if names:
                 names.sort()
-                if self.allowed != None:
-                    s.write('<table summary="files">\n' \
+                if self.allowed != None and self.show_names:
+                    s.write('<table summary="files" border=1>\n' \
                         '<tr><th>info hash</th><th>torrent name</th><th align="right">complete</th><th align="right">downloading</th></tr>\n')
                 else:
                     s.write('<table summary="files">\n' \
@@ -150,11 +150,12 @@ class Tracker:
                     l = self.downloads[name]
                     c = len([1 for i in l.values() if i['left'] == 0])
                     d = len(l) - c
-                    if self.allowed != None and self.show_names and self.allowed.has_key(name):
-                        s.write('<tr><td><code>%s</code></td><td><code>%s</code></td><td align="right"><code>%i</code></td><td align="right"><code>%i</code></td></tr>\n' \
-                            % (b2a_hex(name), self.allowed[name], c, d))
+                    if self.allowed != None and self.show_names:
+                        if self.allowed.has_key(name):
+                            s.write('<tr><td><code>%s</code></td><td><code>%s</code></td><td align="right"><code>%i</code></td><td align="right"><code>%i</code></td></tr>\n' \
+                                % (b2a_hex(name), self.allowed[name], c, d))
 
-                    elif self.allowed == None:
+                    else:
                         s.write('<tr><td><code>%s</code></td><td align="right"><code>%i</code></td><td align="right"><code>%i</code></td></tr>\n' \
                             % (b2a_hex(name), c, d))
                 s.write('</table>\n' \
