@@ -31,8 +31,8 @@ defaults = [
     ('response_size', 50, 'number of peers to send in an info message'),
     ('timeout_check_interval', 5,
         'time to wait between checking if any connections have timed out'),
-    ('nat_check', 1,
-        'whether to check back and ban downloaders behind NAT'),
+    ('nat_check', 3,
+        "how many times to check if a downloader is behind a NAT (0 = don't check)"),
     ('min_time_between_log_flushes', 3.0,
         'minimum time it must have been since the last flush to do another one'),
     ('allowed_dir', '', 'only allow downloads for .torrents in this dir'),
@@ -355,8 +355,11 @@ class Tracker:
                 peers[myid]['left'] = left
             if params.get('event', '') == 'completed':
                 self.completed[infohash] = 1 + self.completed[infohash]
-            if self.natcheck and not peers[myid].get("local_override", 0):
-                if peers[myid].get('nat', 1):
+            if port == 0:
+                peers[myid]['nat'] = 2**30
+            elif self.natcheck and not peers[myid].get("local_override", 0):
+                to_nat = peers[myid].get('nat', -1)
+                if to_nat and to_nat < self.natcheck:
                     NatCheck(self.connectback_result, infohash, myid, ip, port, self.rawserver)
             else:
                 peers[myid]['nat'] = 0
