@@ -97,8 +97,8 @@ def parseargs(argv, options, minargs, maxargs):
             usage("Option %s is required." % combined(longname, shortname))
 
     if len(args) < minargs:
-        usage("Must supply at least %d args." % minimumArgs)
+        usage("Must supply at least %d args." % minargs)
     if len(args) > maxargs:
-        usage("Too many args - %d max." % maximumArgs)
+        usage("Too many args - %d max." % maxargs)
 
     return (config, args)

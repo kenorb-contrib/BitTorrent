@@ -17,9 +17,6 @@ choke_message = bencode({'type': "you're choked"})
     
 unchoke_message = bencode({'type': "you're not choked"})
 
-support_message = bencode({'type': 'I support', 
-    'list all files': None, 'send slice': None})
-
 send_slice_template = compile_template({'type': 'send slice',
     'file': len20, 'begin': 0, 'length': 0})
 
@@ -30,12 +27,12 @@ class SingleUpload:
         self.choked = false
         self.uploading = false
         self.id = connection.get_id()
-        self.listing_all_files = false
-        self.connection.send_message(support_message)
         self.last_sent = None
         self.sent_since_checkpoint = 0
         self.rate = 0
         self.total = 0
+        connection.send_message(bencode({'type': 'I have files', 
+            'files': uploader.database.get_list_of_files_I_have()}))
 
     def get_ip(self):
         return self.connection.get_ip()
@@ -52,10 +49,6 @@ class SingleUpload:
                 if self.uploading:
                     self.uploading = false
                     self.uploader.choker.upload_stopped(self)
-            elif mtype == 'list all files':
-                self.listing_all_files = true
-                self.connection.send_message(bencode({'type': 'I have files', 
-                    'files': self.uploader.database.get_list_of_files_I_have()}))
         except ValueError:
             print_exc()
 
@@ -68,8 +61,6 @@ class SingleUpload:
         begin = m['begin']
         slice = self.uploader.database.get_slice(file, begin, m['length'])
         if slice is None:
-            self.connection.send_message(bencode({'type': "I don't have files", 
-                'files': [file]}))
             return
         self.connection.send_message(bencode({'type': 'here is a slice', 
             'file': file, 'begin': begin, 'slice': slice}))
@@ -126,8 +117,7 @@ class Uploader:
     def received_file(self, file):
         m = bencode({'type': 'I have files', 'files': [file]})
         for up in self.uploads.values():
-            if up.listing_all_files:
-                up.connection.send_message(m)
+            up.connection.send_message(m)
         
 # everything below is for testing
 
@@ -188,16 +178,11 @@ def test():
     
     c = DummyConnection('b' * 20)
     up.connection_made(c)
-    assert c.m == [support_message]
+    assert c.m == [bencode({'type': 'I have files', 'files': [key]})]
     del c.m[:]
     assert th.events == ['connected']
     del th.events[:]
 
-    up.got_message(c, bencode({'type': 'list all files'}))
-    assert c.m == [bencode({'type': 'I have files', 'files': [key]})]
-    del c.m[:]
-    assert th.events == []
-    
     up.received_file('c' * 20)
     assert c.m == [bencode({'type': 'I have files', 'files': ['c' * 20]})]
     del c.m[:]
@@ -233,8 +218,7 @@ def test():
     del th.events[:]
 
     up.got_message(c, bencode({'type': 'send slice', 'file': 'd' * 20, 'begin': 0, 'length': 20}))
-    assert c.m == [bencode({'type': "I don't have files", 'files': ['d' * 20]})]
-    del c.m[:]
+    assert c.m == []
     assert th.events == []
 
     up.got_message(c, bencode({'type': 'done downloading'}))

@@ -16,9 +16,6 @@ def len20(s, verbose):
 have_files_template = compile_template({'type': 'I have files', 
     'files': ListMarker(len20)})
 
-do_not_have_files_template = compile_template({'type': "I don't have files", 
-    'files': ListMarker(len20)})
-
 here_is_a_slice_template = compile_template({'type': 'here is a slice', 
     'file': len20, 'begin': 0, 'slice': string_template})
 
@@ -96,8 +93,6 @@ class SingleDownload:
                     self.downloader.choker.download_unchoked(self)
             elif mtype == 'I have files':
                 self.got_files_message(m)
-            elif mtype == "I don't have files":
-                self.got_no_files_message(m)
         except ValueError:
             print_exc()
 
@@ -151,22 +146,6 @@ class SingleDownload:
             self.peer_has[f] = 1
         self.downloader.choker.download_possible(self)
 
-    def got_no_files_message(self, message):
-        do_not_have_files_template(message)
-        for f in message['files']:
-            if self.peer_has.has_key(f):
-                del self.peer_has[f]
-        new_active = [x for x in self.active_requests if self.peer_has.has_key(x[0])]
-        if len(new_active) == len(self.active_requests):
-            return
-        self.active_requests = new_active
-        self.start_new_downloads()
-        if len(self.active_requests) == 0:
-            self.connection.send_message(done_message)
-            self.downloader.choker.download_hiccuped(self, true)
-        else:
-            self.downloader.choker.download_hiccuped(self, false)
-
 class Downloader:
     def __init__(self, choker, database, uploader, chunk_size, backlog):
         self.choker = choker
@@ -181,7 +160,6 @@ class Downloader:
     def connection_made(self, connection):
         down = SingleDownload(self, connection)
         self.downloads[down.get_id()] = down
-        connection.send_message(bencode({'type': 'list all files'}))
         self.choker.download_connected(down)
 
     def connection_lost(self, connection):
@@ -227,9 +205,6 @@ class DummyChoker:
 
     def data_came_in(self, download, amount, exhausted):
         self.events.append(('in', amount, exhausted))
-
-    def download_hiccuped(self, download, exhausted):
-        self.events.append(('hiccup', exhausted))
 
 class DummyConnection:
     def __init__(self, myid):
@@ -286,8 +261,7 @@ def test_even():
     assert not sd.is_downloading()
     assert not sd.is_choked()
     assert database.files == {}
-    assert connection.messages == [bencode({'type': 'list all files'})]
-    del connection.messages[:]
+    assert connection.messages == []
     
     assert not sd.start_downloading()
     assert uploader.received == []
@@ -384,8 +358,7 @@ def test_out_of_order():
     assert not sd1.is_downloading()
     assert not sd1.is_choked()
     assert database.files == {}
-    assert connection1.messages == [bencode({'type': 'list all files'})]
-    del connection1.messages[:]
+    assert connection1.messages == []
     
     downloader.connection_made(connection2)
     assert uploader.received == []
@@ -398,8 +371,7 @@ def test_out_of_order():
     assert not sd2.is_downloading()
     assert not sd2.is_choked()
     assert database.files == {}
-    assert connection2.messages == [bencode({'type': 'list all files'})]
-    del connection2.messages[:]
+    assert connection2.messages == []
     
     downloader.got_message(connection1, bencode({'type': 'I have files', 'files': [fid]}))
     assert uploader.received == []
@@ -484,8 +456,7 @@ def test_disconnect():
     assert not sd1.is_downloading()
     assert not sd1.is_choked()
     assert database.files == {}
-    assert connection1.messages == [bencode({'type': 'list all files'})]
-    del connection1.messages[:]
+    assert connection1.messages == []
     
     downloader.connection_made(connection2)
     assert uploader.received == []
@@ -498,8 +469,7 @@ def test_disconnect():
     assert not sd2.is_downloading()
     assert not sd2.is_choked()
     assert database.files == {}
-    assert connection2.messages == [bencode({'type': 'list all files'})]
-    del connection2.messages[:]
+    assert connection2.messages == []
     
     downloader.got_message(connection1, bencode({'type': 'I have files', 'files': [fid]}))
     assert uploader.received == []
@@ -574,8 +544,7 @@ def test_choke():
     assert not sd.is_downloading()
     assert not sd.is_choked()
     assert database.files == {}
-    assert connection.messages == [bencode({'type': 'list all files'})]
-    del connection.messages[:]
+    assert connection.messages == []
     
     assert not sd.start_downloading()
     assert uploader.received == []
@@ -652,189 +621,6 @@ def test_choke():
     assert database.files == {}
     assert connection.messages == [bencode({'type': 'send slice', 'file': fid, 
         'begin': 0, 'length': 3})]
-    del connection.messages[:]
-    assert sd.is_downloading()
-    assert not sd.is_choked()
-
-def test_hiccup():
-    file = 'abc'
-    fid = sha(file).digest()
-    database = DummyDatabase({fid: len(file)})
-    choker = DummyChoker()
-    uploader = DummyUploader()
-    downloader = Downloader(choker, database, uploader, 3, 3)
-    connection = DummyConnection('a' * 20)
-    
-    downloader.connection_made(connection)
-    assert uploader.received == []
-    assert choker.events == ['connected']
-    del choker.events[:]
-    assert len(choker.downloads) == 1
-    sd = choker.downloads[0]
-    del choker.downloads[:]
-    assert sd.get_id() == 'a' * 20
-    assert not sd.is_downloading()
-    assert not sd.is_choked()
-    assert database.files == {}
-    assert connection.messages == [bencode({'type': 'list all files'})]
-    del connection.messages[:]
-    
-    assert not sd.start_downloading()
-    assert uploader.received == []
-    assert choker.events == []
-    assert database.files == {}
-    assert connection.messages == []
-    assert not sd.is_downloading()
-    assert not sd.is_choked()
-
-    downloader.got_message(connection, bencode({'type': 'I have files', 'files': [fid]}))
-    assert uploader.received == []
-    assert choker.events == ['possible']
-    del choker.events[:]
-    assert database.files == {}
-    assert connection.messages == []
-    assert not sd.is_downloading()
-    assert not sd.is_choked()
-
-    assert sd.start_downloading()
-    assert uploader.received == []
-    assert choker.events == []
-    assert database.files == {}
-    assert connection.messages == [bencode({'type': 'send slice', 'file': fid, 
-        'begin': 0, 'length': 3})]
-    del connection.messages[:]
-    assert sd.is_downloading()
-    assert not sd.is_choked()
-
-    downloader.got_message(connection, bencode({'type': "I don't have files", 
-        'files': [fid]}))
-    assert uploader.received == []
-    assert choker.events == [('hiccup', true)]
-    del choker.events[:]
-    assert database.files == {}
-    assert connection.messages == [bencode({'type': 'done downloading'})]
-    del connection.messages[:]
-    assert not sd.is_downloading()
-    assert not sd.is_choked()
-
-    downloader.got_message(connection, bencode({'type': "I don't have files", 
-        'files': [fid]}))
-    assert uploader.received == []
-    assert choker.events == []
-    assert database.files == {}
-    assert connection.messages == []
-    assert not sd.is_downloading()
-    assert not sd.is_choked()
-
-    downloader.got_message(connection, bencode({'type': 'I have files', 'files': [fid]}))
-    assert uploader.received == []
-    assert choker.events == ['possible']
-    del choker.events[:]
-    assert database.files == {}
-    assert connection.messages == []
-    assert not sd.is_downloading()
-    assert not sd.is_choked()
-
-    assert sd.start_downloading()
-    assert uploader.received == []
-    assert choker.events == []
-    assert database.files == {}
-    assert connection.messages == [bencode({'type': 'send slice', 'file': fid, 
-        'begin': 0, 'length': 3})]
-    del connection.messages[:]
-    assert sd.is_downloading()
-    assert not sd.is_choked()
-
-def test_hiccup2():
-    file1 = 'ab'
-    fid1 = sha(file1).digest()
-    file2 = 'cd'
-    fid2 = sha(file2).digest()
-    database = DummyDatabase({fid1: len(file1), fid2: len(file2)}, [fid1, fid2])
-    choker = DummyChoker()
-    uploader = DummyUploader()
-    downloader = Downloader(choker, database, uploader, 3, 1)
-    connection = DummyConnection('a' * 20)
-    
-    downloader.connection_made(connection)
-    assert uploader.received == []
-    assert choker.events == ['connected']
-    del choker.events[:]
-    assert len(choker.downloads) == 1
-    sd = choker.downloads[0]
-    del choker.downloads[:]
-    assert sd.get_id() == 'a' * 20
-    assert not sd.is_downloading()
-    assert not sd.is_choked()
-    assert database.files == {}
-    assert connection.messages == [bencode({'type': 'list all files'})]
-    del connection.messages[:]
-    
-    assert not sd.start_downloading()
-    assert uploader.received == []
-    assert choker.events == []
-    assert database.files == {}
-    assert connection.messages == []
-    assert not sd.is_downloading()
-    assert not sd.is_choked()
-
-    downloader.got_message(connection, bencode({'type': 'I have files', 'files': [fid1, fid2]}))
-    assert uploader.received == []
-    assert choker.events == ['possible']
-    del choker.events[:]
-    assert database.files == {}
-    assert connection.messages == []
-    assert not sd.is_downloading()
-    assert not sd.is_choked()
-
-    assert sd.start_downloading()
-    assert uploader.received == []
-    assert choker.events == []
-    assert database.files == {}
-    assert connection.messages == [bencode({'type': 'send slice', 'file': fid1, 
-        'begin': 0, 'length': 2})]
-    del connection.messages[:]
-    assert sd.is_downloading()
-    assert not sd.is_choked()
-
-    downloader.got_message(connection, bencode({'type': "I don't have files", 
-        'files': [fid1]}))
-    assert uploader.received == []
-    assert choker.events == [('hiccup', false)]
-    del choker.events[:]
-    assert database.files == {}
-    assert connection.messages == [bencode({'type': 'send slice', 'file': fid2, 
-        'begin': 0, 'length': 2})]
-    del connection.messages[:]
-    assert sd.is_downloading()
-    assert not sd.is_choked()
-
-    downloader.got_message(connection, bencode({'type': "I don't have files", 
-        'files': [fid2]}))
-    assert uploader.received == []
-    assert choker.events == [('hiccup', true)]
-    del choker.events[:]
-    assert database.files == {}
-    assert connection.messages == [bencode({'type': 'done downloading'})]
-    del connection.messages[:]
-    assert not sd.is_downloading()
-    assert not sd.is_choked()
-
-    downloader.got_message(connection, bencode({'type': 'I have files', 'files': [fid1, fid2]}))
-    assert uploader.received == []
-    assert choker.events == ['possible']
-    del choker.events[:]
-    assert database.files == {}
-    assert connection.messages == []
-    assert not sd.is_downloading()
-    assert not sd.is_choked()
-
-    assert sd.start_downloading()
-    assert uploader.received == []
-    assert choker.events == []
-    assert database.files == {}
-    assert connection.messages == [bencode({'type': 'send slice', 'file': fid1, 
-        'begin': 0, 'length': 2})]
     del connection.messages[:]
     assert sd.is_downloading()
     assert not sd.is_choked()
