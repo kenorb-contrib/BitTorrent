@@ -40,17 +40,26 @@ class TrackerHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         try:
             self.server.lock.acquire()
-            self.get()
+            self.get(false)
         finally:
             self.server.lock.release()
     
-    def get(self):
+    def do_HEAD(self):
+        try:
+            self.server.lock.acquire()
+            self.get(true)
+        finally:
+            self.server.lock.release()
+    
+    def get(self, head):
         # {filename: ([{'ip': ip, 'port': port}], length, pieces, piece_length)}
         published = self.server.published
         path = unquote(self.path)
         if path == '/' or path == '/index.html':
             self.send_response(200)
             self.end_headers()
+            if head:
+                return
             self.wfile.write('<html><head><title>Published BitTorrent files</title></head><body>\n')
             names = published.keys()
             names.sort()
@@ -70,6 +79,8 @@ class TrackerHandler(BaseHTTPRequestHandler):
                             file['pieces'], file['piece length']) != published[name][1:]:
                         self.send_response(200)
                         self.end_headers()
+                        if head:
+                            return
                         self.wfile.write(bencode({'type': 'failure', 
                             'reason': 'mismatching data for ' + file}))
                         return
@@ -91,17 +102,23 @@ class TrackerHandler(BaseHTTPRequestHandler):
                 self.send_response(200)
                 self.send_header('Content-Type', 'text/plain')
                 self.end_headers()
+                if head:
+                    return
                 self.wfile.write(bencode({'type': 'success', 'your ip': ip}))
             except ValueError, e:
                 print_exc()
                 self.send_response(400)
                 self.send_header('Content-Type', 'text/plain')
                 self.end_headers()
+                if head:
+                    return
                 self.wfile.write('you sent me garbage - ' + str(e))
         elif path[:len(prefix3)] == prefix3:
             self.send_response(200)
             self.send_header('Content-Type', 'text/plain')
             self.end_headers()
+            if head:
+                return
             self.wfile.write('Thank you for your feedback! Love, Nina')
         elif path[:len(prefix2)] == prefix2:
             try:
@@ -115,6 +132,8 @@ class TrackerHandler(BaseHTTPRequestHandler):
                     self.send_response(200)
                     self.send_header('content-type', 'text/plain')
                     self.end_headers()
+                    if head:
+                        return
                     self.wfile.write(bencode({'type': 'failure', 'reason': 'no such file'}))
                 else:
                     publishers, length, pieces, piece_length = published[f]
@@ -127,12 +146,16 @@ class TrackerHandler(BaseHTTPRequestHandler):
                     self.send_response(200)
                     self.send_header('content-type', 'text/plain')
                     self.end_headers()
+                    if head:
+                        return
                     self.wfile.write(bencode(response))
             except ValueError, e:
                 print_exc()
                 self.send_response(400)
                 self.send_header('content-type', 'text/plain')
                 self.end_headers()
+                if head:
+                    return
                 self.wfile.write('you sent me garbage - ' + str(e))
         else:
             f = path[1:]
@@ -140,6 +163,8 @@ class TrackerHandler(BaseHTTPRequestHandler):
                 self.send_response(404)
                 self.send_header('Content-Type', 'text/plain')
                 self.end_headers()
+                if head:
+                    return
                 self.wfile.write('your file may exist elsewhere in the universe\n\n')
                 self.wfile.write('but alas, not here')
             else:
@@ -156,6 +181,8 @@ class TrackerHandler(BaseHTTPRequestHandler):
                 self.send_header('Content-Length', str(len(r)))
                 self.send_header('Pragma', 'no-cache')
                 self.end_headers()
+                if head:
+                    return
                 self.wfile.write(r)
 
 def track(config):

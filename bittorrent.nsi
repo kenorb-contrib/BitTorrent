@@ -20,6 +20,7 @@ Section "Install"
   WriteRegStr HKCR "MIME\Database\Content Type\application/x-bittorrent" Extension .torrent
   WriteRegStr HKCR torrent_auto_file "" "TORRENT File"
   WriteRegBin HKCR torrent_auto_file EditFlags 00000100
+  WriteRegStr HKCR "torrent_auto_file\shell" "" open
   WriteRegStr HKCR "torrent_auto_file\shell\open\command" "" '$INSTDIR\btdownloadprefetched.exe "%1"'
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\BitTorrent" "DisplayName" "BitTorrent 2.5.1"
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\BitTorrent" "UninstallString" '"$INSTDIR\uninstall.exe"'

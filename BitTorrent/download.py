@@ -54,6 +54,8 @@ defaults = [
         'time to wait between closing sockets which nothing has been received on'),
     ('choke_interval', None, 30.0,
         "number of seconds to pause between changing who's choked"),
+    ('max_slice_length', None, 2 ** 17,
+        "maximum length slice to send to peers, larger requests are ignored"),
     ]
 
 t = compile_template({'piece length': 1, 
@@ -148,8 +150,8 @@ def download(params, filefunc, displayfunc, doneflag, cols):
         config['timeout'])
     choker = Choker(config['max_uploads'], rawserver.add_task, config['choke_interval'],
         lambda c: c.get_download().rate)
-    def make_upload(connection, choker = choker, blobs = blobs):
-        return Upload(connection, choker, blobs)
+    def make_upload(connection, choker = choker, blobs = blobs, max_slice_length = config['max_slice_length']):
+        return Upload(connection, choker, blobs, max_slice_length)
     dd = DownloaderData(blobs, config['download_slice_size'])
     def make_download(connection, data = dd, backlog = config['request_backlog']):
         return Download(connection, data, backlog)
