@@ -26,7 +26,7 @@ class InvokeEvent(wxPyEvent):
 
 class DownloadInfo:
     def __init__(self):
-        frame = wxFrame(None, -1, 'BitTorrent complete dir 1.0', size = wxSize(550, 250))
+        frame = wxFrame(None, -1, 'BitTorrent complete dir 1.0.1', size = wxSize(550, 250))
         self.frame = frame
 
         panel = wxPanel(frame, -1)
@@ -48,6 +48,12 @@ class DownloadInfo:
         gridSizer.Add(wxStaticText(panel, -1, 'announce url:'))
         self.annCtl = wxTextCtrl(panel, -1, 'http://my.tracker:6969/announce')
         gridSizer.Add(self.annCtl, 0, wxEXPAND)
+
+        gridSizer.Add(wxStaticText(panel, -1, 'piece size:'))
+        self.piece_length = wxChoice(panel, -1, choices = ['2 ** 21', '2 ** 20', '2 ** 19', 
+            '2 ** 18', '2 ** 17', '2 ** 16', '2 ** 15'])
+        self.piece_length.SetSelection(3)
+        gridSizer.Add(self.piece_length)
 
         gridSizer.AddGrowableCol(1)
  
@@ -73,16 +79,18 @@ class DownloadInfo:
             dlg.Destroy()
             return
         try:
-            CompleteDir(self.dirCtl.GetValue(), self.annCtl.GetValue())
+            ps = 2 ** (21 - self.piece_length.GetSelection())
+            CompleteDir(self.dirCtl.GetValue(), self.annCtl.GetValue(), ps)
         except:
             print_exc()
 
 from traceback import print_exc
 
 class CompleteDir:
-    def __init__(self, d, a):
+    def __init__(self, d, a, pl):
         self.d = d
         self.a = a
+        self.pl = pl
         self.flag = Event()
         frame = wxFrame(None, -1, 'BitTorrent make directory', size = wxSize(550, 250))
         self.frame = frame
@@ -115,7 +123,7 @@ class CompleteDir:
 
     def complete(self):
         try:
-            completedir(self.d, self.a, self.flag, self.valcallback, self.filecallback)
+            completedir(self.d, self.a, self.flag, self.valcallback, self.filecallback, self.pl)
             if not self.flag.isSet():
                 self.currentLabel.SetLabel('Done!')
                 self.gauge.SetValue(1000)

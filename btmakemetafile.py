@@ -19,8 +19,10 @@ ignore = ['core', 'CVS'] # ignoring these files could be trouble
 def dummy(v):
     pass
 
-def make_meta_file(file, url, piece_length = 2 ** 18, 
+def make_meta_file(file, url, piece_length = None, 
         flag = Event(), progress = dummy, progress_percent=1):
+    if piece_length is None:
+        piece_length = 2 ** 18
     a, b = split(file)
     if b == '':
         f = a + '.torrent'

@@ -13,7 +13,7 @@ from btmakemetafile import calcsize, make_meta_file, ignore
 def dummy(x):
     pass
 
-def completedir(dir, url, flag = Event(), vc = dummy, fc = dummy):
+def completedir(dir, url, flag = Event(), vc = dummy, fc = dummy, piece_length = None):
     files = listdir(dir)
     files.sort()
     ext = '.torrent'
@@ -36,7 +36,7 @@ def completedir(dir, url, flag = Event(), vc = dummy, fc = dummy):
         try:
             t = split(i)[-1] 
             if t not in ignore and t[0] != '.':
-                make_meta_file(i, url, flag = flag, progress = callback, progress_percent=0)
+                make_meta_file(i, url, flag = flag, progress = callback, progress_percent=0, piece_length = piece_length)
         except ValueError:
             print_exc()
 
