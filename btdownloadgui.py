@@ -80,6 +80,7 @@ class DownloadInfoFrame:
         colSizer.Add(gridSizer, 0, wxEXPAND)
 
         self.errorText = wxStaticText(panel, -1, '', style = wxALIGN_LEFT)
+        self.errorText.SetForegroundColour('Red')
         colSizer.Add(self.errorText, 0, wxEXPAND)
         self.cancelButton = wxButton(panel, -1, 'Cancel')
         colSizer.Add(self.cancelButton, 0, wxALIGN_CENTER)
