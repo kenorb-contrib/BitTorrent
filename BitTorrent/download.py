@@ -56,7 +56,7 @@ defaults = [
         'time to wait between checking if any connections have timed out'),
     ('max_slice_length', None, 2 ** 17,
         "maximum length slice to send to peers, larger requests are ignored"),
-    ('max_rate_recalculate_interval', None, 15.0,
+    ('max_rate_recalculate_interval', None, 5.0,
         "maximum amount of time to let a connection pause before reducing it's rate"),
     ('max_rate_period', None, 20.0,
         "maximum amount of time to guess the current rate estimate represents"),
@@ -74,8 +74,10 @@ defaults = [
         'number of seconds to wait before assuming that an http connection has timed out'),
     ('max_initiate', None, 40,
         'number of peers at which to stop initiating new connections'),
-    ('check_hashes', None, 0,
-        'a signal to not check hashes on disk'),
+    ('check_hashes', None, 1,
+        'whether to check hashes on disk'),
+    ('max_upload_rate', None, 0,
+        'maximum kB/s to upload at, 0 means no limit'),
     ]
 
 def download(params, filefunc, statusfunc, finfunc, errorfunc, doneflag, cols):
@@ -197,12 +199,11 @@ def download(params, filefunc, statusfunc, finfunc, errorfunc, doneflag, cols):
     downmeasure = Measure(config['max_rate_period'], config['max_rate_recalculate_interval'])
     def make_upload(connection, choker = choker, 
             storagewrapper = storagewrapper, 
-            upmeasure = upmeasure,
             max_slice_length = config['max_slice_length'],
             max_rate_period = config['max_rate_period'],
             fudge = config['upload_rate_fudge'],
             max_pause = config['max_rate_recalculate_interval']):
-        return Upload(connection, choker, storagewrapper, upmeasure, 
+        return Upload(connection, choker, storagewrapper, 
             max_slice_length, max_rate_period, fudge, max_pause)
     ratemeasure = RateMeasure(storagewrapper.get_amount_left())
     downloader = Downloader(storagewrapper, 
@@ -210,7 +211,8 @@ def download(params, filefunc, statusfunc, finfunc, errorfunc, doneflag, cols):
         config['max_rate_recalculate_interval'], 
         len(pieces), downmeasure, ratemeasure.data_came_in)
     connecter = Connecter(make_upload, downloader, choker,
-        len(pieces), storagewrapper.is_everything_pending, EndgameDownloader)
+        len(pieces), storagewrapper.is_everything_pending, EndgameDownloader,
+        upmeasure, config['max_upload_rate'], rawserver.add_task)
     infohash = sha(bencode(info)).digest()
     encrypter = Encrypter(connecter, rawserver, 
         myid, config['max_message_length'], rawserver.add_task, 

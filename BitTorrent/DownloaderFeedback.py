@@ -54,7 +54,7 @@ class DownloaderFeedback:
 
     def display(self):
         self.add_task(self.display, self.interval)
-        #self.spew()
+        self.spew()
         if self.finflag.isSet():
             self.statusfunc(upRate = self.upfunc())
             return

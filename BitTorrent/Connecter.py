@@ -4,6 +4,7 @@
 from bitfield import bitfield_to_booleans, booleans_to_bitfield
 from traceback import print_exc
 from binascii import b2a_hex
+from CurrentRateMeasure import Measure
 true = 1
 false = 0
 
@@ -30,8 +31,9 @@ PIECE = chr(7)
 CANCEL = chr(8)
 
 class Connection:
-    def __init__(self, connection):
+    def __init__(self, connection, connecter):
         self.connection = connection
+        self.connecter = connecter
         self.got_anything = false
 
     def get_ip(self):
@@ -41,6 +43,8 @@ class Connection:
         self.connection.close()
 
     def is_flushed(self):
+        if self.connecter.rate_capped:
+            return false
         return self.connection.is_flushed()
 
     def is_locally_initiated(self):
@@ -67,6 +71,8 @@ class Connection:
             tobinary(begin) + tobinary(length))
 
     def send_piece(self, index, begin, piece):
+        assert not self.connecter.rate_capped
+        self.connecter._update_upload_rate(len(piece))
         self.connection.send_message(PIECE + tobinary(index) + 
             tobinary(begin) + piece)
 
@@ -88,22 +94,49 @@ class Connection:
 
 class Connecter:
     def __init__(self, make_upload, downloader, choker, numpieces,
-            is_everything_pending, make_endgame):
+            is_everything_pending, make_endgame, totalup, max_upload_rate = 0, sched = None):
         self.downloader = downloader
         self.make_upload = make_upload
         self.choker = choker
         self.numpieces = numpieces
         self.is_everything_pending = is_everything_pending
+        self.max_upload_rate = max_upload_rate
+        self.sched = sched
+        self.totalup = totalup
+        self.rate_capped = false
         self.make_endgame = make_endgame
         self.connections = {}
         self.endgame = false
         self.check_endgame()
 
+    def _update_upload_rate(self, amount):
+        self.totalup.update_rate(amount)
+        if self.max_upload_rate > 0 and self.totalup.get_rate_noupdate() > self.max_upload_rate:
+            self.rate_capped = true
+            self.sched(self._uncap, self.totalup.time_until_rate(self.max_upload_rate))
+
+    def _uncap(self):
+        self.rate_capped = false
+        while not self.rate_capped:
+            up = None
+            minrate = None
+            for i in self.connections.values():
+                if not i.upload.is_choked() and i.upload.has_queries() and i.connection.is_flushed():
+                    rate = i.upload.get_rate()
+                    if up is None or rate < minrate:
+                        up = i.upload
+                        minrate = rate
+            if up is None:
+                break
+            up.flushed()
+            if self.totalup.get_rate_noupdate() > self.max_upload_rate:
+                break
+
     def how_many_connections(self):
         return len(self.connections)
 
     def connection_made(self, connection):
-        c = Connection(connection)
+        c = Connection(connection, self)
         self.connections[connection] = c
         c.upload = self.make_upload(c)
         c.download = self.downloader.make_download(c)
@@ -275,7 +308,7 @@ def test_operation():
     cs = []
     co = Connecter(lambda c, events = events: DummyUpload(events), 
         DummyDownloader(events), DummyChoker(events, cs), 3, 
-        lambda: false, None)
+        lambda: false, None, Measure(10, 5))
     assert events == []
     assert cs == []
     
