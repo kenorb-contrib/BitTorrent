@@ -70,12 +70,8 @@ class SingleBlob:
         else:
             self.already_existed = false
             self.h = self.open(file, 'wb+')
-            c = chr(0) * csize
-            i = 0
-            while i + csize < file_length:
-                self.h.write(c)
-                i += csize
-            self.h.write(chr(0) * (file_length - i))
+            self.h.seek(file_length - 1)
+            self.h.write(chr(0))
             self.h.flush()
 
     def get_size(self, blob):

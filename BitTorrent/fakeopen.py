@@ -21,6 +21,8 @@ class FakeHandle:
     def read(self, amount = None):
         old = self.pos
         f = self.fakeopen.files[self.name]
+        if self.pos >= len(f):
+            return ''
         if amount is None:
             self.pos = len(f)
             return join(f[old:], '')
@@ -29,6 +31,9 @@ class FakeHandle:
             return join(f[old:self.pos], '')
     
     def write(self, s):
+        f = self.fakeopen.files[self.name]
+        while len(f) < self.pos:
+            f.append(chr(0))
         self.fakeopen.files[self.name][self.pos : self.pos + len(s)] = list(s)
         self.pos += len(s)
 
