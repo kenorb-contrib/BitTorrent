@@ -8,7 +8,7 @@ from BitTorrent import version
 from BitTorrent.download import download
 from btdownloadheadless import print_spew
 from threading import Event, Thread
-from os.path import join
+from os.path import join, split, exists
 from os import getcwd
 from wxPython.wx import *
 from time import strftime, time
@@ -254,19 +254,43 @@ class btWxApp(wxApp):
         return 1
 
 def run(params):
-  try:
-    app = btWxApp(0, params)
-    app.MainLoop()
-  except:
-      print_exc()
+    try:
+        app = btWxApp(0, params)
+        app.MainLoop()
+    except:
+        print_exc()
 
 def next(params, d, doneflag):
-  try:
-    download(params, d.chooseFile, d.updateStatus, d.finished, d.error, doneflag, 100, d.newpath)
-    if not d.fin:
-        d.failed()
-  except:
-      print_exc()
+    try:
+        p = join(split(argv[0])[0], 'donated')
+        if not exists(p) and long(time()) % 3 == 0:
+            open_new('http://bitconjurer.org/BitTorrent/donate.html')
+            dlg = wxMessageDialog(d.frame, 'BitTorrent is Donation supported software. ' + 
+                'Please go to the donation page (which should be appearing for you now) and make a donation from there. ' + 
+                'Or you can click no and donate later.\n\nHave you made a donation yet?',
+                'Donate!', wxYES_NO | wxICON_INFORMATION | wxNO_DEFAULT)
+            if dlg.ShowModal() == wxID_YES:
+                dlg.Destroy()
+                dlg = wxMessageDialog(d.frame, 'Thanks for your donation! You will no longer be shown donation requests.\n\n' + 
+                    "If you haven't actually made a donation and are feeling guilty (as you should!) you can always get to " + 
+                    "the donation page by clicking the 'about' link in the upper-right corner of the main BitTorrent window and " + 
+                    'donating from there.', 'Thanks!', wxOK)
+                dlg.ShowModal()
+                dlg.Destroy()
+                try:
+                    open(p, 'wb').close()
+                except IOError, e:
+                    dlg = wxMessageDialog(d.frame, "Sorry, but I couldn't set the flag to not ask you for donations in the future - " + str(e),
+                        'Sorry!', wxOK)
+                    dlg.ShowModal()
+                    dlg.Destroy()
+            else:
+                dlg.Destroy()
+        download(params, d.chooseFile, d.updateStatus, d.finished, d.error, doneflag, 100, d.newpath)
+        if not d.fin:
+            d.failed()
+    except:
+        print_exc()
 
 if __name__ == '__main__':
     run(argv[1:])
