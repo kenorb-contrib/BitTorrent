@@ -63,6 +63,7 @@ class SingleSocket:
             code, msg = e
             if code != EWOULDBLOCK:
                 self.raw_server.dead_from_write.append(self)
+                return
         if self.buffer == []:
             self.raw_server.poll.register(self.socket, POLLIN)
         else:
@@ -112,7 +113,7 @@ class RawServer:
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.setblocking(0)
         sock.connect_ex(dns)
-        self.poll.register(sock, all)
+        self.poll.register(sock, POLLIN)
         s = SingleSocket(self, sock)
         self.single_sockets[sock.fileno()] = s
         return s
@@ -154,10 +155,9 @@ class RawServer:
                             self.close_socket(s)
                             continue
                 if (event & POLLOUT) != 0 and s.socket is not None:
-                    if not s.is_flushed():
-                        s.try_write()
-                        if s.is_flushed():
-                            self.handler.connection_flushed(s)
+                    s.try_write()
+                    if s.is_flushed():
+                        self.handler.connection_flushed(s)
 
     def listen_forever(self):
         try:
@@ -186,6 +186,8 @@ class RawServer:
                                 print_exc()
                     self.close_dead()
                     self.handle_events(events)
+                    if self.doneflag.isSet():
+                        return
                     self.close_dead()
                 except error, e:
                     if self.doneflag.isSet():
@@ -206,7 +208,7 @@ class RawServer:
             old = self.dead_from_write
             self.dead_from_write = []
             for s in old:
-                if self.single_sockets.has_key(s):
+                if s.socket is not None:
                     self.close_socket(s)
 
     def close_socket(self, s):

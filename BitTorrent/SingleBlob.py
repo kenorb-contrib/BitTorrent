@@ -40,14 +40,12 @@ class SingleBlob:
         self.want_list = self.want.keys()
         shuffle(self.want_list)
         if exists(file):
-            self.already_existed = true
             if getsize(file) != file_length:
                 raise ValueError, 'existing file is of incorrect length'
             self.h = self.open(file, 'rb+')
             for blob in self.want.keys():
                 self.check_blob(blob)
         else:
-            self.already_existed = false
             self.h = self.open(file, 'wb+')
             self.h.seek(file_length - 1)
             self.h.write(chr(0))

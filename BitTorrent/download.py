@@ -6,8 +6,8 @@ from urlparse import urljoin
 from StreamEncrypter import make_encrypter
 from PublisherChoker import Choker
 from SingleBlob import SingleBlob
-from Uploader import Uploader
-from Downloader import Downloader
+from Uploader import Upload
+from Downloader import Download
 from Connecter import Connecter
 from Encrypter import Encrypter
 from RawServer import RawServer
@@ -15,7 +15,7 @@ from DownloaderFeedback import DownloaderFeedback
 from threading import Condition
 from entropy import entropy
 from bencode import bencode, bdecode
-from btemplate import compile_template, string_template, ListMarker, OptionMarker
+from btemplate import compile_template, string_template, ListMarker, OptionMarker, exact_length
 from binascii import b2a_hex
 from os import path
 from parseargs import parseargs, formatDefinitions
@@ -23,10 +23,6 @@ import socket
 from random import randrange, seed
 true = 1
 false = 0
-
-def len20(s, verbose):
-    if ((type(s) != type('')) or (len(s) != 20)):
-        raise ValueError
 
 defaults = [
     ('max_uploads', None, 3,
@@ -55,9 +51,12 @@ defaults = [
         'local file name to save the file as, null indicates query user'),
     ('timeout', None, 300.0,
         'time to wait between closing sockets which nothing has been received on'),
+    ('choke_interval', None, 30.0,
+        "number of seconds to pause between changing who's choked"),
     ]
 
-t = compile_template({'hash': len20, 'piece length': 1, 'pieces': ListMarker(len20),
+t = compile_template({'hash': exact_length(20), 'piece length': 1, 
+    'pieces': ListMarker(exact_length(20)),
     'peers': ListMarker({'ip': string_template, 'port': 1}), 'type': 'success',
     'length': 0, 'id': string_template, 'name': string_template, 
     'announce': string_template, 'postannounce': OptionMarker(string_template),
@@ -94,7 +93,7 @@ def download(params, filefunc, displayfunc, doneflag, cols):
         except IOError, e:
             displayfunc('IO problem reading file - ' + str(e), 'Okay')
             return false
-        
+
     try:
         h = urlopen('http://bitconjurer.org/BitTorrent/status-downloader-02-05-01.txt')
         status = h.read().strip()
@@ -119,8 +118,22 @@ def download(params, filefunc, displayfunc, doneflag, cols):
         return false
     try:
         file_length = response['length']
+        if path.exists(file):
+            displayfunc('checking existing file...', 'Cancel')
+            resuming = true
+        else:
+            displayfunc('allocating new file...', 'Cancel')
+            resuming = false
+        r = [0]
+        def finished(result, displayfunc = displayfunc, doneflag = doneflag, r = r):
+            if result:
+                r[0] = 1
+                displayfunc('Download Succeeded!', 'Okay')
+            else:
+                displayfunc('Download Failed', 'Okay')
+            doneflag.set()
         blobs = SingleBlob(file, response['hash'], file_length, response['pieces'], 
-            response['piece length'], None, open, path.exists, path.getsize, displayfunc)
+            response['piece length'], finished, open, path.exists, path.getsize)
         if len(blobs.get_list_of_files_I_want()) == 0:
             displayfunc('that file has already been completely downloaded', 'Okay')
             return true
@@ -130,33 +143,25 @@ def download(params, filefunc, displayfunc, doneflag, cols):
     except IOError, e:
         displayfunc('disk access error - ' + str(e), 'Okay')
         return false
-    choker = Choker(config['max_uploads'])
-    uploader = Uploader(choker, blobs)
-    downloader = Downloader(choker, blobs, uploader, 
-        config['download_slice_size'], config['request_backlog'])
     rawserver = RawServer(config['max_poll_period'], doneflag,
         config['timeout'])
-    connecter = Connecter(uploader, downloader)
+    choker = Choker(config['max_uploads'], rawserver.add_task, config['choke_interval'])
+    def make_upload(connection, choker = choker, blobs = blobs):
+        return Upload(connection, choker, blobs)
+    dd = DownloaderData(blobs, config['download_slice_size'])
+    def make_download(connection, data = dd, backlog = config['request_backlog']):
+        return Download(connection, data, backlog)
+    connecter = Connecter(make_upload, make_download, choker)
     seed(entropy(20))
     encrypter = Encrypter(connecter, rawserver, lambda e = entropy: e(20),
         entropy(20), config['max_message_length'], rawserver.add_task, 
         config['keepalive_interval'])
-    connecter.set_encrypter(encrypter)
     listen_port = config['port']
     if listen_port == 0:
         listen_port = randrange(5000, 10000)
-    r = [0]
-    def finished(result, displayfunc = displayfunc, doneflag = doneflag, r = r):
-        if result:
-            r[0] = 1
-            displayfunc('Download Succeeded!', 'Okay')
-        else:
-            displayfunc('Download Failed', 'Okay')
-        doneflag.set()
-    blobs.callback = finished
     left = blobs.get_amount_left()
-
-    connecter.start_connecting([(x['ip'], x['port']) for x in response['peers']])
+    for x in response['peers']:
+        encrypter.start_connection((x['ip'], x['port']))
 
     try:
         myid = entropy(20)
@@ -164,7 +169,7 @@ def download(params, filefunc, displayfunc, doneflag, cols):
             'myid': myid}
         if config['ip'] != '':
             a['ip'] = config['ip']
-        if blobs.already_existed:
+        if resuming:
             a['remaining'] = left
         url = urljoin(response['url'], response['announce'] + 
             b2a_hex(bencode(a)) + response.get('postannounce', ''))
