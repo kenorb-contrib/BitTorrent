@@ -2,17 +2,64 @@
 # this file is public domain
 
 from sha import sha
+from bencode import bencode, bdecode
+from btemplate import compile_template, st, ListMarker
+from SingleBlob import make_indices
+from types import StringType
 true = 1
 false = 0
 
+def len20(s, verbose):
+    if type(s) != StringType or len(s) != 20:
+        raise ValueError
+
+info_template = compile_template({'version': '1.0', 'file name': st,
+    'last modified': 0, 'file length': 0, 'pieces': ListMarker(len20),
+    'piece length': 1, 'hash': len20})
+
 class MultiBlob:
-    def __init__(self, files, piece_length, open, getsize):
+    def __init__(self, files, piece_length, open, getsize, exists, 
+            split, getmtime, time, isfile):
         self.open = open
         # blob: (file, begin, end)
         self.blobs = {}
-        # name, hash, [pieces]
+        # name, hash, [pieces], length
         self.info = []
         for file in files:
+            if not exists(file):
+                raise ValueError, file + ' does not exist'
+            if not isfile(file):
+                raise ValueError, file + ' is not a file'
+            filetail = split(file)[1]
+            metafile = file + '.btinfo'
+            if exists(metafile):
+                h = open(metafile, 'rb')
+                v = h.read()
+                h.close()
+                try:
+                    v = bdecode(v)
+                    info_template(v)
+                    if v['file name'] != filetail:
+                        raise ValueError, 'wrong file name, got ' + v['file name']
+                    if v['last modified'] == getmtime(file):
+                        c = true
+                        if v['piece length'] != piece_length:
+                            raise ValueError, 'mismatching piece length'
+                        if v['file length'] != getsize(file):
+                            raise ValueError, 'wrong length'
+                        indices = make_indices(v['pieces'], piece_length, 
+                            v['file length'])
+                        for (blob, vs) in indices.items():
+                            begin, end = vs[0]
+                            self.blobs[blob] = (file, begin, end)
+                        self.info.append((filetail, v['hash'], 
+                            v['pieces'], v['file length']))
+                    else:
+                        c = false
+                except ValueError, e:
+                    raise ValueError, 'error in ' + metafile + ' - ' + str(e)
+                if c:
+                    continue
             pieces = []
             fhash = sha()
             len = getsize(file)
@@ -29,9 +76,17 @@ class MultiBlob:
             piece = sha(block).digest()
             pieces.append(piece)
             fhash.update(block)
+            fhash = fhash.digest()
             self.blobs[piece] = (file, i, len)
             h.close()
-            self.info.append((file, fhash.digest(), pieces, len))
+            self.info.append((filetail, fhash, pieces, len))
+            
+            h = open(metafile, 'wb')
+            h.write(bencode({'version': '1.0', 'file name': filetail, 
+                'last modified': getmtime(file), 'file length': len, 
+                'piece length': piece_length, 'pieces': pieces,
+                'hash': fhash}))
+            h.close()
 
     def get_info(self):
         return self.info
@@ -61,7 +116,28 @@ def test_long_file():
     a = sha(s[:10]).digest()
     b = sha(s[10:]).digest()
     fo = FakeOpen({'test': s})
-    mb = MultiBlob(['test'], 10, fo.open, fo.getsize)
+    mb = MultiBlob(['test'], 10, fo.open, fo.getsize, fo.exists, 
+        lambda x: ('', x), lambda x: 0, lambda: 0, lambda x: true)
+    x = mb.get_list_of_files_I_have()
+    assert x == [a, b] or x == [b, a]
+    assert mb.get_slice(a, 0, 5) == s[:5]
+    assert mb.get_slice(a, 5, 5) == s[5:10]
+    assert mb.get_slice(a, 5, 20) == None
+    assert mb.get_slice(b, 0, 2) == s[10:12]
+    assert mb.get_slice(b, 4, 1) == s[14:]
+    assert mb.get_slice(b, 4, 3) == None
+    assert mb.get_slice(chr(0) * 20, 0, 2) == None
+    assert mb.get_info() == [('test', sha(s).digest(), [a, b], 15)]
+
+def test_resurrected():
+    s = 'abc' * 5
+    a = sha(s[:10]).digest()
+    b = sha(s[10:]).digest()
+    fo = FakeOpen({'test': s})
+    mb = MultiBlob(['test'], 10, fo.open, fo.getsize, fo.exists, 
+        lambda x: ('', x), lambda x: 0, lambda: 0, lambda x: true)
+    mb = MultiBlob(['test'], 10, fo.open, fo.getsize, fo.exists, 
+        lambda x: ('', x), lambda x: 0, lambda: 0, lambda x: true)
     x = mb.get_list_of_files_I_have()
     assert x == [a, b] or x == [b, a]
     assert mb.get_slice(a, 0, 5) == s[:5]
@@ -78,7 +154,8 @@ def test_even():
     a = sha(s[:10]).digest()
     b = sha(s[10:]).digest()
     fo = FakeOpen({'test': s})
-    mb = MultiBlob(['test'], 10, fo.open, fo.getsize)
+    mb = MultiBlob(['test'], 10, fo.open, fo.getsize, fo.exists, 
+        lambda x: ('', x), lambda x: 0, lambda: 0, lambda x: true)
     x = mb.get_list_of_files_I_have()
     assert x == [a, b] or x == [b, a]
     assert mb.get_slice(a, 0, 5) == s[:5]
@@ -88,23 +165,25 @@ def test_even():
     assert mb.get_slice(b, 4, 6) == s[14:]
     assert mb.get_info() == [('test', sha(s).digest(), [a, b], 20)]
 
-def dirtest_short():
+def test_short():
     s = 'abc' * 2
     a = sha(s).digest()
     fo = FakeOpen({'test': s})
-    mb = MultiBlob(['test'], 10, fo.open, fo.getsize)
+    mb = MultiBlob(['test'], 10, fo.open, fo.getsize, fo.exists, 
+        lambda x: ('', x), lambda x: 0, lambda: 0, lambda x: true)
     assert mb.get_list_of_files_I_have() == [a]
     assert mb.get_slice(a, 0, 5) == s[:5]
     assert mb.get_slice(a, 5, 1) == s[5:]
     assert mb.get_slice(a, 5, 20) == None
     assert mb.get_slice(a, 2, 1) == s[2:3]
-    assert mb.get_info() == [(file, a, [a], 6)]
+    assert mb.get_info() == [('test', a, [a], 6)]
 
-def dirtest_null():
+def test_null():
     s = ''
     a = sha(s).digest()
     fo = FakeOpen({'test': s})
-    mb = MultiBlob(['test'], 10, fo.open, fo.getsize)
+    mb = MultiBlob(['test'], 10, fo.open, fo.getsize, fo.exists, 
+        lambda x: ('', x), lambda x: 0, lambda: 0, lambda x: true)
     assert mb.get_list_of_files_I_have() == [a]
     assert mb.get_slice(a, 0, 5) == None
     assert mb.get_slice(a, 0, 0) == ''

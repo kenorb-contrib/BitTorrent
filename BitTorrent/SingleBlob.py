@@ -8,6 +8,27 @@ false = 0
 
 csize = 2 ** 20
 
+def make_indices(pieces, piece_length, file_length):
+    if file_length > len(pieces) * piece_length:
+        raise ValueError, "bigger than the sum of it's parts"
+    if file_length < (len(pieces) - 1) * piece_length:
+        raise ValueError, "smaller than the sum of it's parts"
+    # hash:  [(begin, end)]
+    indices = {}
+    for i in xrange(len(pieces)):
+        begin = i * piece_length
+        end = min((i+1) * piece_length, file_length)
+        if end - begin == 0:
+            break
+        if indices.has_key(pieces[i]):
+            array = indices[pieces[i]]
+            if end - begin != array[0][1] - array[0][0]:
+                raise ValueError, 'pieces with different lengths supposedly have the same hash'
+            array.append((begin, end))
+        else:
+            indices[pieces[i]] = [(begin, end)]
+    return indices
+
 class SingleBlob:
     def __init__(self, file, file_hash, file_length, pieces, 
             piece_length, callback, open, exists, getsize, displayfunc):
@@ -16,24 +37,7 @@ class SingleBlob:
         self.file_hash = file_hash
         self.file_length = file_length
         self.callback = callback
-        if file_length > len(pieces) * piece_length:
-            raise ValueError, "bigger than the sum of it's parts"
-        if file_length < (len(pieces) - 1) * piece_length:
-            raise ValueError, "smaller than the sum of it's parts"
-        # hash:  [(begin, end)]
-        self.indices = {}
-        for i in xrange(len(pieces)):
-            begin = i * piece_length
-            end = min((i+1) * piece_length, file_length)
-            if end - begin == 0:
-                break
-            if self.indices.has_key(pieces[i]):
-                array = self.indices[pieces[i]]
-                if end - begin != array[0][1] - array[0][0]:
-                    raise ValueError, 'pieces with different lengths supposedly have the same hash'
-                array.append((begin, end))
-            else:
-                self.indices[pieces[i]] = [(begin, end)]
+        self.indices = make_indices(pieces, piece_length, file_length)
         # hash: 1
         self.complete = {}
         # hash: amount have

@@ -17,8 +17,9 @@ from entropy import entropy
 from bencode import bencode, bdecode
 from binascii import b2a_hex
 from btemplate import compile_template, string_template
-from os.path import split, getsize
+from os.path import split, getsize, exists, isfile, getmtime
 from random import randrange
+from time import time
 true = 1
 false = 0
 
@@ -62,7 +63,8 @@ def publish(params, cols):
     noncefunc = lambda e = entropy: e(20)
     throttler = Throttler(config['max_uploads'])
     piece_length = config['piece_size']
-    blobs = MultiBlob(files, piece_length, open, getsize)
+    blobs = MultiBlob(files, piece_length, open, getsize, exists, 
+        split, getmtime, time, isfile)
     uploader = Uploader(throttler, blobs)
     downloader = DummyDownloader()
     connecter = Connecter(uploader, downloader)
@@ -77,8 +79,7 @@ def publish(params, cols):
     try:
         files = []
         for name, hash, pieces, length in blobs.get_info():
-            head, tail = split(name)
-            files.append({'hash': hash, 'pieces': pieces, 'name': tail, 
+            files.append({'hash': hash, 'pieces': pieces, 'name': name, 
                 'piece length': piece_length, 'length': length})
         message = {'type': 'publish', 'port': listen_port, 'files': files}
         if config['ip'] != '':
