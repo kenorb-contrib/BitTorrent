@@ -7,7 +7,7 @@ true = 1
 false = 0
 
 class Download:
-    def __init__(self, connection, data, backlog, max_rate_period, total_down = [0]):
+    def __init__(self, connection, data, backlog, max_rate_period, total_down = [0l]):
         self.connection = connection
         self.data = data
         self.backlog = backlog

@@ -8,7 +8,7 @@ false = 0
 
 class Upload:
     def __init__(self, connection, choker, blobs, 
-            max_slice_length, max_rate_period, total_up = [0]):
+            max_slice_length, max_rate_period, total_up = [0l]):
         self.connection = connection
         self.choker = choker
         self.blobs = blobs

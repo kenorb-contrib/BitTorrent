@@ -164,8 +164,8 @@ def download(params, filefunc, statusfunc, resultfunc, doneflag, cols):
         config['timeout'])
     choker = Choker(config['max_uploads'], rawserver.add_task, config['choke_interval'],
         lambda c: c.get_download().rate)
-    total_up = [0]
-    total_down = [0]
+    total_up = [0l]
+    total_down = [0l]
     def make_upload(connection, choker = choker, blobs = blobs, 
             max_slice_length = config['max_slice_length'],
             max_rate_period = config['max_rate_period'],
