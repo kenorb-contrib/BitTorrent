@@ -7,21 +7,14 @@ install Python, version 2.0 or later - http://python.org/
 install wxPython - http://wxpython.org/
 
 untar and cd to the root BitTorrent directory and 
-enter the following commands (you may have to be root 
-to execute some of them)
+enter the following command
 
 ./setup.py install
-cp torrent /usr/lib/mime/packages
-update-mime
 
-and web browse! You can start with this page - 
+To integrate with your web browser, copy the contents of 
+the file named 'torrent' into your /etc/mailcap file. 
+Under Debian you can do this with 
+cp torrent /usr/lib/mime/packages;update-mime
 
-http://bitconjurer.org/BitTorrent/download.html
-
-To run a tracker, execute the command bttrack.py (it will be in 
-your path, and give help information when you run it)
-
-To publish, execute the command btpublish.py and point it at your 
-tracker. Note that the default location is 
-http://tracker.ip/publish/ and that the tracker has a default index 
-page which links to everything published on it.
+You may have to restart your web browser for it to start 
+using BitTorrent.
