@@ -123,8 +123,7 @@ class RawServer:
             handler = self.handler
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.setblocking(0)
-        here_host, here_port = sock.getsockname()
-        sock.bind((self.bindaddr, here_port))
+        sock.bind((self.bindaddr, 0))
         try:
             sock.connect_ex(dns)
         except socket.error:
