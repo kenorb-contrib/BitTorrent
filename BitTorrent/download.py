@@ -271,7 +271,7 @@ def download(params, filefunc, statusfunc, finfunc, errorfunc, doneflag, cols, p
         spewflag.set()
     DownloaderFeedback(choker, rawserver.add_task, statusfunc, 
         upmeasure.get_rate, downmeasure.get_rate, 
-        upmeasure.get_total_megs, downmeasure.get_total_megs, ratemeasure.get_time_left, 
+        upmeasure.get_total, downmeasure.get_total, ratemeasure.get_time_left, 
         ratemeasure.get_size_left, file_length, finflag,
         config['display_interval'], spewflag)
 

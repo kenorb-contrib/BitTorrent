@@ -59,7 +59,7 @@ class DownloaderFeedback:
         self.add_task(self.display, self.interval)
         spew = []
         if self.finflag.isSet():
-            status = {"upRate" : self.upfunc(), "upTotal" : self.uptotal()}
+            status = {"upRate" : self.upfunc(), "upTotal" : self.uptotal() / 1048576.0}
             if self.spewflag.isSet():
                 status['spew'] = self.collect_spew()
             self.statusfunc(status)
@@ -74,8 +74,8 @@ class DownloaderFeedback:
             "fractionDone" : fractionDone, 
             "downRate" : self.downfunc(), 
             "upRate" : self.upfunc(),
-            "upTotal" : self.uptotal(),
-            "downTotal" : self.downtotal()
+            "upTotal" : self.uptotal() / 1048576.0,
+            "downTotal" : self.downtotal() / 1048576.0
             }
         if timeEst is not None:
             status['timeEst'] = timeEst
