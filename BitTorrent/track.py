@@ -325,7 +325,7 @@ class Tracker:
             infohash = params['info_hash']
             if self.allowed != None:
                 if not self.allowed.has_key(infohash):
-                    return (403, 'Forbidden', {'Content-Type': 'text/plain', 'Pragma': 'no-cache'}, bencode({'failure reason':
+                    return (200, 'Okay', {'Content-Type': 'text/plain', 'Pragma': 'no-cache'}, bencode({'failure reason':
                     'Requested download is not authorized for use with this tracker.'}))
             ip = connection.get_ip()
             ip_override = 0
@@ -354,11 +354,11 @@ class Tracker:
             myinfo = peers[myid]
             if myinfo.has_key('key'):
                 if params.get('key') != myinfo['key']:
-                    return (403, 'Forbidden', {'Content-Type': 'text/plain', 'Pragma': 'no-cache'}, 
+                    return (200, 'Okay', {'Content-Type': 'text/plain', 'Pragma': 'no-cache'}, 
                         bencode({'failure reason': 'key did not match key supplied earlier'}))
             else:
                 if myinfo['ip'] != ip:
-                    return (403, 'Forbidden', {'Content-Type': 'text/plain', 'Pragma': 'no-cache'}, 
+                    return (200, 'Okay', {'Content-Type': 'text/plain', 'Pragma': 'no-cache'}, 
                         bencode({'failure reason': 'key parameter must be supported to change ips'}))
         if params.get('event', '') != 'stopped':
             ts[myid] = time()
