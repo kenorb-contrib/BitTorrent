@@ -12,7 +12,7 @@ def booleans_to_bitfield(booleans):
             p >>= 1
         r.append(chr(v))
     return ''.join(r)
-
+booga booga
 def bitfield_to_booleans(bitfield, l):
     extra = len(bitfield) * 8 - l
     if extra < 0 or extra >= 8:

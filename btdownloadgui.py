@@ -142,34 +142,34 @@ class DownloadInfoFrame:
             self.invokeLater(self.onUpdateStatus, [d])
 
     def onUpdateStatus(self, d):
-      try:
-        if d.has_key('spew'):
-            print_spew(d['spew'])
-        activity = d.get('activity')
-        fractionDone = d.get('fractionDone')
-        timeEst = d.get('timeEst')
-        downRate = d.get('downRate')
-        upRate = d.get('upRate')
-        downTotal = d.get('downTotal')
-        upTotal = d.get('upTotal')
-        if activity is not None and not self.fin:
-            self.timeEstText.SetLabel(activity)
-        if fractionDone is not None and not self.fin:
-            self.gauge.SetValue(int(fractionDone * 1000))
-            self.frame.SetTitle('%d%% %s - BitTorrent %s' % (int(fractionDone*100), self.filename, version))
-        if timeEst is not None:
-            self.timeEstText.SetLabel(hours(timeEst))
-        if downRate is not None:
-            self.downRateText.SetLabel('%.0f KiB/s' % (float(downRate) / (1 << 10)))
-        if upRate is not None:
-            self.upRateText.SetLabel('%.0f KiB/s' % (float(upRate) / (1 << 10)))
-        if downTotal is not None:
-            self.downTotalText.SetLabel('%.1f M' % (downTotal))
-        if upTotal is not None:
-            self.upTotalText.SetLabel('%.1f M' % (upTotal))
-        self.last_update_time = time()
-      except:
-          print_ex()
+        try:
+            if d.has_key('spew'):
+                print_spew(d['spew'])
+            activity = d.get('activity')
+            fractionDone = d.get('fractionDone')
+            timeEst = d.get('timeEst')
+            downRate = d.get('downRate')
+            upRate = d.get('upRate')
+            downTotal = d.get('downTotal')
+            upTotal = d.get('upTotal')
+            if activity is not None and not self.fin:
+                self.timeEstText.SetLabel(activity)
+            if fractionDone is not None and not self.fin:
+                self.gauge.SetValue(int(fractionDone * 1000))
+                self.frame.SetTitle('%d%% %s - BitTorrent %s' % (int(fractionDone*100), self.filename, version))
+            if timeEst is not None:
+                self.timeEstText.SetLabel(hours(timeEst))
+            if downRate is not None:
+                self.downRateText.SetLabel('%.0f KiB/s' % (float(downRate) / (1 << 10)))
+            if upRate is not None:
+                self.upRateText.SetLabel('%.0f KiB/s' % (float(upRate) / (1 << 10)))
+            if downTotal is not None:
+                self.downTotalText.SetLabel('%.1f M' % (downTotal))
+            if upTotal is not None:
+                self.upTotalText.SetLabel('%.1f M' % (upTotal))
+            self.last_update_time = time()
+        except:
+            print_exc()
 
     def finished(self):
         self.fin = True
@@ -206,29 +206,30 @@ class DownloadInfoFrame:
         self.showing_error = False
 
     def chooseFile(self, default, size, saveas, dir):
-        if saveas:
-            return saveas
         f = Event()
         bucket = [None]
-        self.invokeLater(self.onChooseFile, [default, bucket, f, size, dir])
+        self.invokeLater(self.onChooseFile, [default, bucket, f, size, dir, saveas])
         f.wait()
         return bucket[0]
     
-    def onChooseFile(self, default, bucket, f, size, dir):
-        if dir:
-            dl = wxDirDialog(self.frame, 'Choose a directory to save to, pick a partial download to resume', 
-                join(getcwd(), default), style = wxDD_DEFAULT_STYLE | wxDD_NEW_DIR_BUTTON)
-        else:
-            dl = wxFileDialog(self.frame, 'Choose file to save as, pick a partial download to resume', '', default, '*.*', wxSAVE)
-        if dl.ShowModal() != wxID_OK:
-            self.done(None)
-        else:
-            bucket[0] = dl.GetPath()
-            self.fileNameText.SetLabel('%s (%.1f MB)' % (default, float(size) / (1 << 20)))
-            self.timeEstText.SetLabel('Starting up...')
-            self.fileDestText.SetLabel(dl.GetPath())
-            self.filename = default
-            self.frame.SetTitle(default + '- BitTorrent ' + version)
+    def onChooseFile(self, default, bucket, f, size, dir, saveas):
+        if not saveas:
+            if dir:
+                dl = wxDirDialog(self.frame, 'Choose a directory to save to, pick a partial download to resume', 
+                    join(getcwd(), default), style = wxDD_DEFAULT_STYLE | wxDD_NEW_DIR_BUTTON)
+            else:
+                dl = wxFileDialog(self.frame, 'Choose file to save as, pick a partial download to resume', '', default, '*.*', wxSAVE)
+            if dl.ShowModal() != wxID_OK:
+                self.done(None)
+                f.set()
+                return
+            saveas = dl.GetPath()
+        bucket[0] = saveas
+        self.fileNameText.SetLabel('%s (%.1f MB)' % (default, float(size) / (1 << 20)))
+        self.timeEstText.SetLabel('Starting up...')
+        self.fileDestText.SetLabel(saveas)
+        self.filename = default
+        self.frame.SetTitle(default + '- BitTorrent ' + version)
         f.set()
 
     def newpath(self, path):
