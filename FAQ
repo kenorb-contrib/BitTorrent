@@ -28,3 +28,9 @@ A:  You need to leave a downloader running which already has the whole file.  Th
 Q:  When is the Java implementation going to be ready?
 
 A:  Soon after the check clears.
+
+
+
+Q:  How do I limit the amount of bandwidth consumed by BT?
+
+A:  BT allows you to control how many simultaneous connections can be actively downloading using --max_uploads in the btdownloadheadless.py script.  Other than that you'll have to limit bandwidth some other way, perhaps at the OS or router level.
