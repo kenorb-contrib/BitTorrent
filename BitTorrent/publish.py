@@ -54,7 +54,9 @@ def publish(params, cols):
         print formatDefinitions(defaults, cols)
         return
     try:
-        config, files = parseargs(params, defaults, 1, 10000)
+        config, files = parseargs(params, defaults, 0, 10000)
+        if len(files) == 0:
+            raise ValueError, 'must specify at least one file to publish'
         if config['port'] == 0:
             raise ValueError, 'port required'
     except ValueError, e:
