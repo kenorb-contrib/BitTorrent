@@ -45,15 +45,11 @@ class Download:
                 x.adjust()
 
     def got_choke(self):
-        if self.choked:
-            return 
         self.choked = true
         for i in self.data.cleared(self):
             i.adjust()
 
     def got_unchoke(self):
-        if not self.choked:
-            return
         self.choked = false
         self.adjust()
 

@@ -74,7 +74,9 @@ class DownloaderData:
             if len(inactive) > 0:
                 return blob, begin, length, []
             else:
-                return blob, begin, length, self.downloads.keys()
+                return blob, begin, length, [i for i in 
+                    self.downloads.keys() if 
+                    self.downloads[i][1].has_key(blob)]
         return None
         
     def num_current(self, d):
