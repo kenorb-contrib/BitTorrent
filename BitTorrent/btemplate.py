@@ -1,15 +1,3 @@
-"""
-compile_template
-
-string_template
-
-ListMarker
-
-OptionMarker
-
-MaxDepth
-"""
-
 # This file is licensed under the GNU Lesser General Public License v2.1.
 # originally written for Mojo Nation by Bram Cohen, based on an earlier 
 # version by Bryce Wilcox
@@ -87,30 +75,32 @@ def compile_list_template(template):
     return func
 
 class ValuesMarker:
-    def __init__(self, template):
+    def __init__(self, template, t2 = string_template):
         self.template = template
+        self.t2 = t2
         
     def get_real_template(self):
-        return compile_values_template(self.template)
+        return compile_values_template(self.template, self.t2)
 
     def __repr__(self):
         return 'ValuesMarker(' + `self.template` + ')'
 
-def compile_values_template(template):
-    def func(thing, verbose, template = compile_inner(template)):
+def compile_values_template(template, t2):
+    def func(thing, verbose, template = compile_inner(template),
+            t2 = compile_inner(t2)):
         if type(thing) != types.DictType:
             raise ValueError, 'not a dict'
         if verbose:
             try:
                 for key, val in thing.items():
                     template(val, 1)
+                    t2(key, 1)
             except ValueError, e:
-                if not verbose:
-                    raise
                 raise ValueError, 'mismatch in key ' + `key` + ': ' + str(e)
         else:
-            for val in thing.values():
+            for key, val in thing.items():
                 template(val, 0)
+                t2(key, 0)
     return func
 
 compilers = {}
@@ -383,7 +373,7 @@ def test_generic_string():
         pass
 
 def test_values():
-    vt = compile_template(ValuesMarker('a'))
+    vt = compile_template(ValuesMarker('a', exact_length(1)))
     vt({})
     vt({'x': 'a'})
     try:
@@ -393,6 +383,11 @@ def test_values():
         pass
     try:
         vt({'x': 'b'})
+        assert 0
+    except ValueError:
+        pass
+    try:
+        vt({'xx': 'a'})
         assert 0
     except ValueError:
         pass

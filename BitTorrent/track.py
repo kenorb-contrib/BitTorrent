@@ -10,6 +10,8 @@ from urllib import urlopen, quote, unquote
 from os.path import exists
 from cStringIO import StringIO
 from traceback import print_exc
+from time import time
+from random import shuffle
 true = 1
 false = 0
 
@@ -29,8 +31,8 @@ infotemplate = compile_template([{'type': 'single',
 infofiletemplate = compile_template(ValuesMarker(infotemplate))
 
 downloaderfiletemplate = compile_template(ValuesMarker(
-    ListMarker({'id': exact_length(20), 'ip': string_template,
-    'port': 1})))
+    ValuesMarker({'ip': string_template, 'port': 1}, 
+    exact_length(20))))
 
 announcetemplate = compile_template({'id': string_template, 
     'myid': exact_length(20), 'ip': string_template, 'port': 1, 
@@ -43,11 +45,13 @@ thanks = (200, 'OK', {'Content-Type': 'text/plain'},
     'Thanks! Love, Kerensa.')
 
 class Tracker:
-    def __init__(self, ip, port, statefile, dfile, logfile):
+    def __init__(self, ip, port, statefile, dfile, logfile, rawserver):
         self.urlprefix = 'http://' + ip + ':' + str(port)
         self.statefile = statefile
         self.dfile = dfile
+        self.rawserver = rawserver
         self.loghandle = open(logfile, 'ab')
+        self.cached = {}
         self.published = {}
         if exists(statefile):
             h = open(statefile, 'rb')
@@ -56,14 +60,22 @@ class Tracker:
             self.published = bdecode(r)
             infofiletemplate(self.published)
         self.loghandle = open(logfile, 'ab')
-        self.downloaders = {}
+        self.downloads = {}
         self.myid_to_id = {}
+        self.times = {}
         if exists(dfile):
             h = open(dfile, 'rb')
             ds = h.read()
             h.close()
             self.downloads = bdecode(ds)
             downloaderfiletemplate(self.downloads)
+            for x in self.downloads.keys():
+                self.times[x] = {}
+                for y in self.downloads[x].keys():
+                    self.times[x][y] = 0
+        rawserver.add_task(self.save_dfile, 5 * 60)
+        self.prevtime = time()
+        rawserver.add_task(self.expire_downloaders, 45 * 60)
 
     def get(self, connection, path, headers):
         path = unquote(path)[1:]
@@ -79,12 +91,19 @@ class Tracker:
             return (200, 'OK', {'Content-Type': 'text/html'}, s.getvalue())
         if not self.published.has_key(path):
             return (404, 'Not Found', {'Content-Type': 'text/plain'}, alas)
-        data = bencode({'info': self.published[path], 'id': path, 
+        data = {'info': self.published[path], 'id': path, 
             'url': self.urlprefix + path, 'protocol': 'plaintext',
             'announce': self.urlprefix + '/announce/',
-            'your ip': connection.get_ip(), 'peers': self.downloaders.get(path, [])})
+            'your ip': connection.get_ip(), 'interval': 30 * 60}
+        if len(self.cached.get(path, [])) < 25:
+            self.cached[path] = [{'id': key, 'ip': value['ip'], 
+                'port': value['port']} for key, value in 
+                self.downloads.setdefault(path, {}).items()]
+            shuffle(self.cached[path])
+        data['peers'] = self.cached[path][-25:]
+        del self.cached[path][-25:]
         return (200, 'OK', {'Content-Type': 'application/x-bittorrent', 
-            'Pragma': 'no-cache'}, data)
+            'Pragma': 'no-cache'}, bencode(data))
 
     def put(self, connection, path, headers, data):
         try:
@@ -98,27 +117,19 @@ class Tracker:
         path = unquote(path)[1:]
         message = bdecode(data)
         self.loghandle.write(str(message) + '\n')
+        self.loghandle.flush()
         if path == 'announce/':
             announcetemplate(message)
-            peers = self.downloaders.setdefault(message['id'], [])
+            peers = self.downloads.setdefault(message['id'], {})
+            myid = message['myid']
             if message.get('event') != 'stopped':
-                for p in peers:
-                    if p['id'] == message['myid']:
-                        return thanks
-                peers.append({'ip': message['ip'], 'port': message['port'],
-                    'id': message['myid']})
-                if len(peers) > 25:
-                    del peers[0]
+                self.times.setdefault(message['id'], {})[myid] = time()
+                if not peers.has_key(myid):
+                    peers[myid] = {'ip': message['ip'], 'port': message['port']}
             else:
-                for i in xrange(len(peers)):
-                    if peers[i]['id'] == message['myid']:
-                        del peers[i]
-                        break
-                else:
-                    return thanks
-            h = open(self.dfile, 'wb')
-            h.write(bencode(self.downloaders))
-            h.close()
+                if peers.has_key(myid):
+                    del peers[myid]
+                    del self.times[message['id']][myid]
         else:
             infotemplate(message)
             if headers.get('content-type') != 'application/x-bittorrent':
@@ -135,6 +146,21 @@ class Tracker:
                 h.close()
         return thanks
 
+    def save_dfile(self):
+        self.rawserver.add_task(self.save_dfile, 5 * 60)
+        h = open(self.dfile, 'wb')
+        h.write(bencode(self.downloads))
+        h.close()
+
+    def expire_downloaders(self):
+        for x in self.times.keys():
+            for myid, t in self.times[x].items():
+                if t < self.prevtime:
+                    del self.times[x][myid]
+                    del self.downloads[x][myid]
+        self.prevtime = time()
+        self.rawserver.add_task(self.expire_downloaders, 45 * 60)
+
 def track(ip, port, statefile, dfile, logfile, bind):
     try:
         h = urlopen('http://bitconjurer.org/BitTorrent/status-tracker-02-07-02.txt')
@@ -145,8 +171,8 @@ def track(ip, port, statefile, dfile, logfile, bind):
             return
     except IOError, e:
         print "Couldn't check version number - " + str(e)
-    t = Tracker(ip, port, statefile, dfile, logfile)
     r = RawServer(100, Event(), 30)
+    t = Tracker(ip, port, statefile, dfile, logfile, r)
     r.bind(port, bind)
     r.listen_forever(HTTPHandler(t.get, t.put))
 

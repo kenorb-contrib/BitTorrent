@@ -68,14 +68,14 @@ def mult20(thing, verbose):
     if len(thing) % 20 != 0:
         raise ValueError, 'must be multiple of 20'
 
-t = compile_template({'info': [{'type': 'single', 
+template = compile_template({'info': [{'type': 'single', 
     'pieces': mult20, 'piece length': 1, 'length': 0, 
     'name': string_template}, 
     {'type': 'multiple', 'pieces': mult20, 'piece length': 1, 
     'files': ListMarker({'path': ListMarker(string_template), 
     'length': 0}), 'name': string_template}], 
     'peers': ListMarker({'ip': string_template, 'port': 1, 'id': exact_length(20)}), 
-    'id': string_template, 'announce': string_template, 
+    'id': string_template, 'announce': string_template, 'interval': 1,
     'url': string_template, 'your ip': string_template})
 
 def download(params, filefunc, statusfunc, resultfunc, doneflag, cols):
@@ -113,7 +113,7 @@ def download(params, filefunc, statusfunc, resultfunc, doneflag, cols):
 
     try:
         response = bdecode(response)
-        t(response)
+        template(response)
     except ValueError, e:
         resultfunc(false, "got bad file info - " + str(e))
         return
@@ -245,6 +245,18 @@ def download(params, filefunc, statusfunc, resultfunc, doneflag, cols):
     ann[0] = announce
 
     announce(0)
+    regannounce(announce, rawserver.add_task, response['interval'])
     rawserver.listen_forever(encrypter)
     announce(2)
     return r[0]
+
+class regannounce:
+    def __init__(self, announce, sched, interval):
+        self.announce = announce
+        self.sched = sched
+        self.interval = interval
+        sched(self.c, interval)
+
+    def c(self):
+        self.sched(self.c, self.interval)
+        self.announce()
