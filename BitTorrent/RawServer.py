@@ -121,7 +121,7 @@ class RawServer:
         try:
             server.setsockopt(socket.IPPROTO_IP, socket.IP_TOS, 32)
         except:
-            print_exc()
+            pass
         server.bind((bind, port))
         server.listen(5)
         self.poll.register(server, POLLIN)
