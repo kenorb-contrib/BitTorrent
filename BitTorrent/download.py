@@ -81,8 +81,6 @@ defaults = [
         'whether to check hashes on disk'),
     ('max_upload_rate', 0,
         'maximum kB/s to upload at, 0 means no limit'),
-    ('alloc_pause', 3.0,
-        'seconds to wait before displaying allocation feedback'),
     ('snub_time', 30.0,
         "seconds to wait for data to come in over a connection before assuming it's semi-permanently choked"),
     ('spew', 0,
@@ -194,7 +192,7 @@ def download(params, filefunc, statusfunc, finfunc, errorfunc, doneflag, cols, p
     try:
         try:
             storage = Storage(files, open, path.exists, 
-                path.getsize, statusfunc, config['alloc_pause'])
+                path.getsize, statusfunc)
         except IOError, e:
             errorfunc('trouble accessing files - ' + str(e))
             return

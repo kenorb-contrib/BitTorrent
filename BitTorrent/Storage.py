@@ -11,7 +11,7 @@ def dummy_status(fractionDone = None, activity = None):
     pass
 
 class Storage:
-    def __init__(self, files, open, exists, getsize, statusfunc, alloc_pause = 3):
+    def __init__(self, files, open, exists, getsize, statusfunc):
         # can raise IOError and ValueError
         self.ranges = []
         total = 0l
@@ -34,13 +34,11 @@ class Storage:
         for file, length in files:
             if exists(file):
                 l = getsize(file)
-                if l > length:
+                if l != length:
                     self.handles[file] = open(file, 'rb+')
                     self.whandles[file] = 1
-                    self.handles[file].truncate(length)
-                elif l < length:
-                    self.handles[file] = open(file, 'rb+')
-                    self.whandles[file] = 1
+                    if l > length:
+                        self.handles[file].truncate(length)
                 else:
                     self.handles[file] = open(file, 'rb')
                 self.tops[file] = l
