@@ -73,6 +73,7 @@ class TrackerHandler(BaseHTTPRequestHandler):
                         self.wfile.write(bencode({'type': 'failure', 
                             'reason': 'mismatching data for ' + file}))
                         return
+                changed = false
                 for file in message['files']:
                     name = file['name']
                     if not published.has_key(name):
@@ -81,9 +82,12 @@ class TrackerHandler(BaseHTTPRequestHandler):
                     n = {'ip': ip, 'port': message['port']}
                     if n not in published[name][0]:
                         published[name][0].append(n)
-                h = open(self.server.file, 'wb')
-                h.write(bencode(published))
-                h.close()
+                        changed = true
+                if changed:
+                    h = open(self.server.file, 'wb')
+                    h.write(bencode(published))
+                    h.flush()
+                    h.close()
                 self.send_response(200)
                 self.send_header('Content-Type', 'text/plain')
                 self.end_headers()
@@ -142,7 +146,7 @@ class TrackerHandler(BaseHTTPRequestHandler):
                 self.send_response(200)
                 self.send_header('Content-Type', 'bittorrent/redirect')
                 publishers, blob, length, pieces, piece_length = published[f]
-                requesters = self.server.downloads.setdefault(f, [])
+                requesters = self.server.downloads.get(f, [])
                 if self.client_address[0] in self.server.ips:
                     requesters = publishers + requesters
                 elif self.server.level < 600:
@@ -201,6 +205,26 @@ def track(config):
                 del s.ips[:]
             finally:
                 s.lock.release()
+    d = config['dfile']
+    if d != '':
+        if exists(d):
+            h = open(d, 'rb')
+            ds = h.read()
+            h.close()
+            s.downloads = bdecode(ds)
+        
+        def store_downloads(s = s, d = d):
+            while true:
+                sleep(600)
+                try:
+                    s.lock.acquire()
+                    h = open(d, 'wb')
+                    h.write(bencode(s.downloads))
+                    h.flush()
+                    h.close()
+                finally:
+                    s.lock.release()
+        Thread(target = store_downloads).start()
     Thread(target = reduce_level).start()
     Thread(target = clear_ips).start()
     Thread(target = s.serve_forever).start()
@@ -209,6 +233,7 @@ configDefinitions = [
     ('port', 'port=', 'p:', 80, """Port to listen on."""),
     ('ip', 'ip=', 'i:', None, """ip to report you have to downloaders."""),
     ('file', 'serialized-file=', 's:', None, 'file to store state in'),
+    ('dfile', 'downloads-file=', 'd:', '', 'file to store recent downloader info in'),
     ]
 
 if __name__ == '__main__':
