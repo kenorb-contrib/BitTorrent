@@ -193,8 +193,7 @@ def download(params, filefunc, statusfunc, finfunc, errorfunc, doneflag, cols, p
     rawserver = RawServer(doneflag, config['timeout_check_interval'], config['timeout'], errorfunc = errorfunc)
     try:
         try:
-            storage = Storage(files, open, path.exists, 
-                path.getsize, statusfunc)
+            storage = Storage(files, open, path.exists, path.getsize)
         except IOError, e:
             errorfunc('trouble accessing files - ' + str(e))
             return

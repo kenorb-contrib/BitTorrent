@@ -81,7 +81,7 @@ class StorageWrapper:
                 if flag.isSet():
                     return
                 numchecked += 1
-                statusfunc({'fractionDone': numchecked / total})
+                statusfunc({'fractionDone': 1 - float(self.amount_left) / self.total_length})
         if self.amount_left == 0:
             finished()
 

@@ -8,11 +8,8 @@ from bisect import bisect_right
 true = 1
 false = 0
 
-def dummy_status(fractionDone = None, activity = None):
-    pass
-
 class Storage:
-    def __init__(self, files, open, exists, getsize, statusfunc):
+    def __init__(self, files, open, exists, getsize):
         # can raise IOError and ValueError
         self.ranges = []
         total = 0l
@@ -113,7 +110,7 @@ from fakeopen import FakeOpen
 
 def test_Storage_simple():
     f = FakeOpen()
-    m = Storage([('a', 5)], f.open, f.exists, f.getsize, dummy_status)
+    m = Storage([('a', 5)], f.open, f.exists, f.getsize)
     assert f.files.keys() == ['a']
     m.write(0, 'abc')
     assert m.read(0, 3) == 'abc'
@@ -125,7 +122,7 @@ def test_Storage_simple():
 def test_Storage_multiple():
     f = FakeOpen()
     m = Storage([('a', 5), ('2', 4), ('c', 3)], 
-        f.open, f.exists, f.getsize, dummy_status)
+        f.open, f.exists, f.getsize)
     x = f.files.keys()
     x.sort()
     assert x == ['2', 'a', 'c']
@@ -140,18 +137,18 @@ def test_Storage_multiple():
 
 def test_Storage_zero():
     f = FakeOpen()
-    Storage([('a', 0)], f.open, f.exists, f.getsize, dummy_status)
+    Storage([('a', 0)], f.open, f.exists, f.getsize)
     assert f.files == {'a': []}
 
 def test_resume_zero():
     f = FakeOpen({'a': ''})
-    Storage([('a', 0)], f.open, f.exists, f.getsize, dummy_status)
+    Storage([('a', 0)], f.open, f.exists, f.getsize)
     assert f.files == {'a': []}
 
 def test_Storage_with_zero():
     f = FakeOpen()
     m = Storage([('a', 3), ('b', 0), ('c', 3)], 
-        f.open, f.exists, f.getsize, dummy_status)
+        f.open, f.exists, f.getsize)
     m.write(2, 'abc')
     assert m.read(2, 3) == 'abc'
     x = f.files.keys()
@@ -163,14 +160,14 @@ def test_Storage_with_zero():
 def test_Storage_resume():
     f = FakeOpen({'a': 'abc'})
     m = Storage([('a', 4)], 
-        f.open, f.exists, f.getsize, dummy_status)
+        f.open, f.exists, f.getsize)
     assert f.files.keys() == ['a']
     assert m.read(0, 3) == 'abc'
 
 def test_Storage_mixed_resume():
     f = FakeOpen({'b': 'abc'})
     m = Storage([('a', 3), ('b', 4)], 
-        f.open, f.exists, f.getsize, dummy_status)
+        f.open, f.exists, f.getsize)
     x = f.files.keys()
     x.sort()
     assert x == ['a', 'b']
