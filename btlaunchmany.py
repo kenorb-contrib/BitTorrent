@@ -43,12 +43,12 @@ class runsingle:
         print self.file + ': failed'
         stdout.flush()
 
-    def choose(self, default, size, saveas, dir, file = file):
+    def choose(self, default, size, saveas, dir):
         return self.file[:-len(ext)]
 
     def status(self, fractionDone = None,
             timeEst = None, downRate = None, upRate = None,
-            activity = None, save = save()):
+            activity = None):
         if fractionDone is not None:
             newpercent = int(fractionDone*100)
             if newpercent != self.percentDone:
