@@ -9,7 +9,7 @@ from threading import Event
 from bencode import bencode, bdecode
 from zurllib import urlopen, quote, unquote
 from urlparse import urlparse
-from os.path import exists
+from os.path import exists, isfile
 from cStringIO import StringIO
 from traceback import print_exc
 from time import time, gmtime, strftime
@@ -39,6 +39,7 @@ defaults = [
     ('allowed_dir', None, '', 'only allow downloads for .torrents in this dir'),
     ('parse_allowed_interval', None, 15, 'minutes between reloading of allowed_dir'),
     ('show_names', None, 1, 'whether to display names from allowed dir'),
+    ('favicon', None, '', 'file containing x-icon data to return when browser requests favicon.ico'),
     ]
 
 def downloaderfiletemplate(x):
@@ -87,6 +88,13 @@ class Tracker:
         self.response_size = config['response_size']
         self.dfile = config['dfile']
         self.natcheck = config['nat_check']
+        favicon = config['favicon']
+        if favicon and (favicon != '') and isfile(favicon):
+            self.favicon = open(favicon,'r').read()
+        else:
+            if favicon and (favicon != ''):
+                print "**warning** specified favicon file -- %s -- does not exist." % favicon
+            self.favicon = None
         self.rawserver = rawserver
         self.cached = {}
         self.downloads = {}
@@ -182,6 +190,8 @@ class Tracker:
                     fs[name]['name'] = self.allowed[name]
             r = {'files': fs}
             return (200, 'OK', {'Content-Type': 'text/plain'}, bencode(r))
+        if path == 'favicon.ico' and self.favicon:
+            return (200, 'OK', {'Content-Type' : 'image/x-icon'}, self.favicon)
         if path != 'announce':
             return (404, 'Not Found', {'Content-Type': 'text/plain'}, alas)
         try:
