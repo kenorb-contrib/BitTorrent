@@ -1,6 +1,7 @@
 /* DLWindowController */
 
 #import <Cocoa/Cocoa.h>
+#import <python2.2/Python.h>
 
 @interface DLWindowController : NSWindowController
 {
@@ -14,9 +15,16 @@
     IBOutlet id cancelButton;
     NSString *timeEst;
     float frac;
-    NSNumber *dlid;
+    PyObject *flag;
     int finished;
+    NSConnection *conn;
 }
 - (IBAction)cancelDl:(id)sender;
-- (id)initWithDlId:(int)nid;
+- (id)init;
+- (void)finished:(NSDictionary *)dict;
+- (void)display:(NSDictionary *)dict;
+- (NSString *)chooseFile:(NSString *)defaultFile size:(long)size isDirectory:(int)dir;
+- (void)setFlag:(PyObject *)nflag;
+- (void)setConnection:(NSConnection *)nc;
+- (void)dealloc;
 @end

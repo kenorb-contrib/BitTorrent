@@ -4,12 +4,11 @@
 
 @implementation DLWindowController
 
-- (id)initWithDlId:(int)nid
+- (id)init
 {
     id not = [NSNotificationCenter defaultCenter];
  
     [super init];
-    dlid = [[NSNumber numberWithInt:nid] retain];
     finished = 0;
     [not addObserver:self selector:@selector(chooseFile:) name:CHOOSE object:nil];
     [not addObserver:self selector:@selector(display:) name:DISPLAY object:nil];
@@ -30,11 +29,18 @@
 	[timeRemaining setStringValue:@"Download cancelled!"];
     }
     [cancelButton setEnabled:NO];
-    [[NSApp delegate] cancelDlWithId:dlid];
+    [[NSApp delegate] setCancelFlag:flag];
     [not removeObserver:self];
 }
-- (void)chooseFile:(NSNotification *)notification
+
+- (void)setFlag:(PyObject *)nflag
 {
+    flag = nflag;
+}
+
+- (void)setConnection:(NSConnection *)nc
+{
+    conn = [nc retain];
 }
 
 - (NSString *)hours:(long) n
@@ -59,14 +65,31 @@
 	return [NSString stringWithFormat:@"%2d min(s) %2d sec(s)", m, sec]; 
 }
 
-- (void)display:(NSNotification *)notification
+- (NSString *)chooseFile:(NSString *)defaultFile size:(long)size isDirectory:(int)dir
 {
-    NSDictionary *dict = [notification userInfo];
+    id panel;
+    if(!dir) {
+	panel = [NSSavePanel savePanel];
+	if([panel runModalForDirectory:NSHomeDirectory() file:defaultFile]) {
+	    return [panel filename];
+	}
+    }
+    else {
+	panel = [NSOpenPanel openPanel];
+	[panel setCanChooseFiles:NO];
+	[panel setCanChooseDirectories:YES];
+	if([panel runModalForDirectory:NSHomeDirectory() file:defaultFile]) {
+	    return [panel filename];
+	}
+    }
+    // shouldn't get here
+    return @"";
+}
+
+- (void)display:(NSDictionary *)dict
+{
     NSString *str, *activity;
     long est;
-    
-    if(![[dict objectForKey:@"dlid"] isEqualToNumber:dlid])
-	return;
     
     activity = [dict objectForKey:@"activity"];
     if ([[dict objectForKey:@"fractionDone"] floatValue] != 0.0) {
@@ -92,15 +115,11 @@
     [timeRemaining setStringValue:timeEst];
 }
 
-- (void)finished:(NSNotification *)notification
+- (void)finished:(NSDictionary *)dict
 {
-    NSDictionary *dict = [notification userInfo];
     NSNumber *fin;
     NSString *errmsg;
     
-    if(![[dict objectForKey:@"dlid"] isEqualToNumber:dlid])
-    return;
-
     finished = 1;
     [cancelButton setEnabled:NO];
     fin = [dict objectForKey:@"fin"];
@@ -121,4 +140,12 @@
     [percentCompleted setStringValue:[NSString localizedStringWithFormat:@"%2.1f%%", frac * 100]];
 }
 
+- (void)dealloc
+{
+    [conn release];
+    conn = nil;
+    [timeEst release];
+    timeEst = nil;
+    [super dealloc];
+}
 @end
