@@ -76,7 +76,7 @@ class FinishEvent(wxPyEvent):
 
 class DownloadInfoFrame(wxFrame):
     def __init__(self, flag):
-        wxFrame.__init__(self, None, -1, 'BitTorrent download', size = wxSize(375, 260))
+        wxFrame.__init__(self, None, -1, 'BitTorrent download', size = wxSize(550, 260))
         self.flag = flag
         self.fin = false
         self.shown = false
