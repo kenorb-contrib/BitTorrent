@@ -12,11 +12,12 @@ from urlparse import urlparse
 from os.path import exists
 from cStringIO import StringIO
 from traceback import print_exc
-from time import time
+from time import time, gmtime, strftime
 from random import shuffle
 from sha import sha
 from types import StringType, LongType, ListType, DictType
 from binascii import b2a_hex
+import __init__
 true = 1
 false = 0
 
@@ -63,13 +64,18 @@ def parseTorrents(dir):
     import os
     a = {}
     for f in os.listdir(dir):
-	if f[-8:] == '.torrent':
-	    d = bdecode(open(os.path.join(dir,f)).read())
-	    h = sha(bencode(d['info'])).digest()
-	    a[h] = 1
+        if f[-8:] == '.torrent':
+            d = bdecode(open(os.path.join(dir,f)).read())
+            h = sha(bencode(d['info'])).digest()
+            a[h] = 1
     return a
 
-alas = 'your file may exist elsewhere in the universe\n\nbut alas, not here'
+alas = 'your file may exist elsewhere in the universe\nbut alas, not here\n'
+
+def isotime(secs = None):
+    if secs == None:
+        secs = time()
+    return strftime('%Y-%m-%d %H:%M UTC', gmtime(secs))
 
 class Tracker:
     def __init__(self, config, rawserver):
@@ -96,12 +102,12 @@ class Tracker:
         self.prevtime = time()
         self.timeout_downloaders_interval = config['timeout_downloaders_interval']
         rawserver.add_task(self.expire_downloaders, self.timeout_downloaders_interval)
-	if config['allowed_dir'] != '':
-	    self.allowed_dir = config['allowed_dir']
-	    self.parse_allowed_interval = config['parse_allowed_interval']
-	    self.parse_allowed()
-	else:
-	    self.allowed = None
+        if config['allowed_dir'] != '':
+            self.allowed_dir = config['allowed_dir']
+            self.parse_allowed_interval = config['parse_allowed_interval']
+            self.parse_allowed()
+        else:
+            self.allowed = None
 
     def get(self, connection, path, headers):
         try:
@@ -117,26 +123,45 @@ class Tracker:
                     'you sent me garbage - ' + str(e))
         if path == '' or path == 'index.html':
             s = StringIO()
-            s.write('<head><title>BitTorrent download info</title></head>BitTorrent download info<p>\n')
+            s.write('<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">\n' \
+                '<html><head><title>BitTorrent download info</title></head>\n' \
+                '<body>\n' \
+                '<h3>BitTorrent download info</h3>\n'\
+                '<ul>\n'
+                '<li><strong>tracker version:</strong> %s</li>\n' \
+                '<li><strong>server time:</strong> %s</li>\n' \
+                '</ul>\n' % (__init__.version, isotime()))
             names = self.downloads.keys()
-            if names == []:
-                s.write('(not tracking any files yet)')
-            names.sort()
-            for name in names:
-                l = self.downloads[name]
-                s.write(b2a_hex(name) + ' (' + str(len([1 for i in 
-                    l.values() if i['left'] == 0])) + '/' + 
-                    str(len(l)) + ')<p>\n\n')
-            return (200, 'OK', {'Content-Type': 'text/html'}, s.getvalue())
+            if names:
+                names.sort()
+                s.write('<table summary="files">\n' \
+                    '<tr><th>info hash</th><th align="right">complete</th><th align="right">downloading</th></tr>\n')
+                for name in names:
+                    l = self.downloads[name]
+                    c = len([1 for i in l.values() if i['left'] == 0])
+                    d = len(l) - c
+                    s.write('<tr><td><code>%s</code></td><td align="right"><code>%i</code></td><td align="right"><code>%i</code></td></tr>\n' \
+                        % (b2a_hex(name), c, d))
+                s.write('</table>\n' \
+                    '<ul>\n' \
+                    '<li><em>info hash:</em> SHA1 hash of the "info" section of the metainfo (*.torrent)</li>\n' \
+                    '<li><em>complete:</em> number of connected clients with the complete file</li>\n' \
+                    '<li><em>downloading:</em> number of connected clients still downloading</li>\n' \
+                    '</ul>\n')
+            else:
+                s.write('<p>not tracking any files yet...</p>\n')
+            s.write('</body>\n' \
+                '</html>\n')
+            return (200, 'OK', {'Content-Type': 'text/html; charset=iso-8859-1'}, s.getvalue())
         if path != 'announce':
             return (404, 'Not Found', {'Content-Type': 'text/plain'}, alas)
         try:
             if not params.has_key('info_hash'):
                 raise ValueError, 'no info hash'
             infohash = params['info_hash']
-	    if self.allowed != None:
-		if not self.allowed.has_key(infohash):
-		    return (400, 'Not Authorized', {'Content-Type': 'text/plain'}, bencode({'failure reason':
+            if self.allowed != None:
+                if not self.allowed.has_key(infohash):
+                    return (400, 'Not Authorized', {'Content-Type': 'text/plain'}, bencode({'failure reason':
                     'Requested download is not authorized for use with this tracker.'}))
             ip = connection.get_ip()
             if params.has_key('ip'):
@@ -196,9 +221,9 @@ class Tracker:
         h.close()
 
     def parse_allowed(self):
-	self.rawserver.add_task(self.parse_allowed, self.parse_allowed_interval * 60)
-	self.allowed = parseTorrents(self.allowed_dir)
-	
+        self.rawserver.add_task(self.parse_allowed, self.parse_allowed_interval * 60)
+        self.allowed = parseTorrents(self.allowed_dir)
+        
     def expire_downloaders(self):
         for x in self.times.keys():
             for myid, t in self.times[x].items():
