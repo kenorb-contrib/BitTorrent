@@ -178,7 +178,7 @@ class Tracker:
                 c = len([1 for i in l.values() if i['left'] == 0])
                 d = len(l) - c
                 fs[name] = {'complete': c, 'incomplete': d}
-                if self.allowed is not None:
+                if self.allowed is not None and self.allowed.has_key(name):
                     fs[name]['name'] = self.allowed[name]
             r = {'files': fs}
             return (200, 'OK', {'Content-Type': 'text/plain'}, bencode(r))
