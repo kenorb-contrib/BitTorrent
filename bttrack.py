@@ -57,17 +57,18 @@ class TrackerHandler(BaseHTTPRequestHandler):
         try:
             l = self.headers.getheader('content-length')
             if l is None:
-                answerno('need content-length header for put')
+                self.answerno('need content-length header for put')
                 return
             message = bdecode(self.rfile.read(int(l)))
             if path == '/publish/':
                 checkfunc(message)
                 ip = message.get('ip', self.client_address[0])
                 for file in message['files']:
-                    if published.has_key('name') and (file['length'],
+                    name = file['name']
+                    if published.has_key(name) and (file['length'],
                             file['pieces'], file['piece length']) != published[name][1:]:
                         self.answer({'type': 'failure', 
-                            'reason': 'mismatching data for ' + file})
+                            'reason': 'mismatching data for ' + name})
                         return
                 changed = false
                 for file in message['files']:
