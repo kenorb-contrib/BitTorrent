@@ -21,20 +21,29 @@ class DownloaderFeedback:
     def spew(self):
         s = StringIO()
         for c in self.choker.connections:
-            s.write(c.get_ip() + ' ')
+            s.write('%20s ' % c.get_ip())
             u = c.get_upload()
+            s.write(' %10s ' % str(int(u.rate)))
             if u.is_interested():
                 s.write('i')
+            else:
+                s.write(' ')
             if u.is_choked():
                 s.write('c')
-            s.write(' ' + str(u.rate) + ' ')
+            else:
+                s.write(' ')
 
             d = c.get_download()
+            s.write(' %10s ' % str(int(d.rate)))
             if d.is_interested():
                 s.write('i')
+            else:
+                s.write(' ')
             if d.is_choked():
                 s.write('c')
-            s.write(' ' + str(d.rate) + '\n')
+            else:
+                s.write(' ')
+            s.write('\n')
         print s.getvalue()
 
     def display(self):
