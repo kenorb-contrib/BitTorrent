@@ -136,7 +136,10 @@ def download(params, filefunc, statusfunc, resultfunc, doneflag, cols):
         resuming = false
     r = [0]
     finflag = Event()
-    def finished(result, errormsg = None, fatal = false, resultfunc = resultfunc, finflag = finflag, doneflag = doneflag):
+    def finished(result, errormsg = None, fatal = false, 
+            resultfunc = resultfunc, finflag = finflag, 
+            doneflag = doneflag, r = r):
+        r[0] = result
         if doneflag.isSet():
             return
         finflag.set()
@@ -211,7 +214,8 @@ def download(params, filefunc, statusfunc, resultfunc, doneflag, cols):
         resultfunc(false, "got bad announcement response - " + str(e))
         return
     try:
-        statusfunc(activity = 'connecting to peers...', fractionDone = 0)
+        if not finflag.isSet():
+            statusfunc(activity = 'connecting to peers...', fractionDone = 0)
         rawserver.start_listening(encrypter, listen_port, false)
     except socket.error, e:
         print_exc()

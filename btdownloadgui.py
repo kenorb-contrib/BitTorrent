@@ -135,6 +135,7 @@ class DownloadInfoFrame(wxFrame):
     def updateStatus(self, fractionDone = None,
             timeEst = None, downRate = None, upRate = None,
             activity=None):
+        assert activity is None or not self.fin
         wxPostEvent(self, UpdateStatusEvent(fractionDone, timeEst, downRate, upRate, activity))
 
     def onUpdateStatus(self, event):
@@ -142,7 +143,7 @@ class DownloadInfoFrame(wxFrame):
             self.gauge.SetValue(int(event.fractionDone * 1000))
         if event.timeEst is not None:
             self.timeEstText.SetLabel(hours(event.timeEst))
-        if event.activity is not None and not self.fin:
+        if event.activity is not None:
             self.timeEstText.SetLabel(event.activity)
         if event.downRate is not None:
             self.downRateText.SetLabel('%s kB/s' % kify(event.downRate))

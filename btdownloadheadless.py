@@ -55,11 +55,12 @@ class HeadlessDisplayer:
 
     def display(self, fractionDone = None, timeEst = None, 
             downRate = None, upRate = None, activity = None):
+        assert activity is None or not self.done
         if fractionDone is not None:
             self.percentDone = str(float(int(fractionDone * 1000)) / 10)
         if timeEst is not None:
             self.timeEst = hours(timeEst)
-        if activity is not None and not self.done:
+        if activity is not None:
             self.timeEst = activity
         if downRate is not None:
             self.downRate = kify(downRate) + ' K/s'
