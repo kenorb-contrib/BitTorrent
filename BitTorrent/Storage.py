@@ -63,9 +63,7 @@ class Storage:
                         if not hit:
                             statusfunc({"activity" : 'allocating'})
                             hit = true
-                        print "pre"
                         statusfunc({"fractionDone" : float(so_far + i - l)/total})
-                        print "post"
                 so_far += length - l
             statusfunc({"fractionDone" : 1.0})
 
