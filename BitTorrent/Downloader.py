@@ -24,7 +24,7 @@ class SingleDownload:
             self.have_list.append(i)
             if len(self.have_list) > self.downloader.maxlistlen:
                 self.have_list = [x for x in self.have_list if not self.downloader.storage.do_I_have(x)]
-                if len(self.have_list) > (self.downloader.maxlistlen * .66):
+                if len(self.have_list) > self.downloader.maxlistlen * .66:
                     self.have_list = None
 
     def disconnected(self):
@@ -114,7 +114,8 @@ class SingleDownload:
         self.have[index] = true
         self._add(index)
         self.downloader.picker.got_have(index)
-        self.fix_download()
+        if self.downloader.storage.do_I_have_requests(index):
+            self.fix_download()
 
     def got_have_bitfield(self, have):
         self.have = have
