@@ -55,7 +55,7 @@ def makeinfo(file, piece_length = 2 ** 20):
             h.close()
         if done > 0:
             pieces.append(sh.digest())
-        return bencode({'type': 'multiple', 'pieces': pieces,
+        return bencode({'type': 'multiple', 'pieces': ''.join(pieces),
             'piece length': piece_length, 'files': fs, 
             'name': split(file)[1]})
     else:
@@ -68,7 +68,7 @@ def makeinfo(file, piece_length = 2 ** 20):
             pieces.append(sha(h.read(piece_length)).digest())
             p += piece_length
         h.close()
-        return bencode({'type': 'single', 'pieces': pieces, 
+        return bencode({'type': 'single', 'pieces': ''.join(pieces), 
             'piece length': piece_length, 'length': size, 
             'name': split(file)[1]})
 

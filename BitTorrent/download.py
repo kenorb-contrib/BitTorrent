@@ -62,11 +62,17 @@ defaults = [
         'ip to bind to locally'),
     ]
 
+def mult20(thing, verbose):
+    if type(thing) != type(''):
+        raise ValueError, 'must be a string'
+    if len(thing) % 20 != 0:
+        raise ValueError, 'must be multiple of 20'
+
 t = compile_template({'info': [{'type': 'single', 
-    'pieces': ListMarker(exact_length(20)),
-    'piece length': 1, 'length': 0, 'name': string_template}, 
-    {'type': 'multiple', 'pieces': ListMarker(exact_length(20)), 
-    'piece length': 1, 'files': ListMarker({'path': ListMarker(string_template), 
+    'pieces': mult20, 'piece length': 1, 'length': 0, 
+    'name': string_template}, 
+    {'type': 'multiple', 'pieces': mult20, 'piece length': 1, 
+    'files': ListMarker({'path': ListMarker(string_template), 
     'length': 0}), 'name': string_template}], 
     'peers': ListMarker({'ip': string_template, 'port': 1, 'id': exact_length(20)}), 
     'id': string_template, 'announce': string_template, 
@@ -161,11 +167,13 @@ def download(params, filefunc, statusfunc, resultfunc, doneflag, cols):
         resultfunc(result, errormsg)
     myid = sha(str(time()) + ' ' + response['your ip']).digest()
     seed(myid)
+    pieces = [info['pieces'][x:x+20] for x in xrange(0, 
+        len(info['pieces']), 20)]
     try:
         storage = Storage(files, open, path.exists, 
             path.getsize, statusfunc)
         storagewrapper = StorageWrapper(storage, 
-            config['download_slice_size'], info['pieces'], 
+            config['download_slice_size'], pieces, 
             info['piece length'], finished, statusfunc, doneflag)
     except ValueError, e:
         finished(false, str(e), true)
@@ -195,9 +203,9 @@ def download(params, filefunc, statusfunc, resultfunc, doneflag, cols):
     ratemeasure = RateMeasure(storagewrapper.get_amount_left())
     downloader = Downloader(storagewrapper, 
         config['download_slice_size'], config['max_rate_period'],
-        len(info['pieces']), total_down, ratemeasure.data_came_in)
+        len(pieces), total_down, ratemeasure.data_came_in)
     connecter = Connecter(make_upload, downloader.make_download, choker,
-        len(info['pieces']))
+        len(pieces))
     encrypter = Encrypter(connecter, rawserver, 
         myid, config['max_message_length'], rawserver.add_task, 
         config['keepalive_interval'], sha(bencode(info)).digest())

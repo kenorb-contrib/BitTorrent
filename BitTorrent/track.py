@@ -13,10 +13,16 @@ from traceback import print_exc
 true = 1
 false = 0
 
+def mult20(thing, verbose):
+    if type(thing) != type(''):
+        raise ValueError, 'must be a string'
+    if len(thing) % 20 != 0:
+        raise ValueError, 'must be multiple of 20'
+
 infotemplate = compile_template([{'type': 'single', 
-    'pieces': ListMarker(exact_length(20)),
-    'piece length': 1, 'length': 0, 'name': string_template}, 
-    {'type': 'multiple', 'pieces': ListMarker(exact_length(20)), 
+    'pieces': mult20, 'piece length': 1, 'length': 0, 
+    'name': string_template}, 
+    {'type': 'multiple', 'pieces': mult20, 
     'piece length': 1, 'files': ListMarker({'path': ListMarker(string_template), 
     'length': 0}), 'name': string_template}])
 
