@@ -72,11 +72,7 @@ it gets associated with the right mimetype.
 
 The file you uploaded in step 4 is linked to using an ordinary url.
 
-6) copy the file you wish to serve to your origin machine
-
-This is the machine which the file will come from initially.
-
-7) start a downloader on the origin machine
+6) start a downloader as a resume on the complete file
 
 You have to run a downloader which already has the complete file, 
 so new downloaders have a place to get it from. Here's an example -
@@ -85,11 +81,15 @@ so new downloaders have a place to get it from. Here's an example -
 
 Make sure the saveas argument points to the already complete file.
 
+If you're running the complete downloader on the same machine or LAN as 
+the tracker, give a --ip parameter to the complete downloader. The --ip 
+parameter can be either an IP address or DNS name.
+
 BitTorrent defaults to port 6881. If it can't use 6881, (probably because 
 another download is happening) it tries 6882, then 6883, etc. It gives up 
 after 6889.
 
-8) you're done!
+7) you're done!
 
 Now you just have to get people downloading! Refer them to the page you 
 created in step 5.
