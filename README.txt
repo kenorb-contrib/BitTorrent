@@ -17,12 +17,14 @@ To start hosting -
 
 1) start running a tracker
 
-First, you need a tracker. Trackers refer downloaders to each other. 
-The load on the tracker is very small, so you only need one for all 
-your files.
+First, you need a tracker. If you're on a dynamic IP or otherwise 
+unreliable connection, you should find someone else's tracker and 
+use that. Otherwise, follow the rest of this step.
 
-To run a tracker, execute the command bttrack.py Here is an 
-example -
+Trackers refer downloaders to each other. The load on the tracker 
+is very small, so you only need one for all your files.
+
+To run a tracker, execute the command bttrack.py Here is an example -
 
 ./bttrack.py --port 6969 --dfile dstate
 
