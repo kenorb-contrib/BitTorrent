@@ -26,7 +26,7 @@ class InvokeEvent(wxPyEvent):
 
 class DownloadInfo:
     def __init__(self):
-        frame = wxFrame(None, -1, 'BitTorrent make directory', size = wxSize(550, 250))
+        frame = wxFrame(None, -1, 'BitTorrent complete dir 1.0', size = wxSize(550, 250))
         self.frame = frame
 
         panel = wxPanel(frame, -1)

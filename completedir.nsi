@@ -12,7 +12,7 @@ Section "Install"
   File *.pyd
   File *.dll
   CreateShortCut "$STARTMENU\Programs\completedir.lnk" "$INSTDIR\btcompletedirgui.exe"
-  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\BitTorrent" "DisplayName" "BitTorrent complete dir"
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\BitTorrent" "DisplayName" "BitTorrent complete dir 1.0"
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\BitTorrent" "UninstallString" '"$INSTDIR\uninstall.exe"'
   MessageBox MB_OK "Complete dir has been successfully installed! Run it under the Programs in the Start Menu."
 SectionEnd
