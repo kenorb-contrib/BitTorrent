@@ -212,7 +212,7 @@ def download(params, filefunc, statusfunc, finfunc, errorfunc, doneflag, cols):
         len(pieces), downmeasure, ratemeasure.data_came_in)
     connecter = Connecter(make_upload, downloader, choker,
         len(pieces), storagewrapper.is_everything_pending, EndgameDownloader,
-        upmeasure, config['max_upload_rate'], rawserver.add_task)
+        upmeasure, config['max_upload_rate'] * 1024, rawserver.add_task)
     infohash = sha(bencode(info)).digest()
     encrypter = Encrypter(connecter, rawserver, 
         myid, config['max_message_length'], rawserver.add_task, 
