@@ -230,10 +230,10 @@ def download(params, filefunc, statusfunc, resultfunc, doneflag, cols):
     def announce(status, q = putqueue(response['announce']), 
             id = response['id'], myid = myid, 
             ip = response['your ip'], port = listen_port, 
-            up = total_up, down = total_down, blobs = blobs):
+            up = total_up, down = total_down, storage = storage):
         q.addrequest(bencode({'ip': ip, 'port': port, 'id': id,
             'uploaded': up[0], 'downloaded': down[0], 'myid': myid,
-            'left': blobs.get_amount_left(), 'status': states[status]}))
+            'left': storage.get_amount_left(), 'status': states[status]}))
 
     if finflag.isSet():
         announce(5)
