@@ -45,12 +45,13 @@
     // do a bunch of checking
     // put up alert sheet if error
     
-    
+    [gButton setEnabled:NO];
     if([[announce stringValue] compare:@""] == NSOrderedSame) {
     NSBeginAlertSheet(NSLocalizedString(@"Invalid Tracker URL", @""), nil, nil, nil, gWindow, nil, nil, nil, nil, NSLocalizedString(@"You must enter the tracker URL.  Contact the tracker administrator for the URL.", @""));
     }
     else if (fname == nil) {
         NSBeginAlertSheet(NSLocalizedString(@"Invalid File", @"invalid file chose fo generate"), nil, nil, nil, gWindow, nil, nil, nil, nil, NSLocalizedString(@"You must drag a file or folder into the generate window first.", @"empty file for generate"));
+        [gButton setEnabled:YES];
     }
     else {
         [defaults setObject:[announce stringValue] forKey:ANNOUNCEKEY];
@@ -74,6 +75,9 @@
     NSString *f = [panel filename];
     if(returnCode == 1) {
         [self prepareGenerateSaveFile:f];
+    }
+    else {
+        [gButton setEnabled:YES];
     }
 }
 
@@ -102,8 +106,6 @@
         [dict setObject:[NSNumber numberWithInt:0] forKey:@"completedir"];
     }
     
-    [gButton setTitle:NSLocalizedString(@"Cancel", @"Cancel")];
-    [gButton setAction:@selector(cancel:)];
     [subCheck setEnabled:NO];
     [progressMeter startAnimation:self];
     [gWindow unregisterDraggedTypes];
@@ -119,12 +121,16 @@
     [dict setObject:[NSData dataWithBytes:&endflag length:sizeof(PyObject *)] forKey:@"flag"];
     [NSThread detachNewThreadSelector:@selector(doGenerate:) toTarget:[self class]  
     withObject:dict];
+    [gButton setTitle:NSLocalizedString(@"Cancel", @"Cancel")];
+    [gButton setAction:@selector(cancel:)];
 }
 
 - (void)progress:(in float)val
 {
-    if(!done)
+    if(!done) {
         [progressMeter setDoubleValue:val];
+        [gButton setEnabled:YES];
+    }
 }
 
 - (void)progressFname:(NSString *)val;
@@ -149,7 +155,6 @@
         [subCheck setEnabled:NO];
     }
 
-    //[progressMeter setDoubleValue:1.0];
     [progressMeter stopAnimation:self];
     [gWindow registerForDraggedTypes:[NSArray arrayWithObjects:NSFilenamesPboardType, nil]];
     [gButton setTitle:NSLocalizedString(@"Generate", @"Generate")];
@@ -165,6 +170,7 @@
     [[NSApp delegate] setTstate:PyEval_SaveThread()];
     [progressMeter setDoubleValue:0.0];
 }
+
 + (void)doGenerate:(NSDictionary *)dict
 {
     PyObject *mm, *md;
@@ -195,7 +201,7 @@
         mmf = PyDict_GetItemString(md, "makeinfo");
         display = PyObject_GetAttrString((PyObject *)proxy, "metaprogress");
         res = PyObject_CallFunction(mmf, "siOOi", [filename cString],  262144, flag, display, 1);
-        if(res) {
+        if(res != NULL && res != Py_None) {
             enc = PyObject_CallFunction(be, "{s:O,s:s}", "info", res, "announce", [url cString]);
             if(PyErr_Occurred())
                 PyErr_Print();
