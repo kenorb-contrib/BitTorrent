@@ -110,49 +110,50 @@ class SingleBlob:
 
 from fakeopen import FakeOpen
 
-def dummy(a, b):
-    pass
-
 def test_normal():
     s = 'abc' * 5
     a = sha(s[:10]).digest()
     b = sha(s[10:]).digest()
     r = []
     f = FakeOpen()
-    sb = SingleBlob('test', sha(s).digest(), 15, [a, b], 10, 
-        r.append, f.open, f.exists, f.getsize, dummy)
+    sb = SingleBlob('test', 15, [a, b], 10, 
+        lambda r = r: r.append(1), f.open, f.exists, f.getsize)
     assert r == []
-    x = sb.get_list_of_files_I_want()
+    x = sb.get_list_of_blobs_I_want()
     assert x == [a, b] or x == [b, a]
-    assert sb.get_list_of_files_I_have() == []
+    assert sb.get_list_of_blobs_I_have() == []
     assert sb.get_slice(a, 0, 2) == None
     
-    assert not sb.save_slice(a, 0, s[0:5])
+    sb.save_slice(a, 0, s[0:5])
+    assert not sb.check_blob(a)
     assert r == []
-    x = sb.get_list_of_files_I_want()
+    x = sb.get_list_of_blobs_I_want()
     assert x == [a, b] or x == [b, a]
-    assert sb.get_list_of_files_I_have() == []
+    assert sb.get_list_of_blobs_I_have() == []
     assert sb.get_slice(a, 0, 2) == None
     
-    assert not sb.save_slice(b, 0, s[10:12])
+    sb.save_slice(b, 0, s[10:12])
+    assert not sb.check_blob(b)
     assert r == []
-    x = sb.get_list_of_files_I_want()
+    x = sb.get_list_of_blobs_I_want()
     assert x == [a, b] or x == [b, a]
-    assert sb.get_list_of_files_I_have() == []
+    assert sb.get_list_of_blobs_I_have() == []
     assert sb.get_slice(a, 0, 2) == None
 
-    assert sb.save_slice(a, 5, s[5:10])
+    sb.save_slice(a, 5, s[5:10])
+    assert sb.check_blob(a)
     assert r == []
-    assert sb.get_list_of_files_I_want() == [b]
-    assert sb.get_list_of_files_I_have() == [a]
+    assert sb.get_list_of_blobs_I_want() == [b]
+    assert sb.get_list_of_blobs_I_have() == [a]
     assert sb.get_slice(a, 0, 2) == s[:2]
     assert sb.get_slice(a, 7, 3) == s[7:10]
     assert sb.get_slice(a, 7, 20) == None
 
-    assert sb.save_slice(b, 2, s[12:])
+    sb.save_slice(b, 2, s[12:])
+    assert sb.check_blob(b)
     assert r == [true]
-    assert sb.get_list_of_files_I_want() == []
-    x = sb.get_list_of_files_I_have()
+    assert sb.get_list_of_blobs_I_want() == []
+    x = sb.get_list_of_blobs_I_have()
     assert x == [a, b] or x == [b, a]
     assert sb.get_slice(b, 0, 2) == s[10:12]
     assert sb.get_slice(b, 4, 1) == s[14:]
@@ -163,40 +164,42 @@ def test_even():
     b = sha(s[10:]).digest()
     r = []
     f = FakeOpen()
-    sb = SingleBlob('test', sha(s).digest(), 20, [a, b], 10, 
-        r.append, f.open, f.exists, f.getsize, dummy)
+    sb = SingleBlob('test', 20, [a, b], 10, 
+        lambda r = r: r.append(1), f.open, f.exists, f.getsize)
     assert r == []
-    x = sb.get_list_of_files_I_want()
+    x = sb.get_list_of_blobs_I_want()
     assert x == [a, b] or x == [b, a]
-    assert sb.get_list_of_files_I_have() == []
+    assert sb.get_list_of_blobs_I_have() == []
     assert sb.get_slice(a, 0, 2) == None
     
     assert not sb.save_slice(a, 0, s[0:5])
     assert r == []
-    x = sb.get_list_of_files_I_want()
+    x = sb.get_list_of_blobs_I_want()
     assert x == [a, b] or x == [b, a]
-    assert sb.get_list_of_files_I_have() == []
+    assert sb.get_list_of_blobs_I_have() == []
     assert sb.get_slice(a, 0, 2) == None
     
     assert not sb.save_slice(b, 0, s[10:12])
     assert r == []
-    x = sb.get_list_of_files_I_want()
+    x = sb.get_list_of_blobs_I_want()
     assert x == [a, b] or x == [b, a]
-    assert sb.get_list_of_files_I_have() == []
+    assert sb.get_list_of_blobs_I_have() == []
     assert sb.get_slice(a, 0, 2) == None
 
-    assert sb.save_slice(a, 5, s[5:10])
+    sb.save_slice(a, 5, s[5:10])
+    assert sb.check_blob(a)
     assert r == []
-    assert sb.get_list_of_files_I_want() == [b]
-    assert sb.get_list_of_files_I_have() == [a]
+    assert sb.get_list_of_blobs_I_want() == [b]
+    assert sb.get_list_of_blobs_I_have() == [a]
     assert sb.get_slice(a, 0, 2) == s[:2]
     assert sb.get_slice(a, 7, 3) == s[7:10]
     assert sb.get_slice(a, 7, 20) == None
 
-    assert sb.save_slice(b, 2, s[12:])
+    sb.save_slice(b, 2, s[12:])
+    assert sb.check_blob(b)
     assert r == [true]
-    assert sb.get_list_of_files_I_want() == []
-    x = sb.get_list_of_files_I_have()
+    assert sb.get_list_of_blobs_I_want() == []
+    x = sb.get_list_of_blobs_I_have()
     assert x == [a, b] or x == [b, a]
     assert sb.get_slice(b, 0, 2) == s[10:12]
     assert sb.get_slice(b, 4, 6) == s[14:]
@@ -206,22 +209,23 @@ def test_short():
     a = sha(s).digest()
     r = []
     f = FakeOpen()
-    sb = SingleBlob('test', a, 8, [a], 10, r.append, 
-        f.open, f.exists, f.getsize, dummy)
+    sb = SingleBlob('test', 8, [a], 10, lambda r = r: r.append(1), 
+        f.open, f.exists, f.getsize)
     assert r == []
-    assert sb.get_list_of_files_I_want() == [a]
+    assert sb.get_list_of_blobs_I_want() == [a]
     assert sb.get_slice(a, 0, 2) == None
     
     assert not sb.save_slice(a, 0, s[0:5])
     assert r == []
-    assert sb.get_list_of_files_I_want() == [a]
-    assert sb.get_list_of_files_I_have() == []
+    assert sb.get_list_of_blobs_I_want() == [a]
+    assert sb.get_list_of_blobs_I_have() == []
     assert sb.get_slice(a, 0, 2) == None
     
-    assert sb.save_slice(a, 5, s[5:])
+    sb.save_slice(a, 5, s[5:])
+    assert sb.check_blob(a)
     assert r == [true]
-    assert sb.get_list_of_files_I_want() == []
-    assert sb.get_list_of_files_I_have() == [a]
+    assert sb.get_list_of_blobs_I_want() == []
+    assert sb.get_list_of_blobs_I_have() == [a]
     assert sb.get_slice(a, 0, 2) == s[:2]
     assert sb.get_slice(a, 7, 1) == s[7:]
     assert sb.get_slice(a, 7, 20) == None
@@ -230,8 +234,8 @@ def test_short():
 def test_zero_length():
     r = []
     f = FakeOpen()
-    sb = SingleBlob('test', sha('').digest(), 0, [], 10, 
-        r.append, f.open, f.exists, f.getsize, dummy)
+    sb = SingleBlob('test', 0, [], 10, 
+        lambda r = r: r.append(1), f.open, f.exists, f.getsize)
     assert r == []
     
 def test_too_big():
@@ -240,8 +244,8 @@ def test_too_big():
     r = []
     f = FakeOpen()
     try:
-        sb = SingleBlob('test', a, 11, [a], 10, r.append, 
-            f.open, f.exists, f.getsize, dummy)
+        sb = SingleBlob('test', 11, [a], 10, lambda r = r: r.append(1), 
+            f.open, f.exists, f.getsize)
         assert false
     except ValueError:
         pass
@@ -252,22 +256,22 @@ def test_too_small():
     r = []
     f = FakeOpen()
     try:
-        sb = SingleBlob('test', sha('x').digest(), 8, [a, b], 
-            10, r.append, f.open, f.exists, f.getsize, dummy)
+        sb = SingleBlob('test', 8, [a, b], 
+            10, lambda r = r: r.append(1), f.open, f.exists, f.getsize)
         assert false
     except ValueError:
         pass
 
 def test_repeat_piece():
-    a = sha('abcabc').digest()
     b = sha('abc').digest()
     r = []
     f = FakeOpen()
-    sb = SingleBlob('test', a, 6, [b, b], 3, r.append, 
-        f.open, f.exists, f.getsize, dummy)
+    sb = SingleBlob('test', 6, [b, b], 3, lambda r = r: r.append(1), 
+        f.open, f.exists, f.getsize)
     assert r == []
     
-    assert sb.save_slice(b, 0, 'abc')
+    sb.save_slice(b, 0, 'abc')
+    assert sb.check_blob(b)
     assert r == [true]
 
 def test_resume_with_repeat_piece_present():
@@ -275,12 +279,13 @@ def test_resume_with_repeat_piece_present():
     b = sha('abc').digest()
     c = sha('q').digest()
     r = []
-    f = FakeOpen({'test': 'aaaabcf'})
-    sb = SingleBlob('test', a, 7, [b, b, c], 3, r.append, 
-        f.open, f.exists, f.getsize, dummy)
+    f = FakeOpen({'test': 'abcaaaf'})
+    sb = SingleBlob('test', 7, [b, b, c], 3, lambda r = r: r.append(1), 
+        f.open, f.exists, f.getsize)
     assert r == []
     
-    assert sb.save_slice(c, 0, 'q')
+    sb.save_slice(c, 0, 'q')
+    assert sb.check_blob(c)
     assert r == [true]
 
 def test_flunk_repeat_with_different_sizes():
@@ -288,8 +293,8 @@ def test_flunk_repeat_with_different_sizes():
     r = []
     f = FakeOpen()
     try:
-        sb = SingleBlob('test', sha('x').digest(), 15, [a, a], 
-            10, r.append, f.open, f.exists, f.getsize, dummy)
+        sb = SingleBlob('test', 15, [a, a], 
+            10, lambda r = r: r.append(1), f.open, f.exists, f.getsize)
         assert false
     except ValueError:
         pass

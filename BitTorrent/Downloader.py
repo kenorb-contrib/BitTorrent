@@ -5,7 +5,7 @@ from btemplate import compile_template, ListMarker, string_template, exact_lengt
 true = 1
 false = 0
 
-have_files_template = compile_template({'type': 'I have', 
+have_blobs_template = compile_template({'type': 'I have', 
     'blobs': ListMarker(exact_length(20))})
 
 here_is_a_slice_template = compile_template({'type': 'slice', 
@@ -82,7 +82,7 @@ class Download:
         return None
 
     def got_I_have(self, message):
-        have_files_template(message)
+        have_blobs_template(message)
         if self.downloader.data.has_blobs(self, 
                 message['blobs']) and not self.interested:
             self.adjust()

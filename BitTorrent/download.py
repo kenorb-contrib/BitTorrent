@@ -7,6 +7,7 @@ from StreamEncrypter import make_encrypter
 from PublisherChoker import Choker
 from SingleBlob import SingleBlob
 from Uploader import Upload
+from DownloaderData import DownloaderData
 from Downloader import Download
 from Connecter import Connecter
 from Encrypter import Encrypter
@@ -134,7 +135,7 @@ def download(params, filefunc, displayfunc, doneflag, cols):
             doneflag.set()
         blobs = SingleBlob(file, response['hash'], file_length, response['pieces'], 
             response['piece length'], finished, open, path.exists, path.getsize)
-        if len(blobs.get_list_of_files_I_want()) == 0:
+        if len(blobs.get_list_of_blobs_I_want()) == 0:
             displayfunc('that file has already been completely downloaded', 'Okay')
             return true
     except ValueError, e:

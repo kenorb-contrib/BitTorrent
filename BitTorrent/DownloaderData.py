@@ -51,7 +51,7 @@ class DownloaderData:
                         if h2.has_key(blob):
                             f.append(d2)
                 return blob, begin, length, f
-        for blob in self.blobs.get_list_of_files_I_want():
+        for blob in self.blobs.get_list_of_blobs_I_want():
             if not have.has_key(blob):
                 continue
             if self.priority_dict.has_key(blob):
@@ -118,6 +118,8 @@ class DownloaderData:
         del self.downloads[d]
         return self.downloads.keys()
 
+"""
+
 def test_normal():
     start three things both which want three pieces
     make first one get two
@@ -135,4 +137,4 @@ def test_short_blob():
     make two connections each of which want a single blob with only one chunk
     start download from one
 
-
+"""

@@ -18,14 +18,14 @@ info_template = compile_template({'version': '1.0', 'file name': st,
     'piece length': 1, 'hash': len20})
 
 class MultiBlob:
-    def __init__(self, files, piece_length, open, getsize, exists, 
+    def __init__(self, blobs, piece_length, open, getsize, exists, 
             split, getmtime, time, isfile):
         self.open = open
         # blob: (file, begin, end)
         self.blobs = {}
         # name, hash, [pieces], length
         self.info = []
-        for file in files:
+        for file in blobs:
             if not exists(file):
                 raise ValueError, file + ' does not exist'
             if not isfile(file):
@@ -106,7 +106,7 @@ class MultiBlob:
         h.close()
         return r
         
-    def get_list_of_files_I_have(self):
+    def get_list_of_blobs_I_have(self):
         return self.blobs.keys()
 
 from fakeopen import FakeOpen
@@ -118,7 +118,7 @@ def test_long_file():
     fo = FakeOpen({'test': s})
     mb = MultiBlob(['test'], 10, fo.open, fo.getsize, fo.exists, 
         lambda x: ('', x), lambda x: 0, lambda: 0, lambda x: true)
-    x = mb.get_list_of_files_I_have()
+    x = mb.get_list_of_blobs_I_have()
     assert x == [a, b] or x == [b, a]
     assert mb.get_slice(a, 0, 5) == s[:5]
     assert mb.get_slice(a, 5, 5) == s[5:10]
@@ -138,7 +138,7 @@ def test_resurrected():
         lambda x: ('', x), lambda x: 0, lambda: 0, lambda x: true)
     mb = MultiBlob(['test'], 10, fo.open, fo.getsize, fo.exists, 
         lambda x: ('', x), lambda x: 0, lambda: 0, lambda x: true)
-    x = mb.get_list_of_files_I_have()
+    x = mb.get_list_of_blobs_I_have()
     assert x == [a, b] or x == [b, a]
     assert mb.get_slice(a, 0, 5) == s[:5]
     assert mb.get_slice(a, 5, 5) == s[5:10]
@@ -156,7 +156,7 @@ def test_even():
     fo = FakeOpen({'test': s})
     mb = MultiBlob(['test'], 10, fo.open, fo.getsize, fo.exists, 
         lambda x: ('', x), lambda x: 0, lambda: 0, lambda x: true)
-    x = mb.get_list_of_files_I_have()
+    x = mb.get_list_of_blobs_I_have()
     assert x == [a, b] or x == [b, a]
     assert mb.get_slice(a, 0, 5) == s[:5]
     assert mb.get_slice(a, 5, 5) == s[5:10]
@@ -171,7 +171,7 @@ def test_short():
     fo = FakeOpen({'test': s})
     mb = MultiBlob(['test'], 10, fo.open, fo.getsize, fo.exists, 
         lambda x: ('', x), lambda x: 0, lambda: 0, lambda x: true)
-    assert mb.get_list_of_files_I_have() == [a]
+    assert mb.get_list_of_blobs_I_have() == [a]
     assert mb.get_slice(a, 0, 5) == s[:5]
     assert mb.get_slice(a, 5, 1) == s[5:]
     assert mb.get_slice(a, 5, 20) == None
@@ -184,7 +184,7 @@ def test_null():
     fo = FakeOpen({'test': s})
     mb = MultiBlob(['test'], 10, fo.open, fo.getsize, fo.exists, 
         lambda x: ('', x), lambda x: 0, lambda: 0, lambda x: true)
-    assert mb.get_list_of_files_I_have() == [a]
+    assert mb.get_list_of_blobs_I_have() == [a]
     assert mb.get_slice(a, 0, 5) == None
     assert mb.get_slice(a, 0, 0) == ''
     assert mb.get_slice(a, 1, 2) == None
