@@ -104,9 +104,6 @@ class Connecter:
 
     def got_message(self, connection, message):
         c = self.connections[connection]
-        if len(message) == 0:
-            connection.close()
-            return
         t = message[0]
         if t == BITFIELD and c.got_anything:
             connection.close()

@@ -205,7 +205,7 @@ def download(params, filefunc, statusfunc, resultfunc, doneflag, cols):
             max_slice_length, max_rate_period, total_up = total_up)
     ratemeasure = RateMeasure(storagewrapper.get_amount_left())
     downloader = Downloader(storagewrapper, 
-        config['download_slice_size'], config['max_rate_period'],
+        config['request_backlog'], config['max_rate_period'],
         len(pieces), total_down, ratemeasure.data_came_in)
     connecter = Connecter(make_upload, downloader.make_download, choker,
         len(pieces))

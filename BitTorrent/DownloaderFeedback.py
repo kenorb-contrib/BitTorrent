@@ -18,9 +18,30 @@ class DownloaderFeedback:
         self.finflag = finflag
         self.add_task(self.display, .1)
 
+    def spew(self):
+        s = StringIO()
+        for c in self.choker.connections:
+            s.write(c.get_ip() + ' ')
+            u = c.get_upload()
+            if u.is_interested():
+                s.write('i')
+            if u.is_choked():
+                s.write('c')
+            s.write(' ' + str(u.rate) + ' ')
+
+            d = c.get_download()
+            if d.is_interested():
+                s.write('i')
+            if d.is_choked():
+                s.write('c')
+            s.write(' ' + str(d.rate) + '\n')
+        print s.getvalue()
+
     def display(self):
         self.add_task(self.display, 1)
         t = time()
+        #print '\n\n\n'
+        #self.spew()
         if self.finflag.isSet():
             upRate = 0
             for c in self.choker.connections:
@@ -37,30 +58,16 @@ class DownloaderFeedback:
         
         downRate = 0
         upRate = 0
-        s = StringIO()
-        s.write('\n\n\n')
         for c in self.choker.connections:
-            s.write(c.get_ip() + ' ')
             u = c.get_upload()
-            if u.is_interested():
-                s.write('i')
-            if u.is_choked():
-                s.write('c')
             if u.lastout < t - self.max_pause:
                 u.update_rate(0)
-            s.write(' ' + str(u.rate) + ' ')
             upRate += u.rate
 
             d = c.get_download()
-            if d.is_interested():
-                s.write('i')
-            if d.is_choked():
-                s.write('c')
             if d.lastin < t - self.max_pause:
                 d.update_rate(0)
-            s.write(' ' + str(d.rate) + '\n')
             downRate += d.rate
-        #print s.getvalue()
         if timeEst is not None:
             self.statusfunc(timeEst=timeEst, fractionDone=fractionDone, 
                 downRate=downRate, upRate=upRate)

@@ -58,15 +58,11 @@ class EncryptedConnection:
 
     def read_peer_id(self, s):
         if self.id is None:
-            self.complete = true
             self.id = s
-            for v in self.encrypter.connections.values():
-                if v is not self and v.id == self.id:
-                    v.close()
         else:
             if s != self.id:
                 return None
-            self.complete = true
+        self.complete = true
         self.encrypter.connecter.connection_made(self)
         return 4, self.read_len
 
@@ -377,64 +373,6 @@ def test_wrong_other_id():
     assert c.log == []
     assert c1.closed
 
-def test_close_redundant_locally_initiated():
-    c = DummyConnecter()
-    rs = DummyRawServer()
-    e = Encrypter(c, rs, 'a' * 20, 500, dummyschedule, 30, 'd' * 20)
-    e.start_connection('dns', 'o' * 20)
-    assert c.log == []
-    assert len(rs.connects) == 1
-    assert rs.connects[0][0] == 'dns'
-    c1 = rs.connects[0][1]
-    del rs.connects[:]
-    assert c1.pop() == chr(len(protocol_name)) + protocol_name + \
-        chr(0) * 8 + 'd' * 20 + 'a' * 20
-    assert not c1.closed
-
-    e.data_came_in(c1, chr(len(protocol_name)) + protocol_name + 
-        chr(0) * 8 + 'd' * 20 + 'o' * 20)
-    assert len(c.log) == 1 and c.log[0][0] == 'made'
-    ch = c.log[0][1]
-    del c.log[:]
-    assert not c1.closed
-
-    c2 = DummyRawConnection()
-    e.external_connection_made(c2)
-    e.data_came_in(c2, chr(len(protocol_name)) + protocol_name + 
-        chr(0) * 8 + 'd' * 20 + 'o' * 20)
-    assert c1.closed
-    assert len(c.log) == 2
-    assert c.log[0] == ('lost', ch)
-    assert c.log[1][0] == 'made'
-
-def test_close_redundant_connection():
-    c = DummyConnecter()
-    rs = DummyRawServer()
-    e = Encrypter(c, rs, 'a' * 20, 500, dummyschedule, 30, 'd' * 20)
-    c1 = DummyRawConnection()
-    e.external_connection_made(c1)
-    assert c1.pop() == chr(len(protocol_name)) + protocol_name + \
-        chr(0) * 8 + 'd' * 20 + 'a' * 20
-    assert c.log == []
-    assert rs.connects == []
-    assert not c1.closed
-
-    e.data_came_in(c1, chr(len(protocol_name)) + protocol_name + 
-        chr(0) * 8 + 'd' * 20 + 'o' * 20)
-    assert len(c.log) == 1 and c.log[0][0] == 'made'
-    ch = c.log[0][1]
-    del c.log[:]
-    assert not c1.closed
-
-    c2 = DummyRawConnection()
-    e.external_connection_made(c2)
-    e.data_came_in(c2, chr(len(protocol_name)) + protocol_name + 
-        chr(0) * 8 + 'd' * 20 + 'o' * 20)
-    assert c1.closed
-    assert len(c.log) == 2
-    assert c.log[0] == ('lost', ch)
-    assert c.log[1][0] == 'made'
-    
 def test_over_max_len():
     c = DummyConnecter()
     rs = DummyRawServer()
