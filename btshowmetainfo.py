@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 
 # Written by Henry 'Pi' James
 # see LICENSE.txt for license information
