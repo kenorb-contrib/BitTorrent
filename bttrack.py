@@ -203,7 +203,7 @@ def track(config):
         print "Couldn't check version number - " + str(e)
 
     port = config['port']
-    s = HTTPServer(('', port), TrackerHandler)
+    s = HTTPServer((config['bind'], port), TrackerHandler)
     s.published = {}
     s.file = config['file']
     if exists(s.file):
@@ -237,6 +237,7 @@ defaults = [
     ('file', 's', None, 'file to store state in'),
     ('dfile', 'd', None, 'file to store recent downloader info in'),
     ('logfile', None, None, 'file to write BitTorrent announcements to'),
+    ('bind', None, '', 'ip to bind to locally'),
     ]
 
 def run(args):

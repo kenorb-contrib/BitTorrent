@@ -98,10 +98,10 @@ class RawServer:
             if k.socket is not None:
                 self._close_socket(k)
 
-    def bind(self, port):
+    def bind(self, port, bind = ''):
         server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         server.setblocking(0)
-        server.bind(('', port))
+        server.bind((bind, port))
         server.listen(5)
         self.poll.register(server, POLLIN)
         self.server = server

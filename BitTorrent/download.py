@@ -62,6 +62,8 @@ defaults = [
         "maximum amount of time to guess the current rate estimate represents"),
     ('permanent', None, 0,
         "whether this peer will stop uploading once it's done downloading"),
+    ('bind', None, '', 
+        'ip to bind to locally'),
     ]
 
 t = compile_template({'info': [{'type': 'single', 
@@ -202,7 +204,7 @@ def download(params, filefunc, statusfunc, resultfunc, doneflag, cols):
         r = [config['port']]
     for listen_port in r:
         try:
-            rawserver.bind(listen_port)
+            rawserver.bind(listen_port, config['bind'])
             break
         except socketerror, e:
             pass

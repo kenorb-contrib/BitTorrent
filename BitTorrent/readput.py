@@ -1,7 +1,7 @@
 # written by Bram Cohen
 # see LICENSE.txt for license information
 
-from httplib import HTTP
+from httplib import HTTPConnection, HTTPSConnection
 from urlparse import urlparse
 from threading import Thread, Lock
 from traceback import print_exc
@@ -10,7 +10,11 @@ false = 0
 
 def readput(url, data):
     protocol, host, path, g1, g2, g3 = urlparse(url)
-    if protocol != 'http':
+    if protocol == 'http':
+        h = HTTPConnection(host)
+    elif protocol == 'https':
+        h = HTTPSConnection(host)
+    else:
         raise ValueError, "can't handle protocol '" + protocol + "'"
     h = HTTP(host)
     h.putrequest('PUT', path)
