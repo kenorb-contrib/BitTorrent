@@ -55,7 +55,7 @@ class HeadlessDisplayer:
     def display(self, fractionDone = None, timeEst = None, 
             downRate = None, upRate = None, activity = None):
         if fractionDone is not None:
-            self.percentDone = str(int(fractionDone * 100))
+            self.percentDone = str(float(int(fractionDone * 1000)) / 10)
         if timeEst is not None:
             self.timeEst = hours(timeEst)
         if activity is not None and not self.done:

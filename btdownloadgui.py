@@ -97,7 +97,7 @@ class DownloadInfoFrame(wxFrame):
         self.fileNameText = wxStaticText(panel, -1, '', style = wxALIGN_LEFT)
         colSizer.Add(self.fileNameText, 0, wxEXPAND, 4)
 
-        self.gauge = wxGauge(panel, -1, range = 100)
+        self.gauge = wxGauge(panel, -1, range = 1000)
         self.gauge.SetBezelFace(5)
         self.gauge.SetShadowWidth(5)
         colSizer.Add(self.gauge, 0, wxEXPAND, 7)
@@ -139,7 +139,7 @@ class DownloadInfoFrame(wxFrame):
 
     def onUpdateStatus(self, event):
         if event.fractionDone is not None:
-            self.gauge.SetValue(int(event.fractionDone * 100))
+            self.gauge.SetValue(int(event.fractionDone * 1000))
         if event.timeEst is not None:
             self.timeEstText.SetLabel(hours(event.timeEst))
         if event.activity is not None and not self.fin:
@@ -157,7 +157,7 @@ class DownloadInfoFrame(wxFrame):
         if event.finished:
             self.timeEstText.SetLabel('Download Succeeded!')
             self.cancelButton.SetLabel('Finish')
-            self.gauge.SetValue(100)
+            self.gauge.SetValue(1000)
         else:
             self.timeEstText.SetLabel('Download Failed!')
             self.cancelButton.SetLabel('Close')
