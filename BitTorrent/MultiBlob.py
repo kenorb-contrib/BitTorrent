@@ -14,12 +14,12 @@ def len20(s, verbose):
         raise ValueError
 
 info_template = compile_template({'version': '1.0', 'file name': st,
-    'last modified': 0, 'file length': 0, 'pieces': ListMarker(len20),
+    'file length': 0, 'pieces': ListMarker(len20),
     'piece length': 1})
 
 class MultiBlob:
     def __init__(self, blobs, piece_length, open, getsize, exists, 
-            split, getmtime, time, isfile):
+            split, time, isfile):
         self.open = open
         # blob: (file, begin, end)
         self.blobs = {}
@@ -41,21 +41,16 @@ class MultiBlob:
                     info_template(v)
                     if v['file name'] != filetail:
                         raise ValueError, 'wrong file name, got ' + v['file name']
-                    if v['last modified'] == getmtime(file):
-                        c = true
-                        if v['piece length'] != piece_length:
-                            raise ValueError, 'mismatching piece length'
-                        if v['file length'] != getsize(file):
-                            raise ValueError, 'wrong length'
-                        indices = make_indices(v['pieces'], piece_length, 
-                            v['file length'])
-                        for (blob, vs) in indices.items():
-                            begin, end = vs[0]
-                            self.blobs[blob] = (file, begin, end)
-                        self.info.append((filetail, 
-                            v['pieces'], v['file length']))
-                    else:
-                        c = false
+                    c = true
+                    if v['file length'] != getsize(file):
+                        raise ValueError, 'file has wrong length'
+                    indices = make_indices(v['pieces'], piece_length, 
+                        v['file length'])
+                    for (blob, vs) in indices.items():
+                        begin, end = vs[0]
+                        self.blobs[blob] = (file, begin, end)
+                    self.info.append((filetail, 
+                        v['pieces'], v['file length']))
                 except ValueError, e:
                     raise ValueError, 'error in ' + metafile + ' - ' + str(e)
                 if c:
@@ -79,7 +74,7 @@ class MultiBlob:
             
             h = open(metafile, 'wb')
             h.write(bencode({'version': '1.0', 'file name': filetail, 
-                'last modified': getmtime(file), 'file length': len, 
+                'file length': len, 
                 'piece length': piece_length, 'pieces': pieces}))
             h.close()
 
@@ -112,7 +107,7 @@ def test_long_file():
     b = sha(s[10:]).digest()
     fo = FakeOpen({'test': s})
     mb = MultiBlob(['test'], 10, fo.open, fo.getsize, fo.exists, 
-        lambda x: ('', x), lambda x: 0, lambda: 0, lambda x: true)
+        lambda x: ('', x), lambda: 0, lambda x: true)
     x = mb.get_list_of_blobs_I_have()
     assert x == [a, b] or x == [b, a]
     assert mb.get_slice(a, 0, 5) == s[:5]
@@ -130,9 +125,9 @@ def test_resurrected():
     b = sha(s[10:]).digest()
     fo = FakeOpen({'test': s})
     mb = MultiBlob(['test'], 10, fo.open, fo.getsize, fo.exists, 
-        lambda x: ('', x), lambda x: 0, lambda: 0, lambda x: true)
+        lambda x: ('', x), lambda: 0, lambda x: true)
     mb = MultiBlob(['test'], 10, fo.open, fo.getsize, fo.exists, 
-        lambda x: ('', x), lambda x: 0, lambda: 0, lambda x: true)
+        lambda x: ('', x), lambda: 0, lambda x: true)
     x = mb.get_list_of_blobs_I_have()
     assert x == [a, b] or x == [b, a]
     assert mb.get_slice(a, 0, 5) == s[:5]
@@ -150,7 +145,7 @@ def test_even():
     b = sha(s[10:]).digest()
     fo = FakeOpen({'test': s})
     mb = MultiBlob(['test'], 10, fo.open, fo.getsize, fo.exists, 
-        lambda x: ('', x), lambda x: 0, lambda: 0, lambda x: true)
+        lambda x: ('', x), lambda: 0, lambda x: true)
     x = mb.get_list_of_blobs_I_have()
     assert x == [a, b] or x == [b, a]
     assert mb.get_slice(a, 0, 5) == s[:5]
@@ -165,7 +160,7 @@ def test_short():
     a = sha(s).digest()
     fo = FakeOpen({'test': s})
     mb = MultiBlob(['test'], 10, fo.open, fo.getsize, fo.exists, 
-        lambda x: ('', x), lambda x: 0, lambda: 0, lambda x: true)
+        lambda x: ('', x), lambda: 0, lambda x: true)
     assert mb.get_list_of_blobs_I_have() == [a]
     assert mb.get_slice(a, 0, 5) == s[:5]
     assert mb.get_slice(a, 5, 1) == s[5:]
@@ -178,7 +173,7 @@ def test_null():
     a = sha(s).digest()
     fo = FakeOpen({'test': s})
     mb = MultiBlob(['test'], 10, fo.open, fo.getsize, fo.exists, 
-        lambda x: ('', x), lambda x: 0, lambda: 0, lambda x: true)
+        lambda x: ('', x), lambda: 0, lambda x: true)
     assert mb.get_list_of_blobs_I_have() == [a]
     assert mb.get_slice(a, 0, 5) == None
     assert mb.get_slice(a, 0, 0) == ''

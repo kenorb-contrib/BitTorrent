@@ -15,7 +15,7 @@ from threading import Condition, Event
 from entropy import entropy
 from readput import readput
 from btemplate import compile_template, string_template
-from os.path import split, getsize, exists, isfile, getmtime
+from os.path import split, getsize, exists, isfile
 from random import randrange
 from time import time
 true = 1
@@ -77,7 +77,7 @@ def publish(params, cols):
         lambda c: c.get_upload().rate)
     piece_length = config['piece_size']
     blobs = MultiBlob(files, piece_length, open, getsize, exists, 
-        split, getmtime, time, isfile)
+        split, time, isfile)
     def make_upload(connection, choker = choker, blobs = blobs, 
             max_slice_length = config['max_slice_length'],
             max_rate_period = config['max_rate_period']):
