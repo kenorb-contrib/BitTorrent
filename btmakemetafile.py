@@ -10,27 +10,41 @@ from os import listdir
 from sha import sha
 from copy import copy
 from BitTorrent.bencode import bencode
+from BitTorrent.btformats import check_info
 
-def make_meta_file(file, url, piece_length = 2 ** 20):
+def dummy(v):
+    pass
+
+def make_meta_file(file, url, piece_length = 2 ** 20, 
+        failure = dummy, progress = dummy):
     a, b = split(file)
     if b == '':
         f = a + '.torrent'
     else:
         f = join(a, b + '.torrent')
-    h = open(f, 'wb')
-    h.write(bencode({'info': makeinfo(file, piece_length), 
-        'announce': url}))
-    h.close()
+    info = makeinfo(file, piece_length, progress)
+    try:
+        check_info(info)
+        h = open(f, 'wb')
+        h.write(bencode({'info': info, 'announce': url}))
+        h.close()
+    except (ValueError, IOError), e:
+        failure(str(e))
+        return
 
-def makeinfo(file, piece_length):
+def makeinfo(file, piece_length, progress = dummy):
     file = abspath(file)
     if isdir(file):
         subs = subfiles(file)
+        total = 0
+        for sub in subs:
+            total += getsize(sub[1])
         subs.sort()
         pieces = []
         sh = sha()
         done = 0
         fs = []
+        subtotal = 0
         for p, f in subs:
             pos = 0
             size = getsize(f)
@@ -41,10 +55,12 @@ def makeinfo(file, piece_length):
                 sh.update(h.read(a))
                 done += a
                 pos += a
+                subtotal += a
                 if done == piece_length:
                     pieces.append(sh.digest())
                     done = 0
                     sh = sha()
+                progress(float(subtotal) / total)
             h.close()
         if done > 0:
             pieces.append(sh.digest())
@@ -78,5 +94,11 @@ def subfiles(d):
             r.append((p, n))
     return r
 
+def fail(reason):
+    print 'failed! ' + reason
+
+def prog(amount):
+    print '%.1f%% complete' % (amount * 100)
+
 if __name__ == '__main__':
-    make_meta_file(argv[1], argv[2])
+    make_meta_file(argv[1], argv[2], failure = fail, progress = prog)

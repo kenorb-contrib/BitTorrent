@@ -1,49 +1,55 @@
 # Written by Bram Cohen
 # see LICENSE.txt for license information
 
-from types import StringType, LongType, ListType, DictType
+from types import StringType, LongType, IntType, ListType, DictType
 from re import compile
 
 reg = compile(r'^[^/\\.~][^/\\]*$')
 
+ints = [LongType, IntType]
+
 def check_info(info):
     if type(info) != DictType:
-        raise ValueError
+        raise ValueError, 'bad metainfo - not a dictionary'
     pieces = info.get('pieces')
     if type(pieces) != StringType or len(pieces) % 20 != 0:
-        raise ValueError
+        raise ValueError, 'bad metainfo - bad pieces key'
     piecelength = info.get('piece length')
-    if type(piecelength) != LongType or piecelength <= 0:
-        raise ValueError
+    if type(piecelength) not in ints or piecelength <= 0:
+        raise ValueError, 'bad metainfo - illegal piece length'
     name = info.get('name')
-    if type(name) != StringType or not reg.match(name):
-        raise ValueError
+    if type(name) != StringType:
+        raise ValueError, 'bad metainfo - bad name'
+    if not reg.match(name):
+        raise ValueError, 'name %s disallowed for security reasons' % name
     if info.has_key('files') == info.has_key('length'):
         raise ValueError, 'single/multiple file mix'
     if info.has_key('length'):
         length = info.get('length')
-        if type(length) != LongType or length < 0:
-            raise ValueError
+        if type(length) not in ints or length < 0:
+            raise ValueError, 'bad metainfo - bad length'
     else:
         files = info.get('files')
         if type(files) != ListType:
             raise ValueError
         for f in files:
             if type(f) != DictType:
-                raise ValueError
+                raise ValueError, 'bad metainfo - bad file value'
             length = f.get('length')
-            if type(length) != LongType or length <= 0:
-                raise ValueError
+            if type(length) not in ints or length < 0:
+                raise ValueError, 'bad metainfo - bad length'
             path = f.get('path')
             if type(path) != ListType or path == []:
-                raise ValueError
+                raise ValueError, 'bad metainfo - bad path'
             for p in path:
-                if type(p) != StringType or not reg.match(p):
-                    raise ValueError
+                if type(p) != StringType:
+                    raise ValueError, 'bad metainfo - bad path dir'
+                if not reg.match(p):
+                    raise ValueError, 'path %s disallowed for security reasons' % p
         for i in xrange(len(files)):
             for j in xrange(i):
                 if files[i]['path'] == files[j]['path']:
-                    raise ValueError
+                    raise ValueError, 'bad metainfo - duplicate path'
 
 def check_message(message):
     if type(message) != DictType:
@@ -68,12 +74,12 @@ def check_peers(message):
         if type(p.get('ip')) != StringType:
             raise ValueError
         port = p.get('port')
-        if type(port) != LongType or p <= 0:
+        if type(port) not in ints or p <= 0:
             raise ValueError
         id = p.get('peer id')
         if type(id) != StringType or len(id) != 20:
             raise ValueError
     interval = message.get('interval')
-    if type(interval) != LongType or interval <= 0:
+    if type(interval) not in ints or interval <= 0:
         raise ValueError
     
