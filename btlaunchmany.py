@@ -10,7 +10,7 @@
 from BitTorrent.download import download
 from threading import Thread, Event, Lock
 from os import listdir
-from os.path import abspath, join, exists
+from os.path import abspath, join, exists, getsize
 from sys import argv, version, stdout, exit
 from time import sleep
 import traceback
@@ -195,7 +195,7 @@ class StatusUpdater:
             saveas = default
         # it asks me where I want to save it before checking the file.. 
         self.myinfo['savefile'] = self.file[:-len(ext)]
-        if exists(self.file[:-len(ext)]):
+        if exists(self.file[:-len(ext)]) and (getsize(self.file[:-len(ext)]) > 0):
             # file will get checked
             while (not filecheck.acquire(0) and not self.myinfo['kill'].isSet()):
                 self.myinfo['status'] = 'disk wait'
