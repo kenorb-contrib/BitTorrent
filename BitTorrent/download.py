@@ -61,8 +61,10 @@ defaults = [
         "maximum amount of time to guess the current rate estimate represents"),
     ('bind', None, '', 
         'ip to bind to locally'),
-    ('upload_rate_fudge', None, '', 
+    ('upload_rate_fudge', None, 5.0, 
         'time equivalent of writing to kernel-level TCP buffer, for rate adjustment'),
+    ('display_interval', None, .1,
+        'time between updates of displayed information'),
     ]
 
 def mult20(thing, verbose):
@@ -240,7 +242,8 @@ def download(params, filefunc, statusfunc, resultfunc, doneflag, cols):
     DownloaderFeedback(choker, rawserver.add_task, 
         response['your ip'], statusfunc, 
         config['max_rate_recalculate_interval'], ratemeasure.get_time_left, 
-        ratemeasure.get_size_left, file_length, finflag)
+        ratemeasure.get_size_left, file_length, finflag,
+        config['display_interval'])
 
     for listen_port in xrange(config['minport'], config['maxport'] + 1):
         try:

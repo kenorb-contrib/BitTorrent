@@ -5,8 +5,8 @@ from time import time
 from cStringIO import StringIO
 
 class DownloaderFeedback:
-    def __init__(self, choker, add_task, ip, statusfunc, 
-            max_pause, remainingfunc, leftfunc, file_length, finflag):
+    def __init__(self, choker, add_task, ip, statusfunc, max_pause, 
+            remainingfunc, leftfunc, file_length, finflag, interval):
         self.choker = choker
         self.add_task = add_task
         self.ip = ip
@@ -16,7 +16,8 @@ class DownloaderFeedback:
         self.leftfunc = leftfunc
         self.file_length = file_length
         self.finflag = finflag
-        self.add_task(self.display, .1)
+        self.interval = interval
+        self.add_task(self.display, interval)
 
     def spew(self):
         print '\n\n\n'
@@ -48,7 +49,7 @@ class DownloaderFeedback:
         print s.getvalue()
 
     def display(self):
-        self.add_task(self.display, 1)
+        self.add_task(self.display, self.interval)
         t = time()
         #self.spew()
         if self.finflag.isSet():
