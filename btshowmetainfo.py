@@ -22,6 +22,7 @@ if len(argv) == 1:
 for metainfo_name in argv[1:]:
     metainfo_file = open(metainfo_name, 'rb')
     metainfo = bdecode(metainfo_file.read())
+    metainfo_file.close()
     announce = metainfo['announce']
     info = metainfo['info']
     info_hash = sha(bencode(info))
@@ -47,7 +48,7 @@ for metainfo_name in argv[1:]:
                 path = path + item
             print '   %s (%d)' % (path, file['length'])
             file_length += file['length']
-            name ='archive size..:'
+        name = 'archive size..:'
     piece_number, last_piece_length = divmod(file_length, piece_length)
     print '%s %i (%i * %i + %i)' \
           % (name,file_length, piece_number, piece_length, last_piece_length)
