@@ -19,13 +19,13 @@ if len(argv) != 3:
   print
   exit(2) # common exit code for syntax error
 
-metainfo_file = open(argv[1])
+metainfo_file = open(argv[1], 'rb')
 metainfo = bdecode(metainfo_file.read())
 metainfo_file.close()
 print 'old filename: %s' % metainfo['info']['name']
 metainfo['info']['name'] = argv[2]
 print 'new filename: %s' % metainfo['info']['name']
-metainfo_file = open(argv[1], 'w')
+metainfo_file = open(argv[1], 'wb')
 metainfo_file.write(bencode(metainfo))
 metainfo_file.close
 print
