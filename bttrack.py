@@ -46,7 +46,10 @@ class TrackerHandler(BaseHTTPRequestHandler):
     def do_PUT(self):
         try:
             self.server.lock.acquire()
-            self.put()
+            try:
+                self.put()
+            except IOError:
+                print_exc()
         finally:
             self.server.lock.release()
 
