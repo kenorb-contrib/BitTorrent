@@ -1,7 +1,7 @@
 # Written by Bram Cohen
 # see LICENSE.txt for license information
 
-from bitfield import bitfield_to_booleans, booleans_to_bitfield
+from bitfield import bitfield_to_booleans
 from binascii import b2a_hex
 from CurrentRateMeasure import Measure
 
@@ -77,8 +77,7 @@ class Connection:
             tobinary(begin) + piece)
 
     def send_bitfield(self, bitfield):
-        self.connection.send_message(BITFIELD + 
-            booleans_to_bitfield(bitfield))
+        self.connection.send_message(BITFIELD + bitfield)
 
     def send_have(self, index):
         self.connection.send_message(HAVE + tobinary(index))
@@ -318,7 +317,7 @@ def test_operation():
     co.got_message(dc, PIECE + tobinary(1) + tobinary(0) + 'abc')
     co.got_message(dc, PIECE + tobinary(1) + tobinary(3) + 'def')
     co.connection_flushed(dc)
-    cc.send_bitfield([False, True, True])
+    cc.send_bitfield(chr(0x60))
     cc.send_interested()
     cc.send_not_interested()
     cc.send_choke()

@@ -3,6 +3,7 @@
 
 from sha import sha
 from threading import Event
+from bitfield import Bitfield
 
 def dummy_status(fractionDone = None, activity = None):
     pass
@@ -32,7 +33,7 @@ class StorageWrapper:
         self.inactive_requests = [1] * len(hashes)
         self.amount_inactive = self.total_length
         self.endgame = False
-        self.have = [False] * len(hashes)
+        self.have = Bitfield(len(hashes))
         self.waschecked = [check_hashes] * len(hashes)
         self.places = {}
         self.holes = []
@@ -71,7 +72,7 @@ class StorageWrapper:
                     markgot(i, i)
                 elif targets.get(s) and self._piecelen(i) == self._piecelen(targets[s][-1]):
                     markgot(targets[s].pop(), i)
-                elif not self.have[-1] and sp == hashes[-1] and (i == len(hashes) - 1 or not self._waspre(len(hashes) - 1)):
+                elif not self.have[len(hashes) - 1] and sp == hashes[-1] and (i == len(hashes) - 1 or not self._waspre(len(hashes) - 1)):
                     markgot(len(hashes) - 1, i)
                 else:
                     self.places[i] = i
@@ -111,7 +112,7 @@ class StorageWrapper:
         return self.endgame
 
     def get_have_list(self):
-        return self.have
+        return self.have.tostring()
 
     def do_I_have(self, index):
         return self.have[index]
@@ -246,7 +247,7 @@ def test_basic():
     sw = StorageWrapper(ds, 2, [sha('abc').digest()], 4, ds.finished, None)
     assert sw.get_amount_left() == 3
     assert not sw.do_I_have_anything()
-    assert sw.get_have_list() == [False]
+    assert sw.get_have_list() == chr(0)
     assert sw.do_I_have_requests(0)
     x = []
     x.append(sw.new_request(0))
@@ -265,13 +266,13 @@ def test_basic():
     assert not sw.do_I_have_requests(0)
     assert sw.get_amount_left() == 3
     assert not sw.do_I_have_anything()
-    assert sw.get_have_list() == [False]
+    assert sw.get_have_list() == chr(0)
     assert not ds.done
     sw.piece_came_in(0, 2, 'c')
     assert not sw.do_I_have_requests(0)
     assert sw.get_amount_left() == 0
     assert sw.do_I_have_anything()
-    assert sw.get_have_list() == [True]
+    assert sw.get_have_list() == chr(0x80)
     assert sw.get_piece(0, 0, 3) == 'abc'
     assert sw.get_piece(0, 1, 2) == 'bc'
     assert sw.get_piece(0, 0, 2) == 'ab'
@@ -284,28 +285,28 @@ def test_two_pieces():
         sha('d').digest()], 3, ds.finished, None)
     assert sw.get_amount_left() == 4
     assert not sw.do_I_have_anything()
-    assert sw.get_have_list() == [False, False]
+    assert sw.get_have_list() == chr(0)
     assert sw.do_I_have_requests(0)
     assert sw.do_I_have_requests(1)
 
     assert sw.new_request(0) == (0, 3)
     assert sw.get_amount_left() == 4
     assert not sw.do_I_have_anything()
-    assert sw.get_have_list() == [False, False]
+    assert sw.get_have_list() == chr(0)
     assert not sw.do_I_have_requests(0)
     assert sw.do_I_have_requests(1)
 
     assert sw.new_request(1) == (0, 1)
     assert sw.get_amount_left() == 4
     assert not sw.do_I_have_anything()
-    assert sw.get_have_list() == [False, False]
+    assert sw.get_have_list() == chr(0)
     assert not sw.do_I_have_requests(0)
     assert not sw.do_I_have_requests(1)
 
     sw.piece_came_in(0, 0, 'abc')
     assert sw.get_amount_left() == 1
     assert sw.do_I_have_anything()
-    assert sw.get_have_list() == [True, False]
+    assert sw.get_have_list() == chr(0x80)
     assert not sw.do_I_have_requests(0)
     assert not sw.do_I_have_requests(1)
     assert sw.get_piece(0, 0, 3) == 'abc'
@@ -315,7 +316,7 @@ def test_two_pieces():
     assert ds.done
     assert sw.get_amount_left() == 0
     assert sw.do_I_have_anything()
-    assert sw.get_have_list() == [True, True]
+    assert sw.get_have_list() == chr(0xC0)
     assert not sw.do_I_have_requests(0)
     assert not sw.do_I_have_requests(1)
     assert sw.get_piece(1, 0, 1) == 'd'
@@ -325,14 +326,14 @@ def test_hash_fail():
     sw = StorageWrapper(ds, 4, [sha('abcd').digest()], 4, ds.finished, None)
     assert sw.get_amount_left() == 4
     assert not sw.do_I_have_anything()
-    assert sw.get_have_list() == [False]
+    assert sw.get_have_list() == chr(0)
     assert sw.do_I_have_requests(0)
 
     assert sw.new_request(0) == (0, 4)
     sw.piece_came_in(0, 0, 'abcx')
     assert sw.get_amount_left() == 4
     assert not sw.do_I_have_anything()
-    assert sw.get_have_list() == [False]
+    assert sw.get_have_list() == chr(0)
     assert sw.do_I_have_requests(0)
 
     assert sw.new_request(0) == (0, 4)
@@ -341,7 +342,7 @@ def test_hash_fail():
     assert ds.done
     assert sw.get_amount_left() == 0
     assert sw.do_I_have_anything()
-    assert sw.get_have_list() == [True]
+    assert sw.get_have_list() == chr(0x80)
     assert not sw.do_I_have_requests(0)
 
 def test_lazy_hashing():
@@ -364,7 +365,7 @@ def test_preexisting():
         sha('ab').digest()], 2, ds.finished, None)
     assert sw.get_amount_left() == 2
     assert sw.do_I_have_anything()
-    assert sw.get_have_list() == [True, False]
+    assert sw.get_have_list() == chr(0x80)
     assert not sw.do_I_have_requests(0)
     assert sw.do_I_have_requests(1)
     assert sw.new_request(1) == (0, 2)
@@ -373,7 +374,7 @@ def test_preexisting():
     assert ds.done
     assert sw.get_amount_left() == 0
     assert sw.do_I_have_anything()
-    assert sw.get_have_list() == [True, True]
+    assert sw.get_have_list() == chr(0xC0)
     assert not sw.do_I_have_requests(0)
     assert not sw.do_I_have_requests(1)
 
