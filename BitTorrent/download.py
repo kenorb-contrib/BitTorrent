@@ -17,6 +17,7 @@ from DownloaderFeedback import DownloaderFeedback
 from RateMeasure import RateMeasure
 from CurrentRateMeasure import Measure
 from EndgameDownloader import EndgameDownloader
+from PiecePicker import PiecePicker
 from bencode import bencode, bdecode
 from sha import sha
 from os import getpid, path, makedirs
@@ -207,7 +208,7 @@ def download(params, filefunc, statusfunc, finfunc, errorfunc, doneflag, cols):
         return Upload(connection, choker, storagewrapper, 
             max_slice_length, max_rate_period, fudge)
     ratemeasure = RateMeasure(storagewrapper.get_amount_left())
-    downloader = Downloader(storagewrapper, 
+    downloader = Downloader(storagewrapper, PiecePicker(len(pieces)),
         config['request_backlog'], config['max_rate_period'],
         len(pieces), downmeasure, ratemeasure.data_came_in)
     connecter = Connecter(make_upload, downloader, choker,

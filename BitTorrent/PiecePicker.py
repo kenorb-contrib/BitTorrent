@@ -8,7 +8,7 @@ false = 0
 class SinglePicker:
     def __init__(self, picker):
         self.picker = picker
-        self.num_interest = 0
+        self.num_interest = 1
         self.num_done = 0
         self.fixedpos = 0
 
@@ -18,7 +18,7 @@ class SinglePicker:
             return self.picker.fixed[self.fixedpos - 1]
         while true:
             if self.num_interest >= len(self.picker.interests):
-                return None
+                raise StopIteration
             interests = self.picker.interests[self.num_interest]
             if len(interests) <= self.num_done:
                 self.num_interest += 1
@@ -43,7 +43,9 @@ class PiecePicker:
         self.interestpos = range(numpieces)
         self.fixed = []
 
-    def got_interest(self, i):
+    def got_have(self, i):
+        if self.numinterests[i] is None:
+            return
         interests = self.interests[self.numinterests[i]]
         pos = self.interestpos[i]
         interests[pos] = interests[-1]
@@ -57,7 +59,9 @@ class PiecePicker:
         self.interestpos[i] = len(interests)
         interests.append(i)
 
-    def lost_interest(self, i):
+    def lost_have(self, i):
+        if self.numinterests[i] is None:
+            return
         interests = self.interests[self.numinterests[i]]
         pos = self.interestpos[i]
         interests[pos] = interests[-1]
@@ -69,7 +73,7 @@ class PiecePicker:
         self.interestpos[i] = len(interests)
         interests.append(i)
 
-    def used(self, piece):
+    def came_in(self, piece):
         if self.numinterests[piece] is not None:
             interests = self.interests[self.numinterests[piece]]
             interests[self.interestpos[piece]] = interests[-1]
@@ -79,46 +83,45 @@ class PiecePicker:
             self.fixed.append(piece)
 
     def complete(self, piece):
-        self.used(piece)
+        self.came_in(piece)
         self.fixed.remove(piece)
 
-    def get_picker(self):
+    def __iter__(self):
         return SinglePicker(self)
 
-def test_used():
+def test_came_in():
     p = PiecePicker(8)
-    p.got_interest(0)
-    p.got_interest(2)
-    p.got_interest(4)
-    p.got_interest(6)
-    p.used(1)
-    p.used(1)
-    p.used(3)
-    p.used(0)
-    p.used(6)
-    s = p.get_picker()
-    v = [s.next() for i in xrange(8)]
-    assert s.next() is None
-    assert v[0:4] == [1, 3, 0, 6]
-    assert v[4:6] == [5, 7] or v[4:6] == [7, 5]
-    assert v[6:8] == [2, 4] or v[6:8] == [4, 2]
+    p.got_have(0)
+    p.got_have(2)
+    p.got_have(4)
+    p.got_have(6)
+    p.came_in(1)
+    p.came_in(1)
+    p.came_in(3)
+    p.came_in(0)
+    p.came_in(6)
+    v = [i for i in p]
+    assert v[:4] == [1, 3, 0, 6]
+    assert v[4:] == [2, 4] or v[4:] == [4, 2]
 
 def test_change_interest():
     p = PiecePicker(8)
-    p.got_interest(0)
-    p.got_interest(2)
-    p.got_interest(4)
-    p.got_interest(6)
-    p.lost_interest(2)
-    p.lost_interest(6)
-    s = p.get_picker()
-    v = [s.next() for i in xrange(8)]
-    assert s.next() is None 
-    assert v[6:] == [0, 4] or v[6:] == [4, 0]
-    a = v[:6]
-    a.sort()
-    assert a == [1, 2, 3, 5, 6, 7]
+    p.got_have(0)
+    p.got_have(2)
+    p.got_have(4)
+    p.got_have(6)
+    p.lost_have(2)
+    p.lost_have(6)
+    v = [i for i in p]
+    assert v == [0, 4] or v == [4, 0]
+
+def test_complete():
+    p = PiecePicker(1)
+    p.got_have(0)
+    p.complete(0)
+    assert [i for i in p] == []
+    p.got_have(0)
+    p.lost_have(0)
 
 def test_zero():
-    p = PiecePicker(0)
-    assert p.get_picker().next() is None
+    assert [i for i in PiecePicker(0)] == []

@@ -1,11 +1,7 @@
 # Written by Bram Cohen
 # see LICENSE.txt for license information
 
-from time import time
-from PriorityBitField import PriorityBitField
 from CurrentRateMeasure import Measure
-from random import shuffle
-from copy import copy
 true = 1
 false = 0
 
@@ -16,36 +12,38 @@ class SingleDownload:
         self.choked = true
         self.interested = false
         self.active_requests = []
-        self.want_priorities = PriorityBitField(downloader.numpieces)
         self.measure = Measure(downloader.max_rate_period)
         self.have = [false] * downloader.numpieces
 
     def disconnected(self):
         self.downloader.downloads.remove(self)
-        self.letgo()
+        for i in xrange(len(self.have)):
+            if self.have[i]:
+                self.downloader.picker.lost_have(i)
+        self._letgo()
 
-    def letgo(self):
-        hit = false
+    def _letgo(self):
+        hits = []
         for index, begin, length in self.active_requests:
             before = self.downloader.storage.do_I_have_requests(index)
             self.downloader.storage.request_lost(index, begin, length)
-            if self.downloader.change_interest(index, before):
-                hit = true
-        del self.active_requests[:]
-        if hit:
-            self.downloader.adjust()
+            if not before:
+                hits.append(index)
+        self.active_requests = []
+        if len(hits) > 0:
+            for d in self.downloader.downloads:
+                d._check_interest(hits)
+                d.download_more(hits)
 
     def got_choke(self):
-        if self.choked:
-            return
-        self.choked = true
-        self.letgo()
+        if not self.choked:
+            self.choked = true
+            self._letgo()
 
     def got_unchoke(self):
-        if not self.choked:
-            return
-        self.choked = false
-        self.downloader.adjust(self)
+        if self.choked:
+            self.choked = false
+            self.download_more()
 
     def is_choked(self):
         return self.choked
@@ -61,97 +59,114 @@ class SingleDownload:
         self.measure.update_rate(len(piece))
         self.downloader.measurefunc(len(piece))
         self.downloader.downmeasure.update_rate(len(piece))
-        wanted_before = self.downloader.storage.do_I_have_requests(index)
+        self.downloader.picker.came_in(index)
         self.downloader.storage.piece_came_in(index, begin, piece)
-        if self.downloader.change_interest(index, wanted_before):
-            self.downloader.adjust()
-        else:
-            self.downloader.adjust(self)
+        if self.downloader.storage.do_I_have(index):
+            self.downloader.picker.complete(index)
+        self.download_more()
+        if len(self.active_requests) == 0:
+            self.interested = false
+            self.connection.send_not_interested()
         return self.downloader.storage.do_I_have(index)
 
-    def adjust(self):
-        if self.want_priorities.is_empty() and self.active_requests == []:
-            if self.interested:
-                self.interested = false
-                self.connection.send_not_interested()
+    def download_more(self, pieces = None):
+        if self.choked or len(self.active_requests) == self.downloader.backlog:
+            return
+        if pieces is None:
+            pieces = self.downloader.picker
+        hit = []
+        self._d(pieces, hit)
+        if len(hit) > 0:
+            for d in self.downloader.downloads:
+                d._lost_interest(hit)
+
+    def _d(self, pieces, hit):
+        for piece in pieces:
+            if self.have[piece]:
+                while self.downloader.storage.do_I_have_requests(piece):
+                    begin, length = self.downloader.storage.new_request(piece)
+                    self.active_requests.append((piece, begin, length))
+                    self.connection.send_request(piece, begin, length)
+                    if not self.downloader.storage.do_I_have_requests(piece):
+                        hit.append(piece)
+                    if len(self.active_requests) == self.downloader.backlog:
+                        return
+
+    def _lost_interest(self, pieces):
+        if not self.interested or len(self.active_requests) > 0:
+            return
+        for piece in pieces:
+            if self.have[piece]:
+                break
         else:
-            if not self.interested:
+            return
+        for i in xrange(len(self.have)):
+            if self.have[i] and self.downloader.storage.do_I_have_requests(i):
+                return
+        self.interested = false
+        self.connection.send_not_interested()
+
+    def _check_interest(self, pieces):
+        if self.interested:
+            return
+        for i in pieces:
+            if self.have[i] and self.downloader.storage.do_I_have_requests(i):
                 self.interested = true
                 self.connection.send_interested()
-        if self.choked:
-            return false
-        hit = false
-        while (not self.want_priorities.is_empty() and 
-                len(self.active_requests) < self.downloader.backlog):
-            i = self.downloader.priority_to_index[self.want_priorities.get_first()]
-            begin, length = self.downloader.storage.new_request(i)
-            self.active_requests.append((i, begin, length))
-            if self.downloader.change_interest(i, true):
-                hit = true
-            self.connection.send_request(i, begin, length)
-        return hit
+                return
 
     def got_have(self, index):
         if self.have[index]:
             return
         self.have[index] = true
-        if self.downloader.storage.do_I_have_requests(index):
-            self.want_priorities.insert_strict(
-                self.downloader.index_to_priority[index])
-            self.downloader.adjust(self)
+        self.downloader.picker.got_have(index)
+        self._check_interest([index])
+        self.download_more([index])
 
     def got_have_bitfield(self, have):
         self.have = have
         for i in xrange(len(have)):
-            if have[i] and self.downloader.storage.do_I_have_requests(i):
-                self.want_priorities.insert_strict(
-                    self.downloader.index_to_priority[i])
-        self.downloader.adjust(self)
+            if have[i]:
+                self.downloader.picker.got_have(i)
+        self._check_interest([i for i in xrange(len(have)) if have[i]])
+        self.download_more()
 
 class Downloader:
-    def __init__(self, storage, backlog, max_rate_period, numpieces, 
+    def __init__(self, storage, picker, backlog, max_rate_period, numpieces, 
             downmeasure, measurefunc = lambda x: None):
         self.storage = storage
+        self.picker = picker
         self.backlog = backlog
         self.max_rate_period = max_rate_period
         self.downmeasure = downmeasure
         self.numpieces = numpieces
         self.measurefunc = measurefunc
-        self.index_to_priority = range(numpieces)
-        shuffle(self.index_to_priority)
-        self.priority_to_index = [None] * numpieces
-        for i in xrange(numpieces):
-            self.priority_to_index[self.index_to_priority[i]] = i
         self.downloads = []
-
-    def change_interest(self, index, before):
-        assert before in [0, 1]
-        after = self.storage.do_I_have_requests(index)
-        p = self.index_to_priority[index]
-        r = false
-        if not before and after:
-            for c in self.downloads:
-                if c.have[index]:
-                    r = true
-                    c.want_priorities.insert_strict(p)
-        elif before and not after:
-            for c in self.downloads:
-                if c.have[index]:
-                    r = true
-                    c.want_priorities.remove_strict(p)
-        return r
-
-    def adjust(self, c = None):
-        if c is None:
-            d = self.downloads
-        else:
-            d = [c]
-        while true in [c.adjust() for c in d]:
-            d = self.downloads
 
     def make_download(self, connection):
         self.downloads.insert(0, SingleDownload(self, connection))
         return self.downloads[0]
+
+class DummyPicker:
+    def __init__(self, num, r):
+        self.stuff = range(num)
+        self.r = r
+
+    def __iter__(self):
+        return iter(self.stuff)
+
+    def lost_have(self, pos):
+        self.r.append('lost have')
+
+    def got_have(self, pos):
+        self.r.append('got have')
+
+    def came_in(self, pos):
+        self.r.append('came in')
+
+    def complete(self, pos):
+        self.stuff.remove(pos)
+        self.r.append('complete')
 
 class DummyStorage:
     def __init__(self, remaining):
@@ -195,14 +210,14 @@ class DummyConnection:
 
 def test_stops_at_backlog():
     ds = DummyStorage([[(0, 2), (2, 2), (4, 2), (6, 2)]])
-    d = Downloader(ds, 2, 15, 1, Measure(15))
     events = []
+    d = Downloader(ds, DummyPicker(len(ds.active), events), 2, 15, 1, Measure(15))
     sd = d.make_download(DummyConnection(events))
     assert events == []
     assert ds.remaining == [[(0, 2), (2, 2), (4, 2), (6, 2)]]
     assert ds.active == [[]]
     sd.got_have_bitfield([true])
-    assert events == ['interested']
+    assert events == ['got have', 'interested']
     del events[:]
     assert ds.remaining == [[(0, 2), (2, 2), (4, 2), (6, 2)]]
     assert ds.active == [[]]
@@ -212,15 +227,15 @@ def test_stops_at_backlog():
     assert ds.remaining == [[(0, 2), (2, 2)]]
     assert ds.active == [[(4, 2), (6, 2)]]
     sd.got_piece(0, 4, 'ab')
-    assert events == [('request', 0, 2, 2)]
+    assert events == ['came in', ('request', 0, 2, 2)]
     del events[:]
     assert ds.remaining == [[(0, 2)]]
     assert ds.active == [[(2, 2), (6, 2)]]
 
 def test_got_have_single():
     ds = DummyStorage([[(0, 2)]])
-    d = Downloader(ds, 2, 15, 1, Measure(15))
     events = []
+    d = Downloader(ds, DummyPicker(len(ds.active), events), 2, 15, 1, Measure(15))
     sd = d.make_download(DummyConnection(events))
     assert events == []
     assert ds.remaining == [[(0, 2)]]
@@ -230,15 +245,17 @@ def test_got_have_single():
     assert ds.remaining == [[(0, 2)]]
     assert ds.active == [[]]
     sd.got_have(0)
-    assert events == ['interested', ('request', 0, 0, 2)]
+    assert events == ['got have', 'interested', ('request', 0, 0, 2)]
     del events[:]
     assert ds.remaining == [[]]
     assert ds.active == [[(0, 2)]]
+    sd.disconnected()
+    assert events == ['lost have']
 
 def test_choke_clears_active():
     ds = DummyStorage([[(0, 2)]])
-    d = Downloader(ds, 2, 15, 1, Measure(15))
     events = []
+    d = Downloader(ds, DummyPicker(len(ds.active), events), 2, 15, 1, Measure(15))
     sd1 = d.make_download(DummyConnection(events))
     sd2 = d.make_download(DummyConnection(events))
     assert events == []
@@ -246,13 +263,14 @@ def test_choke_clears_active():
     assert ds.active == [[]]
     sd1.got_unchoke()
     sd1.got_have(0)
-    assert events == ['interested', ('request', 0, 0, 2)]
+    assert events == ['got have', 'interested', ('request', 0, 0, 2)]
     del events[:]
     assert ds.remaining == [[]]
     assert ds.active == [[(0, 2)]]
     sd2.got_unchoke()
     sd2.got_have(0)
-    assert events == []
+    assert events == ['got have']
+    del events[:]
     assert ds.remaining == [[]]
     assert ds.active == [[(0, 2)]]
     sd1.got_choke()
@@ -261,16 +279,7 @@ def test_choke_clears_active():
     assert ds.remaining == [[]]
     assert ds.active == [[(0, 2)]]
     sd2.got_piece(0, 0, 'ab')
-    assert events == ['not interested']
+    assert events == ['came in', 'complete', 'not interested']
     del events[:]
     assert ds.remaining == [[]]
     assert ds.active == [[]]
-
-def test_introspect_priority_list():
-    d = Downloader(None, 2, 15, 10, Measure(15))
-    for i in xrange(10):
-        for j in xrange(i):
-            assert d.index_to_priority[i] != d.index_to_priority[j]
-            assert d.priority_to_index[i] != d.priority_to_index[j]
-    for i in xrange(10):
-        assert d.index_to_priority[d.priority_to_index[i]] == i
