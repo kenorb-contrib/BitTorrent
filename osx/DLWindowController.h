@@ -16,7 +16,9 @@
     IBOutlet id max_upload_rate;
     IBOutlet id max_uploads;
     IBOutlet id peerStat;
-    
+    IBOutlet id ulTotal;
+    IBOutlet id dlTotal;
+
     NSString *timeEst;
     NSString *savepath;
     float frac;
@@ -33,7 +35,7 @@
 - (id)init;
 - (void)finished;
 - (void)error:(NSString *)str;
-- (void)display:(NSDictionary *)dict;
+- (void)display:(NSData *)dict;
 - (void)pathUpdated:(NSString *)newPath;
 - (void)chooseFile:(NSString *)defaultFile size:(double)size isDirectory:(int)dir;
 - (void)paramFunc:(NSData *)paramDict;

@@ -58,52 +58,22 @@ static PyObject *chooseFile(bt_ProxyObject *self, PyObject *args)
 
 static PyObject *display(bt_ProxyObject *self, PyObject *args, PyObject *keywds)
 {
-    float fractionDone = 0.0;
-    float upRate = 0.0;
-    float downRate = 0.0;
-    char *activity = "";
-    PyObject *d, *t;
+    PyObject *d;
+    NSData *data;
     NSAutoreleasePool *pool =[[NSAutoreleasePool alloc] init];
-    NSMutableDictionary *dict = [NSMutableDictionary dictionaryWithCapacity:5];
-	
-    //static char *kwlist[] = {"fractionDone", "timeEst", "upRate", "downRate", "activity", NULL};
 
-     if (!PyArg_ParseTuple(args, "O", &d))
+    if (!PyArg_ParseTuple(args, "O", &d))
         return NULL;
 
-    if (t = PyDict_GetItemString(d, "fractionDone")) {
-        fractionDone = PyFloat_AsDouble(t);
-        [dict setObject:[NSNumber numberWithFloat:fractionDone] forKey:@"fractionDone"];
-    }
-    if (t = PyDict_GetItemString(d, "timeEst")) {
-        [dict setObject:[NSNumber numberWithDouble:PyFloat_AsDouble(t)] forKey:@"timeEst"];
-    }
+    Py_INCREF(d);
+    data = [NSData dataWithBytes:&d length:sizeof(PyObject *)];
     
-    if (t = PyDict_GetItemString(d, "upRate")) {
-        upRate = PyFloat_AsDouble(t);
-        [dict setObject:[NSNumber numberWithFloat:upRate] forKey:@"upRate"];
-    }
-    if (t = PyDict_GetItemString(d, "downRate")) {
-        downRate = PyFloat_AsDouble(t);
-        [dict setObject:[NSNumber numberWithFloat:downRate] forKey:@"downRate"];
-    }
-    
-    if (t = PyDict_GetItemString(d, "activity")) {
-        activity = PyString_AsString(t);
-        if (activity) {
-            [dict setObject:[NSString stringWithCString:activity] forKey:@"activity"];
-        }
-    }
-    
-    if (t = PyDict_GetItemString(d, "spew")) {
-        Py_INCREF(t);
-        [dict setObject:[NSData dataWithBytes:&t length:sizeof(PyObject *)] forKey:@"spew"];
-    }
-
     Py_BEGIN_ALLOW_THREADS
-    [self->dlController display:dict];
-    [pool release];
+        [self->dlController display:data];
     Py_END_ALLOW_THREADS
+    
+    [pool release];    
+
         
     Py_INCREF(Py_None);
     return Py_None;
