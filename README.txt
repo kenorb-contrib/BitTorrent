@@ -31,11 +31,11 @@ about the files it's currently serving by getting its index page.
 To generate a metainfo file, run the publish script and give it the 
 file you want metainfo for and the url of the tracker
 
-./btpublish.py myfile.ext http://my.tracker/announce/
+./btpublish.py myfile.ext http://my.tracker/announce
 
 This command may take a while to scan over the whole file hashing it.
 
-The announce/ path is special and hard-coded into the tracker. 
+The /announce path is special and hard-coded into the tracker. 
 Make sure to give the domain or ip your tracker is on instead of 
 my.tracker.
 

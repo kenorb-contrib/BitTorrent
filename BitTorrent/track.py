@@ -103,7 +103,7 @@ class Tracker:
                     l.values() if i['left'] == 0])) + '/' + 
                     str(len(l)) + ')<p>\n\n')
             return (200, 'OK', {'Content-Type': 'text/html'}, s.getvalue())
-        if path != 'announce/':
+        if path != 'announce':
             return (404, 'Not Found', {'Content-Type': 'text/plain'}, alas)
         try:
             if not params.has_key('info_hash'):
@@ -190,7 +190,7 @@ def track(args):
         print 'run with no arguments for parameter explanations'
         return
     try:
-        h = urlopen('http://bitconjurer.org/BitTorrent/status-tracker-02-09-00.txt')
+        h = urlopen('http://bitconjurer.org/BitTorrent/status-tracker-02-08-00.txt')
         status = h.read().strip()
         h.close()
         if status != 'current':
