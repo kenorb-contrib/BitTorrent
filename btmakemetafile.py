@@ -14,7 +14,7 @@ from BitTorrent.bencode import bencode
 from BitTorrent.btformats import check_info
 from BitTorrent.parseargs import parseargs, formatDefinitions
 from threading import Event
-from time import asctime
+from time import time
 
 defaults = [
     ('piece_size_pow2', None, 18,
@@ -41,7 +41,7 @@ def make_meta_file(file, url, piece_len_exp = 18,
         return
     check_info(info)
     h = open(f, 'wb')
-    data = {'info': info, 'announce': strip(url), 'creation date': asctime()}
+    data = {'info': info, 'announce': strip(url), 'creation date': long(time())}
     if comment:
         data['comment'] = comment
     h.write(bencode(data))

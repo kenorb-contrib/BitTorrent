@@ -228,6 +228,8 @@ class Tracker:
                 peers[myid] = {'ip': ip, 'port': port, 'left': left}
             else:
                 peers[myid]['left'] = left
+            if self.natcheck and peers[myid].get('nat', 1):
+                NatCheck(self.connectback_result, infohash, myid, ip, port, self.rawserver)
         else:
             if peers.has_key(myid) and peers[myid]['ip'] == ip:
                 del peers[myid]
@@ -244,14 +246,15 @@ class Tracker:
         data['peers'] = cache[-rsize:]
         del cache[-rsize:]
         connection.answer((200, 'OK', {'Content-Type': 'text/plain', 'Pragma': 'no-cache'}, bencode(data)))
-        if self.natcheck:
-            NatCheck(self.connectback_result, infohash, myid, ip, port, self.rawserver)
 
     def connectback_result(self, result, downloadid, peerid, ip, port):
-        if not result:
-            record = self.downloads.get(downloadid, {}).get(peerid)
-            if record and record['ip'] == ip and record['port'] == port:
-                record['nat'] = 1
+        record = self.downloads.get(downloadid, {}).get(peerid)
+        if record is None or record['ip'] != ip or record['port'] != port:
+            return
+        if not record.has_key('nat'):
+            record['nat'] = not result
+        if result:
+            record['nat'] = 0
 
     def save_dfile(self):
         self.rawserver.add_task(self.save_dfile, self.save_dfile_interval)
