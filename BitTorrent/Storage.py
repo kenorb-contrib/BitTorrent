@@ -30,43 +30,25 @@ class Storage:
         self.total_length = total
         self.handles = {}
         self.whandles = {}
-        self.preexisting = false
+        self.preexisting = true
         for file, length in files:
             if exists(file):
-                self.handles[file] = open(file, 'rb')
-                self.preexisting = true
+                l = getsize(file)
+                if l > length:
+                    self.handles[file] = open(file, 'rb+')
+                    self.whandles[file] = 1
+                    self.handles[file].truncate(length)
+                    self.preexisting = false
+                elif l < length:
+                    self.handles[file] = open(file, 'rb+')
+                    self.whandles[file] = 1
+                    self.preexisting = false
+                else:
+                    self.handles[file] = open(file, 'rb')
             else:
                 self.handles[file] = open(file, 'wb+')
                 self.whandles[file] = 1
-        if total > so_far:
-            interval = max(2 ** 20, long(total / 100))
-            tstart = time()
-            hit = false
-            for file, length in files:
-                l = 0
-                if exists(file):
-                    l = getsize(file)
-                    if l > length:
-                        self.handles[file] = open(file, 'rb+')
-                        self.whandles[file] = 1
-                        self.handles[file].truncate(length)
-                        continue
-                    if l == length:
-                        continue
-                if self.preexisting:
-                    self.handles[file] = open(file,'rb+')
-                    self.whandles[file] = 1
-                h = self.handles[file]
-                for i in lrange(l, length, interval)[1:] + [length-1]:
-                    h.seek(i)
-                    h.write(chr(1))
-                    if time() - tstart > alloc_pause:
-                        if not hit:
-                            statusfunc({"activity" : 'allocating'})
-                            hit = true
-                        statusfunc({"fractionDone" : float(so_far + i - l)/total})
-                so_far += length - l
-            statusfunc({"fractionDone" : 1.0})
+                self.preexisting = false
 
     def set_readonly(self):
         # may raise IOError or OSError
