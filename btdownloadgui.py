@@ -80,6 +80,7 @@ class DownloadInfoFrame(wxFrame):
             style = wxDEFAULT_FRAME_STYLE | wxMAXIMIZE_BOX)
         self.flag = flag
         self.fin = false
+        self.shown = false
         self.drawGUI()
 
         EVT_CLOSE(self, self.done)
@@ -166,6 +167,8 @@ class DownloadInfoFrame(wxFrame):
             self.cancelButton.SetLabel('Close')
         self.downRateText.SetLabel('')
         if event.errormsg:
+            if not self.shown:
+                self.Show(true)
             dlg = wxMessageDialog(self, message = event.errormsg, 
                 caption = 'Download Error', style = wxOK | wxICON_ERROR)
             dlg.Fit()
@@ -187,7 +190,8 @@ class DownloadInfoFrame(wxFrame):
             event.bucket[0] = dl.GetPath()
             self.fileNameText.SetLabel(event.default + ' (' + mbfy(event.size) + ' MB)')
             self.timeEstText.SetLabel('Starting up...')
-            self.fileDestText.SetLabel(dl.GetPath()) 
+            self.fileDestText.SetLabel(dl.GetPath())
+            self.shown = true
             self.Show(true)
         event.flag.set()
 

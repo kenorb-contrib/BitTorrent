@@ -75,12 +75,15 @@ t2 = compile_template([{'type': 'success', 'your ip': string_template},
     {'type': 'failure', 'reason': string_template}])
 
 def download(params, filefunc, statusfunc, resultfunc, doneflag, cols):
+    if len(params) == 0:
+        resultfunc(false, formatDefinitions(defaults, cols))
+        return
     try:
         config, garbage = parseargs(params, defaults, 0, 0)
         if config['response'] == '' and config['responsefile'] == '' and config['url'] == '':
             raise ValueError('need response, responsefile, or url')
     except ValueError, e:
-        resultfunc(false, 'error: ' + str(e) + '\n\n' + formatDefinitions(defaults, cols))
+        resultfunc(false, 'error: ' + str(e) + '\nrun with no args for parameter explanations')
         return
     
     if config['response'] != '':

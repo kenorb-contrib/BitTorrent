@@ -216,10 +216,15 @@ defaults = [
     ('dfile', 'd', '', 'file to store recent downloader info in'),
     ]
 
-if __name__ == '__main__':
+def run(args):
+    if len(args) == 0:
+        print formatDefinitions(defaults, 80)
     try:
-        config, files = parseargs(argv[1:], defaults, 0, 0)
+        config, files = parseargs(args, defaults, 0, 0)
         track(config)
     except ValueError, e:
-        print "usage: %s [options]" % argv[0]
-        print formatDefinitions(defaults, 80)
+        print 'error: ' + str(e)
+        print 'run with no arguments for parameter explanations'
+
+if __name__ == '__main__':
+    run(argv[1:])

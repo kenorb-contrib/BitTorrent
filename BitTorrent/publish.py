@@ -50,13 +50,16 @@ defaults = [
     ]
 
 def publish(params, cols):
+    if len(params) == 0:
+        print formatDefinitions(defaults, cols)
+        return
     try:
         config, files = parseargs(params, defaults, 1, 10000)
         if config['port'] == 0:
             raise ValueError, 'port required'
     except ValueError, e:
         print 'error: ' + str(e) + '\n'
-        print formatDefinitions(defaults, cols)
+        print 'run with no args for parameter explanations'
         return
     try:
         h = urlopen('http://bitconjurer.org/BitTorrent/status-publisher-02-06-01.txt')
