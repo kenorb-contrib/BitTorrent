@@ -214,9 +214,10 @@ def download(params, filefunc, statusfunc, resultfunc, doneflag, cols):
         statusfunc(activity = 'connecting to peers')
     q = putqueue(response['announce'])
     myid = encrypter.get_id()
-    a = {'type': 'announce', 'id': response['id'], 
-            'myid': myid, 'permanent': config['permanent'], 
+    a = {'type': 'announce', 'id': response['id'], 'myid': myid,
             'contact': {'ip': response['your ip'], 'port': listen_port}}
+    if config['permanent']:
+        a['permanent'] = None
     if config['ip'] != '':
         a['contact']['ip'] = config['ip']
     if blobs.was_preexisting():

@@ -37,8 +37,7 @@ downloaderfiletemplate = compile_template(ValuesMarker(
     {'permanent': peerlist, 'temporary': peerlist}))
 
 announcetemplate = compile_template([
-    {'type': 'announce', 'id': string_template,
-    'myid': string_template, 'permanent': 0, 
+    {'type': 'announce', 'id': string_template, 'myid': string_template, 
     'contact': contact, 'left': OptionMarker(0)},
     {'type': 'finished', 'myid': string_template, 
     'uploaded': 0, 'downloaded': 0, 
@@ -101,7 +100,7 @@ class TrackerHandler(BaseHTTPRequestHandler):
                             del self.server.myid_to_id[temp[i]['myid']]
                             del temp[i]
                             break
-                if message['permanent'] == 0:
+                if not message.has_key('permanent'):
                     temp.append({'myid': myid, 'contact': contact})
                     if len(temp) > 25:
                         del temp[0]

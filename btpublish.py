@@ -33,9 +33,8 @@ def announce(data, url):
     f.close()
     print r
 
-def makeinfo(file):
+def makeinfo(file, piece_length = 2 ** 20):
     file = abspath(file)
-    piece_length = 2 ** 20
     if isdir(file):
         subs = subfiles(file)
         subs.sort()
