@@ -102,7 +102,7 @@ class GzipStream(StringIO):
 
     def close(self):
         self.fp.close()
-	return StringIO.close(self)
+        return StringIO.close(self)
 
 
 def test():

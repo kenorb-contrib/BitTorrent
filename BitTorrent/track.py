@@ -389,7 +389,7 @@ class Tracker:
 
 def is_local_ip(ip):
     try:
-        v = [long(x) for x in '.'.split(ip)]
+        v = [long(x) for x in ip.split('.')]
         if v[0] == 10 or v[:1] in ([192, 168], [169, 254]):
             return 1
         if v[0] == 172 and v[1] >= 16 and v[1] <= 31:
