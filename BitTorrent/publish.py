@@ -1,6 +1,7 @@
 # Written by Bram Cohen
 # this file is public domain
 
+from parseargs import parseargs, formatDefinitions
 from urllib import urlopen
 from StreamEncrypter import make_encrypter
 from PublisherThrottler import Throttler
@@ -21,7 +22,32 @@ from random import randrange
 true = 1
 false = 0
 
-def publish(config, files):
+defaults = [
+    # ( <name in config dict>, <long getopt descript>, <short getopt descript>, <default value>, '''usage''')
+    ('max_uploads', 'max-uploads=', None, 10,
+        """the maximum number of uploads to allow at once."""),
+    ('piece_size', 'piece-size=', None, 2 ** 20,
+        """Size of individually hashed pieces of file to be published."""),
+    ('max_message_length', 'max-message-length=', None, 2 ** 23,
+        """maximum length prefix encoding you'll accept over the wire - larger values get the connection dropped."""),
+    ('port', 'port=', 'p:', 0, """Port to listen on, zero indicates choose randomly."""),
+    ('max_poll_period', 'max-poll-period=', None, 2.0,
+        """Maximum number of seconds to block in calls to select()"""),
+    ('ip', 'ip=', 'i:', '',
+        """ip to report you have to the publicist."""),
+    ('location', 'location=', None, None,
+        """The prefix url for announcing to the publicist."""),
+    ('postlocation', 'post-location', None, '',
+        """post url for announcing to the publicist."""),
+    ]
+
+def publish(params, cols):
+    try:
+        config, files = parseargs(params, defaults, 1, 10000)
+    except ValueError, e:
+        print 'error: ' + str(e)
+        print formatDefinitions(defaults, cols)
+        return
     try:
         h = urlopen('http://bitconjurer.org/BitTorrent/status-publisher-02-04-00.txt')
         status = h.read().strip()

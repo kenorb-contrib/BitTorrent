@@ -6,6 +6,7 @@ from threading import Thread
 from time import sleep
 from cStringIO import StringIO
 from binascii import b2a_hex
+from sys import stdout
 true = 1
 false = 0
 
@@ -53,3 +54,4 @@ class PublisherFeedback:
         s.write('total sent ' + str(self.total) + '\n')
         s.write('sending rate (kilobytes/sec) '+ str(kify(self.rate)))
         print s.getvalue()
+        stdout.flush()

@@ -5,11 +5,12 @@
 
 from BitTorrent.download import download
 from threading import Event
-from sys import argv, version
+from sys import argv, version, stdout
 assert version >= '2', "Install Python 2.0 or greater"
 
 def display(text, type):
     print '\n\n\n\n' + text
+    stdout.flush()
 
 def run(params):
     try:
