@@ -162,9 +162,12 @@ def download(params, filefunc, statusfunc, finfunc, errorfunc, doneflag, cols):
         storage = Storage(files, open, path.exists, 
             path.getsize, statusfunc)
         def finished(finfunc = finfunc, finflag = finflag, 
-                ann = ann, storage = storage):
+                ann = ann, storage = storage, errorfunc = errorfunc):
             finflag.set()
-            storage.set_readonly()
+            try:
+                storage.set_readonly()
+            except (IOError, OSError), e:
+                errorfunc('trouble setting readonly at end -' + str(e))
             if ann[0] is not None:
                 ann[0](1)
             finfunc()

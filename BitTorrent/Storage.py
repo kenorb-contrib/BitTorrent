@@ -59,12 +59,10 @@ class Storage:
             statusfunc(fractionDone = 1.0)
 
     def set_readonly(self):
-        try:
-            for file, old in self.handles.items():
-                self.handles[file] = open(file, 'r+')
-                old.close()
-        except (OSError, IOError):
-            pass
+        # may raise IOError or OSError
+        for file, old in self.handles.items():
+            self.handles[file] = open(file, 'r+')
+            old.close()
 
     def get_total_length(self):
         return self.total_length
