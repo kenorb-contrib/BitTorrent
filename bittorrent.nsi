@@ -23,9 +23,9 @@ Section "Install"
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\BitTorrent" "UninstallString" '"$INSTDIR\uninstall.exe"'
   NSISdl::download /TIMEOUT=30000 "http://bitconjurer.org/BitTorrent/donate.html" "$TEMP\donate.html"
   ExecShell open "$TEMP\donate.html"
-  Sleep 600
-  BringToFront
+  Sleep 2000
   MessageBox MB_OK "BitTorrent has been successfully installed!"
+  BringToFront
 SectionEnd
 
 Section "Uninstall"
