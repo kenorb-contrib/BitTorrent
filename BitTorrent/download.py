@@ -15,6 +15,7 @@ from Connecter import Connecter
 from Encrypter import Encrypter
 from RawServer import RawServer
 from DownloaderFeedback import DownloaderFeedback
+from RateMeasure import RateMeasure
 from entropy import entropy
 from readput import readput
 from bencode import bdecode
@@ -23,6 +24,7 @@ from os import path
 from parseargs import parseargs, formatDefinitions
 import socket
 from random import randrange, seed
+from traceback import print_exc
 true = 1
 false = 0
 
@@ -90,14 +92,17 @@ def download(params, filefunc, displayfunc, doneflag, cols):
             response = h.read()
             h.close()
         except IOError, e:
+            print_exc()
             displayfunc('IO problem reading file - ' + str(e), 'Okay')
             return false
     else:
         try:
+            print 'url', config['url']
             h = urlopen(config['url'])
             response = h.read()
             h.close()
         except IOError, e:
+            print_exc()
             displayfunc('IO problem reading file - ' + str(e), 'Okay')
             return false
 
@@ -116,6 +121,7 @@ def download(params, filefunc, displayfunc, doneflag, cols):
         response1 = response
         t(response)
     except ValueError, e:
+        print_exc()
         displayfunc("got bad publication response - " + str(e), "Okay")
         return false
     file = config['saveas']
@@ -144,10 +150,13 @@ def download(params, filefunc, displayfunc, doneflag, cols):
         if len(blobs.get_list_of_blobs_I_want()) == 0:
             displayfunc('that file has already been completely downloaded', 'Okay')
             return true
+        left = blobs.get_amount_left()
     except ValueError, e:
+        print_exc()
         displayfunc('bad data for making blob store - ' + str(e), 'Okay')
         return false
     except IOError, e:
+        print_exc()
         displayfunc('disk access error - ' + str(e), 'Okay')
         return false
     rawserver = RawServer(config['max_poll_period'], doneflag,
@@ -159,7 +168,8 @@ def download(params, filefunc, displayfunc, doneflag, cols):
             max_rate_period = config['max_rate_period']):
         return Upload(connection, choker, blobs, max_slice_length,
             max_rate_period)
-    dd = DownloaderData(blobs, config['download_slice_size'])
+    ratemeasure = RateMeasure(left)
+    dd = DownloaderData(blobs, config['download_slice_size'], ratemeasure.data_came_in)
     def make_download(connection, data = dd, 
             backlog = config['request_backlog'],
             max_rate_period = config['max_rate_period']):
@@ -172,7 +182,6 @@ def download(params, filefunc, displayfunc, doneflag, cols):
     listen_port = config['port']
     if listen_port == 0:
         listen_port = randrange(5000, 10000)
-    left = blobs.get_amount_left()
     for x in response['peers']:
         encrypter.start_connection((x['ip'], x['port']))
 
@@ -192,16 +201,19 @@ def download(params, filefunc, displayfunc, doneflag, cols):
             return false
         DownloaderFeedback(choker, rawserver.add_task, 
             listen_port, response['your ip'], displayfunc, 
-            config['max_rate_recalculate_interval'])
+            config['max_rate_recalculate_interval'], ratemeasure.get_time_left)
     except IOError, e:
+        print_exc()
         displayfunc("Couldn't announce - " + str(e), 'Okay')
         return false
     except ValueError, e:
+        print_exc()
         displayfunc("got bad announcement response - " + str(e), 'Okay')
         return false
     try:
         rawserver.start_listening(encrypter, listen_port, false)
     except socket.error, e:
+        print_exc()
         displayfunc("Couldn't listen - " + str(e), 'Okay')
         return false
         
@@ -215,5 +227,6 @@ def download(params, filefunc, displayfunc, doneflag, cols):
             url = urljoin(response1['url'], response1['finish'])
             readput(url, a)
         except IOError, e:
+            print_exc()
             pass
     return r[0]

@@ -7,9 +7,10 @@ true = 1
 false = 0
 
 class DownloaderData:
-    def __init__(self, blobs, chunksize):
+    def __init__(self, blobs, chunksize, rfunc = None):
         self.blobs = blobs
         self.chunksize = chunksize
+        self.rfunc = rfunc
         # blob, active, inactive
         # [(blob, [(begin, length)], [(begin, length)] )]
         self.priority_list = []
@@ -97,6 +98,8 @@ class DownloaderData:
         return len(self.downloads[d][0])
     
     def came_in(self, d, blob, begin, slice):
+        if self.rfunc is not None:
+            self.rfunc(len(slice))
         try:
             self.downloads[d][0].remove((blob, begin, len(slice)))
         except ValueError:
