@@ -29,7 +29,9 @@ class Connection:
         self.next_func = self.read_header_len
         if self.locally_initiated:
             connection.write(chr(len(protocol_name)) + protocol_name + 
-                (chr(0) * 8) + self.encoder.download_id + self.encoder.my_id)
+                (chr(0) * 8) + self.encoder.download_id)
+            if self.id is not None:
+                connection.write(self.encoder.my_id)
 
     def get_ip(self):
         return self.connection.get_ip()
@@ -70,6 +72,8 @@ class Connection:
                 if v.id == s:
                     return None
             self.id = s
+            if self.locally_initiated:
+                connection.write(self.encoder.my_id)
         else:
             if s != self.id:
                 return None
