@@ -57,7 +57,7 @@ class Storage:
                     self.handles[file] = open(file,'rb+')
                     self.whandles[file] = 1
                 h = self.handles[file]
-                for i in range(l, length, interval)[1:] + [length-1]:
+                for i in lrange(l, length, interval)[1:] + [length-1]:
                     h.seek(i)
                     h.write(chr(1))
                     if time() - tstart > alloc_pause:
@@ -110,6 +110,13 @@ class Storage:
             h.seek(begin)
             h.write(s[total: total + end - begin])
             total += end - begin
+
+def lrange(a, b, c):
+    r = []
+    while a < b:
+        r.append(a)
+        a += c
+    return r
 
 # everything below is for testing
 
