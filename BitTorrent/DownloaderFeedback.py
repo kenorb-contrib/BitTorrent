@@ -19,7 +19,7 @@ def ex(n):
         return '0' + str(n)
 
 class DownloaderFeedback:
-    def __init__(self, uploader, downloader, throttler, add_task, port, ip, filesize, displayfunc):
+    def __init__(self, uploader, downloader, throttler, add_task, port, ip, filesize, amount_left, displayfunc):
         self.add_task = add_task
         self.uploader = uploader
         self.downloader = downloader
@@ -27,6 +27,7 @@ class DownloaderFeedback:
         self.port = port
         self.ip = ip
         self.filesize = filesize
+        self.amount_left = amount_left
         self.displayfunc = displayfunc
         self.totalin = 0
         self.totalout = 0
@@ -100,11 +101,12 @@ class DownloaderFeedback:
         s.write('total received ' + str(self.totalin) + '\n')
         s.write('receiving rate (kilobytes/sec) ' + str(kify(self.ratein)) + '\n')
         s.write('file size: ' + str(self.filesize) + '\n')
+        s.write('bytes remaining ' + str(self.amount_left - self.totalin) + '\n')
         s.write('estimated time remaining: ')
         if self.ratein < 128:
             s.write('----')
         else:
-            t = long((self.filesize - self.totalin) / self.ratein)
+            t = long((self.amount_left - self.totalin) / self.ratein)
             h, r = divmod(t, 60 * 60)
             m, sec = divmod(r, 60)
             if h > 0:

@@ -17,6 +17,7 @@ from entropy import entropy
 from bencode import bencode, bdecode
 from btemplate import compile_template, string_template, ListMarker, OptionMarker
 from binascii import b2a_hex
+from os import path
 import socket
 from random import randrange
 true = 1
@@ -48,7 +49,7 @@ def run(private_key, noncefunc, response, filefunc, displayfunc, doneflag, confi
     try:
         file_length = response['length']
         blobs = SingleBlob(file, response['hash'], file_length, response['pieces'], 
-            response['piece length'], None)
+            response['piece length'], None, open, path.exists, path.getsize)
         if len(blobs.get_list_of_files_I_want()) == 0:
             displayfunc('that file has already been completely downloaded', 'Okay')
             return true
@@ -95,7 +96,7 @@ def run(private_key, noncefunc, response, filefunc, displayfunc, doneflag, confi
             displayfunc("Couldn't announce - " + response['reason'], 'Okay')
             return false
         DownloaderFeedback(uploader, downloader, throttler, rawserver.add_task, 
-            listen_port, response['your ip'], file_length, displayfunc)
+            listen_port, response['your ip'], file_length, blobs.get_amount_left(), displayfunc)
     except IOError, e:
         displayfunc("Couldn't announce - " + str(e), 'Okay')
         return false
