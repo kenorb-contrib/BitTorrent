@@ -314,9 +314,13 @@ class Tracker:
                     return (400, 'Not Authorized', {'Content-Type': 'text/plain', 'Pragma': 'no-cache'}, bencode({'failure reason':
                     'Requested download is not authorized for use with this tracker.'}))
             ip = connection.get_ip()
+            local_override = 0
             if params.has_key('ip'):
-                if not self.only_local_override_ip or is_local_ip(ip):
+                is_local = is_local_ip(ip)
+                if not self.only_local_override_ip or is_local:
                     ip = params['ip']
+                    if is_local:
+                        local_override = 1
             if params.has_key('event') and params['event'] not in ['started', 'completed', 'stopped']:
                 raise ValueError, 'invalid event'
             port = long(params.get('port', ''))
@@ -338,12 +342,15 @@ class Tracker:
         if params.get('event', '') != 'stopped':
             ts[myid] = time()
             if not peers.has_key(myid):
-                peers[myid] = {'ip': ip, 'port': port, 'left': left}
+                if local_override:
+                    peers[myid] = {'ip': ip, 'port': port, 'left': left, "local_override" : local_override}
+                else:
+                    peers[myid] = {'ip': ip, 'port': port, 'left': left}
             else:
                 peers[myid]['left'] = left
             if params.get('event', '') == 'completed':
                 self.completed[infohash] = 1 + self.completed[infohash]
-            if self.natcheck and peers[myid].get('nat', 1):
+            if self.natcheck and not peers[myid].get("local_override", 0) and peers[myid].get('nat', 1):
                 NatCheck(self.connectback_result, infohash, myid, ip, port, self.rawserver)
         else:
             if peers.has_key(myid) and peers[myid]['ip'] == ip:
