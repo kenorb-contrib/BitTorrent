@@ -18,7 +18,7 @@ from RateMeasure import RateMeasure
 from EndgameDownloader import EndgameDownloader
 from bencode import bencode, bdecode
 from sha import sha
-from os import path, makedirs
+from os import getpid, path, makedirs
 from parseargs import parseargs, formatDefinitions
 from socket import error as socketerror
 from random import seed
@@ -150,7 +150,7 @@ def download(params, filefunc, statusfunc, finfunc, errorfunc, doneflag, cols):
     
     finflag = Event()
     ann = [None]
-    myid = sha(str(time())).digest()
+    myid = sha(str(time()) + ' ' + str(getpid())).digest()
     seed(myid)
     pieces = [info['pieces'][x:x+20] for x in xrange(0, 
         len(info['pieces']), 20)]

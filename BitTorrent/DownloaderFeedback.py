@@ -54,7 +54,7 @@ class DownloaderFeedback:
     def display(self):
         self.add_task(self.display, self.interval)
         t = time()
-        self.spew()
+        #self.spew()
         if self.finflag.isSet():
             upRate = 0
             for c in self.choker.connections:
