@@ -118,6 +118,10 @@ class RawServer:
         if reuse:
             server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         server.setblocking(0)
+        try:
+            server.setsockopt(socket.IPPROTO_IP, socket.IP_TOS, 32)
+        except:
+            print_exc()
         server.bind((bind, port))
         server.listen(5)
         self.poll.register(server, POLLIN)
@@ -151,7 +155,6 @@ class RawServer:
                     try:
                         newsock, addr = self.server.accept()
                         newsock.setblocking(0)
-                        newsock.setsockopt(socket.IPPROTO_IP, socket.IP_TOS, 32)
                         if len(self.single_sockets) >= self.maxconnects:
                             newsock.close()
                             continue
