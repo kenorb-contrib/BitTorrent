@@ -134,6 +134,8 @@
 		};
 		29B97314FDCFA39411CA2CEA = {
 			children = (
+				F57B922302F27DF501A845D2,
+				F57B922402F27DF501A845D2,
 				080E96DDFE201D6D7F000001,
 				29B97315FDCFA39411CA2CEA,
 				29B97317FDCFA39411CA2CEA,
@@ -252,7 +254,7 @@
 				<string>torrent</string>
 			</array>
 			<key>CFBundleTypeName</key>
-			<string>BTMI</string>
+			<string>BitTorrent Metainfo File</string>
 			<key>CFBundleTypeRole</key>
 			<string>Viewer</string>
 		</dict>
@@ -396,6 +398,16 @@
 			isa = PBXBuildFile;
 			settings = {
 			};
+		};
+		F57B922302F27DF501A845D2 = {
+			isa = PBXFileReference;
+			path = README;
+			refType = 2;
+		};
+		F57B922402F27DF501A845D2 = {
+			isa = PBXFileReference;
+			path = BUILD_INSTRUCTIONS;
+			refType = 2;
 		};
 		F5D01D32027DFD5101A845D2 = {
 			isa = PBXFrameworkReference;
