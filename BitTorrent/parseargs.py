@@ -3,6 +3,7 @@
 
 from getopt import getopt
 import sys
+import string
 
 def longLineForm(longDescription):
     if longDescription[-1:] == '=':
@@ -19,26 +20,73 @@ def takesArgument(aDescription):
     else:
         return 0
 
+def combinedLineForm(longDescription, shortDescription):
+    s = ""
+    if longDescription:
+        s = longLineForm(longDescription)
+    if shortDescription:
+        if len(s): s = s + "/" + shortLineForm(shortDescription)
+        else: s = shortLineForm(shortDescription)
+
+    if takesArgument(longDescription):
+        s = s + " <arg>"
+    
+    return s
+
 def usage(usageHeading, optionDefintions, msg, exitCode=1):
     if msg:
         sys.stderr.write('error: %s\n' % msg)
     sys.stdout.write('%s\n' % usageHeading)
-    for configName, longDescription, shortDescription, defaultValue, usageText in optionDefintions:
-        argDescript = ""
-        if longDescription:
-            if takesArgument(longDescription):
-                sys.stdout.write(longLineForm(longDescription) + " <value>\n")
-            else:
-                sys.stdout.write(longLineForm(longDescription) + "\n")
+    outArray = []
+    maxOptLength = 0
+    for i in optionDefintions:
+        garbage, longDescription, shortDescription, garbage, doc = i
 
-        if shortDescription:
-            if takesArgument(shortDescription):
-                sys.stdout.write(shortLineForm(shortDescription) + '<value>\n')
-            else:
-                sys.stdout.write(shortLineForm(shortDescription) + '\n')
+        lineForm = combinedLineForm(longDescription, shortDescription)
+        if maxOptLength < len(lineForm):
+            maxOptLength = len(lineForm)
+        outArray.append( (lineForm, doc) )
 
-        if defaultValue: sys.stdout.write("\tdefault value: %s" % defaultValue)
-        sys.stdout.write("\t%s\n\n" % usageText)
+    try:
+        import curses
+        curses.initscr()
+        COLS = curses.COLS
+    except:
+        COLS = 80
+
+    firstLineString = "%%-%ds : " % maxOptLength
+    bodyLineString = " " * len(firstLineString % "")
+    targetBodyWidth = COLS - len(bodyLineString) - 2
+
+    if targetBodyWidth < 10:
+        targetBodyWidth = COLS - 1
+        firstLineString = firstLineString[:-3] + "\n "
+        bodyLineString = " "
+
+    for head,body in outArray:
+        if len(body) < targetBodyWidth:
+            sys.stdout.write(firstLineString % head)
+            sys.stdout.write(body)
+            sys.stdout.write("\n")
+        else:
+            outAmount = 0
+            splitBody = string.split(body)
+            for aWord in splitBody:
+                if not outAmount:
+                    sys.stdout.write(firstLineString % head)
+                    sys.stdout.write(aWord)
+                    outAmount = len(aWord)
+                else:
+                    if outAmount + (len(aWord) + 1) > targetBodyWidth:
+                        sys.stdout.write("\n")
+                        sys.stdout.write(bodyLineString)
+                        sys.stdout.write(aWord)
+                        outAmount = len(aWord)
+                    else:
+                        sys.stdout.write(" ")
+                        sys.stdout.write(aWord)
+                        outAmount = outAmount + len(aWord) + 1
+            sys.stdout.write("\n")
 
     sys.exit(exitCode)
 
