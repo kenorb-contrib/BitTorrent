@@ -12,7 +12,11 @@
 
 import os
 import sys
-from ConfigParser import RawConfigParser
+# Python 2.2 doesn't have RawConfigParser
+try:
+    from ConfigParser import RawConfigParser
+except ImportError:
+    from ConfigParser import ConfigParser as RawConfigParser
 
 from BitTorrent import parseargs
 from BitTorrent import ERROR

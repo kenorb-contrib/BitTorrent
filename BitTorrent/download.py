@@ -73,14 +73,14 @@ class Multitorrent(object):
         self.config = dict(config)
         self.rawserver = RawServer(doneflag, config['timeout_check_interval'],
                                    config['timeout'], errorfunc=errorfunc,
-                                   bindaddr=config['bind'],
-                                   tos=config['peer_socket_tos'])
+                                   bindaddr=config['bind'])
         e = 'maxport less than minport - no ports to check'
         self.serversocket = None
         for listen_port in xrange(config['minport'], config['maxport'] + 1):
             try:
                 self.serversocket = self.rawserver.create_serversocket(
-                    listen_port, config['bind'], reuse=True)
+                    listen_port, config['bind'], reuse=True,
+                    tos=config['peer_socket_tos'])
                 break
             except socketerror, e:
                 pass
@@ -144,7 +144,11 @@ class Multitorrent(object):
             if filelist:
                 return None
             return 1
-        s = Storage(None, None, zip(myfiles, metainfo.sizes), check_only=True)
+        try:
+            s = Storage(None, None, zip(myfiles, metainfo.sizes),
+                        check_only=True)
+        except:
+            return None
         filename = os.path.join(config['data_dir'], 'resume',
                                 infohash.encode('hex'))
         try:

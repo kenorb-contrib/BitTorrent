@@ -64,9 +64,10 @@ class TorrentInfo(object):
 
 class TorrentQueue(Feedback):
 
-    def __init__(self, config, ui_options):
+    def __init__(self, config, ui_options, controlsocket):
         self.config = dict(config)
         self.ui_options = ui_options
+        self.controlsocket = controlsocket
         self.config['max_running_torrents'] = 1 # !@# XXX
         self.saved_max_torrents = None
         self.doneflag = threading.Event()
@@ -75,7 +76,6 @@ class TorrentQueue(Feedback):
         self.running_torrents = []
         self.queue = []
         self.other_torrents = []
-        self.controlsocket = ControlSocket(config)
         self.last_save_time = 0
         self.last_version_check = 0
 
@@ -86,7 +86,7 @@ class TorrentQueue(Feedback):
                                         self.global_error, listen_fail_ok=True)
         self.rawserver = self.multitorrent.rawserver
         self.controlsocket.set_rawserver(self.rawserver)
-        self.controlsocket.create_socket(self.external_command)
+        self.controlsocket.start_listening(self.external_command)
         try:
             self._restore_state()
         except BTFailure, e:
@@ -340,6 +340,7 @@ class TorrentQueue(Feedback):
         t = self.torrents[infohash]
         assert t.state == QUEUED
         t.state = RUNNING
+        t.finishtime = None
         self.running_torrents.append(infohash)
         t.dl = self.multitorrent.start_torrent(t.metainfo, self.config, self,
                                                t.dlpath)
@@ -459,6 +460,28 @@ class TorrentQueue(Feedback):
         if torrent is None or torrent.state != RUNNING:
             return
         status = torrent.dl.get_status(want_spew, want_fileinfo)
+        if torrent.finishtime is not None:
+            now = time()
+            uptotal = status['upTotal'] + torrent.uptotal_old
+            downtotal = status['downTotal'] + torrent.downtotal_old
+            ulspeed = status['upRate']
+            if self.queue:
+                ratio = self.config['next_torrent_ratio'] / 100
+            else:
+                ratio = self.config['last_torrent_ratio'] / 100
+            if ratio <= 0 or ulspeed <= 0:
+                rem = 1e99
+            else:
+                rem = (downtotal * ratio - uptotal) / ulspeed
+            if self.queue:
+                rem = min(rem, torrent.finishtime +
+                          self.config['next_torrent_time'] * 60 - now)
+            rem = max(rem, torrent.finishtime + 120 - now)
+            if rem <= 0:
+                rem = 1
+            if rem == 1e99:
+                rem = None
+            status['timeEst'] = rem
         self.run_ui_task(self.ui.update_status, infohash, status)
 
     def unqueue_torrent(self, infohash):

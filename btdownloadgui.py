@@ -29,10 +29,10 @@ import gtk
 import pango
 import gobject
 import webbrowser
-from urllib import quote
+from urllib import quote, url2pathname
 
 from BitTorrent import configfile
-from BitTorrent.parseargs import parseargs
+from BitTorrent.parseargs import parseargs, makeHelp
 from BitTorrent import version, doc_root
 from BitTorrent.defaultargs import get_defaults
 from BitTorrent import TorrentQueue
@@ -49,7 +49,10 @@ defaults.extend((('donated', '', ''),
                  ))
 
 NAG_FREQUENCY = 3
-DONATE_URL = 'http://www.bittorrent.com/donate.html'
+URL = 'http://www.bittorrent.com/'
+DONATE_URL = URL + 'donate.html'
+FAQ_URL = URL + 'FAQ.html'
+HELP_URL = URL + 'documentation.html'
 
 defconfig = dict([(name, value) for (name, value, doc) in defaults])
 del name, value, doc
@@ -57,11 +60,16 @@ del name, value, doc
 ui_options = 'max_upload_rate minport maxport '\
              'next_torrent_time next_torrent_ratio '\
              'last_torrent_ratio '\
-             "min_uploads max_uploads max_initiate "\
+             'ask_for_save save_in ip '\
+             'min_uploads max_uploads max_initiate '\
              'max_allow_in max_files_open display_interval '\
-             'save_in donated'.split()
-advanced_ui_options_index = 6
+             'donated'.split()
+advanced_ui_options_index = 9
 
+
+main_torrent_dnd_tip = 'drag to reorder'
+torrent_menu_tip = 'right-click for menu'
+torrent_tip_format = '%s:\n %s\n %s'
 
 rate_label = ' rate: %s'
 
@@ -77,7 +85,24 @@ speed_classes = {
     (5447,18871): 'OC3'              ,
     }
 
-BT_TARGET_TYPE = 0
+
+def find_dir(path):
+    if os.path.isdir(path):
+        return path
+    directory, garbage = os.path.split(path)
+    while directory:
+        if os.access(directory, os.F_OK) and os.access(directory, os.W_OK):
+            return directory
+        directory, garbage = os.path.split(directory)
+        if garbage == '':
+            break        
+    return None
+
+def smart_dir(path):
+    path = find_dir(path)
+    if path is None:
+        path = Desktop.desktop
+    return path
 
 def build_menu(menu_items, accel_group=None):
     menu = gtk.Menu()
@@ -188,6 +213,7 @@ class MinutesValidator(Validator):
 
 
 class RateSliderBox(gtk.VBox):
+    base = 10
     multiplier = 4
     max_exponent = 3.3
     
@@ -227,10 +253,10 @@ class RateSliderBox(gtk.VBox):
         self.set_max_upload_rate(self.rate_slider_adj)
 
     def rate_to_slider(self, value):
-        return math.log(value/self.multiplier, 10)
+        return math.log(value/self.multiplier, self.base)
 
     def slider_to_rate(self, value):
-        return int(round(10**value * self.multiplier))
+        return int(round(self.base**value * self.multiplier))
 
     def value_to_label(self, value):
         conn_type = ''
@@ -292,7 +318,7 @@ class VersionWindow(Window):
         self.set_resizable(gtk.FALSE)
         self.main = main
         self.download_url = download_url
-        self.connect('destroy', self.main.new_version_closed)
+        self.connect('destroy', lambda w: self.main.window_closed('version'))
         self.vbox = gtk.VBox(spacing=SPACING)
         self.hbox = gtk.HBox(spacing=SPACING)
         self.image = gtk.Image()
@@ -332,13 +358,13 @@ class VersionWindow(Window):
 
 class AboutWindow(object):
 
-    def __init__(self, closefunc, donatefunc):
+    def __init__(self, main, donatefunc):
         self.win = Window()
         self.win.set_title('About %s'%app_name)
         self.win.set_size_request(300,400)
         self.win.set_border_width(SPACING)
         self.win.set_resizable(False)
-        self.win.connect('destroy', closefunc)
+        self.win.connect('destroy', lambda w: main.window_closed('about'))
         self.scroll = gtk.ScrolledWindow()
         self.scroll.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_ALWAYS)
         self.scroll.set_shadow_type(gtk.SHADOW_IN)
@@ -381,9 +407,51 @@ class AboutWindow(object):
         self.win.destroy()    
 
 
+class HelpWindow(Window):
+    def __init__(self, main):
+        Window.__init__(self)
+        self.set_title('%s Help'%app_name)
+        self.main = main
+        self.set_border_width(SPACING)
+
+        self.vbox = gtk.VBox(spacing=SPACING)
+        
+        self.faq_box = gtk.HBox(spacing=SPACING)
+        self.faq_box.pack_start(gtk.Label("Frequently Asked Questions:"), expand=False, fill=False)
+        self.faq_url = gtk.Entry()
+        self.faq_url.set_text(FAQ_URL)
+        self.faq_url.set_editable(False)
+        self.faq_box.pack_start(self.faq_url, expand=True, fill=True)
+        self.faq_button = gtk.Button('Go')
+        self.faq_button.connect('clicked', lambda w: self.main.visit_url(FAQ_URL) )
+        self.faq_box.pack_start(self.faq_button, expand=False, fill=False)
+        self.vbox.pack_start(self.faq_box, expand=False, fill=False)
+
+        self.cmdline_args = gtk.Label(makeHelp('btdownloadgui', defaults))
+
+        self.cmdline_sw = ScrolledWindow()
+        self.cmdline_sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_ALWAYS)
+        self.cmdline_sw.add_with_viewport(self.cmdline_args)
+
+        self.cmdline_sw.set_size_request(self.cmdline_args.size_request()[0]+SCROLLBAR_WIDTH, 200)
+
+        self.vbox.pack_start(self.cmdline_sw)
+        
+        self.add(self.vbox)
+
+        self.show_all()
+
+        self.connect('destroy', lambda w: self.main.window_closed('help'))
+
+
+    def close(self, widget=None):
+        self.destroy()    
+
+
 class LogWindow(object):
-    def __init__(self, logbuffer, closefunc, config):
+    def __init__(self, main, logbuffer, config):
         self.config = config
+        self.main = main
         self.win = Window()
         self.win.set_title('%s Activity Log'%app_name)
         self.win.set_default_size(600, 200)
@@ -429,7 +497,7 @@ class LogWindow(object):
         self.vbox.pack_end(self.hbox2, expand=False, fill=True)
 
         self.win.add(self.vbox)        
-        self.win.connect("destroy", closefunc)
+        self.win.connect("destroy", lambda w: self.main.window_closed('log'))
         self.scroll_to_end()
         self.win.show_all()
 
@@ -438,32 +506,18 @@ class LogWindow(object):
         self.text.scroll_mark_onscreen(mark)
 
     def save_log_file_selection(self, *args):
-        selector = gtk.FileSelection("Save log in:")
-        selector.set_destroy_with_parent(gtk.TRUE)
         name = 'bittorrent.log'
-        path = None
-        if self.config['save_in']:
-            path = self.config['save_in']
-        else:
-            path = Desktop.desktop
-        name = os.path.join(path, name)
+        path = smart_dir(self.config['save_in'])
+        fullname = os.path.join(path, name)
+        self.main.open_window('savefile',
+                              title="Save log in:",
+                              fullname=fullname,
+                              got_location_func=self.save_log,
+                              no_location_func=lambda: self.main.window_closed('savefile'))
 
-        def no_location(widget):
-            pass
 
-        d_handle = selector.connect('destroy', no_location)
-        
-        selector.cancel_button.connect_object("clicked",
-                                      gtk.FileSelection.destroy, selector)
-        selector.ok_button.connect("clicked", self.save_log, selector, d_handle)
-
-        selector.set_filename(name)
-        selector.show_all()
-
-    def save_log(self, widget, selector, d_handle):
-        saveas = selector.get_filename()
-        selector.disconnect(d_handle)
-        selector.destroy()
+    def save_log(self, saveas):
+        self.main.window_closed('savefile')
         f = file(saveas, 'w')
         f.write(self.buffer.get_text(self.buffer.get_start_iter(),
                                      self.buffer.get_end_iter()))
@@ -532,53 +586,57 @@ class LogBuffer(gtk.TextBuffer):
 
 class SettingsWindow(object):
 
-    def __init__(self, config, setfunc, closefunc):
+    def __init__(self, main, config, setfunc):
+        self.main = main
         self.setfunc = setfunc
+        self.config = config
         self.win = Window()
-        self.win.connect("destroy", closefunc)
-        self.win.set_title('%s Preferences'%app_name)
+        self.win.connect("destroy", lambda w: main.window_closed('settings'))
+        self.win.set_title('%s Settings'%app_name)
         self.win.set_border_width(SPACING)
 
         self.vbox = gtk.VBox(spacing=SPACING)
 
-        self.next_torrent_frame = gtk.Frame('Start next torrent in the queue:')
+        self.next_torrent_frame = gtk.Frame('Seed completed torrents:')
         self.next_torrent_box   = gtk.VBox(spacing=SPACING, homogeneous=True)
         self.next_torrent_box.set_border_width(SPACING) 
         
         self.next_torrent_frame.add(self.next_torrent_box)
 
+
+        self.next_torrent_ratio_box = gtk.HBox()
+        self.next_torrent_ratio_box.pack_start(gtk.Label('until share ratio reaches '),
+                                               fill=False, expand=False)
+        self.next_torrent_ratio_field = PercentValidator('next_torrent_ratio',
+                                                         self.config, self.setfunc)
+        self.next_torrent_ratio_box.pack_start(self.next_torrent_ratio_field,
+                                               fill=False, expand=False)
+        self.next_torrent_ratio_box.pack_start(gtk.Label(' percent, or'),
+                                               fill=False, expand=False)
+        self.next_torrent_box.pack_start(self.next_torrent_ratio_box)
+
+
         self.next_torrent_time_box = gtk.HBox()
-        
-        self.next_torrent_time_box.pack_start(gtk.Label('after uploading for '),
+        self.next_torrent_time_box.pack_start(gtk.Label('for '),
                                               fill=False, expand=False)
         self.next_torrent_time_field = MinutesValidator('next_torrent_time',
-                                                        config, self.setfunc)
+                                                        self.config, self.setfunc)
         self.next_torrent_time_box.pack_start(self.next_torrent_time_field,
                                               fill=False, expand=False)
-        self.next_torrent_time_box.pack_start(gtk.Label(' minutes, or'),
+        self.next_torrent_time_box.pack_start(gtk.Label(' minutes, whichever comes first.'),
                                               fill=False, expand=False)
         self.next_torrent_box.pack_start(self.next_torrent_time_box)
 
-        self.next_torrent_ratio_box = gtk.HBox()
-        self.next_torrent_ratio_box.pack_start(gtk.Label('after share ratio reaches '),
-                                               fill=False, expand=False)
-        self.next_torrent_ratio_field = PercentValidator('next_torrent_ratio',
-                                                         config, self.setfunc)
-        self.next_torrent_ratio_box.pack_start(self.next_torrent_ratio_field,
-                                               fill=False, expand=False)
-        self.next_torrent_ratio_box.pack_start(gtk.Label(' percent.'),
-                                               fill=False, expand=False)
-        self.next_torrent_box.pack_start(self.next_torrent_ratio_box)
         
         self.vbox.pack_start(self.next_torrent_frame, expand=False, fill=False)
 
-        self.last_torrent_frame = gtk.Frame('Seed last torrent in the queue:')
+        self.last_torrent_frame = gtk.Frame('Seed last completed torrent:')
         self.last_torrent_box = gtk.HBox()
         self.last_torrent_box.set_border_width(SPACING)
         self.last_torrent_box.pack_start(gtk.Label('until share ratio reaches '),
                                          expand=False, fill=False)
         self.last_torrent_ratio_field = PercentValidator('last_torrent_ratio',
-                                                         config, self.setfunc)
+                                                         self.config, self.setfunc)
         self.last_torrent_box.pack_start(self.last_torrent_ratio_field,
                                                fill=False, expand=False)
         self.last_torrent_box.pack_start(gtk.Label(' percent.'),
@@ -586,30 +644,61 @@ class SettingsWindow(object):
         self.last_torrent_frame.add(self.last_torrent_box)
         self.vbox.pack_start(self.last_torrent_frame, expand=False, fill=False)
 
-        self.port_range_frame = gtk.Frame('Look for available port:')
-        
+        self.port_range_frame = gtk.Frame('Look for available port:')        
         self.port_range = gtk.HBox()
         self.port_range.set_border_width(SPACING)
-
-        self.port_range.pack_start(gtk.Label('starting at port: '), expand=False, fill=False)
-        self.minport_field = PortValidator('minport', config, self.setfunc)
+        self.port_range.pack_start(gtk.Label('starting at port: '),
+                                   expand=False, fill=False)
+        self.minport_field = PortValidator('minport', self.config, self.setfunc)
         self.minport_field.add_end('maxport')
         self.port_range.pack_start(self.minport_field, expand=False, fill=False)
-
         self.minport_field.settingswindow = self
-
         self.port_range.pack_start(gtk.Label(' (0-65535)'),
                                    expand=False, fill=False)
 
         self.port_range_frame.add(self.port_range)
-
         self.vbox.pack_start(self.port_range_frame, expand=False, fill=False)
+
+        self.dl_frame = gtk.Frame("Download folder:") 
+        self.dl_box = gtk.VBox(spacing=SPACING)
+        self.dl_box.set_border_width(SPACING)
+        self.dl_frame.add(self.dl_box)
+        self.save_in_box = gtk.HBox(spacing=SPACING)
+        self.save_in_box.pack_start(gtk.Label("Default:"), expand=False, fill=False)
+
+        self.dl_save_in = gtk.Entry()
+        self.dl_save_in.set_editable(False)
+        self.dl_save_in.original_value = self.config['save_in']
+        self.set_save_in(self.config['save_in'])
+        self.save_in_box.pack_start(self.dl_save_in, expand=True, fill=True)
+
+        self.dl_save_in_button = gtk.Button('Change...')
+        self.dl_save_in_button.connect('clicked', self.get_save_in)
+        self.save_in_box.pack_start(self.dl_save_in_button, expand=False, fill=False)
+        
+        self.dl_box.pack_start(self.save_in_box, expand=False, fill=False)
+        self.dl_ask_checkbutton = gtk.CheckButton("Ask where to save each download")
+        self.dl_ask_checkbutton.set_active( bool(self.config['ask_for_save']) )
+        self.dl_ask_checkbutton.original_value = bool(self.config['ask_for_save'])
+
+        def toggle_save(w):
+            self.config['ask_for_save'] = int(not self.config['ask_for_save'])
+            self.setfunc('ask_for_save', self.config['ask_for_save'])
+            
+        self.dl_ask_checkbutton.connect('toggled', toggle_save)
+        self.dl_box.pack_start(self.dl_ask_checkbutton, expand=False, fill=False)
+
+        self.vbox.pack_start(self.dl_frame, expand=False, fill=False)
+
 
         self.ip_frame = gtk.Frame('IP to report to the tracker:')
         self.ip_box = gtk.VBox()
         self.ip_box.set_border_width(SPACING)
-        self.ip_field = IPValidator('ip', config, self.setfunc)
+        self.ip_field = IPValidator('ip', self.config, self.setfunc)
+        self.main.tooltips.set_tip(self.ip_field,
+                                   'Not needed unless you are on the\nsame local network as the tracker')
         self.ip_box.pack_start(self.ip_field, expand=False, fill=False)
+        #self.ip_box.pack_start(lalign(gtk.Label('()')), expand=False, fill=False)
         self.ip_frame.add(self.ip_box)
         self.vbox.pack_start(self.ip_frame, expand=False, fill=False)
 
@@ -632,7 +721,7 @@ class SettingsWindow(object):
             self.advanced = gtk.Frame(label=advanced_label)
             self.store = gtk.ListStore(*[gobject.TYPE_STRING] * 2)
             for option in ui_options[advanced_ui_options_index:]:
-                self.store.append((option, str(config[option])))
+                self.store.append((option, str(self.config[option])))
 
             self.treeview = gtk.TreeView(self.store)
             r = gtk.CellRendererText()
@@ -648,6 +737,22 @@ class SettingsWindow(object):
 
         self.win.add(self.vbox)
         self.win.show_all()
+
+    def get_save_in(self, widget=None):
+        self.file_selection = self.main.open_window('choosefolder',
+                                                    title='Choose default download directory',
+                                                    fullname=self.config['save_in'],
+                                                    got_location_func=self.set_save_in,
+                                                    no_location_func=lambda: self.main.window_closed('choosefolder'))
+
+    def set_save_in(self, save_location):
+        self.main.window_closed('choosefolder')
+        if os.path.isdir(save_location):
+            if save_location[-1] != os.sep:
+                save_location += os.sep
+            self.config['save_in'] = save_location
+            self.dl_save_in.set_text(self.config['save_in'])
+            self.setfunc('save_in', self.config['save_in'])
 
     def store_value_edited(self, cell, row, new_text):
         it = self.store.get_iter_from_string(row)
@@ -672,6 +777,8 @@ class SettingsWindow(object):
                     self.minport_field,
                     self.ip_field):
             foo.revert()
+        self.dl_ask_checkbutton.set_active(self.dl_ask_checkbutton.original_value)
+        self.set_save_in(self.dl_save_in.original_value)
         #self.win.destroy() #BUG? should we do this?
 
     def close(self, widget):
@@ -1125,6 +1232,8 @@ class TorrentInfoWindow(object):
             opendirbutton.connect('clicked', self.torrent_box.open_dir)
             lbbox.pack_start(opendirbutton, expand=False, fill=False)
 
+        opendirbutton.set_sensitive(self.torrent_box.can_open_dir())
+
         filelistbutton = IconButton("Show file list", stock='gtk-index')
         if self.torrent_box.is_batch:
             filelistbutton.connect('clicked', self.torrent_box.open_filelist)
@@ -1151,15 +1260,15 @@ class TorrentInfoWindow(object):
 
 class DroppableSeparator(gtk.VBox):
 
-    def __init__(self, dropfunc=None, spacing=0):
+    def __init__(self, main, dropfunc=None, spacing=0):
         gtk.VBox.__init__(self)
-        self.sep = gtk.HSeparator(spacing=0)
+        self.main = main
+        self.sep = gtk.HSeparator()
         self.pack_start(self.sep, expand=False, fill=False, padding=spacing)
         self.dropfunc = dropfunc
-        self.drag_dest_set(gtk.DEST_DEFAULT_MOTION |
-                           gtk.DEST_DEFAULT_DROP,
-                           [( "application/x-bittorrent",  gtk.TARGET_SAME_APP, BT_TARGET_TYPE )],
-                           gtk.gdk.ACTION_MOVE)
+        self.drag_dest_set(gtk.DEST_DEFAULT_MOTION|gtk.DEST_DEFAULT_DROP,
+                           [BT_TARGET],
+                           gtk.gdk.ACTION_MOVE )
 
         self.connect('drag_data_received', self.drag_data_received)
 
@@ -1170,6 +1279,7 @@ class DroppableSeparator(gtk.VBox):
         self.sep.drag_unhighlight()
 
     def drag_data_received(self, widget, context, x, y, selection, targetType, time):
+        
         self.dropfunc(selection.data)
 
 
@@ -1182,6 +1292,7 @@ class TorrentBox(gtk.EventBox):
         self.dlpath = dlpath
         self.completion = completion
         self.main = main
+
         self.uptotal   = self.main.torrents[self.infohash].uptotal
         self.downtotal = self.main.torrents[self.infohash].downtotal
         if self.downtotal > 0:
@@ -1206,7 +1317,9 @@ class TorrentBox(gtk.EventBox):
         self.icon.set_size_request(-1, 29)
 
         self.iconbox = gtk.VBox()
-        self.iconbox.pack_start(self.icon, expand=False, fill=False)
+        self.iconevbox = gtk.EventBox()
+        self.iconevbox.add(self.icon)
+        self.iconbox.pack_start(self.iconevbox, expand=False, fill=False)
         self.hbox.pack_start(self.iconbox, expand=False, fill=False)
         
         self.vbox.pack_start(self.hbox)
@@ -1235,6 +1348,8 @@ class TorrentBox(gtk.EventBox):
         self.infoimage.set_from_stock('bt-info', gtk.ICON_SIZE_BUTTON)
         self.infobutton.add(self.infoimage)
         self.infobutton.connect('clicked', self.open_info)
+        self.main.tooltips.set_tip(self.infobutton,
+                                   'Torrent info')
 
         self.buttonbox.pack_start(self.infobutton, expand=True)
 
@@ -1264,7 +1379,7 @@ class TorrentBox(gtk.EventBox):
         self.add( self.vbox )
 
         self.drag_source_set(gtk.gdk.BUTTON1_MASK,
-                             [( "application/x-bittorrent", gtk.TARGET_SAME_APP, BT_TARGET_TYPE )], 
+                             [BT_TARGET],
                              gtk.gdk.ACTION_MOVE)
         self.connect('drag_data_get', self.drag_data_get)
 
@@ -1283,9 +1398,12 @@ class TorrentBox(gtk.EventBox):
         self.main.drag_end()
 
     def make_done_label(self, statistics=None):
+        s = ''
+        if statistics and statistics['timeEst'] is not None:
+            s = ', will seed for %s' % Duration(statistics['timeEst'])
         if self.up_down_ratio is not None:
             done_label = 'Done, share ratio: %d%%' % \
-                         (self.up_down_ratio*100)
+                         (self.up_down_ratio*100) + s
         elif statistics is not None:
             done_label = 'Done, %s uploaded' % \
                          Size(statistics['upTotal'])
@@ -1306,7 +1424,10 @@ class TorrentBox(gtk.EventBox):
         menu_items = [("Torrent _info", self.open_info),]
 
         if OpenPath.can_open_files:
-            menu_items += [('_Open directory', self.open_dir), ]
+            func = None
+            if self.can_open_dir():
+                func = self.open_dir
+            menu_items += [('_Open directory', func), ]
 
         menu_items += [('----', None),
                        ("_File list"  , filelistfunc),]
@@ -1362,11 +1483,17 @@ class TorrentBox(gtk.EventBox):
         else:
             return ret
 
-    def open_dir(self, widget):
+    def get_path_to_open(self):
         path = self.dlpath
         if not self.is_batch:
             path = os.path.split(self.dlpath)[0]
-        OpenPath.opendir(path)
+        return path
+
+    def can_open_dir(self):
+        return os.access(self.get_path_to_open(), os.F_OK|os.R_OK)
+        
+    def open_dir(self, widget):
+        OpenPath.opendir(self.get_path_to_open())
             
 
     def confirm_remove(self, widget):
@@ -1394,10 +1521,20 @@ class KnownTorrentBox(TorrentBox):
     def __init__(self, infohash, metainfo, dlpath, completion, main):
         TorrentBox.__init__(self, infohash, metainfo, dlpath, completion, main)
 
+        status_tip = ''
         if completion >= 1:
             self.icon.set_from_stock('bt-finished', gtk.ICON_SIZE_LARGE_TOOLBAR)
+            status_tip = 'Finished'
+            known_torrent_dnd_tip = 'drag into list to seed'
         else:
             self.icon.set_from_stock('bt-broken', gtk.ICON_SIZE_LARGE_TOOLBAR)
+            status_tip = 'Aborted'
+            known_torrent_dnd_tip = 'drag into list to resume'
+
+        self.main.tooltips.set_tip(self.iconevbox,
+                                   torrent_tip_format % (status_tip,
+                                                         known_torrent_dnd_tip,
+                                                         torrent_menu_tip))
 
         self.menu_items = [('----', None),
                            ('Move to _end', self.start),
@@ -1418,6 +1555,11 @@ class QueuedTorrentBox(TorrentBox):
 
     def __init__(self, infohash, metainfo, dlpath, completion, main):
         TorrentBox.__init__(self, infohash, metainfo, dlpath, completion, main)
+
+        self.main.tooltips.set_tip(self.iconevbox,
+                                   torrent_tip_format % ('Queued',
+                                                         main_torrent_dnd_tip,
+                                                         torrent_menu_tip))
 
         self.hsep = gtk.HSeparator()
         self.vbox.pack_end(self.hsep,
@@ -1445,12 +1587,11 @@ class QueuedTorrentBox(TorrentBox):
         self.index = None
 
 
-        self.drag_dest_set(gtk.DEST_DEFAULT_MOTION | gtk.DEST_DEFAULT_DROP,
-                           [( "application/x-bittorrent",  gtk.TARGET_SAME_APP, BT_TARGET_TYPE )],
+        self.drag_dest_set(gtk.DEST_DEFAULT_DROP,
+                           [BT_TARGET,],
                            gtk.gdk.ACTION_MOVE)
 
         self.connect('drag_data_received', self.drag_data_received)
-
         self.connect('drag_motion', self.drag_motion)
 
     def drag_data_received(self, widget, context, x, y, selection, targetType, time):
@@ -1465,7 +1606,9 @@ class QueuedTorrentBox(TorrentBox):
         if y < half_height:
             self.parent.highlight_child(self.index-1)
         else:
-            self.parent.highlight_child(self.index  )            
+            self.parent.highlight_child(self.index  )
+        #print 'QueuedTorrentBox.drag_motion()'
+        return gtk.FALSE
 
     def drag_end(self, *args):
         self.parent.highlight_child()
@@ -1489,6 +1632,12 @@ class RunningTorrentBox(TorrentBox):
 
     def __init__(self, infohash, metainfo, dlpath, completion, main):
         TorrentBox.__init__(self, infohash, metainfo, dlpath, completion, main)
+
+        self.main.tooltips.set_tip(self.iconevbox,
+                                   torrent_tip_format % ('Running',
+                                                         main_torrent_dnd_tip,
+                                                         torrent_menu_tip))
+
         self.seed = False
         self.peerlistwindow = None
 
@@ -1688,14 +1837,15 @@ class DroppableBox(HSeparatedBox):
     def __init__(self, main, spacing=0):
         HSeparatedBox.__init__(self, spacing=spacing)
         self.main = main
-        self.drag_dest_set(gtk.DEST_DEFAULT_MOTION | gtk.DEST_DEFAULT_DROP,
-                           [("application/x-bittorrent", gtk.TARGET_SAME_APP, BT_TARGET_TYPE)],
+        self.drag_dest_set(gtk.DEST_DEFAULT_MOTION |
+                           gtk.DEST_DEFAULT_DROP,
+                           [BT_TARGET],
                            gtk.gdk.ACTION_MOVE)
         self.connect('drag_data_received', self.drag_data_received)
         self.connect('drag_motion', self.drag_motion)
 
     def drag_motion(self, *args):
-        pass
+        return gtk.FALSE
 
     def drag_data_received(self, *args):
         pass
@@ -1779,14 +1929,16 @@ class ReorderableBox(gtk.VBox):
     def __init__(self, main):
         gtk.VBox.__init__(self, spacing=SPACING)
         self.main = main
-        self.initial_separator = DroppableSeparator(dropfunc=self.put_infohash_first)
+        self.initial_separator = DroppableSeparator(main, dropfunc=self.put_infohash_first)
         self.pack_start(self.initial_separator, expand=False, fill=False)
-        self.drag_dest_set(gtk.DEST_DEFAULT_MOTION |
-                           gtk.DEST_DEFAULT_DROP,
-                           [( "application/x-bittorrent",  gtk.TARGET_SAME_APP, BT_TARGET_TYPE )],
+        self.drag_dest_set(#gtk.DEST_DEFAULT_MOTION |
+                           gtk.DEST_DEFAULT_DROP |
+                           0,
+                           [BT_TARGET],
                            gtk.gdk.ACTION_MOVE)
 
         self.connect('drag_data_received', self.drag_data_received)
+        self.connect('drag_motion'       , self.drag_motion)
 
     def _reorder_child(self, child, index):
         gtk.VBox.reorder_child(self, child, index)
@@ -1795,11 +1947,19 @@ class ReorderableBox(gtk.VBox):
         self._reorder_child(child, index+1)
 
     def drag_data_received(self, widget, context, x, y, selection, targetType, time):
-        half_height = self.size_request()[1] // 2
-        if y < half_height:
-            self.put_infohash_first(selection.data)
+        if targetType == BT_TARGET_TYPE:
+            half_height = self.size_request()[1] // 2
+            if y < half_height:
+                self.put_infohash_first(selection.data)
+            else:
+                self.put_infohash_last(selection.data)
+            return gtk.TRUE
         else:
-            self.put_infohash_last(selection.data)
+            print 'got external type'
+            return gtk.FALSE
+
+    def drag_motion(self, *args):
+        return gtk.FALSE
 
     def drag_highlight(self):
         final = self.get_children()[-1]
@@ -1894,6 +2054,9 @@ class DownloadInfoFrame(object):
 
     def __init__(self, config, torrentqueue):
         self.config = config
+        if self.config['save_in'] == '':
+           self.config['save_in'] = smart_dir('')
+        
         self.torrentqueue = torrentqueue
         self.torrents = {}
         self.running_torrents = {}
@@ -1901,6 +2064,13 @@ class DownloadInfoFrame(object):
         self.update_handle = None
         self.mainwindow = Window(gtk.WINDOW_TOPLEVEL)
         self.mainwindow.set_border_width(0)
+
+        self.mainwindow.drag_dest_set(gtk.DEST_DEFAULT_ALL,
+                                      [EXTERNAL_TARGET,],
+                                      gtk.gdk.ACTION_MOVE)
+
+        self.mainwindow.connect('drag_leave'        , self.drag_leave         )
+        self.mainwindow.connect('drag_data_received', self.accept_dropped_file)
 
         if not advanced_ui:
             self.mainwindow.set_resizable(False)
@@ -1933,22 +2103,24 @@ class DownloadInfoFrame(object):
         file_menu_items = (('_Open torrent file', self.select_torrent_to_open),
 
                            ('----'          , None),
-                           ('_Stop/Start '  , self.ssbutton.toggle),
+                           ('_Pause/Play '  , self.ssbutton.toggle),
                            ('----'          , None),
                            ('_Quit'         , lambda w: self.mainwindow.destroy()),
                            )
         view_menu_items = (('Show/Hide _finished torrents', self.toggle_known),
                            #('_Clean up finished torrents' , self.confirm_remove_finished_torrents),
                            ('----'          , None),
-                           ('_Log'          , self.open_log),
+                           ('_Log'          , lambda w: self.open_window('log')),
                            # 'View log of all download activity',
                            #('----'          , None),
-                           ('_Preferences'     , self.open_settings),
+                           ('_Settings'     , lambda w: self.open_window('settings')),
                            #'Change download behavior and network settings',
                            )
-        help_menu_items = (('_Help'         , None),
-                           ('_About'        , self.open_about),
+        help_menu_items = (('_Help'         , self.open_help),
+                           #('_Help'         , lambda w: self.open_window('help')),
+                           ('_About'        , lambda w: self.open_window('about')),
                            ('_Donate'       , lambda w: self.donate()),
+                           #('_Raise'        , lambda w: self.raiseerror()), 
                            )
         
         self.filemenu = gtk.MenuItem("_File")
@@ -2005,7 +2177,7 @@ class DownloadInfoFrame(object):
         self.paned.pack1(self.knownscroll, resize=gtk.FALSE, shrink=gtk.TRUE)
 
         
-        self.mainscroll = gtk.ScrolledWindow()
+        self.mainscroll = AutoScrollingWindow()
         self.mainscroll.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_ALWAYS)
         self.mainscroll.set_shadow_type(gtk.SHADOW_NONE)
         self.mainscroll.set_size_request(-1, SPACING)
@@ -2028,10 +2200,10 @@ class DownloadInfoFrame(object):
         self.box1.show_all()
 
         self.mainwindow.add(self.box1)
-        self.settingswindow = None
-        self.logwindow      = None
-        self.aboutwindow    = None
-        self.versionwindow  = None
+        self.child_windows = {}
+        self.postponed_save_windows = []
+
+        self.helpwindow     = None
         self.errordialog    = None
 
         self.set_title()
@@ -2049,12 +2221,27 @@ class DownloadInfoFrame(object):
         self.init_updates()
 
         try:
-            gtk.main()
+            gtk.main() 
         except KeyboardInterrupt:
             gtk.threads_leave()
             self.torrentqueue.set_done()
             raise
         gtk.threads_leave()
+
+
+    def drag_leave(self, *args):
+        self.drag_end()
+
+
+    def accept_dropped_file(self, widget, drag_context, x, y, selection,
+                            target_type, time):
+        file_uris = selection.data.split('\r\n')
+        for file_uri in file_uris:
+            file_name = url2pathname(file_uri)
+            file_name = file_name[7:]
+            if os.name == 'nt':
+                file_name = file_name.strip('\\')
+            self.open_torrent( file_name )
 
     def drag_highlight(self, widget=None):
         widgets = (self.knownbox, self.runbox, self.queuebox) 
@@ -2067,6 +2254,7 @@ class DownloadInfoFrame(object):
 
     def drag_end(self):
         self.drag_highlight(widget=None)
+        self.mainscroll.stop_scrolling()
 
     def set_title(self, torrentName=None, fractionDone=None):
         title = app_name
@@ -2092,8 +2280,6 @@ class DownloadInfoFrame(object):
 
     def set_size(self):
         paned_height = self.scrollbox.size_request()[1]
-        #if self.paned.get_position() > 0:
-        #    paned_height += self.knownbox.size_request()[1]
         paned_height += self.paned.get_position()
         paned_height = max(paned_height, MIN_MULTI_PANE_HEIGHT)
 
@@ -2104,10 +2290,15 @@ class DownloadInfoFrame(object):
         self.mainwindow.set_size_request(WINDOW_WIDTH, new_height)
 
     def split_pane(self):
-        if self.paned.get_position() > 0:
+        pos = self.paned.get_position()
+        if pos > 0:
+            self.paned.old_position = pos
             self.paned.set_position(0)
         else:
-            self.maximize_known_pane()
+            if hasattr(self.paned, 'old_position'):
+                self.paned.set_position(self.paned.old_position)
+            else:
+                self.maximize_known_pane()
 
     def maximize_known_pane(self):
         self.set_pane_position(self.knownbox.size_request()[1])        
@@ -2118,46 +2309,78 @@ class DownloadInfoFrame(object):
 
     def toggle_known(self, widget=None):
         self.split_pane()
-        self.set_size()
 
-    def open_log(self, widget=None):
-        if self.logwindow is None:
-            self.logwindow = LogWindow(self.logbuffer, self.log_closed,
-                                       self.config)
+    def open_window(self, window_name, *args, **kwargs):
+        if self.child_windows.has_key(window_name):
+            if window_name == 'savefile':
+                kwargs['show'] = False
+                self.postponed_save_windows.append(SaveFileSelection(self, **kwargs))
+            return
 
-    def close_log(self):
-        self.logwindow.close(None)
+        if window_name == 'log'       :
+            self.child_windows[window_name] = LogWindow(self, self.logbuffer, self.config)
+        elif window_name == 'about'   :
+            self.child_windows[window_name] = AboutWindow(self, lambda w: self.donate())
+        elif window_name == 'help'    :
+            self.child_windows[window_name] = HelpWindow(self)
+        elif window_name == 'settings':
+            self.child_windows[window_name] = SettingsWindow(self, self.config, self.set_config)
+        elif window_name == 'version' :
+            self.child_windows[window_name] = VersionWindow(self, *args)
+        elif window_name == 'openfile':
+            self.child_windows[window_name] = OpenFileSelection(self, **kwargs)
+        elif window_name == 'savefile':
+            self.child_windows[window_name] = SaveFileSelection(self, **kwargs)
+        elif window_name == 'choosefolder':
+            self.child_windows[window_name] = ChooseFolderSelection(self, **kwargs)            
 
-    def log_closed(self, widget):
-        self.logwindow = None
+        return self.child_windows[window_name]
 
-    def open_about(self,widget):
-        if self.aboutwindow is None:
-            self.aboutwindow = AboutWindow(self.about_closed,
-                                           lambda w: self.donate())
-
-    def close_about(self):
-        self.aboutwindow.close(None)
-
-    def about_closed(self, widget):
-        self.aboutwindow = None
-
-    def open_settings(self, widget):
-        if self.settingswindow is None:
-            self.settingswindow = SettingsWindow(self.config,
-                 self.set_config, self.settings_closed)
+    def window_closed(self, window_name):
+        if self.child_windows.has_key(window_name):
+            del self.child_windows[window_name]
+        if window_name == 'savefile' and self.postponed_save_windows:
+            newwin = self.postponed_save_windows.pop(-1)
+            newwin.show()
+            self.child_windows['savefile'] = newwin
     
+    def close_window(self, window_name):
+        self.child_windows[window_name].close(None)
+
+    def new_version(self, newversion, download_url):
+        self.open_window('version', newversion, download_url)
+
+
+    def open_help(self,widget):
+        if self.helpwindow is None:
+            msg = 'BitTorrent help is at \n'\
+                  '%s\n'\
+                  'Would you like to go there now?'%HELP_URL
+            self.helpwindow = MessageDialog(self.mainwindow,
+                                            'Visit help web page?',
+                                            msg,
+                                            type=gtk.MESSAGE_QUESTION,
+                                            buttons=gtk.BUTTONS_OK_CANCEL,
+                                            yesfunc=self.visit_help,
+                                            nofunc =self.help_closed,
+                                            )
+
+    def visit_help(self):
+        self.visit_url(HELP_URL)
+        self.help_closed()
+        
+    def close_help(self):
+        self.helpwindow.close()
+
+    def help_closed(self, widget=None):
+        self.helpwindow = None
+
+
     def set_config(self, option, value):
         self.config[option] = value
         if option == 'display_interval':
             self.init_updates()
         self.torrentqueue.set_config(option, value)
-
-    def settings_closed(self, widget):
-        self.settingswindow = None
-
-    def close_settings(self):
-        self.settingswindow.close(None)
 
 
     def confirm_remove_finished_torrents(self,widget):
@@ -2197,12 +2420,9 @@ class DownloadInfoFrame(object):
 
 
     def cancel(self, widget):
-        if self.logwindow is not None:
-            self.close_log()
-        if self.settingswindow is not None:
-            self.close_settings()
-        if self.aboutwindow is not None:
-            self.close_about()
+        for window_name in self.child_windows.keys():
+            self.close_window(window_name)
+        
         if self.errordialog is not None:
             self.errordialog.destroy()
             self.errors_closed()
@@ -2215,7 +2435,7 @@ class DownloadInfoFrame(object):
         gtk.main_quit()
 
 
-    def make_statusrequest(self):
+    def make_statusrequest(self): 
         for infohash, t in self.running_torrents.iteritems():
             self.torrentqueue.request_status(infohash, t.widget.peerlistwindow
                              is not None, t.widget.filelistwindow is not None)
@@ -2223,24 +2443,16 @@ class DownloadInfoFrame(object):
 
 
     def select_torrent_to_open(self, widget):
-        selector = gtk.FileSelection("Open torrent:")
-        selector.set_destroy_with_parent(gtk.TRUE)
-        fn = None
-        if self.config['save_in']:
-            fn = self.config['save_in']
-        else:
-            fn = Desktop.desktop
-            
-        selector.set_filename(fn+os.sep)
-        selector.cancel_button.connect_object("clicked",
-                                              gtk.FileSelection.destroy,
-                                              selector)
-        selector.ok_button.connect("clicked", self.open_torrent, selector) 
-        selector.show()
+        path = smart_dir(self.config['save_in'])
+        self.open_window('openfile',
+                         title="Open torrent:",
+                         fullname=path,
+                         got_location_func=self.open_torrent,
+                         no_location_func=lambda: self.window_closed('openfile'))
 
-    def open_torrent(self, widget, selector):
-        name = selector.get_filename()
-        selector.destroy()
+
+    def open_torrent(self, name):
+        self.window_closed('openfile')
         f = None
         try:
             f = file(name, 'rb')
@@ -2252,37 +2464,47 @@ class DownloadInfoFrame(object):
         if f is not None:
             f.close()  # shouldn't fail with read-only file (well hopefully)
 
-    def get_save_location(self, infohash, metainfo):
+
+    def save_location(self, infohash, metainfo):
         name = metainfo.name_fs
-        selector = gtk.FileSelection("Save location for " + metainfo.name)
-        selector.set_destroy_with_parent(gtk.TRUE)
-        path = None
-        if self.config['save_in']:
-            path = self.config['save_in']
+
+        path = smart_dir(self.config['save_in'])
+
+        fullname = os.path.join(path, name)
+
+        if not self.config['ask_for_save']:
+            if os.access(fullname, os.F_OK):
+                message = MessageDialog(self.mainwindow, 'File exists!',
+                                        '"%s" already exists.'\
+                                        ' Do you want to choose a different file name?.'%name,
+                                        buttons=gtk.BUTTONS_YES_NO,
+                                        nofunc= lambda : self.got_location(infohash, fullname),
+                                        yesfunc=lambda : self.get_save_location(infohash, metainfo, fullname),)
+
+            else:
+                self.got_location(infohash, fullname)
         else:
-            path = Desktop.desktop
-        name = os.path.join(path, name)
-            
-        selector.cancel_button.connect_object("clicked",
-                                      gtk.FileSelection.destroy, selector)
-        def no_location(widget):
+            self.get_save_location(infohash, metainfo, fullname)
+
+    def get_save_location(self, infohash, metainfo, fullname):
+        def no_location():
+            self.window_closed('savefile')
             self.torrentqueue.remove_torrent(infohash)
-        d_handle = selector.connect('destroy', no_location)
-        selector.ok_button.connect("clicked", self.got_location, selector,
-                                   infohash, d_handle)
-        selector.set_filename(name)
+
+        selector = self.open_window('savefile',
+                                    title="Save location for " + metainfo.name,
+                                    fullname=fullname,
+                                    got_location_func = lambda fn: self.got_location(infohash, fn),
+                                    no_location_func=no_location)
+
         self.torrents[infohash].widget = selector
-        selector.show()
 
-    def got_location(self, widget, selector, infohash, d_handle):
-        saveas = selector.get_filename()
-        self.set_config('save_in',  os.path.split(saveas)[0])
-        selector.disconnect(d_handle)
-        selector.destroy()
-        self.torrents[infohash].dlpath = saveas
+    def got_location(self, infohash, fullpath):
+        self.window_closed('savefile')
         self.torrents[infohash].widget = None
-        self.torrentqueue.set_save_location(infohash, saveas)
-
+        self.set_config('save_in',  os.path.split(fullpath)[0]+os.sep)        
+        self.torrents[infohash].dlpath = fullpath
+        self.torrentqueue.set_save_location(infohash, fullpath)
         self.nag()
 
     def init_updates(self):
@@ -2319,7 +2541,7 @@ class DownloadInfoFrame(object):
     def create_torrent_widget(self, infohash, queuepos=None):
         t = self.torrents[infohash]
         if t.state == ASKING_LOCATION:
-            self.get_save_location(infohash, t.metainfo)
+            self.save_location(infohash, t.metainfo)
         elif t.state == RUNNING:
             self.running_torrents[infohash] = t
             t.widget = RunningTorrentBox(infohash, t.metainfo, t.dlpath,
@@ -2381,7 +2603,7 @@ class DownloadInfoFrame(object):
 
     def multiple_errors_yes(self):
         self.errors_closed()
-        self.open_log()
+        self.open_window('log')
 
     def errors_closed(self):
         self.errordialog = None
@@ -2512,12 +2734,9 @@ class DownloadInfoFrame(object):
                              args=(url,))
         t.start()
 
-    def new_version(self, newversion, download_url):
-        if self.versionwindow is None:
-            self.versionwindow = VersionWindow(self, newversion, download_url)
+    def raiseerror(self, *args):
+        raise ValueError('test traceback behavior')
 
-    def new_version_closed(self, widget):
-        self.versionwindow = None
         
 
 if __name__ == '__main__':
@@ -2574,14 +2793,22 @@ if __name__ == '__main__':
             pass
         else:
             sys.exit(1)
+
+    controlsocket.create_socket()
     gtk.threads_init()
 
-    torrentqueue = TorrentQueue.TorrentQueue(config, ui_options)
+    torrentqueue = TorrentQueue.TorrentQueue(config, ui_options, controlsocket)
     d = DownloadInfoFrame(config,TorrentQueue.ThreadWrappedQueue(torrentqueue))
+
+    def lock_wrap(function, *args):
+        gtk.threads_enter()
+        function(*args)
+        gtk.gdk.flush()
+        gtk.threads_leave()
 
     def gtk_wrap(function, *args):
         gtk.threads_enter()
-        gobject.idle_add(function, *args)
+        gobject.idle_add(lock_wrap, function, *args)
         gtk.threads_leave()
     startflag = threading.Event()
     dlthread = threading.Thread(target = torrentqueue.run,

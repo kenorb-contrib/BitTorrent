@@ -8,15 +8,56 @@
 # for the specific language governing rights and limitations under the
 # License.
 
+# written by Matt Chisholm
+
 import os
-desktop = None
+
+def win_path_resolve(thing, env):
+    res = ''
+    while thing:
+        nextpct = thing.find('%')
+        if nextpct != -1:
+            res += thing[:nextpct]
+            thing = thing[nextpct+1:]
+            nextpct = thing.find('%')
+            if nextpct != -1:
+                key = thing[:nextpct]
+                thing = thing[nextpct+1:]
+                res += env[key]
+            else:
+                res += '%' + thing
+                thing = ''
+        else:
+            res += thing
+            thing = ''
+    return res
+
+
 homedir = os.path.expanduser('~')
 
-if os.name in ('nt', 'mac', 'posix'):
+desktop = homedir
+
+
+if os.name in ('mac', 'posix', 'nt'):
+
     tmp_desktop = os.path.join(homedir, 'Desktop')
-    if os.access(tmp_desktop,os.R_OK):
+    if os.access(tmp_desktop, os.R_OK|os.W_OK):
         desktop = tmp_desktop
-    else:
-        desktop = homedir
-else:
-    desktop = homedir
+
+    if os.name == 'nt':
+        #from win32com.shell import shell, shellcon
+        #desktop = shell.SHGetPathFromIDList(shell.SHGetSpecialFolderLocation(0, shellcon.CSIDL_DESKTOPDIRECTORY))
+        import _winreg as wreg
+        key = wreg.OpenKey(wreg.HKEY_CURRENT_USER,
+                           r'Software\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders')
+        d = wreg.QueryValueEx(key, 'Desktop')
+
+        reg_desktop = None
+        
+        try:
+            reg_desktop = win_path_resolve(d, os.environ)
+        except:
+            pass
+
+        if reg_desktop is not None and os.access(reg_desktop, os.R_OK|os.W_OK):
+            desktop = reg_desktop

@@ -30,7 +30,7 @@ common_options = [
         'maximum number of connections to allow, after this new incoming connections will be immediately closed'),
     ('check_hashes', 1,
         'whether to check hashes on disk'),
-    ('max_upload_rate', 0,
+    ('max_upload_rate', 20,
         'maximum kB/s to upload at, 0 means no limit'),
     ('min_uploads', 2,
         "the number of uploads to fill out to with extra optimistic unchokes"),
@@ -40,12 +40,6 @@ common_options = [
          "bittorrent config directory."),
     ('max_files_open', 50,
      'the maximum number of files in a multifile torrent to keep open at a time, 0 means no limit. Used to avoid running out of file descriptors.'),
-    ('next_torrent_time', 300,
-     'the maximum number of minutes to seed a completed torrent before moving to the next torrent in the queue'),
-    ('next_torrent_ratio', 80,
-     'the minimum upload/download ratio, in percent, to achieve while seeding a completed torrent, before moving to the next torrent in the queue'),
-    ('last_torrent_ratio', 0,
-     'if nonzero, stop seeding when this upload/download ratio is achieved even when there is no queue'),
     ]
 
 
@@ -99,6 +93,12 @@ def get_defaults(ui):
              'file name (for single-file torrents) or directory name (for batch torrents) to save the torrent as, overriding the default name in the torrent. See also --save_in, if neither is specified the user will be asked for save location'),
             ('advanced', 0,
              "display advanced user interface"),
+            ('next_torrent_time', 300,
+             'the maximum number of minutes to seed a completed torrent before moving to the next torrent in the queue'),
+            ('next_torrent_ratio', 80,
+             'the minimum upload/download ratio, in percent, to achieve while seeding a completed torrent, before moving to the next torrent in the queue'),
+            ('last_torrent_ratio', 0,
+             'if nonzero, stop seeding when this upload/download ratio is achieved even when there is no queue'),
             ])
 
     if ui in ('btdownloadcurses', 'btdownloadheadless'):
@@ -116,6 +116,8 @@ def get_defaults(ui):
              'file the server response was stored in, alternative to url'),
             ('url', '',
              'url to get file from, alternative to responsefile'),
+            ('ask_for_save', 0,
+             'whether or not to ask for a location to save downloaded files in'),
             ])
 
     if ui.startswith('btlaunchmany'):

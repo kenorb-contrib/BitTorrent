@@ -1,0 +1,41 @@
+install Python, version 2.3 or later -
+http://python.org/
+
+install a GTK 2.4 runtime -
+http://gladewin32.sourceforge.net/
+
+install pygtk 2.4 -
+http://www.pcpm.ucl.ac.be/~gustin/win32_ports/
+
+install venster -
+http://venster.sourceforge.net/htdocs/index.html
+
+install cjk codecs for python -
+http://cjkpython.i18n.org/
+
+install dnspython -
+http://www.dnspython.org/
+
+install py2exe -
+http://starship.python.net/crew/theller/py2exe/
+
+install the nullsoft installer - 
+http://www.nullsoft.com/free/nsis/
+
+the rest of these instructions can be abbreviated by just running
+build.bat
+
+in a shell, go to the root BitTorrent directory and run this command
+python winsetup.py py2exe
+
+now copy all the necessary GTK files from the GTK root installation
+directory (usually c:\GTK\, see the GTK_BASEPATH environment
+variable) into the dist directory. See build.bat for details.
+
+now run nsis on bittorrent.nsi
+c:\progra~1\nsis\makensis.exe bittorrent.nsi
+
+This will create an installer called BitTorrent-{VERSION}.exe
+The installer is completely self-contained and will work on any 
+Windows machine, even without the above software having been 
+installed.

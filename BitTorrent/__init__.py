@@ -9,7 +9,7 @@
 # License.
 
 app_name = "BitTorrent"
-version = '3.9.0'
+version = '3.9.1'
 
 import sys
 assert sys.version_info >= (2, 2, 1), "Python 2.2.1 or newer required"
@@ -28,6 +28,21 @@ doc_root = app_root
 if app_root.startswith(os.path.join(sys.prefix,'bin')):
     # I'm installed on *nix
     image_root, doc_root = map( lambda p: os.path.join(sys.prefix, p), calc_unix_dirs() )
+
+
+# hackery to get around bug in py2exe that tries to write log files to
+# application directories, which may not be writable by non-admin users
+if os.name == 'nt' and hasattr(sys, 'frozen') and sys.frozen == 'windows_exe':
+    baseclass = sys.stderr.__class__
+    class Stderr(baseclass):
+        logpath = os.path.join(os.path.expanduser('~'),
+                               os.path.splitext(
+                                               os.path.split(sys.executable)[1]
+                                               )[0] + '_errors.log')
+        def write(self, text, alert=None, fname=logpath):
+            baseclass.write(self, text, fname=fname)
+    sys.stderr = Stderr()
+
 
 del sys
 

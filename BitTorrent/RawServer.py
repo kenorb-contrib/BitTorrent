@@ -160,19 +160,20 @@ class RawServer(object):
             if k.socket is not None:
                 self._close_socket(k)
 
-    def create_serversocket(self, port, bind = '', reuse = False):
+    def create_serversocket(port, bind='', reuse=False, tos=0):
         server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         if reuse:
             server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         server.setblocking(0)
-        if self.tos != 0:
+        if tos != 0:
             try:
-                server.setsockopt(socket.IPPROTO_IP, socket.IP_TOS, self.tos)
+                server.setsockopt(socket.IPPROTO_IP, socket.IP_TOS, tos)
             except:
                 pass
         server.bind((bind, port))
         server.listen(5)
         return server
+    create_serversocket = staticmethod(create_serversocket)
 
     def start_listening(self, serversocket, handler, context = None):
         self.listening_handlers[serversocket.fileno()] = (handler, context)

@@ -18,20 +18,25 @@ from BitTorrent.obsoletepythonsupport import *
 
 from BitTorrent import BTFailure
 
-def printHelp(uiname, defaults):
-    print "Usage: %s" % uiname,
+def makeHelp(uiname, defaults):
+    ret = ''
+    ret += ("Usage: %s " % uiname)
     if uiname.startswith('btlaunchmany'):
-        print "[OPTIONS] [TORRENTDIRECTORY]\n"
-        print "If a non-option argument is present it's taken as the value\n"\
-              "of the torrent_dir option."
+        ret += "[OPTIONS] [TORRENTDIRECTORY]\n\n"
+        ret += "If a non-option argument is present it's taken as the value\n"\
+              "of the torrent_dir option.\n"
     elif uiname == 'btdownloadgui':
-        print "[OPTIONS] [TORRENTFILES]"
+        ret += "[OPTIONS] [TORRENTFILES]\n"
     elif uiname.startswith('btdownload'):
-        print "[OPTIONS] [TORRENTFILE]"
+        ret += "[OPTIONS] [TORRENTFILE]\n"
     elif uiname == 'btmaketorrent':
-        print "[OPTION] TRACKER_URL FILE [FILE]"
-    print ''
-    print 'arguments are -\n' + formatDefinitions(defaults, 80)
+        ret += "[OPTION] TRACKER_URL FILE [FILE]\n"
+    ret += '\n'
+    ret += 'arguments are -\n' + formatDefinitions(defaults, 80)
+    return ret
+
+def printHelp(uiname, defaults):
+    print makeHelp(uiname, defaults)
 
 def formatDefinitions(options, COLS):
     s = StringIO()

@@ -28,13 +28,21 @@ def parsedir(directory, parsed, files, blocked, errfunc,
     while dirs_to_check:    # first, recurse directories and gather torrents
         directory = dirs_to_check.pop()
         newtorrents = False
-        for f in os.listdir(directory):
+        try:
+            dir_contents = os.listdir(directory)
+        except (IOError, OSError), e:
+            errfunc("Could not read directory " + directory)
+            continue
+        for f in dir_contents:
             if f.endswith('.torrent'):
                 newtorrents = True
                 p = os.path.join(directory, f)
-                new_files[p] = [(os.path.getmtime(p), os.path.getsize(p)), 0]
+                try:
+                    new_files[p] = [(os.path.getmtime(p),os.path.getsize(p)),0]
+                except (IOError, OSError), e:
+                    errfunc("Could not stat " + p + " : " + str(e))
         if not newtorrents:
-            for f in os.listdir(directory):
+            for f in dir_contents:
                 p = os.path.join(directory, f)
                 if os.path.isdir(p):
                     dirs_to_check.append(p)

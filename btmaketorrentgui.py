@@ -158,27 +158,21 @@ class MainWindow(Window):
         self.check_buttons()
 
     def choose_files(self,widget):
-        selector = gtk.FileSelection("Open torrent:")
-        selector.set_destroy_with_parent(True)
-        selector.set_select_multiple(True)
         fn = None
         if self.config['torrent_dir']:
             fn = self.config['torrent_dir']
         else:
             fn = Desktop.desktop
-        selector.set_filename(fn+os.sep)
-        selector.cancel_button.connect_object("clicked",
-                                              gtk.FileSelection.destroy,
-                                              selector)
-        selector.ok_button.connect("clicked", self.add_files, selector)
-        selector.show()
 
-    def add_files(self, widget, selector):
-        names = selector.get_selections()
-        selector.destroy()
+        selector = OpenFileSelection("Open torrent:",
+                                fn,
+                                got_multiple_location_func=self.add_files)
+    
+    def add_files(self, names):
+        print 'add_files:', names
         for name in names:
             self.file_store.append((name,))
-        self.config['torrent_dir'] = os.path.split(name)[0]
+        self.config['torrent_dir'] = os.path.split(name)[0] + os.sep
 
     def get_piece_size_exponent(self):
         i = self.piece_size.get_active()

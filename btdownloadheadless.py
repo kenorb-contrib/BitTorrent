@@ -75,6 +75,10 @@ class HeadlessDisplayer(object):
         self.seedStatus = ''
         self.peerStatus = ''
         self.errors = []
+        self.file = ''
+        self.downloadTo = ''
+        self.fileSize = ''
+        self.numpieces = 0
 
     def set_torrent_values(self, name, path, size, numpieces):
         self.file = name
@@ -203,7 +207,7 @@ class DL(Feedback):
         self.d = HeadlessDisplayer(self.doneflag)
         try:
             self.multitorrent = Multitorrent(self.config, self.doneflag,
-                                             self.d.error)
+                                             self.global_error)
             # raises BTFailure if bad
             metainfo = ConvertedMetainfo(bdecode(self.metainfo))
             torrent_name = metainfo.name_fs
@@ -250,6 +254,9 @@ class DL(Feedback):
                                              self.config['display_interval'])
         status = self.torrent.get_status(self.config['spew'])
         self.d.display(status)
+
+    def global_error(self, level, text):
+        self.d.error(text)
 
     def error(self, torrent, level, text):
         self.d.error(text)

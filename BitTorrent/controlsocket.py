@@ -16,6 +16,7 @@ import sys
 
 from binascii import b2a_hex
 
+from BitTorrent.RawServer import RawServer
 from BitTorrent import BTFailure
 
 def toint(s):
@@ -25,6 +26,7 @@ def tobinary(i):
     return (chr(i >> 24) + chr((i >> 16) & 0xFF) +
         chr((i >> 8) & 0xFF) + chr(i & 0xFF))
 
+
 class ControlsocketListener(object):
 
     def __init__(self, callback):
@@ -32,6 +34,7 @@ class ControlsocketListener(object):
 
     def external_connection_made(self, connection):
         connection.handler = MessageReceiver(self.callback)
+
 
 class MessageReceiver(object):
 
@@ -91,14 +94,16 @@ class ControlSocket(object):
     def set_rawserver(self, rawserver):
         self.rawserver = rawserver
 
-    def create_socket_inet(self, callback):
+    def start_listening(self, callback):
+        self.rawserver.start_listening(self.controlsocket,
+                                  ControlsocketListener(callback))
+
+    def create_socket_inet(self):
         try:
-            controlsocket = self.rawserver.create_serversocket(56881,
+            controlsocket = RawServer.create_serversocket(56881,
                                                    '127.0.0.1', reuse=True)
         except socket.error, e:
             raise BTFailure("Could not create control socket: "+str(e))
-        self.rawserver.start_listening(controlsocket,
-                                  ControlsocketListener(callback))
         self.controlsocket = controlsocket
 
     def send_command_inet(self, rawserver, action, data = ''):
@@ -113,7 +118,7 @@ class ControlSocket(object):
         conn.write(data)
 
     #blocking version without rawserver
-    def send_command_inet(self, action, data = ''):
+    def send_command_inet(self, action, data=''):
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
             s.connect(('127.0.0.1', 56881))
@@ -126,7 +131,7 @@ class ControlSocket(object):
             s.close()
             raise BTFailure('Could not send command: ' + str(e))
 
-    def create_socket_unix(self, callback):
+    def create_socket_unix(self):
         filename = self.socket_filename
         if os.path.exists(filename):
             try:
@@ -141,8 +146,6 @@ class ControlSocket(object):
             controlsocket.listen(5)
         except socket.error, e:
             raise BTFailure("Could not create control socket: "+str(e))
-        self.rawserver.start_listening(controlsocket,
-                                  ControlsocketListener(callback))
         self.controlsocket = controlsocket
 
     def send_command_unix(self, rawserver, action, data = ''):
@@ -160,7 +163,7 @@ class ControlSocket(object):
         conn.write(data)
 
     # blocking version without rawserver
-    def send_command_unix(self, action, data = ''):
+    def send_command_unix(self, action, data=''):
         s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
         filename = self.socket_filename
         try:

@@ -16,6 +16,7 @@ import gtk
 import pango
 import gobject
 import os.path
+import threading
 
 from __init__ import image_root, app_name
 
@@ -25,6 +26,12 @@ WINDOW_WIDTH = 600
 MAX_WINDOW_HEIGHT = 600 # BUG: can we get this from the user's screen size?
 MAX_WINDOW_WIDTH  = 600 # BUG: can we get this from the user's screen size?
 MIN_MULTI_PANE_HEIGHT = 160
+
+BT_TARGET_TYPE = 0
+EXTERNAL_TARGET_TYPE = 1
+
+BT_TARGET       = ("application/x-bittorrent", gtk.TARGET_SAME_APP, BT_TARGET_TYPE      )
+EXTERNAL_TARGET = ("text/uri-list"           , 0                  , EXTERNAL_TARGET_TYPE)
 
 # a slightly hackish but very reliable way to get OS scrollbar width
 sw = gtk.ScrolledWindow()
@@ -154,9 +161,62 @@ class Window(gtk.Window):
 class ScrolledWindow(gtk.ScrolledWindow):
     def scroll_to_bottom(self):
         child_height = self.child.child.size_request()[1]
-        new_adj = gtk.Adjustment(child_height, 0, child_height)
+        self.scroll_to(0, child_height)
+        
+    def scroll_by(self, dx=0, dy=0):
+        v = self.get_vadjustment()
+        new_y = min(v.upper, v.value + dy)
+        self.scroll_to(0, new_y)
+
+    def scroll_to(self, x=0, y=0):
+        v = self.get_vadjustment()
+        child_height = self.child.child.size_request()[1]
+        new_adj = gtk.Adjustment(y, 0, child_height)
         self.set_vadjustment(new_adj)
 
+
+class AutoScrollingWindow(ScrolledWindow):
+    def __init__(self):
+        ScrolledWindow.__init__(self)
+        self.drag_dest_set(gtk.DEST_DEFAULT_MOTION |
+                           gtk.DEST_DEFAULT_DROP,
+                           [( "application/x-bittorrent",  gtk.TARGET_SAME_APP, BT_TARGET_TYPE )],
+                           gtk.gdk.ACTION_MOVE)
+        self.connect('drag_motion'       , self.drag_motion)
+        self.vscrolltimeout = None
+
+    def drag_motion(self, widget, context, x, y, time):
+        v = self.get_vadjustment()
+        if v.page_size - y <= 10:
+            amount = (10 - int(v.page_size - y)) * 2
+            self.start_scrolling(amount)
+        elif y <= 10:
+            amount = (y - 10) * 2
+            self.start_scrolling(amount)
+        else:
+            self.stop_scrolling()
+
+    def scroll_and_wait(self, amount, lock_held):
+        if not lock_held:
+            gtk.threads_enter()
+        self.scroll_by(0, amount)
+        if not lock_held:
+            gtk.threads_leave()
+        if self.vscrolltimeout is not None:
+            gobject.source_remove(self.vscrolltimeout)
+        self.vscrolltimeout = gobject.timeout_add(100, self.scroll_and_wait, amount, False)
+        #print "adding timeout", self.vscrolltimeout, amount
+
+    def start_scrolling(self, amount):
+        if self.vscrolltimeout is not None:
+            gobject.source_remove(self.vscrolltimeout)            
+        self.scroll_and_wait(amount, True)
+        
+    def stop_scrolling(self):
+        if self.vscrolltimeout is not None:
+            #print "removing timeout", self.vscrolltimeout
+            gobject.source_remove(self.vscrolltimeout)
+            self.vscrolltimeout = None
 
 class MessageDialog(gtk.MessageDialog):
     def __init__(self, parent, title, message,
@@ -182,13 +242,146 @@ class MessageDialog(gtk.MessageDialog):
     def callback(self, widget, response_id, *args):
         if ((response_id == gtk.RESPONSE_OK or
              response_id == gtk.RESPONSE_YES) and
-            self.yesfunc):
+            self.yesfunc is not None):
             self.yesfunc()
         if ((response_id == gtk.RESPONSE_CANCEL or
              response_id == gtk.RESPONSE_NO )
-            and self.nofunc):
+            and self.nofunc is not None):
             self.nofunc()
         self.destroy()
+
+
+class FileSelection(gtk.FileSelection):
+
+    def __init__(self, main, title='', fullname='', got_location_func=None, no_location_func=None, got_multiple_location_func=None, show=True):
+        gtk.FileSelection.__init__(self)
+        self.main = main
+        self.set_modal(gtk.TRUE)
+        self.set_destroy_with_parent(gtk.TRUE)
+        self.set_title(title)
+        if (got_location_func is None and
+            got_multiple_location_func is not None):
+            self.set_select_multiple(True)
+        self.got_location_func = got_location_func
+        self.no_location_func = no_location_func
+        self.got_multiple_location_func = got_multiple_location_func
+        self.cancel_button.connect("clicked", self.destroy)
+        self.d_handle = self.connect('destroy', self.no_location)
+        self.ok_button.connect("clicked", self.done)
+        self.set_filename(fullname)
+        if show:
+            self.show()
+
+    def no_location(self, widget=None):
+        if self.no_location_func is not None:
+            self.no_location_func()
+
+    def done(self, widget=None):
+        if self.get_select_multiple():
+            self.got_multiple_location()
+        else:
+            self.got_location()
+        self.disconnect(self.d_handle)
+        self.destroy()
+
+    def got_location(self):
+        if self.got_location_func is not None:
+            name = self.get_filename()
+            self.got_location_func(name)
+
+    def got_multiple_location(self):
+        if self.got_multiple_location_func is not None:
+            names = self.get_selections()
+            self.got_multiple_location_func(names)
+            
+    def destroy(self, widget=None):
+        gtk.FileSelection.destroy(self)
+
+    def close_child_windows(self):
+        self.no_location()
+
+    def close(self, widget=None):
+        self.destroy()
+
+class OpenFileSelection(FileSelection):
+    pass
+
+class SaveFileSelection(FileSelection):
+    pass
+
+class ChooseFolderSelection(FileSelection):
+    pass
+
+if os.name == 'nt':
+    from venster import comdlg
+    class BaseFileSelection:
+        _klass = None
+        _flags = 0
+        _filter = ''
+        def __init__(self, main, title='', fullname='',
+                     got_location_func=None,
+                     no_location_func=None,
+                     got_multiple_location_func=None,
+                     show=True):
+            self.main = main
+            self.bfs = self._klass()
+            self.bfs.Flags = self._flags
+            self.bfs.filter = self._filter
+
+            self.got_location_func = got_location_func
+            self.no_location_func  = no_location_func
+            self.got_multiple_location_func = got_multiple_location_func
+            
+
+            if (got_location_func is None and
+                got_multiple_location_func is not None):
+                self.bfs.Flags |= comdlg.OFN_ALLOWMULTISELECT
+
+            path, filename = os.path.split(fullname)
+            self.bfs.lpstrInitialDir = path
+            self.bfs.lpstrFile = filename
+            self.bfs.lpstrTitle = title
+
+            self.thread = threading.Thread(target=self.run)
+            if show:
+                self.show()
+            
+        def show(self):
+            self.thread.start()
+
+        def run(self):
+            result = self.bfs.DoModal(parent=None)
+            self.done(result)
+
+        def done(self, result):
+            if result is not None:
+                if self.got_location_func is not None:
+                    self.got_location_func(result)
+                elif self.got_multiple_location_func is not None:
+                    print result, type(result) # this is broken
+                    self.got_multiple_location_func((result,))
+            else:
+                if self.no_location_func is not None:
+                    self.no_location_func()
+            
+
+        def close_child_windows(self):
+            self.destroy()
+
+        def destroy(self):
+            pass
+
+        def close(self):
+            self.destroy()
+        
+    class OpenFileSelection(BaseFileSelection):
+        _klass = comdlg.OpenFileDialog
+        _flags = comdlg.OFN_FILEMUSTEXIST|comdlg.OFN_PATHMUSTEXIST
+        _filter = "Torrent files|*.torrent|All files (*.*)|*.*"
+
+    class SaveFileSelection(BaseFileSelection):
+        _klass = comdlg.SaveFileDialog
+        _filter = "All files (*.*)|*.*"
 
 
 class HSeparatedBox(gtk.VBox):

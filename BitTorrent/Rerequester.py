@@ -10,13 +10,13 @@
 
 # Written by Bram Cohen
 
-from zurllib import urlopen, quote
 from threading import Thread, Lock
 from socket import error, gethostbyname
 from time import time
 from random import randrange
 from binascii import b2a_hex
 
+from BitTorrent.zurllib import urlopen, quote
 from BitTorrent.btformats import check_peers
 from BitTorrent.bencode import bdecode
 from BitTorrent import BTFailure, INFO, WARNING, ERROR, CRITICAL
