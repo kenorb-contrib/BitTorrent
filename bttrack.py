@@ -79,8 +79,8 @@ class TrackerHandler(BaseHTTPRequestHandler):
                 for file in message['files']:
                     name = file['name']
                     if not published.has_key(name):
-                        published[name] = ([], file['length'], 
-                            file['pieces'], file['piece length'])
+                        published[name] = [[], file['length'], 
+                            file['pieces'], file['piece length']]
                     n = {'ip': ip, 'port': message['port']}
                     if n not in published[name][0]:
                         published[name][0].append(n)
