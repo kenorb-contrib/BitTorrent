@@ -91,6 +91,8 @@ class EncryptedConnection:
         m = self.decrypt(s)
         try:
             self.encrypter.connecter.got_message(self, m)
+        except KeyboardInterrupt:
+            raise
         except:
             print_exc()
         return 4, self.read_len
