@@ -122,7 +122,12 @@ class RawServer:
             handler = self.handler
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.setblocking(0)
-        sock.connect_ex(dns)
+        try:
+            sock.connect_ex(dns)
+        except socket.error:
+            raise
+        except Exception, e:
+            raise socket.error(str(e))
         sock.setsockopt(socket.IPPROTO_IP, socket.IP_TOS, 0x08)
         self.poll.register(sock, POLLIN)
         s = SingleSocket(self, sock, handler)
