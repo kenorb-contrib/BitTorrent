@@ -134,7 +134,7 @@ def download(params, filefunc, statusfunc, resultfunc, doneflag, cols):
                     return
         for i in xrange(len(files)):
             for j in xrange(i):
-                if files[i]['path'] == files['j']['path']:
+                if files[i]['path'] == files[j]['path']:
                     resultfunc(false, 'duplicate file in info')
                     return
         for d in files:
@@ -181,7 +181,10 @@ def download(params, filefunc, statusfunc, resultfunc, doneflag, cols):
     r = [false]
     finflag = Event()
     ann = [None]
-    myid = sha(str(time()) + ' ' + response['your ip']).digest()
+    ip = response['your ip']
+    if config['ip'] != '':
+        ip = config['ip']
+    myid = sha(str(time()) + ' ' + ip).digest()
     seed(myid)
     pieces = [info['pieces'][x:x+20] for x in xrange(0, 
         len(info['pieces']), 20)]
@@ -239,7 +242,7 @@ def download(params, filefunc, statusfunc, resultfunc, doneflag, cols):
         myid, config['max_message_length'], rawserver.add_task, 
         config['keepalive_interval'], sha(bencode(info)).digest())
     DownloaderFeedback(choker, rawserver.add_task, 
-        response['your ip'], statusfunc, 
+        ip, statusfunc, 
         config['max_rate_recalculate_interval'], ratemeasure.get_time_left, 
         ratemeasure.get_size_left, file_length, finflag,
         config['display_interval'])
@@ -260,7 +263,7 @@ def download(params, filefunc, statusfunc, resultfunc, doneflag, cols):
         statusfunc(activity = 'connecting to peers')
     def announce(event = None, q = putqueue(response['announce']), 
             id = response['file id'], myid = myid, 
-            ip = response['your ip'], port = listen_port, 
+            ip = ip, port = listen_port, 
             up = total_up, down = total_down, 
             storage = storagewrapper):
         a = {'ip': ip, 'port': port, 'file id': id,
