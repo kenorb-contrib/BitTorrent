@@ -21,13 +21,13 @@ mine.
 ----------------
 HACKING GUIDE
 
-the thing that makes BT-OSX no so straightforward is on the Mac
+the thing that makes BT-OSX not so straightforward is on the Mac
 you don't create a whole new instance of the app for each download.
 That means each download runs in it's own thread.  BT uses callbacks
 for display updating, which is all well and good, but you con't
 reliably draw from any thread but the main thread in Cocoa or your
 app will crash.  So what we do is use NSConnection so messages sent
-from a Python thread to it's DL window are posted on the main thread
+from a DL thread to it's DL window are posted on the main thread
 on the next turn of the main event loop.  This complicates setting up
 the DL but once things are setup communication between the python
 threads and the DL window controller is a simple ObjC message send
@@ -45,13 +45,13 @@ it is messaged by the python callbacks to update the DL window
  BTCallbacks.h - ObjC protocol for messages the DLWindowController
 responds to; chooseFile, display, and finished callbacks..
 
- callbacks.m - Python code written in C, our python<->objc bridge
+ callbacks.m - Python object written in C, it's methods are passed into
+ BitTorrent as callbacks.
  
  
  here's how it goes:
  
-   main.m initializes the Python interpreter and loads our C module
-before starting the regular Appkit stuff
+   main.m initializes the Python interpreter before starting the regular Appkit stuff
    
    when BTAppController starts a new DL, it loads the DLWindow nib and
 instantiates a DLWindowController.

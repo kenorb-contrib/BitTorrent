@@ -14,6 +14,7 @@
     IBOutlet id timeRemaining;
     IBOutlet id ulRate;
     IBOutlet id cancelButton;
+    IBOutlet id window;
     NSString *timeEst;
     float frac;
     PyObject *flag;

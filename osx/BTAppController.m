@@ -14,12 +14,16 @@ PyObject *bt_getProxy(NSPort *receivePort, NSPort *sendPort);
 
 }
 
-- (void)setCancelFlag:(PyObject *)flag
+- (PyThreadState *)tstate
 {
-    PyEval_RestoreThread(tstate);
-    PyObject_CallMethod(flag, "set", NULL);
-    tstate = PyEval_SaveThread();
+    return tstate;
 }
+
+- (void)setTstate:(PyThreadState *)nstate
+{
+    tstate = nstate;
+}
+
 
 - (IBAction)cancelUrl:(id)sender
 {
@@ -78,6 +82,7 @@ PyObject *bt_getProxy(NSPort *receivePort, NSPort *sendPort);
     // create flag
     event = PyDict_GetItemString(md, "Event");
     flag = PyObject_CallObject(event, NULL);
+    Py_INCREF(flag);
     [controller setFlag:flag]; // controller keeps this reference to flag
     
     [dict setObject:right forKey:@"receive"];
@@ -105,13 +110,13 @@ PyObject *bt_getProxy(NSPort *receivePort, NSPort *sendPort);
     ts = PyThreadState_New(tstate->interp);
     PyEval_RestoreThread(ts);    
 
-    // create proxy, which create's BT's side of connection
-    proxy = (PyObject *)bt_getProxy([dict objectForKey:@"receive"], [dict objectForKey:@"send"]);
-    
     // get the download function
     mm = PyImport_ImportModule("__main__");
     md = PyModule_GetDict(mm);
     dl = PyDict_GetItemString(md, "download");
+    
+    // create proxy, which creates our side of connection
+    proxy = (PyObject *)bt_getProxy([dict objectForKey:@"receive"], [dict objectForKey:@"send"]);
     
     // get args
     str = [dict objectForKey:@"str"];

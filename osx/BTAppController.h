@@ -19,5 +19,6 @@
 - (BOOL)application:(NSApplication *)theApplication openFile:(NSString *)filename;
 - (void)applicationDidFinishLaunching:(NSNotification *)note;
 - (NSNotificationCenter *)notificationCenter;
-- (void)setCancelFlag:(PyObject *)flag;
+- (PyThreadState *)tstate;
+- (void)setTstate:(PyThreadState *)nstate;
 @end

@@ -16,18 +16,26 @@
     [self cancelDl:self];
 }
 
+- (void)windowDidClose:(NSNotification *)aNotification
+{
+    [self dealloc];
+}
 - (IBAction)cancelDl:(id)sender
 {
     if(!finished) {
+	finished = 1;
 	[timeRemaining setStringValue:@"Download cancelled!"];
     }
     [cancelButton setEnabled:NO];
-    [[NSApp delegate] setCancelFlag:flag];
+    PyEval_RestoreThread([[NSApp delegate] tstate]);
+    PyObject_CallFunction(flag, "set", NULL);
+    [[NSApp delegate] setTstate:PyEval_SaveThread()];
 }
 
 - (void)setFlag:(PyObject *)nflag
 {
     flag = nflag;
+    Py_INCREF(flag);
 }
 
 - (void)setConnection:(NSConnection *)nc
@@ -60,10 +68,12 @@
 - (NSString *)chooseFile:(NSString *)defaultFile size:(long)size isDirectory:(int)dir
 {
     id panel;
+    NSString *fname = @"";
+    
     if(!dir) {
 	panel = [NSSavePanel savePanel];
 	if([panel runModalForDirectory:NSHomeDirectory() file:defaultFile]) {
-	    return [panel filename];
+	    fname = [panel filename];
 	}
     }
     else {
@@ -71,11 +81,14 @@
 	[panel setCanChooseFiles:NO];
 	[panel setCanChooseDirectories:YES];
 	if([panel runModalForDirectory:NSHomeDirectory() file:defaultFile]) {
-	    return [panel filename];
+	    fname = [panel filename];
 	}
     }
-    // shouldn't get here
-    return @"";
+    [file setStringValue:[NSString stringWithFormat:@"%@ (%1.1f MB)", [fname lastPathComponent], size / 1048576.0]];
+    [downloadTo setStringValue:fname];
+    [window setTitleWithRepresentedFilename:fname];
+    
+    return fname;
 }
 
 - (void)display:(NSDictionary *)dict
@@ -83,6 +96,9 @@
     NSString *str, *activity;
     long est;
     
+    if(finished)
+	return;
+	
     activity = [dict objectForKey:@"activity"];
     if ([[dict objectForKey:@"fractionDone"] floatValue] != 0.0) {
 	frac = [[dict objectForKey:@"fractionDone"] floatValue];
@@ -121,6 +137,7 @@
     if([fin intValue]) {
 	frac = 1.0;
 	timeEst = [@"Download Succeeded." retain];
+	[progressBar setDoubleValue:100.0];
     }
     else {
 	if([errmsg isEqualToString:@""])
@@ -138,6 +155,9 @@
     conn = nil;
     [timeEst release];
     timeEst = nil;
+    PyEval_RestoreThread([[NSApp delegate] tstate]);
+    Py_DECREF(flag);
+    [[NSApp delegate] setTstate:PyEval_SaveThread()];
     [super dealloc];
 }
 @end
