@@ -101,10 +101,8 @@ def runmany(d, params):
             totalup = 0
             totaldown = 0
             for info in wininfo.values():
-                if 'uprate' in info: 
-                    totalup += info['uprate']
-                if 'downrate' in info:
-                    totaldown += info['downrate']
+                totalup += info.get('uprate', 0)
+                totaldown += info.get('downrate', 0)
             stringup = '%s/s' % fmtsize(totalup)
             stringdown = '%s/s' % fmtsize(totaldown)
 
