@@ -35,7 +35,7 @@ class RateMeasure:
             if self.start < self.last - self.remaining:
                 self.start = self.last - self.remaining
         except ZeroDivisionError:
-            self.remaining = -1
+            self.remaining = None
         if self.broke and self.last - self.start < 20:
             self.start = self.last - 20
         if self.last - self.start > 20:

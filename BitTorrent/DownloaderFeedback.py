@@ -17,7 +17,7 @@ class DownloaderFeedback:
         self.file_length = file_length
         self.finflag = finflag
         self.interval = interval
-        self.add_task(self.display, interval)
+        self.display()
 
     def spew(self):
         print '\n\n\n'

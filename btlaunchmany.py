@@ -24,7 +24,7 @@ def runmany(d, params):
 
 def runsingle(file, params):
     def err(msg, file = file):
-        print 'error in' + file + ' - ' + msg
+        print 'error in ' + file + ' - ' + msg
     def failed(file = file):
         print 'failed ' + file
     def choose(default, size, saveas, dir, file = file):
