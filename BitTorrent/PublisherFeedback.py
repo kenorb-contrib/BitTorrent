@@ -29,8 +29,7 @@ class PublisherFeedback:
             u = c.get_upload()
             if u.lastout < t - self.max_pause:
                 u.update_rate(0)
-            s.write(c.get_ip())
-            s.write(' ')
+            s.write('%15s ' % c.get_ip())
             if u.is_choked():
                 s.write('c')
             else:
@@ -40,6 +39,6 @@ class PublisherFeedback:
             else:
                 s.write(' ')
             s.write(' %6s\n' % kify(u.rate))
-        s.write('\nat ' + self.ip + ':' + str(self.port))
+        s.write('\nat %s:%s' % (self.ip,str(self.port)))
         print s.getvalue()
         stdout.flush()
