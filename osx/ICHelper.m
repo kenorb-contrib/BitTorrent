@@ -16,7 +16,7 @@
 
 @implementation ICHelper
 
-- (void) installICHandler:sender
+- (id) installICHandler:sender
 {
     OSStatus err;
     Handle handle = NewHandle(0);
@@ -49,6 +49,7 @@
 	}
 	err = ICStop(ici);
     }
+    return self;
 }
 
 @end

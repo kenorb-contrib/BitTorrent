@@ -13,5 +13,5 @@
 @interface ICHelper : NSObject {
     ICInstance ici;
 }
-- (void) installICHandler:sender;
+- (id) installICHandler:sender;
 @end
