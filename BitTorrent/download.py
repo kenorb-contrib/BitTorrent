@@ -187,6 +187,7 @@ def download(params, filefunc, statusfunc, finfunc, errorfunc, doneflag, cols, p
         doneflag.set()
         if reason is not None:
             errorfunc(reason)
+    rawserver = RawServer(doneflag, config['timeout_check_interval'], config['timeout'])
     try:
         try:
             storage = Storage(files, open, path.exists, 
@@ -212,7 +213,7 @@ def download(params, filefunc, statusfunc, finfunc, errorfunc, doneflag, cols, p
         storagewrapper = StorageWrapper(storage, 
             config['download_slice_size'], pieces, 
             info['piece length'], finished, failed, 
-            statusfunc, doneflag, config['check_hashes'], data_flunked)
+            statusfunc, doneflag, config['check_hashes'], data_flunked, rawserver.external_add_task)
     except ValueError, e:
         failed('bad data - ' + str(e))
     except IOError, e:
@@ -220,7 +221,6 @@ def download(params, filefunc, statusfunc, finfunc, errorfunc, doneflag, cols, p
     if doneflag.isSet():
         return
 
-    rawserver = RawServer(doneflag, config['timeout_check_interval'], config['timeout'])
     e = 'maxport less than minport - no ports to check'
     for listen_port in xrange(config['minport'], config['maxport'] + 1):
         try:

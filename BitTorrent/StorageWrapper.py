@@ -2,7 +2,7 @@
 # see LICENSE.txt for license information
 
 from sha import sha
-from threading import Event
+from threading import Event, Condition, Thread
 true = 1
 false = 0
 
@@ -16,7 +16,7 @@ class StorageWrapper:
     def __init__(self, storage, request_size, hashes, 
             piece_length, finished, failed, 
             statusfunc = dummy_status, flag = Event(), check_hashes = true,
-            data_flunked = dummy_data_flunked):
+            data_flunked = dummy_data_flunked, backfunc = None):
         self.check_hashes = check_hashes
         self.storage = storage
         self.request_size = request_size
@@ -36,6 +36,12 @@ class StorageWrapper:
         self.total_inactive = 0
         self.have = [false] * len(hashes)
         self.waschecked = [check_hashes] * len(hashes)
+        self.hasdata = [false] * len(hashes)
+        self.accessLock = Condition()
+        self.currentwrite = None
+        self.currentbackwrite = None
+        self.backfunc = backfunc
+        self.doneflag = flag
         if len(hashes) == 0:
             finished()
             return
@@ -52,6 +58,39 @@ class StorageWrapper:
             for i in xrange(len(hashes)):
                 self._check_single(i, false)
         self.done_checking = true
+        bg = Thread(target = self.background_allocate)
+        bg.setDaemon(false)
+        bg.start()
+
+    def background_allocate(self):
+        try:
+            self._background_allocate()
+        except IOError, e:
+            def f(self = self, s = 'IO Error ' + str(e)):
+                self.failed(s)
+            self.backfunc(f)
+
+    def _background_allocate(self):
+        for x in xrange(len(self.hashes)):
+            if self.hasdata[x]:
+                continue
+            low = self.piece_length * x
+            piece = chr(0xFF) * (min(low + self.piece_length, self.total_length) - low)
+            self.accessLock.acquire()
+            try:
+                while self.currentwrite == x:
+                    self.accessLock.wait()
+                self.currentbackwrite = x
+            finally:
+                self.accessLock.release()
+            if not self.hasdata[x]:
+                self.storage.write(low, piece)
+            self.accessLock.acquire()
+            try:
+                self.currentbackwrite = None
+                self.accessLock.notify()
+            finally:
+                self.accessLock.release()
 
     def get_amount_left(self):
         return self.amount_left
@@ -67,6 +106,7 @@ class StorageWrapper:
             self.waschecked[index] = true
             if not self.check_hashes or sha(self.storage.read(low, length)).digest() == self.hashes[index]:
                 self.have[index] = true
+                self.hasdata[index] = true
                 self.amount_left -= length
                 if self.amount_left == 0:
                     self.finished()
@@ -111,11 +151,25 @@ class StorageWrapper:
             self.failed('IO Error ' + str(e))
 
     def _piece_came_in(self, index, begin, piece):
+        self.accessLock.acquire()
+        try:
+            while self.currentbackwrite == index:
+                self.accessLock.wait()
+            self.currentwrite = index
+        finally:
+            self.accessLock.release()
         self.storage.write(index * self.piece_length + begin, piece)
+        self.hasdata[index] = true
         self.numactive[index] -= 1
         if (self.inactive_requests[index] == [] and 
                 self.numactive[index] == 0):
             self._check_single(index)
+        self.accessLock.acquire()
+        try:
+            self.currentwrite = None
+            self.accessLock.notify()
+        finally:
+            self.accessLock.release()
 
     def request_lost(self, index, begin, length):
         self.inactive_requests[index].append((begin, length))
@@ -148,7 +202,7 @@ class StorageWrapper:
 class DummyStorage:
     def __init__(self, total, pre = false):
         self.pre = pre
-        self.s = 'q' * total
+        self.s = chr(0xFF) * total
         self.done = false
 
     def was_preexisting(self):
@@ -279,13 +333,13 @@ def test_lazy_hashing():
 def test_lazy_hashing_pass():
     ds = DummyStorage(4)
     flag = Event()
-    sw = StorageWrapper(ds, 4, [sha('qqqq').digest()], 4, ds.finished, lambda x, flag = flag: flag.set(), check_hashes = false)
+    sw = StorageWrapper(ds, 4, [sha(chr(0xFF) * 4).digest()], 4, ds.finished, lambda x, flag = flag: flag.set(), check_hashes = false)
     assert sw.get_piece(0, 0, 2) is None
     assert not flag.isSet()
 
 def test_preexisting():
     ds = DummyStorage(4, true)
-    sw = StorageWrapper(ds, 2, [sha('qq').digest(), 
+    sw = StorageWrapper(ds, 2, [sha(chr(0xFF) * 2).digest(), 
         sha('ab').digest()], 2, ds.finished, None)
     assert sw.get_amount_left() == 2
     assert sw.do_I_have_anything()
@@ -305,8 +359,8 @@ def test_preexisting():
 def test_total_too_short():
     ds = DummyStorage(4)
     try:
-        StorageWrapper(ds, 4, [sha('qqqq').digest(),
-            sha('qqqq').digest()], 4, ds.finished, None)
+        StorageWrapper(ds, 4, [sha(chr(0xff) * 4).digest(),
+            sha(chr(0xFF) * 4).digest()], 4, ds.finished, None)
         raise 'fail'
     except ValueError:
         pass
@@ -315,7 +369,7 @@ def test_total_too_big():
     ds = DummyStorage(9)
     try:
         sw = StorageWrapper(ds, 4, [sha('qqqq').digest(),
-            sha('qqqq').digest()], 4, ds.finished, None)
+            sha(chr(0xFF) * 4).digest()], 4, ds.finished, None)
         raise 'fail'
     except ValueError:
         pass
@@ -327,7 +381,7 @@ def test_end_above_total_length():
 
 def test_end_past_piece_end():
     ds = DummyStorage(4, true)
-    sw = StorageWrapper(ds, 4, [sha('qq').digest(), 
-        sha('qq').digest()], 2, ds.finished, None)
+    sw = StorageWrapper(ds, 4, [sha(chr(0xFF) * 2).digest(), 
+        sha(chr(0xFF) * 2).digest()], 2, ds.finished, None)
     assert ds.done
     assert sw.get_piece(0, 0, 3) == None
