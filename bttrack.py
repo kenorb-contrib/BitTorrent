@@ -3,9 +3,6 @@
 # Written by Bram Cohen
 # see LICENSE.txt for license information
 
-import sys
-assert sys.version >= '2', "Install Python 2.0 or greater"
-
 from sys import argv
 from BitTorrent.parseargs import parseargs
 from BitTorrent.track import track

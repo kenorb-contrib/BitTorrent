@@ -33,10 +33,10 @@ class putqueue:
     def addrequest(self, data):
         try:
             self.lock.acquire()
-            if len(self.requests) == 0 and not self.running:
+            self.requests.append(data)
+            if not self.running and self.requests != []:
                 Thread(target = self.requestall).start()
                 self.running = true
-            self.requests.append(data)
         finally:
             self.lock.release()
 
@@ -44,7 +44,7 @@ class putqueue:
         while true:
             try:
                 self.lock.acquire()
-                if len(self.requests) == 0:
+                if self.requests == []:
                     self.running = false
                     return
                 data = self.requests[0]

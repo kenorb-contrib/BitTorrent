@@ -70,11 +70,7 @@ t = compile_template({'info': [{'type': 'single',
     'length': 0}), 'name': string_template}], 
     'peers': ListMarker({'ip': string_template, 'port': 1, 'id': exact_length(20)}), 
     'id': string_template, 'announce': string_template, 
-    'url': string_template, 'your ip': string_template,
-    'protocol': string_template})
-
-states = ['started', 'downloading', 'finished', 
-    'uploading', 'stopped', 'started finished']
+    'url': string_template, 'your ip': string_template})
 
 def download(params, filefunc, statusfunc, resultfunc, doneflag, cols):
     if len(params) == 0:
@@ -114,10 +110,6 @@ def download(params, filefunc, statusfunc, resultfunc, doneflag, cols):
         t(response)
     except ValueError, e:
         resultfunc(false, "got bad publication response - " + str(e))
-        return
-    if response['protocol'] != 'plaintext':
-        resultfunc(false, "protocol I don't know specified - " + 
-            str(response['protocol']))
         return
     def make(f, forcedir = false, resultfunc = resultfunc):
         try:
@@ -172,15 +164,15 @@ def download(params, filefunc, statusfunc, resultfunc, doneflag, cols):
     try:
         storage = Storage(files, open, path.exists, 
             path.getsize, statusfunc)
+        storagewrapper = StorageWrapper(storage, 
+            config['download_slice_size'], info['pieces'], 
+            info['piece length'], finished, statusfunc, doneflag)
     except ValueError, e:
         finished(false, str(e), true)
         return
     except IOError, e:
         finished(false, str(e), true)
         return
-    storagewrapper = StorageWrapper(storage, 
-        config['download_slice_size'], info['pieces'], 
-        info['piece length'], finished, statusfunc, doneflag)
     if doneflag.isSet():
         return
     rawserver = RawServer(config['max_poll_period'], doneflag,
@@ -227,18 +219,18 @@ def download(params, filefunc, statusfunc, resultfunc, doneflag, cols):
 
     if not finflag.isSet():
         statusfunc(activity = 'connecting to peers')
-    def announce(status, q = putqueue(response['announce']), 
+    def announce(event = None, q = putqueue(response['announce']), 
             id = response['id'], myid = myid, 
             ip = response['your ip'], port = listen_port, 
             up = total_up, down = total_down, storage = storage):
-        q.addrequest(bencode({'ip': ip, 'port': port, 'id': id,
+        a = {'ip': ip, 'port': port, 'id': id,
             'uploaded': up[0], 'downloaded': down[0], 'myid': myid,
-            'left': storage.get_amount_left(), 'status': states[status]}))
+            'left': storage.get_amount_left()}
+        if event is not None:
+            a['event'] = ['started', 'completed', 'finished'][event]
+        q.addrequest(bencode(a))
 
-    if finflag.isSet():
-        announce(5)
-    else:
-        announce(0)
+    announce(0)
     rawserver.listen_forever(encrypter)
-    announce(4)
+    announce(2)
     return r[0]

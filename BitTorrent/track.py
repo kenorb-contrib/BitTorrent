@@ -29,8 +29,7 @@ downloaderfiletemplate = compile_template(ValuesMarker(
 announcetemplate = compile_template({'id': string_template, 
     'myid': exact_length(20), 'ip': string_template, 'port': 1, 
     'uploaded': 0, 'downloaded': 0, 'left': 0,
-    'status': ['started', 'downloading', 'finished', 
-    'uploading', 'stopped']})
+    'event': OptionMarker(['started', 'completed', 'stopped'])})
 
 alas = 'your file may exist elsewhere in the universe\n\nbut alas, not here'
 
@@ -96,7 +95,7 @@ class Tracker:
         if path == 'announce/':
             announcetemplate(message)
             peers = self.downloaders.setdefault(message['id'], [])
-            if message['status'] != 'stopped':
+            if message.get('event') != 'stopped':
                 for p in peers:
                     if p['id'] == message['myid']:
                         return thanks

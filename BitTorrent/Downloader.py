@@ -87,7 +87,7 @@ class SingleDownload:
         if self.choked:
             return false
         hit = false
-        while (not self.want_priorities.is_empty() and \
+        while (not self.want_priorities.is_empty() and 
                 len(self.active_requests) < self.downloader.max_requests):
             i = self.downloader.priority_to_index[self.want_priorities.get_first()]
             begin, length = self.downloader.storage.new_request(i)
@@ -102,20 +102,21 @@ class SingleDownload:
             return
         self.have[index] = true
         if self.connecter.storage.do_I_have_requests(index):
-            self.want_priorities.insert(index)
+            self.want_priorities.insert(
+                self.downloader.index_to_priority[index])
             self.downloader.adjust(self)
 
     def got_have_bitfield(self, have):
         self.have = have
         for i in xrange(len(have)):
             if have[i] and self.connecter.storage.do_I_have_requests(i):
-                self.want_priorities.insert(i)
+                self.want_priorities.insert(
+                    self.downloader.index_to_priority[i])
         self.downloader.adjust(self)
 
 class Downloader:
     def __init__(self, storage, backlog, 
             max_rate_period, numpieces, total_down = [0l]):
-        self.data = data
         self.backlog = backlog
         self.max_rate_period = max_rate_period
         self.total_down = total_down
@@ -149,16 +150,34 @@ class Downloader:
             d = self.d
         else:
             d = [c]
-        while true:
-            hit = false
-            for c in d:
-                if c.adjust():
-                    hit = true
-            if not hit:
-                return
+        while true in [c.adjust() for c in d]:
             d = self.d
 
     def make_download(self, connection):
-        self.downloads.append(SingleDownload(self, connection))
-        return self.downloads[-1]
+        self.downloads.insert(0, SingleDownload(self, connection))
+        return self.downloads[0]
 
+def test_stops_at_backlog():
+    assert false
+    #booga make multiple available, assert stops querying at max
+    #booga make one come in, assert queries for exactly one more
+
+def test_got_have_single():
+    assert false
+    #booga have a have single come in, assert gains interest
+
+def test_download_after_unchoke():
+    assert false
+    #booga make thing which is interested, unchoke after bitfield
+
+def test_choke_clears_active():
+    assert false
+    #booga start two things, both of which want the same thing
+    #booga assert downloads for second connected
+    #booga choke second, assert downloads first
+    #booga receive on first, completing
+    #booga assert loses interest on both
+
+def test_introspect_priority_list():
+    assert false
+    #booga manually verify index_to_priority and priority_to_index

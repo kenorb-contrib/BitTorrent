@@ -647,4 +647,6 @@ def test_ignore_connect_to_self():
     assert rs.connects == []
     assert not c1.closed
 
+def test_conversion():
+    assert toint(tobinary(50000)) == 50000
 

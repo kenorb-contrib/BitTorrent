@@ -42,11 +42,11 @@ class MaxDepth:
         assert self.template is not None, 'You forgot to set the template!'
         if self.max_depth == 0:
             return fail_too_deep
-        self.max_depth = self.max_depth - 1
+        self.max_depth -= 1
         try:
             return compile_inner(self.template)
         finally:
-            self.max_depth = self.max_depth + 1
+            self.max_depth += 1
 
     def __repr__(self):
         if hasattr(self, 'p'):
@@ -223,13 +223,15 @@ def compile_or_template(template):
     assert type(template) in (types.ListType, types.TupleType)
     def func(thing, verbose, templ = [compile_inner(x) for x in template]):
         if verbose:
-            failure_reason = 'did not match any of the ' + str(len(templ)) + ' possible templates;'
+            failure_reason = ('did not match any of the ' + 
+                str(len(templ)) + ' possible templates;')
             for i in xrange(len(templ)):
                 try:
                     templ[i](thing, 1)
                     return
                 except ValueError, reason:
-                    failure_reason = failure_reason + ' failed template at index ' + str(i) + ' because (' + str(reason) + ')'
+                    failure_reason += (' failed template at index ' + 
+                        str(i) + ' because (' + str(reason) + ')')
             raise ValueError, failure_reason
         else:
             for i in templ:

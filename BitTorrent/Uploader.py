@@ -22,9 +22,9 @@ class Upload:
         self.lastout = self.ratesince
         self.rate = 0.0
         if storage.do_I_have_anything():
-            connection.send_bitfield(storage.get_have_list)
+            connection.send_bitfield(storage.get_have_list())
 
-    def got_done(self):
+    def got_not_interested(self):
         if self.interested:
             self.interested = false
             del self.buffer[:]
@@ -83,13 +83,25 @@ class Upload:
 class DummyConnection:
     def __init__(self, events):
         self.events = events
-        self.flushed = true
+        self.flushed = false
 
-    def send_message(self, message):
-        self.events.append(message)
+    def send_bitfield(self, bitfield):
+        self.events.append(('bitfield', bitfield))
     
     def is_flushed(self):
         return self.flushed
+
+    def close(self):
+        self.events.append('closed')
+
+    def send_piece(self, index, begin, piece):
+        self.events.append(('piece', index, begin, piece))
+
+    def send_choke(self):
+        self.events.append('choke')
+
+    def send_unchoke(self):
+        self.events.append('unchoke')
 
 class DummyChoker:
     def __init__(self, events):
@@ -101,171 +113,152 @@ class DummyChoker:
     def not_interested(self, connection):
         self.events.append('not interested')
 
-class DummyBlobs:
-    def __init__(self, blobs):
-        self.blobs = blobs
+class DummyStorage:
+    def __init__(self, events):
+        self.events = events
 
-    def get_list_of_blobs_I_have(self):
-        return self.blobs.keys()
-    
-    def get_slice(self, blob, begin, length):
-        if not self.blobs.has_key(blob):
+    def do_I_have_anything(self):
+        self.events.append('do I have')
+        return true
+
+    def get_have_list(self):
+        self.events.append('get have list')
+        return [false, true]
+
+    def get_piece(self, index, begin, length):
+        self.events.append(('get piece', index, begin, length))
+        if length == 4:
             return None
-        return self.blobs[blob][begin : begin + length]
+        return 'a' * length
 
 def test_skip_over_choke():
     events = []
-    connection = DummyConnection(events)
-    choker = DummyChoker(events)
-    blobs = DummyBlobs({'a' * 20: 'abcd'})
-    upload = Upload(connection, choker, blobs, 100, 15)
-    assert upload.is_choked()
-    assert not upload.is_interested()
-    
-    upload.unchoke()
-    upload.send_intro()
-    assert events == [{'type': 'unchoke'}, {'type': 'I have', 'blobs': ['a' * 20]}]
-    del events[:]
+    dco = DummyConnection(events)
+    dch = DummyChoker(events)
+    ds = DummyStorage(events)
+    u = Upload(dco, dch, ds, 100, 20, [0])
+    assert u.is_choked()
+    assert not u.is_interested()
+    u.got_interested()
+    assert u.is_interested()
+    u.got_send(0, 0, 3)
+    dco.flushed = true
+    u.flushed()
+    assert events == ['do I have', 'get have list', 
+        ('bitfield', [false, true]), 'interested']
 
-    connection.flushed = false
-    upload.got_send({'type': 'send', 'blob': 'a' * 20, 'begin': 1, 'length': 2})
-    assert events == ['interested']
-    del events[:]
-    assert not upload.is_choked()
-    assert upload.is_interested()
-
-    upload.choke()
-    assert events == []
-    assert upload.is_choked()
-    assert upload.is_interested()
-    
-    upload.unchoke()
-    assert events == []
-    assert not upload.is_choked()
-    assert upload.is_interested()
-
-    connection.flushed = true
-    upload.flushed()
-    assert events == [{'type': 'slice', 'blob': 'a' * 20, 'slice': 'bc', 'begin': 1}]
-    del events[:]
-    assert not upload.is_choked()
-    assert upload.is_interested()
-
-    upload.got_send({'type': 'send', 'blob': 'a' * 20, 'begin': 1, 'length': 2})
-    assert events == [{'type': 'slice', 'blob': 'a' * 20, 'slice': 'bc', 'begin': 1}]
-    del events[:]
-    assert not upload.is_choked()
-    assert upload.is_interested()
-
-def test_received_blob():
+def test_bad_piece():
     events = []
-    connection = DummyConnection(events)
-    choker = DummyChoker(events)
-    blobs = DummyBlobs({'a' * 20: 'abcd'})
-    upload = Upload(connection, choker, blobs, 100, 15)
-    assert not upload.is_interested()
-    
-    upload.unchoke()
-    upload.received_blob('a' * 20)
-    assert events == [{'type': 'unchoke'}, {'type': 'I have', 'blobs': ['a' * 20]}]
+    dco = DummyConnection(events)
+    dch = DummyChoker(events)
+    ds = DummyStorage(events)
+    u = Upload(dco, dch, ds, 100, 20, [0])
+    assert u.is_choked()
+    assert not u.is_interested()
+    u.got_interested()
+    assert u.is_interested()
+    u.unchoke()
+    assert not u.is_choked()
+    u.got_send(0, 0, 4)
+    dco.flushed = true
+    u.flushed()
+    assert events == ['do I have', 'get have list', 
+        ('bitfield', [false, true]), 'interested', 'unchoke', 
+        ('get piece', 0, 0, 4), 'closed']
 
-def test_get_bad_slice():
+def test_still_rejected_after_unchoke():
     events = []
-    connection = DummyConnection(events)
-    choker = DummyChoker(events)
-    blobs = DummyBlobs({})
-    upload = Upload(connection, choker, blobs, 100, 15)
-    assert upload.is_choked()
-    assert not upload.is_interested()
+    dco = DummyConnection(events)
+    dch = DummyChoker(events)
+    ds = DummyStorage(events)
+    u = Upload(dco, dch, ds, 100, 20, [0])
+    assert u.is_choked()
+    assert not u.is_interested()
+    u.got_interested()
+    assert u.is_interested()
+    u.unchoke()
+    assert not u.is_choked()
+    u.got_send(0, 0, 3)
+    u.choke()
+    u.unchoke()
+    dco.flushed = true
+    u.flushed()
+    assert events == ['do I have', 'get have list', 
+        ('bitfield', [false, true]), 'interested', 'unchoke', 
+        'choke', 'unchoke']
 
-    upload.unchoke()
-    upload.got_send({'type': 'send', 'blob': 'a' * 20, 'begin': 0, 'length': 2})
-    assert events == [{'type': 'unchoke'}, 'interested']
-    assert not upload.is_choked()
-    assert upload.is_interested()
-
-def test_transitions_clockwise():
+def test_sends_when_flushed():
     events = []
-    connection = DummyConnection(events)
-    choker = DummyChoker(events)
-    blobs = DummyBlobs({'a' * 20: 'abcd'})
-    upload = Upload(connection, choker, blobs, 100, 15)
-    assert not upload.is_interested()
+    dco = DummyConnection(events)
+    dch = DummyChoker(events)
+    ds = DummyStorage(events)
+    u = Upload(dco, dch, ds, 100, 20, [0])
+    u.unchoke()
+    u.got_interested()
+    u.got_send(0, 1, 3)
+    dco.flushed = true
+    u.flushed()
+    u.flushed()
+    assert events == ['do I have', 'get have list', 
+        ('bitfield', [false, true]), 'unchoke', 'interested', 
+        ('get piece', 0, 1, 3), ('piece', 0, 1, 'aaa')]
 
-    upload.unchoke()
-    upload.got_interested()
-    assert events == [{'type': 'unchoke'}, 'interested']
-    del events[:]
-    assert not upload.is_choked()
-    assert upload.is_interested()
-
-    upload.choke()
-    assert events == [{'type': 'choke'}]
-    del events[:]
-    assert upload.is_choked()
-    assert upload.is_interested()
-
-    upload.got_send({'type': 'send', 'blob': 'a' * 20, 'begin': 1, 'length': 2})
-    assert events == []
-    assert upload.is_choked()
-    assert upload.is_interested()
-
-    upload.got_done()
-    assert events == ['not interested']
-    del events[:]
-    assert upload.is_choked()
-    assert not upload.is_interested()
-
-    upload.unchoke()
-    assert events == [{'type': 'unchoke'}]
-    del events[:]
-    assert not upload.is_choked()
-    assert not upload.is_interested()
-
-    upload.got_send({'type': 'send', 'blob': 'a' * 20, 'begin': 1, 'length': 2})
-    assert events == [{'type': 'slice', 'blob': 'a' * 20, 'slice': 'bc', 'begin': 1}, 'interested']
-    del events[:]
-    assert not upload.is_choked()
-    assert upload.is_interested()
-
-def test_transitions_counterclockwise():
+def test_sends_immediately():
     events = []
-    connection = DummyConnection(events)
-    choker = DummyChoker(events)
-    blobs = DummyBlobs({'a' * 20: 'abcd'})
-    upload = Upload(connection, choker, blobs, 100, 15)
-    assert upload.is_choked()
-    assert not upload.is_interested()
+    dco = DummyConnection(events)
+    dch = DummyChoker(events)
+    ds = DummyStorage(events)
+    u = Upload(dco, dch, ds, 100, 20, [0])
+    u.unchoke()
+    u.got_interested()
+    dco.flushed = true
+    u.got_send(0, 1, 3)
+    assert events == ['do I have', 'get have list', 
+        ('bitfield', [false, true]), 'unchoke', 'interested', 
+        ('get piece', 0, 1, 3), ('piece', 0, 1, 'aaa')]
 
-    upload.got_send({'type': 'send', 'blob': 'a' * 20, 'begin': 1, 'length': 2})
-    assert events == ['interested']
-    del events[:]
-    assert upload.is_choked()
-    assert upload.is_interested()
+def test_clears_on_not_interested():
+    events = []
+    dco = DummyConnection(events)
+    dch = DummyChoker(events)
+    ds = DummyStorage(events)
+    u = Upload(dco, dch, ds, 100, 20, [0])
+    u.unchoke()
+    u.got_interested()
+    u.got_send(0, 1, 3)
+    u.got_not_interested()
+    dco.flushed = true
+    u.flushed()
+    assert events == ['do I have', 'get have list', 
+        ('bitfield', [false, true]), 'unchoke', 'interested', 
+        'not interested']
 
-    upload.got_interested()
+def test_close_when_sends_on_not_interested():
+    events = []
+    dco = DummyConnection(events)
+    dch = DummyChoker(events)
+    ds = DummyStorage(events)
+    u = Upload(dco, dch, ds, 100, 20, [0])
+    u.got_send(0, 1, 3)
+    assert events == ['do I have', 'get have list', 
+        ('bitfield', [false, true]), 'closed']
+
+def test_close_over_max_length():
+    events = []
+    dco = DummyConnection(events)
+    dch = DummyChoker(events)
+    ds = DummyStorage(events)
+    u = Upload(dco, dch, ds, 100, 20, [0])
+    u.got_interested()
+    u.got_send(0, 1, 101)
+    assert events == ['do I have', 'get have list', 
+        ('bitfield', [false, true]), 'interested', 'closed']
+
+def test_no_bitfield_on_start_empty():
+    events = []
+    dco = DummyConnection(events)
+    dch = DummyChoker(events)
+    ds = DummyStorage(events)
+    ds.do_I_have_anything = lambda: false
+    u = Upload(dco, dch, ds, 100, 20, [0])
     assert events == []
-    assert upload.is_choked()
-    assert upload.is_interested()
-
-    upload.unchoke()
-    assert events == [{'type': 'unchoke'}]
-    del events[:]
-    assert not upload.is_choked()
-    assert upload.is_interested()
-
-    upload.got_done()
-    assert events == ['not interested']
-    del events[:]
-    assert not upload.is_choked()
-    assert not upload.is_interested()
-
-    upload.got_done()
-    assert events == []
-    assert not upload.is_choked()
-    assert not upload.is_interested()
-
-    upload.got_interested()
-    assert events == ['interested']
-    assert not upload.is_choked()
-    assert upload.is_interested()

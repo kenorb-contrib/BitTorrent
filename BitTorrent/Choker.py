@@ -70,10 +70,12 @@ class Choker:
         self.rechoke()
 
     def interested(self, connection):
-        self.rechoke()
+        if not connection.get_upload().is_choked():
+            self.rechoke()
 
     def not_interested(self, connection):
-        self.rechoke()
+        if not connection.get_upload().is_choked():
+            self.rechoke()
 
 class DummyScheduler:
     def __init__(self):
@@ -103,7 +105,10 @@ class DummyUploader:
         
     def unchoke(self):
         self.c = false
-        
+
+    def is_choked(self):
+        return self.c
+
     def is_interested(self):
         return self.i
 

@@ -14,26 +14,29 @@ def tobinary(i):
     return (chr(i >> 24) + chr((i >> 16) & 0xFF) + 
         chr((i >> 8) & 0xFF) + chr(i & 0xFF))
 
-CHOKE = 0
-UNCHOKE = 1
-INTERESTED = 2
-NOT_INTERESTED = 3
+CHOKE = chr(0)
+UNCHOKE = chr(1)
+INTERESTED = chr(2)
+NOT_INTERESTED = chr(3)
 # index
-HAVE = 4
+HAVE = chr(4)
 # index, bitfield
-BITFIELD = 5
+BITFIELD = chr(5)
 # index, begin, length
-REQUEST = 6
+REQUEST = chr(6)
 # index, begin, piece
-PIECE = 7
+PIECE = chr(7)
 
 class Connection:
     def __init__(self, connection):
         self.connection = connection
-        self.got_have = false
+        self.got_anything = false
 
     def get_ip(self):
         return self.connection.get_ip()
+
+    def close(self):
+        self.connection.close()
 
     def is_flushed(self):
         return self.connection.is_flushed()
@@ -51,19 +54,19 @@ class Connection:
         self.connection.send_message(UNCHOKE)
 
     def send_request(self, index, begin, length):
-        self.connection.send_message(REQUEST + toint(index) + 
-            toint(begin) + toint(length))
+        self.connection.send_message(REQUEST + tobinary(index) + 
+            tobinary(begin) + tobinary(length))
 
     def send_piece(self, index, begin, piece):
-        self.connection.send_message(PIECE + toint(index) + 
-            toint(begin) + piece)
+        self.connection.send_message(PIECE + tobinary(index) + 
+            tobinary(begin) + piece)
 
     def send_bitfield(self, bitfield):
-        b = booleans_to_bitfield(bitfield)
-        self.connection.send_message(BITFIELD + b)
+        self.connection.send_message(BITFIELD + 
+            booleans_to_bitfield(bitfield))
 
     def send_have(self, index):
-        self.connection.send_message(HAVE + toint(index))
+        self.connection.send_message(HAVE + tobinary(index))
 
     def get_upload(self):
         return self.upload
@@ -93,7 +96,6 @@ class Connecter:
         del c.upload
         del c.download
         del self.connections[connection]
-        u.disconnected()
         d.disconnected()
         self.choker.connection_lost(c)
 
@@ -105,63 +107,57 @@ class Connecter:
         if len(message) == 0:
             connection.close()
             return
-        t = chr(message[0])
+        t = message[0]
+        if t == BITFIELD and c.got_anything:
+            connection.close()
+            return
+        c.got_anything = true
+        if (t in [CHOKE, UNCHOKE, INTERESTED, NOT_INTERESTED] and 
+                len(message) != 1):
+            connection.close()
+            return
         if t == CHOKE:
-            if len(message) != 1:
-                connection.close()
-                return
             c.download.got_choke()
         elif t == UNCHOKE:
-            if len(message) != 1:
-                connection.close()
-                return
             c.download.got_unchoke()
         elif t == INTERESTED:
-            if len(message) != 1:
-                connection.close()
-                return
             c.upload.got_interested()
         elif t == NOT_INTERESTED:
-            if len(message) != 1:
-                connection.close()
-                return
             c.upload.got_not_interested()
         elif t == HAVE:
             if len(message) != 5:
                 connection.close()
                 return
-            c.got_have = true
-            i = tobinary(message[1:])
+            i = toint(message[1:])
             if i >= self.numpieces:
                 connection.close()
                 return
             c.download.got_have(i)
         elif t == BITFIELD:
-            b = bitfield_to_booleans(t[1:], self.numpieces)
-            if b is None or c.got_have:
+            b = bitfield_to_booleans(message[1:], self.numpieces)
+            if b is None:
                 connection.close()
                 return
-            c.got_have = true
             c.download.got_bitfield(b)
         elif t == REQUEST:
             if len(message) != 13:
                 connection.close()
                 return
-            i = tobinary(message[1:5])
+            i = toint(message[1:5])
             if i >= self.numpieces:
                 connection.close()
                 return
-            c.upload.got_request(i, tobinary(message[5:9]), 
-                tobinary(message[9:]))
+            c.upload.got_request(i, toint(message[5:9]), 
+                toint(message[9:]))
         elif t == PIECE:
             if len(message) <= 9:
                 connection.close()
                 return
-            i = tobinary(message[1:5])
+            i = toint(message[1:5])
             if i >= self.numpieces:
                 connection.close()
                 return
-            if c.download.got_piece(i, tobinary(message[5:9]), message[9:]):
+            if c.download.got_piece(i, toint(message[5:9]), message[9:]):
                 for co in self.connections.values():
                     co.send_have(i)
         else:
@@ -170,171 +166,109 @@ class Connecter:
 class DummyUpload:
     def __init__(self, events):
         self.events = events
+        events.append('made upload')
 
-    def send_intro(self):
-        self.events.append('intro')
-        
-    def disconnected(self):
-        self.events.append('disconnected')
-        
     def flushed(self):
         self.events.append('flushed')
 
     def got_interested(self):
         self.events.append('interested')
         
-    def got_done(self):
-        self.events.append('done')
+    def got_not_interested(self):
+        self.events.append('not interested')
 
-    def got_send(self, m):
-        self.events.append('send')
-
-    def received_blob(self, blob):
-        self.events.append(('received', blob))
-
-class DummyUploadMaker:
-    def __init__(self, events):
-        self.events = events
-    
-    def make(self, connection):
-        self.events.append(('made upload', DummyUpload(self.events)))
-        return self.events[-1][1]
+    def got_request(self, index, begin, length):
+        self.events.append(('request', index, begin, length))
 
 class DummyDownload:
     def __init__(self, events):
         self.events = events
-        self.received = None
+        events.append('made download')
+        self.hit = 0
 
     def disconnected(self):
         self.events.append('disconnected')
-        
+
     def got_choke(self):
         self.events.append('choke')
-        
+
     def got_unchoke(self):
         self.events.append('unchoke')
 
-    def got_I_have(self, m):
-        self.events.append('I have')
-        
-    def got_slice(self, m):
-        self.events.append('slice')
-        return self.received
+    def got_have(self, i):
+        self.events.append(('have', i))
 
-class DummyDownloadMaker:
-    def __init__(self, events):
-        self.events = events
-        
-    def make(self, connection):
-        self.events.append(('made download', DummyDownload(self.events)))
-        return self.events[-1][1]
+    def got_bitfield(self, bitfield):
+        self.events.append(('bitfield', bitfield))
+
+    def got_piece(self, index, begin, piece):
+        self.events.append(('piece', index, begin, piece))
+        self.hit += 1
+        return self.hit > 1
 
 class DummyConnection:
-    def __init__(self, ident, events):
+    def __init__(self, events):
         self.events = events
-        self.ident = ident
 
     def send_message(self, message):
         self.events.append(('m', message))
-    
-    def get_id(self):
-        return self.ident
-    
-    def close(self):
-        self.events.append('close')
 
 class DummyChoker:
-    def __init__(self, events):
+    def __init__(self, events, cs):
         self.events = events
+        self.cs = cs
 
     def connection_made(self, c):
-        self.events.append(('made', c))
-        
+        self.events.append('made')
+        self.cs.append(c)
+
     def connection_lost(self, c):
-        self.events.append(('lost', c))
+        self.events.append('lost')
 
-def test_connect_and_disconnect():
+def test_operation():
     events = []
-    downloadMaker = DummyDownloadMaker(events)
-    uploadMaker = DummyUploadMaker(events)
-    choker = DummyChoker(events)
-    connecter = Connecter(uploadMaker.make, downloadMaker.make, choker)
-    connection = DummyConnection('a' * 20, events)
-    connecter.connection_made(connection)
+    cs = []
+    co = Connecter(lambda c, events = events: DummyUpload(events), 
+        lambda c, events = events: DummyDownload(events),
+        DummyChoker(events, cs), 3)
+    assert events == []
+    assert cs == []
+    
+    dc = DummyConnection(events)
+    co.connection_made(dc)
+    assert len(cs) == 1
+    cc = cs[0]
+    co.got_message(dc, BITFIELD + chr(3))
+    co.got_message(dc, CHOKE)
+    co.got_message(dc, UNCHOKE)
+    co.got_message(dc, INTERESTED)
+    co.got_message(dc, NOT_INTERESTED)
+    co.got_message(dc, HAVE + tobinary(2))
+    co.got_message(dc, REQUEST + tobinary(1) + tobinary(5) + tobinary(6))
+    co.got_message(dc, PIECE + tobinary(1) + tobinary(0) + 'abc')
+    co.got_message(dc, PIECE + tobinary(1) + tobinary(3) + 'def')
+    co.connection_flushed(dc)
+    cc.send_bitfield([false, true, true])
+    cc.send_interested()
+    cc.send_not_interested()
+    cc.send_choke()
+    cc.send_unchoke()
+    cc.send_have(4)
+    cc.send_request(0, 2, 1)
+    cc.send_piece(1, 2, 'abc')
+    co.connection_lost(dc)
+    x = ['made upload', 'made download', 'made', 
+        ('bitfield', [true, true, false]), 'choke', 'unchoke',
+        'interested', 'not interested', ('have', 2), ('request', 1, 5, 6),
+        ('piece', 1, 0, 'abc'), ('piece', 1, 3, 'def'), 
+        ('m', HAVE + tobinary(1)),
+        'flushed', ('m', BITFIELD + chr(6)), ('m', INTERESTED), 
+        ('m', NOT_INTERESTED), ('m', CHOKE), ('m', UNCHOKE), 
+        ('m', HAVE + tobinary(4)), ('m', REQUEST + tobinary(0) + 
+        tobinary(2) + tobinary(1)), ('m', PIECE + tobinary(1) + 
+        tobinary(2) + 'abc'), 'disconnected', 'lost']
+    for a, b in zip (events, x):
+        assert a == b, `a, b`
 
-    assert events[0][0] == 'made upload'
-    up = events[0][1]
-    assert events[1][0] == 'made download'
-    down = events[1][1]
-    assert events[2][0] == 'made'
-    c = events[2][1]
-    assert events[3] == 'intro'
-    del events[:]
-
-    c.send_message('test')
-    assert events == [('m', bencode('test'))]
-    del events[:]
-
-    connecter.connection_flushed(connection)
-    assert events == ['flushed']
-    del events[:]
-
-    connecter.connection_lost(connection)
-    assert events == ['disconnected', 'disconnected', ('lost', c)]
-    del events[:]
-
-def test_bifurcation():
-    events = []
-    downloadMaker = DummyDownloadMaker(events)
-    uploadMaker = DummyUploadMaker(events)
-    choker = DummyChoker(events)
-    connecter = Connecter(uploadMaker.make, downloadMaker.make, choker)
-    connection = DummyConnection('a' * 20, events)
-    connecter.connection_made(connection)
-
-    assert events[0][0] == 'made upload'
-    up = events[0][1]
-    assert events[1][0] == 'made download'
-    down = events[1][1]
-    assert events[2][0] == 'made'
-    c = events[2][1]
-    assert events[3] == 'intro'
-    del events[:]
-
-    connecter.got_message(connection, bencode({'type': 'choke'}))
-    assert events == ['choke']
-    del events[:]
-
-    connecter.got_message(connection, bencode({'type': 'unchoke'}))
-    assert events == ['unchoke']
-    del events[:]
-
-    connecter.got_message(connection, bencode({'type': 'I have', 
-        'blobs': ['c' * 20]}))
-    assert events == ['I have']
-    del events[:]
-
-    connecter.got_message(connection, bencode({'type': 'slice', 
-        'blob': 'c' * 20, 'begin': 0, 'slice': 'abc'}))
-    assert events == ['slice']
-    del events[:]
-
-    connecter.got_message(connection, bencode({'type': 'interested'}))
-    assert events == ['interested']
-    del events[:]
-
-    connecter.got_message(connection, bencode({'type': 'done'}))
-    assert events == ['done']
-    del events[:]
-
-    connecter.got_message(connection, bencode({'type': 'send', 
-        'blob': 'c' * 20, 'begin': 0, 'length': 3}))
-    assert events == ['send']
-    del events[:]
-
-    down.received = 'b' * 20
-    connecter.got_message(connection, bencode({'type': 'slice', 
-        'blob': 'c' * 20, 'begin': 0, 'slice': 'abc'}))
-    assert events == ['slice', ('received', 'b' * 20)]
-    del events[:]
-
+def test_conversion():
+    assert toint(tobinary(50000)) == 50000
