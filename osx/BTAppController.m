@@ -16,6 +16,7 @@ static PyThreadState *tstate;
 
 - (IBAction)cancelUrl:(id)sender
 {
+    [urlWindow orderOut:self];
 }
 
 - (IBAction)openURL:(id)sender
@@ -23,6 +24,18 @@ static PyThreadState *tstate;
     [urlWindow makeKeyAndOrderFront:self];
 }
 
+- (IBAction)openTrackerResponse:(id)sender;
+{
+    NSOpenPanel *panel = [NSOpenPanel openPanel];
+    id controller;
+    if([panel runModalForTypes:nil]) {
+	controller = [[DLWindowController alloc] initWithDlId:dlid];
+	[NSBundle loadNibNamed:@"DLWindow" owner:controller];
+	[self runWithFile:[panel filename]];
+	dlid++;
+    }
+    
+}
 - (IBAction)takeUrl:(id)sender
 {
     id controller = [[DLWindowController alloc] initWithDlId:dlid];

@@ -10,6 +10,7 @@
  
     [super init];
     dlid = [[NSNumber numberWithInt:nid] retain];
+    finished = 0;
     [not addObserver:self selector:@selector(chooseFile:) name:CHOOSE object:nil];
     [not addObserver:self selector:@selector(display:) name:DISPLAY object:nil];
     [not addObserver:self selector:@selector(finished:) name:FINISHED object:nil];
@@ -17,9 +18,19 @@
     return self;
 }
 
+- (void)windowWillClose:(NSNotification *)aNotification
+{
+    [self cancelDl:self];
+}
+
 - (IBAction)cancelDl:(id)sender
 {
+    id not = [NSNotificationCenter defaultCenter];
+    if(!finished) {
+	// update window to say cancelled here
+    }
     [[NSApp delegate] cancelDlWithId:dlid];
+    [not removeObserver:self];
 }
 - (void)chooseFile:(NSNotification *)notification
 {
@@ -89,6 +100,7 @@
     if(![[dict objectForKey:@"dlid"] isEqualToNumber:dlid])
     return;
 
+    finished = 1;
     fin = [dict objectForKey:@"fin"];
     errmsg = [dict objectForKey:@"errmsg"];
     

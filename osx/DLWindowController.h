@@ -14,6 +14,7 @@
     NSString *timeEst;
     float frac;
     NSNumber *dlid;
+    int finished;
 }
 - (IBAction)cancelDl:(id)sender;
 - (id)initWithDlId:(int)nid;

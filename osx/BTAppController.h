@@ -12,6 +12,7 @@
 - (void)awakeFromNib;
 - (IBAction)cancelUrl:(id)sender;
 - (IBAction)openURL:(id)sender;
+- (IBAction)openTrackerResponse:(id)sender;
 - (IBAction)takeUrl:(id)sender;
 - (void)runWithFile:(NSString *)filename;
 - (void)runWithUrl:(NSString *)url;
