@@ -26,13 +26,10 @@ class Choker:
                 del self.connections[0]
                 self.connections.append(x)
             self.interrupted = false
-        self.resort()
-        self.rechoke()
-    
-    def resort(self):
         self.preforder = [(-self.measurefunc(x), x) for x in self.connections]
         self.preforder.sort()
-
+        self.rechoke()
+    
     def rechoke(self):
         if self.connections == []:
             return

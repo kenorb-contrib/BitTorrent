@@ -115,7 +115,7 @@ def download(params, filefunc, statusfunc, resultfunc, doneflag, cols):
         response = bdecode(response)
         t(response)
     except ValueError, e:
-        resultfunc(false, "got bad publication response - " + str(e))
+        resultfunc(false, "got bad file info - " + str(e))
         return
     def make(f, forcedir = false, resultfunc = resultfunc):
         try:
@@ -155,15 +155,18 @@ def download(params, filefunc, statusfunc, resultfunc, doneflag, cols):
                 return
     r = [false]
     finflag = Event()
+    ann = [None]
     def finished(result, errormsg = None, fatal = false, 
             resultfunc = resultfunc, finflag = finflag, 
-            doneflag = doneflag, r = r):
+            doneflag = doneflag, r = r, ann = ann):
         r[0] = result
         if doneflag.isSet():
             return
         finflag.set()
         if fatal:
             doneflag.set()
+        if result and ann[0] is not None:
+            ann[0](1)
         resultfunc(result, errormsg)
     myid = sha(str(time()) + ' ' + response['your ip']).digest()
     seed(myid)
@@ -239,6 +242,7 @@ def download(params, filefunc, statusfunc, resultfunc, doneflag, cols):
         if event is not None:
             a['event'] = ['started', 'completed', 'stopped'][event]
         q.addrequest(bencode(a))
+    ann[0] = announce
 
     announce(0)
     rawserver.listen_forever(encrypter)

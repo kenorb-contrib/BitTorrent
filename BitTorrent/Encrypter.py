@@ -8,7 +8,7 @@ from traceback import print_exc
 true = 1
 false = 0
 
-protocol_name = 'BitTorrent plaintext protocol'
+protocol_name = 'BitTorrent protocol'
 
 def toint(s):
     return long(b2a_hex(s), 16)
