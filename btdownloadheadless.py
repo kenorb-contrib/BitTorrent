@@ -8,6 +8,7 @@ from threading import Event
 from os.path import abspath
 from sys import argv, stdout
 from cStringIO import StringIO
+from time import time
 
 def hours(n):
     if n == -1:
@@ -57,7 +58,7 @@ class HeadlessDisplayer:
         self.display({})
 
     def display(self, dict):
-        if self.last_update_time + 0.1 > time() and d.get('fractionDone') not in (0.0, 1.0) and not d.has_key('activity'):
+        if self.last_update_time + 0.1 > time() and dict.get('fractionDone') not in (0.0, 1.0) and not dict.has_key('activity'):
             return
         self.last_update_time = time()
         if dict.has_key('spew'):

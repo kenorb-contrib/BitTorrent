@@ -8,7 +8,7 @@ from threading import Event
 from os.path import abspath
 from signal import signal, SIGWINCH
 from sys import argv, stdout
-from time import strftime
+from time import strftime, time
 
 def fmttime(n):
     if n == -1:
@@ -112,7 +112,7 @@ class CursesDisplayer:
         self.display()
 
     def display(self, dict = {}):
-        if self.last_update_time + 0.1 > time() and d.get('fractionDone') not in (0.0, 1.0) and not d.has_key('activity'):
+        if self.last_update_time + 0.1 > time() and dict.get('fractionDone') not in (0.0, 1.0) and not dict.has_key('activity'):
             return
         self.last_update_time = time()
         global mainkillflag
