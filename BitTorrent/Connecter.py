@@ -19,6 +19,9 @@ class Connection:
     def get_ip(self):
         return self.connection.get_ip()
 
+    def is_flushed(self):
+        return self.connection.is_flushed()
+
     def send_message(self, message):
         self.connection.send_message(bencode(message))
 
@@ -59,6 +62,9 @@ class Connecter:
         c.download.disconnected()
         del c.connection
         self.choker.connection_lost(c)
+
+    def connection_flushed(self, connection):
+        self.connections[connection].upload.flushed()
 
     def got_message(self, connection, message):
         if not self.connections.has_key(connection):

@@ -82,14 +82,14 @@ class DownloaderData:
             self.downloads[d][0].remove((blob, begin, len(slice)))
         except ValueError:
             return false, []
-        for i in xrange(len(self.priority_list)):
-            blob2, active, inactive = self.priority_list[i]
-            if blob2 == blob:
-                break
+        active, inactive = self.priority_dict[blob]
         active.remove((begin, len(slice)))
         self.blobs.save_slice(blob, begin, slice)
         if len(active) == 0 and len(inactive) == 0:
-            del self.priority_list[i]
+            for i in xrange(len(self.priority_list)):
+                if self.priority_list[i][0] == blob:
+                    del self.priority_list[i]
+                    break
             del self.priority_dict[blob]
             if self.blobs.check_blob(blob):
                 for a, have in self.downloads.values():

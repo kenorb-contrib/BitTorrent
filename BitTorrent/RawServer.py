@@ -41,6 +41,9 @@ class SingleSocket:
         self.raw_server.poll.unregister(sock)
         sock.close()
 
+    def is_flushed(self):
+        return len(self.buffer) == 0
+
     def write(self, s):
         assert self.socket is not None
         self.buffer.append(s)
@@ -151,7 +154,10 @@ class RawServer:
                             self.close_socket(s)
                             continue
                 if (event & POLLOUT) != 0 and s.socket is not None:
-                    s.try_write()
+                    if not s.is_flushed():
+                        s.try_write()
+                        if s.is_flushed():
+                            self.handler.connection_flushed(s)
 
     def listen_forever(self):
         try:

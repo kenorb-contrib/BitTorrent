@@ -38,6 +38,9 @@ class EncryptedConnection:
     def get_ip(self):
         return self.connection.get_ip()
 
+    def is_flushed(self):
+        return self.connection.is_flushed()
+
     def read_header_len(self, s):
         if ord(s) != len(protocol_name):
             return None, None
@@ -164,9 +167,11 @@ class Encrypter:
             pass
         
     def external_connection_made(self, connection):
-        assert not self.connections.has_key(connection)
         self.connections[connection] = EncryptedConnection(self, connection, None)
-        
+
+    def connection_flushed(self, connection):
+        self.connecter.connection_flushed(self.connections[connection])
+
     def connection_lost(self, connection):
         ec = self.connections[connection]
         ec.closed = true
