@@ -39,6 +39,9 @@ class Connection:
     def get_ip(self):
         return self.connection.get_ip()
 
+    def get_id(self):
+        return self.connection.get_id()
+
     def close(self):
         self.connection.close()
 

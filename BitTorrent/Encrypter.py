@@ -36,6 +36,9 @@ class EncryptedConnection:
     def get_ip(self):
         return self.connection.get_ip()
 
+    def get_id(self):
+        return self.id
+
     def is_locally_initiated(self):
         return self.locally_initiated
 

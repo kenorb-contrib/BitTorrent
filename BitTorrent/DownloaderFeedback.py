@@ -17,12 +17,27 @@ class DownloaderFeedback:
         self.file_length = file_length
         self.finflag = finflag
         self.interval = interval
+        self.lastids = []
         self.display()
+
+    def _rotate(self):
+        cs = self.choker.connections
+        for id in self.lastids:
+            for i in xrange(len(cs)):
+                if cs[i].get_id() == id:
+                    return cs[i:] + cs[:i]
+        return cs
 
     def spew(self):
         s = StringIO()
-        for c in self.choker.connections:
+        cs = self._rotate()
+        self.lastids = [c.get_id() for c in cs]
+        for c in cs:
             s.write('%20s ' % c.get_ip())
+            if c is self.choker.connections[0]:
+                s.write('*')
+            else:
+                s.write(' ')
             if c.is_locally_initiated():
                 s.write('l')
             else:
