@@ -183,6 +183,8 @@ class StorageWrapper:
             else:
                 self.data_flunked(self._piecelen(index))
                 self._make_inactive(index)
+                return false
+        return true
 
     def request_lost(self, index, begin, length):
         self.inactive_requests[index].append((begin, length))

@@ -77,7 +77,10 @@ class SingleDownload:
         self.measure.update_rate(len(piece))
         self.downloader.measurefunc(len(piece))
         self.downloader.downmeasure.update_rate(len(piece))
-        self.downloader.storage.piece_came_in(index, begin, piece)
+        if not self.downloader.storage.piece_came_in(index, begin, piece):
+            for d in self.downloader.downloads:
+                d.fix_download()
+            return
         if self.downloader.storage.do_I_have(index):
             self.downloader.picker.complete(index)
         self.fix_download()
@@ -230,6 +233,7 @@ class DummyStorage:
         
     def piece_came_in(self, index, begin, piece):
         self.active[index].remove((begin, len(piece)))
+        return true
         
     def do_I_have(self, index):
         return (self.remaining[index] == [] and 
