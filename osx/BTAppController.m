@@ -51,7 +51,13 @@ static PyThreadState *tstate;
     PyEval_RestoreThread(tstate);
     PyRun_SimpleString([str cString]);
     tstate = PyEval_SaveThread();
-    
+}
+
+- (void)cancelDlWithId:(NSNumber *)nid
+{
+    PyEval_RestoreThread(tstate);
+    PyRun_SimpleString([[NSString stringWithFormat:@"dlmgr.cancelDlWithId(%@)", nid] cString]);
+    tstate = PyEval_SaveThread();
 }
 
 - (BOOL)application:(NSApplication *)theApplication openFile:(NSString *)filename

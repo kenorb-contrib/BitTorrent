@@ -1,4 +1,5 @@
 #import "DLWindowController.h"
+#import "BTAppController.h"
 #import "messages.h"
 
 @implementation DLWindowController
@@ -16,6 +17,10 @@
     return self;
 }
 
+- (IBAction)cancelDl:(id)sender
+{
+    [[NSApp delegate] cancelDlWithId:dlid];
+}
 - (void)chooseFile:(NSNotification *)notification
 {
 }

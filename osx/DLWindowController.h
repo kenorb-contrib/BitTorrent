@@ -15,5 +15,6 @@
     float frac;
     NSNumber *dlid;
 }
+- (IBAction)cancelDl:(id)sender;
 - (id)initWithDlId:(int)nid;
 @end
