@@ -204,16 +204,16 @@ def track(config):
         Thread(target = store_downloads).start()
     Thread(target = s.serve_forever).start()
 
-configDefinitions = [
-    ('port', 'port=', 'p:', 80, """Port to listen on."""),
-    ('ip', 'ip=', 'i:', None, """ip to report you have to downloaders."""),
-    ('file', 'serialized-file=', 's:', None, 'file to store state in'),
-    ('dfile', 'downloads-file=', 'd:', '', 'file to store recent downloader info in'),
+defaults = [
+    ('port', 'p', 80, "Port to listen on."),
+    ('ip', 'i', None, "ip to report you have to downloaders."),
+    ('file', 's', None, 'file to store state in'),
+    ('dfile', 'd', '', 'file to store recent downloader info in'),
     ]
 
 if __name__ == '__main__':
     try:
-        config, files = parseargs(argv[1:], configDefinitions, 0, 0)
+        config, files = parseargs(argv[1:], defaults, 0, 0)
         track(config)
     except ValueError, e:
         print "usage: %s [options]" % argv[0]

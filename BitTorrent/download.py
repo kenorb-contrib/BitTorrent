@@ -29,32 +29,31 @@ def len20(s, verbose):
         raise ValueError
 
 defaults = [
-    # ( <name in config dict>, <long getopt descript>, <short getopt descript>, <default value>, '''usage''')
-    ('max_uploads', 'max-uploads=', None, 3,
-        """the maximum number of uploads to allow at once."""),
-    ('keepalive_interval', 'keepalive-interval=', None, 120.0,
+    ('max_uploads', None, 3,
+        "the maximum number of uploads to allow at once."),
+    ('keepalive_interval', None, 120.0,
         'number of seconds to pause between sending keepalives'),
-    ('download_chunk_size', 'download-chunk-size=', None, 2 ** 15,
-        """How many bytes to query for per request."""),
-    ('request_backlog', 'request-backlog=', None, 5,
-        """how many requests to keep in a single pipe at once."""),
-    ('max_message_length', 'max-message-length=', None, 2 ** 23,
-        """maximum length prefix encoding you'll accept over the wire - larger values get the connection dropped."""),
-    ('max_poll_period', 'max-poll-period=', None, 2.0,
-        """Maximum number of seconds to block in calls to select()"""),
-    ('port', 'port=', 'p:', 0,
-        """Port to listen on, zero means choose randomly"""),
-    ('ip', 'ip=', 'i:', '',
-        """ip to report you have to the publicist."""),
-    ('response', 'response=', None, '',
+    ('download_slice_size', None, 2 ** 15,
+        "How many bytes to query for per request."),
+    ('request_backlog', None, 5,
+        "how many requests to keep in a single pipe at once."),
+    ('max_message_length', None, 2 ** 23,
+        "maximum length prefix encoding you'll accept over the wire - larger values get the connection dropped."),
+    ('max_poll_period', None, 2.0,
+        "Maximum number of seconds to block in calls to select()"),
+    ('port', 'p', 0,
+        "Port to listen on, zero means choose randomly"),
+    ('ip', 'i', '',
+        "ip to report you have to the publicist."),
+    ('response', None, '',
         'response which came back from server, alternative to responsesfile and url'),
-    ('responsefile', 'responsefile=', None, '',
+    ('responsefile', None, '',
         'file the server response was stored in, alternative to response and url'),
-    ('url', 'url=', None, '',
+    ('url', None, '',
         'url to get file from, alternative to response and responsefile'),
-    ('saveas', 'saveas=', None, '',
+    ('saveas', None, '',
         'local file name to save the file as, null indicates query user'),
-    ('timeout', 'timeout=', None, 300.0,
+    ('timeout', None, 300.0,
         'time to wait between closing sockets which nothing has been received on'),
     ]
 
@@ -134,7 +133,7 @@ def download(params, filefunc, displayfunc, doneflag, cols):
     throttler = Throttler(config['max_uploads'])
     uploader = Uploader(throttler, blobs)
     downloader = Downloader(throttler, blobs, uploader, 
-        config['download_chunk_size'], config['request_backlog'])
+        config['download_slice_size'], config['request_backlog'])
     rawserver = RawServer(config['max_poll_period'], doneflag,
         config['timeout'])
     connecter = Connecter(uploader, downloader)

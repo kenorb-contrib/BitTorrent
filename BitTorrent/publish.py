@@ -24,25 +24,24 @@ true = 1
 false = 0
 
 defaults = [
-    # ( <name in config dict>, <long getopt descript>, <short getopt descript>, <default value>, '''usage''')
-    ('max_uploads', 'max-uploads=', None, 10,
-        """the maximum number of uploads to allow at once."""),
-    ('piece_size', 'piece-size=', None, 2 ** 20,
-        """Size of individually hashed pieces of file to be published."""),
-    ('max_message_length', 'max-message-length=', None, 2 ** 23,
-        """maximum length prefix encoding you'll accept over the wire - larger values get the connection dropped."""),
-    ('port', 'port=', 'p:', 0, """Port to listen on, zero indicates choose randomly."""),
-    ('max_poll_period', 'max-poll-period=', None, 2.0,
-        """Maximum number of seconds to block in calls to select()"""),
-    ('ip', 'ip=', 'i:', '',
-        """ip to report you have to the publicist."""),
-    ('location', 'location=', None, None,
-        """The prefix url for announcing to the publicist."""),
-    ('postlocation', 'post-location=', None, '',
-        """post url for announcing to the publicist."""),
-    ('keepalive_interval', 'keepalive-interval=', None, 120.0,
+    ('max_uploads', None, 10,
+        "the maximum number of uploads to allow at once."),
+    ('piece_size', None, 2 ** 20,
+        "Size of individually hashed pieces of file to be published."),
+    ('max_message_length', None, 2 ** 23,
+        "maximum length prefix encoding you'll accept over the wire - larger values get the connection dropped."),
+    ('port', 'p', 0, """Port to listen on, zero indicates choose randomly."""),
+    ('max_poll_period', None, 2.0,
+        "Maximum number of seconds to block in calls to select()"),
+    ('ip', 'i', '',
+        "ip to report you have to the publicist."),
+    ('location', None, None,
+        "The prefix url for announcing to the publicist."),
+    ('postlocation', None, '',
+        "post url for announcing to the publicist."),
+    ('keepalive_interval', None, 120.0,
         'number of seconds to pause between sending keepalives'),
-    ('timeout', 'timeout=', None, 300.0,
+    ('timeout', None, 300.0,
         'time to wait between closing sockets which nothing has been received on'),
     ]
 
@@ -52,7 +51,7 @@ def publish(params, cols):
         if config['port'] == 0:
             raise ValueError, 'port required'
     except ValueError, e:
-        print 'error: ' + str(e)
+        print 'error: ' + str(e) + '\n'
         print formatDefinitions(defaults, cols)
         return
     try:

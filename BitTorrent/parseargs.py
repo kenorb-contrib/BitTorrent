@@ -1,152 +1,104 @@
 # Written by Bram Cohen
 # this file is public domain
 
-from getopt import getopt
+from getopt import getopt, GetoptError
 from types import *
-import sys
-import string
 from cStringIO import StringIO
 
-def longLineForm(longDescription):
-    if longDescription[-1:] == '=':
-        return '--' + longDescription[0:-1]
-    else:
-        return '--' + longDescription
-
-def shortLineForm(shortDescription):
-    return '-' + shortDescription[:1]
-
-def takesArgument(aDescription):
-    if aDescription[-1:] in [':', '=']:
-        return 1
-    else:
-        return 0
-
-def combinedLineForm(longDescription, shortDescription):
-    s = ""
-    if longDescription:
-        s = longLineForm(longDescription)
-    if shortDescription:
-        if len(s): s = s + "/" + shortLineForm(shortDescription)
-        else: s = shortLineForm(shortDescription)
-
-    if takesArgument(longDescription):
-        s = s + " <arg>"
-
+def combined(longname, shortname):
+    s = ''
+    if longname:
+        s = '--' + longname
+        if shortname:
+            s += '/'
+    if shortname:
+        s += '-' + shortname
     return s
 
-def formatDefinitions(optionDefinitions, COLS):
+def formatDefinitions(options, COLS):
     s = StringIO()
-    outArray = []
-    for i in optionDefinitions:
-        garbage, longDescription, shortDescription, default, doc = i
+    indent = " " * 10
+    width = COLS - 11
 
-        lineForm = combinedLineForm(longDescription, shortDescription)
+    if width < 15:
+        width = COLS - 2
+        indent = " "
+
+    for (longname, shortname, default, doc) in options:
+        s.write(combined(longname, shortname) + ' <arg>\n')
         if default is not None:
             doc += ' defaults to ' + `default`
-        outArray.append( (lineForm, doc) )
-
-    bodyLineString = " " * 10
-    targetBodyWidth = COLS - 11
-
-    if targetBodyWidth < 15:
-        targetBodyWidth = COLS - 2
-        bodyLineString = " "
-
-    for head, body in outArray:
-        s.write(head + '\n')
-        splitBody = string.split(body)
-        outAmount = 0
-        for aWord in splitBody:
-            if outAmount == 0:
-                s.write(bodyLineString + aWord)
-                outAmount = len(aWord)
-            elif outAmount + len(aWord) >= targetBodyWidth:
-                s.write("\n" + bodyLineString + aWord)
-                outAmount = len(aWord)
+        i = 0
+        for word in doc.split():
+            if i == 0:
+                s.write(indent + word)
+                i = len(word)
+            elif i + len(word) >= width:
+                s.write('\n' + indent + word)
+                i = len(word)
             else:
-                s.write(' ' + aWord)
-                outAmount += len(aWord) + 1
-        s.write("\n\n")
+                s.write(' ' + word)
+                i += len(word) + 1
+        s.write('\n\n')
     return s.getvalue()
 
 def usage(str):
     raise ValueError(str)
 
-def checkOpt(config, commandLineOptionValue, shortOptDictionary, longOptDictionary):
-    key, value = commandLineOptionValue
-
-    if shortOptDictionary.has_key(key):
-        configName, longDescription, shortDescription, defaultValue, usageText = shortOptDictionary[key]
-    elif longOptDictionary.has_key(key):
-        configName, longDescription, shortDescription, defaultValue, usageText = longOptDictionary[key]
-    else:
-        assert 0
-
-    try:
-        t = type(config.get(configName))
-        if t is NoneType or t is StringType:
-            config[configName] = value
-        elif t is IntType or t is LongType:
-            config[configName] = long(value)
-        elif t is FloatType:
-            config[configName] = float(value)
-        else:
-            assert 0
-    except ValueError, e:
-        usage('wrong format of %s - %s' % (key, str(e)))
-
-def parseargs(argv, optionDefinitions, minimumArgs, maximumArgs):
+def parseargs(argv, options, minargs, maxargs):
     config = {}
-    reqDict = {}
+    required = {}
 
-    ## generate getopt style argument descriptions and argument processing dictionaries
-    shortGetOptString = ""
-    longGetOptArray = []
-    shortOptDictionary = {}
-    longOptDictionary = {}
-    for optionDescription in optionDefinitions:
-        configName, longDescription, shortDescription, defaultValue, usageText = optionDescription
-        if shortDescription:
-            shortGetOptString = shortGetOptString + shortDescription
-            shortOptDictionary[shortLineForm(shortDescription)] = optionDescription
+    shortopts = ''
+    longopts = []
+    shortkeyed = {}
+    longkeyed = {}
+    for option in options:
+        longname, shortname, default, doc = option
+        if shortname:
+            shortopts += shortname + ':'
+            shortkeyed['-' + shortname] = option
 
-        if longDescription:
-            longGetOptArray.append(longDescription)
-            longOptDictionary[longLineForm(longDescription)] = optionDescription
+        if longname:
+            longopts.append(longname + '=')
+            longkeyed['--' + longname] = option
 
-        if defaultValue is None:
-            reqDict[configName] = optionDescription
+        if default is None:
+            required[longname] = option
         else:
-            config[configName] = defaultValue
-            
-    ## parse arguments
+            config[longname] = default
+
     try:
-        optionList, bareArgs = getopt(argv, shortGetOptString, longGetOptArray)
-    except:
-        usage(sys.exc_info()[1])
+        options, args = getopt(argv, shortopts, longopts)
+    except GetoptError, e:
+        usage(str(e))
 
-    ## process args and set defaults
-    for anOpt in optionList:
-        checkOpt(config, anOpt, shortOptDictionary, longOptDictionary)
+    for key, value in options:
+        if shortkeyed.has_key(key):
+            longname, shortname, default, doc = shortkeyed[key]
+        else:
+            longname, shortname, default, doc = longkeyed[key]
+        try:
+            t = type(config.get(longname))
+            if t is NoneType or t is StringType:
+                config[longname] = value
+            elif t is IntType or t is LongType:
+                config[longname] = long(value)
+            elif t is FloatType:
+                config[longname] = float(value)
+            else:
+                assert 0
+        except ValueError, e:
+            usage('wrong format of %s - %s' % (key, str(e)))
 
-    for requiredKey in reqDict.keys():
-        if not config.has_key(requiredKey):
-            configName, longDescription, shortDescription, defaultValue, usageText = reqDict[requiredKey]
-            s = None
-            if longDescription:
-                s = longLineForm(longDescription)
-            if shortDescription:
-                if s:
-                    s += "/" + shortLineForm(shortDescription)
-                else:
-                    s = shortLineForm(shortDescription)
-            usage("Option %s is required." % s)
+    for key in required.keys():
+        if not config.has_key(key):
+            longname, shortname, default, doc = required[key]
+            usage("Option %s is required." % combined(longname, shortname))
 
-    ## verify arg quantities
-    if len(bareArgs) < minimumArgs:
+    if len(args) < minargs:
         usage("Must supply at least %d args." % minimumArgs)
-    if len(bareArgs) > maximumArgs:
-        usage("Too many args;  %d max, encountered %d." % (maximumArgs, len(bareArgs)))
+    if len(args) > maxargs:
+        usage("Too many args - %d max." % maximumArgs)
 
-    return (config, bareArgs)
+    return (config, args)
