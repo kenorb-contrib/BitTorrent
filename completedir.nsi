@@ -14,6 +14,7 @@ Section "Install"
   File dist\*.pyd
   File dist\*.dll
   File dist\library.zip
+  File bittorrent.ico
   File LICENSE.txt
   CreateShortCut "$STARTMENU\Programs\completedir.lnk" "$INSTDIR\btcompletedirgui.exe"
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\CompleteDir" "DisplayName" "BitTorrent complete dir 1.1"

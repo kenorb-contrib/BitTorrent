@@ -29,6 +29,7 @@ class DownloadInfo:
     def __init__(self):
         frame = wxFrame(None, -1, 'BitTorrent complete dir 1.1', size = wxSize(550, 250))
         self.frame = frame
+        frame.SetIcon(wxIcon(join(split(argv[0])[0], 'bittorrent.ico'), wxBITMAP_TYPE_ICO))
 
         panel = wxPanel(frame, -1)
 
