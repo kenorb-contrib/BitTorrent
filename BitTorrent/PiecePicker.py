@@ -1,7 +1,7 @@
 # Written by Bram Cohen
 # see LICENSE.txt for license information
 
-from random import randrange
+from random import randrange, shuffle
 true = 1
 false = 0
 
@@ -35,6 +35,25 @@ class SinglePicker:
         self.picker.interestpos[interests[y]] = y
         return last
 
+class RandomPicker:
+    def __init__(self, picker):
+        self.picker = picker
+        self.fixedpos = 0
+        self.l = None
+
+    def next(self):
+        if self.fixedpos < len(self.picker.fixed):
+            self.fixedpos += 1
+            return self.picker.fixed[self.fixedpos - 1]
+        if self.l is None:
+            self.l = []
+            for x in self.picker.interests[1:]:
+                self.l.extend(x)
+            shuffle(self.l)
+        if not self.l:
+            raise StopIteration
+        return self.l.pop()
+
 class PiecePicker:
     def __init__(self, numpieces):
         self.numpieces = numpieces
@@ -42,11 +61,12 @@ class PiecePicker:
         self.numinterests = [0] * numpieces
         self.interestpos = range(numpieces)
         self.fixed = []
+        self.got_any = false
 
     # this is a total hack to support python2.1 but supports for ... in
     def __getitem__(self, key):
         if key == 0:
-            self.picker = SinglePicker(self)
+            self.picker = self.__iter__()
         try:
             return self.picker.next()
         except NameError:
@@ -92,11 +112,15 @@ class PiecePicker:
             self.fixed.append(piece)
 
     def complete(self, piece):
+        self.got_any = true
         self.came_in(piece)
         self.fixed.remove(piece)
 
     def __iter__(self):
-        return SinglePicker(self)
+        if self.got_any:
+            return SinglePicker(self)
+        else:
+            return RandomPicker(self)
 
 def test_came_in():
     p = PiecePicker(8)
@@ -115,6 +139,18 @@ def test_came_in():
 
 def test_change_interest():
     p = PiecePicker(8)
+    p.got_have(0)
+    p.got_have(2)
+    p.got_have(4)
+    p.got_have(6)
+    p.lost_have(2)
+    p.lost_have(6)
+    v = [i for i in p]
+    assert v == [0, 4] or v == [4, 0]
+
+def test_change_interest2():
+    p = PiecePicker(9)
+    p.complete(8)
     p.got_have(0)
     p.got_have(2)
     p.got_have(4)
