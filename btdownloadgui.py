@@ -117,9 +117,9 @@ class DownloadInfoFrame:
         if activity is not None and not self.fin:
             self.timeEstText.SetLabel(activity)
         if downRate is not None:
-            self.downRateText.SetLabel('%.1f K/s' % (float(downRate) / (1 << 10)))
+            self.downRateText.SetLabel('%.1f kB/s' % (float(downRate) / (1 << 10)))
         if upRate is not None:
-            self.upRateText.SetLabel('%.1f K/s' % (float(upRate) / (1 << 10)))
+            self.upRateText.SetLabel('%.1f kB/s' % (float(upRate) / (1 << 10)))
 
     def finished(self):
         self.fin = true

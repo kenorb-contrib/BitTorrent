@@ -64,9 +64,9 @@ class HeadlessDisplayer:
         if activity is not None and not self.done:
             self.timeEst = activity
         if downRate is not None:
-            self.downRate = '%.1f K/s' % (float(downRate) / (1 << 10))
+            self.downRate = '%.1f kB/s' % (float(downRate) / (1 << 10))
         if upRate is not None:
-            self.upRate = '%.1f K/s' % (float(upRate) / (1 << 10))
+            self.upRate = '%.1f kB/s' % (float(upRate) / (1 << 10))
         print '\n\n\n\n'
         for err in self.errors:
             print 'ERROR:\n' + err + '\n'
