@@ -6,6 +6,7 @@
 from sys import argv, version
 assert version >= '2', "Install Python 2.0 or greater"
 
+from BitTorrent import version
 from BitTorrent.download import download
 from threading import Event, Thread
 from os.path import join
@@ -43,7 +44,7 @@ class InvokeEvent(wxPyEvent):
 
 class DownloadInfoFrame:
     def __init__(self, flag):
-        frame = wxFrame(None, -1, 'BitTorrent download', size = wxSize(400, 250))
+        frame = wxFrame(None, -1, 'BitTorrent ' + version + ' download', size = wxSize(400, 250))
         self.frame = frame
         self.flag = flag
         self.fin = false
@@ -112,7 +113,7 @@ class DownloadInfoFrame:
     def onUpdateStatus(self, fractionDone, timeEst, downRate, upRate, activity):
         if fractionDone is not None and not self.fin:
             self.gauge.SetValue(int(fractionDone * 1000))
-            self.frame.SetTitle('%d%% %s - BitTorrent' % (int(fractionDone*100), self.filename))
+            self.frame.SetTitle('%d%% %s - BitTorrent %s' % (int(fractionDone*100), self.filename, version))
         if timeEst is not None:
             self.timeEstText.SetLabel(hours(timeEst))
         if activity is not None and not self.fin:
@@ -137,7 +138,7 @@ class DownloadInfoFrame:
         self.timeEstText.SetLabel('Download Succeeded!')
         self.cancelButton.SetLabel('Finish')
         self.gauge.SetValue(1000)
-        self.frame.SetTitle('%s - Upload - BitTorrent' % (self.filename))
+        self.frame.SetTitle('%s - Upload - BitTorrent %s' % (self.filename, version))
         self.downRateText.SetLabel('')
 
     def onFailEvent(self):
@@ -172,13 +173,13 @@ class DownloadInfoFrame:
             self.timeEstText.SetLabel('Starting up...')
             self.fileDestText.SetLabel(dl.GetPath())
             self.filename = default
-            self.frame.SetTitle(default + '- BitTorrent')
+            self.frame.SetTitle(default + '- BitTorrent ' + version)
             self.shown = true
             self.frame.Show(true)
         f.set()
 
     def newpath(self, path):
-        fileDestText.SetLabel(path)
+        self.fileDestText.SetLabel(path)
 
     def done(self, event):
         self.flag.set()
