@@ -97,6 +97,8 @@ class HTTPConnection:
         if self.command != 'HEAD':
             r.write(data)
         self.connection.write(r.getvalue())
+        if self.connection.is_flushed():
+            self.connection.shutdown(1)
 
 class HTTPHandler:
     def __init__(self, getfunc, minflush):
@@ -109,7 +111,8 @@ class HTTPHandler:
         self.connections[connection] = HTTPConnection(self, connection)
 
     def connection_flushed(self, connection):
-        pass
+        if self.connections[connection].done:
+            connection.shutdown(1)
 
     def connection_lost(self, connection):
         ec = self.connections[connection]
@@ -121,5 +124,5 @@ class HTTPHandler:
     def data_came_in(self, connection, data):
         c = self.connections[connection]
         if not c.data_came_in(data) and not c.closed:
-            c.close()
+            c.shutdown(1)
 

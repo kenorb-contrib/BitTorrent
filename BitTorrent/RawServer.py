@@ -43,6 +43,9 @@ class SingleSocket:
         self.raw_server.poll.unregister(sock)
         sock.close()
 
+    def shutdown(self, val):
+        self.socket.shutdown(val)
+
     def is_flushed(self):
         return len(self.buffer) == 0
 
@@ -157,7 +160,7 @@ class RawServer:
                         if code != EWOULDBLOCK:
                             self._close_socket(s)
                             continue
-                if (event & POLLOUT) != 0 and s.socket is not None:
+                if (event & POLLOUT) != 0 and s.socket is not None and not s.is_flushed():
                     s.try_write()
                     if s.is_flushed():
                         s.handler.connection_flushed(s)
