@@ -7,25 +7,22 @@ true = 1
 false = 0
 
 class Upload:
-    def __init__(self, connection, choker, blobs, 
+    def __init__(self, connection, choker, storage, 
             max_slice_length, max_rate_period, total_up = [0l]):
         self.connection = connection
         self.choker = choker
-        self.blobs = blobs
+        self.storage = storage
         self.max_slice_length = max_slice_length
         self.max_rate_period = max_rate_period
         self.total_up = total_up
         self.choked = true
-        self.reported_choked = true
         self.interested = false
         self.buffer = []
         self.ratesince = time() - 5.0
         self.lastout = self.ratesince
         self.rate = 0.0
-
-    def send_intro(self):
-        self.connection.send_message({'type': 'I have', 
-            'blobs': self.blobs.get_list_of_blobs_I_have()})
+        if storage.do_I_have_anything():
+            connection.send_bitfield(storage.get_have_list)
 
     def got_done(self):
         if self.interested:
@@ -48,63 +45,40 @@ class Upload:
             self.ratesince = t - self.max_rate_period
 
     def flushed(self):
-        self.fix_choke()
         while len(self.buffer) > 0 and self.connection.is_flushed():
-            blob, begin, length = self.buffer[0]
+            index, begin, length = self.buffer[0]
             del self.buffer[0]
-            slice = self.blobs.get_slice(blob, begin, length)
-            if slice is not None:
-                self.connection.send_message({'type': 'slice', 
-                    'blob': blob, 'begin': begin, 'slice': slice})
-                self.update_rate(len(slice))
+            piece = self.storage.get_piece(index, begin, length)
+            if piece is None:
+                self.connection.close()
+                return
+            self.update_rate(len(piece))
+            self.connection.send_piece(index, begin, piece)
 
-    def got_send(self, m):
-        if m['length'] > self.max_slice_length:
+    def got_send(self, index, begin, length):
+        if not self.interested or length > self.max_slice_length:
+            self.connection.close()
             return
-        if not self.reported_choked:
-            self.buffer.append((m['blob'], m['begin'], m['length']))
+        if not self.choked:
+            self.buffer.append((index, begin, length))
             self.flushed()
-        if not self.interested:
-            self.interested = true
-            self.choker.interested(self.connection)
-
-    def fix_choke(self):
-        if self.choked == self.reported_choked:
-            return
-        if not self.connection.is_flushed():
-            return
-        if self.choked:
-            self.connection.send_message({'type': 'choke'})
-            self.reported_choked = true
-            del self.buffer[:]
-        else:
-            self.connection.send_message({'type': 'unchoke'})
-            self.reported_choked = false
 
     def choke(self):
         if not self.choked:
             self.choked = true
-            self.fix_choke()
+            del self.buffer[:]
+            self.connection.send_choke()
         
     def unchoke(self):
         if self.choked:
             self.choked = false
-            self.fix_choke()
+            self.connection.send_unchoke()
         
     def is_choked(self):
         return self.choked
         
     def is_interested(self):
         return self.interested
-
-    def received_blob(self, blob):
-        self.connection.send_message({'type': 'I have', 
-            'blobs': [blob]})
-
-    def disconnected(self):
-        del self.connection
-        del self.choker
-        del self.blobs
 
 class DummyConnection:
     def __init__(self, events):

@@ -4,10 +4,10 @@
 from urllib import urlopen
 from urlparse import urljoin
 from Choker import Choker
-from SingleBlob import SingleBlob
+from Storage import Storage
+from StorageWrapper import StorageWrapper
 from Uploader import Upload
-from DownloaderData import DownloaderData
-from Downloader import Download
+from Downloader import Downloader
 from Connecter import Connecter
 from Encrypter import Encrypter
 from RawServer import RawServer
@@ -73,6 +73,9 @@ t = compile_template({'info': [{'type': 'single',
     'url': string_template, 'your ip': string_template,
     'protocol': string_template})
 
+states = ['started', 'downloading', 'finished', 
+    'uploading', 'stopped']
+
 def download(params, filefunc, statusfunc, resultfunc, doneflag, cols):
     if len(params) == 0:
         resultfunc(false, formatDefinitions(defaults, cols))
@@ -124,7 +127,7 @@ def download(params, filefunc, statusfunc, resultfunc, doneflag, cols):
                 makedirs(f)
             return true
         except OSError, e:
-            resultfunc(false, "Couldn't allocate root dir - " + str(e))
+            resultfunc(false, "Couldn't allocate dir - " + str(e))
             return false
     info = response['info']
     if info['type'] == 'single':
@@ -166,9 +169,18 @@ def download(params, filefunc, statusfunc, resultfunc, doneflag, cols):
         resultfunc(result, errormsg)
     myid = sha(str(time()) + ' ' + response['your ip']).digest()
     seed(myid)
-    blobs = SingleBlob(files, info['pieces'], 
-        info['piece length'], finished, open, path.exists, 
-        path.getsize, doneflag, statusfunc)
+    try:
+        storage = Storage(files, open, path.exists, 
+            path.getsize, statusfunc)
+    except ValueError, e:
+        finished(false, str(e), true)
+        return
+    except IOError, e:
+        finished(false, str(e), true)
+        return
+    storagewrapper = StorageWrapper(storage, 
+        config['download_slice_size'], info['pieces'], 
+        info['piece length'], finished, statusfunc, doneflag)
     if doneflag.isSet():
         return
     rawserver = RawServer(config['max_poll_period'], doneflag,
@@ -181,21 +193,18 @@ def download(params, filefunc, statusfunc, resultfunc, doneflag, cols):
         preference)
     total_up = [0l]
     total_down = [0l]
-    def make_upload(connection, choker = choker, blobs = blobs, 
+    def make_upload(connection, choker = choker, 
+            storagewrapper = storagewrapper, 
             max_slice_length = config['max_slice_length'],
             max_rate_period = config['max_rate_period'],
             total_up = total_up):
-        return Upload(connection, choker, blobs, max_slice_length,
-            max_rate_period, total_up = total_up)
-    ratemeasure = RateMeasure(blobs.get_amount_left())
-    dd = DownloaderData(blobs, config['download_slice_size'], ratemeasure.data_came_in)
-    def make_download(connection, data = dd, 
-            backlog = config['request_backlog'],
-            max_rate_period = config['max_rate_period'],
-            total_down = total_down):
-        return Download(connection, data, backlog, max_rate_period,
-            total_down = total_down)
-    connecter = Connecter(make_upload, make_download, choker)
+        return Upload(connection, choker, storagewrapper, 
+            max_slice_length, max_rate_period, total_up = total_up)
+    ratemeasure = RateMeasure(storagewrapper.get_amount_left())
+    downloader = Downloader(storagewrapper, 
+        config['download_slice_size'], config['max_rate_period'],
+        len(info['pieces'], total_down))
+    connecter = Connecter(make_upload, downloader.make_download, choker)
     encrypter = Encrypter(connecter, rawserver, 
         myid, config['max_message_length'], rawserver.add_task, 
         config['keepalive_interval'], sha(bencode(info)).digest())
@@ -224,9 +233,9 @@ def download(params, filefunc, statusfunc, resultfunc, doneflag, cols):
             up = total_up, down = total_down, blobs = blobs):
         q.addrequest(bencode({'ip': ip, 'port': port, 'id': id,
             'uploaded': up[0], 'downloaded': down[0], 'myid': myid,
-            'left': blobs.get_amount_left(), 'status': status}))
+            'left': blobs.get_amount_left(), 'status': states[status]}))
 
-    announce('started')
+    announce(0)
     rawserver.listen_forever(encrypter)
-    announce('stopped')
+    announce(4)
     return r[0]

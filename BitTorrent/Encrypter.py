@@ -2,13 +2,20 @@
 # see LICENSE.txt for license information
 
 from cStringIO import StringIO
-from binaryint import int_to_binary, binary_to_int
+from binascii import b2a_hex
 from socket import error as socketerror
 from traceback import print_exc
 true = 1
 false = 0
 
 protocol_name = 'BitTorrent plaintext protocol'
+
+def toint(s):
+    return long(b2a_hex(s), 16)
+
+def tobinary(i):
+    return (chr(i >> 24) + chr((i >> 16) & 0xFF) + 
+        chr((i >> 8) & 0xFF) + chr(i & 0xFF))
 
 # header, reserved, download id, my id, [length, message]
 
@@ -64,7 +71,7 @@ class EncryptedConnection:
         return 4, self.read_len
 
     def read_len(self, s):
-        l = binary_to_int(s)
+        l = toint(s)
         if l > self.encrypter.max_len:
             return None
         return l, self.read_message
@@ -91,7 +98,7 @@ class EncryptedConnection:
             self.encrypter.connecter.connection_lost(self)
 
     def send_message(self, message):
-        self.connection.write(int_to_binary(len(message), 4))
+        self.connection.write(tobinary(len(message)))
         self.connection.write(message)
 
     def data_came_in(self, s):

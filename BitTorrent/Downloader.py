@@ -2,70 +2,49 @@
 # see LICENSE.txt for license information
 
 from time import time
-
+from PriorityBitField import PriorityBitField
 true = 1
 false = 0
 
-class Download:
-    def __init__(self, connection, data, backlog, max_rate_period, total_down = [0l]):
+class SingleDownload:
+    def __init__(self, downloader, connection):
+        self.downloader = downloader
         self.connection = connection
-        self.data = data
-        self.backlog = backlog
         self.choked = true
         self.interested = false
-        self.max_rate_period = max_rate_period
-        self.total_down = total_down
+        self.active_requests = []
+        self.want_priorities = PriorityBitField(downloader.numpieces)
         self.ratesince = time()
         self.lastin = self.ratesince
         self.rate = 0.0
-        data.connected(self)
+        self.have = [false] * downloader.numpieces
 
-    def adjust(self):
-        data = self.data
-        if self.choked:
-            if self.interested:
-                if not data.do_I_want_more(self):
-                    self.interested = false
-                    self.connection.send_message({'type': 'done'})
-            else:
-                if data.do_I_want_more(self):
-                    self.interested = true
-                    self.connection.send_message({'type': 'interested'})
-            return
-        f = {}
-        while true:
-            if data.num_current(self) >= self.backlog:
-                break
-            s = data.get_next(self)
-            if s is None:
-                if self.interested and data.num_current(self) == 0:
-                    self.interested = false
-                    self.connection.send_message({'type': 'done'})
-                break
-            blob, begin, length, full = s
-            self.interested = true
-            self.connection.send_message({'type': 'send', 
-                'blob': blob, 'begin': begin, 'length': length})
-            for x in full:
-                f[x] = 1
-        for x in f.keys():
-            if x is not self:
-                x.adjust()
+    def disconnected(self):
+        self.downloader.downloaders.remove(self)
+        self.letgo()
+
+    def letgo(self):
+        hit = false
+        for index, begin, length in self.active_requests:
+            before = self.downloader.storage.do_I_have_requests(index)
+            self.downloader.storage.request_lost(index, begin, length)
+            if self.downloader.change_interest(index, before):
+                hit = true
+        del self.active_requests[:]
+        if hit:
+            self.downloader.adjust()
 
     def got_choke(self):
         if self.choked:
             return
         self.choked = true
-        if self.interested:
-            for i in self.data.cleared(self):
-                i.adjust()
+        self.letgo()
 
     def got_unchoke(self):
         if not self.choked:
             return
         self.choked = false
-        if self.interested:
-            self.adjust()
+        self.downloader.adjust(self)
 
     def is_choked(self):
         return self.choked
@@ -74,211 +53,112 @@ class Download:
         return self.interested
 
     def update_rate(self, amount):
-        self.total_down[0] += amount
+        self.downloader.total_down[0] += amount
         t = time()
         self.rate = (self.rate * (self.lastin - self.ratesince) + 
             amount) / (t - self.ratesince)
         self.lastin = t
-        if self.ratesince < t - self.max_rate_period:
-            self.ratesince = t - self.max_rate_period
+        if self.ratesince < t - self.downloader.max_rate_period:
+            self.ratesince = t - self.downloader.max_rate_period
 
-    def got_slice(self, message):
-        complete, check = self.data.came_in(self, 
-            message['blob'], message['begin'], message['slice'])
-        self.update_rate(len(message['slice']))
-        self.adjust()
-        for c in check:
-            c.adjust()
-        if complete:
-            return message['blob']
-        return None
-
-    def got_I_have(self, message):
-        if self.data.has_blobs(self, 
-                message['blobs']) and not self.interested:
-            self.adjust()
-
-    def disconnected(self):
-        for i in self.data.disconnected(self):
-            i.adjust()
-        del self.connection
-        del self.data
-        del self.choked
-
-class DummyConnection:
-    def __init__(self):
-        self.m = []
-        self.more = []
-        self.choked = false
-        self.disconnected = false
-        self.current = 0
-        
-    def send_message(self, message):
-        self.m.append(message)
-
-class DummyData:
-    def __init__(self):
-        self.all = []
-
-    def cleared(self, d):
-        d.connection.current = 0
-        return self.all
-        
-    def do_I_want_more(self, d):
-        return len(d.connection.more) > 0
-
-    def num_current(self, d):
-        return d.connection.current
-        
-    def get_next(self, d):
-        c = d.connection
-        if len(c.more) == 0:
-            return None
-        r = c.more[0]
-        del c.more[0]
-        c.current += 1
-        if len(c.more) == 0:
-            return r + ([],)
+    def got_piece(self, index, begin, piece):
+        try:
+            self.active_requests.remove((index, begin, len(piece)))
+        except ValueError:
+            return false
+        self.update_rate(len(piece))
+        wanted_before = self.downloader.storage.do_I_have_requests(index)
+        self.downloader.storage.piece_came_in(index, begin, piece)
+        if self.downloader.change_interest(index, wanted_before):
+            self.downloader.adjust()
         else:
-            return r + (self.all,)
-        
-    def came_in(self, d, blob, begin, slice):
-        c = d.connection
-        c.current -= 1
-        if c.current == 0:
-            return (blob, self.all)
+            self.downloader.adjust(self)
+        return self.downloader.storage.do_I_have(index)
+
+    def adjust(self):
+        if self.want_priorities.is_empty() and self.active_requests == []:
+            if self.interested:
+                self.interested = false
+                self.connection.send_not_interested()
         else:
-            return (None, [])
-        
-    def has_blobs(self, d, blobs):
-        return true
+            if not self.interested:
+                self.interested = true
+                self.connection.send_interested()
+        if self.choked:
+            return false
+        hit = false
+        while (not self.want_priorities.is_empty() and \
+                len(self.active_requests) < self.downloader.max_requests):
+            i = self.downloader.priority_to_index[self.want_priorities.get_first()]
+            begin, length = self.downloader.storage.new_request(i)
+            self.active_requests.append((i, begin, length))
+            if self.downloader.change_interest(i, true):
+                hit = true
+            self.connection.send_request(i, begin, length)
+        return hit
 
-    def connected(self, d):
-        pass
+    def got_have(self, index):
+        if self.have[index]:
+            return
+        self.have[index] = true
+        if self.connecter.storage.do_I_have_requests(index):
+            self.want_priorities.insert(index)
+            self.downloader.adjust(self)
 
-    def disconnected(self, d):
-        d.connection.disconnected = true
-        return self.all
+    def got_have_bitfield(self, have):
+        self.have = have
+        for i in xrange(len(have)):
+            if have[i] and self.connecter.storage.do_I_have_requests(i):
+                self.want_priorities.insert(i)
+        self.downloader.adjust(self)
 
-def test_choke():
-    # unchoked, interested, want
-    dd = DummyData()
-    yyy = DummyConnection()
-    yyn = DummyConnection()
-    yny = DummyConnection()
-    ynn = DummyConnection()
-    nyy = DummyConnection()
-    nyn = DummyConnection()
-    nny = DummyConnection()
-    nnn = DummyConnection()
-    extra = DummyConnection()
-    
-    yyyd = Download(yyy, dd, 2, 15)
-    yynd = Download(yyn, dd, 2, 15)
-    ynyd = Download(yny, dd, 2, 15)
-    ynnd = Download(ynn, dd, 2, 15)
-    nyyd = Download(nyy, dd, 2, 15)
-    nynd = Download(nyn, dd, 2, 15)
-    nnyd = Download(nny, dd, 2, 15)
-    nnnd = Download(nnn, dd, 2, 15)
-    extrad = Download(extra, dd, 2, 15)
-    
-    yyy.more.append(('a', 0, 2))
-    yny.more.append(('a', 0, 2))
-    nyy.more.append(('a', 0, 2))
-    nny.more.append(('a', 0, 2))
+class Downloader:
+    def __init__(self, storage, backlog, 
+            max_rate_period, numpieces, total_down = [0l]):
+        self.data = data
+        self.backlog = backlog
+        self.max_rate_period = max_rate_period
+        self.total_down = total_down
+        self.numpieces = numpieces
+        self.index_to_priority = range(numpieces)
+        shuffle(self.index_to_priority)
+        self.priority_to_index = [None] * numpieces
+        for i in xrange(numpieces):
+            self.priority_to_index[self.index_to_priority[i]] = i
+        self.downloads = []
 
-    yyyd.got_unchoke()
-    yynd.got_unchoke()
-    ynyd.got_unchoke()
-    ynnd.got_unchoke()
+    def change_interest(self, index, before):
+        assert before in [0, 1]
+        after = self.storage.do_I_have_requests(index)
+        p = self.index_to_priority[index]
+        r = false
+        if not before and after:
+            for c in self.d:
+                if c.have[index]:
+                    r = true
+                    c.want_priorities.insert(p)
+        elif before and not after:
+            for c in self.d:
+                if c.have[index]:
+                    r = true
+                    c.want_priorities.remove(p)
+        return r
 
-    dd.all = [yyyd, yynd, ynyd, ynnd, nyyd, nynd, nnyd, nnnd, extrad]
+    def adjust(self, c = None):
+        if c is None:
+            d = self.d
+        else:
+            d = [c]
+        while true:
+            hit = false
+            for c in d:
+                if c.adjust():
+                    hit = true
+            if not hit:
+                return
+            d = self.d
 
-    yyyd.got_I_have({'type': 'I have', 'blobs': ['a']})
-    yynd.got_I_have({'type': 'I have', 'blobs': ['a']})
-    nyyd.got_I_have({'type': 'I have', 'blobs': ['a']})
-    nynd.got_I_have({'type': 'I have', 'blobs': ['a']})
+    def make_download(self, connection):
+        self.downloads.append(SingleDownload(self, connection))
+        return self.downloads[-1]
 
-    assert yyy.m == [{'type': 'send', 'blob': 'a', 'begin': 0, 'length': 2}]
-    del yyy.m[:]
-    assert yyn.m == []
-    del yyn.m[:]
-    assert nyy.m == [{'type': 'interested'}]
-    del nyy.m[:]
-    assert nyn.m == []
-    del nyn.m[:]
-    
-    extrad.disconnected()
-    assert extra.disconnected
-    assert not yyy.disconnected
-    assert not yyn.disconnected
-    assert not yny.disconnected
-    assert not ynn.disconnected
-    assert not nyy.disconnected
-    assert not nyn.disconnected
-    assert not nny.disconnected
-    assert not nnn.disconnected
-
-    assert yyy.m == []
-    assert yyn.m == []
-    assert yny.m == [{'type': 'send', 'blob': 'a', 'begin': 0, 'length': 2}]
-    assert ynn.m == []
-    assert nyy.m == []
-    assert nyn.m == []
-    assert nny.m == [{'type': 'interested'}]
-    assert nnn.m == []
-
-def test_halts_at_backlog():
-    dd = DummyData()
-    c = DummyConnection()
-    c.more.append(('a', 0, 2))
-    c.more.append(('a', 2, 2))
-    c.more.append(('a', 4, 2))
-    c.more.append(('a', 6, 2))
-    c.more.append(('a', 8, 2))
-    c.more.append(('a', 10, 2))
-    d = Download(c, dd, 2, 15)
-    dd.all.append(d)
-    
-    d.got_unchoke()
-    d.got_I_have({'type': 'I have', 'blobs': ['a']})
-    assert d.interested
-    
-    assert c.m == [{'type': 'send', 'blob': 'a', 'begin': 0, 'length': 2},
-        {'type': 'send', 'blob': 'a', 'begin': 2, 'length': 2}]
-    del c.m[:]
-    assert c.current == 2
-    assert d.interested
-
-    d.got_choke()
-    assert d.interested
-    assert c.current == 0
-    d.got_unchoke()
-
-    assert c.m == [{'type': 'send', 'blob': 'a', 'begin': 4, 'length': 2},
-        {'type': 'send', 'blob': 'a', 'begin': 6, 'length': 2}]
-    del c.m[:]
-    assert c.current == 2
-    assert d.interested
-
-    d.got_slice({'type': 'slice', 'blob': 'a', 'begin': 4, 'slice': 'pq'})
-    assert c.m == [{'type': 'send', 'blob': 'a', 'begin': 8, 'length': 2}]
-    del c.m[:]
-    assert c.current == 2
-
-    d.got_slice({'type': 'slice', 'blob': 'a', 'begin': 6, 'slice': 'pq'})
-    assert c.m == [{'type': 'send', 'blob': 'a', 'begin': 10, 'length': 2}]
-    del c.m[:]
-    assert c.current == 2
-
-    assert d.got_slice({'type': 'slice', 'blob': 'a', 
-        'begin': 8, 'slice': 'pq'}) == None
-    assert c.m == []
-    assert c.current == 1
-    assert d.interested
-
-    assert d.got_slice({'type': 'slice', 'blob': 'a', 
-        'begin': 10, 'slice': 'pq'}) == 'a'
-    assert c.m == [{'type': 'done'}]
-    assert c.current == 0

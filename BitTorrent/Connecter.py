@@ -1,22 +1,36 @@
 # Written by Bram Cohen
 # see LICENSE.txt for license information
 
-from bencode import bencode, bdecode
-from btemplate import compile_template, exact_length, string_template, ListMarker
+from bitfield import bitfield_to_booleans, booleans_to_bitfield
 from traceback import print_exc
+from binascii import b2a_hex
 true = 1
 false = 0
 
-message_template = compile_template([{'type': 'choke'}, 
-    {'type': 'unchoke'}, {'type': 'interested'}, {'type': 'done'}, 
-    {'type': 'I have', 'blobs': ListMarker(exact_length(20))}, 
-    {'type': 'slice', 'blob': exact_length(20), 
-        'begin': 0, 'slice': string_template}, 
-    {'type': 'send', 'blob': exact_length(20), 'begin': 0, 'length': 1}])
+def toint(s):
+    return long(b2a_hex(s), 16)
+
+def tobinary(i):
+    return (chr(i >> 24) + chr((i >> 16) & 0xFF) + 
+        chr((i >> 8) & 0xFF) + chr(i & 0xFF))
+
+CHOKE = 0
+UNCHOKE = 1
+INTERESTED = 2
+NOT_INTERESTED = 3
+# index
+HAVE = 4
+# index, bitfield
+BITFIELD = 5
+# index, begin, length
+REQUEST = 6
+# index, begin, piece
+PIECE = 7
 
 class Connection:
     def __init__(self, connection):
         self.connection = connection
+        self.got_have = false
 
     def get_ip(self):
         return self.connection.get_ip()
@@ -24,8 +38,32 @@ class Connection:
     def is_flushed(self):
         return self.connection.is_flushed()
 
-    def send_message(self, message):
-        self.connection.send_message(bencode(message))
+    def send_interested(self):
+        self.connection.send_message(INTERESTED)
+
+    def send_not_interested(self):
+        self.connection.send_message(NOT_INTERESTED)
+
+    def send_choke(self):
+        self.connection.send_message(CHOKE)
+
+    def send_unchoke(self):
+        self.connection.send_message(UNCHOKE)
+
+    def send_request(self, index, begin, length):
+        self.connection.send_message(REQUEST + toint(index) + 
+            toint(begin) + toint(length))
+
+    def send_piece(self, index, begin, piece):
+        self.connection.send_message(PIECE + toint(index) + 
+            toint(begin) + piece)
+
+    def send_bitfield(self, bitfield):
+        b = booleans_to_bitfield(bitfield)
+        self.connection.send_message(BITFIELD + b)
+
+    def send_have(self, index):
+        self.connection.send_message(HAVE + toint(index))
 
     def get_upload(self):
         return self.upload
@@ -34,21 +72,19 @@ class Connection:
         return self.download
 
 class Connecter:
-    def __init__(self, make_upload, make_download, choker):
+    def __init__(self, make_upload, make_download, choker, numpieces):
         self.make_download = make_download
         self.make_upload = make_upload
         self.choker = choker
+        self.numpieces = numpieces
         self.connections = {}
 
     def connection_made(self, connection):
         c = Connection(connection)
-        upload = self.make_upload(c)
-        download = self.make_download(c)
-        c.upload = upload
-        c.download = download
         self.connections[connection] = c
+        c.upload = self.make_upload(c)
+        c.download = self.make_download(c)
         self.choker.connection_made(c)
-        upload.send_intro()
 
     def connection_lost(self, connection):
         c = self.connections[connection]
@@ -66,29 +102,70 @@ class Connecter:
 
     def got_message(self, connection, message):
         c = self.connections[connection]
-        try:
-            m = bdecode(message)
-            message_template(m)
-            mtype = m['type']
-            if mtype == 'send':
-                c.upload.got_send(m)
-            elif mtype == 'interested':
-                c.upload.got_interested()
-            elif mtype == 'done':
-                c.upload.got_done()
-            elif mtype == 'choke':
-                c.download.got_choke()
-            elif mtype == 'unchoke':
-                c.download.got_unchoke()
-            elif mtype == 'I have':
-                c.download.got_I_have(m)
-            else:
-                blob = c.download.got_slice(m)
-                if blob is not None:
-                    for c in self.connections.values():
-                        c.upload.received_blob(blob)
-        except ValueError:
-            print_exc()
+        if len(message) == 0:
+            connection.close()
+            return
+        t = chr(message[0])
+        if t == CHOKE:
+            if len(message) != 1:
+                connection.close()
+                return
+            c.download.got_choke()
+        elif t == UNCHOKE:
+            if len(message) != 1:
+                connection.close()
+                return
+            c.download.got_unchoke()
+        elif t == INTERESTED:
+            if len(message) != 1:
+                connection.close()
+                return
+            c.upload.got_interested()
+        elif t == NOT_INTERESTED:
+            if len(message) != 1:
+                connection.close()
+                return
+            c.upload.got_not_interested()
+        elif t == HAVE:
+            if len(message) != 5:
+                connection.close()
+                return
+            c.got_have = true
+            i = tobinary(message[1:])
+            if i >= self.numpieces:
+                connection.close()
+                return
+            c.download.got_have(i)
+        elif t == BITFIELD:
+            b = bitfield_to_booleans(t[1:], self.numpieces)
+            if b is None or c.got_have:
+                connection.close()
+                return
+            c.got_have = true
+            c.download.got_bitfield(b)
+        elif t == REQUEST:
+            if len(message) != 13:
+                connection.close()
+                return
+            i = tobinary(message[1:5])
+            if i >= self.numpieces:
+                connection.close()
+                return
+            c.upload.got_request(i, tobinary(message[5:9]), 
+                tobinary(message[9:]))
+        elif t == PIECE:
+            if len(message) <= 9:
+                connection.close()
+                return
+            i = tobinary(message[1:5])
+            if i >= self.numpieces:
+                connection.close()
+                return
+            if c.download.got_piece(i, tobinary(message[5:9]), message[9:]):
+                for co in self.connections.values():
+                    co.send_have(i)
+        else:
+            connection.close()
 
 class DummyUpload:
     def __init__(self, events):
