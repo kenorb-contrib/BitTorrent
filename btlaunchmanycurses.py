@@ -90,8 +90,9 @@ def dropdir_mainloop(d, params):
             # dealing with files that dissapear
             if file not in files:
                 status = 'Gone torrent: %s' % file
-                threadinfo['kill'].set()
-                threadinfo['thread'].join()
+                if threadinfo['timeout'] == -1:
+                    threadinfo['kill'].set()
+                    threadinfo['thread'].join()
                 del threads[file]
         for file in deadfiles:
             # if the file dissapears, remove it from our dead list
@@ -133,13 +134,13 @@ def display_thread(displaykiller):
         statuswin.erase() 
         statuswin.addnstr(0, 0, status, mainwinw)
         # display totals line
-        totaluptxt = '%s/s' % fmtsize(totaldown)
-        totaldowntxt = '%s/s' % fmtsize(totalup)
+        totaluptxt = '%s/s' % fmtsize(totalup)
+        totaldowntxt = '%s/s' % fmtsize(totaldown)
         
         totalwin.erase()
         totalwin.addnstr(0, mainwinw - 27, 'Totals:', 7);
-        totalwin.addnstr(0, mainwinw - 20 + (10 - len(totaluptxt)), totaluptxt, 10)
-        totalwin.addnstr(0, mainwinw - 10 + (10 - len(totaldowntxt)), totaldowntxt, 10)
+        totalwin.addnstr(0, mainwinw - 20 + (10 - len(totaldowntxt)), totaldowntxt, 10)
+        totalwin.addnstr(0, mainwinw - 10 + (10 - len(totaluptxt)), totaluptxt, 10)
         curses.panel.update_panels()
         curses.doupdate()
         sleep(interval)

@@ -1,122 +1,232 @@
 #!/usr/bin/env python
 
-# Written by Bram Cohen
-# Dropdir support added by Michael Janssen
+# Written by Michael Janssen (jamuraa at base0 dot net)
+# originally heavily borrowed code from btlaunchmany.py by Bram Cohen
+# and btdownloadcurses.py written by Henry 'Pi' James
+# now not so much.
+# fmttime and fmtsize stolen from btdownloadcurses. 
 # see LICENSE.txt for license information
 
 from BitTorrent.download import download
-from threading import Thread, Event
+from threading import Thread, Event, RLock
 from os import listdir
-from os.path import join, exists
-from sys import argv, stdout
+from os.path import abspath, join, exists
+from sys import argv, version, stdout, exit
 from time import sleep
-true = 1
-false = 0
+import traceback
 
-ext = '.torrent'
+assert version >= '2', "Install Python 2.0 or greater"
+
+def fmttime(n):
+    if n == -1:
+        return 'download not progressing (no seeds?)'
+    if n == 0:
+        return 'download complete!'
+    n = int(n)
+    m, s = divmod(n, 60)
+    h, m = divmod(m, 60)
+    if h > 1000000:
+        return 'n/a'
+    return 'finishing in %d:%02d:%02d' % (h, m, s)
+
+def fmtsize(n):
+    unit = [' B', 'KiB', 'MiB', 'GiB', 'TiB', 'PiB', 'EiB', 'ZiB', 'YiB']
+    i = 0
+    if (n > 999):
+        i = 1
+        while i + 1 < len(unit) and (n >> 10) >= 999:
+            i += 1
+            n >>= 10
+        n = float(n) / (1 << 10)
+    if i > 0:
+        size = '%.1f' % n + '%s' % unit[i]
+    else:
+        size = '%.0f' % n + '%s' % unit[i]
+    return size
 
 def dummy(*args, **kwargs):
     pass
 
-def runmany(d, params):
-    threads = []
-    killflags = {}
+threads = {}
+ext = '.torrent'
+print 'btlaunchmany starting..'
+filecheck = RLock()
+
+def dropdir_mainloop(d, params):
     deadfiles = []
-    try:
-        while 1:
-            files = listdir(d)
-            # new files
-            for file in files:
-                if file[-len(ext):] == ext:
-                    if file not in [x.getName() for x in threads] + deadfiles:
-                        print 'Starting torrent for ' + file
-                        stdout.flush()
-                        killflags[file] = Event()
-                        threads.append(Thread(target = runsingle(join(d, file), params, killflags[file]).download, name = file))
-                        threads[-1].start()
-            # old files
-            for i in range(len(threads)):
-                try:
-                    threadname = threads[i].getName()
-                except IndexError:
-                    # raised when we delete a thread from earlier,
-                    # the last ones fall out of range
-                    break
-                if not threads[i].isAlive():
-                    # died without our permission
-                    deadfiles.append(threadname)
-                    del killflags[threadname]
-                    del threads[i]
-                elif threadname not in files:
-                    # file gone!
-                    print threadname + ': torrent file gone, stopping downloader'
+    global threads, status
+    while 1:
+        files = listdir(d)
+        # new files
+        for file in files: 
+            if file[-len(ext):] == ext:
+                if file not in threads.keys() + deadfiles:
+                    threads[file] = {'kill': Event(), 'try': 1}
+                    print 'New torrent: %s' % file
                     stdout.flush()
-                    killflags[threadname].set()
-                    threads[i].join()
-                    del killflags[threadname]
-                    del threads[i]
-            sleep(1)
-    except KeyboardInterrupt:
-        print "^C caught.. cleaning up.. "
+                    threads[file]['thread'] = Thread(target = StatusUpdater(join(d, file), params, file).download, name = file)
+                    threads[file]['thread'].start()
+        # files with multiple tries
+        for file, threadinfo in threads.items():
+            if threadinfo.get('timeout') == 0:
+                # Zero seconds left, try and start the thing again.
+                threadinfo['try'] = threadinfo['try'] + 1
+                threadinfo['thread'] = Thread(target = StatusUpdater(join(d, file), params, file).download, name = file)
+                threadinfo['thread'].start()
+                threadinfo['timeout'] = -1
+            elif threadinfo.get('timeout') > 0: 
+                # Decrement our counter by 1
+                threadinfo['timeout'] = threadinfo['timeout'] - 1
+            elif not threadinfo['thread'].isAlive():
+                # died without permission
+                if threadinfo.get('try') == 6: 
+                    # Died on the sixth try? You're dead.
+                    deadfiles.append(file)
+                    print '%s died 6 times, added to dead list' % fil
+                    stdout.flush()
+                    del threads[file]
+                else:
+                    del threadinfo['thread']
+                    threadinfo['timeout'] = 10
+            # dealing with files that dissapear
+            if file not in files:
+                print 'Torrent file dissapeared, killing %s' % file
+                stdout.flush()
+                if threadinfo['timeout'] == -1:
+                    threadinfo['kill'].set()
+                    threadinfo['thread'].join()
+                del threads[file]
+        for file in deadfiles:
+            # if the file dissapears, remove it from our dead list
+            if file not in files: 
+                deadfiles.remove(file)
+        sleep(1)
+
+def display_thread(displaykiller):
+    interval = 1.0
+    global threads, status
+    while 1:
+        # display file info
+        if (displaykiller.isSet()): 
+            break
+        totalup = 0
+        totaldown = 0
+        for file, threadinfo in threads.items(): 
+            uprate = threadinfo.get('uprate', 0)
+            downrate = threadinfo.get('downrate', 0)
+            uptxt = '%s/s' % fmtsize(uprate)
+            downtxt = '%s/s' % fmtsize(downrate)
+            filename = threadinfo.get('savefile', file)
+            if threadinfo.get('timeout', 0) > 0:
+                trys = threadinfo.get('try', 1)
+                timeout = threadinfo.get('timeout')
+                print '%s: died on try %d, retrying in %d' % (filename, trys, timeout)
+            else:
+                status = threadinfo.get('status','')
+                print '%s: %s up %s down [%s]' % (filename, uptxt, downtxt, status)
+            totalup += uprate
+            totaldown += downrate
+        # display totals line
+        totaluptxt = '%s/s' % fmtsize(totalup)
+        totaldowntxt = '%s/s' % fmtsize(totaldown)
+        print 'Total: %s up %s down' % (totaluptxt, totaldowntxt)
+        print
         stdout.flush()
-        for thread in threads:
-            threadname = thread.getName()
-            print "%s: killing torrent.." % threadname
-            stdout.flush()
-            killflags[threadname].set()
-            thread.join()
+        sleep(interval)
 
-
-class runsingle:
-    def __init__(self, file, params, killflag):
+class StatusUpdater:
+    def __init__(self, file, params, name):
         self.file = file
         self.params = params
-        self.percentDone = 0
-        self.doingdown = 0
-        self.doingup = 0
-        self.killflag = killflag
-    
-    def download(self):
-        download(self.params + ['--responsefile', self.file], self.choose, self.status, self.finished, self.err, self.killflag, 80)
+        self.name = name
+        self.myinfo = threads[name]
+        self.done = 0
+        self.checking = 0
+        self.activity = 'starting'
+        self.display()
+        self.myinfo['errors'] = []
 
-    def err(self, msg):
-        print self.file + ': error - ' + msg
+    def download(self): 
+        download(self.params + ['--responsefile', self.file], self.choose, self.display, self.finished, self.err, self.myinfo['kill'], 80)
+        print 'Torrent %s stopped' % self.file
         stdout.flush()
 
-    def failed(self):
-        print self.file + ': failed'
-        stdout.flush()
+    def finished(self): 
+        self.done = 1
+        self.myinfo['done'] = 1
+        self.activity = 'complete'
+        self.display(fractionDone = 1)
+
+    def err(self, msg): 
+        self.myinfo['errors'].append(msg)
+        self.display()
+
+    def failed(self): 
+        self.activity = 'failed' 
+        self.display() 
 
     def choose(self, default, size, saveas, dir):
+        global filecheck
+        self.myinfo['downfile'] = default
+        self.myinfo['filesize'] = fmtsize(size)
+        if saveas == '': 
+            saveas = default
+        # it asks me where I want to save it before checking the file.. 
+        self.myinfo['savefile'] = self.file[:-len(ext)]
+        if (exists(saveas)):
+            # file will get checked
+            while (not filecheck.acquire(blocking = 0) and not self.myinfo['kill'].isSet()):
+                self.myinfo['status'] = 'disk wait'
+                sleep(0.1)
+            self.checking = 1
         return self.file[:-len(ext)]
-
-    def status(self, fractionDone = None,
-            timeEst = None, downRate = None, upRate = None,
-            activity = None):
-        if fractionDone is not None:
-            newpercent = int(fractionDone*100)
-            if newpercent != self.percentDone:
-                self.percentDone = newpercent
-                print self.file + (': %d%%' % newpercent)
-        if activity is not None:
-            print self.file + ': ' + activity
-        if downRate is not None:
-            if self.doingdown*.8 <= downRate <= self.doingdown*1.2:
-                pass
+    
+    def display(self, fractionDone = None, timeEst = None, downRate = None, upRate = None, activity = None): 
+        global filecheck, status
+        if activity is not None and not self.done: 
+            if activity == 'checking existing file':
+                self.activity = 'disk check'
+            elif activity == 'connecting to peers':
+                self.activity = 'connecting'
             else:
-                self.doingdown = downRate
-                print self.file + (': downloading %.0f kB/s' % (float(downRate) / (1 << 10)))
-        if upRate is not None:
-            if self.doingup*.8 <= upRate <= self.doingup*1.2:
-                pass
-            else:
-                self.doingup = upRate
-                print self.file + (': uploading %.0f kB/s' % (float(upRate) / (1 << 10)))
-        stdout.flush()
-
-    def finished(self):
-        print self.file + ': fully accurate and here'
-        stdout.flush()
+                self.activity = activity
+        elif timeEst is not None: 
+            self.activity = fmttime(timeEst)
+        if fractionDone is not None: 
+            self.myinfo['status'] = '%s %.0f%%' % (self.activity, fractionDone * 100)
+            if fractionDone == 1 and self.checking:
+                # we finished checking our files. 
+                filecheck.release()
+                self.checking = 0
+        else:
+            self.myinfo['status'] = self.activity
+        if downRate is None: 
+            downRate = 0
+        if upRate is None:
+            upRate = 0
+        self.myinfo['uprate'] = int(upRate)
+        self.myinfo['downrate'] = int(downRate)
 
 if __name__ == '__main__':
-    runmany(argv[1], argv[2:])
+    if (len(argv) < 2):
+        print """Usage: btlaunchmany.py <directory> <global options>
+  <directory> - directory to look for .torrent files (non-recursive)
+  <global options> - options to be applied to all torrents (see btdownloadheadless.py)
+"""
+        exit(-1)
+    try:
+        displaykiller = Event()
+        displaythread = Thread(target = display_thread, name = 'display', args = [displaykiller])
+        displaythread.start()
+        dropdir_mainloop(argv[1], argv[2:])
+    except KeyboardInterrupt: 
+        print '^C caught! Killing torrents..'
+        for file, threadinfo in threads.items(): 
+            status = 'Killing torrent %s' % file
+            threadinfo['kill'].set() 
+            threadinfo['thread'].join() 
+            del threads[file]
+        displaykiller.set()
+        displaythread.join()
+    except:
+        traceback.print_exc()
