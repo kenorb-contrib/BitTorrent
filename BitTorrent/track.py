@@ -211,6 +211,7 @@ class Tracker:
                 td = 0
                 tt = 0  # Total transferred
                 ts = 0  # Total size
+                nf = 0  # Number of files displayed
                 uc = {}
                 ud = {}
                 if self.allowed != None and self.show_names:
@@ -237,6 +238,7 @@ class Tracker:
                     td = td + d
                     if self.allowed != None and self.show_names:
                         if self.allowed.has_key(name):
+                            nf = nf + 1
                             sz = self.allowed[name]['length']  # size
                             ts = ts + sz
                             szt = sz * n   # Transferred for this torrent
@@ -255,10 +257,10 @@ class Tracker:
                     ttn = ttn + i
                 if self.allowed != None and self.show_names:
                     s.write('<tr><td align="right" colspan="2">%i files</td><td align="right">%s</td><td align="right">%i/%i</td><td align="right">%i/%i</td><td align="right">%i/%i</td><td align="right">%s</td></tr>\n'
-                            % (len(names), size_format(ts), len(uc), tc, len(ud), td, tn, ttn, size_format(tt)))
+                            % (nf, size_format(ts), len(uc), tc, len(ud), td, tn, ttn, size_format(tt)))
                 else:
                     s.write('<tr><td align="right">%i files</td><td align="right">%i/%i</td><td align="right">%i/%i</td><td align="right">%i/%i</td></tr>\n'
-                            % (len(names), len(uc), tc, len(ud), td, tn, ttn))
+                            % (nf, len(uc), tc, len(ud), td, tn, ttn))
                 s.write('</table>\n' \
                     '<ul>\n' \
                     '<li><em>info hash:</em> SHA1 hash of the "info" section of the metainfo (*.torrent)</li>\n' \

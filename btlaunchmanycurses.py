@@ -96,6 +96,9 @@ def dropdir_mainloop(d, params):
                 threadinfo['timeout'] = threadinfo['timeout'] - 1
             elif not threadinfo['thread'].isAlive():
                 # died without permission
+                # if it was checking the file, it's not anymore
+                if threadinfo.get('checking', None):
+                    filecheck.release()
                 if threadinfo.get('try') == 6: 
                     # Died on the sixth try? You're dead.
                     deadfiles.append(file)
@@ -111,7 +114,7 @@ def dropdir_mainloop(d, params):
                     threadinfo['kill'].set()
                     threadinfo['thread'].join()
                 # if it had the lock, unlock it
-                if threadinfo.get('checking', None) == 1:
+                if threadinfo.get('checking', None):
                     filecheck.release()
                 del threads[file]
         for file in deadfiles:
@@ -207,7 +210,7 @@ class StatusUpdater:
         self.done = 1
         self.myinfo['done'] = 1
         self.activity = 'download succeeded!'
-        self.display({'fractionDone' : 1})
+        self.display({'fractionDone' : 1, 'downRate' : 0})
 
     def err(self, msg): 
         self.myinfo['errors'].append(msg)
@@ -240,10 +243,6 @@ class StatusUpdater:
     def display(self, dict = {}):
         fractionDone = dict.get('fractionDone', None)
         timeEst = dict.get('timeEst', None)
-        downRate = dict.get('downRate', 0)
-        upRate = dict.get('upRate', 0)
-        downTotal = dict.get('downTotal', 0.0)
-        upTotal = dict.get('upTotal', 0.0)
         activity = dict.get('activity', None) 
         global filecheck, status
         if activity is not None and not self.done: 
@@ -259,10 +258,14 @@ class StatusUpdater:
                 self.myinfo['checking'] = 0
         else:
             self.myinfo['status'] = self.activity
-        self.myinfo['uprate'] = upRate
-        self.myinfo['downrate'] = downRate
-        self.myinfo['uptotal'] = upTotal
-        self.myinfo['downtotal'] = downTotal
+        if dict.has_key('upRate'):
+            self.myinfo['uprate'] = dict['upRate']
+        if dict.has_key('downRate'):
+            self.myinfo['downrate'] = dict['downRate']
+        if dict.has_key('upTotal'):
+            self.myinfo['uptotal'] = dict['upTotal']
+        if dict.has_key('downTotal'):
+            self.myinfo['downtotal'] = dict['downTotal']
 
 def prepare_display(): 
     global mainwinw, scrwin, headerwin, totalwin
