@@ -93,7 +93,7 @@ class StorageWrapper:
         try:
             self._piece_came_in(index, begin, piece)
         except IOError, e:
-            self.failed('IO Error ' + str(e), true)
+            self.failed('IO Error ' + str(e))
 
     def _piece_came_in(self, index, begin, piece):
         self.storage.write(index * self.piece_length + begin, piece)
@@ -111,7 +111,7 @@ class StorageWrapper:
         try:
             return self._get_piece(index, begin, length)
         except IOError, e:
-            self.failed('IO Error ' + str(e), true)
+            self.failed('IO Error ' + str(e))
             return None
 
     def _get_piece(self, index, begin, length):
