@@ -13,8 +13,8 @@ Section "Install"
   File *.dll
   WriteRegStr HKCR .torrent "" bittorrent
   WriteRegStr HKCR "MIME\Database\Content Type\application/x-bittorrent" Extension .torrent
-#  WriteRegStr HKCR bittorrent "" "TORRENT File"
-#  WriteRegBin HKCR bittorrent EditFlags 00000100
+  WriteRegStr HKCR bittorrent "" "TORRENT File"
+  WriteRegBin HKCR bittorrent EditFlags 00000100
   WriteRegStr HKCR "bittorrent\shell" "" open
   WriteRegStr HKCR "bittorrent\shell\open\command" "" '$INSTDIR\btdownloadprefetched.exe "%1"'
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\BitTorrent" "DisplayName" "BitTorrent 2.9"
