@@ -145,8 +145,6 @@ class Connecter:
     def connection_lost(self, connection):
         c = self.connections[connection]
         d = c.download
-        del c.upload
-        del c.download
         del self.connections[connection]
         d.disconnected()
         self.choker.connection_lost(c)
