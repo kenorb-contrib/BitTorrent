@@ -122,12 +122,15 @@ class DownloaderData:
         return self.downloads.keys()
 
 class DummyBlobs:
-    def __init__(self, blobs):
+    def __init__(self, blobs, prefs = None):
+        if prefs is None:
+            prefs = blobs.keys()
+        self.prefs = prefs
         self.blobs = blobs
         self.expect = false
 
     def get_list_of_blobs_I_want(self):
-        return self.blobs.keys()
+        return self.prefs
         
     def get_size(self, blob):
         return len(self.blobs[blob])
@@ -140,6 +143,7 @@ class DummyBlobs:
         self.expect = false
         if self.result:
             del self.blobs[blob]
+            self.prefs.remove(blob)
             return true
         return false
     
@@ -259,19 +263,103 @@ def test_normal():
     assert dd.num_current(b) == 0
     assert dd.num_current(c) == 0
 
-"""
-
 def test_multiple():
-    make a thing which has second two of three blobs in want
-    make all come in
+    blobs = DummyBlobs({'a': 'abcdef', 'b': 'abcdef', 'c': 'abcdef'}, ['a', 'b', 'c'])
+    dd = DownloaderData(blobs, 2)
+    a = DummyDownloader()
+    dd.connected(a)
+    assert dd.has_blobs(a, ['b', 'c'])
+    assert dd.do_I_want_more(a)
+    assert dd.get_next(a) == ('b', 4, 2, [])
+    assert dd.do_I_want_more(a)
+    assert dd.get_next(a) == ('b', 2, 2, [])
+    assert dd.do_I_want_more(a)
+    assert dd.get_next(a) == ('b', 0, 2, [])
+    assert dd.do_I_want_more(a)
+    assert dd.get_next(a) == ('c', 4, 2, [])
+    assert dd.do_I_want_more(a)
+    assert dd.get_next(a) == ('c', 2, 2, [])
+    assert dd.do_I_want_more(a)
+    assert dd.get_next(a) == ('c', 0, 2, [])
+    assert not dd.do_I_want_more(a)
+    assert dd.get_next(a) == None
+    assert dd.num_current(a) == 6
+
+    assert dd.came_in(a, 'b', 0, 'ab') == (false, [])
+    assert dd.came_in(a, 'b', 2, 'cd') == (false, [])
+    blobs.expect = true
+    blobs.result = true
+    assert dd.came_in(a, 'b', 4, 'ef') == (true, [])
+    
+    assert dd.came_in(a, 'c', 0, 'ab') == (false, [])
+    assert dd.came_in(a, 'c', 2, 'cd') == (false, [])
+    blobs.expect = true
+    blobs.result = true
+    assert dd.came_in(a, 'c', 4, 'ef') == (true, [])
+
+    assert dd.num_current(a) == 0
+    assert not dd.do_I_want_more(a)
 
 def test_flunk():
-    make a single thing with two blobs
-    make first blob arrive, then get flunked, then arrive properly
-    make second blob arrive properly
+    blobs = DummyBlobs({'a': 'abcdef'})
+    dd = DownloaderData(blobs, 2)
+    a = DummyDownloader()
+    dd.connected(a)
+
+    assert dd.has_blobs(a, ['a'])
+    assert dd.do_I_want_more(a)
+    assert dd.get_next(a) == ('a', 4, 2, [])
+    assert dd.do_I_want_more(a)
+    assert dd.get_next(a) == ('a', 2, 2, [])
+    assert dd.do_I_want_more(a)
+    assert dd.get_next(a) == ('a', 0, 2, [])
+    assert not dd.do_I_want_more(a)
+
+    assert dd.came_in(a, 'a', 0, 'ab') == (false, [])
+    assert dd.came_in(a, 'a', 2, 'cd') == (false, [])
+    blobs.expect = true
+    blobs.result = false
+    assert dd.came_in(a, 'a', 4, 'ef') == (false, [a])
+    assert dd.num_current(a) == 0
+
+    assert dd.do_I_want_more(a)
+    assert dd.get_next(a) == ('a', 4, 2, [])
+    assert dd.do_I_want_more(a)
+    assert dd.get_next(a) == ('a', 2, 2, [])
+    assert dd.do_I_want_more(a)
+    assert dd.get_next(a) == ('a', 0, 2, [])
+    assert not dd.do_I_want_more(a)
+    assert dd.num_current(a) == 3
+
+    assert dd.came_in(a, 'a', 0, 'ab') == (false, [])
+    assert dd.came_in(a, 'a', 2, 'cd') == (false, [])
+    blobs.expect = true
+    blobs.result = true
+    assert dd.came_in(a, 'a', 4, 'ef') == (true, [])
+    assert dd.num_current(a) == 0
 
 def test_short_blob():
-    make two connections each of which want a single blob with only one chunk
-    start download from one
+    blobs = DummyBlobs({'a': 'a'})
+    dd = DownloaderData(blobs, 2)
+    a = DummyDownloader()
+    dd.connected(a)
+    assert dd.has_blobs(a, ['a'])
+    b = DummyDownloader()
+    dd.connected(b)
+    assert dd.has_blobs(b, ['a'])
 
-"""
+    spam = dd.get_next(a)
+    assert spam[:-1] == ('a', 0, 1)
+    assert spam[-1] == [a, b] or spam[-1] == [b, a]
+    assert dd.num_current(a) == 1
+    assert not dd.do_I_want_more(a)
+    assert not dd.do_I_want_more(b)
+    assert dd.get_next(a) == None
+    assert dd.get_next(b) == None
+
+    blobs.expect = true
+    blobs.result = true
+    assert dd.came_in(a, 'a', 0, 'a') == (true, [])
+    assert dd.num_current(a) == 0
+    assert not dd.do_I_want_more(a)
+    assert not dd.do_I_want_more(b)
