@@ -262,4 +262,5 @@ def download(params, filefunc, statusfunc, finfunc, errorfunc, doneflag, cols, p
     ann[0] = rerequest.announce
     rerequest.d(0)
     rawserver.listen_forever(encrypter)
+    storage.close()
     rerequest.announce(2)

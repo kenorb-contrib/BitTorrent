@@ -113,6 +113,10 @@ class Storage:
             h.write(s[total: total + end - begin])
             total += end - begin
 
+    def close(self):
+        for h in self.handles.values():
+            h.close()
+
 def lrange(a, b, c):
     r = []
     while a < b:
