@@ -21,13 +21,13 @@ def dummy(v):
     pass
 
 def make_meta_file(file, url, piece_length = 2 ** 18, 
-        flag = Event(), progress = dummy):
+        flag = Event(), progress = dummy, progress_percent=1):
     a, b = split(file)
     if b == '':
         f = a + '.torrent'
     else:
         f = join(a, b + '.torrent')
-    info = makeinfo(file, piece_length, flag, progress)
+    info = makeinfo(file, piece_length, flag, progress, progress_percent)
     if flag.isSet():
         return
     check_info(info)
@@ -43,7 +43,7 @@ def calcsize(file):
         total += getsize(s[1])
     return total
 
-def makeinfo(file, piece_length, flag, progress):
+def makeinfo(file, piece_length, flag, progress, progress_percent=1):
     file = abspath(file)
     if isdir(file):
         subs = subfiles(file)
@@ -75,7 +75,10 @@ def makeinfo(file, piece_length, flag, progress):
                     pieces.append(sh.digest())
                     done = 0
                     sh = sha()
-                progress(totalhashed / totalsize)
+                if progress_percent:
+                    progress(totalhashed / totalsize)
+                else:
+                    progress(a)
             h.close()
         if done > 0:
             pieces.append(sh.digest())

@@ -34,7 +34,7 @@ def completedir(dir, url, flag = Event(), vc = dummy, fc = dummy):
     for i in togen:
         fc(i)
         try:
-            make_meta_file(i, url, flag = flag, progress = callback)
+            make_meta_file(i, url, flag = flag, progress = callback, progress_percent=0)
         except ValueError:
             print_exc()
 
