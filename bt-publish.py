@@ -40,5 +40,5 @@ configDefinitions = [
 if __name__ == '__main__':
     usageHeading = "usage: %s [options] <file1> [<file2> [<file3 [...]]]" % argv[0]
     # require 1 and only 1 file
-    configDictionary, files = parseargs(argv[1:], usageHeading, configDefinitions, 1, 1) 
+    configDictionary, files = parseargs(argv[1:], usageHeading, configDefinitions, 1, 10000) 
     publish(configDictionary, files)

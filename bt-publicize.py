@@ -8,7 +8,7 @@ assert version >= '2', "Install Python 2.0 or greater"
 
 from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler
 from types import StringType
-from threading import Thread
+from threading import Thread, Condition
 from binascii import a2b_hex
 from BitTorrent.btemplate import compile_template, ListMarker, string_template, OptionMarker
 from BitTorrent.bencode import bencode, bdecode
@@ -16,7 +16,6 @@ from BitTorrent.parseargs import parseargs
 from sys import argv
 from urllib import urlopen, quote, unquote
 from traceback import print_exc
-from threading import Condition
 from time import sleep
 true = 1
 false = 0
