@@ -397,8 +397,12 @@ class Tracker:
             return
         if not record.has_key('nat'):
             record['nat'] = int(not result)
+        else:
+            if result:
+                record['nat'] = 0
+            else:
+                record['nat'] += 1
         if result:
-            record['nat'] = 0
             self.becache1.setdefault(downloadid,{})[peerid] = Bencached(bencode({'ip': ip, 'port': port, 'peer id': myid}))
             self.becache2.setdefault(downloadid,{})[peerid] = Bencached(bencode({'ip': ip, 'port': port}))
 
