@@ -7,6 +7,7 @@
 { 
     [super init];
     timeEst = [@"" retain];
+    conn = nil;
     return self;
 }
 
@@ -34,6 +35,10 @@
 
 - (void)setConnection:(NSConnection *)nc
 {
+    if(conn)
+    {
+	[conn release];
+    }
     conn = [nc retain];
 }
 
