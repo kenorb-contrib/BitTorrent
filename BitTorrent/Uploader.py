@@ -19,7 +19,7 @@ class Upload:
         self.reported_choked = false
         self.interested = false
         self.buffer = []
-        self.ratesince = time() - 3.0
+        self.ratesince = time() - 5.0
         self.lastout = self.ratesince
         self.rate = 0.0
 
