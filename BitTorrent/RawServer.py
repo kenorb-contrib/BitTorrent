@@ -76,7 +76,7 @@ class SingleSocket:
             self.raw_server.poll.register(self.socket, all)
 
 class RawServer:
-    def __init__(self, doneflag, timeout_check_interval, timeout, noisy = true, errorfunc None):
+    def __init__(self, doneflag, timeout_check_interval, timeout, noisy = true, errorfunc = None):
         self.timeout_check_interval = timeout_check_interval
         self.timeout = timeout
         self.poll = poll()
