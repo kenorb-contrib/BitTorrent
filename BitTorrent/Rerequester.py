@@ -59,8 +59,6 @@ class Rerequester:
         s = ('%s&uploaded=%s&downloaded=%s&left=%s' %
             (self.url, str(self.up()), str(self.down()), 
             str(self.amount_left())))
-        if self.ip:
-            s += '&ip=' + gethostbyname(self.ip)
         if self.last is not None:
             s += '&last=' + quote(str(self.last))
         if self.trackerid is not None:
@@ -82,6 +80,8 @@ class Rerequester:
 
     def rerequest(self, url, set):
         try:
+            if self.ip:
+                url += '&ip=' + gethostbyname(self.ip)
             h = urlopen(url)
             r = h.read()
             h.close()
