@@ -82,6 +82,8 @@ class PiecePicker:
                 for j in i:
                     if havefunc(j):
                         return j
+                if i and bests:
+                    break
             if bests:
                 return choice(bests)
             return None
@@ -109,7 +111,8 @@ def test_requested():
     p.requested(0)
     p.requested(6)
     v = _pull(p)
-    assert v[:4] == [1, 3, 0, 6]
+    assert v[:2] == [1, 3] or v[:2] == [3, 1]
+    assert v[2:4] == [0, 6] or v[2:4] == [6, 0]
     assert v[4:] == [2, 4] or v[4:] == [4, 2]
 
 def test_change_interest():
