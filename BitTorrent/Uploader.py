@@ -142,7 +142,7 @@ def test_skip_over_choke():
     connection = DummyConnection(events)
     choker = DummyChoker(events)
     blobs = DummyBlobs({'a' * 20: 'abcd'})
-    upload = Upload(connection, choker, blobs, 100)
+    upload = Upload(connection, choker, blobs, 100, 15)
     assert not upload.is_choked()
     assert not upload.is_interested()
     
@@ -185,7 +185,7 @@ def test_received_blob():
     connection = DummyConnection(events)
     choker = DummyChoker(events)
     blobs = DummyBlobs({'a' * 20: 'abcd'})
-    upload = Upload(connection, choker, blobs, 100)
+    upload = Upload(connection, choker, blobs, 100, 15)
     assert not upload.is_choked()
     assert not upload.is_interested()
     
@@ -197,7 +197,7 @@ def test_get_bad_slice():
     connection = DummyConnection(events)
     choker = DummyChoker(events)
     blobs = DummyBlobs({})
-    upload = Upload(connection, choker, blobs, 100)
+    upload = Upload(connection, choker, blobs, 100, 15)
     assert not upload.is_choked()
     assert not upload.is_interested()
 
@@ -211,7 +211,7 @@ def test_transitions_clockwise():
     connection = DummyConnection(events)
     choker = DummyChoker(events)
     blobs = DummyBlobs({'a' * 20: 'abcd'})
-    upload = Upload(connection, choker, blobs, 100)
+    upload = Upload(connection, choker, blobs, 100, 15)
     assert not upload.is_choked()
     assert not upload.is_interested()
 
@@ -255,7 +255,7 @@ def test_transitions_counterclockwise():
     connection = DummyConnection(events)
     choker = DummyChoker(events)
     blobs = DummyBlobs({'a' * 20: 'abcd'})
-    upload = Upload(connection, choker, blobs, 100)
+    upload = Upload(connection, choker, blobs, 100, 15)
     assert not upload.is_choked()
     assert not upload.is_interested()
 
