@@ -3,6 +3,7 @@
 
 from urllib import urlopen
 from urlparse import urljoin
+from re import compile
 from Choker import Choker
 from Storage import Storage
 from StorageWrapper import StorageWrapper
@@ -112,11 +113,33 @@ def download(params, filefunc, statusfunc, resultfunc, doneflag, cols):
     try:
         response = bdecode(response)
         template(response)
-        if response['info'].has_key('files') == response['info'].has_key('length'):
+        info = response['info']
+        if info.has_key('files') == info.has_key('length'):
             raise ValueError, 'single/multiple file mix'
     except ValueError, e:
         resultfunc(false, "got bad file info - " + str(e))
         return
+    reg = compile(r'^[^/\\.~][^/\\]*$')
+    if not reg.match(info['name']):
+        resultfunc(false, 'file name specified by server rejected for security reasons')
+        return
+    if info.has_key('files'):
+        files = info['files']
+        for d in files:
+            for f in d['path']:
+                if not reg.match(f):
+                    resultfunc(false, 'file name specified by server rejected for security reasons')
+                    return
+        for i in xrange(len(files)):
+            for j in xrange(i):
+                if files[i]['path'] == files['j']['path']:
+                    resultfunc(false, 'duplicate file in info')
+                    return
+        for d in files:
+            if d['path'] == []:
+                resultfunc(false, 'empty path in info')
+                return
+    
     def make(f, forcedir = false, resultfunc = resultfunc):
         try:
             if not forcedir:

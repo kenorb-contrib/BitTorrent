@@ -19,6 +19,7 @@ class DownloaderFeedback:
         self.add_task(self.display, .1)
 
     def spew(self):
+        print '\n\n\n'
         s = StringIO()
         for c in self.choker.connections:
             s.write('%20s ' % c.get_ip())
@@ -49,7 +50,6 @@ class DownloaderFeedback:
     def display(self):
         self.add_task(self.display, 1)
         t = time()
-        #print '\n\n\n'
         #self.spew()
         if self.finflag.isSet():
             upRate = 0
