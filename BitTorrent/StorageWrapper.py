@@ -269,7 +269,7 @@ def test_preexisting():
 def test_total_too_short():
     ds = DummyStorage(4)
     try:
-        sw = StorageWrapper(ds, 4, [sha('qqqq').digest(),
+        StorageWrapper(ds, 4, [sha('qqqq').digest(),
             sha('qqqq').digest()], 4, ds.finished, None)
         raise 'fail'
     except ValueError:

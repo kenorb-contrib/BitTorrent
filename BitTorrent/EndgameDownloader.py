@@ -301,7 +301,7 @@ def test_hash_fail():
     s = DummyStorage(events)
     s.expect_flunk = [(0, 4)]
     d = DummyDownloader(s, 1, [d1, d2, d3, d4])
-    ed = EndgameDownloader(d)
+    EndgameDownloader(d)
     d1 = c1.download
     d2 = c2.download
     d3 = c3.download

@@ -32,7 +32,7 @@ class SingleSocket:
     def get_ip(self):
         try:
             return self.socket.getpeername()[0]
-        except socket.error, e:
+        except socket.error:
             return 'no connection'
         
     def close(self):
@@ -206,7 +206,7 @@ class RawServer:
                     if self.doneflag.isSet():
                         return
                     self._close_dead()
-                except error, e:
+                except error:
                     if self.doneflag.isSet():
                         return
                     else:
@@ -530,14 +530,13 @@ def test_closes_if_not_hit():
         sl(sb, db, 5013)
         
         sleep(.5)
-        ca = sa.start_connection(('', 5013))
+        sa.start_connection(('', 5013))
         sleep(1)
         
         assert da.external_made == []
         assert da.data_in == []
         assert da.lost == []
         assert len(db.external_made) == 1
-        cb = db.external_made[0]
         del db.external_made[:]
         assert db.data_in == []
         assert db.lost == []
@@ -566,7 +565,7 @@ def test_does_not_close_if_hit():
         sl(sb, db, 5013)
         
         sleep(.5)
-        ca = sa.start_connection(('', 5013))
+        sa.start_connection(('', 5013))
         sleep(1)
         
         assert da.external_made == []

@@ -80,7 +80,7 @@ class EncryptedConnection:
         try:
             if s != '':
                 self.encrypter.connecter.got_message(self, s)
-        except KeyboardInterrupt, e:
+        except KeyboardInterrupt:
             raise
         except:
             print_exc()
@@ -432,7 +432,6 @@ def test_keepalive():
     e.data_came_in(c1, chr(len(protocol_name)) + protocol_name + 
         chr(0) * 8 + 'd' * 20 + 'o' * 20)
     assert len(c.log) == 1 and c.log[0][0] == 'made'
-    ch = c.log[0][1]
     del c.log[:]
     assert c1.pop() == ''
     assert not c1.closed
@@ -457,7 +456,6 @@ def test_swallow_keepalive():
     e.data_came_in(c1, chr(len(protocol_name)) + protocol_name + 
         chr(0) * 8 + 'd' * 20 + 'o' * 20)
     assert len(c.log) == 1 and c.log[0][0] == 'made'
-    ch = c.log[0][1]
     del c.log[:]
     assert not c1.closed
 
@@ -553,7 +551,6 @@ def test_partial_data_in():
     e.data_came_in(c1, chr(0) * 4 + 'd' * 20 + 'c' * 10)
     e.data_came_in(c1, 'c' * 10)
     assert len(c.log) == 1 and c.log[0][0] == 'made'
-    ch = c.log[0][1]
     del c.log[:]
     assert not c1.closed
     
@@ -572,7 +569,6 @@ def test_ignore_connect_of_extant():
     e.data_came_in(c1, chr(len(protocol_name)) + protocol_name + 
         chr(0) * 8 + 'd' * 20 + 'o' * 20)
     assert len(c.log) == 1 and c.log[0][0] == 'made'
-    ch = c.log[0][1]
     del c.log[:]
     assert not c1.closed
 

@@ -111,7 +111,6 @@ class Connecter:
 
     def connection_lost(self, connection):
         c = self.connections[connection]
-        u = c.upload
         d = c.download
         del c.upload
         del c.download
@@ -318,7 +317,7 @@ def test_operation():
         tobinary(2) + tobinary(3)), ('m', PIECE + tobinary(1) + 
         tobinary(2) + 'abc'), 'disconnected', 'lost']
     for a, b in zip (events, x):
-        assert a == b, repr(a, b)
+        assert a == b, repr((a, b))
 
 def test_conversion():
     assert toint(tobinary(50000)) == 50000

@@ -114,7 +114,7 @@ class DummyUploader:
 
 def test_round_robin_with_no_downloads():
     s = DummyScheduler()
-    choker = Choker(2, s, dummymeasure)
+    Choker(2, s, dummymeasure)
     assert len(s.s) == 1
     assert s.s[0][1] == 10
     s.s[0][0]()

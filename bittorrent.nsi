@@ -19,7 +19,7 @@ Section "Install"
   WriteRegStr HKCR "bittorrent\shell\open\command" "" '$INSTDIR\btdownloadprefetched.exe %1'
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\BitTorrent" "DisplayName" "BitTorrent 3.0"
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\BitTorrent" "UninstallString" '"$INSTDIR\uninstall.exe"'
-  MessageBox MB_OK "Hyperlinks in Internet Explorer which use BitTorrent will now work!"
+  MessageBox MB_OK "BitTorrent has been successfully installed!"
 SectionEnd
 
 Section "Uninstall"

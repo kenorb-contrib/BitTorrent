@@ -140,14 +140,12 @@ def test_Storage_multiple():
 
 def test_Storage_zero():
     f = FakeOpen()
-    m = Storage([('a', 0)], 
-        f.open, f.exists, f.getsize, dummy_status)
+    Storage([('a', 0)], f.open, f.exists, f.getsize, dummy_status)
     assert f.files == {'a': []}
 
 def test_resume_zero():
     f = FakeOpen({'a': ''})
-    m = Storage([('a', 0)], 
-        f.open, f.exists, f.getsize, dummy_status)
+    Storage([('a', 0)], f.open, f.exists, f.getsize, dummy_status)
     assert f.files == {'a': []}
 
 def test_Storage_with_zero():
