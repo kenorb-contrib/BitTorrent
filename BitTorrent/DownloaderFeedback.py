@@ -2,7 +2,6 @@
 # see LICENSE.txt for license information
 
 from time import time
-from cStringIO import StringIO
 
 class DownloaderFeedback:
     def __init__(self, choker, add_task, statusfunc, upfunc, downfunc, uptotal, downtotal,
