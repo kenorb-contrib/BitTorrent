@@ -93,8 +93,10 @@ class SingleDownload:
                 while self.downloader.storage.do_I_have_requests(index):
                     nb, nl = self.downloader.storage.new_request(index)
                     self.downloader.all_requests.append((index, nb, nl))
-            else:
-                self.downloader.picker.bump(index)
+                for d in self.downloader.downloads:
+                    d.fix_download_endgame()
+                return false
+            self.downloader.picker.bump(index)
             ds = [d for d in self.downloader.downloads if not d.choked]
             shuffle(ds)
             for d in ds:
