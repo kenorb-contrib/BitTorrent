@@ -123,7 +123,7 @@ def display_thread(displaykiller, mainquitflag):
     while 1:
         inchar = mainwin.getch();
         if inchar == 12: # ^L
-            winch_handler(SIGWINCH, 0)
+            winch_handler()
         elif inchar == ord('q'): # quit
             mainquitflag.set() 
         # display file info
@@ -191,6 +191,8 @@ class StatusUpdater:
 
     def err(self, msg): 
         self.myinfo['errors'].append(msg)
+        # errors often come with evil tracebacks that mess up our screen.
+        winch_handler()
         self.display()
 
     def failed(self): 
@@ -209,8 +211,9 @@ class StatusUpdater:
             while (not filecheck.acquire(0) and not self.myinfo['kill'].isSet()):
                 self.myinfo['status'] = 'Waiting for disk check...'
                 sleep(0.1)
-            self.checking = 1
-            self.myinfo['checking'] = 1
+            if not self.myinfo['kill'].isSet():
+                self.checking = 1
+                self.myinfo['checking'] = 1
         self.myinfo['savefile'] = saveas
         return saveas
     
@@ -258,7 +261,7 @@ def prepare_display():
 
 
 
-def winch_handler(signum, stackframe): 
+def winch_handler(signum = SIGWINCH, stackframe = None): 
     global scrwin, mainwin, mainwinw, headerwin, totalwin, statuswin
     global scrpan, mainpan, headerpan, totalpan, statuspan
     # SIGWINCH. Remake the frames!
@@ -302,6 +305,7 @@ if __name__ == '__main__':
   <global options> - options to be applied to all torrents (see btdownloadheadless.py)
 """
         exit(-1)
+    dietrace = 0
     try: 
         import curses
         import curses.panel
@@ -345,11 +349,10 @@ if __name__ == '__main__':
         dropdir_mainloop(argv[1], argv[2:])
     except KeyboardInterrupt: 
         cleanup_and_quit()
-        curses.nocbreak()
-        curses.echo()
-        curses.endwin()
     except:
-        curses.nocbreak()
-        curses.echo()
-        curses.endwin()
-        traceback.print_exc()
+        dietrace = traceback
+    curses.nocbreak()
+    curses.echo()
+    curses.endwin()
+    if dietrace != 0:
+        dietrace.print_exc()

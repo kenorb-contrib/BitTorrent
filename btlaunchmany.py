@@ -180,8 +180,9 @@ class StatusUpdater:
             while (not filecheck.acquire(0) and not self.myinfo['kill'].isSet()):
                 self.myinfo['status'] = 'disk wait'
                 sleep(0.1)
-            self.myinfo['checking'] = 1
-            self.checking = 1
+            if not self.myinfo['kill'].isSet():
+                self.myinfo['checking'] = 1
+                self.checking = 1
         return self.file[:-len(ext)]
     
     def display(self, dict = {}):
