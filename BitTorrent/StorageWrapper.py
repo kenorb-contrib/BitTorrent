@@ -57,7 +57,7 @@ class StorageWrapper:
             self.amount_left -= self._piecelen(piece)
             self.waschecked[piece] = check_hashes
         lastlen = self._piecelen(len(hashes) - 1)
-        for i in xrange(len(hashes) - 1, -1, -1):
+        for i in xrange(len(hashes)):
             if not self._waspre(i):
                 self.holes.append(i)
             elif not check_hashes:
@@ -70,9 +70,9 @@ class StorageWrapper:
                 s = sh.digest()
                 if s == hashes[i]:
                     markgot(i, i)
-                elif targets.get(s) and len(v) == piece_size:
+                elif targets.get(s) and self._piecelen(i) == self._piecelen(targets[s][-1]):
                     markgot(targets[s].pop(), i)
-                elif not self.have[-1] and sp == hashes[-1]:
+                elif not self.have[-1] and sp == hashes[-1] and (i == len(hashes) - 1 or not self._waspre(len(hashes) - 1)):
                     markgot(len(hashes) - 1, i)
                 else:
                     self.holes.append(i)
@@ -143,7 +143,7 @@ class StorageWrapper:
 
     def _piece_came_in(self, index, begin, piece):
         if not self.places.has_key(index):
-            n = self.holes.pop()
+            n = self.holes.pop(0)
             if self.places.has_key(n):
                 oldpos = self.places[n]
                 old = self.storage.read(self.piece_size * oldpos, self._piecelen(n))
