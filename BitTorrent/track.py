@@ -224,7 +224,7 @@ class Tracker:
         if len(cache) < self.response_size:
             for key, value in self.downloads.setdefault(
                     infohash, {}).items():
-                if not cache.get('nat'):
+                if not value.get('nat'):
                     cache.append({'peer id': key, 'ip': value['ip'], 
                         'port': value['port']})
             shuffle(cache)
