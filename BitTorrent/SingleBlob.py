@@ -5,6 +5,7 @@ from sha import sha
 from random import shuffle
 from threading import Event
 from suck import suck
+from cStringIO import StringIO
 true = 1
 false = 0
 
@@ -35,21 +36,19 @@ class SingleBlob:
                 callback, open, exists, getsize, flag = Event(),
                 statusfunc = dummy_status):
         try:
-            self.init(file, file_length, pieces, piece_length, callback, 
-                open, exists, getsize, flag, statusfunc)
+            self.fileobj = MultiFile([(file, file_length)], open, exists, getsize, statusfunc)
+            self.init(file_length, pieces, piece_length, callback, 
+                flag, statusfunc)
         except IOError, e:
             callback(false, 'got disk access error -' + str(e), fatal = true)
-
-    def init(self, file, file_length, pieces, piece_length,
-                callback, open, exists, getsize, flag,
-                statusfunc):
-        self.open = open
-        self.callback = callback
-        try:
-            self.indices = make_indices(pieces, piece_length, file_length)
         except ValueError, e:
-            callback(false, 'bad data from server - ' + str(e), fatal = true)
+            callback(false, 'error - ' + str(e), fatal = true)
             return
+
+    def init(self, file_length, pieces, piece_length,
+                callback, flag, statusfunc):
+        self.callback = callback
+        self.indices = make_indices(pieces, piece_length, file_length)
         # hash: 1
         self.complete = {}
         # hash: 1
@@ -58,60 +57,22 @@ class SingleBlob:
             self.want[i] = 1
         self.want_list = self.want.keys()
         shuffle(self.want_list)
-        if exists(file):
-            size = getsize(file)
-            if size > file_length:
-                callback(false, 'existing file size too large')
-                return
-            self.h = self.open(file, 'rb+')
-            if file_length == 0:
-                callback(true)
-                return
-            if size < file_length:
-                statusfunc(activity = 'finishing file allocation', 
-                    fractionDone = float(size)/file_length)
-                for l in range(size, file_length, 
-                        max(file_length/100, 1024))[1:]:
-                    self.h.seek(l)
-                    self.h.write(chr(1))
-                    self.h.flush()
-                    statusfunc(fractionDone = float(l)/file_length)
-                    if flag.isSet():
-                        return
-                self.h.seek(file_length - 1)
-                self.h.write(chr(1))
-                self.h.flush()
+        if len(self.want_list) == 0:
+            self.callback(true)
+            return
+        if self.fileobj.preexisting:
             i = 0
-            numofblobs = len(self.want.keys())
+            numofblobs = len(self.want_list)
             statusfunc(activity = 'checking existing file', 
                 fractionDone = 0)
             for blob in self.want.keys():
-                self.check_blob(blob)
-                if len(self.want) == 0:
-                    return
+                self._check_blob(blob)
                 fracdone = float(i)/numofblobs
                 statusfunc(fractionDone = float(i)/numofblobs)
                 i += 1
                 if flag.isSet():
                     return
-        else:
-            self.h = self.open(file, 'wb+')
-            if file_length == 0:
-                callback(true)
-                return
-            statusfunc(fractionDone = 0,
-                       activity = 'allocating new file')
-            for l in range(0, file_length, max(file_length/100, 1024))[1:]:
-                self.h.seek(l)
-                self.h.write(chr(1))
-                self.h.flush()
-                statusfunc(fractionDone = float(l)/file_length)
-                if flag.isSet():
-                    return
-            self.h.seek(file_length - 1)
-            self.h.write(chr(1))
-            self.h.flush()
-        statusfunc(fractionDone = 1.0)
+            statusfunc(fractionDone = 1.0)
 
     def get_size(self, blob):
         begin, end = self.indices[blob][0]
@@ -140,8 +101,7 @@ class SingleBlob:
         myend = mybegin + length
         if myend > endindex:
             return None
-        self.h.seek(mybegin)
-        return suck(self.h, myend - mybegin)
+        return self.fileobj.read(mybegin, myend - mybegin)
 
     def do_I_want(self, blob):
         return self.want.has_key(blob)
@@ -160,8 +120,7 @@ class SingleBlob:
 
     def _save_slice(self, blob, begin, slice):
         beginindex, endindex = self.indices[blob][0]
-        self.h.seek(beginindex + begin)
-        self.h.write(slice)
+        self.fileobj.write(beginindex + begin, slice)
 
     def check_blob(self, blob):
         try:
@@ -172,14 +131,12 @@ class SingleBlob:
 
     def _check_blob(self, blob):
         beginindex, endindex = self.indices[blob][0]
-        self.h.seek(beginindex)
-        x = suck(self.h, endindex - beginindex)
+        x = self.fileobj.read(beginindex, endindex - beginindex)
         if sha(x).digest() != blob:
             return false
         else:
             for begin, end in self.indices[blob][1:]:
-                self.h.seek(begin)
-                self.h.write(x)
+                self.fileobj.write(begin, x)
         self.complete[blob] = 1
         del self.want[blob]
         self.want_list.remove(blob)
@@ -187,9 +144,158 @@ class SingleBlob:
             self.callback(true)
         return true
 
+class MultiFile:
+    def __init__(self, files, open, exists, getsize, statusfunc):
+        self.ranges = []
+        total = 0
+        so_far = 0
+        for file, length in files:
+            if length != 0:
+                self.ranges.append((total, total + length, file))
+                total += length
+                if exists(file):
+                    l = getsize(file)
+                    if l > length:
+                        raise ValueError, 'existing file %s too large' % file
+                    so_far += l
+            else:
+                if exists(file):
+                    if getsize(file) > 0:
+                        raise ValueError, 'existing file %s too large' % file
+                else:
+                    open(file, 'wb').close()
+        self.handles = {}
+        self.preexisting = false
+        for file, length in files:
+            if exists(file):
+                self.handles[file] = open(file, 'rb+')
+                self.preexisting = true
+            else:
+                self.handles[file] = open(file, 'wb+')
+        if total > so_far:
+            interval = max(2048, total / 100)
+            statusfunc(activity = 'allocating', 
+                fractionDone = float(so_far)/total)
+            for file, length in files:
+                l = 0
+                if exists(file):
+                    l = getsize(file)
+                    if l == length:
+                        continue
+                h = self.handles[file]
+                for i in range(l, length, interval)[1:] + [length-1]:
+                    h.seek(i)
+                    h.write(chr(1))
+                    h.flush()
+                    statusfunc(fractionDone = float(so_far + i - l)/total)
+                so_far += length - l
+            statusfunc(fractionDone = 1.0)
+
+    def intervals(self, pos, amount):
+        r = []
+        stop = pos + amount
+        for begin, end, file in self.ranges:
+            if end <= pos:
+                continue
+            if begin >= stop:
+                break
+            r.append((file, max(pos, begin) - begin, min(end, stop) - begin))
+        return r
+
+    def read(self, pos, amount):
+        r = StringIO()
+        for file, pos, end in self.intervals(pos, amount):
+            h = self.handles[file]
+            h.seek(pos)
+            r.write(suck(h, end - pos))
+        return r.getvalue()
+        
+    def write(self, pos, s):
+        total = 0
+        for file, begin, end in self.intervals(pos, len(s)):
+            h = self.handles[file]
+            h.seek(begin)
+            h.write(s[total: total + end - begin])
+            total += end - begin
+
 # everything below is for testing
 
 from fakeopen import FakeOpen
+
+def test_multifile_simple():
+    f = FakeOpen()
+    m = MultiFile([('a', 5)], f.open, f.exists, f.getsize, dummy_status)
+    assert f.files.keys() == ['a']
+    assert len(f.files['a']) == 5
+    m.write(0, 'abc')
+    assert m.read(0, 3) == 'abc'
+    m.write(2, 'abc')
+    assert m.read(2, 3) == 'abc'
+    m.write(1, 'abc')
+    assert m.read(0, 5) == 'aabcc'
+    
+def test_multifile_multiple():
+    f = FakeOpen()
+    m = MultiFile([('a', 5), ('2', 4), ('c', 3)], 
+        f.open, f.exists, f.getsize, dummy_status)
+    x = f.files.keys()
+    x.sort()
+    assert x == ['2', 'a', 'c']
+    assert len(f.files['a']) == 5
+    assert len(f.files['2']) == 4
+    assert len(f.files['c']) == 3
+    m.write(3, 'abc')
+    assert m.read(3, 3) == 'abc'
+    m.write(5, 'ab')
+    assert m.read(4, 3) == 'bab'
+    m.write(3, 'pqrstuvw')
+    assert m.read(3, 8) == 'pqrstuvw'
+    m.write(3, 'abcdef')
+    assert m.read(3, 7) == 'abcdefv'
+
+def test_multifile_zero():
+    f = FakeOpen()
+    m = MultiFile([('a', 0)], 
+        f.open, f.exists, f.getsize, dummy_status)
+    assert f.files == {'a': []}
+
+def test_resume_zero():
+    f = FakeOpen({'a': ''})
+    m = MultiFile([('a', 0)], 
+        f.open, f.exists, f.getsize, dummy_status)
+    assert f.files == {'a': []}
+
+def test_multifile_with_zero():
+    f = FakeOpen()
+    m = MultiFile([('a', 3), ('b', 0), ('c', 3)], 
+        f.open, f.exists, f.getsize, dummy_status)
+    m.write(2, 'abc')
+    assert m.read(2, 3) == 'abc'
+    x = f.files.keys()
+    x.sort()
+    assert x == ['a', 'b', 'c']
+    assert len(f.files['a']) == 3
+    assert len(f.files['b']) == 0
+    assert len(f.files['c']) == 3
+
+def test_multifile_resume():
+    f = FakeOpen({'a': 'abc'})
+    m = MultiFile([('a', 4)], 
+        f.open, f.exists, f.getsize, dummy_status)
+    assert f.files.keys() == ['a']
+    assert len(f.files['a']) == 4
+    assert m.read(0, 3) == 'abc'
+
+def test_multifile_mixed_resume():
+    f = FakeOpen({'b': 'abc'})
+    m = MultiFile([('a', 3), ('b', 4)], 
+        f.open, f.exists, f.getsize, dummy_status)
+    x = f.files.keys()
+    x.sort()
+    assert x == ['a', 'b']
+    assert len(f.files['a']) == 3
+    assert len(f.files['b']) == 4
+    assert m.read(3, 3) == 'abc'
 
 class dummycalls:
     def __init__(self):
@@ -376,7 +482,6 @@ def test_resume_partial():
     assert d.r == [(true, '', false)]
 
 def test_resume_with_repeat_piece_present():
-    a = sha('abcabcq').digest()
     b = sha('abc').digest()
     c = sha('q').digest()
     d = dummycalls()
