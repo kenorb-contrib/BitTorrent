@@ -18,9 +18,6 @@ class Connection:
     def __init__(self, connection):
         self.connection = connection
 
-    def is_locally_initiated(self):
-        return self.connection.is_locally_initiated()
-
     def get_ip(self):
         return self.connection.get_ip()
 
@@ -43,12 +40,11 @@ class Connecter:
         self.choker = choker
         self.connections = {}
 
-    def locally_initiated_connection_completed(self, connection):
+    def connection_made(self, connection):
         for c in self.connections.keys():
             if c.get_id() == connection.get_id():
                 connection.close()
                 return
-        connection.send_message('transfer')
         self._make_connection(connection)
 
     def _make_connection(self, connection):
@@ -73,12 +69,6 @@ class Connecter:
         self.connections[connection].upload.flushed()
 
     def got_message(self, connection, message):
-        if not self.connections.has_key(connection):
-            if message != 'transfer':
-                connection.close()
-                return
-            self._make_connection(connection)
-            return
         c = self.connections[connection]
         try:
             m = bdecode(message)
@@ -197,7 +187,7 @@ def test_connect_and_disconnect():
     choker = DummyChoker(events)
     connecter = Connecter(uploadMaker.make, downloadMaker.make, choker)
     connection = DummyConnection('a' * 20, events)
-    connecter.got_message(connection, 'transfer')
+    connecter.connection_made(connection)
 
     assert events[0][0] == 'made upload'
     up = events[0][1]
@@ -220,17 +210,6 @@ def test_connect_and_disconnect():
     assert events == ['disconnected', 'disconnected', ('lost', c)]
     del events[:]
 
-def test_flunk_not_transfer():
-    events = []
-    downloadMaker = DummyDownloadMaker(events)
-    uploadMaker = DummyUploadMaker(events)
-    choker = DummyChoker(events)
-    connecter = Connecter(uploadMaker.make, downloadMaker.make, choker)
-    connection = DummyConnection('a' * 20, events)
-    connecter.got_message(connection, 'garbage')
-
-    assert events == ['close']
-
 def test_bifurcation():
     events = []
     downloadMaker = DummyDownloadMaker(events)
@@ -238,7 +217,7 @@ def test_bifurcation():
     choker = DummyChoker(events)
     connecter = Connecter(uploadMaker.make, downloadMaker.make, choker)
     connection = DummyConnection('a' * 20, events)
-    connecter.got_message(connection, 'transfer')
+    connecter.connection_made(connection)
 
     assert events[0][0] == 'made upload'
     up = events[0][1]
@@ -293,18 +272,17 @@ def test_close_duplicate():
     choker = DummyChoker(events)
     connecter = Connecter(uploadMaker.make, downloadMaker.make, choker)
     connection = DummyConnection('a' * 20, events)
-    connecter.locally_initiated_connection_completed(connection)
+    connecter.connection_made(connection)
 
-    assert events[0] == ('m', 'transfer')
-    assert events[1][0] == 'made upload'
-    up = events[1][1]
-    assert events[2][0] == 'made download'
-    down = events[2][1]
-    assert events[3][0] == 'made'
-    c = events[3][1]
-    assert events[4] == 'intro'
+    assert events[0][0] == 'made upload'
+    up = events[0][1]
+    assert events[1][0] == 'made download'
+    down = events[1][1]
+    assert events[2][0] == 'made'
+    c = events[2][1]
+    assert events[3] == 'intro'
     del events[:]
 
     connection2 = DummyConnection('a' * 20, events)
-    connecter.locally_initiated_connection_completed(connection2)
+    connecter.connection_made(connection2)
     assert events == ['close']

@@ -28,10 +28,9 @@ p = long(''.join([c for c in
         '15728E5A 8AACAA68 FFFFFFFF FFFFFFFF' if c != ' ']), 16)
 
 class EncryptedConnection:
-    def __init__(self, encrypter, connection, dns):
+    def __init__(self, encrypter, connection):
         self.encrypter = encrypter
         self.connection = connection
-        self.dns = dns
         self.complete = false
         self.nonce = encrypter.noncefunc()
         self.buffer = StringIO()
@@ -108,6 +107,8 @@ class EncryptedConnection:
         self.hashout.update(chr(0) * 8)
         self.connection.write(self.encrypt(chr(0) * 8))
         self.connection.write(self.encrypt(self.hashout.digest()[:10]))
+        self.complete = true
+        self.encrypter.connecter.connection_made(self)
         return 18, self.read_reserved3
 
     def read_reserved3(self, s):
@@ -115,9 +116,6 @@ class EncryptedConnection:
         self.hashin.update(s[:8])
         if self.hashin.digest()[:10] != s[8:]:
             return None
-        self.complete = true
-        if self.dns is not None:
-            self.encrypter.connecter.locally_initiated_connection_completed(self)
         return 14, self.read_len
 
     def read_len(self, s):
@@ -158,12 +156,6 @@ class EncryptedConnection:
         assert self.complete
         return self.id
         
-    def get_dns(self):
-        return self.dns
-        
-    def is_locally_initiated(self):
-        return self.dns != None
-
     def send_message(self, message):
         l = int_to_binary(len(message), 4)
         self.hashout.update(l)
@@ -222,12 +214,12 @@ class Encrypter:
     def start_connection(self, dns):
         try:
             c = self.raw_server.start_connection(dns)
-            self.connections[c] = EncryptedConnection(self, c, dns)
+            self.connections[c] = EncryptedConnection(self, c)
         except socket.error:
             pass
         
     def external_connection_made(self, connection):
-        self.connections[connection] = EncryptedConnection(self, connection, None)
+        self.connections[connection] = EncryptedConnection(self, connection)
 
     def connection_flushed(self, connection):
         c = self.connections[connection]
@@ -258,7 +250,7 @@ class DummyConnecter:
         self.m_rec = []
         self.close_next = false
     
-    def locally_initiated_connection_completed(self, connection):
+    def connection_made(self, connection):
         self.c_made.append(connection)
         
     def connection_lost(self, connection):
@@ -371,7 +363,10 @@ def test_proper_communication_initiating_side_close():
     assert dc1.m_rec == []
     assert not c2.closed
     assert rs2.connects == []
-    assert dc2.c_made == []
+    assert len(dc2.c_made) == 1
+    ec2 = dc2.c_made[0]
+    assert ec2.get_id() == e1.get_id()
+    del dc2.c_made[:]
     assert dc2.c_lost == []
     assert dc2.m_rec == []
 
@@ -386,9 +381,7 @@ def test_proper_communication_initiating_side_close():
     assert rs2.connects == []
     assert dc2.c_made == []
     assert dc2.c_lost == []
-    assert len(dc2.m_rec) == 1 and dc2.m_rec[0][1] == 'message 0'
-    ec2 = dc2.m_rec[0][0]
-    assert ec2.get_id() == e1.get_id()
+    assert dc2.m_rec == [(ec2, 'message 0')]
     del dc2.m_rec[:]
 
     ec1.send_message('message 1')
@@ -477,7 +470,10 @@ def test_reconstruction():
     assert dc1.m_rec == []
     assert not c2.closed
     assert rs2.connects == []
-    assert dc2.c_made == []
+    assert len(dc2.c_made) == 1
+    ec2 = dc2.c_made[0]
+    assert ec2.get_id() == e1.get_id()
+    del dc2.c_made[:]
     assert dc2.c_lost == []
     assert dc2.m_rec == []
 
@@ -492,9 +488,7 @@ def test_reconstruction():
     assert rs2.connects == []
     assert dc2.c_made == []
     assert dc2.c_lost == []
-    assert len(dc2.m_rec) == 1 and dc2.m_rec[0][1] == 'message 0'
-    ec2 = dc2.m_rec[0][0]
-    assert ec2.get_id() == e1.get_id()
+    assert dc2.m_rec == [(ec2, 'message 0')]
     del dc2.m_rec[:]
 
     ec1.send_message('message 1')
@@ -583,7 +577,10 @@ def test_proper_communication_receiving_side_close():
     assert dc1.m_rec == []
     assert not c2.closed
     assert rs2.connects == []
-    assert dc2.c_made == []
+    assert len(dc2.c_made) == 1
+    ec2 = dc2.c_made[0]
+    assert ec2.get_id() == e1.get_id()
+    del dc2.c_made[:]
     assert dc2.c_lost == []
     assert dc2.m_rec == []
 
@@ -598,9 +595,7 @@ def test_proper_communication_receiving_side_close():
     assert rs2.connects == []
     assert dc2.c_made == []
     assert dc2.c_lost == []
-    assert len(dc2.m_rec) == 1 and dc2.m_rec[0][1] == 'message 0'
-    ec2 = dc2.m_rec[0][0]
-    assert ec2.get_id() == e1.get_id()
+    assert dc2.m_rec == [(ec2, 'message 0')]
     del dc2.m_rec[:]
 
     ec1.send_message('message 1')
@@ -712,7 +707,10 @@ def test_rejected_data_after_completion():
     assert dc1.m_rec == []
     assert not c2.closed
     assert rs2.connects == []
-    assert dc2.c_made == []
+    assert len(dc2.c_made) == 1
+    ec2 = dc2.c_made[0]
+    assert ec2.get_id() == e1.get_id()
+    del dc2.c_made[:]
     assert dc2.c_lost == []
     assert dc2.m_rec == []
 
@@ -727,9 +725,7 @@ def test_rejected_data_after_completion():
     assert rs2.connects == []
     assert dc2.c_made == []
     assert dc2.c_lost == []
-    assert len(dc2.m_rec) == 1 and dc2.m_rec[0][1] == 'm0'
-    ec2 = dc2.m_rec[0][0]
-    assert ec2.get_id() == e1.get_id()
+    assert dc2.m_rec == [(ec2, 'm0')]
     del dc2.m_rec[:]
 
     ec1.send_message('message 1')
@@ -799,7 +795,10 @@ def test_local_close_in_data_received():
     assert dc1.m_rec == []
     assert not c2.closed
     assert rs2.connects == []
-    assert dc2.c_made == []
+    assert len(dc2.c_made) == 1
+    ec2 = dc2.c_made[0]
+    assert ec2.get_id() == e1.get_id()
+    del dc2.c_made[:]
     assert dc2.c_lost == []
     assert dc2.m_rec == []
 
@@ -814,9 +813,7 @@ def test_local_close_in_data_received():
     assert rs2.connects == []
     assert dc2.c_made == []
     assert dc2.c_lost == []
-    assert len(dc2.m_rec) == 1 and dc2.m_rec[0][1] == 'm0'
-    ec2 = dc2.m_rec[0][0]
-    assert ec2.get_id() == e1.get_id()
+    assert dc2.m_rec == [(ec2, 'm0')]
     del dc2.m_rec[:]
 
     dc2.close_next = true
@@ -887,7 +884,10 @@ def test_local_close_and_extra_data():
     assert dc1.m_rec == []
     assert not c2.closed
     assert rs2.connects == []
-    assert dc2.c_made == []
+    assert len(dc2.c_made) == 1
+    ec2 = dc2.c_made[0]
+    assert ec2.get_id() == e1.get_id()
+    del dc2.c_made[:]
     assert dc2.c_lost == []
     assert dc2.m_rec == []
 
@@ -902,9 +902,7 @@ def test_local_close_and_extra_data():
     assert rs2.connects == []
     assert dc2.c_made == []
     assert dc2.c_lost == []
-    assert len(dc2.m_rec) == 1 and dc2.m_rec[0][1] == 'm0'
-    ec2 = dc2.m_rec[0][0]
-    assert ec2.get_id() == e1.get_id()
+    assert dc2.m_rec == [(ec2, 'm0')]
     del dc2.m_rec[:]
 
     dc2.close_next = true
@@ -976,7 +974,10 @@ def test_local_close_and_rejected_data():
     assert dc1.m_rec == []
     assert not c2.closed
     assert rs2.connects == []
-    assert dc2.c_made == []
+    assert len(dc2.c_made) == 1
+    ec2 = dc2.c_made[0]
+    assert ec2.get_id() == e1.get_id()
+    del dc2.c_made[:]
     assert dc2.c_lost == []
     assert dc2.m_rec == []
 
@@ -991,9 +992,7 @@ def test_local_close_and_rejected_data():
     assert rs2.connects == []
     assert dc2.c_made == []
     assert dc2.c_lost == []
-    assert len(dc2.m_rec) == 1 and dc2.m_rec[0][1] == 'm0'
-    ec2 = dc2.m_rec[0][0]
-    assert ec2.get_id() == e1.get_id()
+    assert dc2.m_rec == [(ec2, 'm0')]
     del dc2.m_rec[:]
 
     dc2.close_next = true
@@ -1073,7 +1072,10 @@ def test_keepalive():
     assert dc1.m_rec == []
     assert not c2.closed
     assert rs2.connects == []
-    assert dc2.c_made == []
+    assert len(dc2.c_made) == 1
+    ec2 = dc2.c_made[0]
+    assert ec2.get_id() == e1.get_id()
+    del dc2.c_made[:]
     assert dc2.c_lost == []
     assert dc2.m_rec == []
 
@@ -1088,9 +1090,7 @@ def test_keepalive():
     assert rs2.connects == []
     assert dc2.c_made == []
     assert dc2.c_lost == []
-    assert len(dc2.m_rec) == 1 and dc2.m_rec[0][1] == 'message 0'
-    ec2 = dc2.m_rec[0][0]
-    assert ec2.get_id() == e1.get_id()
+    assert dc2.m_rec == [(ec2, 'message 0')]
     del dc2.m_rec[:]
 
     ec1.send_message('message 1')
