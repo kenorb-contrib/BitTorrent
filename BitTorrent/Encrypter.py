@@ -68,6 +68,8 @@ class Connection:
 
     def read_peer_id(self, s):
         if not self.id:
+            if s == self.encoder.my_id:
+                return None
             for v in self.encoder.connections.values():
                 if s and v.id == s:
                     return None
