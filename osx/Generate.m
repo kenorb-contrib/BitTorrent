@@ -1,6 +1,7 @@
 #import "Generate.h"
 #import "Tstate.h"
 #import "pystructs.h"
+#import "callbacks.h"
 
 @protocol GCallbacks
 - (void)endGenerate;
