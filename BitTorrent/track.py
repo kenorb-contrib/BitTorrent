@@ -425,9 +425,9 @@ def size_format(s):
         r = str(s) + 'B'
     elif (s < 1048576):
         r = str(int(s/1024)) + 'KiB'
-    elif (s < 1073741824):
+    elif (s < 1073741824l):
         r = str(int(s/1048576)) + 'MiB'
-    elif (s < 1099511627776):
+    elif (s < 1099511627776l):
         r = str(int((s/1073741824.0)*100.0)/100.0) + 'GiB'
     else:
         r = str(int((s/1099511627776.0)*100.0)/100.0) + 'TiB'
