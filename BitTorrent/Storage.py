@@ -60,8 +60,9 @@ class Storage:
 
     def set_readonly(self):
         try:
-            for file in self.handles.keys():
+            for file, old in self.handles.items():
                 self.handles[file] = open(file, 'r+')
+                old.close()
         except (OSError, IOError):
             pass
 
