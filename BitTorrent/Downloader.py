@@ -196,7 +196,9 @@ class SingleDownload:
         if self.downloader.picker.am_I_complete() and self.unhave == 0:
             self.connection.close()
             return
-        if self.downloader.storage.do_I_have_requests(index):
+        if self.downloader.storage.is_endgame():
+            self.fix_download_endgame()
+        elif self.downloader.storage.do_I_have_requests(index):
             if not self.choked:
                 self._request_more([index])
             else:
