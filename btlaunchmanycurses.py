@@ -12,6 +12,7 @@ from os import listdir
 from os.path import abspath, join, exists
 from sys import argv, version, stdout, exit
 from time import sleep
+from signal import signal, SIGWINCH
 import traceback
 
 assert version >= '2', "Install Python 2.0 or greater"
@@ -46,6 +47,43 @@ def fmtsize(n):
 
 def dummy(*args, **kwargs):
     pass
+
+def winch_handler(signum, stackframe):
+    global scrwin, mainwin, mainwinw, headerwin, totalwin, statuswin
+    global scrpan, mainpan, headerpan, totalpan, statuspan
+    # SIGWINCH. Remake the frames!
+    ## Curses Trickery
+    curses.endwin()
+    # delete scrwin somehow?
+    scrwin.refresh()
+    scrwin = curses.newwin(0, 0, 0, 0)
+    scrh, scrw = scrwin.getmaxyx()
+    scrpan = curses.panel.new_panel(scrwin)
+    ### Curses Setup
+    scrh, scrw = scrwin.getmaxyx()
+    scrpan = curses.panel.new_panel(scrwin)
+    mainwinh = scrh - 5  # - 2 (bars) - 1 (debugwin) - 1 (borderwin) - 1 (totalwin)
+    mainwinw = scrw - 4  # - 2 (bars) - 2 (spaces)
+    mainwiny = 2         # + 1 (bar) + 1 (titles)
+    mainwinx = 2         # + 1 (bar) + 1 (space)
+    # + 1 to all windows so we can write at mainwinw
+    mainwin = curses.newwin(mainwinh, mainwinw+1, mainwiny, mainwinx)
+    mainpan = curses.panel.new_panel(mainwin)
+
+    headerwin = curses.newwin(1, mainwinw+1, 1, mainwinx)
+    headerpan = curses.panel.new_panel(headerwin)
+
+    totalwin = curses.newwin(1, mainwinw+1, scrh-3, mainwinx)
+    totalpan = curses.panel.new_panel(totalwin)
+
+    statuswin = curses.newwin(1, mainwinw+1, scrh-2, mainwinx)
+    statuspan = curses.panel.new_panel(statuswin)
+    mainwin.scrollok(0)
+    headerwin.scrollok(0)
+    totalwin.scrollok(0)
+    statuswin.addstr(0, 0, 'window resize: %s x %s' % (scrw, scrh))
+    statuswin.scrollok(0)
+    prepare_display()
 
 ext = '.torrent'
 wininfo = {} 
@@ -212,11 +250,8 @@ class SingleCursesDisplayer:
         curses.doupdate()
 
 def prepare_display():
-    scrwin.hline(0, 1, '-', scrw - 2)
-    scrwin.hline(scrh - 1, 1, '-', scrw - 2)
-    scrwin.vline(1, 0, '|', scrh - 2)
-    scrwin.vline(1, scrw - 1, '|', scrh - 2)
-   
+    global mainwinw, scrwin, headerwin, totalwin
+    scrwin.border('|','|','-','-',' ',' ',' ',' ')
     headerwin.addnstr(0, 0, 'Filename', mainwinw - 25, curses.A_BOLD)
     headerwin.addnstr(0, mainwinw - 24, 'Size', 4);
     headerwin.addnstr(0, mainwinw - 18, 'Download', 8);
@@ -244,26 +279,28 @@ if __name__ == '__main__':
     except:
         print 'Textmode GUI initialization failed, cannot proceed.'
         exit(-1)
-    scrh, scrw = scrwin.getmaxyx()
-    scrpan = curses.panel.new_panel(scrwin)
-    mainwinh = scrh - 5  # - 2 (bars) - 1 (debugwin) - 1 (borderwin) - 1 (totalwin)
-    mainwinw = scrw - 4  # - 2 (bars) - 2 (spaces)
-    mainwiny = 2         # + 1 (bar) + 1 (titles)
-    mainwinx = 2         # + 1 (bar) + 1 (space)
-    # + 1 to all windows so we can write at mainwinw
-    mainwin = curses.newwin(mainwinh, mainwinw+1, mainwiny, mainwinx)
-    mainpan = curses.panel.new_panel(mainwin)
-
-    headerwin = curses.newwin(1, mainwinw+1, 1, mainwinx)
-    headerpan = curses.panel.new_panel(headerwin)
-
-    totalwin = curses.newwin(1, mainwinw+1, scrh-3, mainwinx)
-    totalpan = curses.panel.new_panel(totalwin)
-
-    statuswin = curses.newwin(1, mainwinw+1, scrh-2, mainwinx)
-    statuspan = curses.panel.new_panel(statuswin)
     try:
         try:
+            signal(SIGWINCH, winch_handler)
+            ### Curses Setup
+            scrh, scrw = scrwin.getmaxyx()
+            scrpan = curses.panel.new_panel(scrwin)
+            mainwinh = scrh - 5  # - 2 (bars) - 1 (debugwin) - 1 (borderwin) - 1 (totalwin)
+            mainwinw = scrw - 4  # - 2 (bars) - 2 (spaces)
+            mainwiny = 2         # + 1 (bar) + 1 (titles)
+            mainwinx = 2         # + 1 (bar) + 1 (space)
+            # + 1 to all windows so we can write at mainwinw
+            mainwin = curses.newwin(mainwinh, mainwinw+1, mainwiny, mainwinx)
+            mainpan = curses.panel.new_panel(mainwin)
+
+            headerwin = curses.newwin(1, mainwinw+1, 1, mainwinx)
+            headerpan = curses.panel.new_panel(headerwin)
+
+            totalwin = curses.newwin(1, mainwinw+1, scrh-3, mainwinx)
+            totalpan = curses.panel.new_panel(totalwin)
+
+            statuswin = curses.newwin(1, mainwinw+1, scrh-2, mainwinx)
+            statuspan = curses.panel.new_panel(statuswin)
             mainwin.scrollok(0)
             headerwin.scrollok(0)
             totalwin.scrollok(0)

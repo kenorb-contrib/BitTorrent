@@ -122,7 +122,7 @@ def subfiles(d):
     return r
 
 def prog(amount):
-    print '%.1f%% complete' % (amount * 100)
+    print '%.1f%% complete\r' % (amount * 100),
 
 if __name__ == '__main__':
     make_meta_file(argv[1], argv[2], progress = prog)
