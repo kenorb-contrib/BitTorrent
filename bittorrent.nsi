@@ -4,6 +4,7 @@
 Outfile bittorrent.exe
 Name BitTorrent
 SilentInstall silent
+SetCompressor bzip2
 InstallDir "$PROGRAMFILES\BitTorrent\"
 Section "Install"
   WriteUninstaller "$INSTDIR\uninstall.exe"

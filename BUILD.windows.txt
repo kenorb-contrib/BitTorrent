@@ -10,10 +10,12 @@ in a shell, go to the root BitTorrent directory and run this command
 
 python winsetup.py py2exe --windows
 
-change to the newly created subdirectory dist\btdownloadprefetched 
-and run nsis on bittorrent.nsi
+change to the newly created subdirectory dist\btdownloadprefetched,
+copy bittorrent.nsi into that directory, and run nsis on it.
 
-c:\progra~1\nsis\makensis.exe ..\..\bittorrent.nsi
+cd dist\btdownloadprefetched
+copy ..\..\bittorrent.nsi bittorrent.nsi
+c:\progra~1\nsis\makensis.exe bittorrent.nsi
 
 This will create an installer called bittorrent.exe
 
