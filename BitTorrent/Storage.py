@@ -77,8 +77,6 @@ class Storage:
             h = self.handles[file]
             h.seek(pos)
             r.append(h.read(end - pos))
-        if len(r) == 1:
-            return r[0]
         return ''.join(r)
 
     def write(self, pos, s):
