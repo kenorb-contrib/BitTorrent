@@ -25,7 +25,7 @@ st = string_template
 
 def exact_length(l):
     def func(s, verbose, l = l):
-        if type(s) != StringType:
+        if type(s) != types.StringType:
             raise ValueError, 'should have been string'
         if len(s) != l:
             raise ValueError, 'wrong length, should have been ' + str(l) + ' was ' + str(len(s))

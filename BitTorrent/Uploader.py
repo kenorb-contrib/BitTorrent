@@ -13,16 +13,18 @@ class Upload:
         self.reported_choked = false
         self.interested = false
         self.buffer = []
-        connection.send_message({'type': 'I have', 
+
+    def send_intro(self):
+        self.connection.send_message({'type': 'I have', 
             'blobs': blobs.get_list_of_blobs_I_have()})
 
-    def got_done(self, message):
+    def got_done(self):
         if self.interested:
             self.interested = false
             del self.buffer[:]
             self.choker.not_interested(self.connection)
 
-    def got_interested(self, message):
+    def got_interested(self):
         if not self.interested:
             self.interested = true
             self.choker.interested(self.connection)
