@@ -26,6 +26,8 @@ BITFIELD = chr(5)
 REQUEST = chr(6)
 # index, begin, piece
 PIECE = chr(7)
+# index, begin, piece
+CANCEL = chr(8)
 
 class Connection:
     def __init__(self, connection):
@@ -58,6 +60,10 @@ class Connection:
 
     def send_request(self, index, begin, length):
         self.connection.send_message(REQUEST + tobinary(index) + 
+            tobinary(begin) + tobinary(length))
+
+    def send_cancel(self, index, begin, length):
+        self.connection.send_message(CANCEL + tobinary(index) + 
             tobinary(begin) + tobinary(length))
 
     def send_piece(self, index, begin, piece):
@@ -149,6 +155,16 @@ class Connecter:
                 return
             c.upload.got_request(i, toint(message[5:9]), 
                 toint(message[9:]))
+        elif t == CANCEL:
+            if len(message) != 13:
+                connection.close()
+                return
+            i = toint(message[1:5])
+            if i >= self.numpieces:
+                connection.close()
+                return
+            c.upload.got_cancel(i, toint(message[5:9]), 
+                toint(message[9:]))
         elif t == PIECE:
             if len(message) <= 9:
                 connection.close()
@@ -179,6 +195,9 @@ class DummyUpload:
 
     def got_request(self, index, begin, length):
         self.events.append(('request', index, begin, length))
+
+    def got_cancel(self, index, begin, length):
+        self.events.append(('cancel', index, begin, length))
 
 class DummyDownload:
     def __init__(self, events):
@@ -245,6 +264,7 @@ def test_operation():
     co.got_message(dc, NOT_INTERESTED)
     co.got_message(dc, HAVE + tobinary(2))
     co.got_message(dc, REQUEST + tobinary(1) + tobinary(5) + tobinary(6))
+    co.got_message(dc, CANCEL + tobinary(2) + tobinary(3) + tobinary(4))
     co.got_message(dc, PIECE + tobinary(1) + tobinary(0) + 'abc')
     co.got_message(dc, PIECE + tobinary(1) + tobinary(3) + 'def')
     co.connection_flushed(dc)
@@ -255,17 +275,20 @@ def test_operation():
     cc.send_unchoke()
     cc.send_have(4)
     cc.send_request(0, 2, 1)
+    cc.send_cancel(1, 2, 3)
     cc.send_piece(1, 2, 'abc')
     co.connection_lost(dc)
     x = ['made upload', 'made download', 'made', 
         ('bitfield', [true, true, false]), 'choke', 'unchoke',
-        'interested', 'not interested', ('have', 2), ('request', 1, 5, 6),
+        'interested', 'not interested', ('have', 2), 
+        ('request', 1, 5, 6), ('cancel', 2, 3, 4),
         ('piece', 1, 0, 'abc'), ('piece', 1, 3, 'def'), 
         ('m', HAVE + tobinary(1)),
         'flushed', ('m', BITFIELD + chr(6)), ('m', INTERESTED), 
         ('m', NOT_INTERESTED), ('m', CHOKE), ('m', UNCHOKE), 
         ('m', HAVE + tobinary(4)), ('m', REQUEST + tobinary(0) + 
-        tobinary(2) + tobinary(1)), ('m', PIECE + tobinary(1) + 
+        tobinary(2) + tobinary(1)), ('m', CANCEL + tobinary(1) + 
+        tobinary(2) + tobinary(3)), ('m', PIECE + tobinary(1) + 
         tobinary(2) + 'abc'), 'disconnected', 'lost']
     for a, b in zip (events, x):
         assert a == b, `a, b`

@@ -63,6 +63,12 @@ class Upload:
             self.buffer.append((index, begin, length))
             self.flushed()
 
+    def got_cancel(self, index, begin, length):
+        try:
+            self.buffer.remove((index, begin, length))
+        except ValueError:
+            pass
+
     def choke(self):
         if not self.choked:
             self.choked = true
@@ -216,6 +222,22 @@ def test_sends_immediately():
     assert events == ['do I have', 'get have list', 
         ('bitfield', [false, true]), 'unchoke', 'interested', 
         ('get piece', 0, 1, 3), ('piece', 0, 1, 'aaa')]
+
+def test_cancel():
+    events = []
+    dco = DummyConnection(events)
+    dch = DummyChoker(events)
+    ds = DummyStorage(events)
+    u = Upload(dco, dch, ds, 100, 20, [0], 5.0)
+    u.unchoke()
+    u.got_interested()
+    u.got_request(0, 1, 3)
+    u.got_cancel(0, 1, 3)
+    u.got_cancel(0, 1, 2)
+    u.flushed()
+    dco.flushed = true
+    assert events == ['do I have', 'get have list', 
+        ('bitfield', [false, true]), 'unchoke', 'interested']
 
 def test_clears_on_not_interested():
     events = []
