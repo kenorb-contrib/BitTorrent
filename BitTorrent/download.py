@@ -266,7 +266,7 @@ def download(params, filefunc, statusfunc, finfunc, errorfunc, doneflag, cols, p
         rawserver.external_add_task, storagewrapper.get_amount_left, 
         upmeasure.get_total, downmeasure.get_total, listen_port, 
         config['ip'], myid, infohash, config['http_timeout'], errorfunc, 
-        config['max_initiate'], doneflag)
+        config['max_initiate'], doneflag, upmeasure.get_rate, downmeasure.get_rate)
     if config['spew']:
         spewflag.set()
     DownloaderFeedback(choker, rawserver.add_task, statusfunc, 

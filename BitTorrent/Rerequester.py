@@ -10,7 +10,8 @@ from socket import error
 class Rerequester:
     def __init__(self, url, interval, sched, howmany, minpeers, 
             connect, externalsched, amount_left, up, down,
-            port, ip, myid, infohash, timeout, errorfunc, maxpeers, doneflag):
+            port, ip, myid, infohash, timeout, errorfunc, maxpeers, doneflag,
+            upratefunc, downratefunc):
         self.url = ('%s?info_hash=%s&peer_id=%s&port=%s' %
             (url, quote(infohash), quote(myid), str(port)))
         if ip != '':
@@ -31,6 +32,8 @@ class Rerequester:
         self.errorfunc = errorfunc
         self.maxpeers = maxpeers
         self.doneflag = doneflag
+        self.upratefunc = upratefunc
+        self.downratefunc = downratefunc
         self.last_failed = True
         self.sched(self.c, interval / 2)
 
@@ -60,7 +63,7 @@ class Rerequester:
         set = SetOnce().set
         def checkfail(self = self, set = set, callback = callback):
             if set():
-                if self.last_failed:
+                if self.last_failed and self.upratefunc() < 100 and self.downratefunc() < 100:
                     self.errorfunc('Problem connecting to tracker - timeout exceeded')
                 self.last_failed = True
                 callback()
