@@ -192,7 +192,7 @@ def track(args):
         print 'run with no arguments for parameter explanations'
         return
     try:
-        h = urlopen('http://bitconjurer.org/BitTorrent/status-tracker-02-09-01.txt')
+        h = urlopen('http://bitconjurer.org/BitTorrent/status-tracker-02-09-04.txt')
         status = h.read().strip()
         h.close()
         if status != 'current':
