@@ -22,10 +22,6 @@ def takesArgument(aDescription):
     else:
         return 0
 
-def usage(str, exitval = 1):
-    print 'error - ' + str
-    sys.exit(exitval)
-
 def combinedLineForm(longDescription, shortDescription):
     s = ""
     if longDescription:
@@ -39,62 +35,43 @@ def combinedLineForm(longDescription, shortDescription):
 
     return s
 
-def formatDefinitions(optionDefinitions):
+def formatDefinitions(optionDefinitions, COLS):
     s = StringIO()
     outArray = []
-    maxOptLength = 0
     for i in optionDefinitions:
         garbage, longDescription, shortDescription, default, doc = i
 
         lineForm = combinedLineForm(longDescription, shortDescription)
-        if maxOptLength < len(lineForm):
-            maxOptLength = len(lineForm)
         if default is not None:
             doc += ' defaults to ' + `default`
         outArray.append( (lineForm, doc) )
 
-    try:
-        import curses
-        curses.initscr()
-        COLS = curses.COLS
-        curses.endwin()
-    except:
-        COLS = 80
+    bodyLineString = " " * 10
+    targetBodyWidth = COLS - 11
 
-    firstLineString = "%%-%ds : " % maxOptLength
-    bodyLineString = " " * len(firstLineString % "")
-    targetBodyWidth = COLS - len(bodyLineString) - 2
-
-    if targetBodyWidth < 10:
-        targetBodyWidth = COLS - 1
-        firstLineString = firstLineString[:-3] + "\n "
+    if targetBodyWidth < 15:
+        targetBodyWidth = COLS - 2
         bodyLineString = " "
 
-    for head,body in outArray:
-        if len(body) < targetBodyWidth:
-            s.write(firstLineString % head)
-            s.write(body)
-            s.write("\n")
-        else:
-            outAmount = 0
-            splitBody = string.split(body)
-            for aWord in splitBody:
-                if not outAmount:
-                    s.write(firstLineString % head)
-                    s.write(aWord)
-                    outAmount = len(aWord)
-                else:
-                    if outAmount + (len(aWord) + 1) > targetBodyWidth:
-                        s.write("\n")
-                        s.write(bodyLineString)
-                        s.write(aWord)
-                        outAmount = len(aWord)
-                    else:
-                        s.write(" ")
-                        s.write(aWord)
-                        outAmount = outAmount + len(aWord) + 1
-            s.write("\n")
+    for head, body in outArray:
+        s.write(head + '\n')
+        splitBody = string.split(body)
+        outAmount = 0
+        for aWord in splitBody:
+            if outAmount == 0:
+                s.write(bodyLineString + aWord)
+                outAmount = len(aWord)
+            elif outAmount + len(aWord) >= targetBodyWidth:
+                s.write("\n" + bodyLineString + aWord)
+                outAmount = len(aWord)
+            else:
+                s.write(' ' + aWord)
+                outAmount += len(aWord) + 1
+        s.write("\n\n")
     return s.getvalue()
+
+def usage(str):
+    raise ValueError(str)
 
 def checkOpt(config, commandLineOptionValue, shortOptDictionary, longOptDictionary):
     key, value = commandLineOptionValue

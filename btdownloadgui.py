@@ -6,8 +6,7 @@
 from sys import argv, version
 assert version >= '2', "Install Python 2.0 or greater"
 
-from BitTorrent.download import download, downloadurl, defaults
-from BitTorrent.parseargs import parseargs, formatDefinitions
+from BitTorrent.download import download
 from threading import Event, Thread
 from wxPython.wx import *
 from threading import Thread
@@ -51,7 +50,6 @@ class DisplayInfo(wxFrame):
         lc.centreX.SameAs(self, wxCentreX)
         lc.centreY.SameAs(self, wxBottom, -20)
         lc.height.AsIs()
-        #lc.width.AsIs()
         lc.width.PercentOf(self, wxWidth, 50)
         self.button.SetConstraints(lc);
 
@@ -91,31 +89,24 @@ class MyApp(wxApp):
         self.SetTopWindow(self.d)
         return 1
 
-def run(configDictionary, files, prefetched = None):
+def run(params):
     doneflag = Event()
     d = DisplayInfo(doneflag)
     app = MyApp(0, d)
-    Thread(target = next, kwargs = {'files': files, 'prefetched': prefetched, 'd': d, 'doneflag': doneflag, 'configDictionary': configDictionary}).start()
+    Thread(target = next, args = [params, d, doneflag]).start()
     app.MainLoop()
 
-def next(files, prefetched, d, doneflag, configDictionary):
+def next(params, d, doneflag):
     def getname(default, d = d):
         f = Event()
         bucket = []
         wxPostEvent(d, UpdateFileEvent(default, bucket, f))
         f.wait()
         return bucket[0]
-    if prefetched is None:
-        downloadurl(files[0], getname, d.set, doneflag, configDictionary)
-    else:
-        download(prefetched, getname, d.set, doneflag, configDictionary)
+    download(params, getname, d.set, doneflag, 100)
+
     if not d.displayed:
         d.Destroy()
 
 if __name__ == '__main__':
-    if len(argv) == 1:
-        print "usage: %s [options] <url> <file>" % argv[0]
-        print formatDefinitions(configDefinitions)
-    else:
-        config, files = parseargs(argv[1:], defaults, 1, 1) 
-        run(config, files)
+    run(argv[1:])
