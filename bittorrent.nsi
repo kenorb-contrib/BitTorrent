@@ -1,7 +1,7 @@
 # Written by Bram Cohen
 # see LICENSE.txt for license information
 
-!define VERSION "3.4.1"
+!define VERSION "3.4.2"
 Outfile BitTorrent-${VERSION}.exe
 Name BitTorrent
 SilentInstall silent

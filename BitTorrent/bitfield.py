@@ -1,59 +1,77 @@
-# Written by Bram Cohen
+# Written by Bram Cohen, Uoti Urpala, and John Hoffman
 # see LICENSE.txt for license information
 
-from array import array
-counts = [sum([(i >> j) & 1 for j in xrange(8)]) for i in xrange(256)]
+try:
+    True
+except:
+    True = 1
+    False = 0
+    bool = lambda x: not not x
+
+try:
+    sum([1])
+    negsum = lambda a: len(a)-sum(a)
+except:
+    negsum = lambda a: reduce(lambda x,y: x+(not y), a, 0)
+    
+def _int_to_booleans(x):
+    r = []
+    for i in range(8):
+        r.append(bool(x & 0x80))
+        x <<= 1
+    return tuple(r)
+
+lookup_table = [_int_to_booleans(i) for i in range(256)]
+
+reverse_lookup_table = {}
+for i in xrange(256):
+    reverse_lookup_table[lookup_table[i]] = chr(i)
+
 
 class Bitfield:
     def __init__(self, length, bitstring = None):
         self.length = length
-        rlen, extra = divmod(length, 8)
-        if extra:
-            rlen += 1
-        if bitstring is None:
-            self.numfalse = length
-            self.bits = array('B', chr(0) * rlen)
-        else:
-            if len(bitstring) != rlen:
+        if bitstring is not None:
+            extra = len(bitstring) * 8 - length
+            if extra < 0 or extra >= 8:
                 raise ValueError
-            if extra:
-                if (ord(bitstring[-1]) << extra) & 0xFF != 0:
+            t = lookup_table
+            r = []
+            for c in bitstring:
+                r.extend(t[ord(c)])
+            if extra > 0:
+                if r[-extra:] != [0] * extra:
                     raise ValueError
-            c = counts
-            self.numfalse = length - sum([c[ord(i)] for i in bitstring])
-            if self.numfalse != 0:
-                self.bits = array('B', bitstring)
-            else:
-                self.bits = None
+                del r[-extra:]
+            self.array = r
+            self.numfalse = negsum(r)
+        else:
+            self.array = [False] * length
+            self.numfalse = length
 
     def __setitem__(self, index, val):
-        assert val == 1
-        if self[index]:
-            return
-        a, b = divmod(index, 8)
-        self.bits[a] |= (1 << (7 - b))
-        self.numfalse -= 1
-        if self.numfalse == 0:
-            self.bits = None
+        val = bool(val)
+        self.numfalse += self.array[index]-val
+        self.array[index] = val
 
     def __getitem__(self, index):
-        if self.bits is None:
-            return 1
-        a, b = divmod(index, 8)
-        return (self.bits[a] >> (7 - b)) & 1
+        return self.array[index]
 
     def __len__(self):
         return self.length
 
     def tostring(self):
-        if self.bits is None:
-            rlen, extra = divmod(self.length, 8)
-            r = chr(0xFF) * rlen
-            if extra:
-                r += chr((0xFF << (8 - extra)) & 0xFF)
-            return r
-        else:
-            return self.bits.tostring()
+        booleans = self.array
+        t = reverse_lookup_table
+        s = len(booleans) % 8
+        r = [ t[tuple(booleans[x:x+8])] for x in xrange(0, len(booleans)-s, 8) ]
+        if s:
+            r += t[tuple(booleans[-s:] + ([0] * (8-s)))]
+        return ''.join(r)
+
+    def complete(self):
+        return not self.numfalse
+
 
 def test_bitfield():
     try:
