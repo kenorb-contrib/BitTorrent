@@ -69,7 +69,7 @@ class SingleBlob:
             if size < file_length:
                 statusfunc(activity = 'finishing file allocation', 
                     fractionDone = float(size)/file_length)
-                for l in xrange(size,file_length,file_length/100+1):
+                for l in range(size,file_length,file_length/100+1)[1:]:
                     self.h.seek(l)
                     self.h.write(chr(1))
                     self.h.flush()
@@ -99,7 +99,7 @@ class SingleBlob:
                 return
             statusfunc(fractionDone = 0,
                        activity = 'allocating new file')
-            for l in xrange(0,file_length,file_length/100+1):
+            for l in range(0,file_length,file_length/100+1)[1:]:
                 self.h.seek(l)
                 self.h.write(chr(1))
                 self.h.flush()
