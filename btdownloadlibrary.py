@@ -7,8 +7,7 @@ from threading import Event
 def dummychoose(default, size, saveas, dir):
     return saveas
 
-def dummydisplay(fractionDone = None, timeEst = None, 
-        downRate = None, upRate = None, activity = None):
+def dummydisplay(dict):
     pass
 
 def dummyerror(message):

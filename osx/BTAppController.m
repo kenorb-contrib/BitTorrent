@@ -82,7 +82,7 @@ static PyThreadState *tstate;
     id controller;
     if([panel runModalForTypes:[NSArray arrayWithObjects:@"torrent", nil]]) {
 	controller = [self loadDLWindow];
-	[self runWithStr:[NSString stringWithFormat:@"--responsefile=%@", [panel filename]] controller:controller];
+	[self runWithStr:@"--responsefile":[panel filename] controller:controller];
     }
     
 }
@@ -91,11 +91,11 @@ static PyThreadState *tstate;
     id controller;     
     [urlWindow orderOut:self];
     controller = [self loadDLWindow];
-    [self runWithStr:[NSString stringWithFormat:@"--url=%@", [url stringValue]] controller:controller];
+    [self runWithStr:@"--url":[url stringValue] controller:controller];
 
 }
 
-- (void)runWithStr:(NSString *)urlstr controller:(id)controller
+- (void)runWithStr:(NSString *)method :(NSString *)str controller:(id)controller
 {
     NSPort *left, *right;
     NSConnection *conn;
@@ -131,13 +131,13 @@ static PyThreadState *tstate;
     [dict setObject:left forKey:@"send"];
     [dict setObject:[NSData dataWithBytes:&chooseFileFlag length:sizeof(PyObject *)] forKey:@"chooseFileFlag"];
     [dict setObject:[NSData dataWithBytes:&flag length:sizeof(PyObject *)] forKey:@"flag"];
-    [dict setObject:urlstr forKey:@"str"];
-    [dict setObject:[NSString stringWithFormat:@"--minport=%@", [defaults objectForKey:MINPORT]] forKey:@"minport"];
-    [dict setObject:[NSString stringWithFormat:@"--maxport=%@", [defaults objectForKey:MAXPORT]] forKey:@"maxport"];
+    [dict setObject:str forKey:@"str"];
+    [dict setObject:method forKey:@"method"];
+    [dict setObject:[NSString stringWithFormat:@"%@", [defaults objectForKey:MINPORT]] forKey:@"minport"];
+    [dict setObject:[NSString stringWithFormat:@"%@", [defaults objectForKey:MAXPORT]] forKey:@"maxport"];
     if (![[defaults objectForKey:IP] isEqualToString:@""]) {
-        [dict setObject:[NSString stringWithFormat:@"--ip=%@", [defaults objectForKey:IP]] forKey:@"ip"];
+        [dict setObject:[NSString stringWithFormat:@"%@", [defaults objectForKey:IP]] forKey:@"ip"];
     }
-    [dict setObject:[NSString stringWithFormat:@"--maxport=%@", [defaults objectForKey:MAXPORT]] forKey:@"maxport"];
     Py_DECREF(mm);
     tstate = PyEval_SaveThread();
     
@@ -149,8 +149,8 @@ static PyThreadState *tstate;
 {
     NSAutoreleasePool *pool;
     bt_ProxyObject *proxy;
-    NSString *str;
-    PyObject *chooseFile, *finished, *display, *nerror, *mm, *md, *dl, *flag, *chooseFileFlag, *ret, *pathUpdated;
+    NSString *str, *method;
+    PyObject *chooseFile, *finished, *display, *nerror, *paramfunc, *mm, *md, *dl, *flag, *chooseFileFlag, *ret, *pathUpdated;
     PyThreadState *ts;
     const char *minport = [[dict objectForKey:@"minport"] cString];
     const char *maxport = [[dict objectForKey:@"maxport"] cString];
@@ -172,21 +172,23 @@ static PyThreadState *tstate;
     PyEval_RestoreThread(ts);    
     // get callbacks and other args
     str = [dict objectForKey:@"str"];
+    method = [dict objectForKey:@"method"];
     chooseFile = PyObject_GetAttrString((PyObject *)proxy, "chooseFile");
     display = PyObject_GetAttrString((PyObject *)proxy, "display");
     finished = PyObject_GetAttrString((PyObject *)proxy, "finished");
     pathUpdated = PyObject_GetAttrString((PyObject *)proxy, "pathUpdated");
     nerror = PyObject_GetAttrString((PyObject *)proxy, "nerror");
+    paramfunc = PyObject_GetAttrString((PyObject *)proxy, "paramfunc");
     [[dict objectForKey:@"flag"] getBytes:&flag];
     
     // do the download!
     if([dict objectForKey:@"ip"]) {
-            ret = PyObject_CallFunction(dl, "[sssss]OOOOOiO", [str cString], "--display_interval=1.5", minport, maxport, [[dict objectForKey:@"ip"] cString],
-                                    chooseFile, display, finished, nerror, flag, 80, pathUpdated);
+            ret = PyObject_CallFunction(dl, "[ssssssssss]OOOOOiOO", [method cString], [str cString], "--display_interval", "1.5", "--minport", minport, "--maxport", maxport, "--ip", [[dict objectForKey:@"ip"] cString],
+                                    chooseFile, display, finished, nerror, flag, 80, pathUpdated, paramfunc);
     }
     else {
-        ret = PyObject_CallFunction(dl, "[ssss]OOOOOiO", [str cString], "--display_interval=1.5", minport, maxport,
-                                    chooseFile, display, finished, nerror, flag, 80, pathUpdated);
+        ret = PyObject_CallFunction(dl, "[ssssssss]OOOOOiOO", [method cString], [str cString], "--display_interval", "1.5", "--minport", minport, "--maxport", maxport,  
+                                    chooseFile, display, finished, nerror, flag, 80, pathUpdated, paramfunc);
     }
     [proxy->dlController dlExited];
     
@@ -208,7 +210,7 @@ static PyThreadState *tstate;
 {
     id controller = [self loadDLWindow];
     
-    [self runWithStr:[NSString stringWithFormat:@"--responsefile=%@", filename] controller:controller];
+    [self runWithStr:@"--responsefile" :filename controller:controller];
     return TRUE;
 }
 

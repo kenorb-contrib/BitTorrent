@@ -7,6 +7,8 @@
 - (oneway void)chooseFile:(in NSString *)defaultFile size:(in double)size isDirectory:(in int)dir;
 - (oneway void)dlExited;
 - (oneway void)pathUpdated:(in NSString *)newPath;
+- (oneway void)paramFunc:(in bycopy NSData *)paramDict;
+- (NSString *)savePath;
 @end
 
 @protocol MetaGenerateCallbacks

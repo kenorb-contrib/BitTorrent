@@ -14,9 +14,12 @@
     IBOutlet id progressMeter;
     IBOutlet id subCheck;
     NSString *fname;
+    PyObject *endflag;
+    BOOL done;
 }
 - (IBAction)generate:(id)sender;
 - (void)open;
+- (IBAction)cancel:(id)sender;
 - (void)displayFile:(NSString *)f;
 - (void)savePanelDidEnd:(NSWindow *)sheet returnCode:(int)returnCode contextInfo:(void  *)contextInfo;
 // drag protocol

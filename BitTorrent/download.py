@@ -85,7 +85,7 @@ defaults = [
         "whether to display diagnostic info to stdout"),
     ]
 
-def download(params, filefunc, statusfunc, finfunc, errorfunc, doneflag, cols, pathFunc = None):
+def download(params, filefunc, statusfunc, finfunc, errorfunc, doneflag, cols, pathFunc = None, paramfunc = None):
     if len(params) == 0:
         errorfunc('arguments are -\n' + formatDefinitions(defaults, cols))
         return
@@ -260,7 +260,17 @@ def download(params, filefunc, statusfunc, finfunc, errorfunc, doneflag, cols, p
         ratemeasure.get_size_left, file_length, finflag,
         config['display_interval'], config['spew'])
 
-    statusfunc(activity = 'connecting to peers')
+    # paramfunc
+    if paramfunc:
+        paramfunc({ 'max_upload_rate' : connecter.change_max_upload_rate,
+                    'max_uploads': choker.change_max_uploads,
+                    'listen_port' : listen_port,
+                    'peer_id' : myid,
+                    'info_hash' : infohash,
+                    'start_connection' : encrypter.start_connection
+                    })
+    
+    statusfunc({"activity" : 'connecting to peers'})
     ann[0] = rerequest.announce
     rerequest.d(0)
     rawserver.listen_forever(encrypter)

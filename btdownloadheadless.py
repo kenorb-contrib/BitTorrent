@@ -42,31 +42,30 @@ class HeadlessDisplayer:
         self.percentDone = '100'
         self.timeEst = 'Download Succeeded!'
         self.downRate = ''
-        self.display()
+        self.display({})
 
     def failed(self):
         self.done = true
         self.percentDone = '0'
         self.timeEst = 'Download Failed!'
         self.downRate = ''
-        self.display()
+        self.display({})
 
     def error(self, errormsg):
         self.errors.append(errormsg)
-        self.display()
+        self.display({})
 
-    def display(self, fractionDone = None, timeEst = None, 
-            downRate = None, upRate = None, activity = None):
-        if fractionDone is not None:
-            self.percentDone = str(float(int(fractionDone * 1000)) / 10)
-        if timeEst is not None:
-            self.timeEst = hours(timeEst)
-        if activity is not None and not self.done:
-            self.timeEst = activity
-        if downRate is not None:
-            self.downRate = '%.0f kB/s' % (float(downRate) / (1 << 10))
-        if upRate is not None:
-            self.upRate = '%.0f kB/s' % (float(upRate) / (1 << 10))
+    def display(self, dict):
+        if dict.has_key('fractionDone'):
+            self.percentDone = str(float(int(dict['fractionDone'] * 1000)) / 10)
+        if dict.has_key('timeEst'):
+            self.timeEst = hours(dict['timeEst'])
+        if dict.has_key('activity') and not self.done:
+            self.timeEst = dict['activity']
+        if dict.has_key('downRate'):
+            self.downRate = '%.0f kB/s' % (float(dict['downRate']) / (1 << 10))
+        if dict.has_key('upRate'):
+            self.upRate = '%.0f kB/s' % (float(dict['upRate']) / (1 << 10))
         print '\n\n\n\n'
         for err in self.errors:
             print 'ERROR:\n' + err + '\n'

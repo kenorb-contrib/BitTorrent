@@ -88,8 +88,12 @@ class CursesDisplayer:
         self.globalerrlist.append(errormsg)
         self.display()
 
-    def display(self, fractionDone = None, timeEst = None,
-            downRate = None, upRate = None, activity = None):
+    def display(self, dict):
+        fractionDone = dict.get('fractionDone', None)
+        timeEst = dict.get('timeEst', None)
+        downRate = dict.get('downRate', None)
+        upRate = dict.get('upRate', None)
+        activity = dict.get('activity', None)
         if activity is not None and not self.done:
             self.activity = activity
         elif timeEst is not None:

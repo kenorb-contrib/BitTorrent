@@ -76,6 +76,15 @@ class Choker:
         if not connection.get_upload().is_choked():
             self._rechoke()
 
+    def change_max_uploads(self, newval):
+        def foo(self=self, newval=newval):
+            self._change_max_uploads(newval)
+        self.schedule(foo, 0);
+        
+    def _change_max_uploads(self, newval):
+        self.max_uploads = newval
+        self._rechoke()
+
 class DummyScheduler:
     def __init__(self):
         self.s = []

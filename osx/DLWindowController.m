@@ -1,5 +1,41 @@
 #import "DLWindowController.h"
 #import "Tstate.h"
+#import <DNSServiceDiscovery/DNSServiceDiscovery.h>
+
+@interface RateItem : NSToolbarItem
+{
+}
+- validate;
+@end
+@implementation RateItem
+- validate 
+{
+    if ([[self target] rateFunc]) {
+        [self setEnabled:YES];
+    }
+    else {
+        [self setEnabled:NO];
+    }
+    return self;
+}
+@end
+@interface MaxUploadsItem : NSToolbarItem
+{
+}
+- validate;
+@end
+@implementation MaxUploadsItem
+- validate 
+{
+    if ([[self target] maxUploadsFunc]) {
+        [self setEnabled:YES];
+    }
+    else {
+        [self setEnabled:NO];
+    }
+    return self;
+}
+@end
 
 @implementation DLWindowController
 
@@ -20,7 +56,15 @@
     dictionaryWithObject:NSHomeDirectory() forKey:LASTDIR];
     [defaults registerDefaults:appDefaults];
 
+    toolBar = [[NSToolbar alloc] initWithIdentifier:@"DLWindow"];
+    [toolBar setDelegate:self];
+    [toolBar setVisible:NO];
     return self;
+}
+
+- (void)awakeFromNib
+{
+    [[self window] setToolbar:toolBar];
 }
 
 - (void)windowWillClose:(NSNotification *)aNotification
@@ -151,30 +195,97 @@
 - (void)display:(NSDictionary *)dict
 {
     NSString *str, *activity;
+    PyObject *spew;
     long est;
 
     if(!done) {   
         activity = [dict objectForKey:@"activity"];
-        frac = [[dict objectForKey:@"fractionDone"] floatValue];
-        
-        // format dict timeEst here and put in ivar timeEst
-        est = [[dict objectForKey:@"timeEst"] longValue];
-        if(est > 0) {
-            [timeEst release];
-            timeEst = [[self hours:est] retain];
+        if ([dict objectForKey:@"fractionDone"]) {
+            frac = [[dict objectForKey:@"fractionDone"] floatValue];
         }
-        if(![activity isEqualToString:@""]) {
+        // format dict timeEst here and put in ivar timeEst
+        if ([dict objectForKey:@"timeEst"]) {
+            est = [[dict objectForKey:@"timeEst"] longValue];
+            if(est > 0) {
+                [timeEst release];
+                timeEst = [[self hours:est] retain];
+            }
+        }
+        if(activity && ![activity isEqualToString:@""]) {
             [timeEst release];
             timeEst = [activity retain];
         }
+        
         str = [NSString stringWithFormat:NSLocalizedString(@"%2.1f%%", @"percent dl completed"), frac * 100];
     
         [percentCompleted setStringValue:str];
         [progressBar setDoubleValue:frac];
         [timeRemaining setStringValue:timeEst];
     }
-    [dlRate setStringValue:[NSString stringWithFormat:NSLocalizedString(@"%2.1f K/s",@"transfer rate"), [[dict objectForKey:@"downRate"] floatValue] / 1024]];
-    [ulRate setStringValue:[NSString stringWithFormat:NSLocalizedString(@"%2.1f K/s", @"transfer rate"), [[dict objectForKey:@"upRate"] floatValue] / 1024]];
+    if ([dict objectForKey:@"downRate"]) {
+        [dlRate setStringValue:[NSString stringWithFormat:NSLocalizedString(@"%2.1f K/s",@"transfer rate"), [[dict objectForKey:@"downRate"] floatValue] / 1024]];
+    }
+    if ([dict objectForKey:@"upRate"]) {
+        [ulRate setStringValue:[NSString stringWithFormat:NSLocalizedString(@"%2.1f K/s", @"transfer rate"), [[dict objectForKey:@"upRate"] floatValue] / 1024]];
+    }
+    
+    if ([dict objectForKey:@"spew"]){
+        [[dict objectForKey:@"spew"] getBytes:&spew];
+        PyEval_RestoreThread([[NSApp delegate] tstate]);
+        [peerStat setStringValue:[NSString stringWithFormat:NSLocalizedString(@"Connected to %d peers.", @"num connected peers info string"), PyList_Size(spew)]];
+        Py_DECREF(spew);
+        [[NSApp delegate] setTstate:PyEval_SaveThread()];
+    }
+}
+
+- (void)paramFunc:(NSData *)paramDict
+{
+    PyObject *dict, *pid, *ihash;
+    char *peer_id, *info_hash;
+    int listen_port;
+    
+    PyEval_RestoreThread([[NSApp delegate] tstate]);
+    [paramDict getBytes:&dict];
+    rateFunc = PyDict_GetItemString(dict, "max_upload_rate");
+    if (rateFunc) {
+        Py_INCREF(rateFunc);
+    }
+    maxUploadsFunc = PyDict_GetItemString(dict, "max_uploads");
+    if (maxUploadsFunc) {
+        Py_INCREF(maxUploadsFunc);
+    }
+    addPeerFunc = PyDict_GetItemString(dict, "start_connection");
+    if (addPeerFunc) {
+        Py_INCREF(addPeerFunc);
+    }
+
+    
+    // rendezvous 
+/*    listen_port = PyInt_AsLong(PyDict_GetItemString(dict, "listen_port"));
+    pid = PyString_AsEncodedObject(PyDict_GetItemString(dict, "peer_id"), "hex", "strict");
+    peer_id = PyString_AsString(pid);
+    ihash = PyString_AsEncodedObject(PyDict_GetItemString(dict, "info_hash"), "hex", "strict");
+    info_hash = PyString_AsString(ihash);
+    
+    if (listen_port && peer_id && info_hash) {
+        publisher = [[NSNetService alloc] initWithDomain:@""
+                                            type:[NSString stringWithFormat:@"_BitTorrent:%s._tcp", info_hash]
+                                        name:[NSString stringWithCString:peer_id] port:listen_port];
+        if(publisher) {
+            [publisher setDelegate:self];
+            [publisher publish];
+        }
+        
+        browser = [[NSNetServiceBrowser alloc] init];
+        if(browser) {
+            [browser setDelegate:self];
+            [browser searchForServicesOfType:[NSString stringWithFormat:@"_BitTorrent:%s._tcp", info_hash] inDomain:@""];
+        }
+    }
+    Py_DECREF(dict);
+    Py_DECREF(pid);
+    Py_DECREF(ihash);*/
+    [[NSApp delegate] setTstate:PyEval_SaveThread()];
 }
 
 - (void)finished
@@ -184,6 +295,7 @@
     timeEst = [NSLocalizedString(@"Download Succeeded.", @"download completed successfully") retain];
     [progressBar setDoubleValue:100.0];
     [timeRemaining setStringValue:timeEst];
+    [dlRate setStringValue:@""];
     [percentCompleted setStringValue:NSLocalizedString(@"100%", @"one hundred percent")];
 }
 
@@ -195,6 +307,9 @@
         [dlRate setStringValue:@""];
         [ulRate setStringValue:@""];
         [percentCompleted setStringValue:@""];
+        if(publisher) {
+            [publisher stop];
+        }
     }
 }
 
@@ -210,8 +325,25 @@
     [timeEst release];
     timeEst = nil;
     PyEval_RestoreThread([[NSApp delegate] tstate]);
-    Py_DECREF(flag);
-    Py_DECREF(chooseflag);
+    if (flag) {
+        Py_DECREF(flag);
+        flag = nil;
+    }
+    if (chooseflag) {
+        Py_DECREF(chooseflag);
+        chooseflag = nil;
+    }
+    if(rateFunc) {
+        Py_DECREF(rateFunc);
+        rateFunc = nil;
+    }
+    if(publisher) {
+        [publisher stop];
+        [publisher release];
+    }
+    if(browser) {
+        [browser release];
+    }
     [[NSApp delegate] setTstate:PyEval_SaveThread()];
     [super dealloc];
 }
@@ -237,4 +369,120 @@
     return YES;
 }
 
+- (PyObject *)rateFunc
+{
+    return rateFunc;
+}
+
+- (PyObject *) maxUploadsFunc
+{
+    return maxUploadsFunc;
+}
+- (IBAction)takeMaxUploadRateFrom:(id)sender
+{
+    PyObject *args;
+    [sender setIntValue:[sender intValue]];
+    PyEval_RestoreThread([[NSApp delegate] tstate]);
+    args = Py_BuildValue("(i)", [sender intValue] * 1000);
+    PyObject_CallObject(rateFunc, args);
+    Py_DECREF(args);
+    [[NSApp delegate] setTstate:PyEval_SaveThread()];    
+}
+- (IBAction)takeMaxUploadsFrom:(id)sender
+{
+    PyObject *args;
+    int val = [sender intValue];
+    if (val < 2) {
+        val = 2;
+    }
+    [sender setIntValue:val];
+    PyEval_RestoreThread([[NSApp delegate] tstate]);
+    args = Py_BuildValue("(i)", val);
+    PyObject_CallObject(maxUploadsFunc, args);
+    Py_DECREF(args);
+    [[NSApp delegate] setTstate:PyEval_SaveThread()];    
+}
+
+
+// toolbar delegate methods
+
+- (NSArray *)toolbarAllowedItemIdentifiers:(NSToolbar*)toolbar
+{
+    return (NSArray *)[NSArray arrayWithObjects:@"max_upload_rate", @"max_uploads", nil];
+}
+
+- (NSArray *)toolbarDefaultItemIdentifiers:(NSToolbar*)toolbar
+{
+    return (NSArray *)[NSArray arrayWithObjects:@"max_upload_rate", @"max_uploads", nil];
+}
+
+- (NSToolbarItem *)toolbar:(NSToolbar *)toolbar itemForItemIdentifier:(NSString *)itemIdentifier willBeInsertedIntoToolbar:(BOOL)flag
+{
+    NSToolbarItem *item;
+    NSRect rect;
+    if ([itemIdentifier isEqualTo:@"max_upload_rate"]) {
+        item = [[RateItem alloc] initWithItemIdentifier:@"max_upload_rate"];
+        [item setView:max_upload_rate];
+        [item setTarget:self];
+        [item setAction:@selector(takeMaxUploadRateFrom:)];
+        [item setLabel:NSLocalizedString(@"Max UL kB/s", @"max_upload_rate toolbar label")];
+        [item setPaletteLabel:NSLocalizedString(@"Maximum Upload Rate", @"max_upload_rate toolbar palette label")];
+        rect = [max_upload_rate frame];
+        [item setMinSize:rect.size];
+    }
+    else if ([itemIdentifier isEqualTo:@"max_uploads"]) {
+        item = [[MaxUploadsItem alloc] initWithItemIdentifier:@"max_uploads"];
+        [item setView:max_uploads];
+        [item setTarget:self];
+        [item setAction:@selector(takeMaxUploadsFrom:)];
+        [item setLabel:NSLocalizedString(@"Num Uploads", @"max_uploads toolbar label")];
+        [item setPaletteLabel:NSLocalizedString(@"Number of Uploads", @"max_uploads toolbar palette label")];
+        rect = [max_uploads frame];
+        [item setMinSize:rect.size];
+    }
+    
+    [item setEnabled:NO];
+    return item;
+}
+
+
+// rendezvous delegate
+
+- (void)netService:(NSNetService *)sender didNotPublish:(NSDictionary *)errorDict
+{
+
+}
+
+- (void)netServiceWillPublish:(NSNetService *)sender
+{
+    NSLog(@"publishing....");
+}
+
+- (void)netServiceBrowser:(NSNetServiceBrowser *)aNetServiceBrowser didFindService:(NSNetService *)peer moreComing:(BOOL)moreComing
+{
+    [peer setDelegate:self];
+    [peer resolve];
+}
+
+- (void)netServiceDidResolveAddress:(NSNetService *)peer
+{
+    PyObject *args;
+    struct sockaddr_in *ip;
+    NSData *addr;
+    char *str;
+    NSEnumerator *iter = [[peer addresses] objectEnumerator];
+    
+    while (addr = [iter nextObject]) {
+        [addr getBytes:&ip];
+        union { uint32_t l; u_char b[4]; } addr = { ip->sin_addr.s_addr };
+        union { uint16_t s; u_char b[2]; } port = { ip->sin_port };
+        uint16_t PortAsNumber = ((uint16_t)port.b[0]) << 8 | port.b[1];
+        str = [[NSString stringWithFormat:@"%d.%d.%d.%d", addr.b[0], addr.b[1], addr.b[2], addr.b[3]] cString];
+        PyEval_RestoreThread([[NSApp delegate] tstate]);
+        args = Py_BuildValue("((si)s)", str, PortAsNumber, [[peer name] cString]);
+        PyObject_CallObject(addPeerFunc, args);
+        Py_DECREF(args);
+        [[NSApp delegate] setTstate:PyEval_SaveThread()];
+    }
+}
 @end

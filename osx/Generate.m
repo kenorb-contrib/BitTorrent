@@ -81,6 +81,7 @@
     NSConnection *conn;
     NSMutableDictionary *dict = [NSMutableDictionary dictionaryWithCapacity:5];
     NSPort *left, *right;
+    PyObject *mm, *md, *event;
     
     left = [NSPort port];
     right = [NSPort port];
@@ -101,17 +102,29 @@
         [dict setObject:[NSNumber numberWithInt:0] forKey:@"completedir"];
     }
     
-    [gButton setEnabled:NO];
+    [gButton setTitle:NSLocalizedString(@"Cancel", @"Cancel")];
+    [gButton setAction:@selector(cancel:)];
     [subCheck setEnabled:NO];
     [progressMeter startAnimation:self];
     [gWindow unregisterDraggedTypes];
+    
+    PyEval_RestoreThread([[NSApp delegate] tstate]);
+    mm = PyImport_ImportModule("threading");
+    md = PyModule_GetDict(mm);
+    event = PyDict_GetItemString(md, "Event");
+    endflag = PyObject_CallFunction(event, "");
+    [[NSApp delegate] setTstate:PyEval_SaveThread()];
+    
+    done = NO;
+    [dict setObject:[NSData dataWithBytes:&endflag length:sizeof(PyObject *)] forKey:@"flag"];
     [NSThread detachNewThreadSelector:@selector(doGenerate:) toTarget:[self class]  
     withObject:dict];
 }
 
 - (void)progress:(in float)val
 {
-    [progressMeter setDoubleValue:val];
+    if(!done)
+        [progressMeter setDoubleValue:val];
 }
 
 - (void)progressFname:(NSString *)val;
@@ -136,16 +149,26 @@
         [subCheck setEnabled:NO];
     }
 
-    [progressMeter setDoubleValue:1.0];
+    //[progressMeter setDoubleValue:1.0];
     [progressMeter stopAnimation:self];
     [gWindow registerForDraggedTypes:[NSArray arrayWithObjects:NSFilenamesPboardType, nil]];
-    [gButton setEnabled:YES];
+    [gButton setTitle:NSLocalizedString(@"Generate", @"Generate")];
+    [gButton setAction:@selector(generate:)];
+    done = YES;
 }
 
+- (IBAction)cancel:(id)sender
+{
+    done = YES;
+    PyEval_RestoreThread([[NSApp delegate] tstate]);
+    PyObject_CallMethod(endflag, "set", NULL);
+    [[NSApp delegate] setTstate:PyEval_SaveThread()];
+    [progressMeter setDoubleValue:0.0];
+}
 + (void)doGenerate:(NSDictionary *)dict
 {
     PyObject *mm, *md;
-    PyObject *mmf, *res, *enc, *be, *event, *flag, *display, *displayFname;
+    PyObject *mmf, *res, *enc, *be, *flag, *display, *displayFname;
     FILE *desc;
     NSString *f, *url, *filename;
     PyThreadState *ts;
@@ -164,11 +187,8 @@
     md = PyModule_GetDict(mm);
     be = PyDict_GetItemString(md, "bencode");
 
-    mm = PyImport_ImportModule("threading");
-    md = PyModule_GetDict(mm);
-    event = PyDict_GetItemString(md, "Event");
-    flag = PyObject_CallFunction(event, "");
-
+    [[dict objectForKey:@"flag"] getBytes:&flag];
+    
     if ([[dict objectForKey:@"completedir"] intValue] == 0) {
         mm = PyImport_ImportModule("btmakemetafile");
         md = PyModule_GetDict(mm);

@@ -61,11 +61,13 @@ class Storage:
                     h.write(chr(1))
                     if time() - tstart > alloc_pause:
                         if not hit:
-                            statusfunc(activity = 'allocating')
+                            statusfunc({"activity" : 'allocating'})
                             hit = true
-                        statusfunc(fractionDone = float(so_far + i - l)/total)
+                        print "pre"
+                        statusfunc({"fractionDone" : float(so_far + i - l)/total})
+                        print "post"
                 so_far += length - l
-            statusfunc(fractionDone = 1.0)
+            statusfunc({"fractionDone" : 1.0})
 
     def set_readonly(self):
         # may raise IOError or OSError

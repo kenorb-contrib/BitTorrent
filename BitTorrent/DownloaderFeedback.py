@@ -29,7 +29,7 @@ class DownloaderFeedback:
                     return cs[i:] + cs[:i]
         return cs
 
-    def spew(self):
+    def print_spew(self):
         s = StringIO()
         cs = self._rotate()
         self.lastids = [c.get_id() for c in cs]
@@ -69,22 +69,56 @@ class DownloaderFeedback:
             else:
                 s.write(' ')
             s.write('\n')
-        print '\n\n\n' + s.getvalue()
+        print s.getvalue()
+
+    def collect_spew(self):
+        l = [ ]
+        cs = self._rotate()
+        self.lastids = [c.get_id() for c in cs]
+        for c in cs:
+            rec = {}
+            rec["ip"] = c.get_ip()
+            if c is self.choker.connections[0]:
+                rec["is_optimistic_unchoke"] = 1
+            else:
+                rec["is_optimistic_unchoke"] = 0
+            if c.is_locally_initiated():
+                rec["intiation"] = "local"
+            else:
+                rec["intiation"] = "remote"
+            u = c.get_upload()
+            rec["upload"] = (int(u.measure.get_rate()), u.is_interested(), u.is_choked())
+
+            d = c.get_download()
+            rec["download"] = (int(d.measure.get_rate()), d.is_interested(), d.is_choked(), d.is_snubbed())
+            
+            l.append(rec)
+        return l
 
     def display(self):
         self.add_task(self.display, self.interval)
+        spew = []
         if self.sp:
-            self.spew()
+            self.print_spew()
+        else:
+            spew = self.collect_spew()
         if self.finflag.isSet():
-            self.statusfunc(upRate = self.upfunc())
+            self.statusfunc({"upRate" : self.upfunc(), "spew" : spew})
             return
         timeEst = self.remainingfunc()
 
         fractionDone = (self.file_length - self.leftfunc()) / float(self.file_length)
         
         if timeEst is not None:
-            self.statusfunc(timeEst = timeEst, fractionDone = fractionDone, 
-                downRate = self.downfunc(), upRate = self.upfunc())
+            self.statusfunc({	"timeEst" : timeEst,
+                                "fractionDone" : fractionDone, 
+                                "downRate" : self.downfunc(), 
+                                "upRate" : self.upfunc(),
+                                "spew" : spew
+                            })
         else:
-            self.statusfunc(fractionDone = fractionDone, 
-                downRate = self.downfunc(), upRate = self.upfunc())
+            self.statusfunc({	"fractionDone" : fractionDone, 
+                                "downRate" : self.downfunc(), 
+                                "upRate" : self.upfunc(),
+                                "spew" : spew
+                            })

@@ -122,10 +122,12 @@ class DownloadInfoFrame:
         if not self.flag.isSet():
             wxPostEvent(self.frame, InvokeEvent(func, args, kwargs))
 
-    def updateStatus(self, fractionDone = None,
-            timeEst = None, downRate = None, upRate = None,
-            activity=None):
-        self.invokeLater(self.onUpdateStatus, [fractionDone, timeEst, downRate, upRate, activity])
+    def updateStatus(self, dict):
+        self.invokeLater(self.onUpdateStatus, [	dict.get('fractionDone', None),
+                                                dict.get('timeEst', None), 
+                                                dict.get('downRate', None), 
+                                                dict.get('upRate', None), 
+                                                dict.get('activity', None)])
 
     def onUpdateStatus(self, fractionDone, timeEst, downRate, upRate, activity):
         if fractionDone is not None and not self.fin:

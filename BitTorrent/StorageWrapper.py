@@ -40,13 +40,13 @@ class StorageWrapper:
             return
         self.done_checking = false
         if storage.was_preexisting():
-            statusfunc(activity = 'checking existing file', 
-                fractionDone = 0)
+            statusfunc({"activity" : 'checking existing file', 
+                "fractionDone" : 0})
             for i in xrange(len(hashes)):
                 self._check_single(i)
                 if flag.isSet():
                     return
-                statusfunc(fractionDone = float(i+1)/len(hashes))
+                statusfunc({"fractionDone" : float(i+1)/len(hashes)})
         else:
             for i in xrange(len(hashes)):
                 self._check_single(i, false)

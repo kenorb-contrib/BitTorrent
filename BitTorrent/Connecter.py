@@ -135,6 +135,15 @@ class Connecter:
             if self.totalup.get_rate_noupdate() > self.max_upload_rate:
                 break
 
+    def change_max_upload_rate(self, newval):
+        def foo(self=self, newval=newval):
+            self._change_max_upload_rate(newval)
+        self.sched(foo, 0);
+        
+    def _change_max_upload_rate(self, newval):
+        self.max_upload_rate = newval
+        self._uncap()
+        
     def how_many_connections(self):
         return len(self.connections)
 

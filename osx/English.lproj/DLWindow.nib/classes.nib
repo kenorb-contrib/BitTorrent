@@ -1,13 +1,16 @@
 {
     IBClasses = (
         {
-            ACTIONS = {cancelDl = id; }; 
+            ACTIONS = {cancelDl = id; takeMaxUploadRateFrom = id; takeMaxUploadsFrom = id; }; 
             CLASS = DLWindowController; 
             LANGUAGE = ObjC; 
             OUTLETS = {
                 dlRate = id; 
                 file = id; 
                 lastError = id; 
+                "max_upload_rate" = id; 
+                "max_uploads" = id; 
+                peerStat = id; 
                 percentCompleted = id; 
                 progressBar = id; 
                 timeRemaining = id; 
