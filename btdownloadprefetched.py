@@ -14,17 +14,17 @@ in invoking the correct application.
 
 Needless to say, this prevents passing any other useful information to the 
 invoked application - like, say, the original url, which is why the 
-publicist requires you give it it's own ip. 
+tracker requires you give it it's own ip. 
 
-bt-download-preftched is the file to get executed by Internet Explorer.
+btdownloadprefetched is the file to get executed by Internet Explorer.
 """
 
 from sys import argv, version
 assert version >= '2', "Install Python 2.0 or greater"
-from bt-download import run
+from btdownloadgui import run
 
 if __name__ == '__main__':
     h = open(files[0])
     prefetched = h.read()
     h.close()
-    run({'prefetched': prefetched}, ['garbage'])
+    run({}, [], prefetched)

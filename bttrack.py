@@ -12,7 +12,7 @@ from threading import Thread, Condition
 from binascii import a2b_hex
 from BitTorrent.btemplate import compile_template, ListMarker, string_template, OptionMarker
 from BitTorrent.bencode import bencode, bdecode
-from BitTorrent.parseargs import parseargs
+from BitTorrent.parseargs import parseargs, formatDefinitions
 from sys import argv
 from urllib import urlopen, quote, unquote
 from traceback import print_exc
@@ -34,7 +34,7 @@ checkfunc2 = compile_template({'type': 'announce', 'id': string_template,
 prefix = '/publish/'
 prefix2 = '/announce/'
 
-class PublicistHandler(BaseHTTPRequestHandler):
+class TrackerHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         try:
             self.server.lock.acquire()
@@ -130,7 +130,7 @@ class PublicistHandler(BaseHTTPRequestHandler):
                     'url': 'http://' + self.server.ip + ':' + str(self.server.port) + '/' + quote(f)}
                 self.wfile.write(bencode(response))
 
-def publicize(config):
+def track(config):
     try:
         h = urlopen('http://bitconjurer.org/BitTorrent/status-publicist-02-04-00.txt')
         status = h.read().strip()
@@ -141,8 +141,8 @@ def publicize(config):
     except IOError, e:
         print "Couldn't check version number - " + str(e)
 
-    port = long(config.get('port', '8080'))
-    s = HTTPServer(('', port), PublicistHandler)
+    port = config['port']
+    s = HTTPServer(('', port), TrackerHandler)
     s.port = port
     s.published = {}
     s.lock = Condition()
@@ -170,13 +170,14 @@ def publicize(config):
     Thread(target = s.serve_forever).start()
 
 configDefinitions = [
-    ('port', 'port=', 'p:', 6800, """Port to listen on.  Defaults to 6800.  Will be random in the future."""),
-    ('ip', 'ip=', 'i:', None,
-     """ip to report you have to the publicist."""),
-    (None, 'help', 'h', None, """Display the command line help.""")
-]
+    ('port', 'port=', 'p:', 80, """Port to listen on."""),
+    ('ip', 'ip=', 'i:', None, """ip to report you have to downloaders."""),
+    ]
 
 if __name__ == '__main__':
-    usageHeading = "usage: %s [options]" % argv[0]
-    configDictionary, files = parseargs(argv[1:], usageHeading, configDefinitions, 0, 0, requiredConfig = ['ip'])
-    publicize(configDictionary)
+    if len(argv) == 1:
+        print "usage: %s [options]" % argv[0]
+        print formatDefinitions(configDefinitions)
+    else:
+        config, files = parseargs(argv[1:], configDefinitions, 0, 0)
+        track(config)

@@ -2,8 +2,10 @@
 # this file is public domain
 
 from getopt import getopt
+from types import *
 import sys
 import string
+from cStringIO import StringIO
 
 def longLineForm(longDescription):
     if longDescription[-1:] == '=':
@@ -30,24 +32,25 @@ def combinedLineForm(longDescription, shortDescription):
 
     if takesArgument(longDescription):
         s = s + " <arg>"
-    
+
     return s
 
-def usage(usageHeading, optionDefintions, msg, exitCode=1):
-    if msg:
-        sys.stderr.write('error: %s\n' % msg)
-    sys.stdout.write('%s\n' % usageHeading)
+def formatDefinitions(optionDefinitions):
+    s = StringIO()
     outArray = []
     maxOptLength = 0
-    for i in optionDefintions:
-        garbage, longDescription, shortDescription, garbage, doc = i
+    for i in optionDefinitions:
+        garbage, longDescription, shortDescription, default, doc = i
 
         lineForm = combinedLineForm(longDescription, shortDescription)
         if maxOptLength < len(lineForm):
             maxOptLength = len(lineForm)
+        if default is not None:
+            doc += ' defaults to ' + `default`
         outArray.append( (lineForm, doc) )
 
     try:
+        raise ''
         import curses
         curses.initscr()
         COLS = curses.COLS
@@ -65,55 +68,54 @@ def usage(usageHeading, optionDefintions, msg, exitCode=1):
 
     for head,body in outArray:
         if len(body) < targetBodyWidth:
-            sys.stdout.write(firstLineString % head)
-            sys.stdout.write(body)
-            sys.stdout.write("\n")
+            s.write(firstLineString % head)
+            s.write(body)
+            s.write("\n")
         else:
             outAmount = 0
             splitBody = string.split(body)
             for aWord in splitBody:
                 if not outAmount:
-                    sys.stdout.write(firstLineString % head)
-                    sys.stdout.write(aWord)
+                    s.write(firstLineString % head)
+                    s.write(aWord)
                     outAmount = len(aWord)
                 else:
                     if outAmount + (len(aWord) + 1) > targetBodyWidth:
-                        sys.stdout.write("\n")
-                        sys.stdout.write(bodyLineString)
-                        sys.stdout.write(aWord)
+                        s.write("\n")
+                        s.write(bodyLineString)
+                        s.write(aWord)
                         outAmount = len(aWord)
                     else:
-                        sys.stdout.write(" ")
-                        sys.stdout.write(aWord)
+                        s.write(" ")
+                        s.write(aWord)
                         outAmount = outAmount + len(aWord) + 1
-            sys.stdout.write("\n")
+            s.write("\n")
+    return s.getvalue()
 
-    sys.exit(exitCode)
-
-
-def checkOpt( configurationDictionary, commandLineOptionValue, shortOptDictionary, longOptDictionary, setValue = None):
+def checkOpt(config, commandLineOptionValue, shortOptDictionary, longOptDictionary):
     key, value = commandLineOptionValue
 
-    if key and shortOptDictionary.has_key(key):
+    if shortOptDictionary.has_key(key):
         configName, longDescription, shortDescription, defaultValue, usageText = shortOptDictionary[key]
-    elif key and longOptDictionary.has_key(key):
+    elif longOptDictionary.has_key(key):
         configName, longDescription, shortDescription, defaultValue, usageText = longOptDictionary[key]
     else:
-        usage("Encountered key '%s' that passed getopt() but was not in opt dict.  Very confused. Dieing!" % key)
+        assert 0
 
-    if configName == None:
-        usage(None)
+    try:
+        t = type(config.get(configName))
+        if t is NoneType or t is StringType:
+            config[configName] = value
+        elif t is IntType or t is LongType:
+            config[configName] = long(value)
+        elif t is FloatType:
+            config[configName] = float(value)
+        else:
+            assert 0
+    except ValueError, e:
+        usage('wrong format of %s - %s' % (key, str(e)))
 
-    if (value == '') and setValue and configurationDictionary.has_key(configName):
-        configurationDictionary[configName] = setValue
-    else:
-        configurationDictionary[configName] = value
-
-def getKeyOrNone(d, k):
-    try: return d[k]
-    except: return None
-
-def parseargs(argv, usageHeading, optionDefinitions, minimumArgs, maximumArgs, requiredConfig=[]):
+def parseargs(argv, optionDefinitions, minimumArgs, maximumArgs):
     config = {}
     reqDict = {}
 
@@ -132,39 +134,38 @@ def parseargs(argv, usageHeading, optionDefinitions, minimumArgs, maximumArgs, r
             longGetOptArray.append(longDescription)
             longOptDictionary[longLineForm(longDescription)] = optionDescription
 
-        if defaultValue:
-            config[configName] = defaultValue
-
-        if configName in requiredConfig:
+        if defaultValue is None:
             reqDict[configName] = optionDescription
+        else:
+            config[configName] = defaultValue
             
     ## parse arguments
     try:
         optionList, bareArgs = getopt(argv, shortGetOptString, longGetOptArray)
     except:
-        exc_value = sys.exc_info()[1]
-        usage(usageHeading, optionDefinitions, exc_value)
+        usage(sys.exc_info()[1])
 
     ## process args and set defaults
     for anOpt in optionList:
-        checkOpt( config, anOpt, shortOptDictionary, longOptDictionary )
+        checkOpt(config, anOpt, shortOptDictionary, longOptDictionary)
 
-    if requiredConfig:
-        for requiredKey in requiredConfig:
-            if not config.has_key(requiredKey):
-                configName, longDescription, shortDescription, defaultValue, usageText = reqDict[requiredKey]
-                s = None
-                if longDescription:
-                    s = longLineForm(longDescription)
-                if shortDescription:
-                    if s: s = s + "/" + shortLineForm(shortDescription)
-                    else: s = shortLineForm(shortDescription)
-                usage(usageHeading, optionDefinitions, "Option %s is required." % s)
+    for requiredKey in reqDict.keys():
+        if not config.has_key(requiredKey):
+            configName, longDescription, shortDescription, defaultValue, usageText = reqDict[requiredKey]
+            s = None
+            if longDescription:
+                s = longLineForm(longDescription)
+            if shortDescription:
+                if s:
+                    s += "/" + shortLineForm(shortDescription)
+                else:
+                    s = shortLineForm(shortDescription)
+            usage("Option %s is required." % s)
 
     ## verify arg quantities
     if len(bareArgs) < minimumArgs:
-        usage(usageHeading, optionDefinitions, "Must supply at least %d args." % minimumArgs)
+        usage("Must supply at least %d args." % minimumArgs)
     if len(bareArgs) > maximumArgs:
-        usage(usageHeading, optionDefinitions, "Too many args;  %d max, encountered %d." % (maximumArgs, len(bareArgs)))
+        usage("Too many args;  %d max, encountered %d." % (maximumArgs, len(bareArgs)))
 
     return (config, bareArgs)

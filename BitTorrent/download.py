@@ -18,6 +18,7 @@ from bencode import bencode, bdecode
 from btemplate import compile_template, string_template, ListMarker, OptionMarker
 from binascii import b2a_hex
 import socket
+from random import randrange
 true = 1
 false = 0
 
@@ -49,24 +50,24 @@ def run(private_key, noncefunc, response, filefunc, displayfunc, doneflag, confi
         blobs = SingleBlob(file, response['hash'], file_length, response['pieces'], 
             response['piece length'], None)
         if len(blobs.get_list_of_files_I_want()) == 0:
+            displayfunc('that file has already been completely downloaded', 'Okay')
             return true
     except ValueError, e:
         displayfunc('bad data for making blob store - ' + str(e), 'Okay')
         return false
-    throttler = Throttler(long(config.get('rethrottle_diff', str(2 ** 20))), 
-        long(config.get('unthrottle_diff', str(2 ** 23))), 
-        int(config.get('max_uploads', '2')), 
-        int(config.get('max_downloads', '4')))
+    throttler = Throttler(config['rethrottle_diff'], config['unthrottle_diff'], 
+        config['max_uploads'], config['max_downloads'])
     uploader = Uploader(throttler, blobs)
     downloader = Downloader(throttler, blobs, uploader, 
-        long(config.get('download_chunk_size', '32768')), 
-        long(config.get('request_backlog', '5')))
-    rawserver = RawServer(float(config.get('max_poll_period', '2')), doneflag)
+        config['download_chunk_size'], config['request_backlog'])
+    rawserver = RawServer(config['max_poll_period'], doneflag)
     connecter = Connecter(uploader, downloader)
     encrypter = Encrypter(connecter, rawserver, noncefunc, private_key, 
-        long(config.get('max_message_length', str(2 ** 20))))
+        config['max_message_length'])
     connecter.set_encrypter(encrypter)
-    listen_port = long(config.get('port', '6880'))
+    listen_port = config['port']
+    if listen_port == 0:
+        listen_port = randrange(5000, 10000)
     r = []
     def finished(result, displayfunc = displayfunc, doneflag = doneflag, r = r):
         if result:
@@ -81,8 +82,8 @@ def run(private_key, noncefunc, response, filefunc, displayfunc, doneflag, confi
 
     try:
         a = {'type': 'announce', 'id': response['id'], 'port': listen_port}
-        if config.has_key('myip'):
-            a['ip'] = config['myip']
+        if config['ip'] != '':
+            a['ip'] = config['ip']
         url = urljoin(response['url'], response['announce'] + 
             b2a_hex(bencode(a)) + response.get('postannounce', ''))
         h = urlopen(url)
@@ -128,11 +129,9 @@ def download(response, filefunc, displayfunc, doneflag, config):
 
 def downloadurl(url, filefunc, displayfunc, doneflag, config):
     try:
-        response = config.get('prefetched')
-        if response is None:
-            h = urlopen(url)
-            response = h.read()
-            h.close()
+        h = urlopen(url)
+        response = h.read()
+        h.close()
         return download(response, filefunc, displayfunc, doneflag, config)
     except IOError, e:
         displayfunc('IO problem reading file - ' + str(e), 'Okay')

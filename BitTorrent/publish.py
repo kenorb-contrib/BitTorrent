@@ -17,6 +17,7 @@ from bencode import bencode, bdecode
 from binascii import b2a_hex
 from btemplate import compile_template, string_template
 from os.path import split
+from random import randrange
 true = 1
 false = 0
 
@@ -33,17 +34,19 @@ def publish(config, files):
 
     private_key = entropy(20)
     noncefunc = lambda e = entropy: e(20)
-    throttler = Throttler(int(config.get('max_uploads', '6')))
-    piece_length = long(config.get('piece_size', str(2 ** 20)))
+    throttler = Throttler(config['max_uploads'])
+    piece_length = config['piece_size']
     blobs = MultiBlob(files, piece_length)
     uploader = Uploader(throttler, blobs)
     downloader = DummyDownloader()
     connecter = Connecter(uploader, downloader)
-    rawserver = RawServer(float(config.get('max_poll_period', '2')), Event())
+    rawserver = RawServer(config['max_poll_period'], Event())
     encrypter = Encrypter(connecter, rawserver, noncefunc, private_key, 
-        long(config.get('max_message_length', str(2 ** 20))))
+        config['max_message_length'])
     connecter.set_encrypter(encrypter)
-    listen_port = long(config.get('port', '6881'))
+    listen_port = config['port']
+    if listen_port == 0:
+        listenport = randrange(5000, 10000)
 
     try:
         files = []
@@ -52,10 +55,10 @@ def publish(config, files):
             files.append({'hash': hash, 'pieces': pieces, 'name': tail, 
                 'piece length': piece_length, 'length': length})
         message = {'type': 'publish', 'port': listen_port, 'files': files}
-        if config.has_key('ip'):
+        if config['ip'] != '':
             message['ip'] = config['ip']
         h = urlopen(config['location'] + b2a_hex(bencode(message)) + 
-            config.get('postlocation', ''))
+            config['postlocation'])
         response = h.read()
         h.close()
         response = bdecode(response)
