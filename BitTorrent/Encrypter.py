@@ -157,7 +157,7 @@ class Encoder:
     def start_connection(self, dns, id):
         if len(self.connections) >= self.max_initiate:
             return
-        if id == self.my_id:
+        if id and id == self.my_id:
             return
         for v in self.connections.values():
             if v.id == id:
