@@ -1,8 +1,6 @@
 # written by Bram Cohen
 # this file is public domain
 
-from random import randrange
-
 true = 1
 false = 0
 
@@ -31,32 +29,11 @@ class TransferConnection:
         del self.dict[self.id]
         del self.dict
         connection.close()
-        
-class DNSConnecter:
-    def __init__(self, dns, connecter):
-        self.dns = dns
-        self.connecter = connecter
-        self.reconnecting = false
-        self.start_connection()
-    
-    def reconnect_soon(self):
-        if self.reconnecting:
-            return
-        self.reconnecting = true
-        self.connecter.schedulefunc(self.start_connection, 
-            randrange(self.connecter.minsoon, self.connecter.maxsoon))
-
-    def start_connection(self):
-        self.connecter.encrypter.start_connection(self.dns)
 
 class Connecter:
-    def __init__(self, uploader, downloader, schedulefunc,
-            minsoon, maxsoon):
+    def __init__(self, uploader, downloader):
         self.uploader = uploader
         self.downloader = downloader
-        self.schedulefunc = schedulefunc
-        self.minsoon = minsoon
-        self.maxsoon = maxsoon
         # {id: TransferConnection}
         self.uploads = {}
         # {id: TransferConnection}
@@ -64,7 +41,6 @@ class Connecter:
         self.encrypter = None
 
     def set_encrypter(self, encrypter):
-        assert self.encrypter is None
         self.encrypter = encrypter
 
     def start_connecting(self, dnss):
@@ -73,7 +49,6 @@ class Connecter:
 
     def locally_initiated_connection_completed(self, connection):
         k = connection.get_id()
-        assert len(k) == 20
         if not self.downloads.has_key(k):
             down = TransferConnection(connection, self.downloads)
             self.downloads[k] = down
@@ -96,7 +71,6 @@ class Connecter:
             del self.uploads[k]
             del up.dict
             del up.connection
-            self.reconnect_soon(connection)
             self.uploader.connection_lost(up)
             return
         down = self.downloads.get(k, None)
@@ -104,16 +78,8 @@ class Connecter:
             del self.downloads[k]
             del down.dict
             del down.connection
-            self.reconnect_soon(connection)
             self.downloader.connection_lost(down)
             return
-
-    def reconnect_soon(self, connection):
-        if not connection.is_locally_initiated():
-            return
-        delay = randrange(self.minsoon, self.maxsoon)
-        self.schedulefunc(self.encrypter.start_connection, 
-            delay, args = [connection.get_dns()])
 
     def got_message(self, connection, message):
         k = connection.get_id()

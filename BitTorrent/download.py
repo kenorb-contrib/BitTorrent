@@ -62,9 +62,7 @@ def run(private_key, noncefunc, response, filefunc, displayfunc, doneflag, confi
         long(config.get('download_chunk_size', '32768')), 
         long(config.get('request_backlog', '5')))
     rawserver = RawServer(float(config.get('max_poll_period', '2')), doneflag)
-    connecter = Connecter(uploader, downloader, rawserver.add_task, 
-        long(config.get('min_fast_reconnect', '60')), 
-        long(config.get('max_fast_reconnect', '180')))
+    connecter = Connecter(uploader, downloader)
     encrypter = Encrypter(connecter, rawserver, noncefunc, private_key, 
         long(config.get('max_message_length', str(2 ** 20))))
     connecter.set_encrypter(encrypter)

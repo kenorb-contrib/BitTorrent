@@ -3,7 +3,7 @@
 
 from urllib import urlopen
 from StreamEncrypter import make_encrypter
-from Throttler import Throttler
+from PublisherThrottler import Throttler
 from MultiBlob import MultiBlob
 from Uploader import Uploader
 from DummyDownloader import DummyDownloader
@@ -33,15 +33,12 @@ def publish(config, files):
 
     private_key = entropy(20)
     noncefunc = lambda e = entropy: e(20)
-    throttler = Throttler(long(config.get('rethrottle_diff', str(2 ** 20))), 
-        long(config.get('unthrottle_diff', str(2 ** 23))), 
-        int(config.get('max_uploads', '2')), 
-        int(config.get('max_downloads', '4')))
+    throttler = Throttler(int(config.get('max_uploads', '6')))
     piece_length = long(config.get('piece_size', str(2 ** 20)))
     blobs = MultiBlob(files, piece_length)
     uploader = Uploader(throttler, blobs)
     downloader = DummyDownloader()
-    connecter = Connecter(uploader, downloader, None, None, None)
+    connecter = Connecter(uploader, downloader)
     rawserver = RawServer(float(config.get('max_poll_period', '2')), Event())
     encrypter = Encrypter(connecter, rawserver, noncefunc, private_key, 
         long(config.get('max_message_length', str(2 ** 20))))
