@@ -18,6 +18,7 @@ class Rerequester:
         if ip != '':
             self.url += '&ip=' + quote(ip)
         self.interval = interval
+        self.last = None
         self.announce_interval = 30 * 60
         self.sched = sched
         self.howmany = howmany
@@ -47,6 +48,8 @@ class Rerequester:
         s = ('%s&uploaded=%s&downloaded=%s&left=%s' %
             (self.url, str(self.up()), str(self.down()), 
             str(self.amount_left())))
+        if self.last is not None:
+            s += '&last=' + quote(str(self.last))
         if event != 3:
             s += '&event=' + ['started', 'completed', 'stopped'][event]
         set = SetOnce().set
@@ -86,6 +89,7 @@ class Rerequester:
                 self.errorfunc('rejected by tracker - ' + r['failure reason'])
             else:
                 self.announce_interval = r.get('interval', self.announce_interval)
+                self.last = r.get('last')
                 for x in r['peers']:
                     self.connect((x['ip'], x['port']), x['peer id'])
         except ValueError, e:
