@@ -4,6 +4,7 @@
 from parseargs import parseargs, formatDefinitions
 from RawServer import RawServer
 from HTTPHandler import HTTPHandler
+from NatCheck import NatCheck
 from threading import Event
 from bencode import bencode, bdecode
 from urllib import urlopen, quote, unquote
@@ -22,11 +23,15 @@ defaults = [
     ('port', 'p', 80, "Port to listen on."),
     ('dfile', 'd', None, 'file to store recent downloader info in'),
     ('bind', None, '', 'ip to bind to locally'),
-    ('socket_timeout', None, 30, 'timeout for closing connections'),
+    ('socket_timeout', None, 15, 'timeout for closing connections'),
     ('save_dfile_interval', None, 5 * 60, 'seconds between saving dfile'),
     ('timeout_downloaders_interval', None, 45 * 60, 'seconds between expiring downloaders'),
     ('reannounce_interval', None, 30 * 60, 'seconds downloaders should wait between reannouncements'),
     ('response_size', None, 25, 'number of peers to send in an info message'),
+    ('timeout_check_interval', None, 5,
+        'time to wait between checking if any connections have timed out'),
+    ('nat_check', None, 0,
+        'whether to check back and ban downloaders behind NAT'),
     ]
 
 def downloaderfiletemplate(x):
@@ -55,6 +60,7 @@ class Tracker:
     def __init__(self, config, rawserver):
         self.response_size = config['response_size']
         self.dfile = config['dfile']
+        self.natcheck = config['nat_check']
         self.rawserver = rawserver
         self.cached = {}
         self.downloads = {}
@@ -118,29 +124,41 @@ class Tracker:
         except ValueError, e:
             return (400, 'Bad Request', {'Content-Type': 'text/plain'}, 
                 'you sent me garbage - ' + str(e))
-        peers = self.downloads.setdefault(infohash, {})
-        ts = self.times.setdefault(infohash, {})
-        if params.get('event', '') != 'stopped':
-            ts[myid] = time()
-            if not peers.has_key(myid):
-                peers[myid] = {'ip': ip, 'port': port, 'left': left}
+        def respond(result, self = self, infohash = infohash, myid = myid,
+                ip = ip, port = port, left = left, params = params,
+                connection = connection):
+            if not result:
+                connection.answer((200, 'OK', {}, bencode({'failure reason':
+                    'You are behind NAT. Please open port 6881 or download from elsewhere'})))
+                return
+            peers = self.downloads.setdefault(infohash, {})
+            ts = self.times.setdefault(infohash, {})
+            if params.get('event', '') != 'stopped':
+                ts[myid] = time()
+                if not peers.has_key(myid):
+                    peers[myid] = {'ip': ip, 'port': port, 'left': left}
+                else:
+                    peers[myid]['left'] = left
             else:
-                peers[myid]['left'] = left
+                if peers.has_key(myid) and peers[myid]['ip'] == ip:
+                    del peers[myid]
+                    del ts[myid]
+            data = {'interval': self.reannounce_interval}
+            cache = self.cached.setdefault(infohash, [])
+            if len(cache) < self.response_size:
+                for key, value in self.downloads.setdefault(
+                        infohash, {}).items():
+                    cache.append({'peer id': key, 'ip': value['ip'], 
+                        'port': value['port']})
+                shuffle(cache)
+            data['peers'] = cache[-self.response_size:]
+            del cache[-self.response_size:]
+            connection.answer((200, 'OK', {'Pragma': 'no-cache'}, bencode(data)))
+        if (not self.natcheck or params.get('event') == 'stopped' or
+                self.downloads.get(infohash, {}).has_key(myid)):
+            respond(true)
         else:
-            if peers.has_key(myid) and peers[myid]['ip'] == ip:
-                del peers[myid]
-                del ts[myid]
-        data = {'interval': self.reannounce_interval}
-        cache = self.cached.setdefault(infohash, [])
-        if len(cache) < self.response_size:
-            for key, value in self.downloads.setdefault(
-                    infohash, {}).items():
-                cache.append({'peer id': key, 'ip': value['ip'], 
-                    'port': value['port']})
-            shuffle(cache)
-        data['peers'] = cache[-self.response_size:]
-        del cache[-self.response_size:]
-        return (200, 'OK', {'Pragma': 'no-cache'}, bencode(data))
+            NatCheck(respond, infohash, myid, ip, port, self.rawserver)
 
     def save_dfile(self):
         self.rawserver.add_task(self.save_dfile, self.save_dfile_interval)
@@ -180,7 +198,7 @@ def track(args):
             return
     except IOError, e:
         print "Couldn't check version number - " + str(e)
-    r = RawServer(Event(), config['socket_timeout'])
+    r = RawServer(Event(), config['timeout_check_interval'], config['socket_timeout'])
     t = Tracker(config, r)
     r.bind(config['port'], config['bind'])
     r.listen_forever(HTTPHandler(t.get))

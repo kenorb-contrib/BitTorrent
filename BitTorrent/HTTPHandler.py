@@ -18,6 +18,7 @@ class HTTPConnection:
         self.buf = ''
         self.closed = false
         self.done = false
+        self.donereading = false
         self.next_func = self.read_type
 
     def get_ip(self):
@@ -35,7 +36,7 @@ class HTTPConnection:
             val = self.buf[:i]
             self.buf = self.buf[i+1:]
             self.next_func = self.next_func(val)
-            if self.done:
+            if self.donereading:
                 return true
             if self.next_func is None or self.closed:
                 return false
@@ -61,7 +62,10 @@ class HTTPConnection:
     def read_header(self, data):
         data = data.strip()
         if data == '':
-            self.answer(self.handler.getfunc(self, self.path, self.headers))
+            self.donereading = true
+            r = self.handler.getfunc(self, self.path, self.headers)
+            if r is not None:
+                self.answer(r)
             return None
         try:
             i = data.index(':')

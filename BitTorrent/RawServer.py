@@ -21,11 +21,12 @@ false = 0
 all = POLLIN | POLLOUT
 
 class SingleSocket:
-    def __init__(self, raw_server, sock):
+    def __init__(self, raw_server, sock, handler):
         self.raw_server = raw_server
         self.socket = sock
+        self.handler = handler
         self.buffer = []
-        self.hit = true
+        self.last_hit = time()
         self.connected = false
         
     def get_ip(self):
@@ -72,7 +73,8 @@ class SingleSocket:
             self.raw_server.poll.register(self.socket, all)
 
 class RawServer:
-    def __init__(self, doneflag, timeout, noisy = true):
+    def __init__(self, doneflag, timeout_check_interval, timeout, noisy = true):
+        self.timeout_check_interval = timeout_check_interval
         self.timeout = timeout
         self.poll = poll()
         # {socket: SingleSocket}
@@ -82,7 +84,7 @@ class RawServer:
         self.noisy = noisy
         self.funcs = []
         self.externally_added = []
-        self.add_task(self.scan_for_timeouts, timeout)
+        self.add_task(self.scan_for_timeouts, timeout_check_interval)
 
     def add_task(self, func, delay):
         insort(self.funcs, (time() + delay, func))
@@ -91,12 +93,12 @@ class RawServer:
         self.externally_added.append((func, delay))
 
     def scan_for_timeouts(self):
-        self.add_task(self.scan_for_timeouts, self.timeout)
+        self.add_task(self.scan_for_timeouts, self.timeout_check_interval)
+        t = time() - self.timeout
         tokill = []
         for s in self.single_sockets.values():
-            if not s.hit:
+            if s.last_hit < t:
                 tokill.append(s)
-            s.hit = false
         for k in tokill:
             if k.socket is not None:
                 self._close_socket(k)
@@ -109,12 +111,14 @@ class RawServer:
         self.poll.register(server, POLLIN)
         self.server = server
 
-    def start_connection(self, dns):
+    def start_connection(self, dns, handler = None):
+        if handler is None:
+            handler = self.handler
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.setblocking(0)
         sock.connect_ex(dns)
         self.poll.register(sock, POLLIN)
-        s = SingleSocket(self, sock)
+        s = SingleSocket(self, sock, handler)
         self.single_sockets[sock.fileno()] = s
         return s
         
@@ -128,7 +132,7 @@ class RawServer:
                 else:
                     newsock, addr = self.server.accept()
                     newsock.setblocking(0)
-                    nss = SingleSocket(self, newsock)
+                    nss = SingleSocket(self, newsock, self.handler)
                     self.single_sockets[newsock.fileno()] = nss
                     self.poll.register(newsock, POLLIN)
                     self.handler.external_connection_made(nss)
@@ -142,12 +146,12 @@ class RawServer:
                     continue
                 if (event & POLLIN) != 0:
                     try:
-                        s.hit = true
+                        s.last_hit = time()
                         data = s.socket.recv(100000)
                         if data == '':
                             self._close_socket(s)
                         else:
-                            self.handler.data_came_in(s, data)
+                            s.handler.data_came_in(s, data)
                     except socket.error, e:
                         code, msg = e
                         if code != EWOULDBLOCK:
@@ -156,7 +160,7 @@ class RawServer:
                 if (event & POLLOUT) != 0 and s.socket is not None:
                     s.try_write()
                     if s.is_flushed():
-                        self.handler.connection_flushed(s)
+                        s.handler.connection_flushed(s)
 
     def pop_external(self):
         try:
@@ -224,7 +228,7 @@ class RawServer:
         self.poll.unregister(sock)
         del self.single_sockets[sock]
         s.socket = None
-        self.handler.connection_lost(s)
+        s.handler.connection_lost(s)
 
 # everything below is for testing
 
@@ -249,18 +253,28 @@ class DummyHandler:
 def sl(rs, handler, port):
     rs.bind(port)
     Thread(target = rs.listen_forever, args = [handler]).start()
-    
+
+def loop(rs):
+    x = []
+    def r(rs = rs, x = x):
+        rs.add_task(x[0], .1)
+    x.append(r)
+    rs.add_task(r, .1)
+
 def test_starting_side_close():
     try:
         da = DummyHandler()
         fa = Event()
-        sa = RawServer(.1, fa, 100)
+        sa = RawServer(fa, 100, 100)
+        loop(sa)
         sl(sa, da, 5000)
         db = DummyHandler()
         fb = Event()
-        sb = RawServer(.1, fb, 100)
+        sb = RawServer(fb, 100, 100)
+        loop(sb)
         sl(sb, db, 5001)
 
+        sleep(.5)
         ca = sa.start_connection(('', 5001))
         sleep(1)
         
@@ -317,13 +331,16 @@ def test_receiving_side_close():
     try:
         da = DummyHandler()
         fa = Event()
-        sa = RawServer(.1, fa, 100)
+        sa = RawServer(fa, 100, 100)
+        loop(sa)
         sl(sa, da, 5002)
         db = DummyHandler()
         fb = Event()
-        sb = RawServer(.1, fb, 100)
+        sb = RawServer(fb, 100, 100)
+        loop(sb)
         sl(sb, db, 5003)
         
+        sleep(.5)
         ca = sa.start_connection(('', 5003))
         sleep(1)
         
@@ -380,9 +397,11 @@ def test_connection_refused():
     try:
         da = DummyHandler()
         fa = Event()
-        sa = RawServer(.1, fa, 100)
+        sa = RawServer(fa, 100, 100)
+        loop(sa)
         sl(sa, da, 5006)
-        
+
+        sleep(.5)
         ca = sa.start_connection(('', 5007))
         sleep(1)
         
@@ -397,15 +416,18 @@ def test_both_close():
     try:
         da = DummyHandler()
         fa = Event()
-        sa = RawServer(.1, fa, 100)
+        sa = RawServer(fa, 100, 100)
+        loop(sa)
         sl(sa, da, 5004)
 
         sleep(1)
         db = DummyHandler()
         fb = Event()
-        sb = RawServer(.1, fb, 100)
+        sb = RawServer(fb, 100, 100)
+        loop(sb)
         sl(sb, db, 5005)
-        
+
+        sleep(.5)
         ca = sa.start_connection(('', 5005))
         sleep(1)
         
@@ -461,7 +483,8 @@ def test_both_close():
 def test_normal():
     l = []
     f = Event()
-    s = RawServer(.5, f, 100)
+    s = RawServer(f, 100, 100)
+    loop(s)
     sl(s, DummyHandler(), 5007)
     s.add_task(lambda l = l: l.append('b'), 2)
     s.add_task(lambda l = l: l.append('a'), 1)
@@ -475,7 +498,8 @@ def test_normal():
 def test_catch_exception():
     l = []
     f = Event()
-    s = RawServer(.5, f, 100, false)
+    s = RawServer(f, 100, 100, false)
+    loop(s)
     sl(s, DummyHandler(), 5009)
     s.add_task(lambda l = l: l.append('b'), 2)
     s.add_task(lambda: 4/0, 1)
@@ -487,15 +511,18 @@ def test_closes_if_not_hit():
     try:
         da = DummyHandler()
         fa = Event()
-        sa = RawServer(.1, fa, 2)
+        sa = RawServer(fa, 2, 2)
+        loop(sa)
         sl(sa, da, 5012)
 
         sleep(1)
         db = DummyHandler()
         fb = Event()
-        sb = RawServer(.1, fb, 100)
+        sb = RawServer(fb, 100, 100)
+        loop(sb)
         sl(sb, db, 5013)
         
+        sleep(.5)
         ca = sa.start_connection(('', 5013))
         sleep(1)
         
@@ -520,15 +547,18 @@ def test_does_not_close_if_hit():
     try:
         da = DummyHandler()
         fa = Event()
-        sa = RawServer(.1, fa, 2)
+        sa = RawServer(fa, 2, 2)
+        loop(sa)
         sl(sa, da, 5012)
 
         sleep(1)
         db = DummyHandler()
         fb = Event()
-        sb = RawServer(.1, fb, 100)
+        sb = RawServer(fb, 100, 100)
+        loop(sb)
         sl(sb, db, 5013)
         
+        sleep(.5)
         ca = sa.start_connection(('', 5013))
         sleep(1)
         

@@ -51,6 +51,8 @@ defaults = [
         'local file name to save the file as, null indicates query user'),
     ('timeout', None, 300.0,
         'time to wait between closing sockets which nothing has been received on'),
+    ('timeout_check_interval', None, 60.0,
+        'time to wait between checking if any connections have timed out'),
     ('max_slice_length', None, 2 ** 17,
         "maximum length slice to send to peers, larger requests are ignored"),
     ('max_rate_recalculate_interval', None, 15.0,
@@ -177,7 +179,7 @@ def download(params, filefunc, statusfunc, finfunc, errorfunc, doneflag, cols):
     if doneflag.isSet():
         return
 
-    rawserver = RawServer(doneflag, config['timeout'])
+    rawserver = RawServer(doneflag, config['timeout_check_interval'], config['timeout'])
     for listen_port in xrange(config['minport'], config['maxport'] + 1):
         try:
             rawserver.bind(listen_port, config['bind'])
