@@ -115,7 +115,6 @@ def test_Storage_simple():
     f = FakeOpen()
     m = Storage([('a', 5)], f.open, f.exists, f.getsize, dummy_status)
     assert f.files.keys() == ['a']
-    assert len(f.files['a']) == 5
     m.write(0, 'abc')
     assert m.read(0, 3) == 'abc'
     m.write(2, 'abc')
@@ -130,9 +129,6 @@ def test_Storage_multiple():
     x = f.files.keys()
     x.sort()
     assert x == ['2', 'a', 'c']
-    assert len(f.files['a']) == 5
-    assert len(f.files['2']) == 4
-    assert len(f.files['c']) == 3
     m.write(3, 'abc')
     assert m.read(3, 3) == 'abc'
     m.write(5, 'ab')
@@ -163,14 +159,12 @@ def test_Storage_with_zero():
     assert x == ['a', 'b', 'c']
     assert len(f.files['a']) == 3
     assert len(f.files['b']) == 0
-    assert len(f.files['c']) == 3
 
 def test_Storage_resume():
     f = FakeOpen({'a': 'abc'})
     m = Storage([('a', 4)], 
         f.open, f.exists, f.getsize, dummy_status)
     assert f.files.keys() == ['a']
-    assert len(f.files['a']) == 4
     assert m.read(0, 3) == 'abc'
 
 def test_Storage_mixed_resume():
@@ -180,6 +174,4 @@ def test_Storage_mixed_resume():
     x = f.files.keys()
     x.sort()
     assert x == ['a', 'b']
-    assert len(f.files['a']) == 3
-    assert len(f.files['b']) == 4
     assert m.read(3, 3) == 'abc'
