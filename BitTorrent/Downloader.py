@@ -102,9 +102,8 @@ class SingleDownload:
             self.downloader.picker.complete(index)
         self._request_more()
         if self.downloader.picker.am_I_complete():
-            for d in self.downloader.downloads:
-                if d.unhave == 0:
-                    d.connection.close()
+            for d in [i for i in self.downloader.downloads if i.unhave == 0]:
+                d.connection.close()
         return self.downloader.storage.do_I_have(index)
 
     def _want(self, index):
