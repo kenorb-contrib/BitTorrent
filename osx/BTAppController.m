@@ -183,11 +183,11 @@ static PyThreadState *tstate;
     
     // do the download!
     if([dict objectForKey:@"ip"]) {
-            ret = PyObject_CallFunction(dl, "[ssssssssss]OOOOOiOO", [method cString], [str cString], "--display_interval", "1.5", "--minport", minport, "--maxport", maxport, "--ip", [[dict objectForKey:@"ip"] cString],
+            ret = PyObject_CallFunction(dl, "[ssssssssssss]OOOOOiOO", [method cString], [str UTF8String], "--display_interval", "1.5", "--spew", "1", "--minport", minport, "--maxport", maxport, "--ip", [[dict objectForKey:@"ip"] cString],
                                     chooseFile, display, finished, nerror, flag, 80, pathUpdated, paramfunc);
     }
     else {
-        ret = PyObject_CallFunction(dl, "[ssssssss]OOOOOiOO", [method cString], [str cString], "--display_interval", "1.5", "--minport", minport, "--maxport", maxport,  
+        ret = PyObject_CallFunction(dl, "[ssssssssss]OOOOOiOO", [method cString], [str UTF8String], "--display_interval", "1.5", "--spew", "1",  "--minport", minport, "--maxport", maxport,  
                                     chooseFile, display, finished, nerror, flag, 80, pathUpdated, paramfunc);
     }
     [proxy->dlController dlExited];

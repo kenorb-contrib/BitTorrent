@@ -289,7 +289,7 @@
     
     if (listen_port && peer_id && info_hash) {
         publisher = [[NSNetService alloc] initWithDomain:@""
-                                            type:[NSString stringWithFormat:@"_BitTorrent:%s._tcp", info_hash]
+                                            type:[NSString stringWithFormat:@"_BitTorrent-%s._tcp", info_hash]
                                         name:[NSString stringWithCString:peer_id] port:listen_port];
         if(publisher) {
             [publisher setDelegate:self];
@@ -299,7 +299,7 @@
         browser = [[NSNetServiceBrowser alloc] init];
         if(browser) {
             [browser setDelegate:self];
-            [browser searchForServicesOfType:[NSString stringWithFormat:@"_BitTorrent:%s._tcp", info_hash] inDomain:@""];
+            [browser searchForServicesOfType:[NSString stringWithFormat:@"_BitTorrent-%s._tcp", info_hash] inDomain:@""];
         }
     Py_DECREF(mm);
     Py_DECREF(pid);

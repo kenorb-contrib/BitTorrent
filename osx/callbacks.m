@@ -32,7 +32,7 @@ static PyObject *chooseFile(bt_ProxyObject *self, PyObject *args)
     mm = PyImport_ImportModule("__main__");
 
     Py_BEGIN_ALLOW_THREADS
-        [self->dlController chooseFile:[NSString stringWithCString:def] size:PyFloat_AsDouble(obj) isDirectory:dir];
+        [self->dlController chooseFile:[NSString stringWithUTF8String:def] size:PyFloat_AsDouble(obj) isDirectory:dir];
     Py_END_ALLOW_THREADS
   
     PyObject_CallMethod(self->chooseFlag, "wait", NULL);  
@@ -42,7 +42,7 @@ static PyObject *chooseFile(bt_ProxyObject *self, PyObject *args)
     Py_END_ALLOW_THREADS
 
     if(str) {
-        res = PyString_FromString([str cString]);
+        res = PyString_FromString([str UTF8String]);
     }
     else {
         Py_INCREF(Py_None);
@@ -102,7 +102,7 @@ static PyObject *fnameprogress(bt_ProxyObject *self, PyObject *args)
     if (!PyArg_ParseTuple(args, "s", &fname))
         return NULL;
     Py_BEGIN_ALLOW_THREADS
-        [self->dlController progressFname:[NSString stringWithCString:fname]];
+        [self->dlController progressFname:[NSString stringWithUTF8String:fname]];
     [pool release];
     Py_END_ALLOW_THREADS
 

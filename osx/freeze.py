@@ -15,9 +15,9 @@ so_path = 'lib/python2.2/lib-dynload'
 
 ## add dependend modules to one or the other list, depending on the type
 ## there are probably some extra modules in here that aren't actually used
-py_modules = ['StringIO', 'UserDict', '__future__', 'atexit', 'base64', 'bisect', 'copy', 'copy_reg', 'dis', 'dospath', 'ftplib', 'inspect', 'getopt', 'getpass', 'gopherlib', 'gzip', 'httplib', 'linecache', 'macpath', 'macurl2path', 'mimetools', 'mimetypes', 'ntpath', 'nturl2path', 'os', 'popen2', 'posixpath', 'pprint', 'pre', 'quopri', 'random', 're', 'repr', 'rfc822', 'socket', 'sre', 'sre_compile', 'sre_constants', 'sre_parse', 'stat', 'string', 'tempfile', 'termios', 'threading', 'traceback', 'types', 'token', 'tokenize', 'urllib', 'urllib2', 'urlparse', 'uu', 'warnings']
+py_modules = ['StringIO', 'UserDict', '__future__', 'atexit', 'base64', 'bisect', 'codecs', 'copy', 'copy_reg', 'dis', 'dospath', 'ftplib', 'inspect', 'getopt', 'getpass', 'gopherlib', 'gzip', 'httplib', 'linecache', 'macpath', 'macurl2path', 'mimetools', 'mimetypes', 'ntpath', 'nturl2path', 'os', 'popen2', 'posixpath', 'pprint', 'pre', 'quopri', 'random', 're', 'repr', 'rfc822', 'socket', 'sre', 'sre_compile', 'sre_constants', 'sre_parse', 'stat', 'string', 'tempfile', 'termios', 'threading', 'traceback', 'types', 'token', 'tokenize', 'urllib', 'urllib2', 'urlparse', 'uu', 'warnings']
 
-so_modules = ['_socket', 'binascii', 'cStringIO', 'errno','macfs', 'math', 'md5', 'pcre', 'pwd', 'select', 'sha', 'strop', 'struct', 'time', 'zlib']
+so_modules = ['_codecs', '_socket', 'binascii', 'cStringIO', 'errno','macfs', 'math', 'md5', 'pcre', 'pwd', 'select', 'sha', 'strop', 'struct', 'time', 'zlib']
 
 res = join(environ['SYMROOT'], '%s.%s/Contents/Resources' % (environ['PRODUCT_NAME'], environ['WRAPPER_EXTENSION']))
 py = join(res, 'lib/python2.2')

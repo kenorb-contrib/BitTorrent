@@ -192,7 +192,7 @@
     mm = PyImport_ImportModule("BitTorrent.bencode");
     md = PyModule_GetDict(mm);
     be = PyDict_GetItemString(md, "bencode");
-
+    
     [[dict objectForKey:@"flag"] getBytes:&flag];
     
     if ([[dict objectForKey:@"completedir"] intValue] == 0) {
@@ -200,13 +200,13 @@
         md = PyModule_GetDict(mm);
         mmf = PyDict_GetItemString(md, "makeinfo");
         display = PyObject_GetAttrString((PyObject *)proxy, "metaprogress");
-        res = PyObject_CallFunction(mmf, "siOOi", [filename cString],  262144, flag, display, 1);
+        res = PyObject_CallFunction(mmf, "siOOi", [filename UTF8String],  262144, flag, display, 1);
         if(res != NULL && res != Py_None) {
-            enc = PyObject_CallFunction(be, "{s:O,s:s}", "info", res, "announce", [url cString]);
+            enc = PyObject_CallFunction(be, "{s:O,s:s}", "info", res, "announce", [url UTF8String]);
             if(PyErr_Occurred())
                 PyErr_Print();
             else {
-                desc = fopen([f cString], "w");
+                desc = fopen([f UTF8String], "w");
                 fwrite(PyString_AsString(enc), sizeof(char), PyString_Size(enc), desc);
                 fclose(desc);
                 if(enc) {
@@ -222,7 +222,7 @@
         mmf = PyDict_GetItemString(md, "completedir");
         display = PyObject_GetAttrString((PyObject *)proxy, "metaprogress");
         displayFname = PyObject_GetAttrString((PyObject *)proxy, "fnameprogress");
-        res = PyObject_CallFunction(mmf, "ssOOOi", [filename cString], [url cString], flag, display, displayFname, 18);
+        res = PyObject_CallFunction(mmf, "ssOOOi", [filename UTF8String], [url UTF8String], flag, display, displayFname, 18);
         if(PyErr_Occurred())
             PyErr_Print();
         if(res) {
