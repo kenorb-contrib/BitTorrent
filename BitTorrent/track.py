@@ -351,6 +351,9 @@ class Tracker:
                     peers[myid] = {'ip': ip, 'port': port, 'left': left, "local_override" : local_override}
                 else:
                     peers[myid] = {'ip': ip, 'port': port, 'left': left}
+                if not self.natcheck or local_override:
+                    self.becache1.setdefault(infohash,{})[myid] = Bencached(bencode({'ip': ip, 'port': port, 'peer id': myid}))
+                    self.becache2.setdefault(infohash,{})[myid] = Bencached(bencode({'ip': ip, 'port': port}))
             else:
                 peers[myid]['left'] = left
             if params.get('event', '') == 'completed':
@@ -365,12 +368,11 @@ class Tracker:
                 peers[myid]['nat'] = 0
         else:
             if peers.has_key(myid) and peers[myid]['ip'] == ip:
-                if not peers[myid].get('nat',1):
-                    try:
-                        del self.becache1[infohash][myid]
-                        del self.becache2[infohash][myid]
-                    except KeyError:
-                        pass
+                try:
+                    del self.becache1[infohash][myid]
+                    del self.becache2[infohash][myid]
+                except KeyError:
+                    pass
                 del peers[myid]
                 del ts[myid]
         data = {'interval': self.reannounce_interval}
@@ -423,9 +425,11 @@ class Tracker:
         for x in self.times.keys():
             for myid, t in self.times[x].items():
                 if t < self.prevtime:
-                    if not self.downloads[x][myid].get('nat',1):
+                    try:
                         del self.becache1[x][myid]
                         del self.becache2[x][myid]
+                    except KeyError:
+                        pass
                     del self.times[x][myid]
                     del self.downloads[x][myid]
         self.prevtime = time()
