@@ -16,17 +16,12 @@ def readput(url, data):
         h = HTTPSConnection(host)
     else:
         raise ValueError, "can't handle protocol '" + protocol + "'"
-    h.putrequest('PUT', path)
-    h.putheader('content-length', str(len(data)))
-    h.endheaders()
-    h.send(data)
-    reply, message, headers = h.getreply()
-    if reply != 200:
-        raise ValueError, 'unexpected response - ' + str(reply)
-    f = h.getfile()
-    r = f.read(int(headers.getheader('content-length')))
-    f.close()
-    return r
+    h.request('PUT', path, data)
+    response = h.getresponse()
+    if response.status != 200:
+        raise ValueError, ('unexpected response - ' + 
+            str(response.status) + ' ' + response.reason)
+    return response.read()
 
 class putqueue:
     def __init__(self, url):

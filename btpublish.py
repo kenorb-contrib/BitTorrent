@@ -5,7 +5,7 @@
 
 from sys import argv, version
 assert version >= '2', "Install Python 2.0 or greater"
-from httplib import HTTP
+from httplib import HTTPConnection, HTTPSConnection
 from urlparse import urlparse
 from os.path import getsize, split, join, abspath, isdir
 from os import listdir
@@ -19,19 +19,16 @@ def publish(file, url):
 
 def announce(data, url):
     protocol, host, path, g1, g2, g3 = urlparse(url)
-    if protocol != 'http':
+    if protocol == 'http':
+        h = HTTPConnection(host)
+    elif protocol == 'https':
+        h = HTTPSConnection(host)
+    else:
         raise ValueError, "can't handle protocol '" + protocol + "'"
-    h = HTTP(host)
-    h.putrequest('PUT', path)
-    h.putheader('content-length', str(len(data)))
-    h.putheader('Content-Type', 'application/x-bittorrent')
-    h.endheaders()
-    h.send(data)
-    print h.getreply()
-    f = h.getfile()
-    r = f.read(int(h.headers.getheader('content-length')))
-    f.close()
-    print r
+    h.request('PUT', path, data, {'Content-Type': 'application/x-bittorrent'})
+    response = h.getresponse()
+    print response.status, response.reason
+    print response.read()
 
 def makeinfo(file, piece_length = 2 ** 20):
     file = abspath(file)
