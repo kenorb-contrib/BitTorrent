@@ -68,10 +68,12 @@ class TrackerHandler(BaseHTTPRequestHandler):
                 ip = message.get('ip', self.client_address[0])
                 for file in message['files']:
                     name = file['name']
-                    if published.has_key(name) and (file['length'],
-                            file['pieces'], file['piece length']) != published[name][1:]:
+                    if published.has_key(name) and [file['length'],
+                            file['pieces'], file['piece length']] != published[name][1:]:
                         self.answer({'type': 'failure', 
                             'reason': 'mismatching data for ' + name})
+                        print published[name][1:]
+                        print (file['length'], file['pieces'], file['piece length'])
                         return
                 changed = false
                 for file in message['files']:
