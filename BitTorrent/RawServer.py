@@ -26,6 +26,7 @@ class SingleSocket:
         self.socket = sock
         self.buffer = []
         self.hit = true
+        self.connected = false
         
     def get_ip(self):
         try:
@@ -51,19 +52,20 @@ class SingleSocket:
             self.try_write()
 
     def try_write(self):
-        try:
-            while self.buffer != []:
-                amount = self.socket.send(self.buffer[0])
-                if amount != len(self.buffer[0]):
-                    if amount != 0:
-                        self.buffer[0] = self.buffer[0][amount:]
-                    break
-                del self.buffer[0]
-        except socket.error, e:
-            code, msg = e
-            if code != EWOULDBLOCK:
-                self.raw_server.dead_from_write.append(self)
-                return
+        if self.connected:
+            try:
+                while self.buffer != []:
+                    amount = self.socket.send(self.buffer[0])
+                    if amount != len(self.buffer[0]):
+                        if amount != 0:
+                            self.buffer[0] = self.buffer[0][amount:]
+                        break
+                    del self.buffer[0]
+            except socket.error, e:
+                code, msg = e
+                if code != EWOULDBLOCK:
+                    self.raw_server.dead_from_write.append(self)
+                    return
         if self.buffer == []:
             self.raw_server.poll.register(self.socket, POLLIN)
         else:
@@ -133,11 +135,10 @@ class RawServer:
                     self.poll.register(newsock, POLLIN)
                     self.handler.external_connection_made(nss)
             else:
-                if sock == self.server.fileno():
-                    continue
                 s = self.single_sockets.get(sock)
                 if s is None:
                     continue
+                s.connected = true
                 if (event & (POLLHUP | POLLERR)) != 0:
                     self._close_socket(s)
                     continue
