@@ -18,6 +18,8 @@ from RateMeasure import RateMeasure
 from CurrentRateMeasure import Measure
 from PiecePicker import PiecePicker
 from bencode import bencode, bdecode
+from __init__ import version
+from binascii import b2a_hex
 from sha import sha
 from os import path, makedirs
 from parseargs import parseargs, formatDefinitions
@@ -186,7 +188,8 @@ def download(params, filefunc, statusfunc, finfunc, errorfunc, doneflag, cols, p
     
     finflag = Event()
     ann = [None]
-    myid = (chr(0) * 12) + sha(repr(time()) + ' ' + str(getpid())).digest()[-8:]
+    myid = 'M' + version.replace('.', '-')
+    myid = myid + ('-' * (8 - len(myid))) + b2a_hex(sha(repr(time()) + ' ' + str(getpid())).digest()[-8:])
     seed(myid)
     pieces = [info['pieces'][x:x+20] for x in xrange(0, 
         len(info['pieces']), 20)]
