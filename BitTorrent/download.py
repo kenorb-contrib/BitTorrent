@@ -54,6 +54,8 @@ defaults = [
         'url to get file from, alternative to response and responsefile'),
     ('saveas', 'saveas=', None, '',
         'local file name to save the file as, null indicates query user'),
+    ('timeout', 'timeout=', None, 300.0,
+        'time to wait between closing sockets which nothing has been received on'),
     ]
 
 t = compile_template({'hash': len20, 'piece length': 1, 'pieces': ListMarker(len20),
@@ -133,7 +135,8 @@ def download(params, filefunc, displayfunc, doneflag, cols):
     uploader = Uploader(throttler, blobs)
     downloader = Downloader(throttler, blobs, uploader, 
         config['download_chunk_size'], config['request_backlog'])
-    rawserver = RawServer(config['max_poll_period'], doneflag)
+    rawserver = RawServer(config['max_poll_period'], doneflag,
+        config['timeout'])
     connecter = Connecter(uploader, downloader)
     seed(entropy(20))
     encrypter = Encrypter(connecter, rawserver, lambda e = entropy: e(20),

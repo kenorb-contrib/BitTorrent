@@ -25,6 +25,7 @@ class SingleSocket:
         self.raw_server = raw_server
         self.socket = sock
         self.buffer = []
+        self.hit = true
         
     def get_ip(self):
         try:
@@ -50,6 +51,8 @@ class SingleSocket:
         try:
             while self.buffer != []:
                 amount = self.socket.send(self.buffer[0])
+                if amount != 0:
+                    self.hit = true
                 if amount != len(self.buffer[0]):
                     if amount != 0:
                         self.buffer[0] = self.buffer[0][amount:]
@@ -65,8 +68,9 @@ class SingleSocket:
             self.raw_server.poll.register(self.socket, all)
 
 class RawServer:
-    def __init__(self, max_poll_period, doneflag, noisy = true):
+    def __init__(self, max_poll_period, doneflag, timeout, noisy = true):
         self.max_poll_period = max_poll_period
+        self.timeout = timeout
         self.poll = poll()
         # {socket: SingleSocket}
         self.single_sockets = {}
@@ -74,9 +78,21 @@ class RawServer:
         self.doneflag = doneflag
         self.noisy = noisy
         self.funcs = []
+        self.add_task(self.scan_for_timeouts, timeout)
 
     def add_task(self, func, delay):
         insort(self.funcs, (time() + delay, func))
+
+    def scan_for_timeouts(self):
+        self.add_task(self.scan_for_timeouts, self.timeout)
+        tokill = []
+        for s in self.single_sockets.values():
+            if not s.hit:
+                tokill.append(s)
+            s.hit = false
+        for k in tokill:
+            if k.socket is not None:
+                self.close_socket(k)
 
     def start_listening(self, handler, port, ret = true):
         self.handler = handler
@@ -221,11 +237,11 @@ def test_starting_side_close():
     try:
         da = DummyHandler()
         fa = Event()
-        sa = RawServer(.1, fa)
+        sa = RawServer(.1, fa, 100)
         sa.start_listening(da, 5000)
         db = DummyHandler()
         fb = Event()
-        sb = RawServer(.1, fb)
+        sb = RawServer(.1, fb, 100)
         sb.start_listening(db, 5001)
 
         ca = sa.start_connection(('', 5001))
@@ -284,11 +300,11 @@ def test_receiving_side_close():
     try:
         da = DummyHandler()
         fa = Event()
-        sa = RawServer(.1, fa)
+        sa = RawServer(.1, fa, 100)
         sa.start_listening(da, 5002)
         db = DummyHandler()
         fb = Event()
-        sb = RawServer(.1, fb)
+        sb = RawServer(.1, fb, 100)
         sb.start_listening(db, 5003)
         
         ca = sa.start_connection(('', 5003))
@@ -347,7 +363,7 @@ def test_connection_refused():
     try:
         da = DummyHandler()
         fa = Event()
-        sa = RawServer(.1, fa)
+        sa = RawServer(.1, fa, 100)
         sa.start_listening(da, 5006)
         
         ca = sa.start_connection(('', 5007))
@@ -364,13 +380,13 @@ def test_both_close():
     try:
         da = DummyHandler()
         fa = Event()
-        sa = RawServer(.1, fa)
+        sa = RawServer(.1, fa, 100)
         sa.start_listening(da, 5004)
 
         sleep(1)
         db = DummyHandler()
         fb = Event()
-        sb = RawServer(.1, fb)
+        sb = RawServer(.1, fb, 100)
         sb.start_listening(db, 5005)
         
         ca = sa.start_connection(('', 5005))
@@ -428,7 +444,7 @@ def test_both_close():
 def test_normal():
     l = []
     f = Event()
-    s = RawServer(5, f)
+    s = RawServer(5, f, 100)
     s.start_listening(DummyHandler(), 5007)
     s.add_task(lambda l = l: l.append('b'), 2)
     s.add_task(lambda l = l: l.append('a'), 1)
@@ -442,7 +458,7 @@ def test_normal():
 def test_catch_exception():
     l = []
     f = Event()
-    s = RawServer(5, f, false)
+    s = RawServer(5, f, 100, false)
     s.start_listening(DummyHandler(), 5009)
     s.add_task(lambda l = l: l.append('b'), 2)
     s.add_task(lambda: 4/0, 1)

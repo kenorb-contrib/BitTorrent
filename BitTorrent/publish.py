@@ -42,6 +42,8 @@ defaults = [
         """post url for announcing to the publicist."""),
     ('keepalive_interval', 'keepalive-interval=', None, 120.0,
         'number of seconds to pause between sending keepalives'),
+    ('timeout', 'timeout=', None, 300.0,
+        'time to wait between closing sockets which nothing has been received on'),
     ]
 
 def publish(params, cols):
@@ -72,7 +74,8 @@ def publish(params, cols):
     uploader = Uploader(throttler, blobs)
     downloader = DummyDownloader()
     connecter = Connecter(uploader, downloader)
-    rawserver = RawServer(config['max_poll_period'], Event())
+    rawserver = RawServer(config['max_poll_period'], Event(),
+        config['timeout'])
     encrypter = Encrypter(connecter, rawserver, noncefunc, private_key, 
         config['max_message_length'], rawserver.add_task, 
         config['keepalive_interval'])
