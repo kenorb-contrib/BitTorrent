@@ -14,6 +14,9 @@ from BitTorrent.bencode import bencode
 from BitTorrent.btformats import check_info
 from threading import Event
 
+ignore = ['core', 'CVS'] # ignoring these files could be trouble
+ignore += ['.DS_Store'] # fricking macintrash
+
 def dummy(v):
     pass
 
@@ -49,6 +52,11 @@ def makeinfo(file, piece_length, flag, progress):
         sh = sha()
         done = 0
         fs = []
+        totalsize = 0.0
+        totalhashed = 0
+        for p, f in subs:
+            totalsize += getsize(f)
+
         for p, f in subs:
             pos = 0
             size = getsize(f)
@@ -61,11 +69,13 @@ def makeinfo(file, piece_length, flag, progress):
                     return
                 done += a
                 pos += a
+                totalhashed += a
+                
                 if done == piece_length:
                     pieces.append(sh.digest())
                     done = 0
                     sh = sha()
-                progress(a)
+                progress(totalhashed / totalsize)
             h.close()
         if done > 0:
             pieces.append(sh.digest())
@@ -98,7 +108,7 @@ def subfiles(d):
         p, n = stack.pop()
         if isdir(n):
             for s in listdir(n):
-                if s != 'CVS' and s != 'core':
+                if s not in ignore:
                     stack.append((copy(p) + [s], join(n, s)))
         else:
             r.append((p, n))
