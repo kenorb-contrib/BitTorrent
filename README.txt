@@ -18,7 +18,8 @@ web server, and the downloader, which acts as a web helper app.
 To run a tracker, execute the command bttrack.py Here is an 
 example -
 
-bttrack.py --port 8080 --ip 69.69.69.69 --file btstate --dfile dstate
+bttrack.py --port 8080 --ip 69.69.69.69 --file btstate \
+    --dfile dstate --logfile logfile
 
 You should substitute your own ip for 69.69.69.69. You can use 
 a dns name instead of an ip number, although that results in clients 
@@ -28,10 +29,8 @@ This command will read in previously generated files called btstate
 and dstate or generate new ones if they don't exist already. That's 
 where persistent tracker information is kept.
 
-The tracker won't give any immediate feedback because it's output 
-is a weblog. You can get a list of published files by doing an http 
-request in it's base directory (it will of course be an empty 
-list at first)
+The tracker won't give any immediate feedback. You can get a list 
+of published files by doing an http request in it's base directory.
 
 To publish, first run the publish script to let the tracker know about 
 a file, then run a downloader which already has the complete file to 
@@ -39,7 +38,9 @@ make it available. Here's the publish command -
 
 btpublish.py myfile.ext http://my.tracker/somename.ext
 
-This command will finish quickly, hopefully reporting that it worked.
+This command will take some time to scan over the file, then report 
+the information to the tracker and return. It will report whether the 
+tracker's response.
 
 Next run a downloader, here's an example -
 

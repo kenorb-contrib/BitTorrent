@@ -6,10 +6,6 @@ install py2exe - http://starship.python.net/crew/theller/py2exe/
 
 install the nullsoft installer - http://www.nullsoft.com/free/nsis/
 
-Copy this file into the root BitTorrent directory*
-
-http://bitconjurer.org/BitTorrent/_StreamEncrypter.pyd
-
 in a shell, go to the root BitTorrent directory and run this command
 
 python winsetup.py py2exe --windows
@@ -24,9 +20,3 @@ This will create an installer called bittorrent.exe
 The installer is completely self-contained and will work on any 
 Windows machine, even without the above software having been 
 installed.
-
-* If for some odd reason you wish to build _StreamEncrypter yourself 
-and happen to have a copy of MSVC installed, you can run 
-'setup.py build' and move the newly created _StreamEncrypter.pyd 
-(which will be under a subdirectory of the newly created directory 
-named 'build') into the root BitTorrent directory.
