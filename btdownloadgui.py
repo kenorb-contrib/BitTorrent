@@ -168,6 +168,8 @@ class DownloadInfoFrame:
         self.errorText.SetLabel(strftime('ERROR (%I:%M %p) -\n') + errormsg)
 
     def chooseFile(self, default, size, saveas, dir):
+        if saveas:
+            return saveas
         f = Event()
         bucket = [None]
         self.invokeLater(self.onChooseFile, [default, bucket, f, size, dir])
