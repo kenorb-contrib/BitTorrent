@@ -8,12 +8,13 @@ false = 0
 
 class Upload:
     def __init__(self, connection, choker, blobs, 
-            max_slice_length, max_rate_period):
+            max_slice_length, max_rate_period, total_up = [0]):
         self.connection = connection
         self.choker = choker
         self.blobs = blobs
         self.max_slice_length = max_slice_length
         self.max_rate_period = max_rate_period
+        self.total_up = total_up
         self.choked = false
         self.reported_choked = false
         self.interested = false
@@ -38,6 +39,7 @@ class Upload:
             self.choker.interested(self.connection)
 
     def update_rate(self, amount):
+        self.total_up[0] += amount
         t = time()
         self.rate = (self.rate * (self.lastout - self.ratesince) + 
             amount) / (t - self.ratesince)

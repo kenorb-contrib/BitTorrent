@@ -7,13 +7,14 @@ true = 1
 false = 0
 
 class Download:
-    def __init__(self, connection, data, backlog, max_rate_period):
+    def __init__(self, connection, data, backlog, max_rate_period, total_down = [0]):
         self.connection = connection
         self.data = data
         self.backlog = backlog
         self.choked = false
         self.interested = false
         self.max_rate_period = max_rate_period
+        self.total_down = total_down
         self.ratesince = time()
         self.lastin = self.ratesince
         self.rate = 0
@@ -73,6 +74,7 @@ class Download:
         return self.interested
 
     def update_rate(self, amount):
+        self.total_down[0] += amount
         t = time()
         self.rate = (self.rate * (self.lastin - self.ratesince) + 
             amount) / (t - self.ratesince)

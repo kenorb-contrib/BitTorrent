@@ -163,17 +163,22 @@ def download(params, filefunc, statusfunc, resultfunc, doneflag, cols):
         config['timeout'])
     choker = Choker(config['max_uploads'], rawserver.add_task, config['choke_interval'],
         lambda c: c.get_download().rate)
+    total_up = [0]
+    total_down = [0]
     def make_upload(connection, choker = choker, blobs = blobs, 
             max_slice_length = config['max_slice_length'],
-            max_rate_period = config['max_rate_period']):
+            max_rate_period = config['max_rate_period'],
+            total_up = total_up):
         return Upload(connection, choker, blobs, max_slice_length,
-            max_rate_period)
+            max_rate_period, total_up = total_up)
     ratemeasure = RateMeasure(left)
     dd = DownloaderData(blobs, config['download_slice_size'], ratemeasure.data_came_in)
     def make_download(connection, data = dd, 
             backlog = config['request_backlog'],
-            max_rate_period = config['max_rate_period']):
-        return Download(connection, data, backlog, max_rate_period)
+            max_rate_period = config['max_rate_period'],
+            total_down = total_down):
+        return Download(connection, data, backlog, max_rate_period,
+            total_down = total_down)
     connecter = Connecter(make_upload, make_download, choker)
     seed(entropy(20))
     encrypter = Encrypter(connecter, rawserver, lambda e = entropy: e(20),
@@ -221,7 +226,8 @@ def download(params, filefunc, statusfunc, resultfunc, doneflag, cols):
         
     if response1.has_key('finish'):
         try:
-            a = {'type': 'finished', 'id': response1['id'], 'myid': myid}
+            a = {'type': 'finished', 'id': response1['id'], 'myid': myid, 
+                'uploaded': total_up[0], 'downloaded': total_down[0]}
             if r[0]:
                 a['result'] = 'success'
             else:
