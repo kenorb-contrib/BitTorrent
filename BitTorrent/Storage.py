@@ -69,9 +69,11 @@ class Storage:
 
     def set_readonly(self):
         # may raise IOError or OSError
-        for file, old in self.handles.items():
-            self.handles[file] = open(file, 'rb')
+        for file in self.whandles.keys():
+            old = self.handles[file]
+            old.flush()
             old.close()
+            self.handles[file] = open(file, 'rb')
 
     def get_total_length(self):
         return self.total_length
@@ -103,6 +105,7 @@ class Storage:
         total = 0
         for file, begin, end in self._intervals(pos, len(s)):
             if not self.whandles.has_key(file):
+                self.handles[file].close()
                 self.handles[file] = open(file, 'rb+')
                 self.whandles[file] = 1
             h = self.handles[file]

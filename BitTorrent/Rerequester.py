@@ -6,6 +6,7 @@ from btformats import check_peers
 from bencode import bdecode
 from threading import Thread, Lock
 from traceback import print_exc
+from socket import error
 true = 1
 false = 0
 
@@ -79,7 +80,7 @@ class Rerequester:
                     self.last_failed = false
                     self.postrequest(r, callback)
                 self.externalsched(add)
-        except IOError, e:
+        except (IOError, error), e:
             if set():
                 def fail(self = self, r = 'Problem connecting to tracker - ' + str(e)):
                     if self.last_failed:
