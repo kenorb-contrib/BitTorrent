@@ -26,12 +26,29 @@ def make_indices(pieces, piece_length, file_length):
             indices[pieces[i]] = [(begin, end)]
     return indices
 
+def dummy_status(fractionDone = None, activity = None):
+    pass
+
 class SingleBlob:
-    def __init__(self, file, file_length, pieces, piece_length, 
-            callback, open, exists, getsize, flag = Event()):
+    def __init__(self, file, file_length, pieces, piece_length,
+                callback, open, exists, getsize, flag = Event(),
+                statusfunc = dummy_status):
+        try:
+            self.init(file, file_length, pieces, piece_length, callback, 
+                open, exists, getsize, flag, statusfunc)
+        except IOError, e:
+            callback(false, 'got disk access error -' + str(e), fatal = true)
+
+    def init(self, file, file_length, pieces, piece_length,
+                callback, open, exists, getsize, flag,
+                statusfunc):
         self.open = open
         self.callback = callback
-        self.indices = make_indices(pieces, piece_length, file_length)
+        try:
+            self.indices = make_indices(pieces, piece_length, file_length)
+        except ValueError, e:
+            callback(false, 'bad data from server - ' + str(e), fatal = true)
+            return
         # hash: 1
         self.complete = {}
         # hash: 1
@@ -43,21 +60,56 @@ class SingleBlob:
         if exists(file):
             size = getsize(file)
             if size > file_length:
-                raise ValueError, 'existing file size too large'
+                callback(false, 'existing file size too large')
+                return
             self.h = self.open(file, 'rb+')
+            if file_length == 0:
+                callback(true)
+                return
             if size < file_length:
+                statusfunc(activity = 'finishing file allocation', 
+                    fractionDone = 0)
+                for l in xrange(size,file_length,file_length/100+1):
+                    self.h.seek(l)
+                    self.h.write(chr(1))
+                    self.h.flush()
+                    statusfunc(fractionDone = float(l)/file_length)
+                    if flag.isSet():
+                        return
                 self.h.seek(file_length - 1)
                 self.h.write(chr(1))
                 self.h.flush()
+            i = 0
+            numofblobs = len(self.want.keys())
+            statusfunc(activity = 'checking existing file', 
+                fractionDone = 0)
             for blob in self.want.keys():
                 self.check_blob(blob)
+                if len(self.want) == 0:
+                    return
+                fracdone = float(i)/numofblobs
+                statusfunc(fractionDone = float(i)/numofblobs)
+                i += 1
                 if flag.isSet():
                     return
         else:
             self.h = self.open(file, 'wb+')
+            if file_length == 0:
+                callback(true)
+                return
+            statusfunc(fractionDone = 0,
+                       activity = 'allocating new file')
+            for l in xrange(0,file_length,file_length/100+1):
+                self.h.seek(l)
+                self.h.write(chr(1))
+                self.h.flush()
+                statusfunc(fractionDone = float(l)/file_length)
+                if flag.isSet():
+                    return
             self.h.seek(file_length - 1)
             self.h.write(chr(1))
             self.h.flush()
+        statusfunc(fractionDone = 1.0)
 
     def get_size(self, blob):
         begin, end = self.indices[blob][0]
@@ -137,15 +189,22 @@ class SingleBlob:
 
 from fakeopen import FakeOpen
 
+class dummycalls:
+    def __init__(self):
+        self.r = []
+
+    def c(self, a, b = '', fatal = false):
+        self.r.append((a, b, fatal))
+
 def test_normal():
     s = 'abc' * 5
     a = sha(s[:10]).digest()
     b = sha(s[10:]).digest()
-    r = []
+    d = dummycalls()
     f = FakeOpen()
     sb = SingleBlob('test', 15, [a, b], 10, 
-        r.append, f.open, f.exists, f.getsize)
-    assert r == []
+        d.c, f.open, f.exists, f.getsize)
+    assert d.r == []
     x = sb.get_list_of_blobs_I_want()
     assert x == [a, b] or x == [b, a]
     assert sb.get_list_of_blobs_I_have() == []
@@ -153,7 +212,7 @@ def test_normal():
     
     sb.save_slice(a, 0, s[0:5])
     assert not sb.check_blob(a)
-    assert r == []
+    assert d.r == []
     x = sb.get_list_of_blobs_I_want()
     assert x == [a, b] or x == [b, a]
     assert sb.get_list_of_blobs_I_have() == []
@@ -161,7 +220,7 @@ def test_normal():
     
     sb.save_slice(b, 0, s[10:12])
     assert not sb.check_blob(b)
-    assert r == []
+    assert d.r == []
     x = sb.get_list_of_blobs_I_want()
     assert x == [a, b] or x == [b, a]
     assert sb.get_list_of_blobs_I_have() == []
@@ -169,7 +228,7 @@ def test_normal():
 
     sb.save_slice(a, 5, s[5:10])
     assert sb.check_blob(a)
-    assert r == []
+    assert d.r == []
     assert sb.get_list_of_blobs_I_want() == [b]
     assert sb.get_list_of_blobs_I_have() == [a]
     assert sb.get_slice(a, 0, 2) == s[:2]
@@ -178,7 +237,7 @@ def test_normal():
 
     sb.save_slice(b, 2, s[12:])
     assert sb.check_blob(b)
-    assert r == [true]
+    assert d.r == [(true, '', false)]
     assert sb.get_list_of_blobs_I_want() == []
     x = sb.get_list_of_blobs_I_have()
     assert x == [a, b] or x == [b, a]
@@ -189,25 +248,25 @@ def test_even():
     s = 'abcd' * 5
     a = sha(s[:10]).digest()
     b = sha(s[10:]).digest()
-    r = []
+    d = dummycalls()
     f = FakeOpen()
     sb = SingleBlob('test', 20, [a, b], 10, 
-        r.append, f.open, f.exists, f.getsize)
-    assert r == []
+        d.c, f.open, f.exists, f.getsize)
+    assert d.r == []
     x = sb.get_list_of_blobs_I_want()
     assert x == [a, b] or x == [b, a]
     assert sb.get_list_of_blobs_I_have() == []
     assert sb.get_slice(a, 0, 2) == None
     
     assert not sb.save_slice(a, 0, s[0:5])
-    assert r == []
+    assert d.r == []
     x = sb.get_list_of_blobs_I_want()
     assert x == [a, b] or x == [b, a]
     assert sb.get_list_of_blobs_I_have() == []
     assert sb.get_slice(a, 0, 2) == None
     
     assert not sb.save_slice(b, 0, s[10:12])
-    assert r == []
+    assert d.r == []
     x = sb.get_list_of_blobs_I_want()
     assert x == [a, b] or x == [b, a]
     assert sb.get_list_of_blobs_I_have() == []
@@ -215,7 +274,7 @@ def test_even():
 
     sb.save_slice(a, 5, s[5:10])
     assert sb.check_blob(a)
-    assert r == []
+    assert d.r == []
     assert sb.get_list_of_blobs_I_want() == [b]
     assert sb.get_list_of_blobs_I_have() == [a]
     assert sb.get_slice(a, 0, 2) == s[:2]
@@ -224,7 +283,7 @@ def test_even():
 
     sb.save_slice(b, 2, s[12:])
     assert sb.check_blob(b)
-    assert r == [true]
+    assert d.r == [(true, '', false)]
     assert sb.get_list_of_blobs_I_want() == []
     x = sb.get_list_of_blobs_I_have()
     assert x == [a, b] or x == [b, a]
@@ -234,23 +293,23 @@ def test_even():
 def test_short():
     s = 'abcdefgh'
     a = sha(s).digest()
-    r = []
+    d = dummycalls()
     f = FakeOpen()
-    sb = SingleBlob('test', 8, [a], 10, r.append, 
+    sb = SingleBlob('test', 8, [a], 10, d.c, 
         f.open, f.exists, f.getsize)
-    assert r == []
+    assert d.r == []
     assert sb.get_list_of_blobs_I_want() == [a]
     assert sb.get_slice(a, 0, 2) == None
     
     assert not sb.save_slice(a, 0, s[0:5])
-    assert r == []
+    assert d.r == []
     assert sb.get_list_of_blobs_I_want() == [a]
     assert sb.get_list_of_blobs_I_have() == []
     assert sb.get_slice(a, 0, 2) == None
     
     sb.save_slice(a, 5, s[5:])
     assert sb.check_blob(a)
-    assert r == [true]
+    assert d.r == [(true, '', false)]
     assert sb.get_list_of_blobs_I_want() == []
     assert sb.get_list_of_blobs_I_have() == [a]
     assert sb.get_slice(a, 0, 2) == s[:2]
@@ -259,81 +318,79 @@ def test_short():
     assert sb.get_slice(chr(0) * 20, 0, 20) == None
 
 def test_zero_length():
-    r = []
+    d = dummycalls()
     f = FakeOpen()
     sb = SingleBlob('test', 0, [], 10, 
-        r.append, f.open, f.exists, f.getsize)
-    assert r == []
+        d.c, f.open, f.exists, f.getsize)
+    assert d.r == [(true, '', false)]
+    
+def test_zero_length_resume():
+    d = dummycalls()
+    f = FakeOpen({'test': ''})
+    sb = SingleBlob('test', 0, [], 10, 
+        d.c, f.open, f.exists, f.getsize)
+    assert d.r == [(true, '', false)]
     
 def test_too_big():
     s = 'abcdefgh'
     a = sha(s).digest()
-    r = []
+    d = dummycalls()
     f = FakeOpen()
-    try:
-        sb = SingleBlob('test', 11, [a], 10, r.append, 
-            f.open, f.exists, f.getsize)
-        assert false
-    except ValueError:
-        pass
+    sb = SingleBlob('test', 11, [a], 10, d.c, 
+        f.open, f.exists, f.getsize)
+    assert len(d.r) == 1 and not d.r[0][0] and d.r[0][2]
 
 def test_too_small():
     a = sha('abc').digest()
     b = sha('pqr').digest()
-    r = []
+    d = dummycalls()
     f = FakeOpen()
-    try:
-        sb = SingleBlob('test', 8, [a, b], 
-            10, r.append, f.open, f.exists, f.getsize)
-        assert false
-    except ValueError:
-        pass
+    sb = SingleBlob('test', 8, [a, b], 
+        10, d.c, f.open, f.exists, f.getsize)
+    assert len(d.r) == 1 and not d.r[0][0] and d.r[0][2]
 
 def test_repeat_piece():
     b = sha('abc').digest()
-    r = []
+    d = dummycalls()
     f = FakeOpen()
-    sb = SingleBlob('test', 6, [b, b], 3, r.append, 
+    sb = SingleBlob('test', 6, [b, b], 3, d.c, 
         f.open, f.exists, f.getsize)
-    assert r == []
+    assert d.r == []
     
     sb.save_slice(b, 0, 'abc')
     assert sb.check_blob(b)
-    assert r == [true]
+    assert d.r == [(true, '', false)]
 
 def test_resume_partial():
     b = sha('abc').digest()
-    r = []
+    d = dummycalls()
     f = FakeOpen({'test': 'a'})
-    sb = SingleBlob('test', 6, [b, b], 3, r.append, 
+    sb = SingleBlob('test', 6, [b, b], 3, d.c, 
         f.open, f.exists, f.getsize)
-    assert r == []
+    assert d.r == []
     
     sb.save_slice(b, 0, 'abc')
     assert sb.check_blob(b)
-    assert r == [true]
+    assert d.r == [(true, '', false)]
 
 def test_resume_with_repeat_piece_present():
     a = sha('abcabcq').digest()
     b = sha('abc').digest()
     c = sha('q').digest()
-    r = []
+    d = dummycalls()
     f = FakeOpen({'test': 'abcaaaf'})
-    sb = SingleBlob('test', 7, [b, b, c], 3, r.append, 
+    sb = SingleBlob('test', 7, [b, b, c], 3, d.c, 
         f.open, f.exists, f.getsize)
-    assert r == []
+    assert d.r == []
     
     sb.save_slice(c, 0, 'q')
     assert sb.check_blob(c)
-    assert r == [true]
+    assert d.r == [(true, '', false)]
 
 def test_flunk_repeat_with_different_sizes():
     a = sha('abc').digest()
-    r = []
+    d = dummycalls()
     f = FakeOpen()
-    try:
-        sb = SingleBlob('test', 15, [a, a], 
-            10, r.append, f.open, f.exists, f.getsize)
-        assert false
-    except ValueError:
-        pass
+    sb = SingleBlob('test', 15, [a, a], 
+        10, d.c, f.open, f.exists, f.getsize)
+    assert len(d.r) == 1 and not d.r[0][0] and d.r[0][2]

@@ -132,34 +132,25 @@ def download(params, filefunc, statusfunc, resultfunc, doneflag, cols):
         file = filefunc(response['name'], file_length)
     if file is None:
         return
-    try:
-        if path.exists(file):
-            statusfunc(activity = 'checking existing file (this may take a while)')
-            resuming = true
-        else:
-            statusfunc(activity = 'allocating new file (this may take a while)')
-            resuming = false
-        r = [0]
-        finflag = Event()
-        def finished(result, errormsg = None, fatal = false, resultfunc = resultfunc, finflag = finflag, doneflag = doneflag):
-            if doneflag.isSet():
-                return
-            finflag.set()
-            if fatal:
-                doneflag.set()
-            resultfunc(result, errormsg)
-        blobs = SingleBlob(file, file_length, response['pieces'], 
-            response['piece length'], finished, open, path.exists, 
-            path.getsize, doneflag)
-        left = blobs.get_amount_left()
-    except ValueError, e:
-        print_exc()
-        resultfunc(false, 'bad data for making blob store - ' + str(e))
+    if path.exists(file):
+        resuming = true
+    else:
+        resuming = false
+    r = [0]
+    finflag = Event()
+    def finished(result, errormsg = None, fatal = false, resultfunc = resultfunc, finflag = finflag, doneflag = doneflag):
+        if doneflag.isSet():
+            return
+        finflag.set()
+        if fatal:
+            doneflag.set()
+        resultfunc(result, errormsg)
+    blobs = SingleBlob(file, file_length, response['pieces'], 
+        response['piece length'], finished, open, path.exists, 
+        path.getsize, doneflag, statusfunc)
+    if doneflag.isSet():
         return
-    except IOError, e:
-        print_exc()
-        resultfunc(false, 'disk access error - ' + str(e))
-        return
+    left = blobs.get_amount_left()
     rawserver = RawServer(config['max_poll_period'], doneflag,
         config['timeout'])
     def preference(c, finflag = finflag):
@@ -222,7 +213,7 @@ def download(params, filefunc, statusfunc, resultfunc, doneflag, cols):
         resultfunc(false, "got bad announcement response - " + str(e))
         return
     try:
-        statusfunc(activity = 'connecting to peers...')
+        statusfunc(activity = 'connecting to peers...', fractionDone = 0)
         rawserver.start_listening(encrypter, listen_port, false)
     except socket.error, e:
         print_exc()
@@ -241,5 +232,4 @@ def download(params, filefunc, statusfunc, resultfunc, doneflag, cols):
             readput(url, a)
         except IOError, e:
             print_exc()
-            pass
     return r[0]
