@@ -13,6 +13,7 @@ from os.path import join
 from os import getcwd
 from wxPython.wx import *
 from time import strftime
+from webbrowser import open_new
 
 def hours(n):
     if n == -1:
@@ -42,6 +43,9 @@ class InvokeEvent(wxPyEvent):
         self.args = args
         self.kwargs = kwargs
 
+def pr(event):
+    print 'augh!'
+
 class DownloadInfoFrame:
     def __init__(self, flag):
         frame = wxFrame(None, -1, 'BitTorrent ' + version + ' download', size = wxSize(400, 250))
@@ -53,8 +57,15 @@ class DownloadInfoFrame:
         panel = wxPanel(frame, -1)
         colSizer = wxFlexGridSizer(cols = 1, vgap = 3)
 
+        fnsizer = wxBoxSizer(wxHORIZONTAL)
+
         self.fileNameText = wxStaticText(panel, -1, '', style = wxALIGN_LEFT)
-        colSizer.Add(self.fileNameText, 0, wxEXPAND)
+        fnsizer.Add(self.fileNameText, 1, wxALIGN_BOTTOM)
+        self.aboutText = wxStaticText(panel, -1, 'about', style = wxALIGN_RIGHT)
+        self.aboutText.SetForegroundColour('Blue')
+        self.aboutText.SetFont(wxFont(14, wxNORMAL, wxNORMAL, wxNORMAL, true))
+        fnsizer.Add(self.aboutText, 1, wxEXPAND)
+        colSizer.Add(fnsizer, 0, wxEXPAND)
 
         self.gauge = wxGauge(panel, -1, range = 1000, style = wxGA_SMOOTH)
         colSizer.Add(self.gauge, 0, wxEXPAND)
@@ -93,9 +104,16 @@ class DownloadInfoFrame:
         panel.SetSizer(border)
         panel.SetAutoLayout(true)
         
+        EVT_LEFT_DOWN(self.aboutText, self.donate)
         EVT_CLOSE(frame, self.done)
         EVT_BUTTON(frame, self.cancelButton.GetId(), self.done)
         EVT_INVOKE(frame, self.onInvoke)
+
+    def donate(self, event):
+        Thread(target = self.donate2).start()
+
+    def donate2(self):
+        open_new('http://bitconjurer.org/BitTorrent/donate.html')
 
     def onInvoke(self, event):
         if not self.flag.isSet():
