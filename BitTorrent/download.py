@@ -183,18 +183,6 @@ def download(params, filefunc, statusfunc, resultfunc, doneflag, cols):
     r = [false]
     finflag = Event()
     ann = [None]
-    def finished(result, errormsg = None, fatal = false, 
-            resultfunc = resultfunc, finflag = finflag, 
-            doneflag = doneflag, r = r, ann = ann):
-        r[0] = result
-        if doneflag.isSet():
-            return
-        finflag.set()
-        if fatal:
-            doneflag.set()
-        if result and ann[0] is not None:
-            ann[0](1)
-        resultfunc(result, errormsg)
     myid = sha(str(time()) + ' ' + response['your ip']).digest()
     seed(myid)
     pieces = [info['pieces'][x:x+20] for x in xrange(0, 
@@ -202,6 +190,20 @@ def download(params, filefunc, statusfunc, resultfunc, doneflag, cols):
     try:
         storage = Storage(files, open, path.exists, 
             path.getsize, statusfunc)
+        def finished(result, errormsg = None, fatal = false, 
+                resultfunc = resultfunc, finflag = finflag, 
+                doneflag = doneflag, r = r, ann = ann, storage = storage):
+            r[0] = result
+            if doneflag.isSet():
+                return
+            finflag.set()
+            if fatal:
+                doneflag.set()
+            if result:
+                storage.set_readonly()
+                if ann[0] is not None:
+                    ann[0](1)
+            resultfunc(result, errormsg)
         storagewrapper = StorageWrapper(storage, 
             config['download_slice_size'], pieces, 
             info['piece length'], finished, statusfunc, doneflag)

@@ -58,6 +58,13 @@ class Storage:
                 so_far += length - l
             statusfunc(fractionDone = 1.0)
 
+    def set_readonly(self):
+        try:
+            for file in self.handles.keys():
+                self.handles[file] = open(file, 'r+')
+        except (OSError, IOError):
+            pass
+
     def get_total_length(self):
         return self.total_length
 
