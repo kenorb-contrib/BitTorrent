@@ -32,7 +32,7 @@ defaults = [
     ('response_size', None, 50, 'number of peers to send in an info message'),
     ('timeout_check_interval', None, 5,
         'time to wait between checking if any connections have timed out'),
-    ('nat_check', None, 0,
+    ('nat_check', None, 1,
         'whether to check back and ban downloaders behind NAT'),
     ('min_time_between_log_flushes', None, 3.0,
         'minimum time it must have been since the last flush to do another one'),
@@ -190,7 +190,7 @@ class Tracker:
             infohash = params['info_hash']
             if self.allowed != None:
                 if not self.allowed.has_key(infohash):
-                    return (400, 'Not Authorized', {'Content-Type': 'text/plain'}, bencode({'failure reason':
+                    return (400, 'Not Authorized', {'Content-Type': 'text/plain', 'Pragma': 'no-cache'}, bencode({'failure reason':
                     'Requested download is not authorized for use with this tracker.'}))
             ip = connection.get_ip()
             if params.has_key('ip'):
@@ -207,41 +207,38 @@ class Tracker:
         except ValueError, e:
             return (400, 'Bad Request', {'Content-Type': 'text/plain'}, 
                 'you sent me garbage - ' + str(e))
-        def respond(result, self = self, infohash = infohash, myid = myid,
-                ip = ip, port = port, left = left, params = params,
-                connection = connection):
-            if not result:
-                connection.answer((200, 'OK', {'Content-Type': 'text/plain', 'Pragma': 'no-cache'}, bencode({'failure reason':
-                    'You are behind NAT. Please open port 6881 or download from elsewhere'})))
-                return
-            peers = self.downloads.setdefault(infohash, {})
-            ts = self.times.setdefault(infohash, {})
-            if params.get('event', '') != 'stopped':
-                ts[myid] = time()
-                if not peers.has_key(myid):
-                    peers[myid] = {'ip': ip, 'port': port, 'left': left}
-                else:
-                    peers[myid]['left'] = left
+        peers = self.downloads.setdefault(infohash, {})
+        ts = self.times.setdefault(infohash, {})
+        if params.get('event', '') != 'stopped':
+            ts[myid] = time()
+            if not peers.has_key(myid):
+                peers[myid] = {'ip': ip, 'port': port, 'left': left}
             else:
-                if peers.has_key(myid) and peers[myid]['ip'] == ip:
-                    del peers[myid]
-                    del ts[myid]
-            data = {'interval': self.reannounce_interval}
-            cache = self.cached.setdefault(infohash, [])
-            if len(cache) < self.response_size:
-                for key, value in self.downloads.setdefault(
-                        infohash, {}).items():
+                peers[myid]['left'] = left
+        else:
+            if peers.has_key(myid) and peers[myid]['ip'] == ip:
+                del peers[myid]
+                del ts[myid]
+        data = {'interval': self.reannounce_interval}
+        cache = self.cached.setdefault(infohash, [])
+        if len(cache) < self.response_size:
+            for key, value in self.downloads.setdefault(
+                    infohash, {}).items():
+                if not cache.get('nat'):
                     cache.append({'peer id': key, 'ip': value['ip'], 
                         'port': value['port']})
-                shuffle(cache)
-            data['peers'] = cache[-self.response_size:]
-            del cache[-self.response_size:]
-            connection.answer((200, 'OK', {'Content-Type': 'text/plain', 'Pragma': 'no-cache'}, bencode(data)))
-        if (not self.natcheck or params.get('event') == 'stopped' or
-                self.downloads.get(infohash, {}).has_key(myid)):
-            respond(true)
-        else:
-            NatCheck(respond, infohash, myid, ip, port, self.rawserver)
+            shuffle(cache)
+        data['peers'] = cache[-self.response_size:]
+        del cache[-self.response_size:]
+        connection.answer((200, 'OK', {'Content-Type': 'text/plain', 'Pragma': 'no-cache'}, bencode(data)))
+        if self.natcheck:
+            NatCheck(self.connectback_result, infohash, myid, ip, port, self.rawserver)
+
+    def connectback_result(self, result, downloadid, peerid, ip, port):
+        if not result:
+            record = self.downloads.get(downloadid, {}).get(peerid)
+            if record and record['ip'] == ip and record['port'] == port:
+                record['nat'] = 1
 
     def save_dfile(self):
         self.rawserver.add_task(self.save_dfile, self.save_dfile_interval)

@@ -31,8 +31,11 @@ class NatCheck:
 
     def answer(self, result):
         self.closed = true
-        self.connection.close()
-        self.resultfunc(result)
+        try:
+            self.connection.close()
+        except AttributeError:
+            pass
+        self.resultfunc(result, self.downloadid, self.peerid, self.ip, self.port)
 
     def read_header_len(self, s):
         if ord(s) != len(protocol_name):
