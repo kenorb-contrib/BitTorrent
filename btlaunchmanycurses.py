@@ -11,12 +11,10 @@ from BitTorrent.download import download
 from threading import Thread, Event, Lock
 from os import listdir
 from os.path import abspath, join, exists, getsize
-from sys import argv, version, stdout, exit
+from sys import argv, stdout, exit
 from time import sleep
 from signal import signal, SIGWINCH 
 import traceback
-
-assert version >= '2', "Install Python 2.0 or greater"
 
 def fmttime(n):
     if n == -1:

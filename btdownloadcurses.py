@@ -7,9 +7,8 @@ from BitTorrent.download import download
 from threading import Event
 from os.path import abspath
 from signal import signal, SIGWINCH
-from sys import argv, version, stdout
+from sys import argv, stdout
 from time import strftime
-assert version >= '2', "Install Python 2.0 or greater"
 
 def fmttime(n):
     if n == -1:

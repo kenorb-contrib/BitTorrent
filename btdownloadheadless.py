@@ -6,9 +6,8 @@
 from BitTorrent.download import download
 from threading import Event
 from os.path import abspath
-from sys import argv, version, stdout
+from sys import argv, stdout
 from cStringIO import StringIO
-assert version >= '2', "Install Python 2.0 or greater"
 
 def hours(n):
     if n == -1:

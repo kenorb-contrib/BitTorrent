@@ -3,8 +3,7 @@
 # Written by Bram Cohen
 # see LICENSE.txt for license information
 
-from sys import argv, version
-assert version >= '2', "Install Python 2.0 or greater"
+from sys import argv
 from os.path import getsize, split, join, abspath, isdir
 from os import listdir
 from sha import sha

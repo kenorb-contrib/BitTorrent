@@ -3,9 +3,7 @@
 # Written by Bram Cohen and Myers Carpenter
 # see LICENSE.txt for license information
 
-from sys import argv, version
-assert version >= '2', "Install Python 2.0 or greater"
-
+from sys import argv
 from BitTorrent import version
 from BitTorrent.download import download
 from btdownloadheadless import print_spew
