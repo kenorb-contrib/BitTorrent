@@ -51,6 +51,7 @@ class DownloadInfoFrame:
         self.uiflag = Event()
         self.fin = False
         self.last_update_time = 0
+        self.showing_error = False
 
         panel = wxPanel(frame, -1)
         colSizer = wxFlexGridSizer(cols = 1, vgap = 3)
@@ -105,14 +106,7 @@ class DownloadInfoFrame:
         
         colSizer.Add(gridSizer, 0, wxEXPAND)
         colSizer.Add(rategridSizer, 0, wxEXPAND)
-        errorTextSizer = wxFlexGridSizer(cols = 1)
-        self.errorText = wxStaticText(panel, -1, ' ', style = wxALIGN_LEFT)
-        self.errorText.SetForegroundColour('Red')
-        errorTextSizer.Add(self.errorText, 0, wxEXPAND)
-        minsize = self.errorText.GetBestSize()
-        minsize.SetHeight(2*self.errorText.GetBestSize().GetHeight())   # big enough for 2 lines
-        errorTextSizer.SetMinSize(minsize)
-        colSizer.Add(errorTextSizer, 0, wxEXPAND)
+        colSizer.Add(50, 50, 0, wxEXPAND)
         self.cancelButton = wxButton(panel, -1, 'Cancel')
         colSizer.Add(self.cancelButton, 0, wxALIGN_CENTER)
         colSizer.AddGrowableCol(0)
@@ -186,7 +180,8 @@ class DownloadInfoFrame:
         self.invokeLater(self.onFailEvent)
 
     def error(self, errormsg):
-        self.invokeLater(self.onErrorEvent, [errormsg])
+        if not self.showing_error:
+            self.invokeLater(self.onErrorEvent, [errormsg])
 
     def onFinishEvent(self):
         self.timeEstText.SetLabel('Download Succeeded!')
@@ -202,7 +197,13 @@ class DownloadInfoFrame:
         self.downRateText.SetLabel('')
 
     def onErrorEvent(self, errormsg):
-        self.errorText.SetLabel(strftime('ERROR (%I:%M %p) -\n') + errormsg)
+        self.showing_error = True
+        dlg = wxMessageDialog(self.frame, message = errormsg, 
+            caption = 'Download Error', style = wxOK | wxICON_ERROR)
+        dlg.Fit()
+        dlg.Center()
+        dlg.ShowModal()
+        self.showing_error = False
 
     def chooseFile(self, default, size, saveas, dir):
         if saveas:
