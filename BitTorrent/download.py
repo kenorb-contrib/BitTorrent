@@ -190,10 +190,15 @@ def download(params, filefunc, statusfunc, finfunc, errorfunc, doneflag, cols, p
             if ann[0] is not None:
                 ann[0](1)
             finfunc()
+        rm = [None]
+        def data_flunked(amount, rm = rm, errorfunc = errorfunc):
+            if rm[0] is not None:
+                rm[0](amount)
+            errorfunc('a piece failed hash check, re-downloading it')
         storagewrapper = StorageWrapper(storage, 
             config['download_slice_size'], pieces, 
             info['piece length'], finished, failed, 
-            statusfunc, doneflag, config['check_hashes'])
+            statusfunc, doneflag, config['check_hashes'], data_flunked)
     except ValueError, e:
         failed('bad data - ' + str(e))
     except IOError, e:
@@ -225,6 +230,7 @@ def download(params, filefunc, statusfunc, finfunc, errorfunc, doneflag, cols, p
         return Upload(connection, choker, storagewrapper, 
             max_slice_length, max_rate_period, fudge)
     ratemeasure = RateMeasure(storagewrapper.get_amount_left())
+    rm[0] = ratemeasure.data_rejected
     downloader = Downloader(storagewrapper, PiecePicker(len(pieces)),
         config['request_backlog'], config['max_rate_period'],
         len(pieces), downmeasure, config['snub_time'], 

@@ -2,7 +2,6 @@
 # see LICENSE.txt for license information
 
 from sha import sha
-from threading import Event
 from cStringIO import StringIO
 from time import time
 true = 1

@@ -9,15 +9,20 @@ false = 0
 def dummy_status(fractionDone = None, activity = None):
     pass
 
+def dummy_data_flunked(size):
+    pass
+
 class StorageWrapper:
     def __init__(self, storage, request_size, hashes, 
             piece_length, finished, failed, 
-            statusfunc = dummy_status, flag = Event(), check_hashes = true):
+            statusfunc = dummy_status, flag = Event(), check_hashes = true,
+            data_flunked = dummy_data_flunked):
         self.check_hashes = check_hashes
         self.storage = storage
         self.request_size = request_size
         self.hashes = hashes
         self.piece_length = piece_length
+        self.data_flunked = data_flunked
         self.total_length = storage.get_total_length()
         self.amount_left = self.total_length
         if self.total_length <= piece_length * (len(hashes) - 1):
@@ -33,6 +38,7 @@ class StorageWrapper:
         if len(hashes) == 0:
             finished()
             return
+        self.done_checking = false
         if storage.was_preexisting():
             statusfunc(activity = 'checking existing file', 
                 fractionDone = 0)
@@ -44,6 +50,7 @@ class StorageWrapper:
         else:
             for i in xrange(len(hashes)):
                 self._check_single(i, false)
+        self.done_checking = true
 
     def get_amount_left(self):
         return self.amount_left
@@ -57,20 +64,24 @@ class StorageWrapper:
         if index == len(self.hashes) - 1:
             high = self.total_length
         length = high - low
-        if check and (not self.check_hashes or sha(self.storage.read(low, length)).digest() == self.hashes[index]):
-            self.have[index] = true
-            self.amount_left -= length
-            if self.amount_left == 0:
-                self.finished()
-        else:
-            l = self.inactive_requests[index]
-            x = 0
-            while x + self.request_size < length:
-                l.append((x, self.request_size))
-                self.total_inactive += 1
-                x += self.request_size
-            l.append((x, length - x))
+        if check:
+            if not self.check_hashes or sha(self.storage.read(low, length)).digest() == self.hashes[index]:
+                self.have[index] = true
+                self.amount_left -= length
+                if self.amount_left == 0:
+                    self.finished()
+                return
+            else:
+                if self.done_checking:
+                    self.data_flunked(length)
+        l = self.inactive_requests[index]
+        x = 0
+        while x + self.request_size < length:
+            l.append((x, self.request_size))
             self.total_inactive += 1
+            x += self.request_size
+        l.append((x, length - x))
+        self.total_inactive += 1
 
     def is_everything_pending(self):
         return self.total_inactive == 0

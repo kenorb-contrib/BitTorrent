@@ -24,6 +24,9 @@ class RateMeasure:
             return
         self.update(time(), amount)
 
+    def data_rejected(self, amount):
+        self.left += amount
+
     def get_time_left(self):
         if not self.got_anything:
             return None
@@ -34,12 +37,12 @@ class RateMeasure:
 
     def get_size_left(self):
         return self.left
-        
+
     def update(self, t, amount):
         self.left -= amount
-        self.rate = ((self.rate * (self.last - self.start)) + amount) / (t - self.start)
-        self.last = t
         try:
+            self.rate = ((self.rate * (self.last - self.start)) + amount) / (t - self.start)
+            self.last = t
             self.remaining = self.left / self.rate
             if self.start < self.last - self.remaining:
                 self.start = self.last - self.remaining
