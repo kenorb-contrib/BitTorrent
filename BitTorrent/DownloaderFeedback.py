@@ -6,7 +6,7 @@ from cStringIO import StringIO
 
 class DownloaderFeedback:
     def __init__(self, choker, add_task, statusfunc, upfunc, downfunc, uptotal, downtotal,
-            remainingfunc, leftfunc, file_length, finflag, interval, sp):
+            remainingfunc, leftfunc, file_length, finflag, interval, spewflag):
         self.choker = choker
         self.add_task = add_task
         self.statusfunc = statusfunc
@@ -19,7 +19,7 @@ class DownloaderFeedback:
         self.file_length = file_length
         self.finflag = finflag
         self.interval = interval
-        self.sp = sp
+        self.spewflag = spewflag
         self.lastids = []
         self.display()
 
@@ -71,7 +71,6 @@ class DownloaderFeedback:
             else:
                 s.write(' ')
             s.write('\n')
-        print s.getvalue()
 
     def collect_spew(self):
         l = [ ]
@@ -85,9 +84,9 @@ class DownloaderFeedback:
             else:
                 rec["is_optimistic_unchoke"] = 0
             if c.is_locally_initiated():
-                rec["intiation"] = "local"
+                rec["initiation"] = "local"
             else:
-                rec["intiation"] = "remote"
+                rec["initiation"] = "remote"
             u = c.get_upload()
             rec["upload"] = (int(u.measure.get_rate()), u.is_interested(), u.is_choked())
 
@@ -100,31 +99,24 @@ class DownloaderFeedback:
     def display(self):
         self.add_task(self.display, self.interval)
         spew = []
-        if self.sp:
-            self.print_spew()
-        else:
-            spew = self.collect_spew()
         if self.finflag.isSet():
-            self.statusfunc({"upRate" : self.upfunc(), "spew" : spew, "upTotal" : self.uptotal()})
+            status = {"upRate" : self.upfunc(), "upTotal" : self.uptotal()}
+            if self.spewflag.isSet():
+                status['spew'] = self.collect_spew()
+            self.statusfunc(status)
             return
         timeEst = self.remainingfunc()
 
         fractionDone = (self.file_length - self.leftfunc()) / float(self.file_length)
-        
+        status = {
+            "fractionDone" : fractionDone, 
+            "downRate" : self.downfunc(), 
+            "upRate" : self.upfunc(),
+            "upTotal" : self.uptotal(),
+            "downTotal" : self.downtotal()
+            }
         if timeEst is not None:
-            self.statusfunc({	"timeEst" : timeEst,
-                                "fractionDone" : fractionDone, 
-                                "downRate" : self.downfunc(), 
-                                "upRate" : self.upfunc(),
-                                "spew" : spew,
-                                "upTotal" : self.uptotal(),
-                                "downTotal" : self.downtotal()
-                            })
-        else:
-            self.statusfunc({	"fractionDone" : fractionDone, 
-                                "downRate" : self.downfunc(), 
-                                "upRate" : self.upfunc(),
-                                "spew" : spew,
-                                "upTotal" : self.uptotal(),
-                                "downTotal" : self.downtotal()
-                            })
+            status['timeEst'] = timeEst
+        if self.spewflag.isSet():
+            status['spew'] = self.collect_spew()
+        self.statusfunc(status)

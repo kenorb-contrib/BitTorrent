@@ -8,12 +8,14 @@ assert version >= '2', "Install Python 2.0 or greater"
 
 from BitTorrent import version
 from BitTorrent.download import download
+from btdownloadheadless import print_spew
 from threading import Event, Thread
 from os.path import join
 from os import getcwd
 from wxPython.wx import *
 from time import strftime, time
 from webbrowser import open_new
+from traceback import print_exc
 true = 1
 false = 0
 
@@ -145,26 +147,29 @@ class DownloadInfoFrame:
         if not self.uiflag.isSet():
             wxPostEvent(self.frame, InvokeEvent(func, args, kwargs))
 
-    def updateStatus(self, dict):
-        self.invokeLater(self.onUpdateStatus, [dict])
+    def updateStatus(self, d):
+        self.invokeLater(self.onUpdateStatus, [d])
 
-    def onUpdateStatus(self, dict):
-        if self.last_update_time + 0.01 > time() and dict.get('fractionDone') not in [0.0, 1.0] and dict.get('activity') is None:
+    def onUpdateStatus(self, d):
+      try:
+        if d.has_key('spew'):
+            print_spew(d['spew'])
+        if self.last_update_time + 0.01 > time() and d.get('fractionDone') not in [0.0, 1.0] and d.get('activity') is None:
             return
-        activity = dict.get('activity')
-        fractionDone = dict.get('fractionDone')
-        timeEst = dict.get('timeEst')
-        downRate = dict.get('downRate')
-        upRate = dict.get('upRate')
-        downTotal = dict.get('downTotal')
-        upTotal = dict.get('upTotal')
+        activity = d.get('activity')
+        fractionDone = d.get('fractionDone')
+        timeEst = d.get('timeEst')
+        downRate = d.get('downRate')
+        upRate = d.get('upRate')
+        downTotal = d.get('downTotal')
+        upTotal = d.get('upTotal')
         if activity is not None and not self.fin:
             self.timeEstText.SetLabel(activity)
         if fractionDone is not None and not self.fin:
             self.gauge.SetValue(int(fractionDone * 1000))
             self.frame.SetTitle('%d%% %s - BitTorrent %s' % (int(fractionDone*100), self.filename, version))
         if timeEst is not None:
-            self.timeEstText.SetLabel(hours(dict['timeEst']))
+            self.timeEstText.SetLabel(hours(timeEst))
         if downRate is not None:
             self.downRateText.SetLabel('%.0f KiB/s' % (float(downRate) / (1 << 10)))
         if upRate is not None:
@@ -174,6 +179,8 @@ class DownloadInfoFrame:
         if upTotal is not None:
             self.upTotalText.SetLabel('%.1f M' % (upTotal))
         self.last_update_time = time()
+      except:
+          print_ex()
 
     def finished(self):
         self.fin = true
@@ -251,13 +258,19 @@ class btWxApp(wxApp):
         return 1
 
 def run(params):
+  try:
     app = btWxApp(0, params)
     app.MainLoop()
+  except:
+      print_exc()
 
 def next(params, d, doneflag):
+  try:
     download(params, d.chooseFile, d.updateStatus, d.finished, d.error, doneflag, 100, d.newpath)
     if not d.fin:
         d.failed()
+  except:
+      print_exc()
 
 if __name__ == '__main__':
     run(argv[1:])

@@ -93,7 +93,7 @@ defaults = [
         'the number of peers which need to have a piece before other partials take priority over rarest first'),
     ]
 
-def download(params, filefunc, statusfunc, finfunc, errorfunc, doneflag, cols, pathFunc = None, paramfunc = None):
+def download(params, filefunc, statusfunc, finfunc, errorfunc, doneflag, cols, pathFunc = None, paramfunc = None, spewflag = Event()):
     if len(params) == 0:
         errorfunc('arguments are -\n' + formatDefinitions(defaults, cols))
         return
@@ -269,11 +269,13 @@ def download(params, filefunc, statusfunc, finfunc, errorfunc, doneflag, cols, p
         upmeasure.get_total, downmeasure.get_total, listen_port, 
         config['ip'], myid, infohash, config['http_timeout'], errorfunc, 
         config['max_initiate'], doneflag)
+    if config['spew']:
+        spewflag.set()
     DownloaderFeedback(choker, rawserver.add_task, statusfunc, 
         upmeasure.get_rate, downmeasure.get_rate, 
         upmeasure.get_total_megs, downmeasure.get_total_megs, ratemeasure.get_time_left, 
         ratemeasure.get_size_left, file_length, finflag,
-        config['display_interval'], config['spew'])
+        config['display_interval'], spewflag)
 
 
     # useful info and functions for the UI
