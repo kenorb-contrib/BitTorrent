@@ -1,28 +1,36 @@
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+# The contents of this file are subject to the BitTorrent Open Source License
+# Version 1.0 (the License).  You may not copy or use this file, in either
+# source code or executable form, except in compliance with the License.  You
+# may obtain a copy of the License at http://www.bittorrent.com/license/.
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# Software distributed under the License is distributed on an AS IS basis,
+# WITHOUT WARRANTY OF ANY KIND, either express or implied.  See the License
+# for the specific language governing rights and limitations under the
+# License.
 
 # written by Matt Chisholm
 
 import os
+import sys
 
-from __init__ import get_home_dir
+from __init__ import get_home_dir, get_registry_dir
 
 desktop = None
 
 homedir = get_home_dir()
 if homedir == None :
     if os.name == 'nt':
-        desktop = 'C:\\'
+        desktop = os.path.splitdrive(sys.executable)[0]
+        if desktop[-1] != os.sep:
+            desktop += os.sep
+
+        reg_dir = get_registry_dir('Desktop')
+        if reg_dir is not None:
+            desktop = reg_dir
+        else:
+            tmp_desktop = os.path.join(desktop, 'WINDOWS', 'Desktop')
+            if os.access(tmp_desktop, os.R_OK|os.W_OK):
+                desktop = tmp_desktop
     else:
         desktop = '/tmp/'
 
@@ -34,18 +42,6 @@ else:
         if os.access(tmp_desktop, os.R_OK|os.W_OK):
             desktop = tmp_desktop + os.sep
 
-        if os.name == 'nt':
-            #from win32com.shell import shell, shellcon
-            #desktop = shell.SHGetPathFromIDList(shell.SHGetSpecialFolderLocation(0, shellcon.CSIDL_DESKTOPDIRECTORY))
-            reg_desktop = None
-            import _winreg as wreg
-            try: 
-                key = wreg.OpenKey(wreg.HKEY_CURRENT_USER,
-                               r'Software\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders')
-                d = wreg.QueryValueEx(key, 'Desktop')
-                reg_desktop = os.path.expandvars(d, os.environ)
-            except:
-                pass
-
-            if reg_desktop is not None and os.access(reg_desktop, os.R_OK|os.W_OK):
-                desktop = reg_desktop
+            reg_dir = get_registry_dir('Desktop')
+            if reg_dir is not None:
+                desktop = reg_dir

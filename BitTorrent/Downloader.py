@@ -1,21 +1,18 @@
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+# The contents of this file are subject to the BitTorrent Open Source License
+# Version 1.0 (the License).  You may not copy or use this file, in either
+# source code or executable form, except in compliance with the License.  You
+# may obtain a copy of the License at http://www.bittorrent.com/license/.
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# Software distributed under the License is distributed on an AS IS basis,
+# WITHOUT WARRANTY OF ANY KIND, either express or implied.  See the License
+# for the specific language governing rights and limitations under the
+# License.
 
-# Written by Bram Cohen
+# Written by Bram Cohen, Uoti Urpala
 
 from random import shuffle
-from time import time
 
+from BitTorrent.platform import bttime
 from BitTorrent.CurrentRateMeasure import Measure
 from BitTorrent.bitfield import Bitfield
 
@@ -143,7 +140,7 @@ class SingleDownload(object):
             return False
         if self.downloader.storage.endgame:
             self.downloader.all_requests.remove((index, begin, len(piece)))
-        self.last = time()
+        self.last = bttime()
         self.measure.update_rate(len(piece))
         self.downloader.measurefunc(len(piece))
         self.downloader.downmeasure.update_rate(len(piece))
@@ -306,7 +303,7 @@ class SingleDownload(object):
         return self.measure.get_rate()
 
     def is_snubbed(self):
-        return time() - self.last > self.downloader.snub_time
+        return bttime() - self.last > self.downloader.snub_time
 
 
 class Downloader(object):

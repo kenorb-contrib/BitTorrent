@@ -1,18 +1,15 @@
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+# The contents of this file are subject to the BitTorrent Open Source License
+# Version 1.0 (the License).  You may not copy or use this file, in either
+# source code or executable form, except in compliance with the License.  You
+# may obtain a copy of the License at http://www.bittorrent.com/license/.
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# Software distributed under the License is distributed on an AS IS basis,
+# WITHOUT WARRANTY OF ANY KIND, either express or implied.  See the License
+# for the specific language governing rights and limitations under the
+# License.
 
 app_name = "BitTorrent"
-version = '4.0.0'
+version = '4.0.1'
 
 URL = 'http://www.bittorrent.com/'
 DONATE_URL = URL + 'donate.html'
@@ -22,6 +19,7 @@ HELP_URL = URL + 'documentation.html'
 import sys
 assert sys.version_info >= (2, 2, 1), "Python 2.2.1 or newer required"
 import os
+import re
 
 def calc_unix_dirs():
     appdir = '%s-%s'%(app_name, version)
@@ -33,19 +31,31 @@ app_root = os.path.split(os.path.abspath(sys.argv[0]))[0]
 image_root = os.path.join(app_root, 'images')
 doc_root = app_root
 
-if app_root.startswith(os.path.join(sys.prefix,'bin')):
-    # I'm installed on *nix
-    image_root, doc_root = map( lambda p: os.path.join(sys.prefix, p), calc_unix_dirs() )
+if not os.access(image_root, os.F_OK):
+    # probably we are installed on *nix
+    # I have no idea whether this is right or not
+    if app_root[-4:] == '/bin':
+        # yep, installed on *nix
+        installed_prefix = app_root[:-4]
+        image_root, doc_root = map(
+            lambda p: os.path.join(installed_prefix, p), calc_unix_dirs()
+            )
 
 
 # a cross-platform way to get user's home directory
 def get_config_dir():
     shellvars = ['${APPDATA}', '${HOME}', '${USERPROFILE}']
-    return get_dir_root(shellvars)
+    dir_root = get_dir_root(shellvars)
+    if dir_root is None:
+        reg_dir = get_registry_dir('AppData')
+        if reg_dir is not None:
+            dir_root = reg_dir
+    return dir_root
 
 def get_home_dir():
     shellvars = ['${HOME}', '${USERPROFILE}']
-    return get_dir_root(shellvars)
+    dir_root = get_dir_root(shellvars)
+    return dir_root
 
 def get_dir_root(shellvars):
     def check_sysvars(x):
@@ -66,6 +76,41 @@ def get_dir_root(shellvars):
     return dir_root
 
 
+def get_registry_dir(value):
+    reg_dir = None 
+
+    find_pat = re.compile('%([A-Z_]+)%')
+    repl_pat = '${\\1}'
+    
+    if os.name == 'nt':
+        #from win32com.shell import shell, shellcon
+        #desktop = shell.SHGetPathFromIDList(shell.SHGetSpecialFolderLocation(0, shellcon.CSIDL_DESKTOPDIRECTORY))
+        import _winreg as wreg
+        try: 
+            key = wreg.OpenKey(wreg.HKEY_CURRENT_USER,
+                               r'Software\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders')
+            d = wreg.QueryValueEx(key, value)
+            reg_dir, a_random_number = os.path.expandvars(d)
+            reg_dir = find_pat.sub(repl_pat, reg_dir)
+            reg_dir = os.path.expandvars(reg_dir)
+            reg_dir = reg_dir.encode('mbcs')
+        except Exception, e:
+            pass
+
+        if reg_dir is not None and os.access(reg_dir, os.R_OK|os.W_OK):
+            pass
+        else:
+            reg_dir = None
+    return reg_dir
+
+def path_wrap(path):
+    return path
+
+if os.name == 'nt':
+    def path_wrap(path):
+        return path.decode('mbcs').encode('utf-8')
+
+
 is_frozen_exe = (os.name == 'nt') and hasattr(sys, 'frozen') and (sys.frozen == 'windows_exe')
 
 # hackery to get around bug in py2exe that tries to write log files to
@@ -76,10 +121,13 @@ if is_frozen_exe:
         logroot = get_home_dir()
         if logroot is None:
             logroot = os.path.splitdrive(sys.executable)[0]
+            if logroot[-1] != os.sep:
+                logroot += os.sep
         logname = os.path.splitext(os.path.split(sys.executable)[1])[0] + '_errors.log'
         logpath = os.path.join(logroot, logname)
         def write(self, text, alert=None, fname=logpath):
-            baseclass.write(self, text, fname=fname)
+            if 'GtkWarning' not in text:
+                baseclass.write(self, text, fname=fname)
     sys.stderr = Stderr()
 
 del sys

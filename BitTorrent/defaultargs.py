@@ -1,15 +1,12 @@
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+# The contents of this file are subject to the BitTorrent Open Source License
+# Version 1.0 (the License).  You may not copy or use this file, in either
+# source code or executable form, except in compliance with the License.  You
+# may obtain a copy of the License at http://www.bittorrent.com/license/.
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# Software distributed under the License is distributed on an AS IS basis,
+# WITHOUT WARRANTY OF ANY KIND, either express or implied.  See the License
+# for the specific language governing rights and limitations under the
+# License.
 
 common_options = [
     ('ip', '',
@@ -53,7 +50,7 @@ rare_options = [
         "how many bytes to query for per request."),
     ('max_message_length', 2 ** 23,
         "maximum length prefix encoding you'll accept over the wire - larger values get the connection dropped."),
-    ('timeout', 300.0,
+    ('socket_timeout', 300.0,
         'seconds to wait between closing sockets which nothing has been received on'),
     ('timeout_check_interval', 60.0,
         'seconds to wait between checking if any connections have timed out'),
@@ -84,6 +81,8 @@ rare_options = [
      'enable workaround for a bug in BSD libc that makes file reads very slow.'),
     ('tracker_proxy', '',
      'address of HTTP proxy to use for tracker connections'),
+    ('close_with_rst', 0,
+     'close connections with RST and avoid the TCP TIME_WAIT state'),
     ]
 
 def get_defaults(ui):
@@ -106,7 +105,7 @@ def get_defaults(ui):
              'the minimum upload/download ratio, in percent, to achieve before stopping seeding the last torrent. 0 means no limit.'),
             ('pause', 0,
              'start downloader in paused state'),
-            ('dnd_behavior', 'replace',
+            ('start_torrent_behavior', 'replace',
              ''),
             ])
 

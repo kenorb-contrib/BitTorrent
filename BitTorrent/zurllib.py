@@ -14,8 +14,6 @@ from gzip import GzipFile
 from StringIO import StringIO
 import pprint
 
-from BitTorrent import version
-
 DEBUG=0
 
 
@@ -25,7 +23,6 @@ class HTTPContentEncodingHandler(HTTPHandler):
         # add the Accept-Encoding header to the request
         # support gzip encoding (identity is assumed)
         req.add_header("Accept-Encoding","gzip")
-        req.add_header('User-Agent', 'BitTorrent/' + version)
         if DEBUG: 
             print "Sending:" 
             print req.headers

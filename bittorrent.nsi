@@ -1,19 +1,16 @@
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+# The contents of this file are subject to the BitTorrent Open Source License
+# Version 1.0 (the License).  You may not copy or use this file, in either
+# source code or executable form, except in compliance with the License.  You
+# may obtain a copy of the License at http://www.bittorrent.com/license/.
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# Software distributed under the License is distributed on an AS IS basis,
+# WITHOUT WARRANTY OF ANY KIND, either express or implied.  See the License
+# for the specific language governing rights and limitations under the
+# License.
 
 # Written by Bram Cohen and Matt Chisholm
 
-!define VERSION "4.0.0"
+!define VERSION "4.0.1"
 !define APPNAME "BitTorrent"
 Outfile ${APPNAME}-${VERSION}.exe
 Name "${APPNAME}"
@@ -60,20 +57,29 @@ Function QuitIt
     Processes::FindProcess "btdownloadgui.exe"
     StrCmp $R0 "1" foundit didntfindit
 
-  foundit:
-    MessageBox MB_OK "You must quit ${APPNAME} before installing this version.$\r$\nPlease quit it and press OK to continue."
+  waitforit:
     Sleep 2000
     Goto checkforit
+ 
+  foundit:
+    MessageBox MB_OKCANCEL "You must quit ${APPNAME} before installing this \
+    version.$\r$\nPlease quit it and press OK to continue." IDOK waitforit
+    Abort
   didntfindit:
 
   checkforit2:
     Processes::FindProcess "btmaketorrentgui.exe"
     StrCmp $R0 "1" foundit2 didntfindit2
 
-  foundit2:
-    MessageBox MB_OK "You must quit ${APPNAME} metafile creator before installing this version.$\r$\nPlease quit it and press OK to continue."
+  waitforit2:
     Sleep 2000
     Goto checkforit2
+
+  foundit2:
+    MessageBox MB_OKCANCEL "You must quit ${APPNAME} metafile creator before \
+    installing this version.$\r$\nPlease quit it and press OK to continue." \
+    IDOK waitforit2
+    Abort
   didntfindit2:
 
 FunctionEnd
@@ -84,29 +90,40 @@ Function un.QuitIt
     Processes::FindProcess "btdownloadgui.exe"
     StrCmp $R0 "1" foundit didntfindit
 
-  foundit:
-    MessageBox MB_OK "You must quit ${APPNAME} before installing this version.$\r$\nPlease quit it and press OK to continue."
+  waitforit:
     Sleep 2000
     Goto checkforit
+ 
+  foundit:
+    MessageBox MB_OKCANCEL "You must quit ${APPNAME} before installing this \
+    version.$\r$\nPlease quit it and press OK to continue." IDOK waitforit
+    Abort
   didntfindit:
 
   checkforit2:
     Processes::FindProcess "btmaketorrentgui.exe"
     StrCmp $R0 "1" foundit2 didntfindit2
 
-  foundit2:
-    MessageBox MB_OK "You must quit ${APPNAME} Make Torrent before installing this version.$\r$\nPlease quit it and press OK to continue."
+  waitforit2:
     Sleep 2000
     Goto checkforit2
+
+  foundit2:
+    MessageBox MB_OKCANCEL "You must quit ${APPNAME} metafile creator before \
+    installing this version.$\r$\nPlease quit it and press OK to continue." \
+    IDOK waitforit2
+    Abort
   didntfindit2:
 
 FunctionEnd
 
 
 ; This function automatically uninstalls older versions.
-; It is largely copied from: 
+; It is partly copied from: 
 ; http://nsis.sourceforge.net/archive/viewpage.php?pageid=326
 Function .onInit
+  Call QuitIt
+  ClearErrors
 
   ReadRegStr $R0 HKLM \
   "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APPNAME}" \
@@ -122,14 +139,15 @@ Function .onInit
   
 ;Run the uninstaller
 uninst:
-  Call QuitIt
-
-  ClearErrors
-  ExecWait '$R0 _?=$INSTDIR' ;Do not copy the uninstaller to a temp file
+  ExecWait '$R0 _?=$INSTDIR /S' ;Do not copy the uninstaller to a temp file
 
   IfErrors no_remove_uninstaller
-  no_remove_uninstaller:
 
+  Goto endofuninst
+  no_remove_uninstaller: 
+    MessageBox MB_OK "Uninstallation failed. Aborting."
+    Abort
+  endofuninst:
 done:
 
 FunctionEnd
@@ -172,10 +190,10 @@ Section "Install"
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APPNAME}" "UninstallString" '"$INSTDIR\uninstall.exe"'
 
   ; Add items to start menu
-  CreateDirectory "$STARTMENU\Programs\${APPNAME}"
-  CreateShortCut "$STARTMENU\Programs\${APPNAME}\Downloader.lnk"   "$INSTDIR\btdownloadgui.exe"
-  CreateShortCut "$STARTMENU\Programs\${APPNAME}\Make Torrent.lnk" "$INSTDIR\btmaketorrentgui.exe"
-  CreateShortCut "$STARTMENU\Programs\${APPNAME}\Donate.lnk"       "$INSTDIR\redirdonate.html"
+  CreateDirectory "$SMPROGRAMS\${APPNAME}"
+  CreateShortCut "$SMPROGRAMS\${APPNAME}\Downloader.lnk"   "$INSTDIR\btdownloadgui.exe"
+  CreateShortCut "$SMPROGRAMS\${APPNAME}\Make Torrent.lnk" "$INSTDIR\btmaketorrentgui.exe"
+  CreateShortCut "$SMPROGRAMS\${APPNAME}\Donate.lnk"       "$INSTDIR\redirdonate.html"
 
   ExecShell open "$INSTDIR\redirdonate.html"
   Sleep 2000
@@ -191,5 +209,5 @@ Section "Uninstall"
   DeleteRegKey HKCR bittorrent
   DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APPNAME}"
   RMDir /r "$INSTDIR"
-  RMDir /r "$STARTMENU\Programs\${APPNAME}"
+  RMDir /r "$SMPROGRAMS\${APPNAME}"
 SectionEnd

@@ -1,15 +1,12 @@
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+# The contents of this file are subject to the BitTorrent Open Source License
+# Version 1.0 (the License).  You may not copy or use this file, in either
+# source code or executable form, except in compliance with the License.  You
+# may obtain a copy of the License at http://www.bittorrent.com/license/.
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# Software distributed under the License is distributed on an AS IS basis,
+# WITHOUT WARRANTY OF ANY KIND, either express or implied.  See the License
+# for the specific language governing rights and limitations under the
+# License.
 
 # Written by Uoti Urpala
 
@@ -19,14 +16,14 @@ import os
 import sys
 import threading
 
-from time import time
-
+from BitTorrent.platform import bttime
 from BitTorrent.download import Feedback, Multitorrent
 from BitTorrent.controlsocket import ControlSocket
 from BitTorrent.bencode import bdecode
 from BitTorrent.ConvertedMetainfo import ConvertedMetainfo
 from BitTorrent import BTFailure, BTShutdown, INFO, WARNING, ERROR, CRITICAL
 from BitTorrent import configfile
+from BitTorrent import FAQ_URL
 import BitTorrent
 
 # check if dns library from http://www.dnspython.org/ is either installed
@@ -152,7 +149,7 @@ class TorrentQueue(Feedback):
         self._dump_state()
 
     def _check_version(self):
-        now = time()
+        now = bttime()
         if self.last_version_check > now - 24*3600:
             return
         self.last_version_check = now
@@ -210,7 +207,7 @@ class TorrentQueue(Feedback):
                                self.ui_options, self.global_error)
 
     def _dump_state(self):
-        self.last_save_time = time()
+        self.last_save_time = bttime()
         r = []
         def write_entry(infohash, t):
             if t.dlpath is None:
@@ -367,7 +364,7 @@ class TorrentQueue(Feedback):
         if self.doneflag.isSet():
             return
         self.rawserver.add_task(self._queue_loop, 20)
-        now = time()
+        now = bttime()
         if self.queue and self.starting_torrent is None:
             mintime = now - self.config['next_torrent_time'] * 60
             minratio = self.config['next_torrent_ratio'] / 100
@@ -514,8 +511,8 @@ class TorrentQueue(Feedback):
             return
         infohash = t.metainfo.infohash
         if infohash in self.torrents:
-            self.global_error(ERROR, "Cannot start another torrent with the "
-                              "same contents (infohash) as an existing one")
+            self.error(t.metainfo, ERROR, "A torrent with the same contents "
+                       "(infohash) is already open. Cannot start another.")
             return
         path = os.path.join(self.config['data_dir'], 'metainfo',
                             infohash.encode('hex'))
@@ -567,7 +564,7 @@ class TorrentQueue(Feedback):
             return
         status = torrent.dl.get_status(want_spew, want_fileinfo)
         if torrent.finishtime is not None:
-            now = time()
+            now = bttime()
             uptotal = status['upTotal'] + torrent.uptotal_old
             downtotal = status['downTotal'] + torrent.downtotal_old
             ulspeed = status['upRate2']
@@ -614,6 +611,13 @@ class TorrentQueue(Feedback):
         if oldstate != RUNNING and newstate == RUNNING and replaced is None:
             if len(self.running_torrents) >= (force_running and self.config[
                'max_running_torrents'] or self.config['def_running_torrents']):
+                if force_running:
+                    self.global_error(ERROR,
+                                      "Can't run more than %d torrents "\
+                                      "simultaneously. For more info see the"\
+                                      " FAQ at %s."%
+                                      (self.config['max_running_torrents'],
+                                       FAQ_URL))
                 newstate = QUEUED
                 pos = 0
         l = self._get_list(newstate)
@@ -728,7 +732,7 @@ class TorrentQueue(Feedback):
             if ratio and t.uptotal >= t.downtotal * ratio:
                 raise BTShutdown("Not starting torrent as it already meets "
                                "the current settings for when to stop seeding")
-        self.torrents[torrent.infohash].finishtime = time()
+        self.torrents[torrent.infohash].finishtime = bttime()
 
     def started(self, torrent):
         infohash = torrent.infohash

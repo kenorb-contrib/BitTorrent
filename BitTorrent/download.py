@@ -1,15 +1,12 @@
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+# The contents of this file are subject to the BitTorrent Open Source License
+# Version 1.0 (the License).  You may not copy or use this file, in either
+# source code or executable form, except in compliance with the License.  You
+# may obtain a copy of the License at http://www.bittorrent.com/license/.
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# Software distributed under the License is distributed on an AS IS basis,
+# WITHOUT WARRANTY OF ANY KIND, either express or implied.  See the License
+# for the specific language governing rights and limitations under the
+# License.
 
 # Written by Bram Cohen and Uoti Urpala
 
@@ -20,6 +17,7 @@ from __future__ import generators
 import os
 import sys
 import threading
+import errno
 import gc
 from sha import sha
 from socket import error as socketerror
@@ -76,9 +74,8 @@ class Multitorrent(object):
     def __init__(self, config, doneflag, errorfunc, listen_fail_ok=False):
         self.config = dict(config)
         self.errorfunc = errorfunc
-        self.rawserver = RawServer(doneflag, config['timeout_check_interval'],
-                                   config['timeout'], errorfunc=errorfunc,
-                                   bindaddr=config['bind'])
+        self.rawserver = RawServer(doneflag, config, errorfunc=errorfunc,
+                                   tos=config['peer_socket_tos'])
         self.singleport_listener = SingleportListener(self.rawserver)
         self._find_port(listen_fail_ok)
         self.filepool = FilePool(config['max_files_open'])
@@ -363,7 +360,11 @@ class _SingleTorrent(object):
             self._error(CRITICAL, str(e))
             self._activity = ('download failed: ' + str(e), 0)
         elif isinstance(e, IOError):
-            self._error(CRITICAL, 'IO Error ' + str(e))
+            msg = 'IO Error ' + str(e)
+            if e.errno == errno.ENOSPC:
+                msg = 'IO Error: No space left on disk, '\
+                      'or cannot create a file that large:' + str(e)
+            self._error(CRITICAL, msg)
             self._activity = ('killed by IO error: ' + str(e), 0)
         elif isinstance(e, OSError):
             self._error(CRITICAL, 'OS Error ' + str(e))

@@ -1,0 +1,63 @@
+Before installing BitTorrent 4.0.1, remove any older versions of the
+BitTorrent client that may be installed.
+
+Most of the following instructions require root privileges.
+
+How to install BitTorrent on a generic UNIX system:
+----------------------------------------
+Install Python, version 2.2.1 or later
+http://python.org/
+
+Install GTK, version 2.2 or later
+http://gtk.org/
+
+Install pygtk, version 2.4 or later
+http://pygtk.org/
+
+Optionally install dnspython, version 1.3.2 or later, if you want to
+be notified when there is a newer version of BitTorrent available
+http://www.dnspython.org/
+
+Optionally, apply dnspython_patch.diff to dns/resolver.py, found in
+$PYTHONPATH or python's sys.path. (This patch prevents dnspython from
+using a lot of CPU when you have no network connection and is mainly
+only important under Windows.)
+
+Install BitTorrent by running 
+python setup.py install
+
+Optionally, untar and put a line in /etc/mailcap which is similar to
+the following, only replace the path to /usr/bin/btdownloadgui.py with
+the one it's actually in.
+
+application/x-bittorrent; /usr/bin/btdownloadgui.py %s; test=test -n "$DISPLAY"
+
+You may have to restart your web browser for it to start using
+BitTorrent.
+
+If you're using a web browser which doesn't respect /etc/mailcap you
+can go into the mime-type configuration for your web browser and
+manually associate application/x-bittorrent with btdownloadgui.py
+(with the appropriate path, of course.)
+
+
+How to build a .deb format Debian package and install it:
+----------------------------------------
+First, remove any older versions of BitTorrent that may be installed:
+(this command will also remove BitTornado)
+apt-get remove bittorrent bittorrent-gui
+
+python setup.py bdist_dumb
+cd dist/
+alien BitTorrent-4.0.1.linux-i686.tar.gz
+
+you should now have a .deb package in: bittorrent-4.0.1.linux_i686-2_all.deb
+
+then install the .deb
+dpkg -i bittorrent-4.0.1.linux_i686-2_all.deb
+
+
+How to build an .rpm format package and install it:
+----------------------------------------
+python setup.py bdist_rpm
+rpm -i dist/BitTorrent-4.0.1-1.noarch.rpm 

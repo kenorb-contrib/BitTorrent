@@ -1,15 +1,12 @@
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+# The contents of this file are subject to the BitTorrent Open Source License
+# Version 1.0 (the License).  You may not copy or use this file, in either
+# source code or executable form, except in compliance with the License.  You
+# may obtain a copy of the License at http://www.bittorrent.com/license/.
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# Software distributed under the License is distributed on an AS IS basis,
+# WITHOUT WARRANTY OF ANY KIND, either express or implied.  See the License
+# for the specific language governing rights and limitations under the
+# License.
 
 # written by Matt Chisholm
 
@@ -18,16 +15,27 @@ from __future__ import division
 import gtk
 import pango
 import gobject
-import os.path
+import os
 import threading
 
-from __init__ import image_root, app_name, FAQ_URL
+from BitTorrent import image_root, app_name, FAQ_URL
 
 SPACING = 8
 WINDOW_TITLE_LENGTH = 128 # do we need this?
 WINDOW_WIDTH = 600
-MAX_WINDOW_HEIGHT = 600 # BUG: can we get this from the user's screen size?
-MAX_WINDOW_WIDTH  = 600 # BUG: can we get this from the user's screen size?
+
+# get screen size from GTK
+d = gtk.gdk.display_get_default()
+s = d.get_default_screen()
+MAX_WINDOW_HEIGHT = s.get_height()
+MAX_WINDOW_WIDTH  = s.get_width()
+if os.name == 'nt':
+    MAX_WINDOW_HEIGHT -= 32 # leave room for start bar (exact)
+    MAX_WINDOW_HEIGHT -= 32 # and window decorations (depends on windows theme)
+else:
+    MAX_WINDOW_HEIGHT -= 32 # leave room for window decorations (could be any size)
+    
+
 MIN_MULTI_PANE_HEIGHT = 160
 
 BT_TARGET_TYPE = 0
@@ -42,9 +50,13 @@ SCROLLBAR_WIDTH = sw.size_request()[0] - 48
 del sw
 
 def align(obj,x,y):
-    a = gtk.Alignment(x,y,0,0)
-    a.add(obj)
-    return a
+    if type(obj) == gtk.Label:
+        obj.set_alignment(x,y)
+        return obj
+    else:
+        a = gtk.Alignment(x,y,0,0)
+        a.add(obj)
+        return a
     
 def halign(obj, amt):
     return align(obj,amt,0.5)
@@ -298,6 +310,8 @@ class MessageDialog(gtk.MessageDialog):
 
         self.yesfunc = yesfunc
         self.nofunc = nofunc
+        if os.name == 'nt':
+            parent.present()
         self.show_all()
 
     def callback(self, widget, response_id, *args):
@@ -315,137 +329,222 @@ class ErrorMessageDialog(MessageDialog):
     flags = gtk.DIALOG_DESTROY_WITH_PARENT
 
 
-class FileSelection(gtk.FileSelection):
+if gtk.pygtk_version < (2, 4, 1):
 
-    def __init__(self, main, title='', fullname='', got_location_func=None, no_location_func=None, got_multiple_location_func=None, show=True):
-        gtk.FileSelection.__init__(self)
-        self.main = main
-        self.set_modal(gtk.TRUE)
-        self.set_destroy_with_parent(gtk.TRUE)
-        self.set_title(title)
-        if (got_location_func is None and
-            got_multiple_location_func is not None):
-            self.set_select_multiple(True)
-        self.got_location_func = got_location_func
-        self.no_location_func = no_location_func
-        self.got_multiple_location_func = got_multiple_location_func
-        self.cancel_button.connect("clicked", self.destroy)
-        self.d_handle = self.connect('destroy', self.no_location)
-        self.ok_button.connect("clicked", self.done)
-        self.set_filename(fullname)
-        if show:
-            self.show()
+    class FileSelection(gtk.FileSelection):
 
-    def no_location(self, widget=None):
-        if self.no_location_func is not None:
-            self.no_location_func()
-
-    def done(self, widget=None):
-        if self.get_select_multiple():
-            self.got_multiple_location()
-        else:
-            self.got_location()
-        self.disconnect(self.d_handle)
-        self.destroy()
-
-    def got_location(self):
-        if self.got_location_func is not None:
-            name = self.get_filename()
-            self.got_location_func(name)
-
-    def got_multiple_location(self):
-        if self.got_multiple_location_func is not None:
-            names = self.get_selections()
-            self.got_multiple_location_func(names)
-            
-    def destroy(self, widget=None):
-        gtk.FileSelection.destroy(self)
-
-    def close_child_windows(self):
-        self.no_location()
-
-    def close(self, widget=None):
-        self.destroy()
-
-class OpenFileSelection(FileSelection):
-    pass
-
-class SaveFileSelection(FileSelection):
-    pass
-
-class ChooseFolderSelection(FileSelection):
-    pass
-
-if os.name == 'nt':
-    from venster import comdlg
-    class BaseFileSelection:
-        _klass = None
-        _flags = 0
-        _filter = ''
-        def __init__(self, main, title='', fullname='',
-                     got_location_func=None,
-                     no_location_func=None,
-                     got_multiple_location_func=None,
-                     show=True):
+        def __init__(self, main, title='', fullname='', got_location_func=None, no_location_func=None, got_multiple_location_func=None, show=True):
+            gtk.FileSelection.__init__(self)
             self.main = main
-            self.bfs = self._klass()
-            self.bfs.Flags = self._flags
-            self.bfs.filter = self._filter
-
-            self.got_location_func = got_location_func
-            self.no_location_func  = no_location_func
-            self.got_multiple_location_func = got_multiple_location_func
-            
-
+            self.set_modal(gtk.TRUE)
+            self.set_destroy_with_parent(gtk.TRUE)
+            self.set_title(title)
             if (got_location_func is None and
                 got_multiple_location_func is not None):
-                self.bfs.Flags |= comdlg.OFN_ALLOWMULTISELECT
-
-            path, filename = os.path.split(fullname)
-            self.bfs.lpstrInitialDir = path
-            self.bfs.lpstrFile = filename
-            self.bfs.lpstrTitle = title
-
-            self.thread = threading.Thread(target=self.run)
+                self.set_select_multiple(True)
+            self.got_location_func = got_location_func
+            self.no_location_func = no_location_func
+            self.got_multiple_location_func = got_multiple_location_func
+            self.cancel_button.connect("clicked", self.destroy)
+            self.d_handle = self.connect('destroy', self.no_location)
+            self.ok_button.connect("clicked", self.done)
+            self.set_filename(fullname)
             if show:
                 self.show()
-            
-        def show(self):
-            self.thread.start()
 
-        def run(self):
-            result = self.bfs.DoModal(parent=self.main.mainwindow.window.handle)
-            self.done(result)
+        def no_location(self, widget=None):
+            if self.no_location_func is not None:
+                self.no_location_func()
 
-        def done(self, result):
-            if result is not None:
-                if self.got_location_func is not None:
-                    self.got_location_func(result)
-                elif self.got_multiple_location_func is not None:
-                    print result, type(result) # this is broken
-                    self.got_multiple_location_func((result,))
+        def done(self, widget=None):
+            if self.get_select_multiple():
+                self.got_multiple_location()
+            else:
+                self.got_location()
+            self.disconnect(self.d_handle)
+            self.destroy()
+
+        def got_location(self):
+            if self.got_location_func is not None:
+                name = self.get_filename()
+                self.got_location_func(name)
+
+        def got_multiple_location(self):
+            if self.got_multiple_location_func is not None:
+                names = self.get_selections()
+                self.got_multiple_location_func(names)
+
+        def destroy(self, widget=None):
+            gtk.FileSelection.destroy(self)
+
+        def close_child_windows(self):
+            self.no_location()
+
+        def close(self, widget=None):
+            self.destroy()
+
+    class OpenFileSelection(FileSelection):
+        pass
+
+    class SaveFileSelection(FileSelection):
+        pass
+
+    class ChooseFolderSelection(FileSelection):
+        pass
+
+    class CreateFolderSelection(FileSelection):
+        pass
+
+    class FileOrFolderSelection(FileSelection):
+        pass
+
+else:
+
+    class FileSelection(gtk.FileChooserDialog):
+
+        def __init__(self, action, main, title='', fullname='',
+                     got_location_func=None, no_location_func=None,
+                     got_multiple_location_func=None, show=True):
+            gtk.FileChooserDialog.__init__(self, action=action, title=title,
+                         buttons=(gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL,
+                                  gtk.STOCK_OK, gtk.RESPONSE_OK))
+            self.set_default_response(gtk.RESPONSE_OK)
+            if action == gtk.FILE_CHOOSER_ACTION_CREATE_FOLDER:
+                self.convert_button_box = gtk.HBox()
+                self.convert_button = gtk.Button('Choose existing folder')
+                self.convert_button.connect('clicked', self.change_action)
+                self.convert_button_box.pack_end(self.convert_button,
+                                                 expand=False,
+                                                 fill=False)
+                self.convert_button_box.show_all()
+                self.set_extra_widget(self.convert_button_box)
+            self.main = main
+            self.set_modal(gtk.TRUE)
+            self.set_destroy_with_parent(gtk.TRUE)
+            if fullname:
+                if action == gtk.FILE_CHOOSER_ACTION_SELECT_FOLDER:
+                    self.set_filename(fullname)
+                elif action == gtk.FILE_CHOOSER_ACTION_OPEN:
+                    if fullname[-1] != os.sep:
+                        fullname = fullname + os.sep
+                    path, filename = os.path.split(fullname)
+                    self.set_current_folder(path)
+                else:
+                    if fullname[-1] == os.sep:
+                        fullname = fullname[:-1]
+                    path, filename = os.path.split(fullname)
+                    self.set_current_folder(path)
+                    self.set_current_name(filename)
+            if got_multiple_location_func is not None:
+                self.got_multiple_location_func = got_multiple_location_func
+                self.set_select_multiple(True)
+            self.got_location_func = got_location_func
+            self.no_location_func = no_location_func
+            self.connect('response', self.got_response)
+            self.d_handle = self.connect('destroy', self.got_response,
+                                         gtk.RESPONSE_CANCEL)
+            if show:
+                self.show()
+
+        def change_action(self, widget):
+            if self.get_action() == gtk.FILE_CHOOSER_ACTION_CREATE_FOLDER:
+                self.convert_button.set_label('Create new folder')
+                self.set_action(gtk.FILE_CHOOSER_ACTION_SELECT_FOLDER)
+            elif self.get_action() == gtk.FILE_CHOOSER_ACTION_SELECT_FOLDER:
+                self.convert_button.set_label('Choose existing folder')
+                self.set_action(gtk.FILE_CHOOSER_ACTION_CREATE_FOLDER)
+
+        def got_response(self, widget, response):
+            if response == gtk.RESPONSE_OK:
+                if self.get_select_multiple():
+                    if self.got_multiple_location_func is not None:
+                        self.got_multiple_location_func(self.get_filenames())
+                elif self.got_location_func is not None:
+                    self.got_location_func(self.get_filename())
             else:
                 if self.no_location_func is not None:
                     self.no_location_func()
-            
+            self.disconnect(self.d_handle)
+            self.destroy()
+
+        def done(self, widget=None):
+            if self.get_select_multiple():
+                self.got_multiple_location()
+            else:
+                self.got_location()
+            self.disconnect(self.d_handle)
+            self.destroy()
 
         def close_child_windows(self):
             self.destroy()
 
-        def destroy(self):
-            pass
-
-        def close(self):
+        def close(self, widget=None):
             self.destroy()
-        
-    class OpenFileSelection(BaseFileSelection):
-        _klass = comdlg.OpenFileDialog
-        _flags = comdlg.OFN_FILEMUSTEXIST|comdlg.OFN_PATHMUSTEXIST
-        _filter = "Torrent files|*.torrent|All files (*.*)|*.*"
 
-    class SaveFileSelection(BaseFileSelection):
-        _klass = comdlg.SaveFileDialog
-        _filter = "All files (*.*)|*.*"
+
+    class OpenFileSelection(FileSelection):
+
+        def __init__(self, *args, **kwargs):
+            FileSelection.__init__(self, gtk.FILE_CHOOSER_ACTION_OPEN, *args,
+                                   **kwargs)
+
+
+    class SaveFileSelection(FileSelection):
+
+        def __init__(self, *args, **kwargs):
+            FileSelection.__init__(self, gtk.FILE_CHOOSER_ACTION_SAVE, *args,
+                                   **kwargs)
+
+
+    class ChooseFolderSelection(FileSelection):
+
+        def __init__(self, *args, **kwargs):
+            FileSelection.__init__(self, gtk.FILE_CHOOSER_ACTION_SELECT_FOLDER,
+                                   *args, **kwargs)
+
+    class CreateFolderSelection(FileSelection):
+
+        def __init__(self, *args, **kwargs):
+            FileSelection.__init__(self, gtk.FILE_CHOOSER_ACTION_CREATE_FOLDER,
+                                   *args, **kwargs)
+
+            
+    class FileOrFolderSelection(FileSelection):
+        select_file = "Select file"
+        select_folder = "Select folder"
+
+        def __init__(self, *args, **kwargs):
+            FileSelection.__init__(self, gtk.FILE_CHOOSER_ACTION_OPEN, *args,
+                                   **kwargs)
+            self.convert_button_box = gtk.HBox()
+            self.convert_button = gtk.Button(self.select_folder)
+            self.convert_button.connect('clicked', self.change_action)
+            self.convert_button_box.pack_end(self.convert_button,
+                                             expand=False,
+                                             fill=False)
+            self.convert_button_box.show_all()
+            self.set_extra_widget(self.convert_button_box)
+            self.reset_by_action()
+
+
+        def change_action(self, widget):
+            if self.get_action() == gtk.FILE_CHOOSER_ACTION_OPEN:
+                self.set_action(gtk.FILE_CHOOSER_ACTION_SELECT_FOLDER)
+            elif self.get_action() == gtk.FILE_CHOOSER_ACTION_SELECT_FOLDER:
+                self.set_action(gtk.FILE_CHOOSER_ACTION_OPEN)
+            self.reset_by_action()
+
+        def reset_by_action(self):
+            if self.get_action() == gtk.FILE_CHOOSER_ACTION_OPEN:
+                self.convert_button.set_label(self.select_folder)
+                self.set_title(self.select_file)
+            elif self.get_action() == gtk.FILE_CHOOSER_ACTION_SELECT_FOLDER:
+                self.convert_button.set_label(self.select_file)
+                self.set_title(self.select_folder)
+
+        def set_title(self, title):
+            mytitle = title + ':'
+            FileSelection.set_title(self, mytitle)
 
 
 class PaddedHSeparator(gtk.VBox):

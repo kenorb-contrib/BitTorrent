@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 # The contents of this file are subject to the BitTorrent Open Source License
 # Version 1.0 (the License).  You may not copy or use this file, in either
 # source code or executable form, except in compliance with the License.  You
@@ -10,10 +8,10 @@
 # for the specific language governing rights and limitations under the
 # License.
 
-# Written by Bram Cohen
+import sys
+import time
 
-from sys import argv
-from BitTorrent.track import track
-
-if __name__ == '__main__':
-    track(argv[1:])
+if sys.platform == 'win32':
+    bttime = time.clock
+else:
+    bttime = time.time

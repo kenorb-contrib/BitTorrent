@@ -1,17 +1,14 @@
 #!/usr/bin/env python
 
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+# The contents of this file are subject to the BitTorrent Open Source License
+# Version 1.0 (the License).  You may not copy or use this file, in either
+# source code or executable form, except in compliance with the License.  You
+# may obtain a copy of the License at http://www.bittorrent.com/license/.
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# Software distributed under the License is distributed on an AS IS basis,
+# WITHOUT WARRANTY OF ANY KIND, either express or implied.  See the License
+# for the specific language governing rights and limitations under the
+# License.
 
 # Written by Matt Chisholm
 
@@ -87,6 +84,7 @@ class MainWindow(Window):
         y+=1
 
         self.file_list_button_box = gtk.HBox(homogeneous=True,spacing=SPACING)
+
         self.add_button = gtk.Button(stock=gtk.STOCK_ADD)
         self.add_button.connect('clicked', self.choose_files)
         self.file_list_button_box.pack_start(self.add_button)
@@ -172,9 +170,8 @@ class MainWindow(Window):
         else:
             fn = Desktop.desktop 
 
-        selector = OpenFileSelection(self, title="Open torrent:",
-                                fullname=fn,
-                                got_multiple_location_func=self.add_files)
+        selector = FileOrFolderSelection(self, fullname=fn, 
+                       got_multiple_location_func=self.add_files)
     
     def add_files(self, names):
         for name in names:

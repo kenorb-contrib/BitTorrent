@@ -1,17 +1,14 @@
 #!/usr/bin/env python
 
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+# The contents of this file are subject to the BitTorrent Open Source License
+# Version 1.0 (the License).  You may not copy or use this file, in either
+# source code or executable form, except in compliance with the License.  You
+# may obtain a copy of the License at http://www.bittorrent.com/license/.
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# Software distributed under the License is distributed on an AS IS basis,
+# WITHOUT WARRANTY OF ANY KIND, either express or implied.  See the License
+# for the specific language governing rights and limitations under the
+# License.
 
 # Written by Uoti Urpala and Matt Chisholm
 
@@ -24,7 +21,6 @@ assert sys.version_info >= (2, 3), "Install Python 2.3 or greater"
 import itertools
 import math
 import os
-import os.path
 import threading
 import datetime
 import random
@@ -47,10 +43,12 @@ from BitTorrent import BTFailure, INFO, WARNING, ERROR, CRITICAL
 from BitTorrent import OpenPath
 from BitTorrent import Desktop
 from BitTorrent import ClientIdentifier
+from BitTorrent import path_wrap
 from BitTorrent.GUI import * 
 
 defaults = get_defaults('btdownloadgui')
-defaults.extend((('donated', '', ''),
+defaults.extend((('donated' , '', ''), # the version that the user last donated for
+                 ('notified', '', ''), # the version that the user was last notified of
                  ))
 
 NAG_FREQUENCY = 3
@@ -62,13 +60,22 @@ del name, value, doc
 ui_options = 'max_upload_rate minport maxport '\
              'next_torrent_time next_torrent_ratio '\
              'last_torrent_ratio '\
-             'ask_for_save save_in ip dnd_behavior '\
+             'ask_for_save save_in ip start_torrent_behavior '\
+             'close_with_rst '\
              'min_uploads max_uploads max_initiate '\
              'max_allow_in max_files_open display_interval '\
-             'donated pause'.split()
-advanced_ui_options_index = 10
+             'pause donated notified'.split()
+advanced_ui_options_index = 11
 
-
+if is_frozen_exe:
+    ui_options.append('progressbar_hack')
+    defproghack = 0
+    wv = sys.getwindowsversion()
+    if (wv[3], wv[0], wv[1]) == (2, 5, 1):
+        # turn on progress bar hack by default for Win XP 
+        defproghack = 1
+    defaults.extend((('progressbar_hack' , defproghack, ''),)) 
+                     
 main_torrent_dnd_tip = 'drag to reorder'
 torrent_menu_tip = 'right-click for menu'
 torrent_tip_format = '%s:\n %s\n %s'
@@ -143,8 +150,7 @@ class Validator(gtk.Entry):
         self.config      = config
         self.setfunc     = setfunc
 
-        self.original_value = config[option_name]
-        self.set_text(str(self.original_value))
+        self.set_text(str(config[option_name]))
             
         self.set_size_request(self.width,-1)
         
@@ -180,10 +186,7 @@ class Validator(gtk.Entry):
         for i in input:
             if (self.valid_chars is not None) and (i not in self.valid_chars):
                 self.emit_stop_by_name('insert-text')
-                return gtk.TRUE
-
-    def revert(self):
-        self.set_value(self.original_value)
+                return True
 
 
 class IPValidator(Validator):
@@ -324,6 +327,7 @@ class VersionWindow(Window):
         self.set_border_width(SPACING)
         self.set_resizable(gtk.FALSE)
         self.main = main
+        self.newversion = newversion
         self.download_url = download_url
         self.connect('destroy', lambda w: self.main.window_closed('version'))
         self.vbox = gtk.VBox(spacing=SPACING)
@@ -343,22 +347,39 @@ class VersionWindow(Window):
         self.vbox.pack_start(self.hbox)
         self.bbox = gtk.HBox(spacing=SPACING)
 
-        self.closebutton = gtk.Button('Remind me later')
+        self.closebutton = gtk.Button('Download _later')
         self.closebutton.connect('clicked', self.close)
 
-        self.newversionbutton = gtk.Button('Download new version now')
-        self.newversionbutton.connect('clicked', self.newversion)
+        self.newversionbutton = gtk.Button('Download _now')
+        self.newversionbutton.connect('clicked', self.get_newversion)
 
-        self.bbox.pack_start(self.closebutton)
-        self.bbox.pack_start(self.newversionbutton)
+        self.bbox.pack_end(self.newversionbutton, expand=gtk.FALSE, fill=gtk.FALSE)
+        self.bbox.pack_end(self.closebutton     , expand=gtk.FALSE, fill=gtk.FALSE)
+
+        self.checkbox = gtk.CheckButton('_Remind me later')
+        self.checkbox.set_active(True)
+        self.checkbox.connect('toggled', self.remind_toggle)
+        
+        self.bbox.pack_start(self.checkbox, expand=gtk.FALSE, fill=gtk.FALSE)
+
         self.vbox.pack_start(self.bbox)
+        
         self.add(self.vbox)
         self.show_all()
+
+    def remind_toggle(self, widget):
+        v = self.checkbox.get_active()
+        notified = ''
+        if v:
+            notified = ''
+        else:
+            notified = self.newversion
+        self.main.set_config('notified', notified)
 
     def close(self, widget):
         self.destroy()
 
-    def newversion(self, widget):
+    def get_newversion(self, widget):
         self.main.visit_url(self.download_url)
         self.destroy()
 
@@ -561,14 +582,56 @@ class SettingsWindow(object):
         self.win.set_title('%s Settings'%app_name)
         self.win.set_border_width(SPACING)
 
+        self.notebook = gtk.Notebook()
+
         self.vbox = gtk.VBox(spacing=SPACING)
+        self.vbox.pack_start(self.notebook, expand=False, fill=False)
+
+        # Saving tab
+        self.saving_box = gtk.VBox(spacing=SPACING)
+        self.saving_box.set_border_width(SPACING)
+        self.notebook.append_page(self.saving_box, gtk.Label("Saving"))
+
+        self.dl_frame = gtk.Frame("Download folder:")
+        self.saving_box.pack_start(self.dl_frame, expand=False, fill=False)
+
+        self.dl_box = gtk.VBox(spacing=SPACING)
+        self.dl_box.set_border_width(SPACING)
+        self.dl_frame.add(self.dl_box)
+        self.save_in_box = gtk.HBox(spacing=SPACING)
+        self.save_in_box.pack_start(gtk.Label("Default:"), expand=False, fill=False)
+
+        self.dl_save_in = gtk.Entry()
+        self.dl_save_in.set_editable(False)
+        self.set_save_in(self.config['save_in'])
+        self.save_in_box.pack_start(self.dl_save_in, expand=True, fill=True)
+
+        self.dl_save_in_button = gtk.Button('Change...')
+        self.dl_save_in_button.connect('clicked', self.get_save_in)
+        self.save_in_box.pack_start(self.dl_save_in_button, expand=False, fill=False)
+        self.dl_box.pack_start(self.save_in_box, expand=False, fill=False)
+        self.dl_ask_checkbutton = gtk.CheckButton("Ask where to save each download")
+        self.dl_ask_checkbutton.set_active( bool(self.config['ask_for_save']) )
+
+        def toggle_save(w):
+            self.config['ask_for_save'] = int(not self.config['ask_for_save'])
+            self.setfunc('ask_for_save', self.config['ask_for_save'])
+
+        self.dl_ask_checkbutton.connect('toggled', toggle_save) 
+        self.dl_box.pack_start(self.dl_ask_checkbutton, expand=False, fill=False)
+        # end Saving tab
+
+        # Downloading tab
+        self.downloading_box = gtk.VBox(spacing=SPACING)
+        self.downloading_box.set_border_width(SPACING)
+        self.notebook.append_page(self.downloading_box, gtk.Label("Downloading"))
 
         self.dnd_frame = gtk.Frame('Starting additional torrents manually:')
-        self.dnd_box = gtk.VBox(spacing=SPACING, homogeneous=gtk.TRUE)
+        self.dnd_box = gtk.VBox(spacing=SPACING, homogeneous=True)
         self.dnd_box.set_border_width(SPACING)
 
         self.dnd_states = ['replace','add','ask']
-        self.dnd_original_state = self.config['dnd_behavior']
+        self.dnd_original_state = self.config['start_torrent_behavior']
         
         self.always_replace_radio = gtk.RadioButton(
             group=None,
@@ -591,12 +654,12 @@ class SettingsWindow(object):
 
         self.dnd_group = self.always_replace_radio.get_group()
         for r in self.dnd_group:
-            r.connect('toggled', self.dnd_behavior_changed)
+            r.connect('toggled', self.start_torrent_behavior_changed)
 
-        self.set_dnd_behavior(self.config['dnd_behavior'])
+        self.set_start_torrent_behavior(self.config['start_torrent_behavior'])
         
         self.dnd_frame.add(self.dnd_box)
-        self.vbox.pack_start(self.dnd_frame, expand=gtk.FALSE, fill=gtk.FALSE)
+        self.downloading_box.pack_start(self.dnd_frame, expand=False, fill=False)
 
         self.next_torrent_frame = gtk.Frame('Seed completed torrents:')
         self.next_torrent_box   = gtk.VBox(spacing=SPACING, homogeneous=True)
@@ -629,7 +692,7 @@ class SettingsWindow(object):
         self.next_torrent_box.pack_start(self.next_torrent_time_box)
 
         
-        self.vbox.pack_start(self.next_torrent_frame, expand=False, fill=False)
+        self.downloading_box.pack_start(self.next_torrent_frame, expand=False, fill=False)
 
         self.last_torrent_frame = gtk.Frame('Seed last completed torrent:')
         self.last_torrent_box = gtk.HBox()
@@ -639,11 +702,18 @@ class SettingsWindow(object):
         self.last_torrent_ratio_field = PercentValidator('last_torrent_ratio',
                                                          self.config, self.setfunc)
         self.last_torrent_box.pack_start(self.last_torrent_ratio_field,
-                                               fill=False, expand=False)
+                                         fill=False, expand=False)
         self.last_torrent_box.pack_start(gtk.Label(' percent.'),
                                          fill=False, expand=False)
         self.last_torrent_frame.add(self.last_torrent_box)
-        self.vbox.pack_start(self.last_torrent_frame, expand=False, fill=False)
+        self.downloading_box.pack_start(self.last_torrent_frame, expand=False, fill=False)
+        # end Downloading tab
+        
+
+        # Network tab
+        self.network_box = gtk.VBox(spacing=SPACING)
+        self.network_box.set_border_width(SPACING)
+        self.notebook.append_page(self.network_box, gtk.Label('Network'))
 
         self.port_range_frame = gtk.Frame('Look for available port:')        
         self.port_range = gtk.HBox()
@@ -658,68 +728,56 @@ class SettingsWindow(object):
                                    expand=False, fill=False)
 
         self.port_range_frame.add(self.port_range)
-        self.vbox.pack_start(self.port_range_frame, expand=False, fill=False)
-
-        self.dl_frame = gtk.Frame("Download folder:") 
-        self.dl_box = gtk.VBox(spacing=SPACING)
-        self.dl_box.set_border_width(SPACING)
-        self.dl_frame.add(self.dl_box)
-        self.save_in_box = gtk.HBox(spacing=SPACING)
-        self.save_in_box.pack_start(gtk.Label("Default:"), expand=False, fill=False)
-
-        self.dl_save_in = gtk.Entry()
-        self.dl_save_in.set_editable(False)
-        self.dl_save_in.original_value = self.config['save_in']
-        self.set_save_in(self.config['save_in'])
-        self.save_in_box.pack_start(self.dl_save_in, expand=True, fill=True)
-
-        self.dl_save_in_button = gtk.Button('Change...')
-        self.dl_save_in_button.connect('clicked', self.get_save_in)
-        self.save_in_box.pack_start(self.dl_save_in_button, expand=False, fill=False)
-        
-        self.dl_box.pack_start(self.save_in_box, expand=False, fill=False)
-        self.dl_ask_checkbutton = gtk.CheckButton("Ask where to save each download")
-        self.dl_ask_checkbutton.set_active( bool(self.config['ask_for_save']) )
-        self.dl_ask_checkbutton.original_value = bool(self.config['ask_for_save'])
-
-        def toggle_save(w):
-            self.config['ask_for_save'] = int(not self.config['ask_for_save'])
-            self.setfunc('ask_for_save', self.config['ask_for_save'])
-            
-        self.dl_ask_checkbutton.connect('toggled', toggle_save)
-        self.dl_box.pack_start(self.dl_ask_checkbutton, expand=False, fill=False)
-
-        self.vbox.pack_start(self.dl_frame, expand=False, fill=False)
+        self.network_box.pack_start(self.port_range_frame, expand=False, fill=False)
 
 
         self.ip_frame = gtk.Frame('IP to report to the tracker:')
         self.ip_box = gtk.VBox()
         self.ip_box.set_border_width(SPACING)
         self.ip_field = IPValidator('ip', self.config, self.setfunc)
-        self.main.tooltips.set_tip(self.ip_field,
-                                   'Has no effect unless you are on the\nsame local network as the tracker')
         self.ip_box.pack_start(self.ip_field, expand=False, fill=False)
-        #self.ip_box.pack_start(lalign(gtk.Label('()')), expand=False, fill=False)
+        self.ip_box.pack_start(lalign(gtk.Label('(Has no effect unless you are on the\nsame local network as the tracker)')), expand=False, fill=False)
         self.ip_frame.add(self.ip_box)
-        self.vbox.pack_start(self.ip_frame, expand=False, fill=False)
+        self.network_box.pack_start(self.ip_frame, expand=False, fill=False)
 
-        self.buttonbox = gtk.HButtonBox()
-        self.buttonbox.set_spacing(SPACING)
-        
-        self.savebutton = gtk.Button(stock='gtk-close')
-        self.savebutton.connect('clicked', self.close)
 
-        self.revertbutton = gtk.Button(stock='gtk-undo') 
-        self.revertbutton.connect('clicked', self.revert) 
+        if is_frozen_exe: 
+            self.reset_checkbox = gtk.CheckButton("Potential Windows TCP stack fix")
+            self.reset_checkbox.set_active( bool(self.config['close_with_rst']) )
+            self.network_box.pack_start(self.reset_checkbox, expand=False, fill=False)
 
-        self.buttonbox.pack_start(self.revertbutton, expand=False, fill=True)
-        self.buttonbox.pack_end(self.savebutton, expand=False, fill=True)
+            def toggle_reset(w):
+                self.config['close_with_rst'] = int(not self.config['close_with_rst'])
+                self.setfunc('close_with_rst', self.config['close_with_rst'])
+            self.reset_checkbox.connect('toggled', toggle_reset)
         
-        self.vbox.pack_end(self.buttonbox, expand=False, fill=False)
-        
+        # end Network tab        
+
+        # Misc tab
+        if is_frozen_exe:
+            # allow the user to set the progress bar text to all black
+            self.progressbar_hack = gtk.CheckButton('Progress bar text is always black\n(requires restart)')
+            if self.config['progressbar_hack'] :
+                self.progressbar_hack.set_active(True)
+            else:
+                self.progressbar_hack.set_active(False)
+            def progressbar_callback(w):
+                self.config['progressbar_hack'] = int(not self.config['progressbar_hack'])
+                self.setfunc('progressbar_hack', self.config['progressbar_hack'])
+            self.progressbar_hack.connect('toggled', progressbar_callback)
+
+            self.misc_box = gtk.VBox(spacing=SPACING)
+            self.misc_box.set_border_width(SPACING)
+            self.misc_box.pack_start(self.progressbar_hack, expand=False, fill=False)
+            self.notebook.append_page(self.misc_box, gtk.Label("Misc"))
+        # end Misc tab
+
+        # Advanced tab
         if advanced_ui:
-            advanced_label = "Advanced"
-            self.advanced = gtk.Frame(label=advanced_label)
+            self.advanced_box = gtk.VBox(spacing=SPACING)
+            self.advanced_box.set_border_width(SPACING)
+            hint = gtk.Label("WARNING: Changing these settings can\nprevent %s from functioning correctly."%app_name)
+            self.advanced_box.pack_start(lalign(hint), expand=False, fill=False)
             self.store = gtk.ListStore(*[gobject.TYPE_STRING] * 2)
             for option in ui_options[advanced_ui_options_index:]:
                 self.store.append((option, str(self.config[option])))
@@ -733,11 +791,14 @@ class SettingsWindow(object):
             r.connect('edited', self.store_value_edited)
             column = gtk.TreeViewColumn('Value', r, text=1)
             self.treeview.append_column(column)
-            self.advanced.add(self.treeview)
-            self.vbox.pack_end(self.advanced, expand=False, fill=False)
+
+            self.advanced_box.pack_start(self.treeview, expand=False, fill=False)
+            self.notebook.append_page(self.advanced_box, gtk.Label("Advanced"))
+        
 
         self.win.add(self.vbox)
         self.win.show_all()
+
 
     def get_save_in(self, widget=None):
         self.file_selection = self.main.open_window('choosefolder',
@@ -752,24 +813,23 @@ class SettingsWindow(object):
             if save_location[-1] != os.sep:
                 save_location += os.sep
             self.config['save_in'] = save_location
-            self.dl_save_in.set_text(self.config['save_in'])
+            save_in = path_wrap(self.config['save_in'])
+            self.dl_save_in.set_text(save_in)
             self.setfunc('save_in', self.config['save_in'])
 
-
-    def set_dnd_behavior(self, state_name):
+    def set_start_torrent_behavior(self, state_name):
         if state_name in self.dnd_states:
             for r in self.dnd_group:
                 if r.state_name == state_name:
-                    r.set_active(gtk.TRUE)
+                    r.set_active(True)
                 else:
-                    r.set_active(gtk.FALSE)
+                    r.set_active(False)
         else:
-            self.always_replace_radio.set_active(gtk.TRUE)        
-        
+            self.always_replace_radio.set_active(True)        
 
-    def dnd_behavior_changed(self, radiobutton):
+    def start_torrent_behavior_changed(self, radiobutton):
         if radiobutton.get_active():
-            self.setfunc('dnd_behavior', radiobutton.state_name)
+            self.setfunc('start_torrent_behavior', radiobutton.state_name)
 
     def store_value_edited(self, cell, row, new_text):
         it = self.store.get_iter_from_string(row)
@@ -782,22 +842,12 @@ class SettingsWindow(object):
                 value = int(new_text)
             elif t is float:
                 value = float(new_text)
+            else:
+                raise TypeError, str(t)
         except ValueError:
             return
         self.setfunc(option, value)
         self.store.set(it, 1, str(value))
-
-    def revert(self, widget):
-        for foo in (self.next_torrent_time_field,
-                    self.next_torrent_ratio_field,
-                    self.last_torrent_ratio_field,
-                    self.minport_field,
-                    self.ip_field):
-            foo.revert()
-        self.dl_ask_checkbutton.set_active(self.dl_ask_checkbutton.original_value)
-        self.set_save_in(self.dl_save_in.original_value)
-        self.set_dnd_behavior(self.dnd_original_state)
-        #self.win.destroy() #BUG? should we do this?
 
     def close(self, widget):
         self.win.destroy()
@@ -1230,6 +1280,7 @@ class TorrentInfoWindow(object):
             path,filename = os.path.split(self.torrent_box.dlpath)
         if path[-1] != os.sep:
             path += os.sep
+        path = path_wrap(path)
         add_item('Save in:', path, y)
         y+=1
 
@@ -1324,13 +1375,7 @@ class TorrentBox(gtk.EventBox):
         self.progressbarbox = gtk.HBox(homogeneous=False, spacing=SPACING)
         self.progressbar = gtk.ProgressBar()
 
-        if is_frozen_exe:
-            # Hack around broken GTK-Wimp theme:
-            # make progress bar text always black
-            # see task #694
-            style = self.progressbar.get_style().copy()
-            black = style.black
-            self.progressbar.modify_fg(gtk.STATE_PRELIGHT, black)
+        self.reset_progressbar_color()
         
         if self.completion is not None:
             self.progressbar.set_fraction(self.completion)
@@ -1393,6 +1438,17 @@ class TorrentBox(gtk.EventBox):
         self.connect('drag_end'   , self.drag_end   )
         self.cursor_handler_id = self.connect('enter_notify_event', self.change_cursors)
 
+
+    def reset_progressbar_color(self):
+        # Hack around broken GTK-Wimp theme:
+        # make progress bar text always black
+        # see task #694
+        if is_frozen_exe and self.main.config['progressbar_hack']:
+            style = self.progressbar.get_style().copy()
+            black = style.black
+            self.progressbar.modify_fg(gtk.STATE_PRELIGHT, black)
+        
+
     def change_cursors(self, *args):
         # BUG: this is in a handler that is disconnected because the
         # window attributes are None until after show_all() is called
@@ -1430,7 +1486,10 @@ class TorrentBox(gtk.EventBox):
         
 
     def set_name(self):
+        max_title_width = 560
         self.label.set_text(self.metainfo.name)
+        if self.label.size_request()[0] > max_title_width:
+            self.label.set_size_request(max_title_width, -1)
 
     def make_menu(self):
         filelistfunc = None
@@ -2329,6 +2388,9 @@ class DownloadInfoFrame(object):
         
         self.init_updates()
 
+        #self.log_text( 'app settings in "%s"' % config['data_dir'], INFO)
+        #self.log_text( 'will download to "%s"' % config['save_in' ], INFO)
+
         try:
             gtk.main() 
         except KeyboardInterrupt:
@@ -2390,7 +2452,10 @@ class DownloadInfoFrame(object):
 
     def set_size(self):
         paned_height = self.scrollbox.size_request()[1]
-        paned_height += self.paned.style_get_property('handle-size')
+        if hasattr(self.paned, 'style_get_property'):
+            paned_height += self.paned.style_get_property('handle-size')
+        else:
+            paned_height += 5
         paned_height += self.paned.get_position()
         paned_height += 4 # fudge factor, probably from scrolled window beveling ?
         paned_height = max(paned_height, MIN_MULTI_PANE_HEIGHT)
@@ -2401,6 +2466,8 @@ class DownloadInfoFrame(object):
         new_height = min(new_height, MAX_WINDOW_HEIGHT)
         self.mainwindow.set_size_request(WINDOW_WIDTH, new_height)
 
+    # BUG need to add handler on resize event to keep track of
+    # old_position when pane is hidden manually
     def split_pane(self):
         pos = self.paned.get_position()
         if pos > 0:
@@ -2419,14 +2486,24 @@ class DownloadInfoFrame(object):
             pane_position = min(MAX_WINDOW_HEIGHT//2, pane_position)
             self.paned.set_position(pane_position)
 
+    def show_known(self):
+        if self.paned.get_position() == 0:
+            self.split_pane()
+
     def toggle_known(self, widget=None):
         self.split_pane()
 
     def open_window(self, window_name, *args, **kwargs):
+        if os.name == 'nt':
+            self.mainwindow.present()
+        savewidget = SaveFileSelection
+        if window_name == 'savedir':
+            savewidget = CreateFolderSelection
+            window_name = 'savefile'
         if self.child_windows.has_key(window_name):
             if window_name == 'savefile':
                 kwargs['show'] = False
-                self.postponed_save_windows.append(SaveFileSelection(self, **kwargs))
+                self.postponed_save_windows.append(savewidget(self, **kwargs))
             return
 
         if window_name == 'log'       :
@@ -2442,7 +2519,7 @@ class DownloadInfoFrame(object):
         elif window_name == 'openfile':
             self.child_windows[window_name] = OpenFileSelection(self, **kwargs)
         elif window_name == 'savefile':
-            self.child_windows[window_name] = SaveFileSelection(self, **kwargs)
+            self.child_windows[window_name] = savewidget(self, **kwargs)
         elif window_name == 'choosefolder':
             self.child_windows[window_name] = ChooseFolderSelection(self, **kwargs)            
 
@@ -2460,7 +2537,8 @@ class DownloadInfoFrame(object):
         self.child_windows[window_name].close(None)
 
     def new_version(self, newversion, download_url):
-        self.open_window('version', newversion, download_url)
+        if newversion != self.config['notified']:
+            self.open_window('version', newversion, download_url)
 
 
     def open_help(self,widget):
@@ -2611,10 +2689,12 @@ class DownloadInfoFrame(object):
             self.window_closed('savefile')
             self.torrentqueue.remove_torrent(infohash)
 
-        selector = self.open_window('savefile',
+        selector = self.open_window(metainfo.is_batch and 'savedir' or \
+                                                          'savefile',
                                     title="Save location for " + metainfo.name,
                                     fullname=fullname,
-                                    got_location_func = lambda fn: self.got_location(infohash, fn),
+                                    got_location_func = lambda fn: \
+                                              self.got_location(infohash, fn),
                                     no_location_func=no_location)
 
         self.torrents[infohash].widget = selector
@@ -2716,6 +2796,9 @@ class DownloadInfoFrame(object):
         name = self.torrents[infohash].metainfo.name
         err_str = '"%s" : %s'%(name,text)
         err_str = err_str.decode('utf-8', 'replace').encode('utf-8')
+        if self.torrents[infohash].state == KNOWN:
+            err_str += ' (Check the list of known torrents.)'
+            self.show_known()            
         if severity >= ERROR:
             self.error_modal(err_str)
         self.log_text(err_str, severity)
@@ -2845,10 +2928,10 @@ class DownloadInfoFrame(object):
             self.change_torrent_state(infohash, RUNNING, index)
             return
 
-        if self.config['dnd_behavior'] == 'replace':
+        if self.config['start_torrent_behavior'] == 'replace':
             replace_func()
             return
-        elif self.config['dnd_behavior'] == 'add':
+        elif self.config['start_torrent_behavior'] == 'add':
             add_func()
             return
         
@@ -2941,7 +3024,18 @@ if __name__ == '__main__':
             except Exception, e:
                 if f is not None:
                     f.close()
-                errors.append('Could not read %s: %s' % (filename, str(e)))
+                if "Temporary Internet Files" in filename:
+                    errors.append("Could not read %s: %s. You are probably "
+                                  "using a broken Internet Explorer version "
+                                  "that passed BitTorrent a filename that "
+                                  "doesn't exist. To work around the problem, "
+                                  "try clearing your Temporary Internet Files "
+                                  "or right-click the link and save the "
+                                  ".torrent file to disk first." %
+                                  (filename, str(e)))
+                else:
+                    errors.append('Could not read %s: %s' % (filename, str(e)))
+                
             else:
                 datas.append(data)
 

@@ -1,15 +1,12 @@
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+# The contents of this file are subject to the BitTorrent Open Source License
+# Version 1.0 (the License).  You may not copy or use this file, in either
+# source code or executable form, except in compliance with the License.  You
+# may obtain a copy of the License at http://www.bittorrent.com/license/.
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# Software distributed under the License is distributed on an AS IS basis,
+# WITHOUT WARRANTY OF ANY KIND, either express or implied.  See the License
+# for the specific language governing rights and limitations under the
+# License.
 
 # Written by Bram Cohen and John Hoffman
 
@@ -43,6 +40,7 @@ defaults = [
     ('dfile', None, 'file to store recent downloader info in'),
     ('bind', '', 'ip to bind to locally'),
     ('socket_timeout', 15, 'timeout for closing connections'),
+    ('close_with_rst', 0, 'close connections with RST and avoid the TCP TIME_WAIT state'),
     ('save_dfile_interval', 5 * 60, 'seconds between saving dfile'),
     ('timeout_downloaders_interval', 45 * 60, 'seconds between expiring downloaders'),
     ('reannounce_interval', 30 * 60, 'seconds downloaders should wait between reannouncements'),
@@ -789,13 +787,13 @@ class Tracker(object):
         del dls[peerid]
 
     def expire_downloaders(self):
-        for infohash, peertimes in self.times.iteritems():
-            for myid, t in peertimes.iteritems():
+        for infohash, peertimes in self.times.items():
+            for myid, t in peertimes.items():
                 if t < self.prevtime:
                     self.delete_peer(infohash, myid)
         self.prevtime = time()
         if (self.keep_dead != 1):
-            for key, peers in self.downloads.iteritems():
+            for key, peers in self.downloads.items():
                 if len(peers) == 0 and (self.allowed is None or
                                         key not in self.allowed):
                     del self.times[key]
@@ -813,8 +811,7 @@ def track(args):
         print 'error: ' + str(e)
         print 'run with no arguments for parameter explanations'
         return
-    r = RawServer(Event(), config['timeout_check_interval'],
-                  config['socket_timeout'], bindaddr = config['bind'])
+    r = RawServer(Event(), config)
     t = Tracker(config, r)
     s = r.create_serversocket(config['port'], config['bind'], True)
     r.start_listening(s, HTTPHandler(t.get, config['min_time_between_log_flushes']))

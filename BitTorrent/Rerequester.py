@@ -1,24 +1,22 @@
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+# The contents of this file are subject to the BitTorrent Open Source License
+# Version 1.0 (the License).  You may not copy or use this file, in either
+# source code or executable form, except in compliance with the License.  You
+# may obtain a copy of the License at http://www.bittorrent.com/license/.
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# Software distributed under the License is distributed on an AS IS basis,
+# WITHOUT WARRANTY OF ANY KIND, either express or implied.  See the License
+# for the specific language governing rights and limitations under the
+# License.
 
-# Written by Bram Cohen
+# Written by Bram Cohen, Uoti Urpala
 
 from threading import Thread
 from socket import error, gethostbyname
-from time import time
 from random import random, randrange
 from binascii import b2a_hex
 
+from BitTorrent import version
+from BitTorrent.platform import bttime
 from BitTorrent.zurllib import urlopen, quote, Request
 from BitTorrent.btformats import check_peers
 from BitTorrent.bencode import bdecode
@@ -86,10 +84,10 @@ class Rerequester(object):
 
     def _check(self):
         if self.current_started is not None:
-            if self.current_started <= time() - 58:
+            if self.current_started <= bttime() - 58:
                 self.errorfunc(WARNING, "Tracker announce still not complete "
                                "%d seconds after starting it" %
-                               int(time() - self.current_started))
+                               int(bttime() - self.current_started))
             return
         if self.peerid is None:
             self.peerid = self.wanted_peerid
@@ -107,20 +105,20 @@ class Rerequester(object):
             self._announce(1)
             return
         if self.fail_wait is not None:
-            if self.last_time + self.fail_wait <= time():
+            if self.last_time + self.fail_wait <= bttime():
                 self._announce()
             return
-        if self.last_time > time() - self.config['rerequest_interval']:
+        if self.last_time > bttime() - self.config['rerequest_interval']:
             return
         if self.ever_got_incoming():
             getmore = self.howmany() <= self.config['min_peers'] / 3
         else:
             getmore = self.howmany() < self.config['min_peers']
-        if getmore or time() - self.last_time > self.announce_interval:
+        if getmore or bttime() - self.last_time > self.announce_interval:
             self._announce()
 
     def _announce(self, event=None):
-        self.current_started = time()
+        self.current_started = bttime()
         s = ('%s&uploaded=%s&downloaded=%s&left=%s' %
             (self.url, str(self.up() - self.previous_up),
              str(self.down() - self.previous_down), str(self.amount_left())))
@@ -156,6 +154,7 @@ class Rerequester(object):
         if self.config['ip']:
             url += '&ip=' + gethostbyname(self.config['ip'])
         request = Request(url)
+        request.add_header('User-Agent', 'BitTorrent/' + version)
         if self.config['tracker_proxy']:
             request.set_proxy(self.config['tracker_proxy'], 'http')
         try:
@@ -183,7 +182,7 @@ class Rerequester(object):
 
     def _postrequest(self, data=None, errormsg=None, peerid=None):
         self.current_started = None
-        self.last_time = time()
+        self.last_time = bttime()
         if errormsg is not None:
             self.errorfunc(WARNING, errormsg)
             self._fail()

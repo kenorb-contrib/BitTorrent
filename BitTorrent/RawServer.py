@@ -1,27 +1,26 @@
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+# The contents of this file are subject to the BitTorrent Open Source License
+# Version 1.0 (the License).  You may not copy or use this file, in either
+# source code or executable form, except in compliance with the License.  You
+# may obtain a copy of the License at http://www.bittorrent.com/license/.
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# Software distributed under the License is distributed on an AS IS basis,
+# WITHOUT WARRANTY OF ANY KIND, either express or implied.  See the License
+# for the specific language governing rights and limitations under the
+# License.
 
-# Written by Bram Cohen
+# Written by Bram Cohen, Uoti Urpala
 
 import os
 import sys
-from bisect import insort
 import socket
+import struct
+from bisect import insort
 from cStringIO import StringIO
 from traceback import print_exc
 from errno import EWOULDBLOCK, ENOBUFS
-from time import time, sleep
-from BitTorrent import CRITICAL, FAQ_URL
+
+from BitTorrent.platform import bttime
+from BitTorrent import WARNING, CRITICAL, FAQ_URL
 
 try:
     from select import poll, error, POLLIN, POLLOUT, POLLERR, POLLHUP
@@ -30,8 +29,7 @@ except ImportError:
     from BitTorrent.selectpoll import poll, error, POLLIN, POLLOUT, POLLERR, POLLHUP
     timemult = 1
 
-
-all = POLLIN | POLLOUT
+NOLINGER = struct.pack('ii', 1, 0)
 
 
 class SingleSocket(object):
@@ -41,7 +39,7 @@ class SingleSocket(object):
         self.socket = sock
         self.handler = handler
         self.buffer = []
-        self.last_hit = time()
+        self.last_hit = bttime()
         self.fileno = sock.fileno()
         self.connected = False
         self.context = context
@@ -66,6 +64,8 @@ class SingleSocket(object):
         del self.raw_server.single_sockets[self.fileno]
         self.raw_server.poll.unregister(sock)
         self.handler = None
+        if self.raw_server.config['close_with_rst']:
+            sock.setsockopt(socket.SOL_SOCKET, socket.SO_LINGER, NOLINGER)
         sock.close()
 
     def shutdown(self, val):
@@ -98,19 +98,18 @@ class SingleSocket(object):
         if self.buffer == []:
             self.raw_server.poll.register(self.socket, POLLIN)
         else:
-            self.raw_server.poll.register(self.socket, all)
+            self.raw_server.poll.register(self.socket, POLLIN | POLLOUT)
 
-def default_error_handler(x, y):
-    print x
+
+def default_error_handler(level, message):
+    print message
 
 
 class RawServer(object):
 
-    def __init__(self, doneflag, timeout_check_interval, timeout, noisy=True,
-            errorfunc=default_error_handler, bindaddr='', tos=0):
-        self.timeout_check_interval = timeout_check_interval
-        self.timeout = timeout
-        self.bindaddr = bindaddr
+    def __init__(self, doneflag, config, noisy=True,
+                 errorfunc=default_error_handler, tos=0):
+        self.config = config
         self.tos = tos
         self.poll = poll()
         # {socket: SingleSocket}
@@ -124,7 +123,7 @@ class RawServer(object):
         self.listening_handlers = {}
         self.serversockets = {}
         self.live_contexts = {None : True}
-        self.add_task(self.scan_for_timeouts, timeout_check_interval)
+        self.add_task(self.scan_for_timeouts, config['timeout_check_interval'])
         if sys.platform != 'win32':
             self.wakeupfds = os.pipe()
             self.poll.register(self.wakeupfds[0], POLLIN)
@@ -145,7 +144,7 @@ class RawServer(object):
 
     def add_task(self, func, delay, context=None):
         if context in self.live_contexts:
-            insort(self.funcs, (time() + delay, func, context))
+            insort(self.funcs, (bttime() + delay, func, context))
 
     def external_add_task(self, func, delay, context=None):
         self.externally_added_tasks.append((func, delay, context))
@@ -154,8 +153,9 @@ class RawServer(object):
             os.write(self.wakeupfds[1], 'X')
 
     def scan_for_timeouts(self):
-        self.add_task(self.scan_for_timeouts, self.timeout_check_interval)
-        t = time() - self.timeout
+        self.add_task(self.scan_for_timeouts,
+                      self.config['timeout_check_interval'])
+        t = bttime() - self.config['socket_timeout']
         tokill = []
         for s in self.single_sockets.values():
             if s.last_hit < t:
@@ -192,8 +192,9 @@ class RawServer(object):
     def start_connection(self, dns, handler=None, context=None, do_bind=True):
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.setblocking(0)
-        if do_bind and self.bindaddr:
-            sock.bind((self.bindaddr, 0))
+        bindaddr = do_bind and self.config['bind']
+        if bindaddr:
+            sock.bind((bindaddr, 0))
         if self.tos != 0:
             try:
                 sock.setsockopt(socket.IPPROTO_IP, socket.IP_TOS, self.tos)
@@ -228,17 +229,21 @@ class RawServer(object):
                     s.close()
                     self.errorfunc(CRITICAL, 'lost server socket')
                 else:
+                    handler, context = self.listening_handlers[sock]
                     try:
-                        handler, context = self.listening_handlers[sock]
                         newsock, addr = s.accept()
+                    except socket.error:
+                        continue
+                    try:
                         newsock.setblocking(0)
                         nss = SingleSocket(self, newsock, handler, context)
                         self.single_sockets[newsock.fileno()] = nss
                         self.poll.register(newsock, POLLIN)
                         self._make_wrapped_call(handler. \
                            external_connection_made, (nss,), context=context)
-                    except socket.error:
-                        sleep(1)
+                    except socket.error, e:
+                        self.errorfunc(WARNING, "Error handling accepted "
+                                       "connection: "+str(e))
             else:
                 s = self.single_sockets.get(sock)
                 if s is None:
@@ -251,7 +256,7 @@ class RawServer(object):
                     self._close_socket(s)
                     continue
                 if event & (POLLIN | POLLHUP):
-                    s.last_hit = time()
+                    s.last_hit = bttime()
                     try:
                         data = s.socket.recv(100000)
                     except socket.error, e:
@@ -280,16 +285,16 @@ class RawServer(object):
         while not self.doneflag.isSet():
             try:
                 self._pop_externally_added()
-                if len(self.funcs) == 0:
+                if not self.funcs:
                     period = 1e9
                 else:
-                    period = self.funcs[0][0] - time()
+                    period = self.funcs[0][0] - bttime()
                 if period < 0:
                     period = 0
                 events = self.poll.poll(period * timemult)
                 if self.doneflag.isSet():
                     return
-                while len(self.funcs) > 0 and self.funcs[0][0] <= time():
+                while self.funcs and self.funcs[0][0] <= bttime():
                     garbage, func, context = self.funcs.pop(0)
                     self._make_wrapped_call(func, (), context=context)
                 self._close_dead()
@@ -352,6 +357,8 @@ class RawServer(object):
 
     def _close_socket(self, s):
         sock = s.socket.fileno()
+        if self.config['close_with_rst']:
+            s.socket.setsockopt(socket.SOL_SOCKET, socket.SO_LINGER, NOLINGER)
         s.socket.close()
         self.poll.unregister(sock)
         del self.single_sockets[sock]
