@@ -94,8 +94,6 @@ class Download:
         del self.data
         del self.choked
 
-# everything below is just for testing
-
 """
 
 def test_choke():
