@@ -210,6 +210,7 @@ class DummyDownload:
         self.interested = interested
         self.have = have
         self.active_requests = active_requests
+        self.ratesince = 0
         self.lastin = 0
         self.rate = 0
 
