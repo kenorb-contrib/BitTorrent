@@ -12,6 +12,7 @@ Section "Install"
   File *.pyd
   File *.dll
   WriteRegStr HKCR .torrent "" bittorrent
+  WriteRegStr HKCR .torrent "Content Type" application/x-bittorrent
   WriteRegStr HKCR "MIME\Database\Content Type\application/x-bittorrent" Extension .torrent
   WriteRegStr HKCR bittorrent "" "TORRENT File"
   WriteRegBin HKCR bittorrent EditFlags 00000100
@@ -25,7 +26,7 @@ SectionEnd
 Section "Uninstall"
   DeleteRegKey HKCR .torrent
   DeleteRegKey HKCR "MIME\Database\Content Type\application/x-bittorrent"
-  DeleteRegKey HKCR BitTorrent.torrent
+  DeleteRegKey HKCR bittorrent
   DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\BitTorrent"
   RMDir /r "$INSTDIR"
 SectionEnd
