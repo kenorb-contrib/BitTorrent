@@ -11,7 +11,7 @@ class Download:
         self.connection = connection
         self.data = data
         self.backlog = backlog
-        self.choked = false
+        self.choked = true
         self.interested = false
         self.max_rate_period = max_rate_period
         self.total_down = total_down
@@ -188,10 +188,10 @@ def test_choke():
     nyy.more.append(('a', 0, 2))
     nny.more.append(('a', 0, 2))
 
-    nyyd.got_choke()
-    nynd.got_choke()
-    nnyd.got_choke()
-    nnnd.got_choke()
+    yyyd.got_unchoke()
+    yynd.got_unchoke()
+    ynyd.got_unchoke()
+    ynnd.got_unchoke()
 
     dd.all = [yyyd, yynd, ynyd, ynnd, nyyd, nynd, nnyd, nnnd, extrad]
 
@@ -241,6 +241,7 @@ def test_halts_at_backlog():
     d = Download(c, dd, 2, 15)
     dd.all.append(d)
     
+    d.got_unchoke()
     d.got_I_have({'type': 'I have', 'blobs': ['a']})
     assert d.interested
     

@@ -15,8 +15,8 @@ class Upload:
         self.max_slice_length = max_slice_length
         self.max_rate_period = max_rate_period
         self.total_up = total_up
-        self.choked = false
-        self.reported_choked = false
+        self.choked = true
+        self.reported_choked = true
         self.interested = false
         self.buffer = []
         self.ratesince = time() - 5.0
@@ -145,11 +145,12 @@ def test_skip_over_choke():
     choker = DummyChoker(events)
     blobs = DummyBlobs({'a' * 20: 'abcd'})
     upload = Upload(connection, choker, blobs, 100, 15)
-    assert not upload.is_choked()
+    assert upload.is_choked()
     assert not upload.is_interested()
     
+    upload.unchoke()
     upload.send_intro()
-    assert events == [{'type': 'I have', 'blobs': ['a' * 20]}]
+    assert events == [{'type': 'unchoke'}, {'type': 'I have', 'blobs': ['a' * 20]}]
     del events[:]
 
     connection.flushed = false
@@ -188,11 +189,11 @@ def test_received_blob():
     choker = DummyChoker(events)
     blobs = DummyBlobs({'a' * 20: 'abcd'})
     upload = Upload(connection, choker, blobs, 100, 15)
-    assert not upload.is_choked()
     assert not upload.is_interested()
     
+    upload.unchoke()
     upload.received_blob('a' * 20)
-    assert events == [{'type': 'I have', 'blobs': ['a' * 20]}]
+    assert events == [{'type': 'unchoke'}, {'type': 'I have', 'blobs': ['a' * 20]}]
 
 def test_get_bad_slice():
     events = []
@@ -200,11 +201,12 @@ def test_get_bad_slice():
     choker = DummyChoker(events)
     blobs = DummyBlobs({})
     upload = Upload(connection, choker, blobs, 100, 15)
-    assert not upload.is_choked()
+    assert upload.is_choked()
     assert not upload.is_interested()
 
+    upload.unchoke()
     upload.got_send({'type': 'send', 'blob': 'a' * 20, 'begin': 0, 'length': 2})
-    assert events == ['interested']
+    assert events == [{'type': 'unchoke'}, 'interested']
     assert not upload.is_choked()
     assert upload.is_interested()
 
@@ -214,11 +216,11 @@ def test_transitions_clockwise():
     choker = DummyChoker(events)
     blobs = DummyBlobs({'a' * 20: 'abcd'})
     upload = Upload(connection, choker, blobs, 100, 15)
-    assert not upload.is_choked()
     assert not upload.is_interested()
 
+    upload.unchoke()
     upload.got_interested()
-    assert events == ['interested']
+    assert events == [{'type': 'unchoke'}, 'interested']
     del events[:]
     assert not upload.is_choked()
     assert upload.is_interested()
@@ -258,12 +260,6 @@ def test_transitions_counterclockwise():
     choker = DummyChoker(events)
     blobs = DummyBlobs({'a' * 20: 'abcd'})
     upload = Upload(connection, choker, blobs, 100, 15)
-    assert not upload.is_choked()
-    assert not upload.is_interested()
-
-    upload.choke()
-    assert events == [{'type': 'choke'}]
-    del events[:]
     assert upload.is_choked()
     assert not upload.is_interested()
 
