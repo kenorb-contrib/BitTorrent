@@ -88,6 +88,8 @@ defaults = [
         "seconds to wait for data to come in over a connection before assuming it's semi-permanently choked"),
     ('spew', 0,
         "whether to display diagnostic info to stdout"),
+    ('rarest_first_cutoff', 4,
+        "number of downloads at which to switch from random to rarest first"),
     ]
 
 def download(params, filefunc, statusfunc, finfunc, errorfunc, doneflag, cols, pathFunc = None, paramfunc = None):
@@ -245,7 +247,7 @@ def download(params, filefunc, statusfunc, finfunc, errorfunc, doneflag, cols, p
             max_slice_length, max_rate_period, fudge)
     ratemeasure = RateMeasure(storagewrapper.get_amount_left())
     rm[0] = ratemeasure.data_rejected
-    downloader = Downloader(storagewrapper, PiecePicker(len(pieces)),
+    downloader = Downloader(storagewrapper, PiecePicker(len(pieces), config['rarest_first_cutoff']),
         config['request_backlog'], config['max_rate_period'],
         len(pieces), downmeasure, config['snub_time'], 
         ratemeasure.data_came_in)

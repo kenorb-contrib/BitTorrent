@@ -6,12 +6,13 @@ true = 1
 false = 0
 
 class PiecePicker:
-    def __init__(self, numpieces):
+    def __init__(self, numpieces, rarest_first_cutoff = 1):
         self.numpieces = numpieces
         self.interests = [range(numpieces)]
         self.numinterests = [0] * numpieces
         self.started = []
-        self.got_any = false
+        self.numgot = 0
+        self.rarest_first_cutoff = rarest_first_cutoff
 
     def got_have(self, piece):
         if self.numinterests[piece] is not None:
@@ -32,7 +33,7 @@ class PiecePicker:
             self.started.append(piece)
 
     def complete(self, piece):
-        self.got_any = true
+        self.numgot += 1
         self.interests[self.numinterests[piece]].remove(piece)
         self.numinterests[piece] = None
         try:
@@ -41,7 +42,7 @@ class PiecePicker:
             pass
 
     def next(self, havefunc, havelist = None):
-        if self.got_any:
+        if self.numgot >= self.rarest_first_cutoff:
             best = None
             bestnum = 2 ** 30
             for i in self.started:
