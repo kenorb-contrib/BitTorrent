@@ -1,7 +1,7 @@
 # Written by Bram Cohen
 # see LICENSE.txt for license information
 
-from urllib import urlopen, quote
+from zurllib import urlopen, quote
 from btformats import check_peers
 from bencode import bdecode
 from threading import Thread, Lock

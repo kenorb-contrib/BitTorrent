@@ -7,7 +7,7 @@ from HTTPHandler import HTTPHandler
 from NatCheck import NatCheck
 from threading import Event
 from bencode import bencode, bdecode
-from urllib import urlopen, quote, unquote
+from zurllib import urlopen, quote, unquote
 from urlparse import urlparse
 from os.path import exists
 from cStringIO import StringIO

@@ -4,8 +4,11 @@
 from cStringIO import StringIO
 from sys import stdout
 import time
+from gzip import GzipFile
 true = 1
 false = 0
+
+DEBUG = false
 
 weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 
@@ -64,6 +67,22 @@ class HTTPConnection:
         data = data.strip()
         if data == '':
             self.donereading = true
+            # check for Accept-Encoding: header, pick a 
+            if self.headers.has_key('accept-encoding'):
+                ae = self.headers['accept-encoding']
+                if DEBUG:
+                    print "Got Accept-Encoding: " + ae + "\n"
+            else:
+                #identity assumed if no header
+                ae = 'identity'
+            # this eventually needs to support multple acceptable types
+            # q-values and all that fancy HTTP crap
+            # for now assume we're only communicating with our own client
+            if ae == 'gzip':
+                self.encoding = 'gzip'
+            else:
+                #default to identity. 
+                self.encoding = 'identity'
             r = self.handler.getfunc(self, self.path, self.headers)
             if r is not None:
                 self.answer(r)
@@ -73,15 +92,41 @@ class HTTPConnection:
         except ValueError:
             return None
         self.headers[data[:i].strip().lower()] = data[i+1:].strip()
+        if DEBUG:
+            print data[:i].strip() + ": " + data[i+1:].strip()
         return self.read_header
 
     def answer(self, (responsecode, responsestring, headers, data)):
         if self.closed:
             return
+        if self.encoding == 'gzip':
+            #transform data using gzip compression
+            #this is nasty but i'm unsure of a better way at the moment
+            compressed = StringIO()
+            gz = GzipFile(fileobj = compressed, mode = 'wb', compresslevel = 9)
+            gz.write(data)
+            gz.close()
+            compressed.seek(0,0) 
+            cdata = compressed.read()
+            compressed.close()
+            if len(cdata) >= len(data):
+                self.encoding = 'identity'
+            else:
+                if DEBUG:
+                   print "Compressed: %i  Uncompressed: %i\n" % (len(cdata),len(data))
+                data = cdata
+                headers['Content-Encoding'] = 'gzip'
+
+        # i'm abusing the identd field here, but this should be ok
+        if self.encoding == 'identity':
+            ident = '-'
+        else:
+            ident = self.encoding
+
         year, month, day, hour, minute, second, a, b, c = time.localtime(time.time())
-        print '%s - - [%02d/%3s/%04d:%02d:%02d:%02d] "%s" %i %i' % (
-            self.connection.get_ip(), day, months[month], year, hour, minute, 
-            second, self.header, responsecode, len(data))
+        print '%s %s - [%02d/%3s/%04d:%02d:%02d:%02d] "%s" %i %i' % (
+            self.connection.get_ip(), ident, day, months[month], year, hour,
+            minute, second, self.header, responsecode, len(data))
         t = time.time()
         if t - self.handler.lastflush > self.handler.minflush:
             self.handler.lastflush = t

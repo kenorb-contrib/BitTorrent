@@ -1,7 +1,7 @@
 # Written by Bram Cohen
 # see LICENSE.txt for license information
 
-from urllib import urlopen
+from zurllib import urlopen
 from urlparse import urljoin
 from btformats import check_message
 from Choker import Choker
