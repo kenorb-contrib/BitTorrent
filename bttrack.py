@@ -3,8 +3,8 @@
 # Written by Bram Cohen
 # see LICENSE.txt for license information
 
-from sys import version
-assert version >= '2', "Install Python 2.0 or greater"
+import sys
+assert sys.version >= '2', "Install Python 2.0 or greater"
 
 from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler
 from types import StringType
