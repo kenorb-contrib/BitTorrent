@@ -90,35 +90,24 @@ class ErrorEvent(wxPyEvent):
         self.SetEventType(wxEVT_ERROR_STATUS)
         self.errormsg = errormsg
 
-class DownloadInfoFrame(wxFrame):
+class DownloadInfoFrame:
     def __init__(self, flag):
-        wxFrame.__init__(self, None, -1, 'BitTorrent download', size = wxSize(550, 260))
+        frame = wxFrame(None, -1, 'BitTorrent download', size = wxSize(550, 300))
+        self.frame = frame
         self.flag = flag
         self.fin = false
         self.shown = false
-        self.drawGUI()
 
-        EVT_CLOSE(self, self.done)
-        EVT_BUTTON(self, self.cancelButton.GetId(), self.done)
-        EVT_CHOOSE_FILE(self, self.onChooseFile)
-        EVT_UPDATE_STATUS(self, self.onUpdateStatus)
-        EVT_FINISH_STATUS(self, self.onFinishEvent)
-        EVT_FAIL_STATUS(self, self.onFailEvent)
-        EVT_ERROR_STATUS(self, self.onErrorEvent)
-        
-    def drawGUI(self):
-        panel = wxPanel(self, -1)
-        colSizer = wxBoxSizer(wxVERTICAL)
+        panel = wxPanel(frame, -1)
+        colSizer = wxFlexGridSizer(cols = 1, vgap = 7)
 
-        colSizer.Add(wxStaticText(panel, -1, 'Saving:'), 0, wxALIGN_LEFT|wxTOP, 7)
+        colSizer.Add(wxStaticText(panel, -1, 'Saving:'), 0, wxEXPAND)
 
         self.fileNameText = wxStaticText(panel, -1, '', style = wxALIGN_LEFT)
-        colSizer.Add(self.fileNameText, 0, wxEXPAND, 4)
+        colSizer.Add(self.fileNameText, 0, wxEXPAND)
 
-        self.gauge = wxGauge(panel, -1, range = 1000)
-        self.gauge.SetBezelFace(5)
-        self.gauge.SetShadowWidth(5)
-        colSizer.Add(self.gauge, 0, wxEXPAND, 7)
+        self.gauge = wxGauge(panel, -1, range = 1000, style = wxGA_SMOOTH)
+        colSizer.Add(self.gauge, 0, wxEXPAND)
 
         gridSizer = wxFlexGridSizer(cols = 2, vgap = 7, hgap = 8)
         
@@ -139,23 +128,33 @@ class DownloadInfoFrame(wxFrame):
         gridSizer.Add(self.upRateText, 0, wxEXPAND)
         gridSizer.AddGrowableCol(1)
 
-        colSizer.Add(gridSizer, 0, wxEXPAND, 7)
-        
+        colSizer.Add(gridSizer, 0, wxEXPAND)
+
+        colSizer.Add(1, 1, 1, wxEXPAND)
         self.cancelButton = wxButton(panel, -1, 'Cancel')
-        colSizer.Add(self.cancelButton, 0, wxALIGN_RIGHT, 5)
-        colSizer.Add(wxStaticText(panel, -1, ''), 1, wxEXPAND)
+        colSizer.Add(self.cancelButton, 0, wxALIGN_CENTER)
+        colSizer.AddGrowableCol(0)
+        colSizer.AddGrowableRow(4)
 
         border = wxBoxSizer(wxHORIZONTAL)
-        border.Add(colSizer, 1, wxALL, 25)
+        border.Add(colSizer, 1, wxEXPAND | wxALL, 25)
         panel.SetSizer(border)
         panel.SetAutoLayout(true)
+        
+        EVT_CLOSE(frame, self.done)
+        EVT_BUTTON(frame, self.cancelButton.GetId(), self.done)
+        EVT_CHOOSE_FILE(frame, self.onChooseFile)
+        EVT_UPDATE_STATUS(frame, self.onUpdateStatus)
+        EVT_FINISH_STATUS(frame, self.onFinishEvent)
+        EVT_FAIL_STATUS(frame, self.onFailEvent)
+        EVT_ERROR_STATUS(frame, self.onErrorEvent)
         
     def updateStatus(self, fractionDone = None,
             timeEst = None, downRate = None, upRate = None,
             activity=None):
         if self.flag.isSet():
             return
-        wxPostEvent(self, UpdateStatusEvent(fractionDone, timeEst, downRate, upRate, activity))
+        wxPostEvent(self.frame, UpdateStatusEvent(fractionDone, timeEst, downRate, upRate, activity))
 
     def onUpdateStatus(self, event):
         if self.flag.isSet():
@@ -175,18 +174,18 @@ class DownloadInfoFrame(wxFrame):
         if self.flag.isSet():
             return
         self.fin = true
-        wxPostEvent(self, FinishEvent())
+        wxPostEvent(self.frame, FinishEvent())
 
     def failed(self):
         if self.flag.isSet():
             return
         self.fin = true
-        wxPostEvent(self, FailEvent())
+        wxPostEvent(self.frame, FailEvent())
 
     def error(self, errormsg):
         if self.flag.isSet():
             return
-        wxPostEvent(self, ErrorEvent(errormsg))
+        wxPostEvent(self.frame, ErrorEvent(errormsg))
 
     def onFinishEvent(self, event):
         if self.flag.isSet():
@@ -208,8 +207,8 @@ class DownloadInfoFrame(wxFrame):
         if self.flag.isSet():
             return
         if not self.shown:
-            self.Show(true)
-        dlg = wxMessageDialog(self, message = event.errormsg, 
+            self.frame.Show(true)
+        dlg = wxMessageDialog(self.frame, message = event.errormsg, 
             caption = 'Download Error', style = wxOK | wxICON_ERROR)
         dlg.Fit()
         dlg.Center()
@@ -220,7 +219,7 @@ class DownloadInfoFrame(wxFrame):
             return ''
         f = Event()
         bucket = [None]
-        wxPostEvent(self, ChooseFileEvent(default, bucket, f, size, dir))
+        wxPostEvent(self.frame, ChooseFileEvent(default, bucket, f, size, dir))
         f.wait()
         return bucket[0]
     
@@ -228,9 +227,10 @@ class DownloadInfoFrame(wxFrame):
         if self.flag.isSet():
             return
         if event.dir:
-            dl = wxDirDialog(self, 'Choose a directory to save to, pick a partial download to resume', join(getcwd(), event.default))
+            dl = wxDirDialog(self.frame, 'Choose a directory to save to, pick a partial download to resume', 
+                join(getcwd(), event.default), style = wxDD_DEFAULT_STYLE | wxDD_NEW_DIR_BUTTON)
         else:
-            dl = wxFileDialog(self, 'Choose file to save as, pick a partial download to resume', '', event.default, '*.*', wxSAVE)
+            dl = wxFileDialog(self.frame, 'Choose file to save as, pick a partial download to resume', '', event.default, '*.*', wxSAVE)
         if dl.ShowModal() != wxID_OK:
             self.done(None)
         else:
@@ -239,30 +239,29 @@ class DownloadInfoFrame(wxFrame):
             self.timeEstText.SetLabel('Starting up...')
             self.fileDestText.SetLabel(dl.GetPath())
             self.shown = true
-            self.Show(true)
+            self.frame.Show(true)
         event.flag.set()
 
     def done(self, event):
         self.flag.set()
-        self.Destroy()
+        self.frame.Destroy()
 
 class btWxApp(wxApp):
-    def __init__(self, x, d):
-        self.d = d
+    def __init__(self, x, params):
+        self.params = params
         wxApp.__init__(self, x)
 
     def OnInit(self):
-        self.SetTopWindow(self.d)
+        doneflag = Event()
+        d = DownloadInfoFrame(doneflag)
+        self.SetTopWindow(d.frame)
+        thread = Thread(target = next, args = [self.params, d, doneflag])
+        thread.setDaemon(false)
+        thread.start()
         return 1
 
 def run(params):
-    doneflag = Event()
-    d = DownloadInfoFrame(doneflag)
-    app = btWxApp(0, d)
-    thread = Thread(target = next, args = [params, d, doneflag])
-    thread.setDaemon(false)
-    thread.start()
-    
+    app = btWxApp(0, params)
     app.MainLoop()
 
 def next(params, d, doneflag):
