@@ -1,7 +1,7 @@
 # Written by Bram Cohen
 # see LICENSE.txt for license information
 
-from urllib import urlopen
+from urllib import urlopen, quote
 from urlparse import urljoin
 from re import compile
 from Choker import Choker
@@ -14,7 +14,6 @@ from Encrypter import Encrypter
 from RawServer import RawServer
 from DownloaderFeedback import DownloaderFeedback
 from RateMeasure import RateMeasure
-from readput import putqueue
 from bencode import bencode, bdecode
 from btemplate import compile_template, string_template, ListMarker, OptionMarker, exact_length
 from sha import sha
@@ -23,7 +22,7 @@ from parseargs import parseargs, formatDefinitions
 from socket import error as socketerror
 from random import seed
 from traceback import print_exc
-from threading import Event
+from threading import Thread, Event
 from time import time
 true = 1
 false = 0
@@ -261,17 +260,17 @@ def download(params, filefunc, statusfunc, resultfunc, doneflag, cols):
 
     if not finflag.isSet():
         statusfunc(activity = 'connecting to peers')
-    def announce(event = None, q = putqueue(response['announce']), 
-            id = response['file id'], myid = myid, 
+    def announce(event = 3, url = response['announce'], 
+            fileid = response['file id'], myid = myid, 
             ip = ip, port = listen_port, 
             up = total_up, down = total_down, 
             storage = storagewrapper):
-        a = {'ip': ip, 'port': port, 'file id': id,
-            'uploaded': up[0], 'downloaded': down[0], 'peer id': myid,
-            'left': storage.get_amount_left()}
-        if event is not None:
-            a['event'] = ['started', 'completed', 'stopped'][event]
-        q.addrequest(bencode(a))
+        s = (('%s?ip=%s&file_id=%s&peer_id=%s&port=%s&event=%s' +
+            '&uploaded=%s&downloaded=%s&left=%s') %
+            (url, quote(ip), quote(fileid), quote(myid), str(port), 
+            ['started', 'completed', 'stopped', ''][event], 
+            str(up[0]), str(down[0]), str(storage.get_amount_left())))
+        Thread(target = urlopen, args = [s]).start()
     ann[0] = announce
 
     announce(0)
