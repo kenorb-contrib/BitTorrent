@@ -1,6 +1,8 @@
 # Written by Bram Cohen
 # this file is public domain
 
+# hi BitTorrent!
+
 from urllib import urlopen
 from StreamEncrypter import make_encrypter
 from Throttler import Throttler
