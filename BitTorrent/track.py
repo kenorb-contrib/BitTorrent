@@ -202,7 +202,7 @@ def track(args):
         print "Couldn't check version number - " + str(e)
     r = RawServer(Event(), config['timeout_check_interval'], config['socket_timeout'])
     t = Tracker(config, r)
-    r.bind(config['port'], config['bind'])
+    r.bind(config['port'], config['bind'], true)
     r.listen_forever(HTTPHandler(t.get, config['min_time_between_log_flushes']))
 
 

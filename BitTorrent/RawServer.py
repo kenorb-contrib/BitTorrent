@@ -106,8 +106,10 @@ class RawServer:
             if k.socket is not None:
                 self._close_socket(k)
 
-    def bind(self, port, bind = ''):
+    def bind(self, port, bind = '', reuse = false):
         server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        if reuse:
+            server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         server.setblocking(0)
         server.bind((bind, port))
         server.listen(5)
