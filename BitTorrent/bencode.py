@@ -225,6 +225,7 @@ def bencode_rec(x, b):
             bencode_rec(x[k], b)
         b.write('e')
     else:
+        print "*** error *** could not encode type %s (value: %s)" % (t, x)
         assert 0
 
 def bencode(x):
