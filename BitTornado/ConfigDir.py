@@ -342,7 +342,11 @@ class ConfigDir:
                 continue
             if delete_torrents:
                 names.setdefault(f,[]).append(p)
-            times.setdefault(f,[]).append(os.path.getmtime(p))
+            try:
+                t = os.path.getmtime(p)
+            except:
+                t = time()
+            times.setdefault(f,[]).append(t)
         
         for f in os.listdir(self.dir_datacache):
             p = os.path.join(self.dir_datacache,f)
@@ -352,7 +356,11 @@ class ConfigDir:
             except:
                 continue
             names.setdefault(f,[]).append(p)
-            times.setdefault(f,[]).append(os.path.getmtime(p))
+            try:
+                t = os.path.getmtime(p)
+            except:
+                t = time()
+            times.setdefault(f,[]).append(t)
 
         for f in os.listdir(self.dir_piececache):
             p = os.path.join(self.dir_piececache,f)
@@ -364,7 +372,11 @@ class ConfigDir:
             for f2 in os.listdir(p):
                 p2 = os.path.join(p,f2)
                 names.setdefault(f,[]).append(p2)
-                times.setdefault(f,[]).append(os.path.getmtime(p2))
+                try:
+                    t = os.path.getmtime(p2)
+                except:
+                    t = time()
+                times.setdefault(f,[]).append(t)
             names.setdefault(f,[]).append(p)
 
         for k,v in times.items():

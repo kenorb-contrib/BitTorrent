@@ -41,10 +41,10 @@ report \fIip\fP as your IP to the tracker
 bind to \fIip\fP instead of the default
 .TP
 .B \-\-minport \fIportnum\fP
-set \fIportnum\fP as the minimum port to listen on, counts up if unavailable (default 6881)
+set \fIportnum\fP as the minimum port to listen on, counts up if unavailable (default 10000)
 .TP
 .B \-\-maxport \fIportnum\fP
-set \fIportnum\fP as the maximum port to listen on (default 6889)
+set \fIportnum\fP as the maximum port to listen on (default 60000)
 .TP
 .B \-\-saveas \fIfilename\fP
 store the downloaded file to \fIfilename\fP, instead of querying user (gui) or 
@@ -123,5 +123,5 @@ priority over rarest first (default 3)
 .BR btlaunchmany (1).
 .br
 .SH AUTHOR
-This manual page was written by Michael Janssen <jamuraa@debian.org>,
+This manual page was written by Michael Janssen <jamuraa@debian.org>, and modified by Micah Anderson <micah@debian.org>
 for the Debian GNU/Linux system (but may be used by others).

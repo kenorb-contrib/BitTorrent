@@ -30,7 +30,14 @@ for i in xrange(256):
 
 
 class Bitfield:
-    def __init__(self, length, bitstring = None):
+    def __init__(self, length = None, bitstring = None, copyfrom = None):
+        if copyfrom is not None:
+            self.length = copyfrom.length
+            self.array = copyfrom.array[:]
+            self.numfalse = copyfrom.numfalse
+            return
+        if length is None:
+            raise ValueError, "length must be provided unless copying from another array"
         self.length = length
         if bitstring is not None:
             extra = len(bitstring) * 8 - length

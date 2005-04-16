@@ -80,7 +80,7 @@ class Connection:
             self.next_len, self.next_func = 20, self.read_peer_id
         else:
             self.next_len, self.next_func = 1, self.read_header_len
-        self.Encoder.raw_server.external_add_task(self._auto_close, 15)
+        self.Encoder.raw_server.add_task(self._auto_close, 15)
 
     def get_ip(self, real=False):
         return self.connection.get_ip(real)
@@ -127,14 +127,13 @@ class Connection:
             if s != self.id:
                 return None
         self.complete = self.Encoder.got_id(self)
-        if self.complete:
-            if self.locally_initiated:
-                self.connection.write(self.Encoder.my_id)
-                incompletecounter.decrement()
-            c = self.Encoder.connecter.connection_made(self)
-            self.keepalive = c.send_keepalive
-        else:
+        if not self.complete:
             return None
+        if self.locally_initiated:
+            self.connection.write(self.Encoder.my_id)
+            incompletecounter.decrement()
+        c = self.Encoder.connecter.connection_made(self)
+        self.keepalive = c.send_keepalive
         return 4, self.read_len
 
     def read_len(self, s):
@@ -237,7 +236,7 @@ class Encoder:
 
     def start_connections(self, list):
         if not self.to_connect:
-            self.raw_server.external_add_task(self._start_connection_from_queue)
+            self.raw_server.add_task(self._start_connection_from_queue)
         self.to_connect = list
 
     def _start_connection_from_queue(self):
@@ -255,7 +254,7 @@ class Encoder:
             dns, id = self.to_connect.pop(0)
             self.start_connection(dns, id)
         if self.to_connect:
-            self.raw_server.external_add_task(self._start_connection_from_queue, delay)
+            self.raw_server.add_task(self._start_connection_from_queue, delay)
 
     def start_connection(self, dns, id):
         if ( self.paused
@@ -322,12 +321,9 @@ class Encoder:
         return True
 
     def close_all(self):
-        cons = self.connections
+        for c in self.connections.values():
+            c.close()
         self.connections = {}
-        for c in cons.values():
-            if not c.closed:
-                c.connection.close()    # don't bother cleaning up
-                c.closed = True
 
     def ban(self, ip):
         self.banned[ip] = 1

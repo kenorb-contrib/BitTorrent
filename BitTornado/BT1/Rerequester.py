@@ -284,7 +284,7 @@ class Rerequester:
                 return
             
             try:
-                r = bdecode(data)
+                r = bdecode(data, sloppy=1)
                 check_peers(r)
             except ValueError, e:
                 if self.lock.trip(l):

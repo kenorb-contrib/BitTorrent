@@ -225,14 +225,14 @@ class configReader:
         
         if (self.configMenuBox is not None):
             try:
-                self.configMenuBox.Close ()
+                self.configMenuBox.Close()
             except wxPyDeadObjectError, e:
                 self.configMenuBox = None
 
         self.configMenuBox = wxFrame(None, -1, 'BitTorrent Preferences', size = (1,1),
                             style = wxDEFAULT_FRAME_STYLE|wxFULL_REPAINT_ON_RESIZE)
         if (sys.platform == 'win32'):
-            self.icon = wxIcon(os.path.join(self.getIconDir(),'icon_bt.ico'), wxBITMAP_TYPE_ICO)
+            self.icon = self.parent.icon
             self.configMenuBox.SetIcon(self.icon)
 
         panel = wxPanel(self.configMenuBox, -1)
@@ -634,7 +634,8 @@ class configReader:
             try:
                 self.configMenuBox.Close ()
             except wxPyDeadObjectError, e:
-                self.configMenuBox = None
+                pass
+            self.configMenuBox = None
 
     def advancedMenu(self, event = None):
       try:
@@ -1054,7 +1055,7 @@ class configReader:
     def CloseAdvanced(self):
         if self.advancedMenuBox is not None:
             try:
-                self.advancedMenuBox.Close ()
+                self.advancedMenuBox.Close()
             except wxPyDeadObjectError, e:
                 self.advancedMenuBox = None
 

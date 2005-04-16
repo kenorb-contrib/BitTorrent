@@ -124,7 +124,7 @@ class SingleDownload:
                 self.connection = HTTPConnection(self.netloc)
             except:
                 self.connection = None  # will cause an exception and retry next cycle
-        self.downloader.rawserver.external_add_task(self.request_finished)
+        self.downloader.rawserver.add_task(self.request_finished)
 
     def request_finished(self):
         self.active = False

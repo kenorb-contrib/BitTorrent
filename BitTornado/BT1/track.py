@@ -498,9 +498,12 @@ class Tracker:
                     bencode({'failure reason':
                     'specific scrape function is not available with this tracker.'}))
             for hash in paramslist['info_hash']:
-                if ( (self.allowed is not None and self.allowed.has_key(hash))
-                         or self.downloads.has_key(hash) ):
-                    fs[hash] = self.scrapedata(hash)
+                if self.allowed is not None:
+                    if self.allowed.has_key(hash):
+                        fs[hash] = self.scrapedata(hash)
+                else:
+                    if self.downloads.has_key(hash):
+                        fs[hash] = self.scrapedata(hash)
         else:
             if self.config['scrape_allowed'] != 'full':
                 return (400, 'Not Authorized', {'Content-Type': 'text/plain', 'Pragma': 'no-cache'},
@@ -1030,7 +1033,7 @@ def track(args):
     r.bind(config['port'], config['bind'],
            reuse = True, ipv6_socket_style = config['ipv6_binds_v4'])
     r.listen_forever(HTTPHandler(t.get, config['min_time_between_log_flushes']))
-    t.save_dfile()
+    t.save_state()
     print '# Shutting down: ' + isotime()
 
 def size_format(s):

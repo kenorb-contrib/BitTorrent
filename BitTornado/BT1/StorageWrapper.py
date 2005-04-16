@@ -5,6 +5,7 @@ from BitTornado.bitfield import Bitfield
 from sha import sha
 from BitTornado.clock import clock
 from traceback import print_exc
+from random import randrange
 try:
     True
 except:
@@ -103,6 +104,7 @@ class StorageWrapper:
         self.amount_obtained = 0
         self.amount_desired = self.total_length
         self.have = Bitfield(len(hashes))
+        self.have_cloaked_data = None
         self.blocked = [False] * len(hashes)
         self.blocked_holes = []
         self.blocked_movein = Olist()
@@ -451,6 +453,19 @@ class StorageWrapper:
 
     def get_have_list(self):
         return self.have.tostring()
+
+    def get_have_list_cloaked(self):
+        if self.have_cloaked_data is None:
+            newhave = Bitfield(copyfrom = self.have)
+            unhaves = []
+            n = min(randrange(2,5),len(self.hashes))    # between 2-4 unless torrent is small
+            while len(unhaves) < n:
+                unhave = randrange(min(32,len(self.hashes)))    # all in first 4 bytes
+                if not unhave in unhaves:
+                    unhaves.append(unhave)
+                    newhave[unhave] = False
+            self.have_cloaked_data = (newhave.tostring(), unhaves)
+        return self.have_cloaked_data
 
     def do_I_have(self, index):
         return self.have[index]

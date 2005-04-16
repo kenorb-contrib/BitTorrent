@@ -3,6 +3,7 @@
 
 from httplib import HTTPConnection, HTTPException
 from urlparse import urlparse
+from bencode import bdecode
 import socket
 from gzip import GzipFile
 from StringIO import StringIO
@@ -25,7 +26,8 @@ class btHTTPcon(HTTPConnection): # attempt to add automatic connection timeout
 class urlopen:
     def __init__(self, url):
         self.tries = 0
-        self._open(url)
+        self._open(url.strip())
+        self.error_return = None
 
     def _open(self, url):
         self.tries += 1
@@ -58,9 +60,22 @@ class urlopen:
             self._open(self.response.getheader('Location'))
             return
         if status != 200:
+            try:
+                data = self._read()
+                d = bdecode(data)
+                if d.has_key('failure reason'):
+                    self.error_return = data
+                    return
+            except:
+                pass
             raise IOError, ('http error', status, self.response.reason)
 
     def read(self):
+        if self.error_return:
+            return self.error_return
+        return self._read()
+
+    def _read(self):
         data = self.response.read()
         if self.response.getheader('Content-Encoding','').find('gzip') >= 0:
             try:

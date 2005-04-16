@@ -2,7 +2,7 @@
 # see LICENSE.txt for license information
 
 from array import array
-from sys import maxint
+from threading import Lock
 # import inspect
 try:
     True
@@ -41,7 +41,7 @@ class SingleBuffer:
         return self.length
 
     def __getslice__(self, a, b):
-        if b == maxint:
+        if b > self.length:
             b = self.length
         if b < 0:
             b += self.length
@@ -61,10 +61,12 @@ class SingleBuffer:
 class BufferPool:
     def __init__(self):
         self.pool = []
+        self.lock = Lock()
         if DEBUG:
             self.count = 0
 
     def new(self):
+        self.lock.acquire()
         if self.pool:
             x = self.pool.pop()
         else:
@@ -73,6 +75,7 @@ class BufferPool:
                 self.count += 1
                 x.count = self.count
         x.init()
+        self.lock.release()
         return x
 
     def release(self, x):

@@ -83,7 +83,7 @@ class IP_List:
             ip_end = ip_beg
         else:
             assert ip_beg <= ip_end
-        if ip.find(':') < 0:        # IPv4
+        if ip_beg.find(':') < 0:        # IPv4
             ip_beg = to_long_ipv4(ip_beg)
             ip_end = to_long_ipv4(ip_end)
             l = self.ipv4list

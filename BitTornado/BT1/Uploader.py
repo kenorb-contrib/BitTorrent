@@ -11,28 +11,36 @@ except:
 
 class Upload:
     def __init__(self, connection, ratelimiter, totalup, choker, storage,
-            picker, max_slice_length, max_rate_period, fudge, buffer_reads):
+                 picker, config):
         self.connection = connection
         self.ratelimiter = ratelimiter
         self.totalup = totalup
         self.choker = choker
         self.storage = storage
         self.picker = picker
-        self.max_slice_length = max_slice_length
-        self.max_rate_period = max_rate_period
-        self.buffer_reads = buffer_reads
+        self.config = config
+        self.max_slice_length = config['max_slice_length']
         self.choked = True
         self.cleared = True
         self.interested = False
+        self.super_seeding = False
         self.buffer = []
-        self.measure = Measure(max_rate_period, fudge)
+        self.measure = Measure(config['max_rate_period'], config['upload_rate_fudge'])
         self.was_ever_interested = False
-        if storage.get_amount_left() == 0 and choker.super_seed:
-            self.super_seeding = True   # flag, and don't send bitfield
-            self.seed_have_list = []         # set from piecepicker
-            self.skipped_count = 0
+        if storage.get_amount_left() == 0:
+            if choker.super_seed:
+                self.super_seeding = True   # flag, and don't send bitfield
+                self.seed_have_list = []    # set from piecepicker
+                self.skipped_count = 0
+            else:
+                if config['breakup_seed_bitfield']:
+                    bitfield, msgs = storage.get_have_list_cloaked()
+                    connection.send_bitfield(bitfield)
+                    for have in msgs:
+                        connection.send_have(have)
+                else:
+                    connection.send_bitfield(storage.get_have_list())
         else:
-            self.super_seeding = False
             if storage.do_I_have_anything():
                 connection.send_bitfield(storage.get_have_list())
         self.piecedl = None
@@ -58,7 +66,7 @@ class Upload:
         if self.choked or not self.buffer:
             return None
         index, begin, length = self.buffer.pop(0)
-        if self.buffer_reads:
+        if self.config['buffer_reads']:
             if index != self.piecedl:
                 if self.piecebuf:
                     self.piecebuf.release()
@@ -71,6 +79,9 @@ class Upload:
                 self.connection.close()
                 return None
         else:
+            if self.piecebuf:
+                self.piecebuf.release()
+                self.piecedl = None
             piece = self.storage.get_piece(index, begin, length)
             if piece is None:
                 self.connection.close()

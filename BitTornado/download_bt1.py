@@ -86,7 +86,7 @@ defaults = [
     ('ipv6_enabled', 0,
          'allow the client to connect to peers via IPv6'),
     ('ipv6_binds_v4', autodetect_socket_style(),
-        'set if an IPv6 server socket will also field IPv4 connections'),
+        "set if an IPv6 server socket won't also field IPv4 connections"),
     ('upnp_nat_access', 1,
         'attempt to autoconfigure a UPnP router to forward a server port ' +
         '(0 = disabled, 1 = mode 1 [fast], 2 = mode 2 [slow])'),
@@ -120,6 +120,9 @@ defaults = [
     ('write_buffer_size', 4,
         'the maximum amount of space to use for buffering disk writes ' +
         '(in megabytes, 0 = disabled)'),
+    ('breakup_seed_bitfield', 1,
+        'sends an incomplete bitfield and then fills with have messages, '
+        'in order to get around stupid ISP manipulation'),
     ('snub_time', 30.0,
         "seconds to wait for data to come in over a connection before assuming it's semi-permanently choked"),
     ('spew', 0,
@@ -489,7 +492,9 @@ class BT1Download:
 
             data = self.appdataobj.getTorrentData(self.infohash)
             try:
-                disabled_files = [x == -1 for x in data['resume data']['priority']]
+                d = data['resume data']['priority']
+                assert len(d) == len(self.files)
+                disabled_files = [x == -1 for x in d]
             except:
                 try:
                     disabled_files = [x == -1 for x in self.priority]
@@ -509,7 +514,7 @@ class BT1Download:
             self.storagewrapper = StorageWrapper(self.storage, self.config['download_slice_size'],
                 self.pieces, self.info['piece length'], self._finished, self._failed,
                 statusfunc, self.doneflag, self.config['check_hashes'],
-                self._data_flunked, self.rawserver.external_add_task,
+                self._data_flunked, self.rawserver.add_task,
                 self.config, self.unpauseflag)
             
         except ValueError, e:
@@ -523,7 +528,7 @@ class BT1Download:
             self.fileselector = FileSelector(self.files, self.info['piece length'],
                                              self.appdataobj.getPieceDir(self.infohash),
                                              self.storage, self.storagewrapper,
-                                             self.rawserver.external_add_task,
+                                             self.rawserver.add_task,
                                              self._failed)
             if data:
                 data = data.get('resume data')
@@ -543,8 +548,7 @@ class BT1Download:
     def _make_upload(self, connection, ratelimiter, totalup):
         return Upload(connection, ratelimiter, totalup,
                       self.choker, self.storagewrapper, self.picker,
-                      self.config['max_slice_length'], self.config['max_rate_period'],
-                      self.config['upload_rate_fudge'], self.config['buffer_reads'])
+                      self.config)
 
     def _kick_peer(self, connection):
         def k(connection = connection):
@@ -656,7 +660,7 @@ class BT1Download:
         self.rerequest = Rerequester(trackerlist, self.config['rerequest_interval'], 
             self.rawserver.add_task, self.connecter.how_many_connections, 
             self.config['min_peers'], self.encoder.start_connections,
-            self.rawserver.external_add_task, self.storagewrapper.get_amount_left, 
+            self.rawserver.add_task, self.storagewrapper.get_amount_left, 
             self.upmeasure.get_total, self.downmeasure.get_total, self.port, self.config['ip'],
             self.myid, self.infohash, self.config['http_timeout'],
             self.errorfunc, self.excfunc, self.config['max_initiate'],
@@ -721,7 +725,7 @@ class BT1Download:
             def s(self = self, rate = rate):
                 self.config['max_upload_rate'] = rate
                 self.ratelimiter.set_upload_rate(rate)
-            self.rawserver.external_add_task(s)
+            self.rawserver.add_task(s)
         except AttributeError:
             pass
 
@@ -734,7 +738,7 @@ class BT1Download:
                 self.config['max_uploads'] = conns2
                 if (conns > 30):
                     self.config['max_initiate'] = conns + 10
-            self.rawserver.external_add_task(s)
+            self.rawserver.add_task(s)
         except AttributeError:
             pass
         
@@ -743,7 +747,7 @@ class BT1Download:
             def s(self = self, rate = rate):
                 self.config['max_download_rate'] = rate
                 self.downloader.set_download_rate(rate)
-            self.rawserver.external_add_task(s)
+            self.rawserver.add_task(s)
         except AttributeError:
             pass
 
@@ -757,7 +761,7 @@ class BT1Download:
         try:
             def s(self = self, initiate = initiate):
                 self.config['max_initiate'] = initiate
-            self.rawserver.external_add_task(s)
+            self.rawserver.add_task(s)
         except AttributeError:
             pass
 
@@ -777,7 +781,7 @@ class BT1Download:
                     self.rerequest.announce()
                 else:
                     self.rerequest.announce(specialurl = special)
-            self.rawserver.external_add_task (r)
+            self.rawserver.add_task(r)
         except AttributeError:
             pass
 
@@ -790,7 +794,7 @@ class BT1Download:
 #    def Pause(self):
 #        try:
 #            if self.storagewrapper:
-#                self.rawserver.external_add_task(self._pausemaker, 0)
+#                self.rawserver.add_task(self._pausemaker, 0)
 #        except:
 #            return False
 #        self.unpauseflag.clear()
@@ -805,13 +809,13 @@ class BT1Download:
 #        if self.whenpaused and clock()-self.whenpaused > 60:
 #            def r(self = self):
 #                self.rerequest.announce(3)      # rerequest automatically if paused for >60 seconds
-#            self.rawserver.external_add_task(r)
+#            self.rawserver.add_task(r)
 
     def Pause(self):
         if not self.storagewrapper:
             return False
         self.unpauseflag.clear()
-        self.rawserver.external_add_task(self.onPause)
+        self.rawserver.add_task(self.onPause)
         return True
 
     def onPause(self):
@@ -824,7 +828,7 @@ class BT1Download:
     
     def Unpause(self):
         self.unpauseflag.set()
-        self.rawserver.external_add_task(self.onUnpause)
+        self.rawserver.add_task(self.onUnpause)
 
     def onUnpause(self):
         if not self.downloader:
@@ -841,7 +845,7 @@ class BT1Download:
             def s(self = self):
                 if self.finflag.isSet():
                     self._set_super_seed()
-            self.rawserver.external_add_task(s)
+            self.rawserver.add_task(s)
         except AttributeError:
             pass
 
@@ -853,11 +857,11 @@ class BT1Download:
             def s(self = self):
                 self.downloader.set_super_seed()
                 self.choker.set_super_seed()
-            self.rawserver.external_add_task(s)
+            self.rawserver.add_task(s)
             if self.finflag.isSet():        # mode started when already finished
                 def r(self = self):
                     self.rerequest.announce(3)  # so after kicking everyone off, reannounce
-                self.rawserver.external_add_task(r)
+                self.rawserver.add_task(r)
 
     def am_I_finished(self):
         return self.finflag.isSet()

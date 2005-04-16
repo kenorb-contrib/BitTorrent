@@ -70,11 +70,11 @@ class RawServer:
     def get_exception_flag(self):
         return self.excflag
 
-    def add_task(self, func, delay, id = None):
+    def _add_task(self, func, delay, id = None):
         assert float(delay) >= 0
         insort(self.funcs, (clock() + delay, func, id))
 
-    def external_add_task(self, func, delay = 0, id = None):
+    def add_task(self, func, delay = 0, id = None):
         assert float(delay) >= 0
         self.externally_added.append((func, delay, id))
 
@@ -103,7 +103,7 @@ class RawServer:
     def pop_external(self):
         while self.externally_added:
             (a, b, c) = self.externally_added.pop(0)
-            self.add_task(a, b, c)
+            self._add_task(a, b, c)
 
 
     def listen_forever(self, handler):

@@ -45,17 +45,11 @@ class SingleRawServer:
 
     ### RawServer functions ###
 
-    def add_task(self, func, delay, id = default_task_id):
+    def add_task(self, func, delay=0, id = default_task_id):
         if id is default_task_id:
             id = self.info_hash
         if not self.finished:
             self.rawserver.add_task(func, delay, id)
-
-    def external_add_task(self, func, delay=0, id = default_task_id):
-        if id is default_task_id:
-            id = self.info_hash
-        if not self.finished:
-            self.rawserver.external_add_task(func, delay, id)
 
 #    def bind(self, port, bind = '', reuse = False):
 #        pass    # not handled here
@@ -90,7 +84,7 @@ class NewSocketHandler:     # hand a new socket off where it belongs
         self.buffer = StringIO()
         self.complete = False
         self.next_len, self.next_func = 1, self.read_header_len
-        self.multihandler.rawserver.external_add_task(self._auto_close, 15)
+        self.multihandler.rawserver.add_task(self._auto_close, 15)
 
     def _auto_close(self):
         if not self.complete:

@@ -117,8 +117,6 @@ class InvokeEvent(wxPyEvent):
         self.args = args
         self.kwargs = kwargs
 
-def pr(event):
-    print 'augh!'
 
 
 class DownloadInfoFrame:
@@ -177,6 +175,7 @@ class DownloadInfoFrame:
             wxInitAllImageHandlers()
             self.basepath = self.configfile.getIconDir()
             self.icon = wxIcon(os.path.join(self.basepath,'icon_bt.ico'), wxBITMAP_TYPE_ICO)
+            self.finicon = wxIcon(os.path.join(self.basepath,'icon_done.ico'), wxBITMAP_TYPE_ICO)
             self.statusIconFiles={
                 'startup':os.path.join(self.basepath,'white.ico'),
                 'disconnected':os.path.join(self.basepath,'black.ico'),
@@ -547,26 +546,17 @@ class DownloadInfoFrame:
     def onIconify(self, evt):
         try:
             if self.configfileargs['win32_taskbar_icon']:
-                self.frame.tbicon.SetIcon(self.icon, "BitTorrent")
+                if self.fin:
+                    self.frame.tbicon.SetIcon(self.finicon, "BitTorrent")
+                else:
+                    self.frame.tbicon.SetIcon(self.icon, "BitTorrent")
                 self.frame.Hide()
                 self.taskbaricon = True
             else:
-                EVT_ICONIZE(self.frame, self.onIconifyDummy)
-                if self.iconized:
-                    self.frame.Iconize(False)
-                    self.iconized = False
-                else:
-                    self.frame.Iconize(True)
-                    self.iconized = True
-                EVT_ICONIZE(self.frame, self.onIconify)
-                # rant here -- why in god's name can't a function called by an event
-                # trigger the event without calling itself?
-                # self.frame.Iconize(not self.frame.IsIconized()) should do this job...
+                return
         except:
             self.exception()
 
-    def onIconifyDummy(self, evt):
-        return
 
     def onTaskBarActivate(self, evt):
         try:
@@ -817,11 +807,15 @@ class DownloadInfoFrame:
                 frame.aboutBox.Close ()
             EVT_BUTTON(self.aboutBox, okButton.GetId(), closeAbout)
             def kill(self, frame = self):
+                try:
+                    frame.RemoveIcon()
+                except:
+                    pass
                 frame.aboutBox.Destroy()
                 frame.aboutBox = None
             EVT_CLOSE(self.aboutBox, kill)
 
-            self.aboutBox.Show ()
+            self.aboutBox.Show()
             border.Fit(panel)
             self.aboutBox.Fit()
         except:
@@ -1082,6 +1076,10 @@ class DownloadInfoFrame:
                 self.detailBox.Close ()
             EVT_BUTTON(self.detailBox, okButton.GetId(), closeDetail)
             def kill(evt, self = self):
+                try:
+                    self.detailBox.RemoveIcon()
+                except:
+                    pass
                 self.detailBox.Destroy()
                 self.detailBox = None
                 self.fileList = None
@@ -1109,7 +1107,7 @@ class DownloadInfoFrame:
         try:
             if (self.creditsBox is not None):
                 try:
-                    self.creditsBox.Close ()
+                    self.creditsBox.Close()
                 except wxPyDeadObjectError, e:
                     self.creditsBox = None
 
@@ -1187,9 +1185,13 @@ class DownloadInfoFrame:
             panel.SetAutoLayout(True)
 
             def closeCredits(self, frame = self):
-                frame.creditsBox.Close ()
+                frame.creditsBox.Close()
             EVT_BUTTON(self.creditsBox, okButton.GetId(), closeCredits)
             def kill(self, frame = self):
+                try:
+                    frame.creditsBox.RemoveIcon()
+                except:
+                    pass
                 frame.creditsBox.Destroy()
                 frame.creditsBox = None
             EVT_CLOSE(self.creditsBox, kill)
@@ -1205,7 +1207,7 @@ class DownloadInfoFrame:
         try:
             if (self.statusIconHelpBox is not None):
                 try:
-                    self.statusIconHelpBox.Close ()
+                    self.statusIconHelpBox.Close()
                 except wxPyDeadObjectError, e:
                     self.statusIconHelpBox = None
 
@@ -1292,7 +1294,7 @@ class DownloadInfoFrame:
 
 
             def closeHelp(self, frame = self):
-                frame.statusIconHelpBox.Close ()
+                frame.statusIconHelpBox.Close()
             EVT_BUTTON(self.statusIconHelpBox, okButton.GetId(), closeHelp)
 
             self.statusIconHelpBox.Show ()
@@ -1478,11 +1480,6 @@ class DownloadInfoFrame:
                     frame.advextannouncebox.Close()
                 EVT_BUTTON(frame.advextannouncebox, cancelButton.GetId(), cancel)
 
-                def kill(self, frame = frame):
-                    frame.advextannouncebox.Destroy()
-                    frame.advextannouncebox = None
-                EVT_CLOSE(frame.advextannouncebox, kill)
-
                 frame.advextannouncebox.Show ()
                 fullsizer.Fit(panel)
                 frame.advextannouncebox.Fit()
@@ -1495,15 +1492,19 @@ class DownloadInfoFrame:
             EVT_BUTTON(self.advBox, bgallocButton.GetId(), bgalloc)
 
             def closeAdv(evt, self = self):
-                self.advBox.Close ()
+                self.advBox.Close()
             def killAdv(evt, self = self):
+                try:
+                    self.advBox.RemoveIcon()
+                except:
+                    pass
                 self.onDownRateSpinner()
                 self.dow.spewflag.clear()
                 self.advBox.Destroy()
                 self.advBox = None
                 if (self.advextannouncebox is not None):
                     try:
-                        self.advextannouncebox.Close ()
+                        self.advextannouncebox.Close()
                     except wxPyDeadObjectError, e:
                         pass
                     self.advextannouncebox = None
@@ -1639,13 +1640,12 @@ class DownloadInfoFrame:
                     self.frame.SetTitle('%.1f%% %s - BitTorrent %s' % (float(gaugelevel)/10, self.filename, version))
             else:
                 self.frame.SetTitle('%.0f%% %s - BitTorrent %s' % (float(gaugelevel)/10, self.filename, version))
-        if timeEst is not None:
-            self.timeText.SetLabel(hours(clock() - self.starttime) + ' / ' + hours(timeEst))
+        if self.ispaused:
+            self.timeText.SetLabel(hours(clock() - self.starttime) + ' /')
+        elif timeEst is None:
+            self.timeText.SetLabel(hours(clock() - self.starttime) + ' / ' + self.activity)
         else:
-            if self.fin:
-                self.timeText.SetLabel(self.activity)
-            else:
-                self.timeText.SetLabel(hours(clock() - self.starttime) + ' / ' + self.activity)
+            self.timeText.SetLabel(hours(clock() - self.starttime) + ' / ' + hours(timeEst))
         if not self.ispaused:
             if downRate is not None:
                 self.downRateText.SetLabel('%.0f kB/s' % (float(downRate) / 1000))
@@ -1664,7 +1664,10 @@ class DownloadInfoFrame:
                 icontext=icontext+' d:%.0f kB/s' % (float(downRate) / 1000)
             icontext+=' %s' % self.filename
             try:
-                self.frame.tbicon.SetIcon(self.icon,icontext)
+                if self.fin:
+                    self.frame.tbicon.SetIcon(self.finicon,icontext)
+                else:
+                    self.frame.tbicon.SetIcon(self.icon,icontext)
             except:
                 pass
         if statistics is not None:
@@ -1944,13 +1947,12 @@ class DownloadInfoFrame:
         self.cancelButton.SetLabel('Finish')
         self.gauge.SetValue(0)
         self.frame.SetTitle('%s - Upload - BitTorrent %s' % (self.filename, version))
-        self.icon = wxIcon(os.path.join(self.basepath,'icon_done.ico'), wxBITMAP_TYPE_ICO)
         try:
-            self.frame.SetIcon(self.icon)
+            self.frame.SetIcon(self.finicon)
         except:
             pass
         if self.taskbaricon:
-            self.frame.tbicon.SetIcon(self.icon, "BitTorrent - Finished")
+            self.frame.tbicon.SetIcon(self.finicon, "BitTorrent - Finished")
         self.downRateText.SetLabel('')
 
     def onFailEvent(self):
@@ -2114,7 +2116,13 @@ class DownloadInfoFrame:
             except wxPyDeadObjectError, e:
                 self.statusIconHelpBox = None
         self.configfile.Close()
+        try:
+            self.frame.RemoveIcon()
+        except:
+            pass
         self.frame.Destroy()
+        self.icon.Destroy()
+        self.finicon.Destroy()
 
     def exception(self):
         data = StringIO()

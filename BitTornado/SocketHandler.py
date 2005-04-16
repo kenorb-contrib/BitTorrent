@@ -131,6 +131,7 @@ class SocketHandler:
         self.dead_from_write = []
         self.max_connects = 1000
         self.port_forwarded = None
+        self.servers = {}
 
     def scan_for_timeouts(self):
         t = clock() - self.timeout
@@ -165,7 +166,7 @@ class SocketHandler:
         else:
             if self.ipv6_enable:
                 addrinfos.append([socket.AF_INET6, None, None, None, ('', port)])
-            if not addrinfos or ipv6_socket_style == 0:
+            if not addrinfos or ipv6_socket_style != 0:
                 addrinfos.append([socket.AF_INET, None, None, None, ('', port)])
         for addrinfo in addrinfos:
             try:

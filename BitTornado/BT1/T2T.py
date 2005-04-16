@@ -40,7 +40,7 @@ class T2TConnection:
 
         self.rerequester = Rerequester([[tracker]], interval,
             rawserver.add_task, lambda: 0, peers, self.addtolist, 
-            rawserver.external_add_task, lambda: 1, 0, 0, 0, '',
+            rawserver.add_task, lambda: 1, 0, 0, 0, '',
             myid, hash, timeout, self.errorfunc, excfunc, peers, Event(),
             lambda: 0, lambda: 0)
 
