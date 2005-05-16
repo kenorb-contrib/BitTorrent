@@ -40,6 +40,12 @@ PIECE = chr(7)
 # index, begin, piece
 CANCEL = chr(8)
 
+# 2-byte port message
+PORT = chr(9)
+
+# reserved flags
+DHT = 1
+FLAGS = '\0' * 7 + '\1'
 protocol_name = 'BitTorrent protocol'
 
 
@@ -64,9 +70,11 @@ class Connection(object):
         self._partial_message = None
         self._outqueue = []
         self.choke_sent = True
+        self.uses_dht = False
+        self.dht_port = None
         if self.locally_initiated:
             connection.write(chr(len(protocol_name)) + protocol_name +
-                (chr(0) * 8) + self.encoder.download_id)
+                FLAGS + self.encoder.download_id)
             if self.id is not None:
                 connection.write(self.encoder.my_id)
 
@@ -92,6 +100,9 @@ class Connection(object):
             self._send_message(UNCHOKE)
             self.choke_sent = False
 
+    def send_port(self, port):
+        self._send_message(PORT+chr((port & 0xff) >> 8)+chr(port & 0xff))
+        
     def send_request(self, index, begin, length):
         self._send_message(REQUEST + tobinary(index) +
             tobinary(begin) + tobinary(length))
@@ -150,7 +161,10 @@ class Connection(object):
             return
 
         yield 8  # reserved
-
+        # dht is on last reserved byte
+        if ord(self._message[7]) & DHT:
+            self.uses_dht = True
+        
         yield 20 # download id
         if self.encoder.download_id is None:  # incoming connection
             # modifies self.encoder if successful
@@ -161,7 +175,7 @@ class Connection(object):
             return
         if not self.locally_initiated:
             self.connection.write(chr(len(protocol_name)) + protocol_name +
-                (chr(0) * 8) + self.encoder.download_id + self.encoder.my_id)
+                FLAGS + self.encoder.download_id + self.encoder.my_id)
 
         yield 20  # peer id
         if not self.id:
@@ -259,6 +273,12 @@ class Connection(object):
             if self.download.got_piece(i, toint(message[5:9]), message[9:]):
                 for co in self.encoder.complete_connections:
                     co.send_have(i)
+        elif t == PORT:
+            if len(message) != 3:
+                self.close()
+                return
+            self.dht_port = ord(message[1]) << 8 | ord(message[2])
+            self.encoder.got_port(self)
         else:
             self.close()
 

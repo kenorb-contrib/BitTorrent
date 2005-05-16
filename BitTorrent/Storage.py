@@ -55,8 +55,8 @@ class FilePool(object):
     def add_files(self, files, torrent):
         for filename in files:
             if filename in self.allfiles:
-                raise BTFailure('File '+filename+' belongs to another running '
-                                'torrent')
+                raise BTFailure(_("File %s belongs to another running torrent")
+                                % filename)
         for filename in files:
             self.allfiles[filename] = torrent
         if self.handlebuffer is None and \
@@ -99,8 +99,8 @@ class Storage(object):
             total += length
             if os.path.exists(filename):
                 if not os.path.isfile(filename):
-                    raise BTFailure('File '+filename+' already exists, but '
-                                    'is not a regular file')
+                    raise BTFailure(_("File %s already exists, but is not a "
+                                      "regular file") % filename)
                 l = os.path.getsize(filename)
                 if l > length and not check_only:
                     h = file(filename, 'rb+')
@@ -122,7 +122,7 @@ class Storage(object):
 
         # Rather implement this as an ugly hack here than change all the
         # individual calls. Affects all torrent instances using this module.
-        if config['enable_bad_libc_workaround']:
+        if config['bad_libc_workaround']:
             bad_libc_workaround()
 
     def was_preallocated(self, pos, length):
@@ -178,7 +178,7 @@ class Storage(object):
             r.append(h.read(end - pos))
         r = ''.join(r)
         if len(r) != amount:
-            raise BTFailure('Short read - something truncated files?')
+            raise BTFailure(_("Short read - something truncated files?"))
         return r
 
     def write(self, pos, s):
@@ -221,8 +221,8 @@ class Storage(object):
         if resumefile is not None:
             version = resumefile.readline()
             if version != 'BitTorrent resume state file, version 1\n':
-                raise BTFailure('Unsupported fastresume file format, '
-                      'maybe from another client version')
+                raise BTFailure(_("Unsupported fastresume file format, "
+                                  "maybe from another client version?"))
             amount_done = int(resumefile.readline())
         else:
             amount_done = size = mtime = 0
@@ -237,11 +237,11 @@ class Storage(object):
             else:
                 fsize = 0
             if fsize > 0 and mtime != os.path.getmtime(filename):
-                raise BTFailure("Fastresume info doesn't match file "
-                                "modification time")
+                raise BTFailure(_("Fastresume info doesn't match file "
+                                  "modification time"))
             if size != fsize:
-                raise BTFailure("Fastresume data doesn't match actual "
-                                "filesize")
+                raise BTFailure(_("Fastresume data doesn't match actual "
+                                  "filesize"))
         if not return_filelist:
             return amount_done
         if resumefile is None:
@@ -254,7 +254,7 @@ class Storage(object):
             r = array(typecode)
             r.fromfile(resumefile, numpieces)
         except Exception, e:
-            raise BTFailure("Couldn't read fastresume data: " + str(e))
+            raise BTFailure(_("Couldn't read fastresume data: ") + str(e))
         for i in range(numpieces):
             if r[i] >= 0:
                 # last piece goes "past the end", doesn't matter

@@ -113,11 +113,10 @@ class TorrentQueue(Feedback):
         try:
             self._restore_state()
         except BTFailure, e:
-            self.torrents = {}
-            self.running_torrents = []
             self.queue = []
             self.other_torrents = []
-            self.global_error(ERROR, "Could not load saved state: "+str(e))
+            self.torrents = {}
+            self.global_error(ERROR, _("Could not load saved state: ")+str(e))
         else:
             for infohash in self.running_torrents + self.queue + \
                     self.other_torrents:
@@ -136,6 +135,8 @@ class TorrentQueue(Feedback):
         self._queue_loop()
         self._check_version()
         self.multitorrent.rawserver.listen_forever()
+        if self.doneflag.isSet():
+            self.run_ui_task(self.ui.quit)
         self.multitorrent.close_listening_socket()
         self.controlsocket.close_socket()
         for infohash in list(self.running_torrents):
@@ -155,7 +156,7 @@ class TorrentQueue(Feedback):
             return
         self.last_version_check = now
         if not HAVE_DNS:
-            self.global_error(WARNING, "Version check failed: no DNS library")
+            self.global_error(WARNING, _("Version check failed: no DNS library"))
             return
         threading.Thread(target=self._version_thread).start()
 
@@ -172,12 +173,12 @@ class TorrentQueue(Feedback):
             except:
                 # the exceptions from the library have empty str(),
                 # just different classes...
-                raise BTFailure('DNS query failed')
+                raise BTFailure(_("DNS query failed"))
             if len(a) != 1:
-                raise BTFailure('number of received TXT fields is not 1')
+                raise BTFailure(_("number of received TXT fields is not 1"))
             value = iter(a).next() # the object doesn't support a[0]
             if len(value.strings) != 1:
-                raise BTFailure('number of strings in reply is not 1?')
+                raise BTFailure(_("number of strings in reply is not 1?"))
             s = value.strings[0].split(None, 2)
             myversion = splitversion(BitTorrent.version)
             if myversion[1] % 2 and len(s) > 1:
@@ -187,7 +188,7 @@ class TorrentQueue(Feedback):
             try:
                 latest = splitversion(s)
             except ValueError:
-                raise BTFailure("Could not parse new version string")
+                raise BTFailure(_("Could not parse new version string"))
             for my, new in zip(myversion, latest):
                 if my > new:
                     break
@@ -197,11 +198,12 @@ class TorrentQueue(Feedback):
                         self.run_ui_task(self.ui.new_version, s,
                                          download_url)
                     else:
-                        error(ERROR, "A newer version of BitTorrent is "
-                              "available.\nYou can always get the latest "
-                              "version from\n%s." % download_url)
+                        error(ERROR, _("A newer version of BitTorrent is "
+                                       "available.\nYou can always get the "
+                                       "latest version from\n%s.") %
+                              download_url)
         except Exception, e:
-            error(WARNING, "Version check failed: " + str(e))
+            error(WARNING, _("Version check failed: ") + str(e))
 
     def _dump_config(self):
         configfile.save_ui_config(self.config, 'btdownloadgui',
@@ -230,15 +232,11 @@ class TorrentQueue(Feedback):
         r.append('End\n')
         f = None
         try:
-            filename = os.path.join(self.config['data_dir'], 'ui_state')
-            f = file(filename + '.new', 'wb')
+            f = file(os.path.join(self.config['data_dir'], 'ui_state'), 'wb')
             f.write(''.join(r))
             f.close()
-            if os.access(filename, os.F_OK):
-                os.remove(filename) # no atomic rename on win32
-            os.rename(filename + '.new', filename)
         except Exception, e:
-            self.global_error(ERROR, 'Could not save UI state: ' + str(e))
+            self.global_error(ERROR, _("Could not save UI state: ") + str(e))
             if f is not None:
                 f.close()
 
@@ -248,9 +246,9 @@ class TorrentQueue(Feedback):
             try:
                 infohash = hashtext.decode('hex')
             except:
-                raise BTFailure("Invalid state file contents")
+                raise BTFailure(_("Invalid state file contents"))
             if len(infohash) != 20:
-                raise BTFailure("Invalid state file contents")
+                raise BTFailure(_("Invalid state file contents"))
             try:
                 path = os.path.join(self.config['data_dir'], 'metainfo',
                                     hashtext)
@@ -262,23 +260,25 @@ class TorrentQueue(Feedback):
                     f.close()
                 except:
                     pass
-                self.global_error(ERROR,"Error reading file "+path+" ("+str(e)+
-                                  "), cannot restore state completely")
+                self.global_error(ERROR,
+                                  _("Error reading file ") + path +
+                                  " (" + str(e)+ "), " +
+                                  _("cannot restore state completely"))
                 return None
             if infohash in self.torrents:
-                raise BTFailure("Invalid state file (duplicate entry)")
+                raise BTFailure(_("Invalid state file (duplicate entry)"))
             t = TorrentInfo()
             self.torrents[infohash] = t
             try:
                 t.metainfo = ConvertedMetainfo(bdecode(data))
             except Exception, e:
-                self.global_error(ERROR, "Corrupt data in "+path+
-                                  " , cannot restore torrent ("+str(e)+")")
+                self.global_error(ERROR, _("Corrupt data in ")+path+
+                                  _(" , cannot restore torrent (")+str(e)+")")
                 return None
             t.metainfo.reported_errors = True # suppress redisplay on restart
             if infohash != t.metainfo.infohash:
-                self.global_error(ERROR, "Corrupt data in "+path+
-                                  " , cannot restore torrent ("+str(e)+")")
+                self.global_error(ERROR, _("Corrupt data in ")+path+
+                                  _(" , cannot restore torrent (")+str(e)+")")
                 return None
             if len(line) == 41:
                 t.dlpath = None
@@ -292,7 +292,7 @@ class TorrentQueue(Feedback):
                     t.downtotal = t.downtotal_old = int(down)
                     t.dlpath = dlpath.decode('string_escape')
             except ValueError:  # unpack, int(), decode()
-                raise BTFailure('Invalid state file (bad entry)')
+                raise BTFailure(_("Invalid state file (bad entry)"))
             return infohash, t
         filename = os.path.join(self.config['data_dir'], 'ui_state')
         if not os.path.exists(filename):
@@ -311,20 +311,20 @@ class TorrentQueue(Feedback):
             txt = 'BitTorrent UI state file, version '
             version = i.next()
             if not version.startswith(txt):
-                raise BTFailure('Bad UI state file')
+                raise BTFailure(_("Bad UI state file"))
             try:
                 version = int(version[len(txt):-1])
             except:
-                raise BTFailure('Bad UI state file version')
+                raise BTFailure(_("Bad UI state file version"))
             if version > 3:
-                raise BTFailure('Unsupported UI state file version (from '
-                                'newer client version?')
+                raise BTFailure(_("Unsupported UI state file version (from " 
+                                  "newer client version?)"))
             if version < 3:
-                if i.next() != "Running/queued torrents\n":
-                    raise BTFailure("Invalid state file contents")
+                if i.next() != 'Running/queued torrents\n':
+                    raise BTFailure(_("Invalid state file contents"))
             else:
-                if i.next() != "Running torrents\n":
-                    raise BTFailure("Invalid state file contents")
+                if i.next() != 'Running torrents\n':
+                    raise BTFailure(_("Invalid state file contents"))
                 while True:
                     line = i.next()
                     if line == 'Queued torrents\n':
@@ -334,7 +334,7 @@ class TorrentQueue(Feedback):
                         continue
                     infohash, t = t
                     if t.dlpath is None:
-                        raise BTFailure("Invalid state file contents")
+                        raise BTFailure(_("Invalid state file contents"))
                     t.state = RUN_QUEUED
                     self.running_torrents.append(infohash)
             while True:
@@ -346,7 +346,7 @@ class TorrentQueue(Feedback):
                     continue
                 infohash, t = t
                 if t.dlpath is None:
-                    raise BTFailure("Invalid state file contents")
+                    raise BTFailure(_("Invalid state file contents"))
                 t.state = QUEUED
                 self.queue.append(infohash)
             while True:
@@ -363,7 +363,7 @@ class TorrentQueue(Feedback):
                     t.state = KNOWN
                 self.other_torrents.append(infohash)
         except StopIteration:
-            raise BTFailure("Invalid state file contents")
+            raise BTFailure(_("Invalid state file contents"))
 
     def _queue_loop(self):
         if self.doneflag.isSet():
@@ -389,7 +389,7 @@ class TorrentQueue(Feedback):
             if t.finishtime is None or t.finishtime > now - 120:
                 continue
             if t.finishtime > mintime:
-                if t.uptotal < t.downtotal * minratio:
+                if t.uptotal < t.metainfo.total_bytes * minratio:
                     continue
             self.change_torrent_state(infohash, RUNNING, KNOWN)
             break
@@ -432,8 +432,8 @@ class TorrentQueue(Feedback):
             l = self._get_list(state)
             if l[-1] != infohash:
                 pos = l.index(infohash)
-        self.run_ui_task(self.ui.torrent_state_changed, infohash, state,
-                        t.completion, t.uptotal_old, t.downtotal_old, pos)
+        self.run_ui_task(self.ui.torrent_state_changed, infohash, t.dlpath,
+                     state, t.completion, t.uptotal_old, t.downtotal_old, pos)
 
     def _stop_running(self, infohash):
         t = self.torrents[infohash]
@@ -488,7 +488,7 @@ class TorrentQueue(Feedback):
         try:
             os.remove(filename)
         except Exception, e:
-            self.global_error(WARNING, 'Could not delete cached metainfo file:'
+            self.global_error(WARNING, _("Could not delete cached metainfo file:")
                               + str(e))
         self._dump_state()
 
@@ -511,7 +511,7 @@ class TorrentQueue(Feedback):
         try:
             t.metainfo = ConvertedMetainfo(bdecode(data))
         except Exception, e:
-            self.global_error(ERROR, "This is not a valid torrent file. (%s)"
+            self.global_error(ERROR, _("This is not a valid torrent file. (%s)")
                               % str(e))
             return
         infohash = t.metainfo.infohash
@@ -519,37 +519,35 @@ class TorrentQueue(Feedback):
             real_state = self.torrents[infohash].state
             if real_state in (RUNNING, RUN_QUEUED):
                 self.error(t.metainfo, ERROR,
-                           "This torrent (or one with the same contents) is "
-                           "already running.")
+                           _("This torrent (or one with the same contents) is "
+                             "already running."))
             elif real_state == QUEUED:
                 self.error(t.metainfo, ERROR,
-                           "This torrent (or one with the same contents) is "
-                           "already waiting to run.")
+                           _("This torrent (or one with the same contents) is "
+                             "already waiting to run."))
             elif real_state == ASKING_LOCATION:
                 pass
             elif real_state == KNOWN:
                 self.change_torrent_state(infohash, KNOWN, newstate=QUEUED)
             else:
-                raise BTFailure("Torrent in unknown state %d" % real_state)
+                raise BTFailure(_("Torrent in unknown state %d") % real_state)
             return
 
         path = os.path.join(self.config['data_dir'], 'metainfo',
                             infohash.encode('hex'))
         try:
-            f = file(path+'.new', 'wb')
+            f = file(path, 'wb')
             f.write(data)
             f.close()
-            if os.access(path, os.F_OK):
-                os.remove(path) # no atomic rename on win32
-            os.rename(path+'.new', path)
         except Exception, e:
             try:
                 f.close()
             except:
                 pass
-            self.global_error(ERROR, 'Could not write file '+path+' ('+str(e)+
-                              '), torrent will not be restarted correctly on '
-                              'client restart')
+            self.global_error(ERROR, _("Could not write file ") + path +
+                              ' (' + str(e) + '), ' +  
+                              _("torrent will not be restarted "
+                                "correctly on client restart"))
         self.torrents[infohash] = t
         t.state = ASKING_LOCATION
         self.other_torrents.append(infohash)
@@ -635,9 +633,9 @@ class TorrentQueue(Feedback):
                'max_running_torrents'] or self.config['def_running_torrents']):
                 if force_running:
                     self.global_error(ERROR,
-                                      "Can't run more than %d torrents "\
-                                      "simultaneously. For more info see the"\
-                                      " FAQ at %s."%
+                                      _("Can't run more than %d torrents " 
+                                        "simultaneously. For more info see the"
+                                        " FAQ at %s.")%
                                       (self.config['max_running_torrents'],
                                        FAQ_URL))
                 newstate = QUEUED
@@ -749,15 +747,15 @@ class TorrentQueue(Feedback):
             t = self.torrents[infohash]
             if self.queue:
                 ratio = self.config['next_torrent_ratio'] / 100
-                msg = "Not starting torrent as there are other torrents "\
-                      "waiting to run, and this one already meets the "\
-                      "settings for when to stop seeding."
+                msg = _("Not starting torrent as there are other torrents "
+                        "waiting to run, and this one already meets the "
+                        "settings for when to stop seeding.")
             else:
                 ratio = self.config['last_torrent_ratio'] / 100
-                msg = "Not starting torrent as it already meets the settings "\
-                      "for when to stop seeding the last completed torrent."
-
-            if ratio and t.uptotal >= t.downtotal * ratio:
+            if ratio and t.uptotal >= t.metainfo.total_bytes * ratio:
+                msg = _("Not starting torrent as it already meets the "
+                        "settings for when to stop seeding the last "
+                        "completed torrent.")
                 raise BTShutdown(msg)
         self.torrents[torrent.infohash].finishtime = bttime()
 

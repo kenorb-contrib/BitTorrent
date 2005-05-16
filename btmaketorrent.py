@@ -12,22 +12,27 @@
 
 # Written by Bram Cohen
 
+if __name__ == '__main__':
+    import gettext
+    gettext.install('bittorrent', 'locale')
+
 import sys
+from BitTorrent.defaultargs import get_defaults
+from BitTorrent import configfile
 from BitTorrent.makemetafile import make_meta_files
 from BitTorrent.parseargs import parseargs, printHelp
 from BitTorrent import BTFailure
 
-defaults = [
-    ('piece_size_pow2', 18,
-        "which power of 2 to set the piece size to"),
+defaults = get_defaults('btmaketorrent')
+defaults.extend([
     ('comment', '',
-        "optional human-readable comment to put in .torrent"),
+     _("optional human-readable comment to put in .torrent")),
     ('target', '',
-        "optional target file for the torrent"),
-    ('filesystem_encoding', '',
-     "character encoding used on the local filesystem. If left empty, autodetected. Autodetection doesn't work under python versions older than 2.3.")
-    ]
+     _("optional target file for the torrent")),
+    ])
 
+defconfig = dict([(name, value) for (name, value, doc) in defaults])
+del name, value, doc
 
 def dc(v):
     print v
@@ -36,12 +41,25 @@ def prog(amount):
     print '%.1f%% complete\r' % (amount * 100),
 
 if __name__ == '__main__':
+    config, args = configfile.parse_configuration_and_args(defaults,
+                                                           'btmaketorrent',
+                                                           sys.argv[1:],
+                                                           0, None)
+
     if len(sys.argv) <= 1:
         printHelp('btmaketorrent', defaults)
     else:
         try:
-            config, args = parseargs(sys.argv[1:], defaults, 2, None)
-            make_meta_files(args[0], args[1:], piece_len_pow2=config['piece_size_pow2'], progressfunc=prog, filefunc=dc, comment=config['comment'], target=config['target'], filesystem_encoding=config['filesystem_encoding'])
+            make_meta_files(args[0],
+                            args[1:],
+                            progressfunc=prog,
+                            filefunc=dc,
+                            piece_len_pow2=config['piece_size_pow2'],
+                            comment=config['comment'],
+                            target=config['target'],
+                            filesystem_encoding=config['filesystem_encoding'],
+                            use_tracker=config['use_tracker'],
+                            data_dir=config['data_dir'])
         except BTFailure, e:
             print str(e)
             sys.exit(1)

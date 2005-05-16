@@ -24,7 +24,7 @@ class HTTPContentEncodingHandler(HTTPHandler):
         # support gzip encoding (identity is assumed)
         req.add_header("Accept-Encoding","gzip")
         if DEBUG: 
-            print "Sending:" 
+            print "Sending:"
             print req.headers
             print "\n"
         fp = HTTPHandler.http_open(self,req)

@@ -14,10 +14,13 @@
 
 from __future__ import division
 
+import gettext
+gettext.install('bittorrent', 'locale')
+
 import os
 import sys
 
-assert sys.version_info >= (2, 3), "Install Python 2.3 or greater"
+assert sys.version_info >= (2, 3), _("Install Python 2.3 or greater")
 
 from threading import Event
 
@@ -25,32 +28,37 @@ import gtk
 import gobject
 
 from BitTorrent.GUI import *
+from BitTorrent import spawn
 from BitTorrent import Desktop
 from BitTorrent import version
 from BitTorrent import configfile
 from BitTorrent.defaultargs import get_defaults
 from BitTorrent.makemetafile import make_meta_files
 from BitTorrent.parseargs import makeHelp
-from BitTorrent.ConvertedMetainfo import set_filesystem_encoding
 
 defaults = get_defaults('btmaketorrentgui')
 defconfig = dict([(name, value) for (name, value, doc) in defaults])
 del name, value, doc
+ui_options = ('torrent_dir','piece_size_pow2','tracker_list','use_tracker')
 
-def sfe_ef(e,s):
-    print s
-set_filesystem_encoding(defconfig['filesystem_encoding'], sfe_ef)
+EXTENSION = '.torrent'
+
+MAXIMUM_NODES = 8
 
 class MainWindow(Window):
 
     def __init__(self, config):
         Window.__init__(self)
         self.mainwindow = self # temp hack to make modal win32 file choosers work
+        self.tooltips = gtk.Tooltips()
         self.connect('destroy', self.quit)
-        self.set_title('%s metafile creator %s'%(app_name, version))
+        self.set_title(_("%s metafile creator %s")%(app_name, version))
         self.set_border_width(SPACING)
 
         self.config = config
+        self.tracker_list = []
+        if self.config['tracker_list']:
+            self.tracker_list = self.config['tracker_list'].split(',')
 
         right_column_width=276
         self.box = gtk.VBox(spacing=SPACING)
@@ -61,7 +69,9 @@ class MainWindow(Window):
         y = 0
 
         # file list
-        self.table.attach(lalign(gtk.Label('Make .torrent metafiles for these files:')),
+        self.table.attach(lalign(gtk.Label(
+            _("Make .torrent metafiles for these files/directories:\n"
+              "(Directories will become batch torrents)"))),
                           0,2,y,y+1, xoptions=gtk.FILL, yoptions=gtk.FILL, )
         y+=1
 
@@ -75,7 +85,7 @@ class MainWindow(Window):
 
         self.file_list = gtk.TreeView(self.file_store)
         r = gtk.CellRendererText()
-        column = gtk.TreeViewColumn('_Files', r, text=0)
+        column = gtk.TreeViewColumn(_("_Files/directories"), r, text=0)
         self.file_list.append_column(column)
         self.file_list.get_selection().set_mode(gtk.SELECTION_MULTIPLE)
 
@@ -104,17 +114,8 @@ class MainWindow(Window):
                           xoptions=gtk.FILL, yoptions=0)
         y+=1
 
-        # Announce
-        self.table.attach(ralign(gtk.Label('Announce URL:')),0,1,y,y+1,
-                          xoptions=gtk.FILL, yoptions=0)
-        self.announce_entry = gtk.Entry()
-        self.announce_entry.set_text(self.config['tracker_name'])
-        self.announce_entry.set_size_request(right_column_width,-1)
-        self.table.attach(self.announce_entry,1,2,y,y+1, xoptions=gtk.FILL|gtk.EXPAND, yoptions=0)
-        y+=1
-
         # Piece size
-        self.table.attach(ralign(gtk.Label('Piece size:')),0,1,y,y+1,
+        self.table.attach(ralign(gtk.Label(_("Piece size:"))),0,1,y,y+1,
                           xoptions=gtk.FILL, yoptions=0)
         self.piece_size = gtk.combo_box_new_text()
         self.piece_size.offset = 15
@@ -123,22 +124,117 @@ class MainWindow(Window):
         self.piece_size.set_active(self.config['piece_size_pow2'] -
                                    self.piece_size.offset)
         self.piece_size_box = gtk.HBox(spacing=SPACING)
-        self.piece_size_box.pack_start(self.piece_size, expand=False, fill=False)
-        self.table.attach(self.piece_size_box,1,2,y,y+1, xoptions=gtk.FILL|gtk.EXPAND, yoptions=0)
+        self.piece_size_box.pack_start(self.piece_size,
+                                       expand=False, fill=False)
+        self.table.attach(self.piece_size_box,1,2,y,y+1,
+                          xoptions=gtk.FILL|gtk.EXPAND, yoptions=0)
         y+=1
 
 
+        # Announce URL / Tracker
+        self.tracker_radio = gtk.RadioButton(group=None, label=_("Use _tracker:"))
+        self.tracker_radio.value = True
+        
+        self.table.attach(self.tracker_radio,0,1,y,y+1,
+                          xoptions=gtk.FILL, yoptions=0)
+        self.announce_entry = gtk.Entry()
+        self.announce_completion = gtk.EntryCompletion()
+        self.announce_entry.set_completion(self.announce_completion)
+        self.announce_completion.set_text_column(0)
+        self.build_completion()
+
+        self.tracker_radio.entry = self.announce_entry
+        if self.config['use_tracker'] == self.tracker_radio.value:
+            self.announce_entry.set_sensitive(True)
+        else:
+            self.announce_entry.set_sensitive(False)
+
+        if self.config['tracker_name']:
+            self.announce_entry.set_text(self.config['tracker_name'])
+        elif len(self.tracker_list):
+            self.announce_entry.set_text(self.tracker_list[0])
+        else:
+            self.announce_entry.set_text('http://my.tracker:6969/announce')
+            
+        self.announce_entry.set_size_request(right_column_width,-1)
+        self.table.attach(self.announce_entry,1,2,y,y+1, xoptions=gtk.FILL|gtk.EXPAND, yoptions=0)
+        y+=1
+
+        # DHT / Trackerless
+        self.dht_radio = gtk.RadioButton(group=self.tracker_radio,
+                                         label=_("Use _DHT"))
+        self.dht_radio.value = False
+        
+        self.table.attach(align(self.dht_radio,0,0), 0,1,y,y+1,
+                          xoptions=gtk.FILL|gtk.EXPAND, yoptions=0)
+
+        self.dht_nodes_expander = gtk.Expander(_("Nodes (optional):"))
+        
+##        self.dht_nodes = gtk.Entry()
+##        self.dht_nodes.set_size_request(right_column_width,-1)
+##        self.dht_nodes.set_text('router.bittorrent.com:6881')
+        self.dht_nodes = NodeList(self, 'router.bittorrent.com:6881')
+        self.dht_nodes_expander.add(self.dht_nodes)
+
+        self.table.attach(self.dht_nodes_expander,1,2,y,y+1, xoptions=gtk.FILL|gtk.EXPAND, yoptions=0)
+        self.dht_radio.entry = self.dht_nodes
+
+##        self.tooltips.set_tip(self.dht_nodes,
+##                              _("list of comma separated <ip>:<port> pairs\n"
+##                                "Example:\n"
+##                                "127.0.0.1:6881, 12.34.123.321:7890"))
+
+        if self.config['use_tracker'] == self.dht_radio.value:
+            self.dht_nodes.set_sensitive(True)
+        else:
+            self.dht_nodes.set_sensitive(False)
+
+        y+=1
+
+        for w in self.tracker_radio.get_group():
+            w.connect('toggled', self.toggle_tracker_dht)
+
+        for w in self.tracker_radio.get_group():
+            if w.value == bool(self.config['use_tracker']):
+                w.set_active(True)
+            else:
+                w.set_active(False)
+
+        # Hsep
+        self.table.attach(gtk.HSeparator(),0,2,y,y+1,yoptions=0)
+        y+=1
+
+        # Comment
+        self.comment_expander = gtk.Expander(_("Comments:"))
+        
+        self.comment_buffer = gtk.TextBuffer()
+        self.comment_text = gtk.TextView()
+        self.comment_text.set_buffer(self.comment_buffer)
+        self.comment_text.set_wrap_mode(gtk.WRAP_WORD)
+        self.comment_scroll = gtk.ScrolledWindow()
+        self.comment_scroll.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_ALWAYS)
+        self.comment_scroll.set_shadow_type(gtk.SHADOW_IN)
+        self.comment_scroll.add(self.comment_text)
+
+        self.comment_expander.add(self.comment_scroll)
+        self.table.attach(self.comment_expander,0,2,y,y+1,
+                          xoptions=gtk.FILL, yoptions=0)
+        y+=1
+
+        # add table
         self.box.pack_start(self.table, expand=True, fill=True)
+
+        # buttons
 
         self.buttonbox = gtk.HBox(homogeneous=True, spacing=SPACING)
 
-        self.quitbutton = gtk.Button(stock=gtk.STOCK_QUIT)
+        self.quitbutton = gtk.Button(stock=gtk.STOCK_CLOSE)
         self.quitbutton.connect('clicked', self.quit)
         self.buttonbox.pack_start(self.quitbutton, expand=True, fill=True)
 
         self.buttonbox.pack_start(gtk.Label(''), expand=True, fill=True)
 
-        self.makebutton = IconButton('Make', stock=gtk.STOCK_EXECUTE)
+        self.makebutton = IconButton(_("Make"), stock=gtk.STOCK_EXECUTE)
         self.makebutton.connect('clicked', self.make)
         self.makebutton.set_sensitive(False)
         self.buttonbox.pack_end(self.makebutton, expand=True, fill=True)
@@ -149,12 +245,28 @@ class MainWindow(Window):
         self.file_store.connect('row-changed', self.check_buttons)
         sel = self.file_list.get_selection()
         sel.connect('changed', self.check_buttons)
+        for w in self.tracker_radio.get_group():
+            w.connect('clicked', self.check_buttons)
+
+        self.box.pack_end(gtk.HSeparator(), expand=False, fill=False)
 
         self.add(self.box)
 
 #        HelpWindow(None, makeHelp('btmaketorrentgui', defaults))
         
         self.show_all()
+
+
+    def toggle_tracker_dht(self, widget):
+        if widget.get_active():
+            self.config['use_tracker'] = widget.value
+
+        for e in [self.announce_entry, self.dht_nodes]:
+            if widget.entry is e:
+                e.set_sensitive(True)
+            else:
+                e.set_sensitive(False)
+
 
     def remove_selection(self,widget):
         sel = self.file_list.get_selection()
@@ -199,23 +311,33 @@ class MainWindow(Window):
             it = self.file_store.iter_next(it)
         return files
 
-    def get_announce_url(self):
-        announce_url = self.announce_entry.get_text()
-        self.config['tracker_name'] = announce_url
-        return announce_url
+    def get_announce(self):
+        if self.config['use_tracker']:
+            announce = self.announce_entry.get_text()
+            self.config['tracker_name'] = announce
+        else:
+            announce = self.dht_nodes.get_text()
+            print announce
+        return announce
 
     def make(self, widget):
         file_list = self.get_file_list()
         piece_size_exponent = self.get_piece_size_exponent()
-        announce_url = self.get_announce_url()
+        announce = self.get_announce()
+        comment = self.comment_buffer.get_text(
+            *self.comment_buffer.get_bounds())
+                
+        if self.config['use_tracker']:
+            self.add_tracker(announce) 
         errored = False
         if not errored:
-            d = ProgressDialog(self, file_list, announce_url, piece_size_exponent)
+            d = ProgressDialog(self, file_list, announce,
+                               piece_size_exponent, comment)
             d.main()
 
     def check_buttons(self, *widgets):
         file_list = self.get_file_list()
-        announce_url = self.get_announce_url()
+        tracker = self.announce_entry.get_text()
 
         if len(file_list) >= 1:
             self.clear_button.set_sensitive(True)
@@ -225,33 +347,170 @@ class MainWindow(Window):
                 self.remove_button.set_sensitive(True)
             else:
                 self.remove_button.set_sensitive(False)
-            if len(announce_url) >= len('http://x.cc'):
-                self.makebutton.set_sensitive(True)
+
+            if self.config['use_tracker']:
+                if len(tracker) >= len('http://x.cc'):
+                    self.makebutton.set_sensitive(True)
+                else:
+                    self.makebutton.set_sensitive(False)
             else:
-                self.makebutton.set_sensitive(False)
+                self.makebutton.set_sensitive(True)
         else:
             self.clear_button.set_sensitive(False)
             self.remove_button.set_sensitive(False)
             self.makebutton.set_sensitive(False)
 
+    def save_config(self):
+        def error_callback(error, string): print string
+        configfile.save_ui_config(self.config, 'btmaketorrentgui', ui_options, error_callback)
+                
     def quit(self, widget):
+        self.save_config()
+        self.destroy()        
+
+    def add_tracker(self, tracker_name):
+        try:
+            self.tracker_list.pop(self.tracker_list.index(tracker_name))
+        except ValueError:
+            pass
+        self.tracker_list[0:0] = [tracker_name,]
+        
+        self.config['tracker_list'] = ','.join(self.tracker_list)
+        self.build_completion()
+
+    def build_completion(self):
+        liststore = gtk.ListStore(gobject.TYPE_STRING)
+        for t in self.tracker_list:
+            liststore.append([t])
+        self.announce_completion.set_model(liststore)
+
+
+class AppWindow(MainWindow):
+    def quit(self, widget):
+        MainWindow.quit(self, widget)
         gtk.main_quit()
+
+
+class NodeList(gtk.TreeView):
+    def __init__(self, parent, nodelist):
+        self.store = gtk.ListStore(gobject.TYPE_STRING, gobject.TYPE_STRING)
+        pre_size_list = ['router.bittorrent.com', '65536']
+        self.store.append(pre_size_list)
+
+        gtk.TreeView.__init__(self, self.store)
+
+        self.host_render = gtk.CellRendererText()
+        self.host_render.set_property('editable', True)
+        self.host_column = gtk.TreeViewColumn(_("_Host"), self.host_render,
+                                              text=0)
+        self.append_column(self.host_column)
+        self.host_render.connect('edited', self.store_host_value)
+
+        self.port_render = gtk.CellRendererText()
+        self.port_render.set_property('editable', True)
+        self.port_column = gtk.TreeViewColumn(_("_Port"), self.port_render,
+                                              text=1)
+        self.append_column(self.port_column)
+        self.port_render.connect('edited', self.store_port_value)
+
+        #self.columns_autosize()
+        #self.host_column.set_fixed_width(self.host_column.get_width())
+        #self.host_column.set_sizing(gtk.TREE_VIEW_COLUMN_FIXED)
+        #self.realize()
+        #self.port_column.set_fixed_width(self.port_column.get_width())
+        #self.port_column.set_sizing(gtk.TREE_VIEW_COLUMN_FIXED)
+
+        self.store.clear()
+        
+        for i, e in enumerate(nodelist.split(',')):
+            host, port = e.split(':')
+            self.store.append((host, port))
+
+        if i < MAXIMUM_NODES - 1:
+            self.store.append(('',''))
+
+    def store_host_value(self, cell, row, value):
+        parts = value.split('.')
+        if value != '':
+            for p in parts:
+                if not p.isalnum():
+                    return
+                try:
+                    value = value.encode('idna')
+                except UnicodeError:
+                    return
+        it = self.store.get_iter_from_string(row)
+        self.store.set(it, 0, str(value))
+        self.check_row(row)
+
+    def store_port_value(self, cell, row, value):
+        if value != '':
+            try:
+                v = int(value)
+                if v > 65535:
+                    value = 65535
+                if v < 0:
+                    value = 0
+            except:
+                return # return on non-integer values
+        it = self.store.get_iter_from_string(row)
+        self.store.set(it, 1, str(value))
+        #curs = self.get_cursor()
+        #print curs
+        #print type(curs[0][0])
+
+        self.check_row(row)
+        #newpath = ((int(row)+1,), self.port_column)
+        #print newpath
+        #self.set_cursor(newpath)
+
+    def check_row(self, row):
+        # called after editing to see whether we should add a new
+        # blank row, or remove the now blank currently edited row.
+        it = self.store.get_iter_from_string(row)
+        host_value = self.store.get_value(it, 0)
+        port_value = self.store.get_value(it, 1)
+        if host_value and port_value         and \
+               int(row) == len(self.store)-1 and \
+               int(row) < MAXIMUM_NODES   -1 :
+            self.store.append(('',''))
+        elif host_value == '' and \
+             port_value == '' and \
+             int(row) != len(self.store)-1:
+            self.store.remove(it)            
+
+    def get_nodes(self):
+        retlist = []
+        it = self.store.get_iter_first()
+        while it:
+            host = self.store.get_value(it, 0)
+            port = self.store.get_value(it, 1)
+            if host != '' and port != '':
+                retlist.append((host,port))
+            it = self.store.iter_next(it)
+        return retlist
+        
+    def get_text(self):
+        nodelist = self.get_nodes()
+        return ','.join(['%s:%s'%node for node in nodelist])
 
 
 class ProgressDialog(gtk.Dialog):
 
-    def __init__(self, parent, file_list, announce_url, piece_length):
+    def __init__(self, parent, file_list, announce, piece_length, comment):
         gtk.Dialog.__init__(self, parent=parent, flags=gtk.DIALOG_MODAL|gtk.DIALOG_DESTROY_WITH_PARENT)
         self.set_size_request(400,-1)
         self.set_border_width(SPACING)
-        self.set_title('Building torrents...')
+        self.set_title(_("Building torrents..."))
         self.file_list = file_list
-        self.announce_url = announce_url
+        self.announce = announce
         self.piece_length = piece_length
+        self.comment = comment
+
         self.flag = Event() # ???
 
-        self.label = gtk.Label('Checking file sizes...')
-        self.label.set_line_wrap(gtk.TRUE)
+        self.label = gtk.Label(_("Checking file sizes..."))
+        self.label.set_line_wrap(True)
 
         self.vbox.set_spacing(SPACING)
         self.vbox.pack_start(lalign(self.label), expand=False, fill=False)
@@ -268,8 +527,16 @@ class ProgressDialog(gtk.Dialog):
         self.done_button = gtk.Button(stock=gtk.STOCK_OK)
         self.done_button.connect('clicked', self.cancel)
 
+        self.seed_button = gtk.Button(_("Start seeding"))
+        self.seed_button.connect('clicked', self.seed)
+
     def main(self):
         self.complete()
+
+    def seed(self, widget=None):
+        for file in self.file_list:
+            spawn('btdownloadgui', file+EXTENSION, '--save_as', file)
+        self.cancel()
 
     def cancel(self, widget=None):
         self.flag.set()
@@ -280,7 +547,7 @@ class ProgressDialog(gtk.Dialog):
         self._update_gui()
 
     def set_file(self, filename):
-        self.label.set_text('building ' + filename + '.torrent')
+        self.label.set_text(_("building ") + filename + EXTENSION)
         self._update_gui()
 
     def _update_gui(self):
@@ -289,36 +556,45 @@ class ProgressDialog(gtk.Dialog):
 
     def complete(self):
         try:
-            make_meta_files(self.announce_url,
-                        self.file_list,
-                        self.flag,
-                        self.set_progress_value,
-                        self.set_file,
-                        self.piece_length)
+            make_meta_files(self.announce, 
+                            self.file_list,
+                            flag=self.flag,
+                            progressfunc=self.set_progress_value,
+                            filefunc=self.set_file,
+                            piece_len_pow2=self.piece_length,
+                            comment=self.comment, 
+                            use_tracker=config['use_tracker'],
+                            data_dir=config['data_dir'],
+                            )
             if not self.flag.isSet():
-                self.set_title('Done.')
-                self.label.set_text('Done building torrents.')
+                self.set_title(_("Done."))
+                self.label.set_text(_("Done building torrents."))
                 self.set_progress_value(1)
                 self.action_area.remove(self.cancelbutton)
+                self.action_area.pack_start(self.seed_button)
                 self.action_area.pack_start(self.done_button)
+                self.seed_button.show()
                 self.done_button.show()
         except (OSError, IOError), e:
-            self.set_title('Error!')
-            self.label.set_text('Error building torrents: ' + str(e))
+            self.set_title(_("Error!"))
+            self.label.set_text(_("Error building torrents: ") + str(e))
+
+
+    
+
+def run():
+    config, args = configfile.parse_configuration_and_args(defaults,
+                                    'btmaketorrentgui', [], 0, None)
+    w = MainWindow(config)
 
 
 if __name__ == '__main__':
-
     config, args = configfile.parse_configuration_and_args(defaults,
                                     'btmaketorrentgui', sys.argv[1:], 0, None)
-    w = MainWindow(config)
+    w = AppWindow(config)
     try:
         gtk.main()
     except KeyboardInterrupt:
         # gtk.mainloop not running
         # exit and don't save config options
         sys.exit(1)
-
-    save_options = ('torrent_dir','piece_size_pow2','tracker_name')
-    def error_callback(error, string): print string
-    configfile.save_ui_config(w.config, 'btmaketorrentgui', save_options, error_callback)

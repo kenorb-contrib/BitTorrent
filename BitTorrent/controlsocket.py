@@ -105,7 +105,7 @@ class ControlSocket(object):
             controlsocket = RawServer.create_serversocket(56881,
                                                    '127.0.0.1', reuse=True)
         except socket.error, e:
-            raise BTFailure("Could not create control socket: "+str(e))
+            raise BTFailure(_("Could not create control socket: ")+str(e))
         self.controlsocket = controlsocket
 
     def send_command_inet(self, rawserver, action, data = ''):
@@ -113,7 +113,7 @@ class ControlSocket(object):
         try:
             conn = rawserver.start_connection(('127.0.0.1', 56881), r)
         except socket.error, e:
-            raise BTFailure('Could not send command: ' + str(e))
+            raise BTFailure(_("Could not send command: ") + str(e))
         conn.write(tobinary(len(action)))
         conn.write(action)
         conn.write(tobinary(len(data)))
@@ -131,7 +131,7 @@ class ControlSocket(object):
             s.close()
         except socket.error, e:
             s.close()
-            raise BTFailure('Could not send command: ' + str(e))
+            raise BTFailure(_("Could not send command: ") + str(e))
 
     def create_socket_unix(self):
         filename = self.socket_filename
@@ -141,12 +141,12 @@ class ControlSocket(object):
             except BTFailure:
                 pass
             else:
-                raise BTFailure("Could not create control socket: already in use")
+                raise BTFailure(_("Could not create control socket: already in use"))
 
             try:
                 os.unlink(filename)
             except OSError, e:
-                raise BTFailure("Could not remove old control socket filename:"
+                raise BTFailure(_("Could not remove old control socket filename:")
                                 + str(e))
         try:
             controlsocket = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
@@ -154,7 +154,7 @@ class ControlSocket(object):
             controlsocket.bind(filename)
             controlsocket.listen(5)
         except socket.error, e:
-            raise BTFailure("Could not create control socket: "+str(e))
+            raise BTFailure(_("Could not create control socket: ")+str(e))
         self.controlsocket = controlsocket
 
     def send_command_unix(self, rawserver, action, data = ''):
@@ -163,7 +163,7 @@ class ControlSocket(object):
         try:
             s.connect(filename)
         except socket.error, e:
-            raise BTFailure('Could not send command: ' + str(e))
+            raise BTFailure(_("Could not send command: ") + str(e))
         r = MessageReceiver(lambda action, data: None)
         conn = rawserver.wrap_socket(s, r, ip = s.getpeername())
         conn.write(tobinary(len(action)))
@@ -184,7 +184,7 @@ class ControlSocket(object):
             s.close()
         except socket.error, e:
             s.close()
-            raise BTFailure('Could not send command: ' + str(e))
+            raise BTFailure(_("Could not send command: ") + str(e))
 
     def close_socket(self):
         self.rawserver.stop_listening(self.controlsocket)

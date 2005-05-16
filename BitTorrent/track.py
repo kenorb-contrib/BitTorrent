@@ -36,40 +36,78 @@ from BitTorrent import version
 
 
 defaults = [
-    ('port', 80, "Port to listen on."),
-    ('dfile', None, 'file to store recent downloader info in'),
-    ('bind', '', 'ip to bind to locally'),
-    ('socket_timeout', 15, 'timeout for closing connections'),
-    ('close_with_rst', 0, 'close connections with RST and avoid the TCP TIME_WAIT state'),
-    ('save_dfile_interval', 5 * 60, 'seconds between saving dfile'),
-    ('timeout_downloaders_interval', 45 * 60, 'seconds between expiring downloaders'),
-    ('reannounce_interval', 30 * 60, 'seconds downloaders should wait between reannouncements'),
-    ('response_size', 50, 'default number of peers to send in an info message if the client does not specify a number'),
+    ('port', 80,
+     _("Port to listen on.")),
+    ('dfile', None,
+     _("file to store recent downloader info in")),
+    ('bind', '',
+     _("ip to bind to locally")),
+    ('socket_timeout', 15,
+     _("timeout for closing connections")),
+    ('close_with_rst', 0,
+     _("close connections with RST and avoid the TCP TIME_WAIT state")),
+    ('save_dfile_interval', 5 * 60,
+     _("seconds between saving dfile")),
+    ('timeout_downloaders_interval', 45 * 60,
+     _("seconds between expiring downloaders")),
+    ('reannounce_interval', 30 * 60,
+     _("seconds downloaders should wait between reannouncements")),
+    ('response_size', 50,
+     _("default number of peers to send in an info message if the client does "
+       "not specify a number")),
     ('timeout_check_interval', 5,
-        'time to wait between checking if any connections have timed out'),
-    ('nat_check', 3,
-        "how many times to check if a downloader is behind a NAT (0 = don't check)"),
+     _("time to wait between checking if any connections have timed out")),
+    ('nat_check', 3, 
+     _("how many times to check if a downloader is behind a NAT "
+       "(0 = don't check)")),
     ('log_nat_checks', 0,
-        "whether to add entries to the log for nat-check results"),
+     _("whether to add entries to the log for nat-check results")),
     ('min_time_between_log_flushes', 3.0,
-        'minimum time it must have been since the last flush to do another one'),
+     _("minimum time it must have been since the last flush to do "
+       "another one")),
     ('min_time_between_cache_refreshes', 600.0,
-        'minimum time in seconds before a cache is considered stale and is flushed'),
-    ('allowed_dir', '', 'only allow downloads for .torrents in this dir (and recursively in subdirectories of directories that have no .torrent files themselves). If set, torrents in this directory show up on infopage/scrape whether they have peers or not'),
-    ('parse_dir_interval', 60, 'how often to rescan the torrent directory, in seconds'),
-    ('allowed_controls', 0, 'allow special keys in torrents in the allowed_dir to affect tracker access'),
-    ('hupmonitor', 0, 'whether to reopen the log file upon receipt of HUP signal'),
-    ('show_infopage', 1, "whether to display an info page when the tracker's root dir is loaded"),
-    ('infopage_redirect', '', 'a URL to redirect the info page to'),
-    ('show_names', 1, 'whether to display names from allowed dir'),
-    ('favicon', '', 'file containing x-icon data to return when browser requests favicon.ico'),
-    ('only_local_override_ip', 2, "ignore the ip GET parameter from machines which aren't on local network IPs (0 = never, 1 = always, 2 = ignore if NAT checking is not enabled). HTTP proxy headers giving address of original client are treated the same as --ip."),
-    ('logfile', '', 'file to write the tracker logs, use - for stdout (default)'),
-    ('allow_get', 0, 'use with allowed_dir; adds a /file?hash={hash} url that allows users to download the torrent file'),
-    ('keep_dead', 0, 'keep dead torrents after they expire (so they still show up on your /scrape and web page). Only matters if allowed_dir is not set'),
-    ('scrape_allowed', 'full', 'scrape access allowed (can be none, specific or full)'),
-    ('max_give', 200, 'maximum number of peers to give with any one request'),
-    ]
+     _("minimum time in seconds before a cache is considered stale "
+       "and is flushed")),
+    ('allowed_dir', '',
+     _("only allow downloads for .torrents in this dir (and recursively in "
+       "subdirectories of directories that have no .torrent files "
+       "themselves). If set, torrents in this directory show up on "
+       "infopage/scrape whether they have peers or not")),
+    ('parse_dir_interval', 60,
+     _("how often to rescan the torrent directory, in seconds")),
+    ('allowed_controls', 0,
+     _("allow special keys in torrents in the allowed_dir to affect "
+       "tracker access")),
+    ('hupmonitor', 0,
+     _("whether to reopen the log file upon receipt of HUP signal")),
+    ('show_infopage', 1,
+     _("whether to display an info page when the tracker's root dir "
+       "is loaded")),
+    ('infopage_redirect', '',
+     _("a URL to redirect the info page to")),
+    ('show_names', 1,
+     _("whether to display names from allowed dir")),
+    ('favicon', '',
+     _("file containing x-icon data to return when browser requests "
+       "favicon.ico")),
+    ('only_local_override_ip', 2,
+     _("ignore the ip GET parameter from machines which aren't on "
+       "local network IPs (0 = never, 1 = always, 2 = ignore if NAT "
+       "checking is not enabled). HTTP proxy headers giving address "
+       "of original client are treated the same as --ip.")),
+    ('logfile', '',
+     _("file to write the tracker logs, use - for stdout (default)")),
+    ('allow_get', 0,
+     _("use with allowed_dir; adds a /file?hash={hash} url that "
+       "allows users to download the torrent file")),
+    ('keep_dead', 0,
+     _("keep dead torrents after they expire (so they still show up on your "
+       "/scrape and web page). Only matters if allowed_dir is not set")),
+    ('scrape_allowed', 'full',
+     _("scrape access allowed (can be none, specific or full)")),
+    ('max_give', 200,
+     _("maximum number of peers to give with any one request")),
+    ] 
 
 def statefiletemplate(x):
     if type(x) != DictType:
@@ -120,7 +158,7 @@ def statefiletemplate(x):
                 dirkeys[y[1]] = 1
 
 
-alas = 'your file may exist elsewhere in the universe\nbut alas, not here\n'
+alas = _("your file may exist elsewhere in the universe\nbut alas, not here\n")
 
 def isotime(secs = None):
     if secs == None:
@@ -205,7 +243,7 @@ class Tracker(object):
                 self.favicon = h.read()
                 h.close()
             except:
-                print "**warning** specified favicon file -- %s -- does not exist." % favicon
+                print _("**warning** specified favicon file -- %s -- does not exist.") % favicon
         self.rawserver = rawserver
         self.cached = {}    # format: infohash: [[time1, l1, s1], [time2, l2, s2], [time3, l3, s3]]
         self.cached_t = {}  # format: infohash: [time, cache]
@@ -228,7 +266,8 @@ class Tracker(object):
                 statefiletemplate(tempstate)
                 self.state = tempstate
             except:
-                print '**warning** statefile '+self.dfile+' corrupt; resetting'
+                print _("**warning** statefile %s corrupt; resetting") % \
+                      self.dfile
         self.downloads    = self.state.setdefault('peers', {})
         self.completed    = self.state.setdefault('completed', {})
 
@@ -263,9 +302,9 @@ class Tracker(object):
                 self.logfile = config['logfile']
                 self.log = open(self.logfile,'a')
                 sys.stdout = self.log
-                print "# Log Started: ", isotime()
+                print _("# Log Started: "), isotime()
             except:
-                print "**warning** could not redirect stdout to log file: ", sys.exc_info()[0]
+                print _("**warning** could not redirect stdout to log file: "), sys.exc_info()[0]
 
         if config['hupmonitor']:
             def huphandler(signum, frame, self = self):
@@ -273,9 +312,9 @@ class Tracker(object):
                     self.log.close ()
                     self.log = open(self.logfile,'a')
                     sys.stdout = self.log
-                    print "# Log reopened: ", isotime()
+                    print _("# Log reopened: "), isotime()
                 except:
-                    print "**warning** could not reopen logfile"
+                    print _("**warning** could not reopen logfile")
 
             signal.signal(signal.SIGHUP, huphandler)
 
@@ -415,7 +454,7 @@ class Tracker(object):
             if self.config['scrape_allowed'] not in ['specific', 'full']:
                 return (400, 'Not Authorized', {'Content-Type': 'text/plain', 'Pragma': 'no-cache'},
                     bencode({'failure reason':
-                    'specific scrape function is not available with this tracker.'}))
+                    _("specific scrape function is not available with this tracker.")}))
             for infohash in paramslist['info_hash']:
                 if self.allowed is not None and infohash not in self.allowed:
                     continue
@@ -425,7 +464,7 @@ class Tracker(object):
             if self.config['scrape_allowed'] != 'full':
                 return (400, 'Not Authorized', {'Content-Type': 'text/plain', 'Pragma': 'no-cache'},
                     bencode({'failure reason':
-                    'full scrape function is not available with this tracker.'}))
+                    _("full scrape function is not available with this tracker.")}))
             if self.allowed is not None:
                 hashes = self.allowed
             else:
@@ -438,7 +477,7 @@ class Tracker(object):
     def get_file(self, infohash):
          if not self.allow_get:
              return (400, 'Not Authorized', {'Content-Type': 'text/plain', 'Pragma': 'no-cache'},
-                 'get function is not available with this tracker.')
+                 _("get function is not available with this tracker."))
          if not self.allowed.has_key(infohash):
              return (404, 'Not Found', {'Content-Type': 'text/plain', 'Pragma': 'no-cache'}, alas)
          fname = self.allowed[infohash]['file']
@@ -452,7 +491,7 @@ class Tracker(object):
             if not self.allowed.has_key(infohash):
                 return (200, 'Not Authorized', {'Content-Type': 'text/plain', 'Pragma': 'no-cache'},
                     bencode({'failure reason':
-                    'Requested download is not authorized for use with this tracker.'}))
+                    _("Requested download is not authorized for use with this tracker.")}))
             if self.config['allowed_controls']:
                 if self.allowed[infohash].has_key('failure reason'):
                     return (200, 'Not Authorized', {'Content-Type': 'text/plain', 'Pragma': 'no-cache'},
@@ -808,8 +847,8 @@ def track(args):
     try:
         config, files = parseargs(args, defaults, 0, 0)
     except ValueError, e:
-        print 'error: ' + str(e)
-        print 'run with no arguments for parameter explanations'
+        print _("error: ") + str(e)
+        print _("run with no arguments for parameter explanations")
         return
     r = RawServer(Event(), config)
     t = Tracker(config, r)
@@ -817,7 +856,7 @@ def track(args):
     r.start_listening(s, HTTPHandler(t.get, config['min_time_between_log_flushes']))
     r.listen_forever()
     t.save_dfile()
-    print '# Shutting down: ' + isotime()
+    print _("# Shutting down: ") + isotime()
 
 def size_format(s):
     if (s < 1024):

@@ -13,6 +13,7 @@
 import os
 import sys
 import socket
+import signal
 import struct
 from bisect import insort
 from cStringIO import StringIO
@@ -43,6 +44,8 @@ class SingleSocket(object):
         self.fileno = sock.fileno()
         self.connected = False
         self.context = context
+        self.port = None
+
         if ip is not None:
             self.ip = ip
         else:
@@ -52,11 +55,11 @@ class SingleSocket(object):
                 self.ip = 'unknown'
             else:
                 try:
-                    self.ip = peername[0]
+                    self.ip, self.port = peername
                 except:
                     assert isinstance(peername, basestring)
                     self.ip = peername # UNIX socket, not really ip
-
+                    
     def close(self):
         sock = self.socket
         self.socket = None
@@ -114,6 +117,7 @@ class RawServer(object):
         self.poll = poll()
         # {socket: SingleSocket}
         self.single_sockets = {}
+        self.udp_sockets = {}
         self.dead_from_write = []
         self.doneflag = doneflag
         self.noisy = noisy
@@ -140,14 +144,16 @@ class RawServer(object):
 
     def remove_context(self, context):
         del self.live_contexts[context]
-        self.funcs = [x for x in self.funcs if x[2] != context]
+        self.funcs = [x for x in self.funcs if x[3] != context]
 
-    def add_task(self, func, delay, context=None):
+    def add_task(self, func, delay, args=(), context=None):
+        assert type(args) == list or type(args) == tuple
         if context in self.live_contexts:
-            insort(self.funcs, (bttime() + delay, func, context))
+            insort(self.funcs, (bttime() + delay, func, args, context))
 
-    def external_add_task(self, func, delay, context=None):
-        self.externally_added_tasks.append((func, delay, context))
+    def external_add_task(self, func, delay, args=(), context=None):
+        assert type(args) == list or type(args) == tuple
+        self.externally_added_tasks.append((func, delay, args, context))
         # Wake up the RawServer thread in case it's sleeping in poll()
         if self.wakeupfds[1] is not None:
             os.write(self.wakeupfds[1], 'X')
@@ -157,7 +163,7 @@ class RawServer(object):
                       self.config['timeout_check_interval'])
         t = bttime() - self.config['socket_timeout']
         tokill = []
-        for s in self.single_sockets.values():
+        for s in [s for s in self.single_sockets.values() if s not in self.udp_sockets.keys()]:
             if s.last_hit < t:
                 tokill.append(s)
         for k in tokill:
@@ -179,14 +185,42 @@ class RawServer(object):
         return server
     create_serversocket = staticmethod(create_serversocket)
 
+    def create_udpsocket(port, bind='', reuse=False, tos=0):
+        server = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        if reuse and os.name != 'nt':
+            server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        server.setblocking(0)
+        if tos != 0:
+            try:
+                server.setsockopt(socket.IPPROTO_IP, socket.IP_TOS, tos)
+            except:
+                pass
+        server.bind((bind, port))
+        return server
+    create_udpsocket = staticmethod(create_udpsocket)
+
     def start_listening(self, serversocket, handler, context=None):
         self.listening_handlers[serversocket.fileno()] = (handler, context)
         self.serversockets[serversocket.fileno()] = serversocket
         self.poll.register(serversocket, POLLIN)
 
+    def start_listening_udp(self, serversocket, handler, context=None):
+        self.listening_handlers[serversocket.fileno()] = (handler, context)
+        nss = SingleSocket(self, serversocket, handler, context)
+        self.single_sockets[serversocket.fileno()] = nss
+        self.udp_sockets[nss] = 1
+        self.poll.register(serversocket, POLLIN)
+
     def stop_listening(self, serversocket):
         del self.listening_handlers[serversocket.fileno()]
         del self.serversockets[serversocket.fileno()]
+        self.poll.unregister(serversocket)
+
+    def stop_listening_udp(self, serversocket):
+        del self.listening_handlers[serversocket.fileno()]
+        del self.single_sockets[serversocket.fileno()]
+        l = [s for s in self.udp_sockets.keys() if s.socket == serversocket]
+        del self.udp_sockets[l[0]]
         self.poll.unregister(serversocket)
 
     def start_connection(self, dns, handler=None, context=None, do_bind=True):
@@ -220,6 +254,15 @@ class RawServer(object):
         self.single_sockets[sock.fileno()] = s
         return s
 
+    # must be called from the main thread
+    def install_sigint_handler(self):
+        def handler(signum, frame):
+            self.external_add_task(self.doneflag.set, 0)
+            # Allow pressing ctrl-c multiple times to raise KeyboardInterrupt,
+            # in case the program is in an infinite loop
+            signal.signal(signal.SIGINT, signal.default_int_handler)
+        signal.signal(signal.SIGINT, handler)
+
     def _handle_events(self, events):
         for sock, event in events:
             if sock in self.serversockets:
@@ -227,7 +270,7 @@ class RawServer(object):
                 if event & (POLLHUP | POLLERR) != 0:
                     self.poll.unregister(s)
                     s.close()
-                    self.errorfunc(CRITICAL, 'lost server socket')
+                    self.errorfunc(CRITICAL, _("lost server socket"))
                 else:
                     handler, context = self.listening_handlers[sock]
                     try:
@@ -242,8 +285,9 @@ class RawServer(object):
                         self._make_wrapped_call(handler. \
                            external_connection_made, (nss,), context=context)
                     except socket.error, e:
-                        self.errorfunc(WARNING, "Error handling accepted "
-                                       "connection: "+str(e))
+                        self.errorfunc(WARNING,
+                                       _("Error handling accepted connection: ") +
+                                       str(e))
             else:
                 s = self.single_sockets.get(sock)
                 if s is None:
@@ -258,7 +302,7 @@ class RawServer(object):
                 if event & (POLLIN | POLLHUP):
                     s.last_hit = bttime()
                     try:
-                        data = s.socket.recv(100000)
+                        data, addr = s.socket.recvfrom(100000)
                     except socket.error, e:
                         code, msg = e
                         if code != EWOULDBLOCK:
@@ -267,8 +311,13 @@ class RawServer(object):
                     if data == '':
                         self._close_socket(s)
                     else:
-                        self._make_wrapped_call(s.handler.data_came_in,
-                                                (s, data), s)
+                        if not self.udp_sockets.has_key(s):
+                            self._make_wrapped_call(s.handler.data_came_in,
+                                                    (s, data), s)
+                        else:
+                            self._make_wrapped_call(s.handler.data_came_in,
+                                                    (addr, data), s)
+                            
                 # data_came_in could have closed the socket (s.socket = None)
                 if event & POLLOUT and s.socket is not None:
                     s.try_write()
@@ -282,51 +331,54 @@ class RawServer(object):
             self.add_task(*task)
 
     def listen_forever(self):
-        while not self.doneflag.isSet():
+        ret = 0
+        while not self.doneflag.isSet() and not ret:
+            ret = self.listen_once()
+            
+    def listen_once(self, period=1e9):
+        try:
+            self._pop_externally_added()
+            if self.funcs:
+                period = self.funcs[0][0] - bttime()
+            if period < 0:
+                period = 0
+            events = self.poll.poll(period * timemult)
+            if self.doneflag.isSet():
+                return 0
+            while self.funcs and self.funcs[0][0] <= bttime():
+                garbage, func, args, context = self.funcs.pop(0)
+                self._make_wrapped_call(func, args, context=context)
+            self._close_dead()
+            self._handle_events(events)
+            if self.doneflag.isSet():
+                return 0
+            self._close_dead()
+        except error, e:
+            if self.doneflag.isSet():
+                return 0
+            # I can't find a coherent explanation for what the behavior
+            # should be here, and people report conflicting behavior,
+            # so I'll just try all the possibilities
             try:
-                self._pop_externally_added()
-                if not self.funcs:
-                    period = 1e9
-                else:
-                    period = self.funcs[0][0] - bttime()
-                if period < 0:
-                    period = 0
-                events = self.poll.poll(period * timemult)
-                if self.doneflag.isSet():
-                    return
-                while self.funcs and self.funcs[0][0] <= bttime():
-                    garbage, func, context = self.funcs.pop(0)
-                    self._make_wrapped_call(func, (), context=context)
-                self._close_dead()
-                self._handle_events(events)
-                if self.doneflag.isSet():
-                    return
-                self._close_dead()
-            except error, e:
-                if self.doneflag.isSet():
-                    return
-                # I can't find a coherent explanation for what the behavior
-                # should be here, and people report conflicting behavior,
-                # so I'll just try all the possibilities
-                try:
-                    code, msg, desc = e
-                except:
-                    try:
-                        code, msg = e
-                    except:
-                        code = e
-                if code == ENOBUFS:
-                    self.errorfunc(CRITICAL, "Have to exit due to the TCP "
-                                   "stack flaking out. "
-                                   "Please see the FAQ at %s"%FAQ_URL)
-                    return
-            except KeyboardInterrupt:
-                print_exc()
-                return
+                code, msg, desc = e
             except:
-                data = StringIO()
-                print_exc(file=data)
-                self.errorfunc(CRITICAL, data.getvalue())
+                try:
+                    code, msg = e
+                except:
+                    code = ENOBUFS
+            if code == ENOBUFS:
+                self.errorfunc(CRITICAL,
+                               _("Have to exit due to the TCP stack flaking "
+                                 "out. Please see the FAQ at %s") % FAQ_URL)
+                return -1
+        except KeyboardInterrupt:
+            print_exc()
+            return -1
+        except:
+            data = StringIO()
+            print_exc(file=data)
+            self.errorfunc(CRITICAL, data.getvalue())
+            return 0
 
     def _make_wrapped_call(self, function, args, socket=None, context=None):
         try:

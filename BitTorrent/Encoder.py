@@ -15,6 +15,7 @@ from socket import error as socketerror
 from BitTorrent.Connecter import Connection
 from BitTorrent import BTFailure, is_frozen_exe
 
+from BitTorrent.ClientIdentifier import identify_client
 
 # header, reserved, download id, my id, [length, message]
 
@@ -22,7 +23,7 @@ from BitTorrent import BTFailure, is_frozen_exe
 class Encoder(object):
 
     def __init__(self, make_upload, downloader, choker, numpieces, ratelimiter,
-               raw_server, config, my_id, schedulefunc, download_id, context):
+               raw_server, config, my_id, schedulefunc, download_id, context, addcontactfunc, reported_port):
         self.make_upload = make_upload
         self.downloader = downloader
         self.choker = choker
@@ -34,6 +35,8 @@ class Encoder(object):
         self.schedulefunc = schedulefunc
         self.download_id = download_id
         self.context = context
+        self.addcontact = addcontactfunc
+        self.reported_port = reported_port
         self.everinc = False
         self.connections = {}
         self.complete_connections = {}
@@ -76,6 +79,12 @@ class Encoder(object):
         c.upload = self.make_upload(c)
         c.download = self.downloader.make_download(c)
         self.choker.connection_made(c)
+        if c.uses_dht:
+            c.send_port(self.reported_port)
+
+    def got_port(self, c):
+        if c.uses_dht and c.dht_port != None:
+            self.addcontact(c.connection.ip, c.dht_port)
 
     def ever_got_incoming(self):
         return self.everinc
@@ -161,8 +170,8 @@ class SingleportListener(object):
 
     def add_torrent(self, infohash, encoder):
         if infohash in self.torrents:
-            raise BTFailure("Can't start two separate instances of the same "
-                            "torrent")
+            raise BTFailure(_("Can't start two separate instances of the same "
+                              "torrent"))
         self.torrents[infohash] = encoder
 
     def remove_torrent(self, infohash):

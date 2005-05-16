@@ -17,10 +17,10 @@ from gzip import GzipFile
 
 DEBUG = False
 
-weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+weekdays = [_("Mon"), _("Tue"), _("Wed"), _("Thu"), _("Fri"), _("Sat"), _("Sun")]
 
-months = [None, 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+months = [None, _("Jan"), _("Feb"), _("Mar"), _("Apr"), _("May"), _("Jun"),
+    _("Jul"), _("Aug"), _("Sep"), _("Oct"), _("Nov"), _("Dec")]
 
 
 class HTTPConnection(object):
@@ -80,7 +80,7 @@ class HTTPConnection(object):
             if self.headers.has_key('accept-encoding'):
                 ae = self.headers['accept-encoding']
                 if DEBUG:
-                    print "Got Accept-Encoding: " + ae + "\n"
+                    print _("Got Accept-Encoding: ") + ae + "\n"
             else:
                 #identity assumed if no header
                 ae = 'identity'
@@ -122,7 +122,7 @@ class HTTPConnection(object):
                 self.encoding = 'identity'
             else:
                 if DEBUG:
-                   print "Compressed: %i  Uncompressed: %i\n" % (len(cdata),len(data))
+                   print _("Compressed: %i  Uncompressed: %i\n") % (len(cdata),len(data))
                 data = cdata
                 headers['Content-Encoding'] = 'gzip'
 

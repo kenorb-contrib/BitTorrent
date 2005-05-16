@@ -8,8 +8,8 @@
 # for the specific language governing rights and limitations under the
 # License.
 
-app_name = "BitTorrent"
-version = '4.0.4'
+app_name = _("BitTorrent")
+version = '4.1.0'
 
 URL = 'http://www.bittorrent.com/'
 DONATE_URL = URL + 'donate.html'
@@ -17,7 +17,7 @@ FAQ_URL = URL + 'FAQ.html'
 HELP_URL = URL + 'documentation.html'
 
 import sys
-assert sys.version_info >= (2, 2, 1), "Python 2.2.1 or newer required"
+assert sys.version_info >= (2, 2, 1), _("Python 2.2.1 or newer required")
 import os
 import re
 
@@ -132,6 +132,20 @@ if is_frozen_exe:
 
 del sys
 
+def spawn(cmd, *args):
+    ext = 'py'
+    if is_frozen_exe:
+        ext = 'exe'
+    path = os.path.join(app_root,cmd+'.'+ext)
+    # do proper argument quoting
+    args = [path] + list(args) # $0
+    args = ['"%s"'%a.replace('"', '\"') for a in args]
+    # BUG: if you get "OSError [Errno 8] Exec format error" on win32 here,
+    # it means you haven't set up your python files to be executable, but
+    # this should still work after building an exe with pygtk.
+    pid = os.spawnl(os.P_NOWAIT, path, *args)
+
+
 INFO = 0
 WARNING = 1
 ERROR = 2
@@ -142,3 +156,4 @@ class BTFailure(Exception):
 
 class BTShutdown(BTFailure):
     pass
+

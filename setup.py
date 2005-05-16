@@ -12,6 +12,9 @@
 
 # Written by Bram Cohen and Matt Chisholm
 
+import gettext
+gettext.install('bittorrent', 'locale')
+
 import sys
 import os
 from distutils.core import setup, Extension
@@ -40,6 +43,6 @@ setup(
     url = "http://bittorrent.com/",
     license = "BitTorrent Open Source License",
     scripts = scripts,
-    packages = ["BitTorrent"],
+    packages = ["BitTorrent", "khashmir"],
     data_files = data_files,
     )

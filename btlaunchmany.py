@@ -12,6 +12,10 @@
 
 # Written by John Hoffman
 
+if __name__ == '__main__':
+    import gettext
+    gettext.install('bittorrent', 'locale')
+
 import sys
 import os
 
@@ -28,7 +32,7 @@ class HeadlessDisplayer:
     def display(self, data):
         print ''
         if not data:
-            self.message('no torrents')
+            self.message(_("no torrents"))
         for x in data:
             ( name, status, progress, peers, seeds, seedsmsg, dist,
               uprate, dnrate, upamt, dnamt, size, t, msg ) = x
@@ -42,7 +46,7 @@ class HeadlessDisplayer:
 
     def exception(self, s):
         exceptions.append(s)
-        self.message('SYSTEM ERROR - EXCEPTION GENERATED')
+        self.message(_("SYSTEM ERROR - EXCEPTION GENERATED"))
 
 
 if __name__ == '__main__':
@@ -57,12 +61,12 @@ if __name__ == '__main__':
         if args:
             config['torrent_dir'] = args[0]
         if not os.path.isdir(config['torrent_dir']):
-            raise BTFailure("Warning: "+args[0]+" is not a directory")
+            raise BTFailure(_("Warning: ")+args[0]+_(" is not a directory"))
     except BTFailure, e:
-        print 'error: ' + str(e) + '\nrun with no args for parameter explanations'
+        print _("error: %s\nrun with no args for parameter explanations") % str(e) 
         sys.exit(1)
 
     LaunchMany(config, HeadlessDisplayer(), 'btlaunchmany')
     if exceptions:
-        print '\nEXCEPTION:'
+        print _("\nEXCEPTION:")
         print exceptions[0]

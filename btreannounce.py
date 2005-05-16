@@ -12,12 +12,14 @@
 
 # Written by Henry 'Pi' James and Bram Cohen
 
-from os.path import basename
-from sys import argv, exit
+import gettext
+gettext.install('bittorrent', 'locale')
+
+from sys import argv
 from BitTorrent.bencode import bencode, bdecode
 
 if len(argv) < 3:
-    print '%s http://new.uri:port/announce file1.torrent file2.torrent' % basename(argv[0])
+    print _("Usage: %s TRACKER_URL [TORRENTFILE [TORRENTFILE ... ] ]") % argv[0]
     print
     exit(2) # common exit code for syntax error
 
@@ -26,7 +28,7 @@ for f in argv[2:]:
     metainfo = bdecode(h.read())
     h.close()
     if metainfo['announce'] != argv[1]:
-        print 'old announce for %s: %s' % (f, metainfo['announce'])
+        print _("old announce for %s: %s") % (f, metainfo['announce'])
         metainfo['announce'] = argv[1]
         h = open(f, 'wb')
         h.write(bencode(metainfo))

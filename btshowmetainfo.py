@@ -12,19 +12,22 @@
 
 # Written by Henry 'Pi' James and Loring Holden
 
+import gettext
+gettext.install('bittorrent', 'locale')
+
 from sys import *
 from os.path import *
 from sha import *
 from BitTorrent.bencode import *
-from BitTorrent import app_name, version
+from BitTorrent import version, app_name
 
 NAME, EXT = splitext(basename(argv[0]))
 
-print '%s %s - decode %s metainfo files' % (NAME, version, app_name)
-print
+print _("%s %s - decode %s metainfo files") % (NAME, version, app_name)
+print 
 
 if len(argv) == 1:
-    print '%s file1.torrent file2.torrent file3.torrent ...' % basename(argv[0])
+    print _("Usage: %s [TORRENTFILE [TORRENTFILE ... ] ]") % argv[0]
     print
     exit(2) # common exit code for syntax error
 
@@ -36,18 +39,18 @@ for metainfo_name in argv[1:]:
     info = metainfo['info']
     info_hash = sha(bencode(info))
 
-    print 'metainfo file.: %s' % basename(metainfo_name)
-    print 'info hash.....: %s' % info_hash.hexdigest()
+    print _("metainfo file.: %s") % basename(metainfo_name)
+    print _("info hash.....: %s") % info_hash.hexdigest()
     piece_length = info['piece length']
     if info.has_key('length'):
         # let's assume we just have a file
-        print 'file name.....: %s' % info['name']
+        print _("file name.....: %s") % info['name']
         file_length = info['length']
-        name ='file size.....:'
+        name = _("file size.....:")
     else:
         # let's assume we have a directory structure
-        print 'directory name: %s' % info['name']
-        print 'files.........: '
+        print _("directory name: %s") % info['name']
+        print _("files.........: ")
         file_length = 0;
         for file in info['files']:
             path = ''
@@ -57,9 +60,12 @@ for metainfo_name in argv[1:]:
                 path = path + item
             print '   %s (%d)' % (path, file['length'])
             file_length += file['length']
-        name = 'archive size..:'
+        name = _("archive size..:")
     piece_number, last_piece_length = divmod(file_length, piece_length)
     print '%s %i (%i * %i + %i)' \
           % (name,file_length, piece_number, piece_length, last_piece_length)
-    print 'announce url..: %s' % announce
-    print
+    print _("announce url..: %s") % announce
+    print _("comment.......: \n")
+    if metainfo.has_key('comment'):
+        print metainfo['comment']
+        print

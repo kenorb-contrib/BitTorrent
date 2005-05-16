@@ -10,7 +10,7 @@
 
 # Written by Bram Cohen and Matt Chisholm
 
-!define VERSION "4.0.4"
+!define VERSION "4.1.0-Beta"
 !define APPNAME "BitTorrent"
 Outfile ${APPNAME}-${VERSION}.exe
 Name "${APPNAME}"
@@ -18,7 +18,6 @@ SilentInstall silent
 SetCompressor lzma
 InstallDir "$PROGRAMFILES\${APPNAME}\"
 
-; " this fixes syntax highlighting in xemacs :)
 ; This function ensures that you have administrator privileges
 ; it is copied from:
 ;http://nsis.sourceforge.net/archive/viewpage.php?pageid=275
@@ -77,14 +76,11 @@ Function QuitIt
     Goto checkforit2
 
   foundit2:
-    MessageBox MB_OKCANCEL "You must quit ${APPNAME} torrent file creator \
-    before installing this version.$\r$\nPlease quit it and press OK to \
-    continue." IDOK waitforit2
+    MessageBox MB_OKCANCEL "You must quit ${APPNAME} metafile creator before \
+    installing this version.$\r$\nPlease quit it and press OK to continue." \
+    IDOK waitforit2
     Abort
   didntfindit2:
-
-  KillProcDLL::KillProc "btdownloadgui.exe"
-  KillProcDLL::KillProc "btmaketorrentgui.exe"
 
 FunctionEnd
 
@@ -113,14 +109,11 @@ Function un.QuitIt
     Goto checkforit2
 
   foundit2:
-    MessageBox MB_OKCANCEL "You must quit ${APPNAME} torrent file creator \
-    before installing this version.$\r$\nPlease quit it and press OK to \
-    continue." IDOK waitforit2
+    MessageBox MB_OKCANCEL "You must quit ${APPNAME} metafile creator before \
+    installing this version.$\r$\nPlease quit it and press OK to continue." \
+    IDOK waitforit2
     Abort
   didntfindit2:
-
-  KillProcDLL::KillProc "btdownloadgui.exe"
-  KillProcDLL::KillProc "btmaketorrentgui.exe"
 
 FunctionEnd
 
@@ -129,42 +122,33 @@ FunctionEnd
 ; It is partly copied from: 
 ; http://nsis.sourceforge.net/archive/viewpage.php?pageid=326
 Function .onInit
-	Call QuitIt
-	ClearErrors
+  Call QuitIt
+  ClearErrors
 
-	ReadRegStr $R0 HKLM \
-	"Software\Microsoft\Windows\CurrentVersion\Uninstall\${APPNAME}" \
-	"UninstallString"
-	StrCmp $R0 "" endofuninst
+  ReadRegStr $R0 HKLM \
+  "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APPNAME}" \
+  "UninstallString"
+  StrCmp $R0 "" done
 
-	MessageBox MB_OKCANCEL|MB_ICONEXCLAMATION "${APPNAME} is already \
-	installed. $\n$\nClick `OK` to upgrade to ${APPNAME} ${VERSION}." \
-	IDOK uninst
-	Abort
+  MessageBox MB_OKCANCEL|MB_ICONEXCLAMATION \
+  "Another version of ${APPNAME} is already installed. $\n$\nClick `OK` to \
+  remove the already installed version and continue installing this version. \ 
+  $\n$\nClick `Cancel` to cancel this installation." \
+  IDOK uninst
+  Abort
   
-	;Run the uninstaller
-	uninst:
-		;Do not copy the uninstaller to a temp file
-		ExecWait '$R0 _?=$INSTDIR /S' 
-		IfErrors no_remove_uninstaller
-		Goto endofuninst
-	no_remove_uninstaller: 
-		MessageBox MB_OK "Uninstallation failed. Aborting."
-		Abort
-	endofuninst:
+;Run the uninstaller
+uninst:
+  ExecWait '$R0 _?=$INSTDIR /S' ;Do not copy the uninstaller to a temp file
 
-	MessageBox MB_OKCANCEL "${APPNAME} is 100% FREE, and it always will be. $\n$\n\
-	Some malicious websites are charging money for ${APPNAME}, committing credit card$\n\
-	fraud, and infecting computers with malicious software. If you did not download$\n\
-	this copy of ${APPNAME} from http://www.bittorrent.com/, PROTECT YOURSELF NOW!$\n\
-	* Check your computer for malicious software.$\n\
-	* Check your credit card bill for unauthorized charges.$\n\
-	* Cancel the installation NOW and download ${APPNAME} for free from $\n\
-	http://www.bittorrent.com/\
-	" IDOK done
+  IfErrors no_remove_uninstaller
 
-	Abort
-	done:	
+  Goto endofuninst
+  no_remove_uninstaller: 
+    MessageBox MB_OK "Uninstallation failed. Aborting."
+    Abort
+  endofuninst:
+done:
 
 FunctionEnd
 
@@ -195,28 +179,17 @@ Section "Install"
   File README.txt
 
   ; registry entries
-  ;; make us the default handler for BT files
   WriteRegStr HKCR .torrent "" bittorrent
   DeleteRegKey HKCR ".torrent\Content Type"
-  ;; This line might make it so that BT sticks around as an option 
-  ;; after installing some other default handler for torrent files
-  ;WriteRegStr HKCR ".Torrent\OpenWithProgids" "bittorrent" 
-
-  ;; Add a mime type
   WriteRegStr HKCR "MIME\Database\Content Type\application/x-bittorrent" Extension .torrent
-
-  ;; Add a shell command to match the 'bittorrent' handler described above
   WriteRegStr HKCR bittorrent "" "TORRENT File"
   WriteRegBin HKCR bittorrent EditFlags 00000100
   WriteRegStr HKCR "bittorrent\shell" "" open
   WriteRegStr HKCR "bittorrent\shell\open\command" "" `"$INSTDIR\btdownloadgui.exe" --responsefile "%1"`
-
-  ;; Info about install/uninstall 
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APPNAME}" "DisplayName" "${APPNAME} ${VERSION}"
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APPNAME}" "UninstallString" '"$INSTDIR\uninstall.exe"'
 
   ; Add items to start menu
-  SetShellVarContext all
   CreateDirectory "$SMPROGRAMS\${APPNAME}"
   CreateShortCut "$SMPROGRAMS\${APPNAME}\Downloader.lnk"   "$INSTDIR\btdownloadgui.exe"
   CreateShortCut "$SMPROGRAMS\${APPNAME}\Make Torrent.lnk" "$INSTDIR\btmaketorrentgui.exe"
@@ -236,6 +209,5 @@ Section "Uninstall"
   DeleteRegKey HKCR bittorrent
   DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APPNAME}"
   RMDir /r "$INSTDIR"
-  SetShellVarContext all
   RMDir /r "$SMPROGRAMS\${APPNAME}"
 SectionEnd

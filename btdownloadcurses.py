@@ -15,6 +15,9 @@
 
 from __future__ import division
 
+import gettext
+gettext.install('bittorrent', 'locale')
+
 SPEW_SCROLL_RATE = 1
 
 import sys
@@ -24,7 +27,7 @@ from time import time, strftime
 
 from BitTorrent.download import Feedback, Multitorrent
 from BitTorrent.defaultargs import get_defaults
-from BitTorrent.parseargs import parseargs, printHelp
+from BitTorrent.parseargs import printHelp
 from BitTorrent.zurllib import urlopen
 from BitTorrent.bencode import bdecode
 from BitTorrent.ConvertedMetainfo import ConvertedMetainfo
@@ -39,27 +42,27 @@ try:
     from curses.wrapper import wrapper as curses_wrapper
     from signal import signal, SIGWINCH
 except:
-    print 'Textmode GUI initialization failed, cannot proceed.'
+    print _("Textmode GUI initialization failed, cannot proceed.")
     print
-    print 'This download interface requires the standard Python module ' \
-       '"curses", which is unfortunately not available for the native ' \
-       'Windows port of Python. It is however available for the Cygwin ' \
-       'port of Python, running on all Win32 systems (www.cygwin.com).'
+    print _("This download interface requires the standard Python module "
+            "\"curses\", which is unfortunately not available for the native "
+            "Windows port of Python. It is however available for the Cygwin "
+            "port of Python, running on all Win32 systems (www.cygwin.com).")
     print
-    print 'You may still use "btdownloadheadless.py" to download.'
+    print _('You may still use "btdownloadheadless.py" to download.')
     sys.exit(1)
 
 def fmttime(n):
     if n == 0:
-        return 'download complete!'
+        return _("download complete!")
     try:
         n = int(n)
         assert n >= 0 and n < 5184000  # 60 days
     except:
-        return '<unknown>'
+        return _("<unknown>")
     m, s = divmod(n, 60)
     h, m = divmod(m, 60)
-    return 'finishing in %d:%02d:%02d' % (h, m, s)
+    return _("finishing in %d:%02d:%02d") % (h, m, s)
 
 def fmtsize(n):
     s = str(n)
@@ -145,16 +148,16 @@ class CursesDisplayer(object):
             self.scrwin.border(ord('|'),ord('|'),ord('-'),ord('-'),ord(' '),ord(' '),ord(' '),ord(' '))
         except:
             pass
-        self.labelwin.addstr(0, 0, 'file:')
-        self.labelwin.addstr(1, 0, 'size:')
-        self.labelwin.addstr(2, 0, 'dest:')
-        self.labelwin.addstr(3, 0, 'progress:')
-        self.labelwin.addstr(4, 0, 'status:')
-        self.labelwin.addstr(5, 0, 'dl speed:')
-        self.labelwin.addstr(6, 0, 'ul speed:')
-        self.labelwin.addstr(7, 0, 'sharing:')
-        self.labelwin.addstr(8, 0, 'seeds:')
-        self.labelwin.addstr(9, 0, 'peers:')
+        self.labelwin.addstr(0, 0, _("file:"))
+        self.labelwin.addstr(1, 0, _("size:"))
+        self.labelwin.addstr(2, 0, _("dest:"))
+        self.labelwin.addstr(3, 0, _("progress:"))
+        self.labelwin.addstr(4, 0, _("status:"))
+        self.labelwin.addstr(5, 0, _("dl speed:"))
+        self.labelwin.addstr(6, 0, _("ul speed:"))
+        self.labelwin.addstr(7, 0, _("sharing:"))
+        self.labelwin.addstr(8, 0, _("seeds:"))
+        self.labelwin.addstr(9, 0, _("peers:"))
         curses.panel.update_panels()
         curses.doupdate()
         self.changeflag.clear()
@@ -163,7 +166,7 @@ class CursesDisplayer(object):
     def finished(self):
         self.done = True
         self.downRate = '---'
-        self.display({'activity':'download succeeded', 'fractionDone':1})
+        self.display({'activity':_("download succeeded"), 'fractionDone':1})
 
     def error(self, errormsg):
         newerrmsg = strftime('[%H:%M:%S] ') + errormsg
@@ -207,20 +210,20 @@ class CursesDisplayer(object):
         if downTotal is not None:
             upTotal = statistics['upTotal']
             if downTotal <= upTotal / 100:
-                self.shareRating = 'oo  (%.1f MB up / %.1f MB down)' % (
+                self.shareRating = _("oo  (%.1f MB up / %.1f MB down)") % (
                     upTotal / (1<<20), downTotal / (1<<20))
             else:
-                self.shareRating = '%.3f  (%.1f MB up / %.1f MB down)' % (
+                self.shareRating = _("%.3f  (%.1f MB up / %.1f MB down)") % (
                    upTotal / downTotal, upTotal / (1<<20), downTotal / (1<<20))
             numCopies = statistics['numCopies']
             nextCopies = ', '.join(["%d:%.1f%%" % (a,int(b*1000)/10) for a,b in
                     zip(xrange(numCopies+1, 1000), statistics['numCopyList'])])
             if not self.done:
-                self.seedStatus = '%d seen now, plus %d distributed copies ' \
+                self.seedStatus = _("%d seen now, plus %d distributed copies") +\
                                   '(%s)' % (statistics['numSeeds'],
                                          statistics['numCopies'], nextCopies)
             else:
-                self.seedStatus = '%d distributed copies (next: %s)' % (
+                self.seedStatus = _("%d distributed copies (next: %s)") % (
                     statistics['numCopies'], nextCopies)
             self.peerStatus = '%d seen now' % statistics['numPeers']
 
@@ -242,7 +245,7 @@ class CursesDisplayer(object):
         if not spew:
             errsize = self.spewh
             if self.errors:
-                self.spewwin.addnstr(0, 0, "error(s):", self.speww, curses.A_BOLD)
+                self.spewwin.addnstr(0, 0, _("error(s):"), self.speww, curses.A_BOLD)
                 errsize = len(self.errors)
                 displaysize = min(errsize, self.spewh)
                 displaytop = errsize - displaysize
@@ -251,10 +254,10 @@ class CursesDisplayer(object):
                                  self.speww-self.labelw-1, curses.A_BOLD)
         else:
             if self.errors:
-                self.spewwin.addnstr(0, 0, "error:", self.speww, curses.A_BOLD)
+                self.spewwin.addnstr(0, 0, _("error:"), self.speww, curses.A_BOLD)
                 self.spewwin.addnstr(0, self.labelw, self.errors[-1],
                                  self.speww-self.labelw-1, curses.A_BOLD)
-            self.spewwin.addnstr(2, 0, "  #     IP                 Upload           Download     Completed  Speed", self.speww, curses.A_BOLD)
+            self.spewwin.addnstr(2, 0, _("  #     IP                 Upload           Download     Completed  Speed"), self.speww, curses.A_BOLD)
 
 
             if self.spew_scroll_time + SPEW_SCROLL_RATE < time():
@@ -299,8 +302,8 @@ class CursesDisplayer(object):
                     self.spewwin.addnstr(i+3, 64, '%5.0f KB/s' % (spew[i]['speed']/1000), 10)
 
             self.spewwin.addnstr(self.spewh-1, 0,
-                    "downloading %d pieces, have %d fragments, "
-                    "%d of %d pieces completed" %
+                    _("downloading %d pieces, have %d fragments, ") + \
+                    _("%d of %d pieces completed") %
                     (statistics['storage_active'], statistics['storage_dirty'],
                      statistics['storage_numcomplete'], self.numpieces),
                     self.speww-1)
@@ -329,8 +332,8 @@ class DL(Feedback):
             torrent_name = metainfo.name_fs
             if config['save_as']:
                 if config['save_in']:
-                    raise BTFailure('You cannot specify both --save_as and '
-                                    '--save_in')
+                    raise BTFailure(_("You cannot specify both --save_as and "
+                                      "--save_in")
                 saveas = config['save_as']
             elif config['save_in']:
                 saveas = os.path.join(config['save_in'], torrent_name)
@@ -345,15 +348,16 @@ class DL(Feedback):
             errlist.append(str(e))
             return
         self.get_status()
+        self.multitorrent.rawserver.install_sigint_handler()
         self.multitorrent.rawserver.listen_forever()
-        self.d.display({'activity':'shutting down', 'fractionDone':0})
+        self.d.display({'activity':_("shutting down"), 'fractionDone':0})
         self.torrent.shutdown()
 
     def reread_config(self):
         try:
             newvalues = configfile.get_config(self.config, 'btdownloadcurses')
         except Exception, e:
-            self.d.error('Error reading config: ' + str(e))
+            self.d.error(_("Error reading config: ") + str(e))
             return
         self.config.update(newvalues)
         # The set_option call can potentially trigger something that kills
@@ -396,8 +400,8 @@ if __name__ == '__main__':
                                        uiname, sys.argv[1:], 0, 1)
         if args:
             if config['responsefile']:
-                raise BTFailure, 'must have responsefile as arg or ' \
-                      'parameter, not both'
+                raise BTFailure, _("must have responsefile as arg or "
+                                   "parameter, not both")
             config['responsefile'] = args[0]
         try:
             if config['responsefile']:
@@ -409,9 +413,9 @@ if __name__ == '__main__':
                 metainfo = h.read()
                 h.close()
             else:
-                raise BTFailure('you need to specify a .torrent file')
+                raise BTFailure(_("you must specify a .torrent file"))
         except IOError, e:
-            raise BTFailure('Error reading .torrent file: ', str(e))
+            raise BTFailure(_("Error reading .torrent file: "), str(e))
     except BTFailure, e:
         print str(e)
         sys.exit(1)
@@ -421,6 +425,6 @@ if __name__ == '__main__':
     curses_wrapper(dl.run)
 
     if errlist:
-       print "These errors occurred during execution:"
+       print _("These errors occurred during execution:")
        for error in errlist:
           print error

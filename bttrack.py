@@ -12,6 +12,10 @@
 
 # Written by Bram Cohen
 
+if __name__ == '__main__':
+    import gettext
+    gettext.install('bittorrent', 'locale')
+
 from sys import argv
 from BitTorrent.track import track
 

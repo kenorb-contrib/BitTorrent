@@ -20,6 +20,16 @@ import threading
 
 from BitTorrent import image_root, app_name, FAQ_URL
 
+def lock_wrap(function, *args):
+    gtk.threads_enter()
+    function(*args)
+    gtk.threads_leave()
+
+def gtk_wrap(function, *args):
+    gtk.threads_enter()
+    gobject.idle_add(lock_wrap, function, *args)
+    gtk.threads_leave()
+
 SPACING = 8
 WINDOW_TITLE_LENGTH = 128 # do we need this?
 WINDOW_WIDTH = 600
@@ -50,7 +60,7 @@ SCROLLBAR_WIDTH = sw.size_request()[0] - 48
 del sw
 
 def align(obj,x,y):
-    if type(obj) == gtk.Label:
+    if type(obj) is gtk.Label:
         obj.set_alignment(x,y)
         return obj
     else:
@@ -136,17 +146,27 @@ class Duration(float):
         if value > 365 * 24 * 60 * 60:
             return '?'
         elif value >= 172800:
-            return '%d days' % (value//86400) # 2 days or longer
+            return _("%d days") % (value//86400) # 2 days or longer
         elif value >= 86400:
-            return '1 day %d hours' % ((value-86400)//3600) # 1-2 days
+            return _("1 day %d hours") % ((value-86400)//3600) # 1-2 days
         elif value >= 3600:
-            return '%d:%02d hours' % (value//3600, (value%3600)//60) # 1 h - 1 day
+            return _("%d:%02d hours") % (value//3600, (value%3600)//60) # 1 h - 1 day
         elif value >= 60:
-            return '%d:%02d minutes' % (value//60, value%60) # 1 minute to 1 hour
+            return _("%d:%02d minutes") % (value//60, value%60) # 1 minute to 1 hour
         elif value >= 0:
-            return '%d seconds' % int(value)
+            return _("%d seconds") % int(value)
         else:
-            return '0 seconds'
+            return _("0 seconds")
+
+
+class FancyLabel(gtk.Label):
+    def __init__(self, label_string, *values):
+        self.label_string = label_string
+        gtk.Label.__init__(self, label_string%values)
+
+    def set_value(self, *values):
+        self.set_text(self.label_string%values)
+
 
 class IconButton(gtk.Button):
     def __init__(self, label, iconpath=None, stock=None):
@@ -160,7 +180,7 @@ class IconButton(gtk.Button):
         elif iconpath is not None:
             self.icon.set_from_file(iconpath)
         else:
-            raise TypeError, "IconButton needs iconpath or stock"
+            raise TypeError, 'IconButton needs iconpath or stock'
         self.hbox.pack_start(self.icon)
 
         self.label = gtk.Label(label)
@@ -178,19 +198,19 @@ class Window(gtk.Window):
 class HelpWindow(Window):
     def __init__(self, main, helptext):
         Window.__init__(self)
-        self.set_title('%s Help'%app_name)
+        self.set_title(_("%s Help")%app_name)
         self.main = main
         self.set_border_width(SPACING)
 
         self.vbox = gtk.VBox(spacing=SPACING)
         
         self.faq_box = gtk.HBox(spacing=SPACING)
-        self.faq_box.pack_start(gtk.Label("Frequently Asked Questions:"), expand=False, fill=False)
+        self.faq_box.pack_start(gtk.Label(_("Frequently Asked Questions:")), expand=False, fill=False)
         self.faq_url = gtk.Entry()
         self.faq_url.set_text(FAQ_URL)
         self.faq_url.set_editable(False)
         self.faq_box.pack_start(self.faq_url, expand=True, fill=True)
-        self.faq_button = gtk.Button('Go')
+        self.faq_button = gtk.Button(_("Go"))
         self.faq_button.connect('clicked', lambda w: self.main.visit_url(FAQ_URL) )
         self.faq_box.pack_start(self.faq_button, expand=False, fill=False)
         self.vbox.pack_start(self.faq_box, expand=False, fill=False)
@@ -250,7 +270,7 @@ class AutoScrollingWindow(ScrolledWindow):
         self.vscrolltimeout = None
 
 #    def drag_data_received(self, widget, context, x, y, selection, targetType, time):
-#        print 'AutoScrollingWindow.drag_data_received(', widget
+#        print _("AutoScrollingWindow.drag_data_received("), widget
 
     def drag_motion(self, widget, context, x, y, time):
         v = self.get_vadjustment()
@@ -299,12 +319,12 @@ class MessageDialog(gtk.MessageDialog):
                                    type, buttons, message)
 
         self.set_size_request(-1, -1)
-        self.set_resizable(gtk.FALSE)
+        self.set_resizable(False)
         self.set_title(title)
         if default is not None:
             self.set_default_response(default)
         
-        self.label.set_line_wrap(gtk.TRUE)
+        self.label.set_line_wrap(True)
 
         self.connect('response', self.callback)
 
@@ -335,15 +355,9 @@ if gtk.pygtk_version < (2, 4, 1):
 
         def __init__(self, main, title='', fullname='', got_location_func=None, no_location_func=None, got_multiple_location_func=None, show=True):
             gtk.FileSelection.__init__(self)
-            from BitTorrent.ConvertedMetainfo import filesystem_encoding
-            self.fsenc = filesystem_encoding
-            try:
-                fullname.decode('utf8')
-            except:
-                fullname = fullname.decode(self.fsenc)
             self.main = main
-            self.set_modal(gtk.TRUE)
-            self.set_destroy_with_parent(gtk.TRUE)
+            self.set_modal(True)
+            self.set_destroy_with_parent(True)
             self.set_title(title)
             if (got_location_func is None and
                 got_multiple_location_func is not None):
@@ -414,17 +428,10 @@ else:
             gtk.FileChooserDialog.__init__(self, action=action, title=title,
                          buttons=(gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL,
                                   gtk.STOCK_OK, gtk.RESPONSE_OK))
-            
-            from BitTorrent.ConvertedMetainfo import filesystem_encoding
-            self.fsenc = filesystem_encoding
-            try:
-                fullname.decode('utf8')
-            except:
-                fullname = fullname.decode(self.fsenc)
             self.set_default_response(gtk.RESPONSE_OK)
             if action == gtk.FILE_CHOOSER_ACTION_CREATE_FOLDER:
                 self.convert_button_box = gtk.HBox()
-                self.convert_button = gtk.Button('Choose an existing folder...')
+                self.convert_button = gtk.Button(_("Choose existing folder"))
                 self.convert_button.connect('clicked', self.change_action)
                 self.convert_button_box.pack_end(self.convert_button,
                                                  expand=False,
@@ -434,36 +441,30 @@ else:
             elif action == gtk.FILE_CHOOSER_ACTION_OPEN:
                 self.all_filter = gtk.FileFilter()
                 self.all_filter.add_pattern('*')
-                self.all_filter.set_name('All Files')
+                self.all_filter.set_name(_("All Files"))
                 self.add_filter(self.all_filter)
                 self.torrent_filter = gtk.FileFilter()
                 self.torrent_filter.add_pattern('*.torrent')
                 self.torrent_filter.add_mime_type('application/x-bittorrent')
-                self.torrent_filter.set_name('Torrents')
+                self.torrent_filter.set_name(_("Torrents"))
                 self.add_filter(self.torrent_filter)
                 self.set_filter(self.torrent_filter)
 
             self.main = main
-            self.set_modal(gtk.TRUE)
-            self.set_destroy_with_parent(gtk.TRUE)
+            self.set_modal(True)
+            self.set_destroy_with_parent(True)
             if fullname:
                 if action == gtk.FILE_CHOOSER_ACTION_SELECT_FOLDER:
-                    if gtk.gtk_version < (2,6):
-                        fullname = fullname.encode(self.fsenc)
                     self.set_filename(fullname)
                 elif action == gtk.FILE_CHOOSER_ACTION_OPEN:
                     if fullname[-1] != os.sep:
                         fullname = fullname + os.sep
                     path, filename = os.path.split(fullname)
-                    if gtk.gtk_version < (2,6):
-                        path = path.encode(self.fsenc)
                     self.set_current_folder(path)
                 else:
                     if fullname[-1] == os.sep:
                         fullname = fullname[:-1]
                     path, filename = os.path.split(fullname)
-                    if gtk.gtk_version < (2,8):
-                        path = path.encode(self.fsenc)
                     self.set_current_folder(path)
                     self.set_current_name(filename)
             if got_multiple_location_func is not None:
@@ -479,10 +480,10 @@ else:
 
         def change_action(self, widget):
             if self.get_action() == gtk.FILE_CHOOSER_ACTION_CREATE_FOLDER:
-                self.convert_button.set_label('Create a new folder...')
+                self.convert_button.set_label(_("Create new folder"))
                 self.set_action(gtk.FILE_CHOOSER_ACTION_SELECT_FOLDER)
             elif self.get_action() == gtk.FILE_CHOOSER_ACTION_SELECT_FOLDER:
-                self.convert_button.set_label('Choose an existing folder...')
+                self.convert_button.set_label(_("Choose existing folder"))
                 self.set_action(gtk.FILE_CHOOSER_ACTION_CREATE_FOLDER)
 
         def got_response(self, widget, response):
@@ -491,11 +492,7 @@ else:
                     if self.got_multiple_location_func is not None:
                         self.got_multiple_location_func(self.get_filenames())
                 elif self.got_location_func is not None:
-                    fn = self.get_filename()
-                    if fn:
-                        self.got_location_func(fn)
-                    else:
-                        self.no_location_func()
+                    self.got_location_func(self.get_filename())
             else:
                 if self.no_location_func is not None:
                     self.no_location_func()
@@ -545,8 +542,8 @@ else:
 
             
     class FileOrFolderSelection(FileSelection):
-        select_file = "Select file"
-        select_folder = "Select folder"
+        select_file   = _("Select file"  )
+        select_folder = _("Select folder")
 
         def __init__(self, *args, **kwargs):
             FileSelection.__init__(self, gtk.FILE_CHOOSER_ACTION_OPEN, *args,

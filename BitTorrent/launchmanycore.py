@@ -60,14 +60,16 @@ class LaunchMany(Feedback):
                 def handler(signum, frame):
                     self.rawserver.external_add_task(self.read_config, 0)
                 signal.signal(signal.SIGHUP, handler)
+                self.rawserver.install_sigint_handler()
             except Exception, e:
-                self.output.message('Could not set signal handler: ' + str(e))
+                self.output.message(_("Could not set signal handler: ") + str(e))
 
             self.rawserver.listen_forever()
 
-            self.output.message('shutting down')
+            self.output.message(_("shutting down"))
             for infohash in self.torrent_list:
-                self.output.message('dropped "'+self.torrent_cache[infohash]['path']+'"')
+                self.output.message(_('dropped "%s"') %
+                                    self.torrent_cache[infohash]['path'])
                 torrent = self.downloads[infohash]
                 if torrent is not None:
                     torrent.shutdown()
@@ -87,10 +89,10 @@ class LaunchMany(Feedback):
             added, removed ) = r
 
         for infohash, data in removed.items():
-            self.output.message('dropped "'+data['path']+'"')
+            self.output.message(_('dropped "%s"') % data['path'])
             self.remove(infohash)
         for infohash, data in added.items():
-            self.output.message('added "'+data['path']+'"')
+            self.output.message(_('added "%s"'  ) % data['path'])
             self.add(infohash, data)
 
     def stats(self):
@@ -116,7 +118,7 @@ class LaunchMany(Feedback):
             t = 0
             msg = ''
             if d is None:
-                status = 'waiting for hash check'
+                status = _("waiting for hash check")
             else:
                 stats = d.get_status()
                 status = stats['activity']
@@ -134,10 +136,10 @@ class LaunchMany(Feedback):
                                 t = -1
                             if t == 0:  # unlikely
                                 t = 0.01
-                            status = 'downloading'
+                            status = _("downloading")
                         else:
                             t = -1
-                            status = 'connecting to peers'
+                            status = _("connecting to peers")
                         seeds = s['numSeeds']
                         dnrate = stats['downRate']
                     peers = s['numPeers']
@@ -219,9 +221,9 @@ class LaunchMany(Feedback):
         try:
             newvalues = configfile.get_config(self.config, self.configfile_key)
         except Exception, e:
-            self.output.message('Error reading config: ' + str(e))
+            self.output.message(_("Error reading config: ") + str(e))
             return
-        self.output.message('Rereading config file')
+        self.output.message(_("Rereading config file"))
         self.config.update(newvalues)
         # The set_option call can potentially trigger something that kills
         # the torrent (when writing this the only possibility is a change in

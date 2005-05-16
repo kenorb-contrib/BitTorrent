@@ -14,6 +14,9 @@
 
 from __future__ import division
 
+import gettext
+gettext.install('bittorrent', 'locale')
+
 DOWNLOAD_SCROLL_RATE = 1
 
 import sys, os
@@ -33,14 +36,14 @@ try:
     from curses.wrapper import wrapper as curses_wrapper
     from signal import signal, SIGWINCH
 except:
-    print 'Textmode GUI initialization failed, cannot proceed.'
+    print _("Textmode GUI initialization failed, cannot proceed.")
     print
-    print 'This download interface requires the standard Python module ' \
-       '"curses", which is unfortunately not available for the native ' \
-       'Windows port of Python. It is however available for the Cygwin ' \
-       'port of Python, running on all Win32 systems (www.cygwin.com).'
+    print _("This download interface requires the standard Python module "
+            "\"curses\", which is unfortunately not available for the native "
+            "Windows port of Python. It is however available for the Cygwin "
+            "port of Python, running on all Win32 systems (www.cygwin.com).")
     print
-    print 'You may still use "btdownloadheadless.py" to download.'
+    print _("You may still use \"btdownloadheadless.py\" to download.")
     sys.exit(1)
 
 exceptions = []
@@ -52,8 +55,8 @@ def fmttime(n):
     m, s = divmod(n, 60)
     h, m = divmod(m, 60)
     if h > 1000000:
-        return 'connecting to peers'
-    return 'ETA in %d:%02d:%02d' % (h, m, s)
+        return _("connecting to peers")
+    return _("ETA in %d:%02d:%02d") % (h, m, s)
 
 def fmtsize(n):
     n = long(n)
@@ -136,11 +139,11 @@ class CursesDisplayer(object):
         except:
             pass
         self.headerwin.addnstr(0, 2, '#', self.mainwinw - 25, curses.A_BOLD)
-        self.headerwin.addnstr(0, 4, 'Filename', self.mainwinw - 25, curses.A_BOLD)
-        self.headerwin.addnstr(0, self.mainwinw - 24, 'Size', 4, curses.A_BOLD)
-        self.headerwin.addnstr(0, self.mainwinw - 18, 'Download', 8, curses.A_BOLD)
-        self.headerwin.addnstr(0, self.mainwinw -  6, 'Upload', 6, curses.A_BOLD)
-        self.totalwin.addnstr(0, self.mainwinw - 27, 'Totals:', 7, curses.A_BOLD)
+        self.headerwin.addnstr(0, 4, _("Filename"), self.mainwinw - 25, curses.A_BOLD)
+        self.headerwin.addnstr(0, self.mainwinw - 24, _("Size"    ), 4, curses.A_BOLD)
+        self.headerwin.addnstr(0, self.mainwinw - 18, _("Download"), 8, curses.A_BOLD)
+        self.headerwin.addnstr(0, self.mainwinw -  6, _("Upload"  ), 6, curses.A_BOLD)
+        self.totalwin.addnstr(0, self.mainwinw - 27, _("Totals:"), 7, curses.A_BOLD)
 
         self._display_messages()
 
@@ -199,9 +202,9 @@ class CursesDisplayer(object):
             line = "%3d %s%s%s%s" % (ii+1, name, size, dnrate, uprate)
             self._display_line(line, True)
             if peers + seeds:
-                datastr = '    (%s) %s - %s peers %s seeds %s dist copies - %s up %s dn' % (
-                                progress, status, peers, seeds, dist,
-                                fmtsize(upamt), fmtsize(dnamt) )
+                datastr = _("    (%s) %s - %s peers %s seeds %s dist copies - %s up %s dn") % (
+                    progress, status, peers, seeds, dist,
+                    fmtsize(upamt), fmtsize(dnamt) )
             else:
                 datastr = '    '+status+' ('+progress+')'
             self._display_line(datastr)
@@ -221,7 +224,7 @@ class CursesDisplayer(object):
             self._display_data(data)
         else:
             self.mainwin.addnstr( 1, self.mainwinw//2-5,
-                                  'no torrents', 12, curses.A_BOLD )
+                                  _("no torrents"), 12, curses.A_BOLD )
         totalup = 0
         totaldn = 0
         for ( name, status, progress, peers, seeds, seedsmsg, dist,
@@ -233,7 +236,7 @@ class CursesDisplayer(object):
         totaldn = '%s/s' % fmtsize(totaldn)
 
         self.totalwin.erase()
-        self.totalwin.addnstr(0, self.mainwinw-27, 'Totals:', 7, curses.A_BOLD)
+        self.totalwin.addnstr(0, self.mainwinw-27, _("Totals:"), 7, curses.A_BOLD)
         self.totalwin.addnstr(0, self.mainwinw-20 + (10-len(totaldn)),
                               totaldn, 10, curses.A_BOLD)
         self.totalwin.addnstr(0, self.mainwinw-10 + (10-len(totalup)),
@@ -259,7 +262,7 @@ class CursesDisplayer(object):
 
     def exception(self, s):
         exceptions.append(s)
-        self.message('SYSTEM ERROR - EXCEPTION GENERATED')
+        self.message(_("SYSTEM ERROR - EXCEPTION GENERATED"))
 
 
 
@@ -279,12 +282,12 @@ if __name__ == '__main__':
         if args:
             config['torrent_dir'] = args[0]
         if not os.path.isdir(config['torrent_dir']):
-            raise BTFailure("Warning: "+args[0]+" is not a directory")
+            raise BTFailure(_("Warning: ")+args[0]+_(" is not a directory"))
     except BTFailure, e:
-        print 'error: ' + str(e) + '\nrun with no args for parameter explanations'
+        print _("error: ") + str(e) + _("\nrun with no args for parameter explanations")
         sys.exit(1)
 
     curses_wrapper(LaunchManyWrapper, config)
     if exceptions:
-        print '\nEXCEPTION:'
+        print _("\nEXCEPTION:")
         print exceptions[0]

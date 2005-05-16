@@ -19,7 +19,7 @@ from BitTorrent import version
 from BitTorrent.platform import bttime
 from BitTorrent.zurllib import urlopen, quote, Request
 from BitTorrent.btformats import check_peers
-from BitTorrent.bencode import bdecode
+from BitTorrent.bencode import bencode, bdecode
 from BitTorrent import BTFailure, INFO, WARNING, ERROR, CRITICAL
 
 
@@ -58,6 +58,8 @@ class Rerequester(object):
         self.last_time = None
         self.previous_down = 0
         self.previous_up = 0
+        self.tracker_num_peers = None
+        self.tracker_num_seeds = None
 
     def _makeurl(self, peerid, port):
         return ('%s?info_hash=%s&peer_id=%s&port=%s&key=%s' %
@@ -72,8 +74,9 @@ class Rerequester(object):
         self._check()
 
     def begin(self):
-        self.sched(self.begin, 60)
-        self._check()
+        if self.sched:
+            self.sched(self.begin, 60)
+            self._check()
 
     def announce_finish(self):
         self.finish = True
@@ -85,8 +88,9 @@ class Rerequester(object):
     def _check(self):
         if self.current_started is not None:
             if self.current_started <= bttime() - 58:
-                self.errorfunc(WARNING, "Tracker announce still not complete "
-                               "%d seconds after starting it" %
+                self.errorfunc(WARNING,
+                               _("Tracker announce still not complete "
+                                 "%d seconds after starting it") %
                                int(bttime() - self.current_started))
             return
         if self.peerid is None:
@@ -165,7 +169,7 @@ class Rerequester(object):
         # exception class especially when proxies are used, at least
         # ValueError and stuff from httplib
         except Exception, e:
-            def f(r='Problem connecting to tracker - ' + str(e)):
+            def f(r=_("Problem connecting to tracker - ") + str(e)):
                 self._postrequest(errormsg=r, peerid=peerid)
         else:
             def f():
@@ -192,25 +196,32 @@ class Rerequester(object):
             check_peers(r)
         except BTFailure, e:
             if data != '':
-                self.errorfunc(ERROR, 'bad data from tracker - ' + str(e))
+                self.errorfunc(ERROR, _("bad data from tracker - ") + str(e))
             self._fail()
             return
+        if type(r.get('complete')) in (int, long) and \
+           type(r.get('incomplete')) in (int, long):
+            self.tracker_num_seeds = r['complete']
+            self.tracker_num_peers = r['incomplete']
+        else:
+            self.tracker_num_seeds = self.tracker_num_peers = None
         if r.has_key('failure reason'):
             if self.howmany() > 0:
-                self.errorfunc(ERROR, 'rejected by tracker - ' +
+                self.errorfunc(ERROR, _("rejected by tracker - ") +
                                r['failure reason'])
             else:
                 # sched shouldn't be strictly necessary
                 def die():
-                    self.diefunc(CRITICAL, "Aborting the torrent as it was "
-                    "rejected by the tracker while not connected to any peers."
-                    " Message from the tracker:     " + r['failure reason'])
+                    self.diefunc(CRITICAL,
+                                 _("Aborting the torrent as it was rejected by "
+                                   "the tracker while not connected to any peers. ") + 
+                                 _(" Message from the tracker: ") + r['failure reason'])
                 self.sched(die, 0)
             self._fail()
         else:
             self.fail_wait = None
             if r.has_key('warning message'):
-                self.errorfunc(ERROR, 'warning from tracker - ' +
+                self.errorfunc(ERROR, _("warning from tracker - ") +
                                r['warning message'])
             self.announce_interval = r.get('interval', self.announce_interval)
             self.config['rerequest_interval'] = r.get('min interval',
@@ -240,3 +251,41 @@ class Rerequester(object):
             if peerid == self.wanted_peerid:
                 self.successfunc()
             self._check()
+
+class DHTRerequester(Rerequester):
+    def __init__(self, config, sched, howmany, connect, externalsched,
+            amount_left, up, down, port, myid, infohash, errorfunc, doneflag,
+            upratefunc, downratefunc, ever_got_incoming, diefunc, sfunc, dht):
+        self.dht = dht
+        Rerequester.__init__(self, "http://localhost/announce", config, sched,  howmany, connect, externalsched,
+                             amount_left, up, down, port, myid, infohash, errorfunc, doneflag,
+                             upratefunc, downratefunc, ever_got_incoming, diefunc, sfunc)
+    
+    def _announce(self, event=None):
+        self.current_started = bttime()
+        self._rerequest("", self.peerid)
+
+    def _rerequest(self, url, peerid):
+        self.peers = ""
+        try:
+            self.dht.getPeers(self.infohash, self._got_peers)
+        except Exception, e:
+            self._postrequest(errmsg="Trackerless lookup failed: " + str(e), peerid=self.wanted_peerid)
+        
+    def _got_peers(self, peers):
+        if not self.howmany:
+            return
+        if not peers:
+            self.dht.announcePeer(self.infohash, self.port, self._announced_peers)
+            d = {'peers':self.peers}
+            self._postrequest(bencode(d), peerid=self.wanted_peerid)
+        else:
+            self.peers += peers[0]
+            
+
+    def _announced_peers(self, nodes):
+        pass
+
+    def announce_stop(self):
+        # don't do anything
+        pass

@@ -8,7 +8,7 @@
 # for the specific language governing rights and limitations under the
 # License.
 
-# Written by Uoti Urpala
+# Written by Uoti Urpala and Matt Chisholm
 
 import os
 import sys
@@ -22,7 +22,7 @@ from ConfigParser import MissingSectionHeaderError, ParsingError
 
 from BitTorrent import parseargs
 from BitTorrent import ERROR
-from BitTorrent import app_name, version, is_frozen_exe
+from BitTorrent import version
 from __init__ import get_config_dir
 
 
@@ -104,13 +104,7 @@ def save_ui_config(defaults, section, save_options, error_callback):
     p.remove_section(section)
     p.add_section(section)
     for name in save_options:
-        if defaults.has_key(name):
-            p.set(section, name, defaults[name])
-        else:
-            err_str = "Configuration option mismatch: '%s'" % name
-            if is_frozen_exe:
-                err_str = "You must quit %s and reinstall it. (%s)" % (app_name, err_str)
-            error_callback(ERROR, err_str)
+        p.set(section, name, defaults[name])
     try:
         f = file(filename, 'w')
         p.write(f)
@@ -120,7 +114,7 @@ def save_ui_config(defaults, section, save_options, error_callback):
             f.close()
         except:
             pass
-        error_callback(ERROR, 'Could not permanently save options: '+
+        error_callback(ERROR, _("Could not permanently save options: ")+
                        str(e))
 
 

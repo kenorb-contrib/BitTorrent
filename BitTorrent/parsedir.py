@@ -31,7 +31,7 @@ def parsedir(directory, parsed, files, blocked, errfunc,
         try:
             dir_contents = os.listdir(directory)
         except (IOError, OSError), e:
-            errfunc("Could not read directory " + directory)
+            errfunc(_("Could not read directory ") + directory)
             continue
         for f in dir_contents:
             if f.endswith('.torrent'):
@@ -40,7 +40,7 @@ def parsedir(directory, parsed, files, blocked, errfunc,
                 try:
                     new_files[p] = [(os.path.getmtime(p),os.path.getsize(p)),0]
                 except (IOError, OSError), e:
-                    errfunc("Could not stat " + p + " : " + str(e))
+                    errfunc(_("Could not stat ") + p + " : " + str(e))
         if not newtorrents:
             for f in dir_contents:
                 p = os.path.join(directory, f)
@@ -71,7 +71,7 @@ def parsedir(directory, parsed, files, blocked, errfunc,
             continue
         if p not in blocked and h in parsed:  # modified; remove+add
             if NOISY:
-                errfunc('removing '+p+' (will re-add)')
+                errfunc(_("removing %s (will re-add)") % p)
             removed[h] = parsed[h]
         to_add.append(p)
 
@@ -81,8 +81,8 @@ def parsedir(directory, parsed, files, blocked, errfunc,
         v = new_file[0]
         if new_file[1] in new_parsed:  # duplicate
             if p not in blocked or files[p][0] != v:
-                errfunc('**warning** '+ p + ' is a duplicate torrent for ' +
-                        new_parsed[new_file[1]]['path'])
+                errfunc(_("**warning** %s is a duplicate torrent for %s") %
+                        (p, new_parsed[new_file[1]]['path']))
             new_blocked[p] = None
             continue
 
@@ -95,8 +95,8 @@ def parsedir(directory, parsed, files, blocked, errfunc,
             h = sha(bencode(d['info'])).digest()
             new_file[1] = h
             if new_parsed.has_key(h):
-                errfunc('**warning** '+ p +
-                        ' is a duplicate torrent for '+new_parsed[h]['path'])
+                errfunc(_("**warning** %s is a duplicate torrent for %s") %
+                        (p, new_parsed[h]['path']))
                 new_blocked[p] = None
                 continue
 
@@ -127,7 +127,7 @@ def parsedir(directory, parsed, files, blocked, errfunc,
             if include_metainfo:
                 a['metainfo'] = d
         except:
-            errfunc('**warning** '+p+' has errors')
+            errfunc(_("**warning** %s has errors") % p)
             new_blocked[p] = None
             continue
         try:
@@ -135,16 +135,16 @@ def parsedir(directory, parsed, files, blocked, errfunc,
         except:
             pass
         if NOISY:
-            errfunc('... successful')
+            errfunc(_("... successful"))
         new_parsed[h] = a
         added[h] = a
 
     for p,v in files.iteritems():       # and finally, mark removed torrents
         if p not in new_files and p not in blocked:
             if NOISY:
-                errfunc('removing '+p)
+                errfunc(_("removing %s") % p)
             removed[v[1]] = parsed[v[1]]
 
     if NOISY:
-        errfunc('done checking')
+        errfunc(_("done checking"))
     return (new_parsed, new_files, new_blocked, added, removed)

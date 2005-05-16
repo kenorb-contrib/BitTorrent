@@ -17,7 +17,7 @@ class DownloaderFeedback(object):
 
     def __init__(self, choker, upfunc, upfunc2, downfunc, uptotal, downtotal,
                  remainingfunc, leftfunc, file_length, finflag, downloader,
-                 files):
+                 files, ever_got_incoming, rerequester):
         self.downloader = downloader
         self.picker = downloader.picker
         self.storage = downloader.storage
@@ -32,6 +32,8 @@ class DownloaderFeedback(object):
         self.file_length = file_length
         self.finflag = finflag
         self.files = files
+        self.ever_got_incoming = ever_got_incoming
+        self.rerequester = rerequester
         self.lastids = []
 
     def _rotate(self):
@@ -67,7 +69,7 @@ class DownloaderFeedback(object):
             l.append(rec)
         return l
 
-    def get_statistics(self, spewflag = False, fileflag = False):
+    def get_statistics(self, spewflag=False, fileflag=False):
         status = {}
         numSeeds = 0
         numPeers = 0
@@ -78,9 +80,12 @@ class DownloaderFeedback(object):
                 numPeers += 1
         status['numSeeds'] = numSeeds
         status['numPeers'] = numPeers
+        status['trackerSeeds'] = self.rerequester.tracker_num_seeds
+        status['trackerPeers'] = self.rerequester.tracker_num_peers
         status['upRate'] = self.upfunc()
         status['upRate2'] = self.upfunc2()
         status['upTotal'] = self.uptotal()
+        status['ever_got_incoming'] = self.ever_got_incoming()
         missingPieces = 0
         numCopyList = []
         numCopies = 0

@@ -8,160 +8,237 @@
 # for the specific language governing rights and limitations under the
 # License.
 
+
+# False and True are not distinct from 0 and 1 under Python 2.2,
+# and we want to handle boolean options differently.
+class MyBool(object):
+
+    def __init__(self, value):
+        self.value = value
+
+    def __repr__(self):
+        if self.value:
+            return 'True'
+        return 'False'
+
+    def __nonzero__(self):
+        return self.value
+
+MYTRUE = MyBool(True)
+MYFALSE = MyBool(False)
+
+basic_options = [
+    ('data_dir', '',
+     _("directory under which variable data such as fastresume information "
+       "and GUI state is saved. Defaults to subdirectory 'data' of the "
+       "bittorrent config directory.")),
+    ('filesystem_encoding', '',
+     _("character encoding used on the local filesystem. "
+       "If left empty, autodetected. "
+       "Autodetection doesn't work under python versions older than 2.3")),
+    ]
+
 common_options = [
     ('ip', '',
-        "ip to report to the tracker (has no effect unless you are on the same local network as the tracker)"),
+     _("ip to report to the tracker (has no effect unless you are on the same "
+       "local network as the tracker)")),
     ('forwarded_port', 0,
-        "world-visible port number if it's different from the one the client "
-        "listens on locally"),
-    ('minport', 6881, 'minimum port to listen on, counts up if unavailable'),
-    ('maxport', 6999, 'maximum port to listen on'),
+     _("world-visible port number if it's different from the one the client "
+       "listens on locally")),
+    ('minport', 6881,
+     _("minimum port to listen on, counts up if unavailable")),
+    ('maxport', 6999,
+     _("maximum port to listen on")),
     ('bind', '',
-        'ip to bind to locally'),
+     _("ip to bind to locally")),
     ('display_interval', .5,
-        'seconds between updates of displayed information'),
+     _("seconds between updates of displayed information")),
     ('rerequest_interval', 5 * 60,
-        'minutes to wait between requesting more peers'),
+     _("minutes to wait between requesting more peers")),
     ('min_peers', 20,
-        'minimum number of peers to not do rerequesting'),
+     _("minimum number of peers to not do rerequesting")),
     ('max_initiate', 40,
-        'number of peers at which to stop initiating new connections'),
+     _("number of peers at which to stop initiating new connections")),
     ('max_allow_in', 80,
-        'maximum number of connections to allow, after this new incoming connections will be immediately closed'),
-    ('check_hashes', 1,
-        'whether to check hashes on disk'),
+     _("maximum number of connections to allow, after this new incoming "
+       "connections will be immediately closed")),
+    ('check_hashes', MYTRUE,
+     _("whether to check hashes on disk")),
     ('max_upload_rate', 20,
-        'maximum kB/s to upload at, 0 means no limit'),
+     _("maximum kB/s to upload at, 0 means no limit")),
     ('min_uploads', 2,
-        "the number of uploads to fill out to with extra optimistic unchokes"),
-    ('data_dir', '',
-         "directory under which variable data such as fastresume information "
-         "and GUI state is saved. Defaults to subdirectory 'data' of the "
-         "bittorrent config directory."),
+     _("the number of uploads to fill out to with extra optimistic unchokes")),
     ('max_files_open', 50,
-     'the maximum number of files in a multifile torrent to keep open at a time, 0 means no limit. Used to avoid running out of file descriptors.'),
+     _("the maximum number of files in a multifile torrent to keep open at a "
+       "time, 0 means no limit. Used to avoid running out of file descriptors.")),
     ]
 
 
 rare_options = [
     ('keepalive_interval', 120.0,
-        'number of seconds to pause between sending keepalives'),
+     _("number of seconds to pause between sending keepalives")),
     ('download_slice_size', 2 ** 14,
-        "how many bytes to query for per request."),
+     _("how many bytes to query for per request.")),
     ('max_message_length', 2 ** 23,
-        "maximum length prefix encoding you'll accept over the wire - larger values get the connection dropped."),
+     _("maximum length prefix encoding you'll accept over the wire - larger "
+       "values get the connection dropped.")),
     ('socket_timeout', 300.0,
-        'seconds to wait between closing sockets which nothing has been received on'),
+     _("seconds to wait between closing sockets which nothing has been "
+       "received on")),
     ('timeout_check_interval', 60.0,
-        'seconds to wait between checking if any connections have timed out'),
+     _("seconds to wait between checking if any connections have timed out")),
     ('max_slice_length', 16384,
-        "maximum length slice to send to peers, close connection if a larger request is received"),
+     _("maximum length slice to send to peers, close connection if a larger "
+       "request is received")),
     ('max_rate_period', 20.0,
-        "maximum amount of time to guess the current rate estimate represents"),
+     _("maximum amount of time to guess the current rate estimate represents")),
     ('max_rate_period_seedtime', 100.0,
-        "maximum amount of time to guess the current rate estimate represents"),
+     _("maximum amount of time to guess the current rate estimate represents")),
     ('max_announce_retry_interval', 1800,
-        'maximum time to wait between retrying announces if they keep failing'),
+     _("maximum time to wait between retrying announces if they keep failing")),
     ('snub_time', 30.0,
-        "seconds to wait for data to come in over a connection before assuming it's semi-permanently choked"),
+     _("seconds to wait for data to come in over a connection before assuming "
+       "it's semi-permanently choked")),
     ('rarest_first_cutoff', 4,
-        "number of downloads at which to switch from random to rarest first"),
+     _("number of downloads at which to switch from random to rarest first")),
     ('upload_unit_size', 1380,
-        'how many bytes to write into network buffers at once.'),
-    ('retaliate_to_garbled_data', 1,
-     'refuse further connections from addresses with broken or intentionally '
-     'hostile peers that send incorrect data'),
-    ('one_connection_per_ip', 1,
-     'do not connect to several peers that have the same IP address'),
+     _("how many bytes to write into network buffers at once.")),
+    ('retaliate_to_garbled_data', MYTRUE,
+     _("refuse further connections from addresses with broken or intentionally "
+       "hostile peers that send incorrect data")),
+    ('one_connection_per_ip', MYTRUE,
+     _("do not connect to several peers that have the same IP address")),
     ('peer_socket_tos', 8,
-     'if nonzero, set the TOS option for peer connections to this value'),
-    ('filesystem_encoding', '',
-     "character encoding used on the local filesystem. If left empty, autodetected. Autodetection doesn't work under python versions older than 2.3"),
-    ('enable_bad_libc_workaround', 0,
-     'enable workaround for a bug in BSD libc that makes file reads very slow.'),
+     _("if nonzero, set the TOS option for peer connections to this value")),
+    ('bad_libc_workaround', MYFALSE,
+     _("enable workaround for a bug in BSD libc that makes file reads very slow.")),
     ('tracker_proxy', '',
-     'address of HTTP proxy to use for tracker connections'),
+     _("address of HTTP proxy to use for tracker connections")),
     ('close_with_rst', 0,
-     'close connections with RST and avoid the TCP TIME_WAIT state (attempt to fix TCP stack problems under Win32)'),
-    ('chop_max_allow_in', 0,
-     'force max_allow_in to stay below 30 on Win32'),
+     _("close connections with RST and avoid the TCP TIME_WAIT state")),
+    ('chop_max_allow_in', MYFALSE,
+     _("force max_allow_in to stay below 30 on Win32")),
     ]
 
-def get_defaults(ui):
-    assert ui in "btdownloadheadless btdownloadcurses btdownloadgui " \
-           "btlaunchmany btlaunchmanycurses btmaketorrentgui".split()
 
-    r = list(common_options)
+def get_defaults(ui):
+    assert ui in ("btdownloadheadless", "btdownloadcurses"  , "btdownloadgui",
+                  "btlaunchmany"      , "btlaunchmanycurses",
+                  "btmaketorrent"     , "btmaketorrentgui")
+
+    r = []
+
+    if ui.startswith('btdownload') or ui.startswith('btlaunchmany'):
+        r.extend(common_options)
 
     if ui == 'btdownloadgui':
         r.extend([
             ('save_as', '',
-             'file name (for single-file torrents) or directory name (for batch torrents) to save the torrent as, overriding the default name in the torrent. See also --save_in, if neither is specified the user will be asked for save location'),
-            ('advanced', 0,
-             "display advanced user interface"),
+             _("file name (for single-file torrents) or directory name (for "
+               "batch torrents) to save the torrent as, overriding the default "
+               "name in the torrent. See also --save_in, if neither is "
+               "specified the user will be asked for save location")),
+            ('advanced', MYFALSE,
+             _("display advanced user interface")),
             ('next_torrent_time', 300,
-             'the maximum number of minutes to seed a completed torrent before stopping seeding'),
+             _("the maximum number of minutes to seed a completed torrent "
+               "before stopping seeding")),
             ('next_torrent_ratio', 80,
-             'the minimum upload/download ratio, in percent, to achieve before stopping seeding. 0 means no limit.'),
+             _("the minimum upload/download ratio, in percent, to achieve "
+               "before stopping seeding. 0 means no limit.")),
             ('last_torrent_ratio', 0,
-             'the minimum upload/download ratio, in percent, to achieve before stopping seeding the last torrent. 0 means no limit.'),
-            ('pause', 0,
-             'start downloader in paused state'),
+             _("the minimum upload/download ratio, in percent, to achieve "
+               "before stopping seeding the last torrent. 0 means no limit.")),
+            ('pause', MYFALSE,
+             _("start downloader in paused state")),
             ('start_torrent_behavior', 'replace',
-             ''),
+             _('specifies how the app should behave when the user manually '
+               'tries to start another torrent: "replace" means always replace '
+               'the running torrent with the new one, "add" means always add '
+               'the running torrent in parallel, and "ask" means ask the user '
+               'each time.')),
+            ('open_from', '',
+             'local directory to look in for .torrent files to open'),
+            ('ask_for_save', MYFALSE,
+             'whether or not to ask for a location to save downloaded files in'),
             ])
 
     if ui in ('btdownloadcurses', 'btdownloadheadless'):
         r.append(
             ('save_as', '',
-             'file name (for single-file torrents) or directory name (for batch torrents) to save the torrent as, overriding the default name in the torrent. See also --save_in'))
+             _("file name (for single-file torrents) or directory name (for "
+               "batch torrents) to save the torrent as, overriding the "
+               "default name in the torrent. See also --save_in")))
 
     if ui.startswith('btdownload'):
         r.extend([
             ('max_uploads', -1,
-             "the maximum number of uploads to allow at once. -1 means a (hopefully) reasonable number based on --max_upload_rate. The automatic values are only sensible when running one torrent at once."),
+             _("the maximum number of uploads to allow at once. -1 means a "
+               "(hopefully) reasonable number based on --max_upload_rate. "
+               "The automatic values are only sensible when running one "
+               "torrent at once.")),
             ('save_in', '',
-             'local directory where the torrent contents will be saved. The file (single-file torrents) or directory (batch torrents) will be created under this directory using the default name specified in the .torrent file. See also --save_as.'),
+             _("local directory where the torrent contents will be saved. The "
+               "file (single-file torrents) or directory (batch torrents) will "
+               "be created under this directory using the default name "
+               "specified in the .torrent file. See also --save_as.")),
             ('responsefile', '',
-             'file the server response was stored in, alternative to url'),
+             _("file the server response was stored in, alternative to url")),
             ('url', '',
-             'url to get file from, alternative to responsefile'),
+             _("url to get file from, alternative to responsefile")),
             ('ask_for_save', 0,
-             'whether or not to ask for a location to save downloaded files in'),
+             _("whether or not to ask for a location to save downloaded files in")),
             ])
 
     if ui.startswith('btlaunchmany'):
         r.extend([
             ('max_uploads', 6,
-             "the maximum number of uploads to allow at once. -1 means a (hopefully) reasonable number based on --max_upload_rate. The automatic values are only sensible when running one torrent at once."),
+             _("the maximum number of uploads to allow at once. -1 means a "
+               "(hopefully) reasonable number based on --max_upload_rate. The "
+               "automatic values are only sensible when running one torrent at "
+               "once.")),
             ('save_in', '',
-             'local directory where the torrents will be saved, using a name determined by --saveas_style. If this is left empty each torrent will be saved under the directory of the corresponding .torrent file'),
+             _("local directory where the torrents will be saved, using a "
+               "name determined by --saveas_style. If this is left empty "
+               "each torrent will be saved under the directory of the "
+               "corresponding .torrent file")),
             ('parse_dir_interval', 60,
-              "how often to rescan the torrent directory, in seconds" ),
+              _("how often to rescan the torrent directory, in seconds") ),
             ('saveas_style', 1,
-              "How to name torrent downloads (1 = rename to torrent name, " +
-              "2 = save under name in torrent, 3 = save in directory under torrent name)" ),
-            ('display_path', ui == 'btlaunchmany' and 1 or 0,
-              "whether to display the full path or the torrent contents for each torrent" ),
+              _("How to name torrent downloads (1 = rename to torrent name, "
+                "2 = save under name in torrent, 3 = save in directory under "
+                "torrent name)") ),
+            ('display_path', ui == 'btlaunchmany' and MYTRUE or MYFALSE,
+              _("whether to display the full path or the torrent contents for "
+                "each torrent") ),
             ])
 
     if ui.startswith('btlaunchmany') or ui == 'btmaketorrentgui':
         r.append(
             ('torrent_dir', '',
-             'directory to look for .torrent files (semi-recursive)'),)
+             _("directory to look for .torrent files (semi-recursive)")),)
 
     if ui in ('btdownloadcurses', 'btdownloadheadless'):
         r.append(
-            ('spew', 0,
-             "whether to display diagnostic info to stdout"))
+            ('spew', MYFALSE,
+             _("whether to display diagnostic info to stdout")))
 
-    if ui == 'btmaketorrentgui':
+    if ui.startswith('btmaketorrent'):
         r.extend([
             ('piece_size_pow2', 18,
-             "which power of two to set the piece size to"),
+             _("which power of two to set the piece size to")),
             ('tracker_name', 'http://my.tracker:6969/announce',
-             "default tracker name"),
+             _("default tracker name")),
+            ('tracker_list', '', ''),
+            ('use_tracker', MYTRUE,
+             _("if false then make a trackerless torrent, instead of "
+               "announce URL, use reliable node in form of <ip>:<port> or an "
+               "empty string to pull some nodes from your routing table")),
             ])
 
-    r.extend(rare_options)
+    r.extend(basic_options)
+    
+    if ui.startswith('btdownload') or ui.startswith('btlaunchmany'):
+        r.extend(rare_options)
+    
     return r

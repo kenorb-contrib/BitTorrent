@@ -11,6 +11,7 @@
 from __future__ import generators
 
 import sys
+
 if sys.version_info < (2, 3):
     # Allow int() to create numbers larger than "small ints".
     # This is NOT SAFE if int is used as the name of the type instead

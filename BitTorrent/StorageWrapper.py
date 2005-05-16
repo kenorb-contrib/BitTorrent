@@ -50,9 +50,9 @@ class StorageWrapper(object):
                             "downloaded yet."+infohash+\
                             tobinary(config['download_slice_size'])
         if self.total_length <= piece_size * (self.numpieces - 1):
-            raise BTFailure, 'bad data in responsefile - total too small'
+            raise BTFailure, _("bad data in responsefile - total too small")
         if self.total_length > piece_size * self.numpieces:
-            raise BTFailure, 'bad data in responsefile - total too big'
+            raise BTFailure, _("bad data in responsefile - total too big")
         self.finished = finished
         self.numactive = array('H', [0] * self.numpieces)
         self.inactive_requests = [1] * self.numpieces
@@ -97,7 +97,7 @@ class StorageWrapper(object):
                 else:
                     targets[hashes[i]] = i
         if total and check_hashes:
-            statusfunc('checking existing file', 0)
+            statusfunc(_("checking existing file"), 0)
         def markgot(piece, pos):
             if self.have[piece]:
                 if piece != pos:
@@ -119,8 +119,8 @@ class StorageWrapper(object):
         for i in xrange(self.numpieces):
             if not self._waspre(i):
                 if self.rplaces[i] != UNALLOCATED:
-                    raise BTFailure("--check_hashes 0 or fastresume info "
-                                    "doesn't match file state (missing data)")
+                    raise BTFailure(_("--check_hashes 0 or fastresume info "
+                                      "doesn't match file state (missing data)"))
                 continue
             elif fastresume:
                 t = self.rplaces[i]
@@ -128,12 +128,12 @@ class StorageWrapper(object):
                     markgot(t, i)
                     continue
                 if t == UNALLOCATED:
-                    raise BTFailure("Bad fastresume info (files contain more "
-                                    "data)")
+                    raise BTFailure(_("Bad fastresume info (files contain more "
+                                      "data)"))
                 if t == ALLOCATED:
                     continue
                 if t!= FASTRESUME_PARTIAL:
-                    raise BTFailure("Bad fastresume info (illegal value)")
+                    raise BTFailure(_("Bad fastresume info (illegal value)"))
                 data = self.storage.read(self.piece_size * i,
                                          self._piecelen(i))
                 self._check_partial(i, partials, data)
@@ -249,8 +249,8 @@ class StorageWrapper(object):
             return
         data = data[:self._piecelen(piece)]
         if sha(data).digest() != self.hashes[piece]:
-            raise BTFailure('data corrupted on disk - '
-                            'maybe you have two copies running?')
+            raise BTFailure(_("data corrupted on disk - "
+                              "maybe you have two copies running?"))
 
     def _get_free_place(self):
         while self.rplaces[self.holepos] >= 0:
@@ -281,7 +281,7 @@ class StorageWrapper(object):
                 r.fromfile(resumefile, self.numpieces)
                 return r
             except Exception, e:
-                self.errorfunc(WARNING, "Couldn't read fastresume data: " +
+                self.errorfunc(WARNING, _("Couldn't read fastresume data: ") +
                                str(e))
         return None
 
@@ -401,7 +401,7 @@ class StorageWrapper(object):
             return None
         if not self.waschecked[index]:
             if sha(self.storage.read(self.piece_size * self.places[index], self._piecelen(index))).digest() != self.hashes[index]:
-                raise BTFailure, 'told file complete on start-up, but piece failed hash check'
+                raise BTFailure, _("told file complete on start-up, but piece failed hash check")
             self.waschecked[index] = True
         if begin + length > self._piecelen(index):
             return None

@@ -14,16 +14,18 @@
 
 from __future__ import division
 
+import gettext
+gettext.install('bittorrent', 'locale')
+
 import sys
 import os
 import threading
 from time import time, strftime
-from signal import signal, SIGWINCH
 from cStringIO import StringIO
 
 from BitTorrent.download import Feedback, Multitorrent
 from BitTorrent.defaultargs import get_defaults
-from BitTorrent.parseargs import parseargs, printHelp
+from BitTorrent.parseargs import printHelp
 from BitTorrent.zurllib import urlopen
 from BitTorrent.bencode import bdecode
 from BitTorrent.ConvertedMetainfo import ConvertedMetainfo
@@ -34,15 +36,15 @@ from BitTorrent import version
 
 def fmttime(n):
     if n == 0:
-        return 'download complete!'
+        return _("download complete!")
     try:
         n = int(n)
         assert n >= 0 and n < 5184000  # 60 days
     except:
-        return '<unknown>'
+        return _("<unknown>")
     m, s = divmod(n, 60)
     h, m = divmod(m, 60)
-    return 'finishing in %d:%02d:%02d' % (h, m, s)
+    return _("finishing in %d:%02d:%02d") % (h, m, s)
 
 def fmtsize(n):
     s = str(n)
@@ -89,7 +91,7 @@ class HeadlessDisplayer(object):
     def finished(self):
         self.done = True
         self.downRate = '---'
-        self.display({'activity':'download succeeded', 'fractionDone':1})
+        self.display({'activity':_("download succeeded"), 'fractionDone':1})
 
     def error(self, errormsg):
         newerrmsg = strftime('[%H:%M:%S] ') + errormsg
@@ -123,34 +125,34 @@ class HeadlessDisplayer(object):
         if downTotal is not None:
             upTotal = statistics['upTotal']
             if downTotal <= upTotal / 100:
-                self.shareRating = 'oo  (%.1f MB up / %.1f MB down)' % (
+                self.shareRating = _("oo  (%.1f MB up / %.1f MB down)") % (
                     upTotal / (1<<20), downTotal / (1<<20))
             else:
-                self.shareRating = '%.3f  (%.1f MB up / %.1f MB down)' % (
+                self.shareRating = _("%.3f  (%.1f MB up / %.1f MB down)") % (
                    upTotal / downTotal, upTotal / (1<<20), downTotal / (1<<20))
             numCopies = statistics['numCopies']
             nextCopies = ', '.join(["%d:%.1f%%" % (a,int(b*1000)/10) for a,b in
                     zip(xrange(numCopies+1, 1000), statistics['numCopyList'])])
             if not self.done:
-                self.seedStatus = '%d seen now, plus %d distributed copies ' \
+                self.seedStatus = _("%d seen now, plus %d distributed copies ") \
                                   '(%s)' % (statistics['numSeeds'],
                                          statistics['numCopies'], nextCopies)
             else:
-                self.seedStatus = '%d distributed copies (next: %s)' % (
+                self.seedStatus = _("%d distributed copies (next: %s)") % (
                     statistics['numCopies'], nextCopies)
-            self.peerStatus = '%d seen now' % statistics['numPeers']
+            self.peerStatus = _("%d seen now") % statistics['numPeers']
 
-        for err in self.errors:
-            print 'ERROR:\n' + err + '\n'
-        print 'saving:        ', self.file
-        print 'percent done:  ', self.percentDone
-        print 'time left:     ', self.timeEst
-        print 'download to:   ', self.downloadTo
-        print 'download rate: ', self.downRate
-        print 'upload rate:   ', self.upRate
-        print 'share rating:  ', self.shareRating
-        print 'seed status:   ', self.seedStatus
-        print 'peer status:   ', self.peerStatus
+        for err in self.errors[-4:]:
+            print _("ERROR:\n") + err + '\n'
+        print _("saving:        "), self.file
+        print _("percent done:  "), self.percentDone
+        print _("time left:     "), self.timeEst
+        print _("download to:   "), self.downloadTo
+        print _("download rate: "), self.downRate
+        print _("upload rate:   "), self.upRate
+        print _("share rating:  "), self.shareRating
+        print _("seed status:   "), self.seedStatus
+        print _("peer status:   "), self.peerStatus
 
     def print_spew(self, spew):
         s = StringIO()
@@ -213,8 +215,8 @@ class DL(Feedback):
             torrent_name = metainfo.name_fs
             if config['save_as']:
                 if config['save_in']:
-                    raise BTFailure('You cannot specify both --save_as and '
-                                    '--save_in')
+                    raise BTFailure(_("You cannot specify both --save_as and "
+                                      "--save_in"))
                 saveas = config['save_as']
             elif config['save_in']:
                 saveas = os.path.join(config['save_in'], torrent_name)
@@ -229,15 +231,16 @@ class DL(Feedback):
             print str(e)
             return
         self.get_status()
+        self.multitorrent.rawserver.install_sigint_handler()
         self.multitorrent.rawserver.listen_forever()
-        self.d.display({'activity':'shutting down', 'fractionDone':0})
+        self.d.display({'activity':_("shutting down"), 'fractionDone':0})
         self.torrent.shutdown()
 
     def reread_config(self):
         try:
             newvalues = configfile.get_config(self.config, 'btdownloadcurses')
         except Exception, e:
-            self.d.error('Error reading config: ' + str(e))
+            self.d.error(_("Error reading config: ") + str(e))
             return
         self.config.update(newvalues)
         # The set_option call can potentially trigger something that kills
@@ -280,8 +283,8 @@ if __name__ == '__main__':
                                       uiname, sys.argv[1:], 0, 1)
         if args:
             if config['responsefile']:
-                raise BTFailure, 'must have responsefile as arg or ' \
-                      'parameter, not both'
+                raise BTFailure, _("must have responsefile as arg or "
+                                   "parameter, not both")
             config['responsefile'] = args[0]
         try:
             if config['responsefile']:
@@ -293,9 +296,9 @@ if __name__ == '__main__':
                 metainfo = h.read()
                 h.close()
             else:
-                raise BTFailure('you need to specify a .torrent file')
+                raise BTFailure(_("you must specify a .torrent file"))
         except IOError, e:
-            raise BTFailure('Error reading .torrent file: ', str(e))
+            raise BTFailure(_("Error reading .torrent file: "), str(e))
     except BTFailure, e:
         print str(e)
         sys.exit(1)

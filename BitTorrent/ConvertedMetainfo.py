@@ -47,16 +47,23 @@ def set_filesystem_encoding(encoding, errorfunc):
         try:
             sys.getfilesystemencoding
         except AttributeError:
-            errorfunc(WARNING, "This seems to be an old Python version which does not support detecting the filesystem encoding. Assuming 'ascii'.")
+            errorfunc(WARNING,
+                      _("This seems to be an old Python version which "
+                        "does not support detecting the filesystem "
+                        "encoding. Assuming 'ascii'."))
             return
         encoding = sys.getfilesystemencoding()
         if encoding is None:
-            errorfunc(WARNING, "Python failed to autodetect filesystem encoding. Using 'ascii' instead.")
+            errorfunc(WARNING,
+                      _("Python failed to autodetect filesystem encoding. "
+                        "Using 'ascii' instead."))
             return
     try:
         'a1'.decode(encoding)
     except:
-        errorfunc(ERROR, "Filesystem encoding '"+encoding+"' is not supported. Using 'ascii' instead.")
+        errorfunc(ERROR,
+                  _("Filesystem encoding '%s' is not supported. "
+                    "Using 'ascii' instead.") % encoding)
         return
     filesystem_encoding = encoding
 
@@ -92,6 +99,7 @@ class ConvertedMetainfo(object):
         self.files_fs = None
         self.total_bytes = 0
         self.sizes = []
+        self.comment = None
 
         btformats.check_message(metainfo, check_paths=False)
         info = metainfo['info']
@@ -112,22 +120,15 @@ class ConvertedMetainfo(object):
                 for x in path:
                     if not btformats.allowed_path_re.match(x):
                         if l > 0:
-                            raise BTFailure("Bad file path component: "+x)
+                            raise BTFailure(_("Bad file path component: ")+x)
                         # BitComet makes bad .torrent files with empty
                         # filename part
                         self.bad_path = True
                         break
                 else:
-                    p = []
-                    for x in path:
-                        p.append((self._enforce_utf8(x), x))
-                    path = p
+                    path = [(self._enforce_utf8(x), x) for x in path]
                     self.orig_files.append('/'.join([x[0] for x in path]))
-                    k = []
-                    for u,o in path:
-                        tf2 = self._to_fs_2(u)
-                        k.append((tf2, u, o))
-                    r.append((k,i))
+                    r.append(([(self._to_fs_2(u), u, o) for u, o in path], i))
                     i += 1
             # If two or more file/subdirectory names in the same directory
             # would map to the same name after encoding conversions + Windows
@@ -166,7 +167,16 @@ class ConvertedMetainfo(object):
         self.name = self._get_field_utf8(info, 'name')
         self.name_fs = self._to_fs(self.name)
         self.piece_length = info['piece length']
-        self.announce = metainfo['announce']
+        self.is_trackerless = False
+        if metainfo.has_key('announce'):
+            self.announce = metainfo['announce']
+        elif metainfo.has_key('nodes'):
+            self.is_trackerless = True
+            self.nodes = metainfo['nodes']
+
+        if metainfo.has_key('comment'):
+            self.comment = metainfo['comment']
+            
         self.hashes = [info['pieces'][x:x+20] for x in xrange(0,
             len(info['pieces']), 20)]
         self.infohash = sha(bencode(info)).digest()
@@ -174,17 +184,41 @@ class ConvertedMetainfo(object):
     def show_encoding_errors(self, errorfunc):
         self.reported_errors = True
         if self.bad_torrent_unsolvable:
-            errorfunc(ERROR, "This .torrent file has been created with a broken tool and has incorrectly encoded filenames. Some or all of the filenames may appear different from what the creator of the .torrent file intended.")
+            errorfunc(ERROR,
+                      _("This .torrent file has been created with a broken "
+                        "tool and has incorrectly encoded filenames. Some or "
+                        "all of the filenames may appear different from what "
+                        "the creator of the .torrent file intended."))
         elif self.bad_torrent_noncharacter:
-            errorfunc(ERROR, "This .torrent file has been created with a broken tool and has bad character values that do not correspond to any real character. Some or all of the filenames may appear different from what the creator of the .torrent file intended.")
+            errorfunc(ERROR,
+                      _("This .torrent file has been created with a broken "
+                        "tool and has bad character values that do not "
+                        "correspond to any real character. Some or all of the "
+                        "filenames may appear different from what the creator "
+                        "of the .torrent file intended."))
         elif self.bad_torrent_wrongfield:
-            errorfunc(ERROR, "This .torrent file has been created with a broken tool and has incorrectly encoded filenames. The names used may still be correct.")
+            errorfunc(ERROR,
+                      _("This .torrent file has been created with a broken "
+                        "tool and has incorrectly encoded filenames. The "
+                        "names used may still be correct."))
         elif self.bad_conversion:
-            errorfunc(WARNING, 'The character set used on the local filesystem ("'+filesystem_encoding+'") cannot represent all characters used in the filename(s) of this torrent. Filenames have been changed from the original.')
+            errorfunc(WARNING,
+                      _('The character set used on the local filesystem ("%s") '
+                        'cannot represent all characters used in the '
+                        'filename(s) of this torrent. Filenames have been '
+                        'changed from the original.') % filesystem_encoding)
         elif self.bad_windows:
-            errorfunc(WARNING, 'The Windows filesystem cannot handle some characters used in the filename(s) of this torrent. Filenames have been changed from the original.')
+            errorfunc(WARNING,
+                      _("The Windows filesystem cannot handle some "
+                        "characters used in the filename(s) of this torrent."
+                        "Filenames have been changed from the original."))
         elif self.bad_path:
-            errorfunc(WARNING, "This .torrent file has been created with a broken tool and has at least 1 file with an invalid file or directory name. However since all such files were marked as having length 0 those files are just ignored.")
+            errorfunc(WARNING,
+                      _("This .torrent file has been created with a broken "
+                        "tool and has at least 1 file with an invalid file "
+                        "or directory name. However since all such files "
+                        "were marked as having length 0 those files are "
+                        "just ignored."))
 
     # At least BitComet seems to make bad .torrent files that have
     # fields in an arbitrary encoding but separate 'field.utf-8' attributes
@@ -237,11 +271,8 @@ class ConvertedMetainfo(object):
             self.bad_conversion = True
             bad = True
             r = name.encode(filesystem_encoding, 'replace')
-
-        if sys.platform == 'win32':
-            # encoding to mbcs with or without 'replace' will make the
-            # name unsupported by windows again because it adds random
-            # '?' characters which are invalid windows filesystem
-            # character
-            r, bad = self._fix_windows(r)
+            # 'replace' could possibly make the name unsupported by windows
+            # again, but I think this shouldn't happen with the 'mbcs'
+            # encoding. Could happen under Python 2.2 or if someone explicitly
+            # specifies a stupid encoding...
         return (bad, r)
