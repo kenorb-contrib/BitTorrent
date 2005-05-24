@@ -30,7 +30,7 @@ MAX_FAILURES = 3
 MIN_PING_INTERVAL = 60 * 15 # fifteen minutes
 
 # refresh buckets that haven't been touched in this long
-BUCKET_STALENESS = 60 * 60 # one hour
+BUCKET_STALENESS = 60 * 15 # fifteen minutes
 
 
 ###  KEY EXPIRER

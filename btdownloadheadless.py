@@ -134,9 +134,10 @@ class HeadlessDisplayer(object):
             nextCopies = ', '.join(["%d:%.1f%%" % (a,int(b*1000)/10) for a,b in
                     zip(xrange(numCopies+1, 1000), statistics['numCopyList'])])
             if not self.done:
-                self.seedStatus = _("%d seen now, plus %d distributed copies ") \
-                                  '(%s)' % (statistics['numSeeds'],
-                                         statistics['numCopies'], nextCopies)
+                self.seedStatus = _("%d seen now, plus %d distributed copies "
+                                    "(%s)") % (statistics['numSeeds' ],
+                                               statistics['numCopies'],
+                                               nextCopies)
             else:
                 self.seedStatus = _("%d distributed copies (next: %s)") % (
                     statistics['numCopies'], nextCopies)

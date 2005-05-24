@@ -8,6 +8,7 @@ import const
 from khash import intify
 from ktable import KTable, K
 from util import unpackNodes
+from krpc import KRPCProtocolError
 
 class ActionBase:
     """ base class for some long running asynchronous proccesses like finding nodes or values """
@@ -18,6 +19,7 @@ class ActionBase:
         self.num = intify(target)
         self.found = {}
         self.queried = {}
+        self.queriedip = {}
         self.answered = {}
         self.callback = callback
         self.outstanding = 0
@@ -32,7 +34,16 @@ class ActionBase:
                 return -1
             return 0
         self.sort = sort
-        
+
+    def shouldQuery(self, node):
+        if node.id == self.table.node.id:
+            return False
+        elif (node.host, node.port) not in self.queriedip and node.id not in self.queried:
+            self.queriedip[(node.host, node.port)] = 1
+            self.queried[node.id] = 1
+            return True
+        return False
+    
     def goWithNodes(self, t):
         pass
     
@@ -50,8 +61,6 @@ class FindNode(ActionBase):
         sender['port'] = _krpc_sender[1]        
         sender['host'] = _krpc_sender[0]        
         sender = self.table.Node().initWithDict(sender)
-        sender.conn = self.table.udp.connectionForAddr((sender.host, sender.port))
-        self.table.insertNode(sender)
         if self.finished or self.answered.has_key(sender.id):
             # a day late and a dollar short
             return
@@ -59,13 +68,8 @@ class FindNode(ActionBase):
         self.answered[sender.id] = 1
         for node in l:
             n = self.table.Node().initWithDict(node)
-            try:
-                n.conn = self.table.udp.connectionForAddr((n.host, n.port))
-            except:
-                pass
-            else:
-                if not self.found.has_key(n.id):
-                    self.found[n.id] = n
+            if not self.found.has_key(n.id):
+                self.found[n.id] = n
         self.schedule()
         
     def schedule(self):
@@ -80,12 +84,11 @@ class FindNode(ActionBase):
             if node.id == self.target:
                 self.finished=1
                 return self.callback([node])
-            if (not self.queried.has_key(node.id)) and node.id != self.table.node.id:
+            if self.shouldQuery(node):
                 #xxxx t.timeout = time.time() + FIND_NODE_TIMEOUT
                 df = node.findNode(self.target, self.table.node.id)
                 df.addCallbacks(self.handleGotNodes, self.makeMsgFailed(node))
                 self.outstanding = self.outstanding + 1
-                self.queried[node.id] = 1
             if self.outstanding >= const.CONCURRENT_REQS:
                 break
         assert(self.outstanding) >=0
@@ -96,7 +99,6 @@ class FindNode(ActionBase):
     
     def makeMsgFailed(self, node):
         def defaultGotNodes(err, self=self, node=node):
-            self.table.table.nodeFailed(node)
             self.outstanding = self.outstanding - 1
             self.schedule()
         return defaultGotNodes
@@ -129,8 +131,6 @@ class GetValue(FindNode):
         sender['port'] = _krpc_sender[1]
         sender['host'] = _krpc_sender[0]                
         sender = self.table.Node().initWithDict(sender)
-        sender.conn = self.table.udp.connectionForAddr((sender.host, sender.port))
-        self.table.insertNode(sender)
         if self.finished or self.answered.has_key(sender.id):
             # a day late and a dollar short
             return
@@ -141,13 +141,8 @@ class GetValue(FindNode):
         if dict.has_key('nodes'):
             for node in unpackNodes(dict['nodes']):
                 n = self.table.Node().initWithDict(node)
-                try:
-                    n.conn = self.table.udp.connectionForAddr((n.host, n.port))
-                except:
-                    pass
-                else:
-                    if not self.found.has_key(n.id):
-                        self.found[n.id] = n
+                if not self.found.has_key(n.id):
+                    self.found[n.id] = n
         elif dict.has_key('values'):
             def x(y, z=self.results):
                 if not z.has_key(y):
@@ -167,20 +162,22 @@ class GetValue(FindNode):
             return
         l = self.found.values()
         l.sort(self.sort)
-        
         for node in l[:K]:
-            if (not self.queried.has_key(node.id)) and node.id != self.table.node.id:
+            if self.shouldQuery(node):
                 #xxx t.timeout = time.time() + GET_VALUE_TIMEOUT
                 try:
                     f = getattr(node, self.findValue)
                 except AttributeError:
                     print ">>> findValue %s doesn't have a %s method!" % (node, self.findValue)
                 else:
-                    df = f(self.target, self.table.node.id)
-                    df.addCallback(self.handleGotNodes)
-                    df.addErrback(self.makeMsgFailed(node))
-                    self.outstanding = self.outstanding + 1
-                    self.queried[node.id] = 1
+                    try:
+                        df = f(self.target, self.table.node.id)
+                        df.addCallback(self.handleGotNodes)
+                        df.addErrback(self.makeMsgFailed(node))
+                        self.outstanding = self.outstanding + 1
+                        self.queried[node.id] = 1
+                    except KRPCSelfNodeError:
+                        pass
             if self.outstanding >= const.CONCURRENT_REQS:
                 break
         assert(self.outstanding) >=0
@@ -213,7 +210,6 @@ class StoreValue(ActionBase):
         
     def storedValue(self, t, node):
         self.outstanding -= 1
-        self.table.insertNode(node)
         if self.finished:
             return
         self.stored.append(t)
@@ -226,7 +222,6 @@ class StoreValue(ActionBase):
         return t
     
     def storeFailed(self, t, node):
-        self.table.table.nodeFailed(node)
         self.outstanding -= 1
         if self.finished:
             return t
@@ -237,28 +232,37 @@ class StoreValue(ActionBase):
         if self.finished:
             return
         num = const.CONCURRENT_REQS - self.outstanding
-        if num > const.STORE_REDUNDANCY:
-            num = const.STORE_REDUNDANCY
-        for i in range(num):
+        if num > const.STORE_REDUNDANCY - len(self.stored):
+            num = const.STORE_REDUNDANCY - len(self.stored)
+        if num == 0 and not self.finished:
+            self.finished=1
+            self.callback(self.stored)
+        while num > 0:
             try:
                 node = self.nodes.pop()
             except IndexError:
                 if self.outstanding == 0:
                     self.finished = 1
                     self.callback(self.stored)
-                    return
+                return
             else:
                 if not node.id == self.table.node.id:
-                    self.outstanding += 1
                     try:
                         f = getattr(node, self.store)
                     except AttributeError:
                         print ">>> %s doesn't have a %s method!" % (node, self.store)
                     else:
-                        df = f(self.target, self.value, self.table.node.id)
-                        df.addCallback(self.storedValue,(),{'node':node})
-                        df.addErrback(self.storeFailed, (), {'node':node})
-                    
+                        try:
+                            df = f(self.target, self.value, self.table.node.id)
+                            df.addCallback(self.storedValue,(),{'node':node})
+                            df.addErrback(self.storeFailed, (), {'node':node})
+                            self.outstanding += 1
+                            num -= 1
+                        except KRPCProtocolError:
+                            self.table.table.invalidateNode(node)
+                        except KRPCSelfNodeError:
+                            pass
+                        
     def goWithNodes(self, nodes):
         self.nodes = nodes
         self.nodes.sort(self.sort)

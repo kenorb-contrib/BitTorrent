@@ -186,6 +186,14 @@ class LaunchMany(Feedback):
         savein = self.config['save_in']
         isdir = not x['metainfo']['info'].has_key('length')
         style = self.config['saveas_style']
+        if style == 4:
+            torrentname   = os.path.split(x['path'][:-8])[1]
+            suggestedname = name
+            if torrentname == suggestedname:
+                style = 1
+            else:
+                style = 3
+        
         if style == 1 or style == 3:
             if savein:
                 saveas = os.path.join(savein,x['file'][:-8]) # strip '.torrent'

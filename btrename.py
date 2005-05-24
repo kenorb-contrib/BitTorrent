@@ -15,13 +15,13 @@
 import gettext
 gettext.install('bittorrent', 'locale')
 
-from sys import *
-from os.path import *
-from sha import *
-from BitTorrent.bencode import *
+import os.path
+
+from sys import argv, exit
+from BitTorrent.bencode import bdecode, bencode
 from BitTorrent import version, app_name
 
-NAME, EXT = splitext(basename(argv[0]))
+NAME, EXT = os.path.splitext(os.path.basename(argv[0]))
 
 print _("%s %s - change the suggested filename in a .torrent file") % (NAME,
                                                                     version)

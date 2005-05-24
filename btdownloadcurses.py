@@ -219,9 +219,10 @@ class CursesDisplayer(object):
             nextCopies = ', '.join(["%d:%.1f%%" % (a,int(b*1000)/10) for a,b in
                     zip(xrange(numCopies+1, 1000), statistics['numCopyList'])])
             if not self.done:
-                self.seedStatus = _("%d seen now, plus %d distributed copies") +\
-                                  '(%s)' % (statistics['numSeeds'],
-                                         statistics['numCopies'], nextCopies)
+                self.seedStatus = _("%d seen now, plus %d distributed copies"
+                                    "(%s)") % (statistics['numSeeds' ],
+                                               statistics['numCopies'],
+                                               nextCopies)
             else:
                 self.seedStatus = _("%d distributed copies (next: %s)") % (
                     statistics['numCopies'], nextCopies)
@@ -302,8 +303,8 @@ class CursesDisplayer(object):
                     self.spewwin.addnstr(i+3, 64, '%5.0f KB/s' % (spew[i]['speed']/1000), 10)
 
             self.spewwin.addnstr(self.spewh-1, 0,
-                    _("downloading %d pieces, have %d fragments, ") + \
-                    _("%d of %d pieces completed") %
+                    _("downloading %d pieces, have %d fragments, "
+                      "%d of %d pieces completed") %
                     (statistics['storage_active'], statistics['storage_dirty'],
                      statistics['storage_numcomplete'], self.numpieces),
                     self.speww-1)
@@ -333,7 +334,7 @@ class DL(Feedback):
             if config['save_as']:
                 if config['save_in']:
                     raise BTFailure(_("You cannot specify both --save_as and "
-                                      "--save_in")
+                                      "--save_in"))
                 saveas = config['save_as']
             elif config['save_in']:
                 saveas = os.path.join(config['save_in'], torrent_name)

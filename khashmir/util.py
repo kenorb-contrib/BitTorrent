@@ -1,6 +1,8 @@
 ## Copyright 2002-2005 Andrew Loewenstern, All Rights Reserved
 # see LICENSE.txt for license information
 
+from struct import pack, unpack
+
 def bucket_stats(l):
     """given a list of khashmir instances, finds min, max, and average number of nodes in tables"""
     max = avg = 0
@@ -23,7 +25,7 @@ def bucket_stats(l):
     return {'min':min, 'max':max, 'avg':avg}
 
 def compact_peer_info(ip, port):
-    return ''.join([chr(int(i)) for i in ip.split('.')]) + chr((port & 0xFF00) >> 8) + chr(port & 0xFF)
+    return ''.join([chr(int(i)) for i in ip.split('.')]) + pack('!H', port)
 
 def packPeers(peers):
     return map(lambda a: compact_peer_info(a[0], a[1]), peers)
@@ -36,7 +38,7 @@ def unpackPeers(p):
     if type(p) == type(''):
         for x in xrange(0, len(p), 6):
             ip = '.'.join([str(ord(i)) for i in p[x:x+4]])
-            port = (ord(p[x+4]) << 8) | ord(p[x+5])
+            port = unpack('!H', p[x+4:x+6])[0]
             peers.append((ip, port, None))
     else:
         for x in p:
@@ -55,6 +57,6 @@ def unpackNodes(n):
     for x in xrange(0, len(n), 26):
         id = n[x:x+20]
         ip = '.'.join([str(ord(i)) for i in n[x+20:x+24]])
-        port = (ord(n[x+24]) << 8) | ord(n[x+25])
+        port = unpack('!H', n[x+24:x+26])[0]
         nodes.append({'id':id, 'host':ip, 'port': port})
     return nodes  

@@ -13,7 +13,6 @@ from BitTorrent.RawServer import RawServer
 from ktable import KTable, K
 from knode import *
 from kstore import KStore
-
 from khash import newID, newIDInRange
 
 from util import packNodes
@@ -52,6 +51,7 @@ class KhashmirBase:
         self.port = port
         self.ddir = data_dir
         self.store = KStore()
+        self.pingcache = {}
         self.socket = self.rawserver.create_udpsocket(self.port, self.host, True)
         self.udp = krpc.hostbroker(self, (self.host, self.port), self.socket, self.rawserver.add_task)
         self._load()
@@ -62,7 +62,7 @@ class KhashmirBase:
         self.rawserver.add_task(self.checkpoint, 60, (1,))
 
     def Node(self):
-        n = self._Node()
+        n = self._Node(self.udp.connectionForAddr)
         n.table = self
         return n
     
@@ -80,7 +80,7 @@ class KhashmirBase:
             id = dict['id']
             do_load = True
             
-        self.node = self._Node().init(id, self.host, self.port)
+        self.node = self._Node(self.udp.connectionForAddr).init(id, self.host, self.port)
         self.table = KTable(self.node)
         if do_load:
             self._loadRoutingTable(dict['rt'])
@@ -114,8 +114,7 @@ class KhashmirBase:
         """
         for rec in nodes:
             n = self.Node().initWithDict(rec)
-            n.conn = self.udp.connectionForAddr((n.host, n.port))
-            self.table.insertNode(n, contacted=0)
+            self.table.insertNode(n, contacted=0, nocheck=True)
 
     def _dumpRoutingTable(self):
         """
@@ -137,18 +136,18 @@ class KhashmirBase:
         """
         n =self.Node().init(const.NULL_ID, host, port)
         try:
-            n.conn = self.udp.connectionForAddr((n.host, n.port))
+            self.sendPing(n, callback=callback)
         except krpc.KRPCSelfNodeError:
             # our own node
             pass
-        else:
-            self.sendPing(n, callback=callback)
 
     ## this call is async!
     def findNode(self, id, callback, errback=None):
         """ returns the contact info for node, or the k closest nodes, from the global table """
         # get K nodes out of local table/cache, or the node we want
-        nodes = self.table.findNodes(id)
+        nodes = self.table.findNodes(id, invalid=False)
+        nodes += self.table.findNodes(id, invalid=True)
+
         d = Deferred()
         if errback:
             d.addCallbacks(callback, errback)
@@ -171,28 +170,60 @@ class KhashmirBase:
         method needs to be a properly formed Node object with a valid ID.
         """
         old = self.table.insertNode(n, contacted=contacted)
-        if old and (time.time() - old.lastSeen) > const.MIN_PING_INTERVAL and old.id != self.node.id:
+        if old:
+            if not old.pinging:
+                self.checkOldNode(old, n)
+            else:
+                l = self.pingcache.get(old.id, [])
+                l.append((n, contacted))
+                self.pingcache[old.id] = l
+            
+    def checkOldNode(self, old, new):
+        if (time.time() - old.lastSeen) > const.MIN_PING_INTERVAL and old.id != self.node.id:
             # the bucket is full, check to see if old node is still around and if so, replace it
             
             ## these are the callbacks used when we ping the oldest node in a bucket
-            def _staleNodeHandler(oldnode=old, newnode = n):
+            def _staleNodeHandler(dict, oldnode=old, newnode = new):
                 """ called if the pinged node never responds """
-                self.table.replaceStaleNode(old, newnode)
-            
-            def _notStaleNodeHandler(dict, old=old):
+                o = self.table.replaceStaleNode(oldnode, newnode)
+                if o:
+                    self.checkOldNode(o, newnode)
+                    try:
+                        self.pingcache[newnode.id] = self.pingcache[oldnode.id]
+                        del(self.pingcache[oldnode.id])
+                    except KeyError:
+                        pass
+                else:
+                    for node in self.pingcache.get(oldnode.id, []):
+                        self.insertNode(node[0], node[1])
+                    try:
+                        del(self.pingcache[oldnode.id])
+                    except KeyError:
+                        pass
+                    
+            def _notStaleNodeHandler(dict, o=old):
                 """ called when we get a pong from the old node """
-                dict = dict['rsp']
-                if dict['id'] == old.id:
-                    self.table.justSeenNode(old.id)
-            
-            df = old.ping(self.node.id)
+                for node in self.pingcache.get(o.id, []):
+                    self.insertNode(node[0], node[1])
+                try:
+                    del(self.pingcache[o.id])
+                except KeyError:
+                    pass
+            try:
+                df = old.ping(self.node.id)
+            except krpc.KRPCSelfNodeError:
+                pass
             df.addCallbacks(_notStaleNodeHandler, _staleNodeHandler)
 
     def sendPing(self, node, callback=None):
         """
             ping a node
         """
-        df = node.ping(self.node.id)
+        try:
+            df = node.ping(self.node.id)
+        except krpc.KRPCSelfNodeError:
+            pass
+        
         ## these are the callbacks we use when we issue a PING
         def _pongHandler(dict, node=node, table=self.table, callback=callback):
             _krpc_sender = dict['_krpc_sender']
@@ -201,12 +232,10 @@ class KhashmirBase:
             sender['host'] = _krpc_sender[0]
             sender['port'] = _krpc_sender[1]
             n = self.Node().initWithDict(sender)
-            n.conn = self.udp.connectionForAddr((n.host, n.port))
             table.insertNode(n)
             if callback:
                 callback()
         def _defaultPong(err, node=node, table=self.table, callback=callback):
-            table.nodeFailed(node)
             if callback:
                 callback()
         
@@ -248,7 +277,6 @@ class KhashmirBase:
         sender['host'] = _krpc_sender[0]
         sender['port'] = _krpc_sender[1]        
         n = self.Node().initWithDict(sender)
-        n.conn = self.udp.connectionForAddr((n.host, n.port))
         self.insertNode(n, contacted=0)
         return {"id" : self.node.id}
         
@@ -259,7 +287,6 @@ class KhashmirBase:
         sender['host'] = _krpc_sender[0]
         sender['port'] = _krpc_sender[1]        
         n = self.Node().initWithDict(sender)
-        n.conn = self.udp.connectionForAddr((n.host, n.port))
         self.insertNode(n, contacted=0)
         return {"nodes" : packNodes(nodes), "id" : self.node.id}
 
@@ -299,7 +326,6 @@ class KhashmirRead(KhashmirBase):
         sender['host'] = _krpc_sender[0]
         sender['port'] = _krpc_sender[1]        
         n = self.Node().initWithDict(sender)
-        n.conn = self.udp.connectionForAddr((n.host, n.port))
         self.insertNode(n, contacted=0)
     
         l = self.retrieveValues(key)
@@ -339,7 +365,6 @@ class KhashmirWrite(KhashmirRead):
         sender['host'] = _krpc_sender[0]
         sender['port'] = _krpc_sender[1]        
         n = self.Node().initWithDict(sender)
-        n.conn = self.udp.connectionForAddr((n.host, n.port))
         self.insertNode(n, contacted=0)
         return {"id" : self.node.id}
 

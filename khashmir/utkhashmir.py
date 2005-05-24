@@ -25,19 +25,18 @@ class UTNode(knode.KNodeBase):
         except:
             token = None
         if token:
-            df = self.conn.sendRequest('announce_peer', {'info_hash':info_hash,
+            df = self.conn().sendRequest('announce_peer', {'info_hash':info_hash,
                                                          'port':port,
                                                          'id':khashmir_id,
                                                          'token':token})
         else:
-            df = Deferred()
-            df.errback("no write token for node")
-        #df.addErrback(self.errBack)
+            raise KRPCProtocolError("no write token for node")
+        df.addErrback(self.errBack)
         df.addCallback(self.checkSender)
         return df
     
     def getPeers(self, info_hash, khashmir_id):
-        df = self.conn.sendRequest('get_peers', {'info_hash':info_hash, 'id':khashmir_id})
+        df = self.conn().sendRequest('get_peers', {'info_hash':info_hash, 'id':khashmir_id})
         df.addErrback(self.errBack)
         df.addCallback(self.checkSender)
         return df
@@ -45,7 +44,7 @@ class UTNode(knode.KNodeBase):
     def checkSender(self, dict):
         d = knode.KNodeBase.checkSender(self, dict)
         try:
-            self.table.tcache[self.id] = d['rsp']['token']
+            self.table.tcache[d['rsp']['id']] = d['rsp']['token']
         except KeyError:
             pass
         return d
@@ -140,7 +139,6 @@ class UTKhashmir(khashmir.KhashmirBase):
         value = compact_peer_info(_krpc_sender[0], port)
         self.store[info_hash] = value
         n = self.Node().initWithDict(sender)
-        n.conn = self.udp.connectionForAddr((n.host, n.port))
         self.insertNode(n, contacted=0)
         return {"id" : self.node.id}
 
@@ -156,7 +154,8 @@ class UTKhashmir(khashmir.KhashmirBase):
             callback will be called with a list of values for each peer that returns unique values
             final callback will be an empty list - probably should change to 'more coming' arg
         """
-        nodes = self.table.findNodes(info_hash)
+        nodes = self.table.findNodes(info_hash, invalid=False)
+        nodes += self.table.findNodes(info_hash, invalid=True)
         
         # get locals
         if searchlocal:
@@ -174,7 +173,6 @@ class UTKhashmir(khashmir.KhashmirBase):
         sender['host'] = _krpc_sender[0]
         sender['port'] = _krpc_sender[1]        
         n = self.Node().initWithDict(sender)
-        n.conn = self.udp.connectionForAddr((n.host, n.port))
         self.insertNode(n, contacted=0)
     
         l = self.retrieveValues(info_hash)

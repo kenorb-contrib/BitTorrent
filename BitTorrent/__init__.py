@@ -8,8 +8,8 @@
 # for the specific language governing rights and limitations under the
 # License.
 
-app_name = _("BitTorrent")
-version = '4.1.0'
+app_name = 'BitTorrent'
+version = '4.1.1'
 
 URL = 'http://www.bittorrent.com/'
 DONATE_URL = URL + 'donate.html'
@@ -132,18 +132,27 @@ if is_frozen_exe:
 
 del sys
 
-def spawn(cmd, *args):
+def spawn(torrentqueue, cmd, *args):
     ext = 'py'
     if is_frozen_exe:
         ext = 'exe'
     path = os.path.join(app_root,cmd+'.'+ext)
-    # do proper argument quoting
     args = [path] + list(args) # $0
-    args = ['"%s"'%a.replace('"', '\"') for a in args]
-    # BUG: if you get "OSError [Errno 8] Exec format error" on win32 here,
-    # it means you haven't set up your python files to be executable, but
-    # this should still work after building an exe with pygtk.
-    pid = os.spawnl(os.P_NOWAIT, path, *args)
+    if os.name == 'nt':
+        # do proper argument quoting since exec/spawn on Windows doesn't
+        args = ['"%s"'%a.replace('"', '\"') for a in args]
+        # BUG: if you get "OSError [Errno 8] Exec format error" on win32 here,
+        # it means you haven't set up your python files to be executable, but
+        # this should still work after building an exe with pygtk.
+        pid = os.spawnl(os.P_NOWAIT, path, *args)
+    else:
+        forkback = os.fork()
+        if forkback == 0:
+            if torrentqueue is not None:
+                #BUG: should we do this?
+                #torrentqueue.set_done()
+                torrentqueue.wrapped.controlsocket.close_socket()
+            pid = os.execl(path, *args)
 
 
 INFO = 0

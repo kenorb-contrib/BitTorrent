@@ -49,7 +49,6 @@ class hostbroker(object):
         self.addr = addr
         self.transport = transport
         self.call_later = call_later
-        # this should be changed to storage that drops old entries
         self.connections = Cache(touch_on_access=True)
         self.expire_connections(loop=True)
         
@@ -59,12 +58,9 @@ class hostbroker(object):
             self.call_later(self.expire_connections, CONNECTION_CACHE_TIME, (True,))
 
     def data_came_in(self, addr, datagram):
-        #print `addr`, `datagram`
         #if addr != self.addr:
         c = self.connectionForAddr(addr)
         c.datagramReceived(datagram, addr)
-        #if c.idle():
-        #    del self.connections[addr]
 
     def connection_lost(self, socket):
         ## this is like, bad
@@ -74,7 +70,6 @@ class hostbroker(object):
         if addr == self.addr:
             raise KRPCSelfNodeError()
         if not self.connections.has_key(addr):
-
             conn = KRPC(addr, self.server, self.transport, self.call_later)
             self.connections[addr] = conn
         else:
@@ -159,9 +154,8 @@ class KRPC:
                     df.callback({'rsp' : msg[RSP], '_krpc_sender': addr})
                 else:
                     # no tid, this transaction timed out already...
-                    #if self.noisy:
-                    #    print 'timeout ' + `msg[RSP]['id']`
                     pass
+                
             elif msg[TYP] == ERR:
                 # if error
                 # 	lookup tid
@@ -195,9 +189,12 @@ class KRPC:
                 del(tids[id])
                 df.errback(KRPC_ERROR_TIMEOUT)
         self.call_later(timeOut, KRPC_TIMEOUT)
+        self.call_later(self._send, 0, (s, d))
+        return d
+ 
+    def _send(self, s, d):
         try:
             self.transport.sendto(s, 0, self.addr)
         except socket.error:
             d.errback(KRPC_SOCKET_ERROR)
-        return d
- 
+            

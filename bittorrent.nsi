@@ -10,7 +10,7 @@
 
 # Written by Bram Cohen and Matt Chisholm
 
-!define VERSION "4.1.0-Beta"
+!define VERSION "4.1.1-Beta"
 !define APPNAME "BitTorrent"
 Outfile ${APPNAME}-${VERSION}.exe
 Name "${APPNAME}"
@@ -173,6 +173,7 @@ Section "Install"
   File /r dist\lib
   File /r dist\etc
   File /r dist\share
+  File /r dist\locale
   File redirdonate.html
   File credits.txt
   File LICENSE.txt

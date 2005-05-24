@@ -11,15 +11,13 @@ class Deferred(object):
     def addCallback(self, cb, args=(), kwargs={}):
         self.callbacks.append((cb, args, kwargs))
         if self.calledBack:
-            self.doCallbacks(self.results, self.callbacks)
-            self.results = []
+            self.doCallbacks(self.results, [(cb, args, kwargs)])
         return self
 
     def addErrback(self, cb, args=(), kwargs={}):
         self.errbacks.append((cb, args, kwargs))
         if self.erredBack:
-            self.doCallbacks(self.failures, self.errbacks)
-            self.failures = []
+            self.doCallbacks(self.failures, [(cb, args, kwargs)])
         return self
 
     def addCallbacks(self, cb, eb, args=(), kwargs={},
@@ -31,15 +29,13 @@ class Deferred(object):
         self.results.append(result)
         self.calledBack = True
         if self.callbacks:
-            self.doCallbacks(self.results, self.callbacks)
-            self.results = []
+            self.doCallbacks([result], self.callbacks)
         
     def errback(self, failed):
         self.failures.append(failed)
         self.erredBack = True
         if self.errbacks:
-            self.doCallbacks(self.failures, self.errbacks)
-            self.failures = []
+            self.doCallbacks([failed], self.errbacks)
         
     def doCallbacks(self, results, callbacks):
         for result in results:

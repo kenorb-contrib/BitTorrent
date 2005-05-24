@@ -427,7 +427,11 @@ class AboutWindow(object):
 
         self.outervbox.pack_start(get_logo(96), expand=False, fill=False)
 
-        self.outervbox.pack_start(gtk.Label(_("Version %s")%version), expand=False, fill=False)
+        version_str = version
+        if int(version_str[2]) % 2:
+            version_str = version_str + ' ' + _("Beta")
+
+        self.outervbox.pack_start(gtk.Label(_("Version %s")%version_str), expand=False, fill=False)
 
         self.vbox = gtk.VBox()
         self.vbox.set_size_request(250, -1)
@@ -820,8 +824,11 @@ class SettingsWindow(object):
             r.connect('edited', self.store_value_edited)
             column = gtk.TreeViewColumn(_("Value"), r, text=1)
             self.treeview.append_column(column)
+            self.advanced_frame = gtk.Frame()
+            self.advanced_frame.set_shadow_type(gtk.SHADOW_IN)
+            self.advanced_frame.add(self.treeview)
 
-            self.advanced_box.pack_start(self.treeview, expand=False, fill=False)
+            self.advanced_box.pack_start(self.advanced_frame, expand=False, fill=False)
             self.notebook.append_page(self.advanced_box, gtk.Label(_("Advanced")))
         
 
@@ -915,7 +922,7 @@ class FileListWindow(object):
         self.box1.pack_start(self.sw)
         self.win.add(self.box1)
 
-        columns = ['Filename','Length','%']
+        columns = [_("Filename"),_("Length"),_('%')]
         pre_size_list = ['MMMMMMMMMMMMMMMMMMMMMMMM', '6666 MB', '100.0']
         if advanced_ui:
             columns += ['A','Order']
@@ -1079,7 +1086,7 @@ class PeerListWindow(object):
     def __init__(self, torrent_name, closefunc):
         self.win = Window()
         self.win.connect("destroy", closefunc)
-        self.win.set_title( 'Peers for "%s"'%torrent_name)
+        self.win.set_title( _('Peers for "%s"')%torrent_name)
         self.sw = gtk.ScrolledWindow()
         self.sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_ALWAYS)
         self.sw.set_shadow_type(gtk.SHADOW_IN)
@@ -2487,7 +2494,8 @@ class DownloadInfoFrame(object):
         self.drag_end()
 
     def make_new_torrent(self, widget=None):
-        spawn('btmaketorrentgui')
+        #raise self.torrentqueue.wrapped.controlsocket
+        spawn(self.torrentqueue, 'btmaketorrentgui')
 
     def accept_dropped_file(self, widget, drag_context, x, y, selection,
                             target_type, time):
@@ -2519,7 +2527,7 @@ class DownloadInfoFrame(object):
         sep = ': '
 
         if self.config['pause']:
-            title += sep+'(stopped)'
+            title += sep+_("(stopped)")
         elif len(self.running_torrents) == 1 and torrentName and \
                fractionDone is not None:
             maxlen = WINDOW_TITLE_LENGTH - len(app_name) - len(trunc) - len(sep)
@@ -2779,9 +2787,10 @@ class DownloadInfoFrame(object):
 
         if not self.config['ask_for_save']:
             if os.access(fullname, os.F_OK):
-                message = MessageDialog(self.mainwindow, _("File exists!"),
-                                        _('"%s" already exists. ') + \
-                                        _("Do you want to choose a different file name?") % name,
+                message = MessageDialog(self.mainwindow,
+                                        _("File exists!"),
+                                        _('"%s" already exists. '
+                                          "Do you want to choose a different file name?") % name,
                                         buttons=gtk.BUTTONS_YES_NO,
                                         nofunc= lambda : self.got_location(infohash, fullname),
                                         yesfunc=lambda : self.get_save_location(infohash, metainfo, fullname),)

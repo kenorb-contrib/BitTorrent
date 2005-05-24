@@ -37,20 +37,23 @@ opts = {
     }
 }
 
+langs = ["fr",]
+translations = []
+for l in langs:
+    translations.append (("locale\\%s\\LC_MESSAGES"                % l,
+                          ["locale\\%s\\LC_MESSAGES\\bittorrent.mo" % l,
+                           "locale\\%s\\LC_MESSAGES\\bittorrent.po" % l,]))
+
 setup(windows=[{'script': 'btdownloadgui.py',
                 "icon_resources": [(1, "images\\bittorrent.ico")]},
                {'script': 'btmaketorrentgui.py',
                 "icon_resources": [(1, "images\\bittorrent.ico")]}],
       options=opts,
       data_files=[('',["credits.txt", "LICENSE.txt",
-                       "README.txt", "redirdonate.html"]),
+                       "README.txt", "redirdonate.html",
+                       "TRACKERLESS.txt",
+                       ]),
                   ("images", glob.glob("images\\*png")+["images\\bittorrent.ico"]),
                   ("images\\logo", glob.glob("images\\logo\\*png")),
-#                  ('locale/fr/LC_MESSAGES',
-#                   ['locale/fr/LC_MESSAGES/bittorrent.mo', 'locale/fr/LC_MESSAGES/bittorrent.po']),
-#                  ('locale/de/LC_MESSAGES',
-#                   ['locale/de/LC_MESSAGES/bittorrent.mo', 'locale/de/LC_MESSAGES/bittorrent.po']),
-#                  ('locale/es/LC_MESSAGES',
-#                   ['locale/es/LC_MESSAGES/bittorrent.mo', 'locale/es/LC_MESSAGES/bittorrent.po']),
-                  ],
+                  ] + translations,
                 )

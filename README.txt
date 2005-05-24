@@ -13,6 +13,8 @@ yourself are in BUILD.windows.txt
 
 Instructions for Unix installation are in INSTALL.unix.txt
 
+Instructions for trackerless operation are in TRACKERLESS.txt.
+
 To start hosting -
 
 1) start running a tracker
@@ -39,16 +41,19 @@ ip number or dns name of it.
 The tracker outputs web logs to standard out. You can get information 
 about the files it's currently serving by getting its index page. 
 
-2) create a metainfo file using btmakemetafile.py
+2) create a torrent file using btmaketorrent.py
 
-To generate a metainfo file, run the publish btmakemetafile and give 
-it the file you want metainfo for and the url of the tracker
+To generate a torrent file, run btmaketorrent and give it the file
+you want a torrent for and the url of the tracker
 
-./btmakemetafile.py myfile.ext http://my.tracker:6969/announce
+./btmaketorrent.py myfile.ext http://my.tracker:6969/announce
 
 This will generate a file called myfile.ext.torrent
 
 Make sure to include the port number in the tracker url if it isn't 80.
+
+(You may also use btmaketorrent.py to create trackerless torrents. See
+the file TRACKERLESS.txt for information about trackerless operation.)
 
 This command may take a while to scan over the whole file hashing it.
 
@@ -97,14 +102,15 @@ Now you just have to get people downloading! Refer them to the page you
 created in step 5.
 
 BitTorrent can also publish whole directories - simply point 
-btmakemetafile.py at the directory with files in it, they'll be published 
+btmaketorrent.py at the directory with files in it, they'll be published 
 as one unit. All files in subdirectories will be included, although files 
 and directories named 'CVS' and 'core' are ignored.
 
-If you have any questions, try the web site or mailing list -
+If you have any questions, try the web site:
 
-http://bitconjurer.org/BitTorrent/
+http://www.bittorrent.com/
 
-http://groups.yahoo.com/group/BitTorrent
+If you find a bug, please report it to:
 
-You can also often find me, Bram, in #bittorrent of irc.freenode.net
+bugs at bittorrent.com
+

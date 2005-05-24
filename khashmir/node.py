@@ -10,7 +10,8 @@ class Node:
     def __init__(self):
         self.fails = 0
         self.lastSeen = 0
-        self.invalid = False
+        self.invalid = True
+        self.pinging = False
         self.id = self.host = self.port = ''
     
     def init(self, id, host, port):

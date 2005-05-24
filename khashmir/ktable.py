@@ -7,7 +7,7 @@ from types import *
 
 import khash as hash
 import const
-from const import K, HASH_LENGTH, NULL_ID
+from const import K, HASH_LENGTH, NULL_ID, MAX_FAILURES
 from node import Node
 
 class KTable:
@@ -49,6 +49,8 @@ class KTable:
             
         # don't have the node, get the K closest nodes
         nodes = nodes + self.buckets[i].l
+        if not invalid:
+            nodes = [a for a in nodes if not a.invalid]
         if len(nodes) < K:
             # need more nodes
             min = i - 1
@@ -61,9 +63,9 @@ class KTable:
                     nodes = nodes + self.buckets[max].l
                 min = min - 1
                 max = max + 1
+                if not invalid:
+                    nodes = [a for a in nodes if not a.invalid]
 
-        if not invalid:
-            nodes = [a for a in nodes if not a.invalid]
         nodes.sort(lambda a, b, num=num: cmp(num ^ a.num, num ^ b.num))
         return nodes[:K]
         
@@ -85,14 +87,18 @@ class KTable:
         try:
             it = self.buckets[i].l.index(stale.num)
         except ValueError:
-            return
+            if new:
+                return self.insertNode(new)
+            else:
+                return
     
         del(self.buckets[i].l[it])
         if new:
             self.buckets[i].l.append(new)
             self.buckets[i].touch()
+        return
     
-    def insertNode(self, node, contacted=1):
+    def insertNode(self, node, contacted=1, nocheck=False):
         """ 
         this insert the node, returning None if successful, returns the oldest node in the bucket if it's full
         the caller responsible for pinging the returned node and calling replaceStaleNode if it is found to be stale!!
@@ -100,6 +106,10 @@ class KTable:
         """
         assert node.id != NULL_ID
         if node.id == self.node.id: return
+
+        if contacted:
+            node.updateLastSeen()
+
         # get the bucket for this node
         i = self. _bucketIndexForInt(node.num)
         # check to see if node is in the bucket already
@@ -110,7 +120,6 @@ class KTable:
             pass
         else:
             if contacted:
-                node.updateLastSeen()
                 # move node to end of bucket
                 xnode = self.buckets[i].l[it]
                 del(self.buckets[i].l[it])
@@ -118,24 +127,18 @@ class KTable:
                 # utilizing this nodes new contact info
                 self.buckets[i].l.append(node)
                 self.buckets[i].touch()
-            else:
-                node.lastSeen = self.buckets[i].l[it].lastSeen
-                self.buckets[i].l[it] = node
-                
             return
         
         # we don't have this node, check to see if the bucket is full
         if len(self.buckets[i].l) < K:
             # no, append this node and return
-            if contacted:
-                node.updateLastSeen()
             self.buckets[i].l.append(node)
             self.buckets[i].touch()
             return
 
         # full bucket, check to see if any nodes are invalid
         invalid = [n for n in self.buckets[i].l if n.invalid]
-        if len(invalid):
+        if len(invalid) and not nocheck:
             def ls(a, b):
                 if a.lastSeen > b.lastSeen:
                     return 1
@@ -143,11 +146,15 @@ class KTable:
                     return -1
                 return 0
             invalid.sort(ls)
-            self.replaceStaleNode(invalid[-1], node)
-            return
+            if invalid[0].lastSeen == 0 and invalid[0].fails < MAX_FAILURES:
+                return invalid[0]
+            else:
+                return self.replaceStaleNode(invalid[0], node)
+
         
         # bucket is full and all nodes are valid, check to see if self.node is in the bucket
         if not (self.buckets[i].min <= self.node < self.buckets[i].max):
+            self.buckets[i].sort()
             return self.buckets[i].l[0]
         
         # this bucket is full and contains our node, split the bucket
@@ -159,7 +166,7 @@ class KTable:
         self._splitBucket(self.buckets[i])
         
         # now that the bucket is split and balanced, try to insert the node again
-        return self.insertNode(node)
+        return self.insertNode(node, contacted)
     
     def justSeenNode(self, id):
         """call this any time you get a message from a node
@@ -199,7 +206,17 @@ class KBucket:
         
     def touch(self):
         self.lastAccessed = time.time()
-    
+
+    def lacmp(self, a, b):
+        if a.lastSeen > b.lastSeen:
+            return 1
+        elif b.lastSeen > a.lastSeen:
+            return -1
+        return 0
+        
+    def sort(self):
+        self.l.sort(self.lacmp)
+        
     def getNodeWithInt(self, num):
         if num in self.l: return num
         else: raise ValueError

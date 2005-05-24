@@ -77,11 +77,11 @@ class MainWindow(Window):
 
         self.file_store = gtk.ListStore(gobject.TYPE_STRING)
 
-        for i in range(8): self.file_store.append(('foo',))
+        for i in range(3): self.file_store.append(('foo',))
 
         self.file_scroll = gtk.ScrolledWindow()
         self.file_scroll.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_ALWAYS)
-        self.file_scroll.set_shadow_type(gtk.SHADOW_OUT)
+        self.file_scroll.set_shadow_type(gtk.SHADOW_IN)
 
         self.file_list = gtk.TreeView(self.file_store)
         r = gtk.CellRendererText()
@@ -170,19 +170,14 @@ class MainWindow(Window):
 
         self.dht_nodes_expander = gtk.Expander(_("Nodes (optional):"))
         
-##        self.dht_nodes = gtk.Entry()
-##        self.dht_nodes.set_size_request(right_column_width,-1)
-##        self.dht_nodes.set_text('router.bittorrent.com:6881')
         self.dht_nodes = NodeList(self, 'router.bittorrent.com:6881')
-        self.dht_nodes_expander.add(self.dht_nodes)
+        self.dht_frame = gtk.Frame()
+        self.dht_frame.add(self.dht_nodes)
+        self.dht_frame.set_shadow_type(gtk.SHADOW_IN)
+        self.dht_nodes_expander.add(self.dht_frame)
 
         self.table.attach(self.dht_nodes_expander,1,2,y,y+1, xoptions=gtk.FILL|gtk.EXPAND, yoptions=0)
         self.dht_radio.entry = self.dht_nodes
-
-##        self.tooltips.set_tip(self.dht_nodes,
-##                              _("list of comma separated <ip>:<port> pairs\n"
-##                                "Example:\n"
-##                                "127.0.0.1:6881, 12.34.123.321:7890"))
 
         if self.config['use_tracker'] == self.dht_radio.value:
             self.dht_nodes.set_sensitive(True)
@@ -254,7 +249,13 @@ class MainWindow(Window):
 
 #        HelpWindow(None, makeHelp('btmaketorrentgui', defaults))
         
+        self.box.show_all()
+        extraheight = self.dht_frame.size_request()[1] + \
+                      self.comment_scroll.size_request()[1]
+        sr = self.box.size_request()
+        self.resize(sr[0] + SPACING*2, sr[1]+extraheight + SPACING*2)
         self.show_all()
+
 
 
     def toggle_tracker_dht(self, widget):
@@ -317,7 +318,6 @@ class MainWindow(Window):
             self.config['tracker_name'] = announce
         else:
             announce = self.dht_nodes.get_text()
-            print announce
         return announce
 
     def make(self, widget):
@@ -398,6 +398,7 @@ class NodeList(gtk.TreeView):
         self.store.append(pre_size_list)
 
         gtk.TreeView.__init__(self, self.store)
+        self.set_enable_search(False)
 
         self.host_render = gtk.CellRendererText()
         self.host_render.set_property('editable', True)
@@ -535,7 +536,7 @@ class ProgressDialog(gtk.Dialog):
 
     def seed(self, widget=None):
         for file in self.file_list:
-            spawn('btdownloadgui', file+EXTENSION, '--save_as', file)
+            spawn(None, 'btdownloadgui', file+EXTENSION, '--save_as', file)
         self.cancel()
 
     def cancel(self, widget=None):

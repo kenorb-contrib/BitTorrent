@@ -204,10 +204,21 @@ def get_defaults(ui):
                "corresponding .torrent file")),
             ('parse_dir_interval', 60,
               _("how often to rescan the torrent directory, in seconds") ),
-            ('saveas_style', 1,
-              _("How to name torrent downloads (1 = rename to torrent name, "
-                "2 = save under name in torrent, 3 = save in directory under "
-                "torrent name)") ),
+            ('saveas_style', 4,
+              _("How to name torrent downloads: "
+                "1: use name OF torrent file (minus .torrent);  " 
+                "2: use name encoded IN torrent file;  "
+                "3: create a directory with name OF torrent file "
+                "(minus .torrent) and save in that directory using name "
+                "encoded IN torrent file;  "
+                "4: if name OF torrent file (minus .torrent) and name "
+                "encoded IN torrent file are identical, use that "
+                "name (style 1/2), otherwise create an intermediate "
+                "directory as in style 3;  " 
+                "CAUTION: options 1 and 2 have the ability to "
+                "overwrite files without warning and may present "
+                "security issues."
+                ) ),
             ('display_path', ui == 'btlaunchmany' and MYTRUE or MYFALSE,
               _("whether to display the full path or the torrent contents for "
                 "each torrent") ),

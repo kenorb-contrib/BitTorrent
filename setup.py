@@ -29,11 +29,19 @@ scripts = ["btdownloadgui.py", "btdownloadcurses.py", "btdownloadheadless.py",
 
 img_root, doc_root = BitTorrent.calc_unix_dirs()
 
+langs = ["fr",]
+translations = []
+for l in langs:
+    translations.append (("share/locale/%s/LC_MESSAGES"          % l,
+                          ["locale/%s/LC_MESSAGES/bittorrent.mo" % l]))
+
 data_files = [ (img_root        , glob.glob('images/*png')+['images/bittorrent.ico',]),
                (img_root+'/logo', glob.glob('images/logo/bittorrent_[0-9]*.png')     ),
                (doc_root        , ['credits.txt', 'LICENSE.txt',
-                                   'README.txt', 'redirdonate.html']       ),
-               ]
+                                   'README.txt', 'redirdonate.html',
+                                   'TRACKERLESS.txt',
+                                   ]       ),
+               ] + translations
 
 setup(
     name = "BitTorrent",

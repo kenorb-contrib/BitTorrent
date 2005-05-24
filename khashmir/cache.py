@@ -3,37 +3,36 @@ from time import time
 
 class Cache(DictMixin):
     def __init__(self, touch_on_access = False):
-        self.d = {}
+        self.data = {}
         self.q = []
         self.touch = touch_on_access
         
     def __getitem__(self, key):
         if self.touch:
-            t = time()
-            v = self.d[key][1]
-            self.d[key] = (t, v)
-            self.q.insert(0, (t, key, v))
-        return self.d[key][1]
+            v = self.data[key][1]
+            self[key] = v
+        return self.data[key][1]
 
     def __setitem__(self, key, value):
         t = time()
-        self.d[key] = (t, value)
+        self.data[key] = (t, value)
         self.q.insert(0, (t, key, value))
 
     def __delitem__(self, key):
-        del(self.d[key])
+        del(self.data[key])
 
     def keys(self):
-        return self.d.keys()
+        return self.data.keys()
 
-    def expire(self, t):
+    def expire(self, expire_time):
         try:
-            while self.q[-1][0] < t:
+            while self.q[-1][0] < expire_time:
                 x = self.q.pop()
+                assert(x[0] < expire_time)
                 try:
-                    t, v = self.d[x[1]]
+                    t, v = self.data[x[1]]
                     if v == x[2] and t == x[0]:
-                        del(self.d[x[1]])
+                        del(self.data[x[1]])
                 except KeyError:
                     pass
         except IndexError:

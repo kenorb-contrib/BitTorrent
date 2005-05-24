@@ -14,6 +14,7 @@
 from __future__ import generators
 
 from binascii import b2a_hex
+from struct import pack, unpack
 
 from BitTorrent.bitfield import Bitfield
 from BitTorrent.obsoletepythonsupport import *
@@ -101,7 +102,7 @@ class Connection(object):
             self.choke_sent = False
 
     def send_port(self, port):
-        self._send_message(PORT+chr((port & 0xff) >> 8)+chr(port & 0xff))
+        self._send_message(PORT+pack('!H', port))
         
     def send_request(self, index, begin, length):
         self._send_message(REQUEST + tobinary(index) +
@@ -277,7 +278,7 @@ class Connection(object):
             if len(message) != 3:
                 self.close()
                 return
-            self.dht_port = ord(message[1]) << 8 | ord(message[2])
+            self.dht_port = unpack('!H', message[1:3])[0]
             self.encoder.got_port(self)
         else:
             self.close()

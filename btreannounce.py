@@ -15,7 +15,7 @@
 import gettext
 gettext.install('bittorrent', 'locale')
 
-from sys import argv
+from sys import argv, exit
 from BitTorrent.bencode import bencode, bdecode
 
 if len(argv) < 3:
