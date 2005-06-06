@@ -12,11 +12,13 @@
 
 # Written by Bram Cohen and Matt Chisholm
 
+import os
+os.system('sh ./makei18n.sh')
+
 import gettext
 gettext.install('bittorrent', 'locale')
 
 import sys
-import os
 from distutils.core import setup, Extension
 import BitTorrent
 
@@ -27,12 +29,11 @@ scripts = ["btdownloadgui.py", "btdownloadcurses.py", "btdownloadheadless.py",
            "btlaunchmany.py", "btlaunchmanycurses.py",
            "bttrack.py", "btreannounce.py", "btrename.py", "btshowmetainfo.py"]
 
-img_root, doc_root = BitTorrent.calc_unix_dirs()
+img_root, doc_root, locale_root = BitTorrent.calc_unix_dirs()
 
-langs = ["fr",]
 translations = []
-for l in langs:
-    translations.append (("share/locale/%s/LC_MESSAGES"          % l,
+for l in BitTorrent.languages:
+    translations.append (("%s/%s/LC_MESSAGES"          % (locale_root, l),
                           ["locale/%s/LC_MESSAGES/bittorrent.mo" % l]))
 
 data_files = [ (img_root        , glob.glob('images/*png')+['images/bittorrent.ico',]),

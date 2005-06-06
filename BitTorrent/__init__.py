@@ -9,7 +9,7 @@
 # License.
 
 app_name = 'BitTorrent'
-version = '4.1.1'
+version = '4.1.2'
 
 URL = 'http://www.bittorrent.com/'
 DONATE_URL = URL + 'donate.html'
@@ -21,23 +21,27 @@ assert sys.version_info >= (2, 2, 1), _("Python 2.2.1 or newer required")
 import os
 import re
 
+languages = ["fr", "it", "no", "pt_BR"]
+
 def calc_unix_dirs():
     appdir = '%s-%s'%(app_name, version)
     ip = os.path.join('share', 'pixmaps', appdir)
     dp = os.path.join('share', 'doc'    , appdir)
-    return ip, dp
+    lp = os.path.join('share', 'locale')
+    return ip, dp, lp
 
 app_root = os.path.split(os.path.abspath(sys.argv[0]))[0]
-image_root = os.path.join(app_root, 'images')
 doc_root = app_root
+image_root  = os.path.join(app_root, 'images')
+locale_root = os.path.join(app_root, 'locale')
 
-if not os.access(image_root, os.F_OK):
-    # probably we are installed on *nix
-    # I have no idea whether this is right or not
+if not os.access(image_root, os.F_OK) or not os.access(locale_root, os.F_OK):
+    # we guess that probably we are installed on *nix in this case
+    # (I have no idea whether this is right or not -- matt)
     if app_root[-4:] == '/bin':
         # yep, installed on *nix
         installed_prefix = app_root[:-4]
-        image_root, doc_root = map(
+        image_root, doc_root, locale_root = map(
             lambda p: os.path.join(installed_prefix, p), calc_unix_dirs()
             )
 

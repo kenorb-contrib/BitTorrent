@@ -1,41 +1,52 @@
-install Python, version 2.3 or later -
+Install Python, version 2.3 or later:
 http://python.org/
 
-install a GTK 2.4 runtime -
+Install a GTK 2.4 runtime:
 http://gladewin32.sourceforge.net/
 
-install pygtk 2.4 -
+Install pygtk 2.4:
 http://www.pcpm.ucl.ac.be/~gustin/win32_ports/
 
-install dnspython -
+Install GNUWin32 Gettext:
+http://gnuwin32.sourceforge.net/packages/gettext.htm
+
+Install dnspython:
 http://www.dnspython.org/
 
 Apply dnspython_patch.diff to resolver.py
 
-install py2exe -
+Install py2exe:
 http://starship.python.net/crew/theller/py2exe/
 
-install the nullsoft (NSIS) installer - 
+Install the nullsoft (NSIS) installer:
 http://www.nullsoft.com/free/nsis/
 
-install the Processes NSIS plugin - 
+Install the Processes NSIS plugin:
 http://nsis.sourceforge.net/archive/viewpage.php?pageid=542
 http://www.geocities.com/hardwiredteks/files/setup-processes.zip
 
-the rest of these instructions can be abbreviated by just running
+Install the KillProcDLL NSIS plugin:
+http://nsis.sourceforge.net/archive/viewpage.php?pageid=271
+
+The rest of these instructions can be abbreviated by just running
+
 build.bat
 
-in a shell, go to the root BitTorrent directory and run this command
-python winsetup.py py2exe
+==============================
 
-now copy all the necessary GTK files from the GTK root installation
-directory (usually c:\GTK\, see the GTK_BASEPATH environment
-variable) into the dist directory. See build.bat for details.
+In a shell, go to the root BitTorrent directory and run these commands:
 
-now run nsis on bittorrent.nsi
+python.exe winmakei18n.py
+python.exe winsetup.py py2exe
+
+Copy all the necessary GTK files from the GTK root installation
+directory (usually c:\GTK\, see the GTK_BASEPATH environment variable)
+into the dist directory. See build.bat for details.
+
+Run NSIS on bittorrent.nsi:
+
 c:\progra~1\nsis\makensis.exe bittorrent.nsi
 
-This will create an installer called BitTorrent-{VERSION}.exe
-The installer is completely self-contained and will work on any 
-Windows machine, even without the above software having been 
-installed.
+This will create an installer called BitTorrent-{VERSION}.exe .  The
+installer is completely self-contained and will work on any Windows
+machine, even without the above software having been installed.

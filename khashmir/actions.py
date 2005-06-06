@@ -1,14 +1,21 @@
-## Copyright 2002-2004 Andrew Loewenstern, All Rights Reserved
-# see LICENSE.txt for license information
+# The contents of this file are subject to the BitTorrent Open Source License
+# Version 1.0 (the License).  You may not copy or use this file, in either
+# source code or executable form, except in compliance with the License.  You
+# may obtain a copy of the License at http://www.bittorrent.com/license/.
+#
+# Software distributed under the License is distributed on an AS IS basis,
+# WITHOUT WARRANTY OF ANY KIND, either express or implied.  See the License
+# for the specific language governing rights and limitations under the
+# License.
 
-from time import time
+from BitTorrent.platform import bttime as time
 
 import const
 
 from khash import intify
 from ktable import KTable, K
 from util import unpackNodes
-from krpc import KRPCProtocolError
+from krpc import KRPCProtocolError, KRPCSelfNodeError
 
 class ActionBase:
     """ base class for some long running asynchronous proccesses like finding nodes or values """
@@ -27,6 +34,10 @@ class ActionBase:
     
         def sort(a, b, num=self.num):
             """ this function is for sorting nodes relative to the ID we are looking for """
+            if (not a.invalid) and b.invalid:
+                return 1
+            elif a.invalid and not b.invalid:
+                return -1
             x, y = num ^ a.num, num ^ b.num
             if x > y:
                 return 1
@@ -61,6 +72,7 @@ class FindNode(ActionBase):
         sender['port'] = _krpc_sender[1]        
         sender['host'] = _krpc_sender[0]        
         sender = self.table.Node().initWithDict(sender)
+        
         if self.finished or self.answered.has_key(sender.id):
             # a day late and a dollar short
             return
@@ -70,6 +82,7 @@ class FindNode(ActionBase):
             n = self.table.Node().initWithDict(node)
             if not self.found.has_key(n.id):
                 self.found[n.id] = n
+                self.table.insertNode(n, contacted=0)
         self.schedule()
         
     def schedule(self):
@@ -86,9 +99,13 @@ class FindNode(ActionBase):
                 return self.callback([node])
             if self.shouldQuery(node):
                 #xxxx t.timeout = time.time() + FIND_NODE_TIMEOUT
-                df = node.findNode(self.target, self.table.node.id)
-                df.addCallbacks(self.handleGotNodes, self.makeMsgFailed(node))
-                self.outstanding = self.outstanding + 1
+                try:
+                    df = node.findNode(self.target, self.table.node.id)
+                except KRPCSelfNodeError:
+                    pass
+                else:
+                    df.addCallbacks(self.handleGotNodes, self.makeMsgFailed(node))
+                    self.outstanding = self.outstanding + 1
             if self.outstanding >= const.CONCURRENT_REQS:
                 break
         assert(self.outstanding) >=0
@@ -131,6 +148,7 @@ class GetValue(FindNode):
         sender['port'] = _krpc_sender[1]
         sender['host'] = _krpc_sender[0]                
         sender = self.table.Node().initWithDict(sender)
+        
         if self.finished or self.answered.has_key(sender.id):
             # a day late and a dollar short
             return
@@ -142,6 +160,7 @@ class GetValue(FindNode):
             for node in unpackNodes(dict['nodes']):
                 n = self.table.Node().initWithDict(node)
                 if not self.found.has_key(n.id):
+                    self.table.insertNode(n)
                     self.found[n.id] = n
         elif dict.has_key('values'):
             def x(y, z=self.results):
@@ -254,14 +273,15 @@ class StoreValue(ActionBase):
                     else:
                         try:
                             df = f(self.target, self.value, self.table.node.id)
-                            df.addCallback(self.storedValue,(),{'node':node})
-                            df.addErrback(self.storeFailed, (), {'node':node})
-                            self.outstanding += 1
-                            num -= 1
                         except KRPCProtocolError:
                             self.table.table.invalidateNode(node)
                         except KRPCSelfNodeError:
                             pass
+                        else:
+                            df.addCallback(self.storedValue,(),{'node':node})
+                            df.addErrback(self.storeFailed, (), {'node':node})
+                            self.outstanding += 1
+                            num -= 1
                         
     def goWithNodes(self, nodes):
         self.nodes = nodes

@@ -36,6 +36,8 @@ basic_options = [
      _("character encoding used on the local filesystem. "
        "If left empty, autodetected. "
        "Autodetection doesn't work under python versions older than 2.3")),
+    ('language', '',
+     _("ISO Language code to use")),
     ]
 
 common_options = [

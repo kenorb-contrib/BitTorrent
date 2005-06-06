@@ -14,8 +14,10 @@
 
 from __future__ import division
 
+from BitTorrent import locale_root
+
 import gettext
-gettext.install('bittorrent', 'locale')
+gettext.install('bittorrent', locale_root)
 
 import sys
 
@@ -35,11 +37,10 @@ from urllib import quote, url2pathname
 
 assert gtk.pygtk_version >= (2, 4), _("PyGTK 2.4 or newer required")
 
+from BitTorrent import HELP_URL, DONATE_URL, version, doc_root, languages, \
+     is_frozen_exe, spawn, path_wrap
 from BitTorrent import configfile
-from BitTorrent import HELP_URL, DONATE_URL
-from BitTorrent import is_frozen_exe
 from BitTorrent.parseargs import makeHelp
-from BitTorrent import version, doc_root
 from BitTorrent.defaultargs import get_defaults
 from BitTorrent import TorrentQueue
 from BitTorrent.TorrentQueue import RUNNING, QUEUED, KNOWN, ASKING_LOCATION
@@ -48,8 +49,6 @@ from BitTorrent import BTFailure, INFO, WARNING, ERROR, CRITICAL
 from BitTorrent import OpenPath
 from BitTorrent import Desktop
 from BitTorrent import ClientIdentifier
-from BitTorrent import spawn
-from BitTorrent import path_wrap
 from BitTorrent.GUI import * 
 
 defaults = get_defaults('btdownloadgui')
@@ -119,7 +118,6 @@ speed_classes = {
     ( 250, 5446):_("T3"               ),
     (5447,18871):_("OC3"              ),
     }
-
 
 def find_dir(path):
     if os.path.isdir(path):
@@ -740,7 +738,9 @@ class SettingsWindow(object):
         
         self.last_torrent_frame.add(self.last_torrent_vbox)
         self.downloading_box.pack_start(self.last_torrent_frame, expand=False, fill=False)
-        self.downloading_box.pack_start(lalign(gtk.Label(_('"0 percent" means seed forever.'))))
+        lab = gtk.Label(_('"0 percent" means seed forever.'))
+        lab.set_line_wrap(True)
+        self.downloading_box.pack_start(lalign(lab))
         # end Downloading tab
         
 
@@ -1179,7 +1179,7 @@ class PeerListWindow(object):
             field = []
             field.append(peer['ip']) 
 
-            client, version = ClientIdentifier.identify_client(peer['id']) 
+            client, version = ClientIdentifier.identify_client(peer['id'])
             field.append(client + ' ' + version)
 
             if advanced_ui:
@@ -2310,6 +2310,7 @@ class DownloadInfoFrame(object):
         self.lists = {}
         self.update_handle = None
         self.unhighlight_handle = None
+        self.custom_size = False
         gtk.threads_enter()
         self.mainwindow = Window(gtk.WINDOW_TOPLEVEL)
         self.mainwindow.set_border_width(0)
@@ -2323,10 +2324,11 @@ class DownloadInfoFrame(object):
         self.mainwindow.connect('drag_leave'        , self.drag_leave         )
         self.mainwindow.connect('drag_data_received', self.accept_dropped_file)
 
-        if not advanced_ui:
-            self.mainwindow.set_resizable(False)
+        self.mainwindow.set_size_request(WINDOW_WIDTH, 200)
 
         self.mainwindow.connect('destroy', self.cancel)
+
+        self.mainwindow.connect('size-allocate', self.size_was_allocated)
 
         self.accel_group = gtk.AccelGroup()
 
@@ -2360,7 +2362,8 @@ class DownloadInfoFrame(object):
                            (_("_Quit")      , lambda w: self.mainwindow.destroy()),
                            )
         view_menu_items = ((_("Show/Hide _finished torrents"), self.toggle_known),
-                           (_("_Resize window to fit"), lambda w: self.set_size()),
+                           # BUG: if you reorder this menu, see def set_custom_size() first
+                           (_("_Resize window to fit"), lambda w: self.resize_to_fit()),
                            ('----'             , None),
                            (_("_Log")          , lambda w: self.open_window('log')),
                            # 'View log of all download activity',
@@ -2543,7 +2546,7 @@ class DownloadInfoFrame(object):
 
         self.mainwindow.set_title(title)
 
-    def set_size(self):
+    def _guess_size(self):
         paned_height = self.scrollbox.size_request()[1]
         if hasattr(self.paned, 'style_get_property'):
             paned_height += self.paned.style_get_property('handle-size')
@@ -2557,7 +2560,28 @@ class DownloadInfoFrame(object):
                      self.box2.size_request()[1] + \
                      paned_height
         new_height = min(new_height, MAX_WINDOW_HEIGHT)
-        self.mainwindow.set_size_request(WINDOW_WIDTH, new_height)
+        return WINDOW_WIDTH, new_height
+
+    def set_size(self):
+        if not self.custom_size:
+            self.mainwindow.resize(*self._guess_size())
+
+    def size_was_allocated(self, *args):
+        current_size = self.mainwindow.get_size()
+        target_size = self._guess_size()
+        if current_size == target_size:
+            self.set_custom_size(False)
+        else:
+            self.set_custom_size(True)
+
+    def resize_to_fit(self):
+        self.set_custom_size(False)
+        self.set_size()
+
+    def set_custom_size(self, val):
+        self.custom_size = val
+        # BUG this is a hack:
+        self.viewmenu.get_submenu().get_children()[1].set_sensitive(val)
 
     # BUG need to add handler on resize event to keep track of
     # old_position when pane is hidden manually

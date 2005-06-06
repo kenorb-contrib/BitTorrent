@@ -1,13 +1,20 @@
-## Copyright 2002-2003 Andrew Loewenstern, All Rights Reserved
-# see LICENSE.txt for license information
+# The contents of this file are subject to the BitTorrent Open Source License
+# Version 1.0 (the License).  You may not copy or use this file, in either
+# source code or executable form, except in compliance with the License.  You
+# may obtain a copy of the License at http://www.bittorrent.com/license/.
+#
+# Software distributed under the License is distributed on an AS IS basis,
+# WITHOUT WARRANTY OF ANY KIND, either express or implied.  See the License
+# for the specific language governing rights and limitations under the
+# License.
 
-import time
+from BitTorrent.platform import bttime as time
 from bisect import *
 from types import *
 
 import khash as hash
 import const
-from const import K, HASH_LENGTH, NULL_ID, MAX_FAILURES
+from const import K, HASH_LENGTH, NULL_ID, MAX_FAILURES, MIN_PING_INTERVAL
 from node import Node
 
 class KTable:
@@ -15,7 +22,7 @@ class KTable:
     def __init__(self, node):
         # this is the root node, a.k.a. US!
         self.node = node
-        self.buckets = [KBucket([], 0L, 2L**HASH_LENGTH)]
+        self.buckets = [KBucket([], 0L, (2L**HASH_LENGTH) - 1)]
         self.insertNode(node)
         
     def _bucketIndexForInt(self, num):
@@ -104,14 +111,14 @@ class KTable:
         the caller responsible for pinging the returned node and calling replaceStaleNode if it is found to be stale!!
         contacted means that yes, we contacted THEM and we know the node is reachable
         """
-        assert node.id != NULL_ID
-        if node.id == self.node.id: return
+        if node.id == NULL_ID or node.id == self.node.id:
+            return
 
         if contacted:
             node.updateLastSeen()
 
         # get the bucket for this node
-        i = self. _bucketIndexForInt(node.num)
+        i = self._bucketIndexForInt(node.num)
         # check to see if node is in the bucket already
         try:
             it = self.buckets[i].l.index(node.num)
@@ -137,25 +144,31 @@ class KTable:
             return
 
         # full bucket, check to see if any nodes are invalid
+        t = time()
+        def ls(a, b):
+            if a.lastSeen > b.lastSeen:
+                return 1
+            elif b.lastSeen > a.lastSeen:
+                return -1
+            return 0
+        
         invalid = [n for n in self.buckets[i].l if n.invalid]
         if len(invalid) and not nocheck:
-            def ls(a, b):
-                if a.lastSeen > b.lastSeen:
-                    return 1
-                elif b.lastSeen > a.lastSeen:
-                    return -1
-                return 0
             invalid.sort(ls)
-            if invalid[0].lastSeen == 0 and invalid[0].fails < MAX_FAILURES:
+            if (invalid[0].lastSeen == 0 and invalid[0].fails < MAX_FAILURES):
                 return invalid[0]
             else:
-                return self.replaceStaleNode(invalid[0], node)
+                self.replaceStaleNode(invalid[0], node)
+                return
 
-        
+        stale =  [n for n in self.buckets[i].l if (t - n.lastSeen) > MIN_PING_INTERVAL]
+        if len(stale) and not nocheck:
+            stale.sort(ls)
+            return stale[0]
+            
         # bucket is full and all nodes are valid, check to see if self.node is in the bucket
-        if not (self.buckets[i].min <= self.node < self.buckets[i].max):
-            self.buckets[i].sort()
-            return self.buckets[i].l[0]
+        if not (self.buckets[i].min <= self.node <= self.buckets[i].max):
+            return
         
         # this bucket is full and contains our node, split the bucket
         if len(self.buckets) >= HASH_LENGTH:
@@ -195,17 +208,21 @@ class KTable:
         else:
             if n.msgFailed() >= const.MAX_FAILURES:
                 self.invalidateNode(n)
-                        
+
+    def numPeers(self):
+        """ estimated number of connectable nodes in global table """
+        return 8 * (2 ** (len(self.buckets) - 1))
+    
 class KBucket:
     __slots__ = ('min', 'max', 'lastAccessed')
     def __init__(self, contents, min, max):
         self.l = contents
         self.min = min
         self.max = max
-        self.lastAccessed = time.time()
+        self.lastAccessed = time()
         
     def touch(self):
-        self.lastAccessed = time.time()
+        self.lastAccessed = time()
 
     def lacmp(self, a, b):
         if a.lastSeen > b.lastSeen:

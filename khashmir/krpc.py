@@ -1,10 +1,18 @@
-## Copyright 2002-2003 Andrew Loewenstern, All Rights Reserved
-# see LICENSE.txt for license information
+# The contents of this file are subject to the BitTorrent Open Source License
+# Version 1.0 (the License).  You may not copy or use this file, in either
+# source code or executable form, except in compliance with the License.  You
+# may obtain a copy of the License at http://www.bittorrent.com/license/.
+#
+# Software distributed under the License is distributed on an AS IS basis,
+# WITHOUT WARRANTY OF ANY KIND, either express or implied.  See the License
+# for the specific language governing rights and limitations under the
+# License.
 
 from defer import Deferred
 from BitTorrent.bencode import bencode, bdecode
 import socket
 from BitTorrent.RawServer import RawServer
+from BitTorrent.platform import bttime
 import time
 
 import sys
@@ -12,16 +20,9 @@ from traceback import print_exc
 
 import khash as hash
 from cache import Cache
+from KRateLimiter import KRateLimiter
 
-KRPC_TIMEOUT = 20
-
-KRPC_ERROR = 1
-KRPC_ERROR_METHOD_UNKNOWN = 2
-KRPC_ERROR_RECEIVED_UNKNOWN = 3
-KRPC_ERROR_TIMEOUT = 4
-KRPC_SOCKET_ERROR = 5
-
-CONNECTION_CACHE_TIME = KRPC_TIMEOUT * 2
+from const import *
 
 # commands
 TID = 't'
@@ -44,18 +45,18 @@ class KRPCSelfNodeError(Exception):
     pass
 
 class hostbroker(object):       
-    def __init__(self, server, addr, transport, call_later):
+    def __init__(self, server, addr, transport, call_later, max_ul_rate):
         self.server = server
         self.addr = addr
-        self.transport = transport
+        self.transport = KRateLimiter(transport, max_ul_rate, call_later)
         self.call_later = call_later
         self.connections = Cache(touch_on_access=True)
         self.expire_connections(loop=True)
         
     def expire_connections(self, loop=False):
-        self.connections.expire(time.time() - CONNECTION_CACHE_TIME)
+        self.connections.expire(bttime() - KRPC_CONNECTION_CACHE_TIME)
         if loop:
-            self.call_later(self.expire_connections, CONNECTION_CACHE_TIME, (True,))
+            self.call_later(self.expire_connections, KRPC_CONNECTION_CACHE_TIME, (True,))
 
     def data_came_in(self, addr, datagram):
         #if addr != self.addr:
@@ -87,7 +88,8 @@ class KRPC:
         self.addr = addr
         self.tids = {}
         self.mtid = 0
-
+        self.pinging = False
+        
     def sendErr(self, addr, tid, msg):
         ## send error
         out = bencode({TID:tid, TYP:ERR, ERR :msg})

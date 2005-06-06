@@ -7,6 +7,9 @@
 # WITHOUT WARRANTY OF ANY KIND, either express or implied.  See the License
 # for the specific language governing rights and limitations under the
 # License.
+#
+# Written by Matt Chisholm
+# Client list updated by Ed Savage-Jones - May 28th 2005
 
 import re
 
@@ -17,13 +20,18 @@ matches = (
            ('M(?P<version>\d-\d-\d)--.+$'  , "BitTorrent"          ),
            ('T(?P<version>%s+)-+.+$'%v64p  , "BitTornado"          ),
            ('-TS(?P<version>\d+)-+.+$'     , "TorrentStorm"        ),
-           ('exbc.+$'                      , "BitComet"            ),
+           ('exbc(?P<bcver>.*)LORD.+$'     , "BitLord"             ),
+           ('exbc(?P<bcver>.*).+$'         , "BitComet"            ),
+           ('FUTB(?P<bcver>.*).+$'         , "BitComet Mod1"       ),
+           ('xUTB(?P<bcver>.*).+$'         , "BitComet Mod2"       ),
            ('A(?P<version>%s+)-+.+$'%v64p  , "ABC"                 ),
            ('S(?P<version>%s+)-+.+$'%v64p  , "Shadow's"            ),
            ('-G3.+$'                       , "G3Torrent"           ),
            ('-LT(?P<version>\d+)-+.+$'     , "libtorrent"          ),
            ('Mbrst(?P<version>\d-\d-\d).+$', "burst!"              ),
-           ('eXanonymous.+$'               , "eXeem"               ),
+           ('eX.+$'                        , "eXeem"               ),
+           ('\x00\x02BS.+$'                , "BitSpirit v2"        ),
+           ('.*(?=HTTPBT$|UDP0$).+$'       , "BitSpirit"           ),
 # Clients I've never actually seen in a peer list:           
            ('-BB(?P<version>\d+)-+.+$'     , "BitBuddy"            ),
            ('-CT(?P<version>\d+)-+.+$'     , "CTorrent"            ),
@@ -34,9 +42,17 @@ matches = (
            ('-XT(?P<version>\d+)-+.+$'     , "XanTorrent"          ),
            ('U(?P<version>\d+)-+.+$'       , "UPnP NAT Bit Torrent"),
            ('-BOWP?(?P<version>\d+)-.+$'   , "Bits on Wheels"      ),
+# added by Ed Savage-Jones :
+           ('-AR(?P<version>\d+)-+.+$'     , "Arctic"              ),
+           ('(?P<rsver>.*)BM.+$'           , "BitMagnet"           ),
+           ('BG(?P<version>\d+).+$'        , "BtGetit"             ),
+           ('-eX.+$'                       , "eXeem beta"          ),
+           ('Plus.+$'                      , "Plus! II"            ),
+           ('(?P<rsver>.*)RS.+$'           , "Rufus"               ),
+           ('XBT(?P<version>\d+)-+.+$'     , "XBT"                 ),
+           ('-ZT(?P<version>\d+)-+.+$'     , "ZipTorrent"          ),
 # Unknown peerids
-           ('FUTB.+$'                      , "FUTB ?"              ),
-           ('..BS.+$'                      , "BS ?"                ),
+           (chr(0)*12 + '.+$'              , "\\0 * 12"            ),
            )
 
 matches = [(re.compile(pattern, re.DOTALL), name) for pattern, name in matches]
@@ -72,6 +88,16 @@ def identify_client(peerid, log=None):
                     else:
                         break
                 version = '.'.join(version)
+            elif d.has_key('bcver'):
+                bcver = d['bcver']
+                version += str(ord(bcver[0])) + '.'
+                version += str(ord(bcver[1])/10)
+                version += str(ord(bcver[1])%10)
+            elif d.has_key('rsver'):
+                rsver = d['rsver']
+                version += str(ord(rsver[0])) + '.'
+                version += str(ord(rsver[1])/10) + '.'
+                version += str(ord(rsver[1])%10)
             break
     if client == 'unknown' and log is not None:
         if not unknown_clients.has_key(peerid):

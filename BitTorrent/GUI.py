@@ -431,7 +431,7 @@ else:
             self.set_default_response(gtk.RESPONSE_OK)
             if action == gtk.FILE_CHOOSER_ACTION_CREATE_FOLDER:
                 self.convert_button_box = gtk.HBox()
-                self.convert_button = gtk.Button(_("Choose existing folder"))
+                self.convert_button = gtk.Button(_("Choose an existing folder..."))
                 self.convert_button.connect('clicked', self.change_action)
                 self.convert_button_box.pack_end(self.convert_button,
                                                  expand=False,
@@ -480,10 +480,10 @@ else:
 
         def change_action(self, widget):
             if self.get_action() == gtk.FILE_CHOOSER_ACTION_CREATE_FOLDER:
-                self.convert_button.set_label(_("Create new folder"))
+                self.convert_button.set_label(_("Create a new folder..."))
                 self.set_action(gtk.FILE_CHOOSER_ACTION_SELECT_FOLDER)
             elif self.get_action() == gtk.FILE_CHOOSER_ACTION_SELECT_FOLDER:
-                self.convert_button.set_label(_("Choose existing folder"))
+                self.convert_button.set_label(_("Choose an existing folder..."))
                 self.set_action(gtk.FILE_CHOOSER_ACTION_CREATE_FOLDER)
 
         def got_response(self, widget, response):

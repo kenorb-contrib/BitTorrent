@@ -1,5 +1,12 @@
-## Copyright 2002-2003 Andrew Loewenstern, All Rights Reserved
-# see LICENSE.txt for license information
+# The contents of this file are subject to the BitTorrent Open Source License
+# Version 1.0 (the License).  You may not copy or use this file, in either
+# source code or executable form, except in compliance with the License.  You
+# may obtain a copy of the License at http://www.bittorrent.com/license/.
+#
+# Software distributed under the License is distributed on an AS IS basis,
+# WITHOUT WARRANTY OF ANY KIND, either express or implied.  See the License
+# for the specific language governing rights and limitations under the
+# License.
 
 # magic id to use before we know a peer's id
 NULL_ID =  20 * '\0'
@@ -11,8 +18,10 @@ K = 8
 HASH_LENGTH = 160
 
 # checkpoint every this many seconds
-CHECKPOINT_INTERVAL = 60 * 15 # fifteen minutes
+CHECKPOINT_INTERVAL = 60 * 5 # five minutes
 
+# how often to find our own nodes
+FIND_CLOSE_INTERVAL = 60 * 15 # fifteen minutes
 
 ### SEARCHING/STORING
 # concurrent xmlrpc calls per find node/value request!
@@ -42,3 +51,15 @@ KE_DELAY = 60 * 5 # 5 minutes
 
 # expire entries older than this
 KE_AGE = 60 * 30 # 30 minutes
+
+
+## krpc
+KRPC_TIMEOUT = 20
+
+KRPC_ERROR = 1
+KRPC_ERROR_METHOD_UNKNOWN = 2
+KRPC_ERROR_RECEIVED_UNKNOWN = 3
+KRPC_ERROR_TIMEOUT = 4
+KRPC_SOCKET_ERROR = 5
+
+KRPC_CONNECTION_CACHE_TIME = KRPC_TIMEOUT * 2

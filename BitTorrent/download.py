@@ -95,7 +95,7 @@ class Multitorrent(object):
         for port in xrange(self.config['minport'], self.config['maxport'] + 1):
             try:
                 self.singleport_listener.open_port(port, self.config)
-                self.dht = UTKhashmir(self.config['bind'], self.singleport_listener.get_port(), self.config['data_dir'], self.rawserver)
+                self.dht = UTKhashmir(self.config['bind'], self.singleport_listener.get_port(), self.config['data_dir'], self.rawserver, int(self.config['max_upload_rate'] * 1024 * 0.05))
                 break
             except socketerror, e:
                 pass

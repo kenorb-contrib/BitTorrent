@@ -113,9 +113,10 @@ class TorrentQueue(Feedback):
         try:
             self._restore_state()
         except BTFailure, e:
+            self.torrents = {}
+            self.running_torrents = []
             self.queue = []
             self.other_torrents = []
-            self.torrents = {}
             self.global_error(ERROR, _("Could not load saved state: ")+str(e))
         else:
             for infohash in self.running_torrents + self.queue + \
@@ -232,9 +233,13 @@ class TorrentQueue(Feedback):
         r.append('End\n')
         f = None
         try:
-            f = file(os.path.join(self.config['data_dir'], 'ui_state'), 'wb')
+            filename = os.path.join(self.config['data_dir'], 'ui_state')
+            f = file(filename + '.new', 'wb')
             f.write(''.join(r))
             f.close()
+            if os.access(filename, os.F_OK):
+                os.remove(filename) # no atomic rename on win32
+            os.rename(filename + '.new', filename)
         except Exception, e:
             self.global_error(ERROR, _("Could not save UI state: ") + str(e))
             if f is not None:
@@ -536,9 +541,12 @@ class TorrentQueue(Feedback):
         path = os.path.join(self.config['data_dir'], 'metainfo',
                             infohash.encode('hex'))
         try:
-            f = file(path, 'wb')
+            f = file(path+'.new', 'wb')
             f.write(data)
             f.close()
+            if os.access(path, os.F_OK):
+                os.remove(path) # no atomic rename on win32
+            os.rename(path+'.new', path)
         except Exception, e:
             try:
                 f.close()

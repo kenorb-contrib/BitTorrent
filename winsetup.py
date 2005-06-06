@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 # The contents of this file are subject to the BitTorrent Open Source License
 # Version 1.0 (the License).  You may not copy or use this file, in either
 # source code or executable form, except in compliance with the License.  You
@@ -12,9 +10,17 @@
 
 # Written by Bram Cohen and Matt Chisholm
 
+import os
+import sys
 from distutils.core import setup
 import py2exe
 import glob
+from BitTorrent import languages
+
+if os.name != 'nt':
+    print "This script is only for use on Win32. Use setup.py to install on a Unix OS."
+    sys.exit()
+
 
 opts = {
     "py2exe": {
@@ -37,9 +43,8 @@ opts = {
     }
 }
 
-langs = ["fr",]
 translations = []
-for l in langs:
+for l in languages:
     translations.append (("locale\\%s\\LC_MESSAGES"                % l,
                           ["locale\\%s\\LC_MESSAGES\\bittorrent.mo" % l,
                            "locale\\%s\\LC_MESSAGES\\bittorrent.po" % l,]))

@@ -8,24 +8,25 @@ msgstr ""
 "Project-Id-Version: BitTorrent 4.2\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2005-06-06 16:58-0700\n"
-"PO-Revision-Date: 2005-05-19 11:59-0800\n"
-"Last-Translator: Adrien Frey <adrien.frey@free.fr>\n"
-"Language-Team: French <bugs@bittorrent.com>\n"
+"PO-Revision-Date: 2005-05-26 02:58+0200\n"
+"Last-Translator: Ben Pesso <senseBOP@gmail.com>\n"
+"Language-Team: Ben's Project <senseBOP@gmail.com>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Poedit-Language: French\n"
-"X-Poedit-Country: FRANCE\n"
+"X-Poedit-Language: Hebrew\n"
 
 #: BitTorrent/ConvertedMetainfo.py:51
 msgid ""
 "This seems to be an old Python version which does not support detecting the "
 "filesystem encoding. Assuming 'ascii'."
 msgstr ""
+".ASCII נראה כי זו גרסת פייטון שאינה תומכת בזיהוי קידוד קבצי מערכת. אני נאלצת "
+"לנחש כי זהו קידוד"
 
 #: BitTorrent/ConvertedMetainfo.py:58
 msgid "Python failed to autodetect filesystem encoding. Using 'ascii' instead."
-msgstr ""
+msgstr ".במקום ASCII-פייטון לא הצליח למצוא קידוד קבצי מערכת. משתמשת ב"
 
 #: BitTorrent/ConvertedMetainfo.py:65
 #, python-format
@@ -85,44 +86,44 @@ msgstr ""
 #: BitTorrent/GUI.py:149
 #, python-format
 msgid "%d days"
-msgstr "%d jours"
+msgstr ""
 
 #: BitTorrent/GUI.py:151
 #, python-format
 msgid "1 day %d hours"
-msgstr "1 jour %d heures"
+msgstr ""
 
 #: BitTorrent/GUI.py:153
 #, python-format
 msgid "%d:%02d hours"
-msgstr "%d:%02d heures"
+msgstr ""
 
 #: BitTorrent/GUI.py:155
 #, python-format
 msgid "%d:%02d minutes"
-msgstr "%d:%02d minutes"
+msgstr ""
 
 #: BitTorrent/GUI.py:157
 #, python-format
 msgid "%d seconds"
-msgstr "%d secondes"
+msgstr ""
 
 #: BitTorrent/GUI.py:159
 msgid "0 seconds"
-msgstr "0 secondes"
+msgstr ""
 
 #: BitTorrent/GUI.py:201
 #, python-format
 msgid "%s Help"
-msgstr "%s Aide"
+msgstr ""
 
 #: BitTorrent/GUI.py:208
 msgid "Frequently Asked Questions:"
-msgstr "Foire Aux Questions"
+msgstr ""
 
 #: BitTorrent/GUI.py:213
 msgid "Go"
-msgstr "Go"
+msgstr ""
 
 #: BitTorrent/GUI.py:434 BitTorrent/GUI.py:486
 msgid "Choose an existing folder..."
@@ -130,11 +131,11 @@ msgstr ""
 
 #: BitTorrent/GUI.py:444
 msgid "All Files"
-msgstr "Tous les Fichiers"
+msgstr ""
 
 #: BitTorrent/GUI.py:449
 msgid "Torrents"
-msgstr "Torrents"
+msgstr ""
 
 #: BitTorrent/GUI.py:483
 msgid "Create a new folder..."
@@ -142,11 +143,11 @@ msgstr ""
 
 #: BitTorrent/GUI.py:545
 msgid "Select file"
-msgstr "Sélectionner fichier"
+msgstr ""
 
 #: BitTorrent/GUI.py:546
 msgid "Select folder"
-msgstr "Sélectionner dossier"
+msgstr ""
 
 #: BitTorrent/HTTPHandler.py:20
 msgid "Mon"
@@ -342,27 +343,27 @@ msgstr ""
 
 #: BitTorrent/TorrentQueue.py:120
 msgid "Could not load saved state: "
-msgstr "N'a pas pu charger l'état sauvegardé :"
+msgstr ""
 
 #: BitTorrent/TorrentQueue.py:160
 msgid "Version check failed: no DNS library"
-msgstr "Echec vérification de la Version : pas de librairie DNS"
+msgstr ""
 
 #: BitTorrent/TorrentQueue.py:177
 msgid "DNS query failed"
-msgstr "Echec Requète DNS"
+msgstr ""
 
 #: BitTorrent/TorrentQueue.py:179
 msgid "number of received TXT fields is not 1"
-msgstr "Nombre de champ texte reçu n'est pas 1"
+msgstr ""
 
 #: BitTorrent/TorrentQueue.py:182
 msgid "number of strings in reply is not 1?"
-msgstr "Nombre de chaînes reçu n'est pas 1 ?"
+msgstr ""
 
 #: BitTorrent/TorrentQueue.py:192
 msgid "Could not parse new version string"
-msgstr "Analyse de la nouvelle chaine de version impossible"
+msgstr ""
 
 #: BitTorrent/TorrentQueue.py:202
 #, python-format
@@ -371,94 +372,87 @@ msgid ""
 "You can always get the latest version from\n"
 "%s."
 msgstr ""
-"Une nouvelle version de Bit Torrent est disponible. \n"
-"Vous pouvez toujours obtenir le dernière version depuis \n"
-"%s"
 
 #: BitTorrent/TorrentQueue.py:207
 msgid "Version check failed: "
-msgstr "Echec vérification de la version :"
+msgstr ""
 
 #: BitTorrent/TorrentQueue.py:244
 msgid "Could not save UI state: "
-msgstr "N''a pas pu enregistrer l'état de l'IU :"
+msgstr ""
 
 #: BitTorrent/TorrentQueue.py:254 BitTorrent/TorrentQueue.py:256
 #: BitTorrent/TorrentQueue.py:329 BitTorrent/TorrentQueue.py:332
 #: BitTorrent/TorrentQueue.py:342 BitTorrent/TorrentQueue.py:354
 #: BitTorrent/TorrentQueue.py:371
 msgid "Invalid state file contents"
-msgstr "Contenu du fichier d'état incorrect"
+msgstr ""
 
 #: BitTorrent/TorrentQueue.py:269
 msgid "Error reading file "
-msgstr "Erreur à la lecture du fichier"
+msgstr ""
 
 #: BitTorrent/TorrentQueue.py:271
 msgid "cannot restore state completely"
-msgstr "N'a pas pu complètement restaurer l'état"
+msgstr ""
 
 #: BitTorrent/TorrentQueue.py:274
 msgid "Invalid state file (duplicate entry)"
-msgstr "Fichier d'état invalide (entrée double)"
+msgstr ""
 
 #: BitTorrent/TorrentQueue.py:280 BitTorrent/TorrentQueue.py:285
 msgid "Corrupt data in "
-msgstr "Données endommagées dans"
+msgstr ""
 
 #: BitTorrent/TorrentQueue.py:281 BitTorrent/TorrentQueue.py:286
 msgid " , cannot restore torrent ("
-msgstr ", restauration torrent impossible ("
+msgstr ""
 
 #: BitTorrent/TorrentQueue.py:300
 msgid "Invalid state file (bad entry)"
-msgstr "Fichier d'état invalide (mauvaise entrée)"
+msgstr ""
 
 #: BitTorrent/TorrentQueue.py:319
 msgid "Bad UI state file"
-msgstr "Mauvais fichier d'état d'IU"
+msgstr ""
 
 #: BitTorrent/TorrentQueue.py:323
 msgid "Bad UI state file version"
-msgstr "Mauvaise version de fichier d'état d'IU"
+msgstr ""
 
 #: BitTorrent/TorrentQueue.py:325
 msgid "Unsupported UI state file version (from newer client version?)"
 msgstr ""
-"Version de fichier d'état d'IU non supportée (depuis une nouvelle version du "
-"client ?)"
 
 #: BitTorrent/TorrentQueue.py:496
 msgid "Could not delete cached metainfo file:"
-msgstr "Ne peut effacer les fichiers de méta-infos en cache :"
+msgstr ""
 
 #: BitTorrent/TorrentQueue.py:519
 #, python-format
 msgid "This is not a valid torrent file. (%s)"
-msgstr "Ce n'est pas un fichier torrent valable. (%s)"
+msgstr ""
 
 #: BitTorrent/TorrentQueue.py:527
 msgid "This torrent (or one with the same contents) is already running."
-msgstr "Ce torrent (ou un autre au contenu semblable) est déjà en cours."
+msgstr ""
 
 #: BitTorrent/TorrentQueue.py:531
 msgid "This torrent (or one with the same contents) is already waiting to run."
-msgstr "Ce torrent (ou un autre au contenu semblable) est déjà en attente."
+msgstr ""
 
 #: BitTorrent/TorrentQueue.py:538
 #, python-format
 msgid "Torrent in unknown state %d"
-msgstr "Torrent à l'état inconnu %d"
+msgstr ""
 
 #: BitTorrent/TorrentQueue.py:555
 msgid "Could not write file "
-msgstr "Écriture du fichier impossible"
+msgstr ""
 
 #: BitTorrent/TorrentQueue.py:557
 msgid "torrent will not be restarted correctly on client restart"
 msgstr ""
-"Ce torrent ne sera pas redémarré correctement au prochain lancement du "
-"client."
 
 #: BitTorrent/TorrentQueue.py:644
 #, python-format
@@ -466,24 +460,18 @@ msgid ""
 "Can't run more than %d torrents simultaneously. For more info see the FAQ at "
 "%s."
 msgstr ""
-"Impossible de gérer plus de %d torrents simultanément. Pour plus d'infos, "
-"voir la FAQ à %s."
 
 #: BitTorrent/TorrentQueue.py:758
 msgid ""
 "Not starting torrent as there are other torrents waiting to run, and this "
 "one already meets the settings for when to stop seeding."
 msgstr ""
-"Aucun démarrage de torrent tant qu'il y a d'autres torrents en attente, et "
-"celui-là  correspond déjà aux critères d'arrêt d'essaimage."
 
 #: BitTorrent/TorrentQueue.py:764
 msgid ""
 "Not starting torrent as it already meets the settings for when to stop "
 "seeding the last completed torrent."
 msgstr ""
-"Aucun démarrage de torrent vu qu'il correspond déjà aux critères d'arrêt "
-"d'essaimage du dernier torrent complété."
 
 #: BitTorrent/__init__.py:20
 msgid "Python 2.2.1 or newer required"
@@ -1481,87 +1469,87 @@ msgstr ""
 
 #: btdownloadgui.py:24 btmaketorrentgui.py:23
 msgid "Install Python 2.3 or greater"
-msgstr "Install Python 2.3 ou plus récent"
+msgstr ""
 
 #: btdownloadgui.py:38
 msgid "PyGTK 2.4 or newer required"
-msgstr "PyGTK 2.4 ou plus récent requis"
+msgstr ""
 
 #: btdownloadgui.py:104
 msgid "drag to reorder"
-msgstr "cliquez-glissez pour ré-ordonner"
+msgstr ""
 
 #: btdownloadgui.py:105
 msgid "right-click for menu"
-msgstr "clic droit pour le menu"
+msgstr ""
 
 #: btdownloadgui.py:108
 #, python-format
 msgid "rate: %s"
-msgstr "taux : %s"
+msgstr ""
 
 #: btdownloadgui.py:111
 msgid "dialup"
-msgstr "RTC"
+msgstr ""
 
 #: btdownloadgui.py:112
 msgid "DSL/cable 128k up"
-msgstr "DSL/cable 128k montant"
+msgstr ""
 
 #: btdownloadgui.py:113
 msgid "DSL/cable 256k up"
-msgstr "DSL/cable 256k montant"
+msgstr ""
 
 #: btdownloadgui.py:114
 msgid "DSL 768k up"
-msgstr "DSL 768k montant"
+msgstr ""
 
 #: btdownloadgui.py:115
 msgid "T1"
-msgstr "T1"
+msgstr ""
 
 #: btdownloadgui.py:116
 msgid "T1/E1"
-msgstr "T1/E1"
+msgstr ""
 
 #: btdownloadgui.py:117
 msgid "E1"
-msgstr "E1"
+msgstr ""
 
 #: btdownloadgui.py:118
 msgid "T3"
-msgstr "T3"
+msgstr ""
 
 #: btdownloadgui.py:119
 msgid "OC3"
-msgstr "OC3"
+msgstr ""
 
 #: btdownloadgui.py:297
 msgid "Maximum upload "
-msgstr "Débit montant maximum"
+msgstr ""
 
 #: btdownloadgui.py:310
 msgid "Temporarily stop all running torrents"
-msgstr "Arrêt temporaire des torrents en marche"
+msgstr ""
 
 #: btdownloadgui.py:311
 msgid "Resume downloading"
-msgstr "Reprise du téléchargement"
+msgstr ""
 
 #: btdownloadgui.py:350
 #, python-format
 msgid "New %s version available"
-msgstr "Nouvelle %s version disponible"
+msgstr ""
 
 #: btdownloadgui.py:365
 #, python-format
 msgid "A newer version of %s is available.\n"
-msgstr "Une nouvelle version de %s est disponible. \n"
+msgstr ""
 
 #: btdownloadgui.py:366
 #, python-format
 msgid "You are using %s, and the new version is %s.\n"
-msgstr "Vous utilisez %s, et une nouvelle version est %s. \n"
+msgstr ""
 
 #: btdownloadgui.py:367
 #, python-format
@@ -1569,25 +1557,23 @@ msgid ""
 "You can always get the latest version from \n"
 "%s"
 msgstr ""
-"Vous pouvez toujours obtenir la dernière version depuis \n"
-"%s"
 
 #: btdownloadgui.py:374 btdownloadgui.py:1789 btdownloadgui.py:1894
 msgid "Download _later"
-msgstr "Télécharge p_lus tard"
+msgstr ""
 
 #: btdownloadgui.py:377 btdownloadgui.py:1753
 msgid "Download _now"
-msgstr "Télécharge mai_ntenant"
+msgstr ""
 
 #: btdownloadgui.py:383
 msgid "_Remind me later"
-msgstr "Me le _rappeler ultérieurement"
+msgstr ""
 
 #: btdownloadgui.py:415
 #, python-format
 msgid "About %s"
-msgstr "À propos de %s"
+msgstr ""
 
 #: btdownloadgui.py:430
 msgid "Beta"
@@ -1596,145 +1582,141 @@ msgstr ""
 #: btdownloadgui.py:432
 #, python-format
 msgid "Version %s"
-msgstr "Version %s"
+msgstr ""
 
 #: btdownloadgui.py:451
 msgid "Donate"
-msgstr "Faites un don"
+msgstr ""
 
 #: btdownloadgui.py:471
 #, python-format
 msgid "%s Activity Log"
-msgstr "Journal d'activité de %s"
+msgstr ""
 
 #: btdownloadgui.py:528
 msgid "Save log in:"
-msgstr "Enregistrer le journal dans :"
+msgstr ""
 
 #: btdownloadgui.py:539
 msgid "log saved"
-msgstr "journal enregistré"
+msgstr ""
 
 #: btdownloadgui.py:598
 msgid "log cleared"
-msgstr "journal effacé"
+msgstr ""
 
 #: btdownloadgui.py:610
 #, python-format
 msgid "%s Settings"
-msgstr "Réglages de %s"
+msgstr ""
 
 #: btdownloadgui.py:621
 msgid "Saving"
-msgstr "Sauvegarde en cours"
+msgstr ""
 
 #: btdownloadgui.py:623
 msgid "Download folder:"
-msgstr "Dossier de téléchargement :"
+msgstr ""
 
 #: btdownloadgui.py:630
 msgid "Default:"
-msgstr "Par défaut :"
+msgstr ""
 
 #: btdownloadgui.py:637
 msgid "Change..."
-msgstr "Changer ..."
+msgstr ""
 
 #: btdownloadgui.py:641
 msgid "Ask where to save each download"
-msgstr "Demander où enregistrer à chaque fois"
+msgstr ""
 
 #: btdownloadgui.py:655
 msgid "Downloading"
-msgstr "Téléchargement en cours"
+msgstr ""
 
 #: btdownloadgui.py:657
 msgid "Starting additional torrents manually:"
-msgstr "Ajout manuel de torrents supplémentaires"
+msgstr ""
 
 #: btdownloadgui.py:666
 msgid "Always stops the _last running torrent"
-msgstr "Toujours stopper _le dernier torrent en marche"
+msgstr ""
 
 #: btdownloadgui.py:672
 msgid "Always starts the torrent in _parallel"
-msgstr "Toujours lancer le dernier torrents en _parallèle"
+msgstr ""
 
 #: btdownloadgui.py:678
 msgid "_Asks each time"
-msgstr "Dem_ander à chaque fois"
+msgstr ""
 
 #: btdownloadgui.py:692
 msgid "Seed completed torrents:"
-msgstr "Essaimer les torrents completés :"
+msgstr ""
 
 #: btdownloadgui.py:700 btdownloadgui.py:729
 msgid "until share ratio reaches "
-msgstr "juqu'au ratio de partage "
+msgstr ""
 
 #: btdownloadgui.py:706
 msgid " percent, or"
-msgstr "pourcent, ou"
+msgstr ""
 
 #: btdownloadgui.py:712
 msgid "for "
-msgstr "pour"
+msgstr ""
 
 #: btdownloadgui.py:718
 msgid " minutes, whichever comes first."
-msgstr "minutes, au premier terme échu."
+msgstr ""
 
 #: btdownloadgui.py:725
 msgid "Seed last completed torrent:"
-msgstr "Essaimer le dernier torrent complété :"
+msgstr ""
 
 #: btdownloadgui.py:735
 msgid " percent."
-msgstr "pourcent."
+msgstr ""
 
 #: btdownloadgui.py:741
 msgid "\"0 percent\" means seed forever."
-msgstr "\"0 pourcent\" pour un essaimage sans fin."
+msgstr ""
 
 #: btdownloadgui.py:750
 msgid "Network"
-msgstr "Réseau"
+msgstr ""
 
 #: btdownloadgui.py:752
 msgid "Look for available port:"
-msgstr "Recherche pour un port disponible :"
+msgstr ""
 
 #: btdownloadgui.py:755
 msgid "starting at port: "
-msgstr "Commencer au port :"
+msgstr ""
 
 #: btdownloadgui.py:768
 msgid "IP to report to the tracker:"
-msgstr "l'IP se rapporte au tracker :"
+msgstr ""
 
 #: btdownloadgui.py:773
 msgid ""
 "(Has no effect unless you are on the\n"
 "same local network as the tracker)"
 msgstr ""
-"(Aucun effet tant que vous n'êtes pas sur le\n"
-"même réseau local que le tracker)"
 
 #: btdownloadgui.py:778
 msgid "Potential Windows TCP stack fix"
-msgstr "Répare la fenêtre potentiel de la pile TCP"
+msgstr ""
 
 #: btdownloadgui.py:792
 msgid ""
 "Progress bar text is always black\n"
 "(requires restart)"
 msgstr ""
-"Texte de la barre de progression toujours en noir\n"
-"(nécessite un redémarrage)"
 
 #: btdownloadgui.py:805
 msgid "Misc"
-msgstr "Divers"
+msgstr ""
 
 #: btdownloadgui.py:812
 #, python-format
@@ -1742,49 +1724,47 @@ msgid ""
 "WARNING: Changing these settings can\n"
 "prevent %s from functioning correctly."
 msgstr ""
-"ATTENTION : modifier ces réglages peut\n"
-" empêcher %s de fonctionner correctement."
 
 #: btdownloadgui.py:820
 msgid "Option"
-msgstr "Option"
+msgstr ""
 
 #: btdownloadgui.py:825
 msgid "Value"
-msgstr "Valeur"
+msgstr ""
 
 #: btdownloadgui.py:832
 msgid "Advanced"
-msgstr "Avancé"
+msgstr ""
 
 #: btdownloadgui.py:841
 msgid "Choose default download directory"
-msgstr "Sélectionner le répertoire de téléchargement par défaut"
+msgstr ""
 
 #: btdownloadgui.py:902
 #, python-format
 msgid "Files in \"%s\""
-msgstr "Fichier dans \"%s\""
+msgstr ""
 
 #: btdownloadgui.py:911
 msgid "Apply"
-msgstr "Appliquer"
+msgstr ""
 
 #: btdownloadgui.py:912
 msgid "Allocate"
-msgstr "Allouer"
+msgstr ""
 
 #: btdownloadgui.py:913
 msgid "Never download"
-msgstr "Ne jamais télécharger"
+msgstr ""
 
 #: btdownloadgui.py:914
 msgid "Decrease"
-msgstr "Diminuer"
+msgstr ""
 
 #: btdownloadgui.py:915
 msgid "Increase"
-msgstr "Augmenter"
+msgstr ""
 
 #: btdownloadgui.py:925 btlaunchmanycurses.py:142
 msgid "Filename"
@@ -1805,321 +1785,321 @@ msgstr ""
 
 #: btdownloadgui.py:1095
 msgid "IP address"
-msgstr "Adresse IP"
+msgstr ""
 
 #: btdownloadgui.py:1095
 msgid "Client"
-msgstr "Client"
+msgstr ""
 
 #: btdownloadgui.py:1095
 msgid "Connection"
-msgstr "Connection"
+msgstr ""
 
 #: btdownloadgui.py:1095
 msgid "KB/s down"
-msgstr "Ko/s descendants"
+msgstr ""
 
 #: btdownloadgui.py:1095
 msgid "KB/s up"
-msgstr "Ko/s montants"
+msgstr ""
 
 #: btdownloadgui.py:1095
 msgid "MB downloaded"
-msgstr "Mo téléchargés"
+msgstr ""
 
 #: btdownloadgui.py:1095
 msgid "MB uploaded"
-msgstr "Mo émis"
+msgstr ""
 
 #: btdownloadgui.py:1095
 #, python-format
 msgid "% complete"
-msgstr "% complété"
+msgstr ""
 
 #: btdownloadgui.py:1095
 msgid "KB/s est. peer download"
-msgstr "Ko/s estimation téléchargement du pair"
+msgstr ""
 
 #: btdownloadgui.py:1101
 msgid "Peer ID"
-msgstr "ID du pair"
+msgstr ""
 
 #: btdownloadgui.py:1104 btdownloadgui.py:1107
 msgid "Interested"
-msgstr "Intéressé"
+msgstr ""
 
 #: btdownloadgui.py:1104 btdownloadgui.py:1107
 msgid "Choked"
-msgstr "Étranglé"
+msgstr ""
 
 #: btdownloadgui.py:1104
 msgid "Snubbed"
-msgstr "Rejeté"
+msgstr ""
 
 #: btdownloadgui.py:1107
 msgid "Optimistic upload"
-msgstr "Émission optimiste"
+msgstr ""
 
 #: btdownloadgui.py:1188
 msgid "remote"
-msgstr "à distance"
+msgstr ""
 
 #: btdownloadgui.py:1188
 msgid "local"
-msgstr "local"
+msgstr ""
 
 #: btdownloadgui.py:1224
 msgid "bad peer"
-msgstr "Mauvais pair"
+msgstr ""
 
 #: btdownloadgui.py:1234
 #, python-format
 msgid "%d ok"
-msgstr "%d ok"
+msgstr ""
 
 #: btdownloadgui.py:1235
 #, python-format
 msgid "%d bad"
-msgstr "%d mauvais"
+msgstr ""
 
 #: btdownloadgui.py:1237
 msgid "banned"
-msgstr "banni"
+msgstr ""
 
 #: btdownloadgui.py:1239
 msgid "ok"
-msgstr "ok"
+msgstr ""
 
 #: btdownloadgui.py:1275
 #, python-format
 msgid "Info for \"%s\""
-msgstr "Infos sur \"%s\""
+msgstr ""
 
 #: btdownloadgui.py:1293
 msgid "Torrent name:"
-msgstr "Nom du torrent :"
+msgstr ""
 
 #: btdownloadgui.py:1298
 msgid "(trackerless torrent)"
-msgstr "(torrent sans tracker)"
+msgstr ""
 
 #: btdownloadgui.py:1301
 msgid "Announce url:"
-msgstr "URL du Tracker :"
+msgstr ""
 
 #: btdownloadgui.py:1305
 msgid ", in one file"
-msgstr ", en 1 fichier"
+msgstr ""
 
 #: btdownloadgui.py:1307
 #, python-format
 msgid ", in %d files"
-msgstr ", en %d fichiers"
+msgstr ""
 
 #: btdownloadgui.py:1308
 msgid "Total size:"
-msgstr "Taille totale :"
+msgstr ""
 
 #: btdownloadgui.py:1315
 msgid "Pieces:"
-msgstr "Pièces :"
+msgstr ""
 
 #: btdownloadgui.py:1317
 msgid "Info hash:"
-msgstr "Info hachage :"
+msgstr ""
 
 #: btdownloadgui.py:1327
 msgid "Save in:"
-msgstr "Enregistrer sous :"
+msgstr ""
 
 #: btdownloadgui.py:1331
 msgid "File name:"
-msgstr "Nom de fichier :"
+msgstr ""
 
 #: btdownloadgui.py:1357
 msgid "Open directory"
-msgstr "Ouvrir répertoire"
+msgstr ""
 
 #: btdownloadgui.py:1363
 msgid "Show file list"
-msgstr "Afficher liste fichier"
+msgstr ""
 
 #: btdownloadgui.py:1458
 msgid "Torrent info"
-msgstr "Info du torrent"
+msgstr ""
 
 #: btdownloadgui.py:1467 btdownloadgui.py:1890
 msgid "Remove torrent"
-msgstr "Enlever torrent"
+msgstr ""
 
 #: btdownloadgui.py:1471
 msgid "Abort torrent"
-msgstr "Avorter torrent"
+msgstr ""
 
 #: btdownloadgui.py:1528
 #, python-format
 msgid ", will seed for %s"
-msgstr ", essaimera jusqu'à %s"
+msgstr ""
 
 #: btdownloadgui.py:1530
 msgid ", will seed indefinitely."
-msgstr ", essaimera indéfiniment."
+msgstr ""
 
 #: btdownloadgui.py:1533
 #, python-format
 msgid "Done, share ratio: %d%%"
-msgstr "Effectué, ratio de partage : %d%%"
+msgstr ""
 
 #: btdownloadgui.py:1536
 #, python-format
 msgid "Done, %s uploaded"
-msgstr "Effectué, %s envoyé."
+msgstr ""
 
 #: btdownloadgui.py:1568
 msgid "Torrent _info"
-msgstr "_Infos du Torrent"
+msgstr ""
 
 #: btdownloadgui.py:1569
 msgid "_Open directory"
-msgstr "_Ouvrir répertoire"
+msgstr ""
 
 #: btdownloadgui.py:1570
 msgid "_Change location"
-msgstr "_Changer l'emplacement"
+msgstr ""
 
 #: btdownloadgui.py:1572
 msgid "_File list"
-msgstr "Liste de _Fichiers"
+msgstr ""
 
 #: btdownloadgui.py:1646
 #, python-format
 msgid "Are you sure you want to remove \"%s\"?"
-msgstr "Êtes-vous sûr de vouloir enlever \"%s\" ?"
+msgstr ""
 
 #: btdownloadgui.py:1649
 #, python-format
 msgid "Your share ratio for this torrent is %d%%. "
-msgstr "Votre ratio de partage pour ce torrent est de %d%%. "
+msgstr ""
 
 #: btdownloadgui.py:1651
 #, python-format
 msgid "You have uploaded %s to this torrent. "
-msgstr "Vous avez envoyé %s de ce torrent."
+msgstr ""
 
 #: btdownloadgui.py:1654
 msgid "Remove this torrent?"
-msgstr "Enlever ce torrent ?"
+msgstr ""
 
 #: btdownloadgui.py:1673
 msgid "Finished"
-msgstr "Terminé"
+msgstr ""
 
 #: btdownloadgui.py:1674
 msgid "drag into list to seed"
-msgstr "Glissez-le dans la liste pour l'essaimer"
+msgstr ""
 
 #: btdownloadgui.py:1677
 msgid "Failed"
-msgstr "Échoué"
+msgstr ""
 
 #: btdownloadgui.py:1678
 msgid "drag into list to resume"
-msgstr "Glissez-le dans la liste pour le reprendre"
+msgstr ""
 
 #: btdownloadgui.py:1687
 msgid "Re_start"
-msgstr "Redémarrage"
+msgstr ""
 
 #: btdownloadgui.py:1688 btdownloadgui.py:1759 btdownloadgui.py:1795
 #: btdownloadgui.py:1900
 msgid "_Remove"
-msgstr "Enleve_r"
+msgstr ""
 
 #: btdownloadgui.py:1738
 msgid "Waiting"
-msgstr "En attente"
+msgstr ""
 
 #: btdownloadgui.py:1758 btdownloadgui.py:1794 btdownloadgui.py:1899
 msgid "_Finish"
-msgstr "_Fini"
+msgstr ""
 
 #: btdownloadgui.py:1761 btdownloadgui.py:1790 btdownloadgui.py:1895
 msgid "_Abort"
-msgstr "_Avorter"
+msgstr ""
 
 #: btdownloadgui.py:1776
 msgid "Paused"
-msgstr "En pause"
+msgstr ""
 
 #: btdownloadgui.py:1817
 msgid "Running"
-msgstr "En cours"
+msgstr ""
 
 #: btdownloadgui.py:1841
 #, python-format
 msgid "Current up: %s"
-msgstr "Émission actuelle : %s"
+msgstr ""
 
 #: btdownloadgui.py:1842
 #, python-format
 msgid "Current down: %s"
-msgstr "Réception actuelle : %s"
+msgstr ""
 
 #: btdownloadgui.py:1848
 #, python-format
 msgid "Previous up: %s"
-msgstr "Émission précédente : %s"
+msgstr ""
 
 #: btdownloadgui.py:1849
 #, python-format
 msgid "Previous down: %s"
-msgstr "Réception précédente : %s"
+msgstr ""
 
 #: btdownloadgui.py:1855
 #, python-format
 msgid "Share ratio: %0.02f%%"
-msgstr "Ratio de partage : %0.02f%%"
+msgstr ""
 
 #: btdownloadgui.py:1858
 #, python-format
 msgid "%s peers, %s seeds. Totals from tracker: %s"
-msgstr "%s pairs, %s essaimeurs. Total depuis le tracker : %s"
+msgstr ""
 
 #: btdownloadgui.py:1862
 #, python-format
 msgid "Distributed copies: %d; Next: %s"
-msgstr "Copies distribuées : %d; Suivant : %s"
+msgstr ""
 
 #: btdownloadgui.py:1865
 #, python-format
 msgid "Pieces: %d total, %d complete, %d partial, %d active (%d empty)"
-msgstr "Pièces : %d total, %d complétée, %d partielles, %d active (%d vide)"
+msgstr ""
 
 #: btdownloadgui.py:1869
 #, python-format
 msgid "%d bad pieces + %s in discarded requests"
-msgstr "%d mauvaises pièces +%s  de requêtes écartées"
+msgstr ""
 
 #: btdownloadgui.py:1903
 msgid "_Peer list"
-msgstr "Liste des _pairs"
+msgstr ""
 
 #: btdownloadgui.py:1962
 msgid "Done"
-msgstr "Effectué"
+msgstr ""
 
 #: btdownloadgui.py:1977
 #, python-format
 msgid "%.1f%% done, %s remaining"
-msgstr "%.1f%% effectué, %s restant"
+msgstr ""
 
 #: btdownloadgui.py:1985
 msgid "Download "
-msgstr "Téléchargement"
+msgstr ""
 
 #: btdownloadgui.py:1987
 msgid "Upload "
-msgstr "Émission"
+msgstr ""
 
 #: btdownloadgui.py:2002
 msgid "NA"
@@ -2128,59 +2108,59 @@ msgstr ""
 #: btdownloadgui.py:2343
 #, python-format
 msgid "%s started"
-msgstr "%s démarré"
+msgstr ""
 
 #: btdownloadgui.py:2356
 msgid "_Open torrent file"
-msgstr "_Ouvrir fichier torrent"
+msgstr ""
 
 #: btdownloadgui.py:2357
 msgid "Make _new torrent"
-msgstr "Créer  _nouveau torrent"
+msgstr ""
 
 #: btdownloadgui.py:2360
 msgid "_Pause/Play"
-msgstr "_pause/Lecture"
+msgstr ""
 
 #: btdownloadgui.py:2362
 msgid "_Quit"
-msgstr "_Quitter"
+msgstr ""
 
 #: btdownloadgui.py:2364
 msgid "Show/Hide _finished torrents"
-msgstr "Afficher/Cacher les torrents _fini"
+msgstr ""
 
 #: btdownloadgui.py:2366
 msgid "_Resize window to fit"
-msgstr "_Redimensionner pour adapter"
+msgstr ""
 
 #: btdownloadgui.py:2368
 msgid "_Log"
-msgstr "Journa_l"
+msgstr ""
 
 #: btdownloadgui.py:2371
 msgid "_Settings"
-msgstr "Réglage_s"
+msgstr ""
 
 #: btdownloadgui.py:2374 btdownloadgui.py:2390
 msgid "_Help"
-msgstr "Aide"
+msgstr ""
 
 #: btdownloadgui.py:2376
 msgid "_About"
-msgstr "À propos"
+msgstr ""
 
 #: btdownloadgui.py:2377
 msgid "_Donate"
-msgstr "Faites un _don"
+msgstr ""
 
 #: btdownloadgui.py:2381
 msgid "_File"
-msgstr "_Fichier"
+msgstr ""
 
 #: btdownloadgui.py:2386
 msgid "_View"
-msgstr "_Vues"
+msgstr ""
 
 #: btdownloadgui.py:2533
 msgid "(stopped)"
@@ -2188,7 +2168,7 @@ msgstr ""
 
 #: btdownloadgui.py:2545
 msgid "(multiple)"
-msgstr "(multiple)"
+msgstr ""
 
 #: btdownloadgui.py:2659
 #, python-format
@@ -2197,83 +2177,78 @@ msgid ""
 "%s\n"
 "Would you like to go there now?"
 msgstr ""
-"%s L'aide est à \n"
-"%s\n"
-"Voulez-vous y aller maintenant ?"
 
 #: btdownloadgui.py:2662
 msgid "Visit help web page?"
-msgstr "Visiter la page de l'aide ?"
+msgstr ""
 
 #: btdownloadgui.py:2698
 msgid "There is one finished torrent in the list. "
-msgstr "Il y a un torrent fini dans la liste."
+msgstr ""
 
 #: btdownloadgui.py:2699
 msgid "Do you want to remove it?"
-msgstr "Voulez-vous l'enlever ?"
+msgstr ""
 
 #: btdownloadgui.py:2701
 #, python-format
 msgid "There are %d finished torrents in the list. "
-msgstr "Il y a %d torrents finis dans la liste."
+msgstr ""
 
 #: btdownloadgui.py:2702
 msgid "Do you want to remove all of them?"
-msgstr "Souhaitez-vous tous les enlever ?"
+msgstr ""
 
 #: btdownloadgui.py:2704
 msgid "Remove all finished torrents?"
-msgstr "Enlever tous les torrents achevés ?"
+msgstr ""
 
 #: btdownloadgui.py:2711
 msgid "No finished torrents"
-msgstr "Aucun torrent temriné."
+msgstr ""
 
 #: btdownloadgui.py:2712
 msgid "There are no finished torrents to remove."
-msgstr "Il n'y a aucun torrent terminé à enlever."
+msgstr ""
 
 #: btdownloadgui.py:2756
 msgid "Open torrent:"
-msgstr "Ouvrir torrent :"
+msgstr ""
 
 #: btdownloadgui.py:2789
 msgid "Change save location for "
-msgstr "Changer l'emplacement de l'enregistrement pour"
+msgstr ""
 
 #: btdownloadgui.py:2815
 msgid "File exists!"
-msgstr "Le fichier existe !"
+msgstr ""
 
 #: btdownloadgui.py:2816
 #, python-format
 msgid "\"%s\" already exists. Do you want to choose a different file name?"
-msgstr "\"%s\" existe déjà. Voulez-vous choisir un nom de fichier différent ?"
+msgstr ""
 
 #: btdownloadgui.py:2834
 msgid "Save location for "
-msgstr "Enregistrer l'emplacement pour"
+msgstr ""
 
 #: btdownloadgui.py:2944
 #, python-format
 msgid "(global message) : %s"
-msgstr "(message global) : %s"
+msgstr ""
 
 #: btdownloadgui.py:2951
 #, python-format
 msgid "%s Error"
-msgstr "%s Erreur"
+msgstr ""
 
 #: btdownloadgui.py:2957
 msgid "Multiple errors have occurred. Click OK to view the error log."
 msgstr ""
-"De multiples erreurs sont survenues. Cliquez OK pour voir le journal des "
-"erreurs."
 
 #: btdownloadgui.py:3087
 msgid "Stop running torrent?"
-msgstr "Arrêt du torrent en cours ?"
+msgstr ""
 
 #: btdownloadgui.py:3088
 #, python-format
@@ -2281,38 +2256,33 @@ msgid ""
 "You are about to start \"%s\". Do you want to stop the last running torrent "
 "as well?"
 msgstr ""
-"Vous allez lancer \"%s\". Voulez-vous arrêter le dernier torrent en cours ?"
 
 #: btdownloadgui.py:3098
 msgid "Have you donated?"
-msgstr "Avez-vous fait un don ?"
+msgstr ""
 
 #: btdownloadgui.py:3099
 #, python-format
 msgid "Welcome to the new version of %s. Have you donated?"
-msgstr "Bienvenue dans cette nouvelle version de %s. Avez-vous fait un don ?"
+msgstr ""
 
 #: btdownloadgui.py:3113
 msgid "Thanks!"
-msgstr "Merci !"
+msgstr ""
 
 #: btdownloadgui.py:3114
 msgid ""
 "Thanks for donating! To donate again, select \"Donate\" from the \"Help\" "
 "menu."
 msgstr ""
-"Merci pour votre don ! Pour donner encore, sélectionner \"faire un don\" "
-"depuis le menu \"Aide\"."
 
 #: btdownloadgui.py:3143
 msgid "Can't have both --responsefile and non-option arguments"
 msgstr ""
-"Ne peut pas avoir à la fois --un fichier réponse et des arguments sans "
-"options"
 
 #: btdownloadgui.py:3173
 msgid "Temporary Internet Files"
-msgstr "Temporary Internet Files"
+msgstr ""
 
 #: btdownloadgui.py:3174
 #, python-format
@@ -2322,16 +2292,11 @@ msgid ""
 "the problem, try clearing your Temporary Internet Files or right-click the "
 "link and save the .torrent file to disk first."
 msgstr ""
-"Impossible de lire %s : %s. Vous utilisez sans doute une version d'internet "
-"explorer qui a fourni à Bit Torrent un nom de fichier qui n'existe pas. Afin "
-"de contourner le problème, essayer de vider le dossier Temporary Internet "
-"Files ou faites un clic-droit sur le lien et enregistrez d'abord le fichier ."
-"torrent sur le disque."
 
 #: btdownloadgui.py:3197
 #, python-format
 msgid "%s already running"
-msgstr "%s déjà en cours"
+msgstr ""
 
 #: btdownloadheadless.py:137
 #, python-format
@@ -2447,83 +2412,81 @@ msgstr ""
 #: btmaketorrentgui.py:55
 #, python-format
 msgid "%s metafile creator %s"
-msgstr "%s créateur de métafichiers %s"
+msgstr ""
 
 #: btmaketorrentgui.py:73
 msgid ""
 "Make .torrent metafiles for these files/directories:\n"
 "(Directories will become batch torrents)"
 msgstr ""
-"Créer des métafichiers .torrents pour ces fichiers/répertoires : \n"
-"(Les répertoires accueilleront les lots de torrents)."
 
 #: btmaketorrentgui.py:88
 msgid "_Files/directories"
-msgstr "_Fichiers/répertoires"
+msgstr ""
 
 #: btmaketorrentgui.py:118
 msgid "Piece size:"
-msgstr "Taille de la pièce :"
+msgstr ""
 
 #: btmaketorrentgui.py:135
 msgid "Use _tracker:"
-msgstr "Utiliser _tracker :"
+msgstr ""
 
 #: btmaketorrentgui.py:165
 msgid "Use _DHT"
-msgstr "Utiliser _DHT"
+msgstr "_DHT-השתמשי ב"
 
 #: btmaketorrentgui.py:171
 msgid "Nodes (optional):"
-msgstr "Nœuds (optionnel) :"
+msgstr ""
 
 #: btmaketorrentgui.py:203
 msgid "Comments:"
-msgstr "Commentaires :"
+msgstr ":הערות"
 
 #: btmaketorrentgui.py:232
 msgid "Make"
-msgstr "Créer"
+msgstr "בני"
 
 #: btmaketorrentgui.py:405
 msgid "_Host"
-msgstr "_Hôte"
+msgstr "_שרת"
 
 #: btmaketorrentgui.py:412
 msgid "_Port"
-msgstr "_Port"
+msgstr "_ערוץ"
 
 #: btmaketorrentgui.py:505
 msgid "Building torrents..."
-msgstr "Création torrents en cours..."
+msgstr "...בונה קבצים"
 
 #: btmaketorrentgui.py:513
 msgid "Checking file sizes..."
-msgstr "Vérification taille des fichiers ..."
+msgstr "...בודקת גודל קבצים"
 
 #: btmaketorrentgui.py:531
 msgid "Start seeding"
-msgstr "Début de l'essaimage"
+msgstr "מתחילה לזרועה"
 
 #: btmaketorrentgui.py:551
 msgid "building "
-msgstr "en construction"
+msgstr "בונה"
 
 #: btmaketorrentgui.py:571
 msgid "Done."
-msgstr "Effectué."
+msgstr ".סיימתי"
 
 #: btmaketorrentgui.py:572
 msgid "Done building torrents."
-msgstr "Construction des torrents terminée."
+msgstr ".סיימתי לבנות את הקבצים"
 
 #: btmaketorrentgui.py:580
 msgid "Error!"
-msgstr "Erreur !"
+msgstr "!טעות אנוש"
 
 #: btmaketorrentgui.py:581
 msgid "Error building torrents: "
-msgstr "Erreur de construction des torrents :"
+msgstr ":בעיה בבניית הקבצים"
 
 #: btmaketorrent.py:29
 msgid "optional human-readable comment to put in .torrent"
@@ -2536,7 +2499,7 @@ msgstr ""
 #: btreannounce.py:22
 #, python-format
 msgid "Usage: %s TRACKER_URL [TORRENTFILE [TORRENTFILE ... ] ]"
-msgstr ""
+msgstr "%s TRACKER_URL [TORRENTFILE [TORRENTFILE ... ] ] :דוגמא"
 
 #: btreannounce.py:31
 #, python-format
@@ -2551,21 +2514,21 @@ msgstr ""
 #: btrename.py:31
 #, python-format
 msgid "Usage: %s TORRENTFILE NEW_FILE_NAME"
-msgstr ""
+msgstr "%s TORRENTFILE NEW_FILE_NAME :דוגמא"
 
 #: btrename.py:38
 #, python-format
 msgid "old filename: %s"
-msgstr ""
+msgstr "%s :שם קובץ ישן"
 
 #: btrename.py:40
 #, python-format
 msgid "new filename: %s"
-msgstr ""
+msgstr "%s :שם קובץ חדש"
 
 #: btrename.py:45
 msgid "done."
-msgstr ""
+msgstr "זהו!"
 
 #: btshowmetainfo.py:26
 #, python-format
@@ -2575,51 +2538,46 @@ msgstr ""
 #: btshowmetainfo.py:30
 #, python-format
 msgid "Usage: %s [TORRENTFILE [TORRENTFILE ... ] ]"
-msgstr ""
+msgstr "%s [TORRENTFILE [TORRENTFILE ... ] ] :דוגמא"
 
 #: btshowmetainfo.py:42
 #, python-format
 msgid "metainfo file.: %s"
-msgstr ""
+msgstr "%s :קובץ מטא-מידע"
 
 #: btshowmetainfo.py:43
 #, python-format
 msgid "info hash.....: %s"
-msgstr ""
+msgstr "%s :האש מידע"
 
 #: btshowmetainfo.py:47
 #, python-format
 msgid "file name.....: %s"
-msgstr ""
+msgstr "%s :שם קובץ"
 
 #: btshowmetainfo.py:49
+#, fuzzy
 msgid "file size.....:"
-msgstr ""
+msgstr ":גודל קובץ"
 
 #: btshowmetainfo.py:52
 #, python-format
 msgid "directory name: %s"
-msgstr ""
+msgstr "%s :שם תיקייה"
 
 #: btshowmetainfo.py:53
 msgid "files.........: "
-msgstr ""
+msgstr ":קבצים"
 
 #: btshowmetainfo.py:63
 msgid "archive size..:"
-msgstr ""
+msgstr ":גודל קובץ"
 
 #: btshowmetainfo.py:67
 #, python-format
 msgid "announce url..: %s"
-msgstr ""
+msgstr "%s :כתובת הכרזה"
 
 #: btshowmetainfo.py:68
 msgid "comment.......: \n"
-msgstr ""
-
-#~ msgid "Choose existing folder"
-#~ msgstr "Choisir dossier existant"
-
-#~ msgid "Create new folder"
-#~ msgstr "Créer nouveau dossier"
+msgstr ":הערה\n"

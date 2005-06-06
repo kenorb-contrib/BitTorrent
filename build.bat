@@ -9,6 +9,7 @@ rem License.
 
 
 del /F /S /Q build dist 
+c:\python23\python.exe winmakei18n.py
 c:\python23\python.exe winsetup.py py2exe
 
 copy %GTK_BASEPATH%\bin\libpng12.dll dist\
