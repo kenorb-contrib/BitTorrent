@@ -10,7 +10,7 @@
 
 # Written by Bram Cohen and Matt Chisholm
 
-!define VERSION "4.0.2"
+!define VERSION "4.0.3"
 !define APPNAME "BitTorrent"
 Outfile ${APPNAME}-${VERSION}.exe
 Name "${APPNAME}"
@@ -18,6 +18,7 @@ SilentInstall silent
 SetCompressor lzma
 InstallDir "$PROGRAMFILES\${APPNAME}\"
 
+; " this fixes syntax highlighting in xemacs :)
 ; This function ensures that you have administrator privileges
 ; it is copied from:
 ;http://nsis.sourceforge.net/archive/viewpage.php?pageid=275
@@ -76,11 +77,14 @@ Function QuitIt
     Goto checkforit2
 
   foundit2:
-    MessageBox MB_OKCANCEL "You must quit ${APPNAME} metafile creator before \
-    installing this version.$\r$\nPlease quit it and press OK to continue." \
-    IDOK waitforit2
+    MessageBox MB_OKCANCEL "You must quit ${APPNAME} torrent file creator \
+    before installing this version.$\r$\nPlease quit it and press OK to \
+    continue." IDOK waitforit2
     Abort
   didntfindit2:
+
+  KillProcDLL::KillProc "btdownloadgui.exe"
+  KillProcDLL::KillProc "btmaketorrentgui.exe"
 
 FunctionEnd
 
@@ -109,11 +113,14 @@ Function un.QuitIt
     Goto checkforit2
 
   foundit2:
-    MessageBox MB_OKCANCEL "You must quit ${APPNAME} metafile creator before \
-    installing this version.$\r$\nPlease quit it and press OK to continue." \
-    IDOK waitforit2
+    MessageBox MB_OKCANCEL "You must quit ${APPNAME} torrent file creator \
+    before installing this version.$\r$\nPlease quit it and press OK to \
+    continue." IDOK waitforit2
     Abort
   didntfindit2:
+
+  KillProcDLL::KillProc "btdownloadgui.exe"
+  KillProcDLL::KillProc "btmaketorrentgui.exe"
 
 FunctionEnd
 
@@ -179,13 +186,23 @@ Section "Install"
   File README.txt
 
   ; registry entries
+  ;; make us the default handler for BT files
   WriteRegStr HKCR .torrent "" bittorrent
   DeleteRegKey HKCR ".torrent\Content Type"
+  ;; This line might make it so that BT sticks around as an option 
+  ;; after installing some other default handler for torrent files
+  ;WriteRegStr HKCR ".Torrent\OpenWithProgids" "bittorrent" 
+
+  ;; Add a mime type
   WriteRegStr HKCR "MIME\Database\Content Type\application/x-bittorrent" Extension .torrent
+
+  ;; Add a shell command to match the 'bittorrent' handler described above
   WriteRegStr HKCR bittorrent "" "TORRENT File"
   WriteRegBin HKCR bittorrent EditFlags 00000100
   WriteRegStr HKCR "bittorrent\shell" "" open
   WriteRegStr HKCR "bittorrent\shell\open\command" "" `"$INSTDIR\btdownloadgui.exe" --responsefile "%1"`
+
+  ;; Info about install/uninstall 
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APPNAME}" "DisplayName" "${APPNAME} ${VERSION}"
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APPNAME}" "UninstallString" '"$INSTDIR\uninstall.exe"'
 

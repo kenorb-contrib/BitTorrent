@@ -12,7 +12,7 @@
 
 import re
 
-from BitTorrent import BTFailure
+from BitTorrent import BTFailure, app_name
 
 allowed_path_re = re.compile(r'^[^/\\.~][^/\\]*$')
 
@@ -78,6 +78,11 @@ def check_message(message, check_paths=True):
         raise BTFailure, 'bad metainfo - wrong object type'
     check_info(message.get('info'), check_paths)
     if type(message.get('announce')) != str:
+        ### WARNING: the following 3 lines MUST NOT be merged into BT 4.1
+        if type(message.get('nodes')) == list:
+            raise BTFailure, 'This is a trackerless torrent. %s version 4.1'\
+                  ' or greater is required to download this file.' % app_name
+        ### END WARNING
         raise BTFailure, 'bad metainfo - no announce URL string'
 
 def check_peers(message):

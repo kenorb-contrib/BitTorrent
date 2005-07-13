@@ -22,7 +22,7 @@ from ConfigParser import MissingSectionHeaderError, ParsingError
 
 from BitTorrent import parseargs
 from BitTorrent import ERROR
-from BitTorrent import version
+from BitTorrent import app_name, version, is_frozen_exe
 from __init__ import get_config_dir
 
 
@@ -104,7 +104,13 @@ def save_ui_config(defaults, section, save_options, error_callback):
     p.remove_section(section)
     p.add_section(section)
     for name in save_options:
-        p.set(section, name, defaults[name])
+        if defaults.has_key(name):
+            p.set(section, name, defaults[name])
+        else:
+            err_str = "Configuration option mismatch: '%s'" % name
+            if is_frozen_exe:
+                err_str = "You must quit %s and reinstall it. (%s)" % (app_name, err_str)
+            error_callback(ERROR, err_str)
     try:
         f = file(filename, 'w')
         p.write(f)

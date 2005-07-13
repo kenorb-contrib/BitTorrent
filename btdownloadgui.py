@@ -78,7 +78,6 @@ ui_options.extend([
     'max_allow_in'    ,
     'max_files_open'  ,
     'display_interval',
-    'pause'           ,
     'donated'         ,
     'notified'        ,
     ])
@@ -609,14 +608,13 @@ class SettingsWindow(object):
         self.saving_box.set_border_width(SPACING)
         self.notebook.append_page(self.saving_box, gtk.Label("Saving"))
 
-        self.dl_frame = gtk.Frame("Download folder:")
+        self.dl_frame = gtk.Frame("Save new downloads in:")
         self.saving_box.pack_start(self.dl_frame, expand=False, fill=False)
 
         self.dl_box = gtk.VBox(spacing=SPACING)
         self.dl_box.set_border_width(SPACING)
         self.dl_frame.add(self.dl_box)
         self.save_in_box = gtk.HBox(spacing=SPACING)
-        self.save_in_box.pack_start(gtk.Label("Default:"), expand=False, fill=False)
 
         self.dl_save_in = gtk.Entry()
         self.dl_save_in.set_editable(False)
@@ -627,7 +625,7 @@ class SettingsWindow(object):
         self.dl_save_in_button.connect('clicked', self.get_save_in)
         self.save_in_box.pack_start(self.dl_save_in_button, expand=False, fill=False)
         self.dl_box.pack_start(self.save_in_box, expand=False, fill=False)
-        self.dl_ask_checkbutton = gtk.CheckButton("Ask where to save each download")
+        self.dl_ask_checkbutton = gtk.CheckButton("Ask where to save each new download")
         self.dl_ask_checkbutton.set_active( bool(self.config['ask_for_save']) )
 
         def toggle_save(w):
@@ -1363,7 +1361,7 @@ class TorrentBox(gtk.EventBox):
         self.uptotal   = self.main.torrents[self.infohash].uptotal
         self.downtotal = self.main.torrents[self.infohash].downtotal
         if self.downtotal > 0:
-            self.up_down_ratio = self.uptotal / self.downtotal
+            self.up_down_ratio = self.uptotal / self.metainfo.total_bytes
         else:
             self.up_down_ratio = None
 
@@ -1899,7 +1897,7 @@ class RunningTorrentBox(DroppableTorrentBox):
             ut += statistics['upTotal']
 
         if dt > 0:
-            self.up_down_ratio = ut / dt
+            self.up_down_ratio = ut / self.metainfo.total_bytes
         
         eta_label = '?'
         done_label = 'Done' 
