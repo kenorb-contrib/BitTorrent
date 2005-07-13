@@ -52,7 +52,7 @@ class MainWindow(Window):
         self.mainwindow = self # temp hack to make modal win32 file choosers work
         self.tooltips = gtk.Tooltips()
         self.connect('destroy', self.quit)
-        self.set_title(_("%s metafile creator %s")%(app_name, version))
+        self.set_title(_("%s torrent file creator %s")%(app_name, version))
         self.set_border_width(SPACING)
 
         self.config = config
@@ -63,56 +63,31 @@ class MainWindow(Window):
         right_column_width=276
         self.box = gtk.VBox(spacing=SPACING)
 
+        self.box.pack_start(lalign(gtk.Label(
+            _("Make torrent file for this file/directory:"))),
+                            expand=False, fill=False)
+
+        self.filebox = gtk.Entry()
+        self.filebox.set_editable(False)
+        self.change_button = gtk.Button(_("Choose..."))
+        self.change_button.connect('clicked', self.choose_files)
+
+        hb = gtk.HBox(spacing=SPACING)
+        hb.pack_start(self.filebox, expand=True, fill=True)
+        hb.pack_end(self.change_button, expand=False, fill=False)
+
+        self.box.pack_start(hb, expand=False, fill=False, padding=0)
+
+        self.box.pack_start(lalign(gtk.Label(
+            _("(Directories will become batch torrents)"))),
+                            expand=False, fill=False, padding=0)
+
+        self.box.pack_start(gtk.HSeparator(), expand=False, fill=False, padding=0)
+
         self.table = gtk.Table(rows=3,columns=2,homogeneous=False)
         self.table.set_col_spacings(SPACING)
         self.table.set_row_spacings(SPACING)
         y = 0
-
-        # file list
-        self.table.attach(lalign(gtk.Label(
-            _("Make .torrent metafiles for these files/directories:\n"
-              "(Directories will become batch torrents)"))),
-                          0,2,y,y+1, xoptions=gtk.FILL, yoptions=gtk.FILL, )
-        y+=1
-
-        self.file_store = gtk.ListStore(gobject.TYPE_STRING)
-
-        for i in range(3): self.file_store.append(('foo',))
-
-        self.file_scroll = gtk.ScrolledWindow()
-        self.file_scroll.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_ALWAYS)
-        self.file_scroll.set_shadow_type(gtk.SHADOW_IN)
-
-        self.file_list = gtk.TreeView(self.file_store)
-        r = gtk.CellRendererText()
-        column = gtk.TreeViewColumn(_("_Files/directories"), r, text=0)
-        self.file_list.append_column(column)
-        self.file_list.get_selection().set_mode(gtk.SELECTION_MULTIPLE)
-
-        file_list_height = self.file_list.size_request()[1] + SCROLLBAR_WIDTH
-        self.file_store.clear()
-
-        self.file_scroll.set_size_request(-1, file_list_height)
-        self.file_scroll.add(self.file_list)
-        self.table.attach(self.file_scroll,0,2,y,y+1,yoptions=gtk.EXPAND|gtk.FILL)
-        y+=1
-
-        self.file_list_button_box = gtk.HBox(homogeneous=True,spacing=SPACING)
-
-        self.add_button = gtk.Button(stock=gtk.STOCK_ADD)
-        self.add_button.connect('clicked', self.choose_files)
-        self.file_list_button_box.pack_start(self.add_button)
-        self.remove_button = gtk.Button(stock=gtk.STOCK_REMOVE)
-        self.remove_button.connect('clicked', self.remove_selection)
-        self.remove_button.set_sensitive(False)
-        self.file_list_button_box.pack_start(self.remove_button)
-        self.clear_button = gtk.Button(stock=gtk.STOCK_CLEAR)
-        self.clear_button.connect('clicked', self.clear_file_list)
-        self.clear_button.set_sensitive(False)
-        self.file_list_button_box.pack_start(self.clear_button)
-        self.table.attach(self.file_list_button_box,0,2,y,y+1,
-                          xoptions=gtk.FILL, yoptions=0)
-        y+=1
 
         # Piece size
         self.table.attach(ralign(gtk.Label(_("Piece size:"))),0,1,y,y+1,
@@ -162,13 +137,14 @@ class MainWindow(Window):
 
         # DHT / Trackerless
         self.dht_radio = gtk.RadioButton(group=self.tracker_radio,
-                                         label=_("Use _DHT"))
+                                         label=_("Use _DHT:"))
         self.dht_radio.value = False
         
         self.table.attach(align(self.dht_radio,0,0), 0,1,y,y+1,
                           xoptions=gtk.FILL|gtk.EXPAND, yoptions=0)
 
         self.dht_nodes_expander = gtk.Expander(_("Nodes (optional):"))
+        self.dht_nodes_expander.connect('size-allocate', self.resize_to_fit)
         
         self.dht_nodes = NodeList(self, 'router.bittorrent.com:6881')
         self.dht_frame = gtk.Frame()
@@ -201,6 +177,7 @@ class MainWindow(Window):
 
         # Comment
         self.comment_expander = gtk.Expander(_("Comments:"))
+        self.comment_expander.connect('size-allocate', self.resize_to_fit)
         
         self.comment_buffer = gtk.TextBuffer()
         self.comment_text = gtk.TextView()
@@ -217,7 +194,7 @@ class MainWindow(Window):
         y+=1
 
         # add table
-        self.box.pack_start(self.table, expand=True, fill=True)
+        self.box.pack_start(self.table, expand=True, fill=True, padding=0)
 
         # buttons
 
@@ -237,9 +214,7 @@ class MainWindow(Window):
         self.box.pack_end(self.buttonbox, expand=False, fill=False)
 
         self.announce_entry.connect('changed', self.check_buttons)
-        self.file_store.connect('row-changed', self.check_buttons)
-        sel = self.file_list.get_selection()
-        sel.connect('changed', self.check_buttons)
+        self.filebox.connect('changed', self.check_buttons)
         for w in self.tracker_radio.get_group():
             w.connect('clicked', self.check_buttons)
 
@@ -250,13 +225,12 @@ class MainWindow(Window):
 #        HelpWindow(None, makeHelp('btmaketorrentgui', defaults))
         
         self.box.show_all()
-        extraheight = self.dht_frame.size_request()[1] + \
-                      self.comment_scroll.size_request()[1]
-        sr = self.box.size_request()
-        self.resize(sr[0] + SPACING*2, sr[1]+extraheight + SPACING*2)
+##        extraheight = self.dht_frame.size_request()[1] + \
+##                      self.comment_scroll.size_request()[1]
+##        sr = self.box.size_request()
+##        self.resize(sr[0] + SPACING*2, sr[1]+extraheight + SPACING*2)
+        self.resize_to_fit()
         self.show_all()
-
-
 
     def toggle_tracker_dht(self, widget):
         if widget.get_active():
@@ -267,18 +241,6 @@ class MainWindow(Window):
                 e.set_sensitive(True)
             else:
                 e.set_sensitive(False)
-
-
-    def remove_selection(self,widget):
-        sel = self.file_list.get_selection()
-        list_store, rows = sel.get_selected_rows()
-        rows.reverse()
-        for row in rows:
-            list_store.remove(list_store.get_iter(row))
-
-    def clear_file_list(self,widget):
-        self.file_store.clear()
-        self.check_buttons()
 
     def choose_files(self,widget):
         fn = None
@@ -292,7 +254,7 @@ class MainWindow(Window):
     
     def add_files(self, names):
         for name in names:
-            self.file_store.append((name,))
+            self.filebox.set_text(name)
         torrent_dir = os.path.split(name)[0]
         if torrent_dir[-1] != os.sep:
             torrent_dir += os.sep
@@ -304,13 +266,8 @@ class MainWindow(Window):
         self.config['piece_size_pow2'] = exp
         return exp
 
-    def get_file_list(self):
-        it = self.file_store.get_iter_first()
-        files = []
-        while it is not None:
-            files.append(self.file_store.get_value(it, 0))
-            it = self.file_store.iter_next(it)
-        return files
+    def get_file(self):
+        return self.filebox.get_text()
 
     def get_announce(self):
         if self.config['use_tracker']:
@@ -321,7 +278,7 @@ class MainWindow(Window):
         return announce
 
     def make(self, widget):
-        file_list = self.get_file_list()
+        file_name = self.get_file()
         piece_size_exponent = self.get_piece_size_exponent()
         announce = self.get_announce()
         comment = self.comment_buffer.get_text(
@@ -331,23 +288,15 @@ class MainWindow(Window):
             self.add_tracker(announce) 
         errored = False
         if not errored:
-            d = ProgressDialog(self, file_list, announce,
+            d = ProgressDialog(self, [file_name,], announce,
                                piece_size_exponent, comment)
             d.main()
 
     def check_buttons(self, *widgets):
-        file_list = self.get_file_list()
+        file_name = self.get_file()
         tracker = self.announce_entry.get_text()
 
-        if len(file_list) >= 1:
-            self.clear_button.set_sensitive(True)
-            sel = self.file_list.get_selection()
-            list_store, rows = sel.get_selected_rows()
-            if len(rows):
-                self.remove_button.set_sensitive(True)
-            else:
-                self.remove_button.set_sensitive(False)
-
+        if file_name is not None:
             if self.config['use_tracker']:
                 if len(tracker) >= len('http://x.cc'):
                     self.makebutton.set_sensitive(True)
@@ -356,8 +305,6 @@ class MainWindow(Window):
             else:
                 self.makebutton.set_sensitive(True)
         else:
-            self.clear_button.set_sensitive(False)
-            self.remove_button.set_sensitive(False)
             self.makebutton.set_sensitive(False)
 
     def save_config(self):
@@ -383,6 +330,11 @@ class MainWindow(Window):
         for t in self.tracker_list:
             liststore.append([t])
         self.announce_completion.set_model(liststore)
+
+    def resize_to_fit(self, *args):
+        garbage, y = self.size_request()
+        x, garbage = self.get_size()
+        gobject.idle_add(self.resize, x, y)
 
 
 class AppWindow(MainWindow):

@@ -45,9 +45,17 @@ opts = {
 
 translations = []
 for l in languages:
-    translations.append (("locale\\%s\\LC_MESSAGES"                % l,
-                          ["locale\\%s\\LC_MESSAGES\\bittorrent.mo" % l,
-                           "locale\\%s\\LC_MESSAGES\\bittorrent.po" % l,]))
+    translations.append(("locale\\%s\\LC_MESSAGES"                 % l,
+                         ["locale\\%s\\LC_MESSAGES\\bittorrent.mo" % l,
+                          #"locale\\%s\\LC_MESSAGES\\bittorrent.po" % l,
+                          ]))
+    gtk_mo = []
+    gtk_path = "C:\\GTK\\share\\locale\\%s\\LC_MESSAGES" % l
+    for fn in ("glib20.mo", "gtk20.mo", "gtk20-properties.mo"):
+        moname = os.path.join(gtk_path, fn)
+        if os.access(moname, os.F_OK):
+            gtk_mo.append(moname) 
+    translations.append(("share\\locale\\%s\\LC_MESSAGES" % l, gtk_mo))
 
 setup(windows=[{'script': 'btdownloadgui.py',
                 "icon_resources": [(1, "images\\bittorrent.ico")]},

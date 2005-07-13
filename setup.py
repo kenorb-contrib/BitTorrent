@@ -38,9 +38,9 @@ for l in BitTorrent.languages:
 
 data_files = [ (img_root        , glob.glob('images/*png')+['images/bittorrent.ico',]),
                (img_root+'/logo', glob.glob('images/logo/bittorrent_[0-9]*.png')     ),
-               (doc_root        , ['credits.txt', 'LICENSE.txt',
-                                   'README.txt', 'redirdonate.html',
-                                   'TRACKERLESS.txt',
+               (doc_root        , ['credits.txt', 'credits-l10n.txt',
+                                   'LICENSE.txt', 'README.txt',
+                                   'TRACKERLESS.txt', 'redirdonate.html',
                                    ]       ),
                ] + translations
 

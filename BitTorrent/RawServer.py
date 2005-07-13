@@ -15,6 +15,7 @@ import sys
 import socket
 import signal
 import struct
+import thread
 from bisect import insort
 from cStringIO import StringIO
 from traceback import print_exc
@@ -127,6 +128,7 @@ class RawServer(object):
         self.listening_handlers = {}
         self.serversockets = {}
         self.live_contexts = {None : True}
+        self.ident = thread.get_ident()
         self.add_task(self.scan_for_timeouts, config['timeout_check_interval'])
         if sys.platform != 'win32':
             self.wakeupfds = os.pipe()
@@ -147,6 +149,7 @@ class RawServer(object):
         self.funcs = [x for x in self.funcs if x[3] != context]
 
     def add_task(self, func, delay, args=(), context=None):
+        assert thread.get_ident() == self.ident
         assert type(args) == list or type(args) == tuple
         if context in self.live_contexts:
             insort(self.funcs, (bttime() + delay, func, args, context))
@@ -332,6 +335,7 @@ class RawServer(object):
 
     def listen_forever(self):
         ret = 0
+        self.ident = thread.get_ident()
         while not self.doneflag.isSet() and not ret:
             ret = self.listen_once()
             

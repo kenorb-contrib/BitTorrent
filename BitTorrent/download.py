@@ -39,7 +39,10 @@ from BitTorrent.StorageWrapper import StorageWrapper
 from BitTorrent.Uploader import Upload
 from BitTorrent.Downloader import Downloader
 from BitTorrent.Encoder import Encoder, SingleportListener
-from BitTorrent.RateLimiter import RateLimiter
+
+from BitTorrent.RateLimiter import MultiRateLimiter as RateLimiter
+from BitTorrent.RateLimiter import RateLimitedGroup
+
 from BitTorrent.RawServer import RawServer
 from BitTorrent.Rerequester import Rerequester, DHTRerequester
 from BitTorrent.DownloaderFeedback import DownloaderFeedback
@@ -95,7 +98,7 @@ class Multitorrent(object):
         for port in xrange(self.config['minport'], self.config['maxport'] + 1):
             try:
                 self.singleport_listener.open_port(port, self.config)
-                self.dht = UTKhashmir(self.config['bind'], self.singleport_listener.get_port(), self.config['data_dir'], self.rawserver, int(self.config['max_upload_rate'] * 1024 * 0.05))
+                self.dht = UTKhashmir(self.config['bind'], self.singleport_listener.get_port(), self.config['data_dir'], self.rawserver, int(self.config['max_upload_rate'] * 1024 * 0.02))
                 break
             except socketerror, e:
                 pass
@@ -113,10 +116,11 @@ class Multitorrent(object):
     def start_torrent(self, metainfo, config, feedback, filename):
         torrent = _SingleTorrent(self.rawserver, self.singleport_listener,
                                  self.ratelimiter, self.filepool, config, self.dht)
+        torrent.rlgroup = RateLimitedGroup(0, torrent.got_exception)
         self.rawserver.add_context(torrent)
         def start():
             torrent.start_download(metainfo, feedback, filename)
-        self.rawserver.add_task(start, 0, context=torrent)
+        self.rawserver.external_add_task(start, 0, context=torrent)
         return torrent
 
     def set_option(self, option, value):
@@ -212,7 +216,8 @@ class _SingleTorrent(object):
         self._activity = (_("Initial startup"), 0)
         self.feedback = None
         self.errors = []
-
+        self.rlgroup = None
+        
     def start_download(self, *args, **kwargs):
         it = self._start_download(*args, **kwargs)
         def cont():
@@ -530,7 +535,9 @@ class _SingleTorrent(object):
         if option not in 'min_uploads max_uploads max_initiate max_allow_in '\
            'data_dir ip max_upload_rate retaliate_to_garbled_data'.split():
             return
-        # max_upload_rate doesn't affect upload rate here, just auto uploads
+        if option == 'max_upload_rate':
+            # make sure counters get reset so new rate applies immediately
+            self.check_time=1
         self.config[option] = value
         self._set_auto_uploads()
 

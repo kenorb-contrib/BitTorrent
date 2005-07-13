@@ -7,10 +7,19 @@ rem WITHOUT WARRANTY OF ANY KIND, either express or implied.  See the License
 rem for the specific language governing rights and limitations under the
 rem License.
 
+rem For Python 2.3:
+set PYTHON=python23
+rem For Python 2.4:
+rem set PYTHON=Python24
+
+rem For GTK 2.4:
+rem set WIMP_DIR_NAME=wimp
+rem For GTK 2.6:
+set WIMP_DIR_NAME=MS-Windows
 
 del /F /S /Q build dist 
-c:\python23\python.exe winmakei18n.py
-c:\python23\python.exe winsetup.py py2exe
+c:\%PYTHON%\python.exe winmakei18n.py
+c:\%PYTHON%\python.exe winsetup.py py2exe
 
 copy %GTK_BASEPATH%\bin\libpng12.dll dist\
 copy %GTK_BASEPATH%\bin\zlib1.dll dist\
@@ -38,7 +47,8 @@ copy %GTK_BASEPATH%\lib\locale dist\lib\
 copy %GTK_BASEPATH%\etc\gtk-2.0\gtkrc dist\etc\gtk-2.0
 mkdir dist\lib\gtk-2.0\2.4.0\engines
 copy %GTK_BASEPATH%\lib\gtk-2.0\2.4.0\engines\libwimp.dll dist\lib\gtk-2.0\2.4.0\engines
-mkdir dist\share\themes\wimp\gtk-2.0
-copy %GTK_BASEPATH%\share\themes\wimp\gtk-2.0\gtkrc dist\share\themes\wimp\gtk-2.0
+
+mkdir dist\share\themes\%WIMP_DIR_NAME%\gtk-2.0
+copy %GTK_BASEPATH%\share\themes\%WIMP_DIR_NAME%\gtk-2.0\gtkrc dist\share\themes\%WIMP_DIR_NAME%\gtk-2.0
 
 "C:\Program Files\NSIS\makensis.exe" bittorrent.nsi

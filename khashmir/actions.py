@@ -34,10 +34,6 @@ class ActionBase:
     
         def sort(a, b, num=self.num):
             """ this function is for sorting nodes relative to the ID we are looking for """
-            if (not a.invalid) and b.invalid:
-                return 1
-            elif a.invalid and not b.invalid:
-                return -1
             x, y = num ^ a.num, num ^ b.num
             if x > y:
                 return 1
@@ -67,17 +63,22 @@ class FindNode(ActionBase):
     def handleGotNodes(self, dict):
         _krpc_sender = dict['_krpc_sender']
         dict = dict['rsp']
-        l = unpackNodes(dict["nodes"])
         sender = {'id' : dict["id"]}
         sender['port'] = _krpc_sender[1]        
         sender['host'] = _krpc_sender[0]        
         sender = self.table.Node().initWithDict(sender)
-        
-        if self.finished or self.answered.has_key(sender.id):
+        try:
+            l = unpackNodes(dict.get("nodes", []))
+            if not self.answered.has_key(sender.id):
+                self.answered[sender.id] = sender
+        except:
+            l = []
+            self.table.invalidateNode(sender)
+            
+        if self.finished:
             # a day late and a dollar short
             return
         self.outstanding = self.outstanding - 1
-        self.answered[sender.id] = 1
         for node in l:
             n = self.table.Node().initWithDict(node)
             if not self.found.has_key(n.id):
@@ -153,11 +154,18 @@ class GetValue(FindNode):
             # a day late and a dollar short
             return
         self.outstanding = self.outstanding - 1
-        self.answered[sender.id] = 1
+
+        self.answered[sender.id] = sender
         # go through nodes
         # if we have any closer than what we already got, query them
         if dict.has_key('nodes'):
-            for node in unpackNodes(dict['nodes']):
+            try:
+                l = unpackNodes(dict.get('nodes',[]))
+            except:
+                l = []
+                del(self.answered[sender.id])
+            
+            for node in l:
                 n = self.table.Node().initWithDict(node)
                 if not self.found.has_key(n.id):
                     self.table.insertNode(n)
@@ -169,8 +177,8 @@ class GetValue(FindNode):
                     return y
                 else:
                     return None
-            z = len(dict['values'])
-            v = filter(None, map(x, dict['values']))
+            z = len(dict.get('values', []))
+            v = filter(None, map(x, dict.get('values',[])))
             if(len(v)):
                 self.callLater(self.callback, 0, (v,))
         self.schedule()
@@ -289,6 +297,22 @@ class StoreValue(ActionBase):
         self.schedule()
 
 
+class GetAndStore(GetValue):
+    def __init__(self, table, target, value, callback, storecallback, callLater, find="findValue", store="storeValue"):
+        self.store = store
+        self.value = value
+        self.cb2 = callback
+        self.storecallback = storecallback
+        def cb(res):
+            self.cb2(res)
+            if not(res):
+                n = StoreValue(self.table, self.target, self.value, self.doneStored, self.callLater, self.store)
+                n.goWithNodes(self.answered.values())
+        GetValue.__init__(self, table, target, cb, callLater, find)
+
+    def doneStored(self, dict):
+        self.storecallback(dict)
+        
 class KeyExpirer:
     def __init__(self, store, callLater):
         self.store = store

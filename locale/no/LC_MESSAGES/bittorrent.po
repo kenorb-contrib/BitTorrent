@@ -7,9 +7,9 @@ msgid ""
 msgstr ""
 "Project-Id-Version: BitTorrent 4.2\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2005-06-06 16:58-0700\n"
-"PO-Revision-Date: 2005-06-01 11:34+0100\n"
-"Last-Translator: Audun Einangen <audun@einangen.no>\n"
+"POT-Creation-Date: 2005-07-09 01:50-0700\n"
+"PO-Revision-Date: 2005-07-03 13:34-0700\n"
+"Last-Translator: Matt Chisholm <matt@bittorrent.com>\n"
 "Language-Team: Einangen <audun@einangen.no>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -17,355 +17,995 @@ msgstr ""
 "X-Poedit-Language: Norwegian Bokmal\n"
 "X-Poedit-Country: NORWAY\n"
 
-#: BitTorrent/ConvertedMetainfo.py:51
-msgid ""
-"This seems to be an old Python version which does not support detecting the "
-"filesystem encoding. Assuming 'ascii'."
-msgstr ""
-"Dette ser ut til å være en gammel Pythonversjon, som ikke støtter oppdagelse "
-"av filsystemkoding.  Antar 'ascii'."
+#: btdownloadgui.py:24 btmaketorrentgui.py:23
+msgid "Install Python 2.3 or greater"
+msgstr "Installér Python 2.3 eller nyere"
 
-#: BitTorrent/ConvertedMetainfo.py:58
-msgid "Python failed to autodetect filesystem encoding. Using 'ascii' instead."
-msgstr ""
-"Python kunne ikke filsystemkodingen automatisk.  Bruker 'ascii' i stedet."
+#: btdownloadgui.py:38
+msgid "PyGTK 2.4 or newer required"
+msgstr "Krever PyGTK 2.4 eller nyere"
 
-#: BitTorrent/ConvertedMetainfo.py:65
+#: btdownloadgui.py:103
+msgid "drag to reorder"
+msgstr "dra for å endre rekkefølge"
+
+#: btdownloadgui.py:104
+msgid "right-click for menu"
+msgstr "høyreklikk for meny"
+
+#: btdownloadgui.py:110
+msgid "dialup"
+msgstr "oppringt"
+
+#: btdownloadgui.py:111
+msgid "DSL/cable 128k up"
+msgstr "DSL/kabel over 128k"
+
+#: btdownloadgui.py:112
+msgid "DSL/cable 256k up"
+msgstr "DSL/kabel over 256k"
+
+#: btdownloadgui.py:113
+msgid "DSL 768k up"
+msgstr "DSL over 768k"
+
+#: btdownloadgui.py:114
+msgid "T1"
+msgstr "T1"
+
+#: btdownloadgui.py:115
+msgid "T1/E1"
+msgstr "T1/E1"
+
+#: btdownloadgui.py:116
+msgid "E1"
+msgstr "E1"
+
+#: btdownloadgui.py:117
+msgid "T3"
+msgstr "T3"
+
+#: btdownloadgui.py:118
+msgid "OC3"
+msgstr "OC3"
+
+#: btdownloadgui.py:296
+msgid "Maximum upload rate"
+msgstr ""
+
+#: btdownloadgui.py:309
+msgid "Temporarily stop all running torrents"
+msgstr "Stopp alle torrents midlertidig"
+
+#: btdownloadgui.py:310
+msgid "Resume downloading"
+msgstr "Fortsett nedlasting"
+
+#: btdownloadgui.py:349
 #, python-format
-msgid "Filesystem encoding '%s' is not supported. Using 'ascii' instead."
-msgstr "Filsystemkoding '%s' støttes ikke.  Bruker 'ascii' i stedet."
+msgid "New %s version available"
+msgstr "Ny %s versjon tilgjengelig"
 
-#: BitTorrent/ConvertedMetainfo.py:123
-msgid "Bad file path component: "
-msgstr "Feil i del av filstien:"
+#: btdownloadgui.py:364
+#, python-format
+msgid "A newer version of %s is available.\n"
+msgstr "En nyere versjon av %s er tilgjengelig.\n"
 
-#: BitTorrent/ConvertedMetainfo.py:188
-msgid ""
-"This .torrent file has been created with a broken tool and has incorrectly "
-"encoded filenames. Some or all of the filenames may appear different from "
-"what the creator of the .torrent file intended."
-msgstr ""
-"Denne .torrentfilen har blitt laget med et ødelagt verktøy og har uriktig "
-"kodede filnavn.  Noen eller alle filnavnene kan være forskjellige fra det "
-"personen som laget .torrentfilen har ment."
+#: btdownloadgui.py:365
+#, python-format
+msgid "You are using %s, and the new version is %s.\n"
+msgstr "Du bruker %s, og den nye versjonen er %s.\n"
 
-#: BitTorrent/ConvertedMetainfo.py:194
-msgid ""
-"This .torrent file has been created with a broken tool and has bad character "
-"values that do not correspond to any real character. Some or all of the "
-"filenames may appear different from what the creator of the .torrent file "
-"intended."
-msgstr ""
-"Denne .torrentfilen har blitt laget med et ødelagt verktøy, og har "
-"tegnverdier som ikke tilsvarer virkelige tegn.  Noen eller alle filnavnene "
-"kan være forskjellig fra det personen som laget den har ment."
-
-#: BitTorrent/ConvertedMetainfo.py:201
-msgid ""
-"This .torrent file has been created with a broken tool and has incorrectly "
-"encoded filenames. The names used may still be correct."
-msgstr ""
-"Denne .torrentfilen har blitt laget med et ødelagt verktøy og har feilkodede "
-"filnavn.  Navnene kan fortsatt være riktige."
-
-#: BitTorrent/ConvertedMetainfo.py:206
+#: btdownloadgui.py:366
 #, python-format
 msgid ""
-"The character set used on the local filesystem (\"%s\") cannot represent all "
-"characters used in the filename(s) of this torrent. Filenames have been "
-"changed from the original."
+"You can always get the latest version from \n"
+"%s"
 msgstr ""
-"Tegnsettet i det lokale filsystemet (\"%s\") kan ikke vise alle tegn brukt i "
-"filnavnet/ene i denne torrenten.  Filnavnene har blitt endret fra originalen."
+"Du kan alltid få nyeste versjon fra \n"
+"%s"
 
-#: BitTorrent/ConvertedMetainfo.py:212
+#: btdownloadgui.py:373 btdownloadgui.py:1795 btdownloadgui.py:1900
+msgid "Download _later"
+msgstr "Hent ned _senere"
+
+#: btdownloadgui.py:376 btdownloadgui.py:1759
+msgid "Download _now"
+msgstr "Hent ned _nå"
+
+#: btdownloadgui.py:382
+msgid "_Remind me later"
+msgstr "_Minn meg på det senere"
+
+#: btdownloadgui.py:414
+#, python-format
+msgid "About %s"
+msgstr "Om %s"
+
+#: btdownloadgui.py:429
+msgid "Beta"
+msgstr "Beta"
+
+#: btdownloadgui.py:431
+#, python-format
+msgid "Version %s"
+msgstr "Versjon %s"
+
+#: btdownloadgui.py:454
+msgid "Donate"
+msgstr "Donér"
+
+#: btdownloadgui.py:474
+#, python-format
+msgid "%s Activity Log"
+msgstr "%s aktivitetslogg"
+
+#: btdownloadgui.py:531
+msgid "Save log in:"
+msgstr "Lagre logg i:"
+
+#: btdownloadgui.py:542
+msgid "log saved"
+msgstr "Loggen er lagret"
+
+#: btdownloadgui.py:601
+msgid "log cleared"
+msgstr "Loggen er tømt"
+
+#: btdownloadgui.py:613
+#, python-format
+msgid "%s Settings"
+msgstr "%s innstillinger"
+
+#: btdownloadgui.py:624
+msgid "Saving"
+msgstr "Lagrer"
+
+#: btdownloadgui.py:626
+msgid "Save new downloads in:"
+msgstr ""
+
+#: btdownloadgui.py:639
+msgid "Change..."
+msgstr "Endre..."
+
+#: btdownloadgui.py:643
+msgid "Ask where to save each new download"
+msgstr ""
+
+#: btdownloadgui.py:657
+msgid "Downloading"
+msgstr "Laster ned"
+
+#: btdownloadgui.py:659
+msgid "Starting additional torrents manually:"
+msgstr "Starter flere torrents manuelt:"
+
+#: btdownloadgui.py:668
+msgid "Always stops the _last running torrent"
+msgstr "Stopp alltid den _siste kjørende torrenten"
+
+#: btdownloadgui.py:674
+msgid "Always starts the torrent in _parallel"
+msgstr "Start alltid torrenten _parallelt"
+
+#: btdownloadgui.py:680
+msgid "_Asks each time"
+msgstr "Spør _hver gang"
+
+#: btdownloadgui.py:694
+msgid "Seed completed torrents:"
+msgstr "Så frø til ferdige torrents:"
+
+#: btdownloadgui.py:702 btdownloadgui.py:731
+msgid "until share ratio reaches "
+msgstr "til forholdet mellom opplasting og nedlasting når "
+
+#: btdownloadgui.py:708
+msgid " percent, or"
+msgstr " prosent, eller"
+
+#: btdownloadgui.py:714
+msgid "for "
+msgstr "i "
+
+#: btdownloadgui.py:720
+msgid " minutes, whichever comes first."
+msgstr " minutter, ettersom hva som kommer først."
+
+#: btdownloadgui.py:727
+msgid "Seed last completed torrent:"
+msgstr "Så frø til siste ferdige torrent:"
+
+#: btdownloadgui.py:737
+msgid " percent."
+msgstr "prosent."
+
+#: btdownloadgui.py:743
+msgid "\"0 percent\" means seed forever."
+msgstr "\"0 prosent\" betyr så frø for alltid."
+
+#: btdownloadgui.py:752
+msgid "Network"
+msgstr "Nettverk"
+
+#: btdownloadgui.py:754
+msgid "Look for available port:"
+msgstr "Se etter ledig port:"
+
+#: btdownloadgui.py:757
+msgid "starting at port: "
+msgstr "Starter på port:"
+
+#: btdownloadgui.py:770
+msgid "IP to report to the tracker:"
+msgstr "IP som rapporteres til tracker:"
+
+#: btdownloadgui.py:775
 msgid ""
-"The Windows filesystem cannot handle some characters used in the filename(s) "
-"of this torrent.Filenames have been changed from the original."
+"(Has no effect unless you are on the\n"
+"same local network as the tracker)"
 msgstr ""
-"Windows sitt filsystem kan ikke håndtere noen av tegnene i filnavnet/ene i "
-"denne torrenten.  Filnavn har blitt endret fra originalen."
+"(Har ingen effekt hvis du ikke er på samme\n"
+"lokalnett som trackeren.)"
 
-#: BitTorrent/ConvertedMetainfo.py:217
+#: btdownloadgui.py:780
+msgid "Potential Windows TCP stack fix"
+msgstr "Potensiell retting av Windows TCP stack"
+
+#: btdownloadgui.py:794
 msgid ""
-"This .torrent file has been created with a broken tool and has at least 1 "
-"file with an invalid file or directory name. However since all such files "
-"were marked as having length 0 those files are just ignored."
+"Progress bar text is always black\n"
+"(requires restart)"
 msgstr ""
-"Denne .torrentfilen har blitt laget med et ødelagt verktøy, og har minst en "
-"fil eller en mappe med ugyldig navn, men ettersom alle slike filer har "
-"størrelse 0, er disse ignorert."
+"Fremdriftsindikatoren er alltid svart\n"
+"(Programmet må startes på nytt)"
 
-#: BitTorrent/Encoder.py:173
-msgid "Can't start two separate instances of the same torrent"
-msgstr "Kan ikke starte to instanser av samme torrent"
+#: btdownloadgui.py:807
+msgid "Misc"
+msgstr "Diverse"
 
-#: BitTorrent/GUI.py:149
+#: btdownloadgui.py:814
+#, python-format
+msgid ""
+"WARNING: Changing these settings can\n"
+"prevent %s from functioning correctly."
+msgstr ""
+"ADVARSEL: Endring av disse innstillingene kan\n"
+"hindre at %s fungerer som det skal."
+
+#: btdownloadgui.py:822
+msgid "Option"
+msgstr "Valg"
+
+#: btdownloadgui.py:827
+msgid "Value"
+msgstr "Verdi"
+
+#: btdownloadgui.py:834
+msgid "Advanced"
+msgstr "Avansert"
+
+#: btdownloadgui.py:843
+msgid "Choose default download directory"
+msgstr "Velg standard nedlastingsmappe"
+
+#: btdownloadgui.py:904
+#, python-format
+msgid "Files in \"%s\""
+msgstr "Filer i \"%s\""
+
+#: btdownloadgui.py:913
+msgid "Apply"
+msgstr "Bruk"
+
+#: btdownloadgui.py:914
+msgid "Allocate"
+msgstr "Tilegn"
+
+#: btdownloadgui.py:915
+msgid "Never download"
+msgstr "Aldri last ned"
+
+#: btdownloadgui.py:916
+msgid "Decrease"
+msgstr "Reduser"
+
+#: btdownloadgui.py:917
+msgid "Increase"
+msgstr "Øk"
+
+#: btdownloadgui.py:927 btlaunchmanycurses.py:142
+msgid "Filename"
+msgstr "Filnavn"
+
+#: btdownloadgui.py:927
+msgid "Length"
+msgstr "Lengde"
+
+#: btdownloadgui.py:927
+msgid "%"
+msgstr "%"
+
+#: btdownloadgui.py:1091
+#, python-format
+msgid "Peers for \"%s\""
+msgstr "Klienter for \"%s\""
+
+#: btdownloadgui.py:1097
+msgid "IP address"
+msgstr "IPadresse"
+
+#: btdownloadgui.py:1097
+msgid "Client"
+msgstr "Klient"
+
+#: btdownloadgui.py:1097
+msgid "Connection"
+msgstr "Tilkobling"
+
+#: btdownloadgui.py:1097
+msgid "KB/s down"
+msgstr "kB/s ned"
+
+#: btdownloadgui.py:1097
+msgid "KB/s up"
+msgstr "kB/s opp"
+
+#: btdownloadgui.py:1097
+msgid "MB downloaded"
+msgstr "MB lastet ned"
+
+#: btdownloadgui.py:1097
+msgid "MB uploaded"
+msgstr "MB lastet opp"
+
+# Kommer opp feil i poEdit...
+# poEdit doesn't like this one...
+#: btdownloadgui.py:1097
+#, python-format
+msgid "% complete"
+msgstr "% ferdig"
+
+#: btdownloadgui.py:1097
+msgid "KB/s est. peer download"
+msgstr "KB/s beregnet klientnedlastingshastighet"
+
+#: btdownloadgui.py:1103
+msgid "Peer ID"
+msgstr "KlientID"
+
+#: btdownloadgui.py:1106 btdownloadgui.py:1109
+msgid "Interested"
+msgstr "Interessert"
+
+#: btdownloadgui.py:1106 btdownloadgui.py:1109
+msgid "Choked"
+msgstr "Overbelastet"
+
+#: btdownloadgui.py:1106
+msgid "Snubbed"
+msgstr "Døde"
+
+#: btdownloadgui.py:1109
+msgid "Optimistic upload"
+msgstr "optimistisk opplasting"
+
+#: btdownloadgui.py:1190
+msgid "remote"
+msgstr "fjern"
+
+#: btdownloadgui.py:1190
+msgid "local"
+msgstr "lokal"
+
+#: btdownloadgui.py:1226
+msgid "bad peer"
+msgstr "klientfeil"
+
+#: btdownloadgui.py:1236
+#, python-format
+msgid "%d ok"
+msgstr "%d ok"
+
+#: btdownloadgui.py:1237
+#, python-format
+msgid "%d bad"
+msgstr "%d ødelagt"
+
+#: btdownloadgui.py:1239
+msgid "banned"
+msgstr "bannlyst"
+
+#: btdownloadgui.py:1241
+msgid "ok"
+msgstr "ok"
+
+#: btdownloadgui.py:1277
+#, python-format
+msgid "Info for \"%s\""
+msgstr "Informasjon for \"%s\""
+
+#: btdownloadgui.py:1295
+msgid "Torrent name:"
+msgstr "Torrentnavn:"
+
+#: btdownloadgui.py:1300
+msgid "(trackerless torrent)"
+msgstr "(sporerløs torrent)"
+
+#: btdownloadgui.py:1303
+msgid "Announce url:"
+msgstr "annonseringsURL:"
+
+#: btdownloadgui.py:1307
+msgid ", in one file"
+msgstr ", i en fil"
+
+#: btdownloadgui.py:1309
+#, python-format
+msgid ", in %d files"
+msgstr ", i %d filer"
+
+#: btdownloadgui.py:1310
+msgid "Total size:"
+msgstr "Total størrelse:"
+
+#: btdownloadgui.py:1317
+msgid "Pieces:"
+msgstr "Deler: "
+
+#: btdownloadgui.py:1319
+msgid "Info hash:"
+msgstr "Infohash:"
+
+#: btdownloadgui.py:1329
+msgid "Save in:"
+msgstr "Lagre i:"
+
+#: btdownloadgui.py:1333
+msgid "File name:"
+msgstr "Filnavn:"
+
+#: btdownloadgui.py:1359
+msgid "Open directory"
+msgstr "Åpne mappe"
+
+#: btdownloadgui.py:1364
+msgid "Show file list"
+msgstr "Vis filliste"
+
+#: btdownloadgui.py:1459
+msgid "Torrent info"
+msgstr "Torrentinformasjon"
+
+#: btdownloadgui.py:1468 btdownloadgui.py:1896
+msgid "Remove torrent"
+msgstr "Fjern torrent"
+
+#: btdownloadgui.py:1472
+msgid "Abort torrent"
+msgstr "Avslutt torrent"
+
+#: btdownloadgui.py:1530
+#, python-format
+msgid ", will seed for %s"
+msgstr ", vil så frø i %s"
+
+#: btdownloadgui.py:1532
+msgid ", will seed indefinitely."
+msgstr ", vil så frø uendelig."
+
+#: btdownloadgui.py:1535
+#, python-format
+msgid "Done, share ratio: %d%%"
+msgstr "Ferdig, delingsforhold: %d%%"
+
+#: btdownloadgui.py:1538
+#, python-format
+msgid "Done, %s uploaded"
+msgstr "Ferdig, %s lastet opp"
+
+#: btdownloadgui.py:1570
+msgid "Torrent _info"
+msgstr "Torrent_informasjon"
+
+#: btdownloadgui.py:1571
+msgid "_Open directory"
+msgstr "_Åpne mappe"
+
+#: btdownloadgui.py:1572
+msgid "_Change location"
+msgstr "_Endre lagringssted"
+
+#: btdownloadgui.py:1574
+msgid "_File list"
+msgstr "_Filliste"
+
+#: btdownloadgui.py:1652
+#, python-format
+msgid "Are you sure you want to remove \"%s\"?"
+msgstr "Er du sikker på at du vil fjerne \"%s\"?"
+
+#: btdownloadgui.py:1655
+#, python-format
+msgid "Your share ratio for this torrent is %d%%. "
+msgstr "Delingsforholdet ditt for denne torrenten er %d%%."
+
+#: btdownloadgui.py:1657
+#, python-format
+msgid "You have uploaded %s to this torrent. "
+msgstr "Du har lastet opp %s til denne torrenten."
+
+#: btdownloadgui.py:1660
+msgid "Remove this torrent?"
+msgstr "Fjern denne torrenten?"
+
+#: btdownloadgui.py:1679
+msgid "Finished"
+msgstr "Ferdig"
+
+#: btdownloadgui.py:1680
+msgid "drag into list to seed"
+msgstr "dra inn i listen for å så frø"
+
+#: btdownloadgui.py:1683
+msgid "Failed"
+msgstr "Feilet"
+
+#: btdownloadgui.py:1684
+msgid "drag into list to resume"
+msgstr "dra inn i listen for å fortsette"
+
+#: btdownloadgui.py:1693
+msgid "Re_start"
+msgstr "Gjen_start"
+
+#: btdownloadgui.py:1694 btdownloadgui.py:1765 btdownloadgui.py:1801
+#: btdownloadgui.py:1906
+msgid "_Remove"
+msgstr "F_jern"
+
+#: btdownloadgui.py:1744
+msgid "Waiting"
+msgstr "Venter"
+
+#: btdownloadgui.py:1764 btdownloadgui.py:1800 btdownloadgui.py:1905
+msgid "_Finish"
+msgstr "_Gjør ferdig"
+
+#: btdownloadgui.py:1767 btdownloadgui.py:1796 btdownloadgui.py:1901
+msgid "_Abort"
+msgstr "_Avbryt"
+
+#: btdownloadgui.py:1782
+msgid "Paused"
+msgstr "Pause"
+
+#: btdownloadgui.py:1823
+msgid "Running"
+msgstr "Kjører"
+
+#: btdownloadgui.py:1847
+#, python-format
+msgid "Current up: %s"
+msgstr "Nåværende opp: %s"
+
+#: btdownloadgui.py:1848
+#, python-format
+msgid "Current down: %s"
+msgstr "Nåværende ned: %s"
+
+#: btdownloadgui.py:1854
+#, python-format
+msgid "Previous up: %s"
+msgstr "Forrige opp: %s"
+
+#: btdownloadgui.py:1855
+#, python-format
+msgid "Previous down: %s"
+msgstr "Forrige ned: %s"
+
+#: btdownloadgui.py:1861
+#, python-format
+msgid "Share ratio: %0.02f%%"
+msgstr "Delingsforhold: %0.02f%%"
+
+#: btdownloadgui.py:1864
+#, python-format
+msgid "%s peers, %s seeds. Totals from tracker: %s"
+msgstr "%s klienter, %s frø.  Totaler fra sporer: %s"
+
+#: btdownloadgui.py:1868
+#, python-format
+msgid "Distributed copies: %d; Next: %s"
+msgstr "Distribuerte kopier: %d; Neste: %s"
+
+#: btdownloadgui.py:1871
+#, python-format
+msgid "Pieces: %d total, %d complete, %d partial, %d active (%d empty)"
+msgstr "Deler: %d totalt, %d ferdig, %d delvis, %d aktive (%d tomme)"
+
+#: btdownloadgui.py:1875
+#, python-format
+msgid "%d bad pieces + %s in discarded requests"
+msgstr "%d ødelagte deler + %s i forkastede forespørsler"
+
+#: btdownloadgui.py:1909
+msgid "_Peer list"
+msgstr "_Klientliste"
+
+#: btdownloadgui.py:1968
+msgid "Done"
+msgstr "Ferdig"
+
+#: btdownloadgui.py:1983
+#, python-format
+msgid "%.1f%% done, %s remaining"
+msgstr "%.1f%% ferdig, %s gjenstår"
+
+#: btdownloadgui.py:1991
+msgid "Download rate"
+msgstr ""
+
+#: btdownloadgui.py:1993
+msgid "Upload rate"
+msgstr ""
+
+#: btdownloadgui.py:2008
+msgid "NA"
+msgstr "IT"
+
+#: btdownloadgui.py:2349
+#, python-format
+msgid "%s started"
+msgstr "%s startet"
+
+#: btdownloadgui.py:2362
+msgid "_Open torrent file"
+msgstr "_Åpne torrentfil"
+
+#: btdownloadgui.py:2363
+msgid "Make _new torrent"
+msgstr "Lag _ny torrent"
+
+#: btdownloadgui.py:2366
+msgid "_Pause/Play"
+msgstr "_Pause/Play"
+
+#: btdownloadgui.py:2368
+msgid "_Quit"
+msgstr "_Avslutt"
+
+#: btdownloadgui.py:2370
+msgid "Show/Hide _finished torrents"
+msgstr "Vis/Gjem _ferdige torrents"
+
+#: btdownloadgui.py:2372
+msgid "_Resize window to fit"
+msgstr "_Endre størrelsen på vinduet til å passe"
+
+#: btdownloadgui.py:2374
+msgid "_Log"
+msgstr "_Logg"
+
+#: btdownloadgui.py:2377
+msgid "_Settings"
+msgstr "Opp_sett"
+
+#: btdownloadgui.py:2380 btdownloadgui.py:2396
+msgid "_Help"
+msgstr "_Hjelp"
+
+#: btdownloadgui.py:2382
+msgid "_About"
+msgstr "_Om"
+
+#: btdownloadgui.py:2383
+msgid "_Donate"
+msgstr "_Donér"
+
+#: btdownloadgui.py:2387
+msgid "_File"
+msgstr "_Fil"
+
+#: btdownloadgui.py:2392
+msgid "_View"
+msgstr "_Vis"
+
+#: btdownloadgui.py:2537
+msgid "(stopped)"
+msgstr "(stoppet)"
+
+#: btdownloadgui.py:2549
+msgid "(multiple)"
+msgstr "(flere)"
+
+#: btdownloadgui.py:2663
+#, python-format
+msgid ""
+"%s help is at \n"
+"%s\n"
+"Would you like to go there now?"
+msgstr ""
+"Hjelp til %s er på \n"
+"%s\n"
+"Vil du gå dit nå?"
+
+#: btdownloadgui.py:2666
+msgid "Visit help web page?"
+msgstr "Gå til hjelpesiden?"
+
+#: btdownloadgui.py:2702
+msgid "There is one finished torrent in the list. "
+msgstr "Det er en fullført torrent i listen."
+
+#: btdownloadgui.py:2703
+msgid "Do you want to remove it?"
+msgstr "Vil du fjerne den?"
+
+#: btdownloadgui.py:2705
+#, python-format
+msgid "There are %d finished torrents in the list. "
+msgstr "Det er %d fullførte torrents i listen."
+
+#: btdownloadgui.py:2706
+msgid "Do you want to remove all of them?"
+msgstr "Vil du fjerne alle?"
+
+#: btdownloadgui.py:2708
+msgid "Remove all finished torrents?"
+msgstr "Fjerne alle fullførte torrents?"
+
+#: btdownloadgui.py:2715
+msgid "No finished torrents"
+msgstr "Ingen fullførte torrents"
+
+#: btdownloadgui.py:2716
+msgid "There are no finished torrents to remove."
+msgstr "Det er ingen fullførte torrents å fjerne."
+
+#: btdownloadgui.py:2760
+msgid "Open torrent:"
+msgstr "Åpne torrent:"
+
+#: btdownloadgui.py:2793
+msgid "Change save location for "
+msgstr "Endre lagringssted for "
+
+#: btdownloadgui.py:2819
+msgid "File exists!"
+msgstr "Filen eksisterer!"
+
+#: btdownloadgui.py:2820
+#, python-format
+msgid "\"%s\" already exists. Do you want to choose a different file name?"
+msgstr "\"%s\" eksisterer allerede.  Vil du lagre under et annet navn?"
+
+#: btdownloadgui.py:2838
+msgid "Save location for "
+msgstr "Lagringssted for "
+
+#: btdownloadgui.py:2948
+#, python-format
+msgid "(global message) : %s"
+msgstr "(global melding) : %s"
+
+#: btdownloadgui.py:2955
+#, python-format
+msgid "%s Error"
+msgstr "%s-feil"
+
+#: btdownloadgui.py:2961
+msgid "Multiple errors have occurred. Click OK to view the error log."
+msgstr "Det har oppstått flere feil.  Trykk OK for å se feilloggen."
+
+#: btdownloadgui.py:3091
+msgid "Stop running torrent?"
+msgstr "Stoppe kjørende torrent?"
+
+#: btdownloadgui.py:3092
+#, python-format
+msgid ""
+"You are about to start \"%s\". Do you want to stop the last running torrent "
+"as well?"
+msgstr ""
+"Du skal til å starte \"%s\".  Vil du stoppe den forrige kjørende torrenten "
+"også?"
+
+#: btdownloadgui.py:3102
+msgid "Have you donated?"
+msgstr "Har du donert?"
+
+#: btdownloadgui.py:3103
+#, python-format
+msgid "Welcome to the new version of %s. Have you donated?"
+msgstr "Velkommen til den nye versjonen av %s.  Har du donert?"
+
+#: btdownloadgui.py:3117
+msgid "Thanks!"
+msgstr "Takk!"
+
+#: btdownloadgui.py:3118
+msgid ""
+"Thanks for donating! To donate again, select \"Donate\" from the \"Help\" "
+"menu."
+msgstr ""
+"Takk for din donasjon! For å gi mer, velg \"Donér\" fra \"Hjelp\"menyen."
+
+#: btdownloadgui.py:3148 BitTorrent/defaultargs.py:188
+#: BitTorrent/defaultargs.py:190 btdownloadcurses.py:427
+#: btdownloadheadless.py:292
+msgid "deprecated, do not use"
+msgstr ""
+
+#: btdownloadgui.py:3161
+msgid "Failed to create or send command through existing control socket."
+msgstr ""
+
+#: btdownloadgui.py:3163 btdownloadgui.py:3188
+#, python-format
+msgid " Closing all %s windows may fix the problem."
+msgstr ""
+
+#: btdownloadgui.py:3184
+#, python-format
+msgid "%s already running"
+msgstr "%s kjører allerede"
+
+#: btdownloadgui.py:3186
+msgid "Failed to send command through existing control socket."
+msgstr ""
+
+#: btmaketorrentgui.py:55
+#, fuzzy, python-format
+msgid "%s torrent file creator %s"
+msgstr "%s metafilskaper %s"
+
+#: btmaketorrentgui.py:67
+msgid "Make torrent file for this file/directory:"
+msgstr ""
+
+#: btmaketorrentgui.py:72
+#, fuzzy
+msgid "Choose..."
+msgstr "Endre..."
+
+#: btmaketorrentgui.py:82
+msgid "(Directories will become batch torrents)"
+msgstr "(Mapper blir til flerfilstorrents)"
+
+#: btmaketorrentgui.py:93
+msgid "Piece size:"
+msgstr "Delstørrelse:"
+
+#: btmaketorrentgui.py:110
+msgid "Use _tracker:"
+msgstr "Bruk _sporer:"
+
+#: btmaketorrentgui.py:140
+msgid "Use _DHT:"
+msgstr "Bruk _DHT:"
+
+#: btmaketorrentgui.py:146
+msgid "Nodes (optional):"
+msgstr "Noder (valgfritt):"
+
+#: btmaketorrentgui.py:179
+msgid "Comments:"
+msgstr "Kommentarer:"
+
+#: btmaketorrentgui.py:209
+msgid "Make"
+msgstr "Lag"
+
+#: btmaketorrentgui.py:357
+msgid "_Host"
+msgstr "_Vert"
+
+#: btmaketorrentgui.py:364
+msgid "_Port"
+msgstr "_Port"
+
+#: btmaketorrentgui.py:457
+msgid "Building torrents..."
+msgstr "Lager torrents..."
+
+#: btmaketorrentgui.py:465
+msgid "Checking file sizes..."
+msgstr "Kontrollerer filstørrelser..."
+
+#: btmaketorrentgui.py:483
+msgid "Start seeding"
+msgstr "Begynn å så frø"
+
+#: btmaketorrentgui.py:503
+msgid "building "
+msgstr "bygger opp"
+
+#: btmaketorrentgui.py:523
+msgid "Done."
+msgstr "Ferdig."
+
+#: btmaketorrentgui.py:524
+msgid "Done building torrents."
+msgstr "Ferdig med å lage torrents"
+
+#: btmaketorrentgui.py:532
+msgid "Error!"
+msgstr "Feil!"
+
+#: btmaketorrentgui.py:533
+msgid "Error building torrents: "
+msgstr "Feil mens torrents ble laget:"
+
+#: BitTorrent/GUI.py:152
 #, python-format
 msgid "%d days"
 msgstr "%d dager"
 
-#: BitTorrent/GUI.py:151
+#: BitTorrent/GUI.py:154
 #, python-format
 msgid "1 day %d hours"
 msgstr "1 dag %d timer"
 
-#: BitTorrent/GUI.py:153
+#: BitTorrent/GUI.py:156
 #, python-format
 msgid "%d:%02d hours"
 msgstr "%d:%02d timer"
 
-#: BitTorrent/GUI.py:155
+#: BitTorrent/GUI.py:158
 #, python-format
 msgid "%d:%02d minutes"
 msgstr "%d:%02d minutter"
 
-#: BitTorrent/GUI.py:157
+#: BitTorrent/GUI.py:160
 #, python-format
 msgid "%d seconds"
 msgstr "%d sekunder"
 
-#: BitTorrent/GUI.py:159
+#: BitTorrent/GUI.py:162
 msgid "0 seconds"
 msgstr "0 sekunder"
 
-#: BitTorrent/GUI.py:201
+#: BitTorrent/GUI.py:204
 #, python-format
 msgid "%s Help"
 msgstr "%s Hjelp"
 
-#: BitTorrent/GUI.py:208
+#: BitTorrent/GUI.py:211
 msgid "Frequently Asked Questions:"
 msgstr "Ofte Stilte Spørsmål (FAQ/OSS):"
 
-#: BitTorrent/GUI.py:213
+#: BitTorrent/GUI.py:216
 msgid "Go"
 msgstr "Start"
 
-#: BitTorrent/GUI.py:434 BitTorrent/GUI.py:486
+#: BitTorrent/GUI.py:437 BitTorrent/GUI.py:489
 msgid "Choose an existing folder..."
 msgstr ""
 
-#: BitTorrent/GUI.py:444
+#: BitTorrent/GUI.py:447
 msgid "All Files"
 msgstr "Alle filer"
 
-#: BitTorrent/GUI.py:449
+#: BitTorrent/GUI.py:452
 msgid "Torrents"
 msgstr "Torrents"
 
-#: BitTorrent/GUI.py:483
+#: BitTorrent/GUI.py:486
 msgid "Create a new folder..."
 msgstr ""
 
-#: BitTorrent/GUI.py:545
-msgid "Select file"
+#: BitTorrent/GUI.py:548
+#, fuzzy
+msgid "Select a file"
 msgstr "Velg fil"
 
-#: BitTorrent/GUI.py:546
-msgid "Select folder"
+#: BitTorrent/GUI.py:549
+#, fuzzy
+msgid "Select a folder"
 msgstr "Velg mappe"
-
-#: BitTorrent/HTTPHandler.py:20
-msgid "Mon"
-msgstr "Man"
-
-#: BitTorrent/HTTPHandler.py:20
-msgid "Tue"
-msgstr "Tir"
-
-#: BitTorrent/HTTPHandler.py:20
-msgid "Wed"
-msgstr "Ons"
-
-#: BitTorrent/HTTPHandler.py:20
-msgid "Thu"
-msgstr "Tor"
-
-#: BitTorrent/HTTPHandler.py:20
-msgid "Fri"
-msgstr "Fre"
-
-#: BitTorrent/HTTPHandler.py:20
-msgid "Sat"
-msgstr "Lør"
-
-#: BitTorrent/HTTPHandler.py:20
-msgid "Sun"
-msgstr "Søn"
-
-#: BitTorrent/HTTPHandler.py:22
-msgid "Jan"
-msgstr "Jan"
-
-#: BitTorrent/HTTPHandler.py:22
-msgid "Feb"
-msgstr "Feb"
-
-#: BitTorrent/HTTPHandler.py:22
-msgid "Mar"
-msgstr "Mar"
-
-#: BitTorrent/HTTPHandler.py:22
-msgid "Apr"
-msgstr "Apr"
-
-#: BitTorrent/HTTPHandler.py:22
-msgid "May"
-msgstr "Mai"
-
-#: BitTorrent/HTTPHandler.py:22
-msgid "Jun"
-msgstr "Jun"
-
-#: BitTorrent/HTTPHandler.py:23
-msgid "Jul"
-msgstr "Jul"
-
-#: BitTorrent/HTTPHandler.py:23
-msgid "Aug"
-msgstr "Aug"
-
-#: BitTorrent/HTTPHandler.py:23
-msgid "Sep"
-msgstr "Sep"
-
-#: BitTorrent/HTTPHandler.py:23
-msgid "Oct"
-msgstr "Okt"
-
-#: BitTorrent/HTTPHandler.py:23
-msgid "Nov"
-msgstr "Nov"
-
-#: BitTorrent/HTTPHandler.py:23
-msgid "Dec"
-msgstr "Des"
-
-#: BitTorrent/HTTPHandler.py:83
-msgid "Got Accept-Encoding: "
-msgstr "Fikk aksept-koding:"
-
-#: BitTorrent/HTTPHandler.py:125
-#, python-format
-msgid "Compressed: %i  Uncompressed: %i\n"
-msgstr "Komprimert: %i Ukomprimert: %i\n"
-
-#: BitTorrent/RawServer.py:273
-msgid "lost server socket"
-msgstr "mistet tjenertilkobling"
-
-#: BitTorrent/RawServer.py:289
-msgid "Error handling accepted connection: "
-msgstr "Feil ved håndtering av akseptert forbindelse:"
-
-#: BitTorrent/RawServer.py:371
-#, python-format
-msgid "Have to exit due to the TCP stack flaking out. Please see the FAQ at %s"
-msgstr ""
-"Må avslutte fordi TCPforbindelsen svikter (TCP stack flaking out).  "
-"Vennligst se FAQ/OSS under %s"
-
-#: BitTorrent/Rerequester.py:92
-#, python-format
-msgid "Tracker announce still not complete %d seconds after starting it"
-msgstr "Sporers annonsering er fortsatt ikke ferdig %d sekunder etter start"
-
-#: BitTorrent/Rerequester.py:172
-msgid "Problem connecting to tracker - "
-msgstr "Problem med å koble til sporer - "
-
-#: BitTorrent/Rerequester.py:199
-msgid "bad data from tracker - "
-msgstr "Feil i data fra sporer - "
-
-#: BitTorrent/Rerequester.py:210
-msgid "rejected by tracker - "
-msgstr "Avvist av sporer - "
-
-#: BitTorrent/Rerequester.py:216
-msgid ""
-"Aborting the torrent as it was rejected by the tracker while not connected "
-"to any peers. "
-msgstr ""
-"Avslutter torrent, ettersom den ble avvist av sporeren uten å ha blitt "
-"koblet til noen annen klient."
-
-#: BitTorrent/Rerequester.py:218
-msgid " Message from the tracker: "
-msgstr " Beskjed fra sporer: "
-
-#: BitTorrent/Rerequester.py:224
-msgid "warning from tracker - "
-msgstr "advarsel fra sporer: - "
-
-#: BitTorrent/Storage.py:58
-#, python-format
-msgid "File %s belongs to another running torrent"
-msgstr "Filen %s hører til en annen kjørende torrent"
-
-#: BitTorrent/Storage.py:102
-#, python-format
-msgid "File %s already exists, but is not a regular file"
-msgstr "Filen %s eksisterer, men er ikke en vanlig fil"
-
-#: BitTorrent/Storage.py:181
-msgid "Short read - something truncated files?"
-msgstr "Lite data - Noe har forkortet filene?"
-
-#: BitTorrent/Storage.py:224
-msgid "Unsupported fastresume file format, maybe from another client version?"
-msgstr "Ukjent hurtigfortsettelsesformat.  Kanskje en annen klientversjon?"
-
-#: BitTorrent/Storage.py:240
-msgid "Fastresume info doesn't match file modification time"
-msgstr ""
-"Hurtigfortsettelsesinformasjon passer ikke med tidsstempelet for "
-"filmodifisering"
-
-#: BitTorrent/Storage.py:243
-msgid "Fastresume data doesn't match actual filesize"
-msgstr "Data for hurtigfortsettelse stemmer ikke med faktisk filstørrelse"
-
-#: BitTorrent/Storage.py:257 BitTorrent/StorageWrapper.py:284
-msgid "Couldn't read fastresume data: "
-msgstr "Kunne ikke lese hurtigfortsettelsesdata:"
-
-#: BitTorrent/StorageWrapper.py:53
-msgid "bad data in responsefile - total too small"
-msgstr "Feil data i responsfil - totalen for liten"
-
-#: BitTorrent/StorageWrapper.py:55
-msgid "bad data in responsefile - total too big"
-msgstr "Feil data i responsfil - totalen for stor"
-
-#: BitTorrent/StorageWrapper.py:100
-msgid "checking existing file"
-msgstr "sjekker eksisterende fil"
-
-#: BitTorrent/StorageWrapper.py:122
-msgid ""
-"--check_hashes 0 or fastresume info doesn't match file state (missing data)"
-msgstr ""
-"--check_hashes 0 eller hurtigfortsettelsesinfo stemmer ikke med filtilstand "
-"(Data mangler)"
-
-#: BitTorrent/StorageWrapper.py:131
-msgid "Bad fastresume info (files contain more data)"
-msgstr "Hurtigfortsettelsesinfo stemmer ikke (filen inneholder mer data)"
-
-#: BitTorrent/StorageWrapper.py:136
-msgid "Bad fastresume info (illegal value)"
-msgstr "Hurtigfortsettelsesinfo stemmer ikke (ugyldig verdi)"
-
-#: BitTorrent/StorageWrapper.py:252
-msgid "data corrupted on disk - maybe you have two copies running?"
-msgstr "Data ødelagt på disken - kjører du to kopier?"
-
-#: BitTorrent/StorageWrapper.py:404
-msgid "told file complete on start-up, but piece failed hash check"
-msgstr ""
-"Ga beskjed om komplett fil ved oppstart, men delen feilet hash-kontrollen"
 
 #: BitTorrent/TorrentQueue.py:120
 msgid "Could not load saved state: "
@@ -455,39 +1095,40 @@ msgstr ""
 "Ikke støttet versjon av tilstandsfil for grensesnitt (fra nyere "
 "klientversjon?)"
 
-#: BitTorrent/TorrentQueue.py:496
-msgid "Could not delete cached metainfo file:"
-msgstr "Kunne ikke slette cachet metainfofil:"
+#: BitTorrent/TorrentQueue.py:499
+#, python-format
+msgid "Could not delete cached %s file:"
+msgstr ""
 
-#: BitTorrent/TorrentQueue.py:519
+#: BitTorrent/TorrentQueue.py:523
 #, python-format
 msgid "This is not a valid torrent file. (%s)"
 msgstr "Dette er ikke en gyldig .torrentfil. (%s)"
 
-#: BitTorrent/TorrentQueue.py:527
+#: BitTorrent/TorrentQueue.py:531
 msgid "This torrent (or one with the same contents) is already running."
 msgstr "Denne torrenten (eller en med likt innhold) kjører allerede."
 
-#: BitTorrent/TorrentQueue.py:531
+#: BitTorrent/TorrentQueue.py:535
 msgid "This torrent (or one with the same contents) is already waiting to run."
 msgstr ""
 "Denne torrenten (eller en med likt innhold) venter allerede på å kjøre."
 
-#: BitTorrent/TorrentQueue.py:538
+#: BitTorrent/TorrentQueue.py:542
 #, python-format
 msgid "Torrent in unknown state %d"
 msgstr "Torrenten er i en ukjent tilstand %d"
 
-#: BitTorrent/TorrentQueue.py:555
+#: BitTorrent/TorrentQueue.py:559
 msgid "Could not write file "
 msgstr "Kunne ikke skrive filen "
 
-#: BitTorrent/TorrentQueue.py:557
+#: BitTorrent/TorrentQueue.py:561
 msgid "torrent will not be restarted correctly on client restart"
 msgstr ""
 "Torrenten vil ikke bli korrekt gjenopprettet ved neste oppstart av klienten"
 
-#: BitTorrent/TorrentQueue.py:644
+#: BitTorrent/TorrentQueue.py:648
 #, python-format
 msgid ""
 "Can't run more than %d torrents simultaneously. For more info see the FAQ at "
@@ -496,7 +1137,7 @@ msgstr ""
 "Kan ikke kjøre mer enn %d torrents samtidig. For mer informasjon, se FAQ/OSS "
 "under %s."
 
-#: BitTorrent/TorrentQueue.py:758
+#: BitTorrent/TorrentQueue.py:762
 msgid ""
 "Not starting torrent as there are other torrents waiting to run, and this "
 "one already meets the settings for when to stop seeding."
@@ -505,164 +1146,13 @@ msgstr ""
 "starte, og denne oppfyller allerede kriteriene for når den skal slutte å så "
 "frø."
 
-#: BitTorrent/TorrentQueue.py:764
+#: BitTorrent/TorrentQueue.py:768
 msgid ""
 "Not starting torrent as it already meets the settings for when to stop "
 "seeding the last completed torrent."
 msgstr ""
 "Starter ikke torrenten, ettersom den allerede oppfyller kriteriene for når "
 "den siste torrenten skal slutte å så frø."
-
-#: BitTorrent/__init__.py:20
-msgid "Python 2.2.1 or newer required"
-msgstr "Krever Python 2.2.1 eller nyere"
-
-#: BitTorrent/bencode.py:73
-msgid "not a valid bencoded string"
-msgstr "ikke en gyldig bkodet streng"
-
-#: BitTorrent/bencode.py:75
-msgid "invalid bencoded value (data after valid prefix)"
-msgstr "ugyldig bkodet verdi (data etter gyldig prefiks)"
-
-#: BitTorrent/btformats.py:23
-msgid "bad metainfo - not a dictionary"
-msgstr "feil i metainfo - ikke en mappe"
-
-#: BitTorrent/btformats.py:26
-msgid "bad metainfo - bad pieces key"
-msgstr "feil i metainfo - feil (fil)del-nøkkel"
-
-#: BitTorrent/btformats.py:29
-msgid "bad metainfo - illegal piece length"
-msgstr "feil i metainfo - ulovlig dellengde"
-
-#: BitTorrent/btformats.py:32
-msgid "bad metainfo - bad name"
-msgstr "feil i metainfo - ugyldig navn"
-
-#: BitTorrent/btformats.py:34
-#, python-format
-msgid "name %s disallowed for security reasons"
-msgstr "navnet %s er ikke tillatt av sikkerhetsmessige årsaker"
-
-#: BitTorrent/btformats.py:36
-msgid "single/multiple file mix"
-msgstr "blanding av enkeltfiler og flere filer"
-
-#: BitTorrent/btformats.py:40 BitTorrent/btformats.py:50
-msgid "bad metainfo - bad length"
-msgstr "feil i metainfo - ugyldig lengde"
-
-#: BitTorrent/btformats.py:44
-msgid "bad metainfo - \"files\" is not a list of files"
-msgstr "feil i metainfo - \"files\" er ikke en filliste"
-
-#: BitTorrent/btformats.py:47
-msgid "bad metainfo - bad file value"
-msgstr "feil i metainfo - ugyldig filverdi"
-
-#: BitTorrent/btformats.py:53
-msgid "bad metainfo - bad path"
-msgstr "feil i metainfo - ugyldig sti"
-
-#: BitTorrent/btformats.py:56
-msgid "bad metainfo - bad path dir"
-msgstr "feil i metainfo - ugyldig sti til mappe"
-
-#: BitTorrent/btformats.py:58
-#, python-format
-msgid "path %s disallowed for security reasons"
-msgstr "stien %s er ikke tillat av sikkerhetsmessige årsaker"
-
-#: BitTorrent/btformats.py:69
-msgid "bad metainfo - duplicate path"
-msgstr "feil i metainfo - dobbel sti"
-
-#: BitTorrent/btformats.py:71
-msgid "bad metainfo - name used as bothfile and subdirectory name"
-msgstr "feil i metainfo - navnet er brukt både som fil og undermappenavn"
-
-#: BitTorrent/btformats.py:78
-msgid "bad metainfo - wrong object type"
-msgstr "feil i metainfo - feil objekttype"
-
-#: BitTorrent/btformats.py:81
-msgid "bad metainfo - no announce URL string"
-msgstr "feil i metainfo - ingen annonseringsURL"
-
-#: BitTorrent/btformats.py:88
-msgid "non-text failure reason"
-msgstr "ikketekstlig feilårsak"
-
-#: BitTorrent/btformats.py:92
-msgid "non-text warning message"
-msgstr "ikketekstlig advarsel"
-
-#: BitTorrent/btformats.py:97
-msgid "invalid entry in peer list1"
-msgstr "ugyldig forekomst i klientliste 1"
-
-#: BitTorrent/btformats.py:99
-msgid "invalid entry in peer list2"
-msgstr "ugyldig forekomst i klientliste 2"
-
-#: BitTorrent/btformats.py:102
-msgid "invalid entry in peer list3"
-msgstr "ugyldig forekomst i klientliste 3"
-
-#: BitTorrent/btformats.py:106
-msgid "invalid entry in peer list4"
-msgstr "ugyldig forekomst i klientliste 4"
-
-#: BitTorrent/btformats.py:108
-msgid "invalid peer list"
-msgstr "Ugyldig klientliste"
-
-#: BitTorrent/btformats.py:111
-msgid "invalid announce interval"
-msgstr "ugyldig annonseringsintervall"
-
-#: BitTorrent/btformats.py:114
-msgid "invalid min announce interval"
-msgstr "ugyldig minste annonseringsintervall"
-
-#: BitTorrent/btformats.py:116
-msgid "invalid tracker id"
-msgstr "ugyldig sporerID"
-
-#: BitTorrent/btformats.py:119
-msgid "invalid peer count"
-msgstr "Ugyldig antall klienter"
-
-#: BitTorrent/btformats.py:122
-msgid "invalid seed count"
-msgstr "Ygyldig antall frø"
-
-#: BitTorrent/btformats.py:125
-msgid "invalid \"last\" entry"
-msgstr "ugyldig \"siste\"-verdi"
-
-#: BitTorrent/configfile.py:125
-msgid "Could not permanently save options: "
-msgstr "Kunne ikke lagre oppsett permanent"
-
-#: BitTorrent/controlsocket.py:108 BitTorrent/controlsocket.py:157
-msgid "Could not create control socket: "
-msgstr "Kunne ikke opprette kontrollforbindelse"
-
-#: BitTorrent/controlsocket.py:116 BitTorrent/controlsocket.py:134
-#: BitTorrent/controlsocket.py:166 BitTorrent/controlsocket.py:187
-msgid "Could not send command: "
-msgstr "Kunne ikke sende komando: "
-
-#: BitTorrent/controlsocket.py:144
-msgid "Could not create control socket: already in use"
-msgstr "Kunne ikke opprette kontrollforbindelse: allerede i bruk"
-
-#: BitTorrent/controlsocket.py:149
-msgid "Could not remove old control socket filename:"
-msgstr "Kunne ikke fjerne filnavnet for den gamle kontrollforbindelsen"
 
 #: BitTorrent/defaultargs.py:32
 msgid ""
@@ -939,14 +1429,6 @@ msgstr ""
 "eller mappen (flere torrents) vil bli laget i denne mappen med "
 "standardnavnet spesifisert i .torrentfilen.  Se også --save_as."
 
-#: BitTorrent/defaultargs.py:188
-msgid "file the server response was stored in, alternative to url"
-msgstr "Filen tjenersvaret ble lagret i, alternativ til URL."
-
-#: BitTorrent/defaultargs.py:190
-msgid "url to get file from, alternative to responsefile"
-msgstr "URL å hente fil fra, alternativ til svarfil"
-
 #: BitTorrent/defaultargs.py:192
 msgid "whether or not to ask for a location to save downloaded files in"
 msgstr "Spør etter sted å lagre nedlastede filer i eller ikke"
@@ -1016,163 +1498,404 @@ msgstr ""
 "pålitelig node i form av <ip>:<port> eller en tom streng for å hente ut noen "
 "noder fra rutingtabellen din"
 
-#: BitTorrent/download.py:92
-msgid "maxport less than minport - no ports to check"
-msgstr "øverste port er lavere enn laveste port - ingen porter å sjekke"
-
-#: BitTorrent/download.py:104
-#, python-format
-msgid "Could not open a listening port: %s."
-msgstr "Kunne ikke åpne port å lytte på: %s."
-
-#: BitTorrent/download.py:106
-#, python-format
-msgid "Could not open a listening port: %s. "
-msgstr "Kunne ikke åpne port å lytte på: %s."
-
-#: BitTorrent/download.py:108
-msgid "Check your port range settings."
-msgstr "Sjekk portintervall-innstillingene."
-
-#: BitTorrent/download.py:212
-msgid "Initial startup"
-msgstr "Første oppstart"
-
-#: BitTorrent/download.py:264
-#, python-format
-msgid "Could not load fastresume data: %s. "
-msgstr "Kunne ikke laste inn hurtigfortsettelsesdata: %s."
-
-#: BitTorrent/download.py:265
-msgid "Will perform full hash check."
-msgstr "Vil foreta full hash-kontroll."
-
-#: BitTorrent/download.py:272
-#, python-format
-msgid "piece %d failed hash check, re-downloading it"
-msgstr "del %d feilet hash-kontroll, henter ned på nytt"
-
-#: BitTorrent/download.py:383 BitTorrent/launchmanycore.py:139
-msgid "downloading"
-msgstr "laster ned"
-
-#: BitTorrent/download.py:393
-msgid "download failed: "
-msgstr "nedlasting feilet:"
-
-#: BitTorrent/download.py:397
-msgid "IO Error: No space left on disk, or cannot create a file that large:"
+#: btdownloadcurses.py:45 btlaunchmanycurses.py:39
+msgid "Textmode GUI initialization failed, cannot proceed."
 msgstr ""
-"Inn/Ut-feil: Ikke mer plass på disken, eller kan ikke opprette en så stor "
-"fil:"
+"Oppstart av teksbasert grafisk brukergrensesnitt feilet, kan ikke fortsette."
 
-#: BitTorrent/download.py:400
-msgid "killed by IO error: "
-msgstr "drept av inn/ut-feil"
+#: btdownloadcurses.py:47 btlaunchmanycurses.py:41
+msgid ""
+"This download interface requires the standard Python module \"curses\", "
+"which is unfortunately not available for the native Windows port of Python. "
+"It is however available for the Cygwin port of Python, running on all Win32 "
+"systems (www.cygwin.com)."
+msgstr ""
+"Denne nedlastingen krever Pythonmodulen \"curses\", som dessverre ikke er "
+"tilgjengelig for Windowsversjonen av Python.  Den er derimot tilgjengelig "
+"for Cygwinversjonen (www.cygwin.com) av Python, som kjører på alle "
+"win32systemer."
 
-#: BitTorrent/download.py:403
-msgid "killed by OS error: "
-msgstr "drept av operativsystemfeil:"
+#: btdownloadcurses.py:52 btlaunchmanycurses.py:46
+msgid "You may still use \"btdownloadheadless.py\" to download."
+msgstr "Du kan fortsatt bruke \"btdownloadheadless.py\" til nedlasting."
 
-#: BitTorrent/download.py:408
-msgid "killed by internal exception: "
-msgstr "drept av internt unntak:"
+#: btdownloadcurses.py:57 btdownloadheadless.py:39
+msgid "download complete!"
+msgstr "Nedlasting ferdig!"
 
-#: BitTorrent/download.py:413
-msgid "Additional error when closing down due to error: "
-msgstr "Ekstra feil ved avslutning på grunn av feil:"
+#: btdownloadcurses.py:62 btdownloadheadless.py:44
+msgid "<unknown>"
+msgstr "<ukjent>"
 
-#: BitTorrent/download.py:426
-msgid "Could not remove fastresume file after failure:"
-msgstr "Kunne ikke fjerne hurtigfortsettelsesfil etter at den feilet:"
+#: btdownloadcurses.py:65 btdownloadheadless.py:47
+#, python-format
+msgid "finishing in %d:%02d:%02d"
+msgstr "Ferdig om %d:%02d:%02d"
 
-#: BitTorrent/download.py:443
-msgid "seeding"
-msgstr "lager frø"
+#: btdownloadcurses.py:152
+msgid "file:"
+msgstr "fil:"
 
-#: BitTorrent/download.py:466
-msgid "Could not write fastresume data: "
-msgstr "Kunne ikke skrive hurtigfortsettelsesdata:"
+#: btdownloadcurses.py:153
+msgid "size:"
+msgstr "Størrelse:"
 
-#: BitTorrent/download.py:476
-msgid "shut down"
-msgstr "avslutt"
+#: btdownloadcurses.py:154
+msgid "dest:"
+msgstr "mål:"
 
-#: BitTorrent/launchmanycore.py:65
-#, fuzzy
-msgid "Could not set signal handler: "
-msgstr "Kunne ikke sette signalhåndterer: "
+#: btdownloadcurses.py:155
+msgid "progress:"
+msgstr "fremgang:"
 
-#: BitTorrent/launchmanycore.py:69 btdownloadcurses.py:354
-#: btdownloadheadless.py:237
+#: btdownloadcurses.py:156
+msgid "status:"
+msgstr "status:"
+
+#: btdownloadcurses.py:157
+msgid "dl speed:"
+msgstr "nedl. hastighet:"
+
+#: btdownloadcurses.py:158
+msgid "ul speed:"
+msgstr "oppl. hastighet:"
+
+#: btdownloadcurses.py:159
+msgid "sharing:"
+msgstr "deler:"
+
+#: btdownloadcurses.py:160
+msgid "seeds:"
+msgstr "frø:"
+
+#: btdownloadcurses.py:161
+msgid "peers:"
+msgstr "klienter:"
+
+#: btdownloadcurses.py:170 btdownloadheadless.py:94
+msgid "download succeeded"
+msgstr "Vellykket nedlasting"
+
+#: btdownloadcurses.py:227 btdownloadheadless.py:128
+#, python-format
+msgid "oo  (%.1f MB up / %.1f MB down)"
+msgstr "oo (%.1f MB opp / %.1f MB ned)"
+
+#: btdownloadcurses.py:230 btdownloadheadless.py:131
+#, python-format
+msgid "%.3f  (%.1f MB up / %.1f MB down)"
+msgstr "%.3f (%.1f MB opp / %.1f MB ned)"
+
+#: btdownloadcurses.py:236
+#, python-format
+msgid "%d seen now, plus %d distributed copies(%s)"
+msgstr "%d synlige nå, plus %d distribuerte kopier (%s)"
+
+#: btdownloadcurses.py:241 btdownloadheadless.py:142
+#, python-format
+msgid "%d distributed copies (next: %s)"
+msgstr "%d distribuerte kopier (neste: %s)"
+
+#: btdownloadcurses.py:243 btdownloadheadless.py:144
+#, python-format
+msgid "%d seen now"
+msgstr "%d synlig nå"
+
+#: btdownloadcurses.py:263
+msgid "error(s):"
+msgstr "feil:"
+
+#: btdownloadcurses.py:272
+msgid "error:"
+msgstr "feil:"
+
+#: btdownloadcurses.py:275
+msgid ""
+"  #     IP                 Upload           Download     Completed  Speed"
+msgstr ""
+"  #     IP                 Opp              Ned          Ferdig      "
+"Hastighet"
+
+#: btdownloadcurses.py:320
+#, python-format
+msgid "downloading %d pieces, have %d fragments, %d of %d pieces completed"
+msgstr "laster ned %d deler, har %d biter, %d av %d deler ferdig"
+
+#: btdownloadcurses.py:354 btdownloadheadless.py:219
+msgid "You cannot specify both --save_as and --save_in"
+msgstr "Du kan ikke spesifisere både --save_as og --save_in"
+
+#: btdownloadcurses.py:372 btdownloadheadless.py:237
+#: BitTorrent/launchmanycore.py:69
 msgid "shutting down"
 msgstr "avslutter"
 
-#: BitTorrent/launchmanycore.py:71 BitTorrent/launchmanycore.py:92
-#, python-format
-msgid "dropped \"%s\""
-msgstr "droppet \"%s\""
-
-#: BitTorrent/launchmanycore.py:95
-#, python-format
-msgid "added \"%s\""
-msgstr "la til \"%s\""
-
-#: BitTorrent/launchmanycore.py:121
-msgid "waiting for hash check"
-msgstr "Venter på hash-kontroll"
-
-#: BitTorrent/launchmanycore.py:142 btlaunchmanycurses.py:58
-msgid "connecting to peers"
-msgstr "kobler til klienter"
-
-#: BitTorrent/launchmanycore.py:232 btdownloadcurses.py:361
-#: btdownloadheadless.py:244
+#: btdownloadcurses.py:379 btdownloadheadless.py:244
+#: BitTorrent/launchmanycore.py:232
 msgid "Error reading config: "
 msgstr "Feil ved lesing av konfigurasjon:"
 
-#: BitTorrent/launchmanycore.py:234
-msgid "Rereading config file"
-msgstr "Leser konfigurasjonsfilen om igjen"
+#: btdownloadcurses.py:432 btdownloadheadless.py:297
+msgid "Error reading .torrent file: "
+msgstr "Feil ved lesing av .torrentfil:"
 
-#: BitTorrent/makemetafile.py:60
-msgid ""
-"You can't specify the name of the .torrent file when generating multiple "
-"torrents at once"
-msgstr ""
-"Du kan ikke spesifisere navn på .torrentfilen når du genererer flere "
-"torrents på en gang"
+#: btdownloadcurses.py:434 btdownloadheadless.py:299
+msgid "you must specify a .torrent file"
+msgstr "Du må oppgi en .torrentfil"
 
-#: BitTorrent/makemetafile.py:75
+#: btdownloadcurses.py:444
+msgid "These errors occurred during execution:"
+msgstr "Disse feilene oppstod under kjøring:"
+
+#: btdownloadheadless.py:137
 #, python-format
-msgid "Filesystem encoding \"%s\" is not supported in this version"
-msgstr "Filsystemkodingen \"%s\" støttes ikke i denne versjonen"
+msgid "%d seen now, plus %d distributed copies (%s)"
+msgstr "%d synlig nå, plus %d distribuerte kopier (%s)"
 
-#: BitTorrent/makemetafile.py:185
+#: btdownloadheadless.py:147
+msgid "ERROR:\n"
+msgstr "FEIL:\n"
+
+#: btdownloadheadless.py:148
+msgid "saving:        "
+msgstr "lagrer:"
+
+#: btdownloadheadless.py:149
+msgid "percent done:  "
+msgstr "prosent ferdig:"
+
+#: btdownloadheadless.py:150
+msgid "time left:     "
+msgstr "gjenstående tid:"
+
+#: btdownloadheadless.py:151
+msgid "download to:   "
+msgstr "last ned til:"
+
+#: btdownloadheadless.py:152
+msgid "download rate: "
+msgstr "nedlastingshastighet:"
+
+#: btdownloadheadless.py:153
+msgid "upload rate:   "
+msgstr "opplastingshastighet:"
+
+#: btdownloadheadless.py:154
+msgid "share rating:  "
+msgstr "forhold mellom opp- og nedlasting:"
+
+#: btdownloadheadless.py:155
+msgid "seed status:   "
+msgstr "frø-status:"
+
+#: btdownloadheadless.py:156
+msgid "peer status:   "
+msgstr "klientstatus:"
+
+#: btlaunchmanycurses.py:58 BitTorrent/launchmanycore.py:142
+msgid "connecting to peers"
+msgstr "kobler til klienter"
+
+#: btlaunchmanycurses.py:59
+#, python-format
+msgid "ETA in %d:%02d:%02d"
+msgstr "Antatt ferdig om %d:%02d:%02d"
+
+#: btlaunchmanycurses.py:143
+msgid "Size"
+msgstr "Størrelse"
+
+#: btlaunchmanycurses.py:144
+msgid "Download"
+msgstr "Nedlastinger"
+
+#: btlaunchmanycurses.py:145
+msgid "Upload"
+msgstr "Opplastinger"
+
+#: btlaunchmanycurses.py:146 btlaunchmanycurses.py:239
+msgid "Totals:"
+msgstr "Totalt:"
+
+#: btlaunchmanycurses.py:205
+#, python-format
+msgid "    (%s) %s - %s peers %s seeds %s dist copies - %s up %s dn"
+msgstr "    (%s) %s - %s klienter %s frø %s distr. kopier - %s opp %s ned"
+
+#: btlaunchmanycurses.py:227 btlaunchmany.py:35
+msgid "no torrents"
+msgstr "ingen torrents"
+
+#: btlaunchmanycurses.py:265 btlaunchmany.py:49
+msgid "SYSTEM ERROR - EXCEPTION GENERATED"
+msgstr "SYSTEMFEIL - UNNTAK OPPSTÅTT"
+
+#: btlaunchmanycurses.py:285 btlaunchmany.py:64
+msgid "Warning: "
+msgstr "Advarsel:"
+
+#: btlaunchmanycurses.py:285 btlaunchmany.py:64
+msgid " is not a directory"
+msgstr " er ikke en mappe"
+
+#: btlaunchmanycurses.py:287 BitTorrent/track.py:850
+msgid "error: "
+msgstr "feil:"
+
+#: btlaunchmanycurses.py:287
+msgid ""
+"\n"
+"run with no args for parameter explanations"
+msgstr ""
+"\n"
+"Kjør uten argumenter for forklaring på parametrene."
+
+#: btlaunchmanycurses.py:292 btlaunchmany.py:71
+msgid ""
+"\n"
+"EXCEPTION:"
+msgstr ""
+"\n"
+"UNNTAK:"
+
+#: btlaunchmany.py:66
 #, python-format
 msgid ""
-"Could not convert file/directory name \"%s\" to utf-8 (%s). Either the "
-"assumed filesystem encoding \"%s\" is wrong or the filename contains illegal "
-"bytes."
+"error: %s\n"
+"run with no args for parameter explanations"
 msgstr ""
-"Kunne ikke konvertere fil-/mappenavnet \"%s\" til utf-8 (%s).  Enten er "
-"antatt filsystemkoding \"%s\" feil, eller filnavnet inneholder ugyldige tegn."
+"feil: %s\n"
+"Kjør uten argumenter for forklaring på parametrene."
 
-#: BitTorrent/makemetafile.py:190
+#: btmaketorrent.py:29
+msgid "optional human-readable comment to put in .torrent"
+msgstr "Valgfri leselig kommentar å legge i .torrentfilen"
+
+#: btmaketorrent.py:31
+msgid "optional target file for the torrent"
+msgstr "Valgfri målfil for torrenten"
+
+#: btreannounce.py:22
 #, python-format
-msgid ""
-"File/directory name \"%s\" contains reserved unicode values that do not "
-"correspond to characters."
-msgstr ""
-"Fil-/mappenavnet \"%s\" inneholder reserverte unicodeverdier som ikke "
-"tilsvarer tegn."
+msgid "Usage: %s TRACKER_URL [TORRENTFILE [TORRENTFILE ... ] ]"
+msgstr "Bruk: %s SPORER_URL [TORRENTFIL [TORRENTFIL ... ] ]"
 
-#: BitTorrent/parseargs.py:23
+#: btreannounce.py:31
+#, python-format
+msgid "old announce for %s: %s"
+msgstr "gammel annonsering av %s: %s"
+
+#: btrename.py:26
+#, python-format
+msgid "%s %s - change the suggested filename in a .torrent file"
+msgstr "%s %s - endre det foreslåtte navnet i en .torrentfil"
+
+#: btrename.py:31
+#, python-format
+msgid "Usage: %s TORRENTFILE NEW_FILE_NAME"
+msgstr "Bruk: %s TORRENTFIL NYTT_FILNAVN"
+
+#: btrename.py:38
+#, python-format
+msgid "old filename: %s"
+msgstr "gammelt filnavn: %s"
+
+#: btrename.py:40
+#, python-format
+msgid "new filename: %s"
+msgstr "nytt filnavn: %s"
+
+#: btrename.py:45
+msgid "done."
+msgstr "ferdig."
+
+#: btshowmetainfo.py:26
+#, python-format
+msgid "%s %s - decode %s metainfo files"
+msgstr "%s %s - dekod %s metainformasjonsfiler"
+
+#: btshowmetainfo.py:30
+#, python-format
+msgid "Usage: %s [TORRENTFILE [TORRENTFILE ... ] ]"
+msgstr "Bruk: %s [TORRENTFIL [TORRENTFIL ... ] ]"
+
+#: btshowmetainfo.py:34
+#, python-format
+msgid "metainfo file: %s"
+msgstr "metainfofil: %s"
+
+#: btshowmetainfo.py:35
+#, python-format
+msgid "info hash: %s"
+msgstr "info hash: %s"
+
+#: btshowmetainfo.py:36
+#, python-format
+msgid "file name: %s"
+msgstr "filnavn: %s"
+
+#: btshowmetainfo.py:37
+msgid "file size:"
+msgstr "filstørrelse:"
+
+#: btshowmetainfo.py:38
+#, fuzzy
+msgid "files:"
+msgstr "filer:"
+
+#: btshowmetainfo.py:39
+#, python-format
+msgid "directory name: %s"
+msgstr "mappenavn: %s"
+
+#: btshowmetainfo.py:40
+msgid "archive size:"
+msgstr "arkivstørrelse:"
+
+#: btshowmetainfo.py:41
+#, fuzzy, python-format
+msgid "tracker announce url: %s"
+msgstr "annonseringsURL: %s"
+
+#: btshowmetainfo.py:42
+msgid "trackerless nodes:"
+msgstr ""
+
+#: btshowmetainfo.py:43
+msgid "comment:"
+msgstr "kommentar:"
+
+#: BitTorrent/controlsocket.py:108 BitTorrent/controlsocket.py:157
+msgid "Could not create control socket: "
+msgstr "Kunne ikke opprette kontrollforbindelse"
+
+#: BitTorrent/controlsocket.py:116 BitTorrent/controlsocket.py:134
+#: BitTorrent/controlsocket.py:166 BitTorrent/controlsocket.py:187
+msgid "Could not send command: "
+msgstr "Kunne ikke sende komando: "
+
+#: BitTorrent/controlsocket.py:144
+msgid "Could not create control socket: already in use"
+msgstr "Kunne ikke opprette kontrollforbindelse: allerede i bruk"
+
+#: BitTorrent/controlsocket.py:149
+msgid "Could not remove old control socket filename:"
+msgstr "Kunne ikke fjerne filnavnet for den gamle kontrollforbindelsen"
+
+#: BitTorrent/bencode.py:73
+msgid "not a valid bencoded string"
+msgstr "ikke en gyldig bkodet streng"
+
+#: BitTorrent/bencode.py:75
+msgid "invalid bencoded value (data after valid prefix)"
+msgstr "ugyldig bkodet verdi (data etter gyldig prefiks)"
+
+#: BitTorrent/parseargs.py:27
 #, python-format
 msgid "Usage: %s "
 msgstr "Bruk: %s"
 
-#: BitTorrent/parseargs.py:25
+#: BitTorrent/parseargs.py:29
 msgid ""
 "[OPTIONS] [TORRENTDIRECTORY]\n"
 "\n"
@@ -1180,7 +1903,7 @@ msgstr ""
 "[INNSTILLINGER] [TORRENTMAPPE]\n"
 "\n"
 
-#: BitTorrent/parseargs.py:26
+#: BitTorrent/parseargs.py:30
 msgid ""
 "If a non-option argument is present it's taken as the value\n"
 "of the torrent_dir option.\n"
@@ -1188,57 +1911,129 @@ msgstr ""
 "Hvis et argument som ikke er en innstilling er tilstede, blir det\n"
 "brukt som verdien til torrent_dir-innstilingen.\n"
 
-#: BitTorrent/parseargs.py:29
+#: BitTorrent/parseargs.py:33
 msgid "[OPTIONS] [TORRENTFILES]\n"
 msgstr "[INNSTILLINGER] [TORRENTFILER]\n"
 
-#: BitTorrent/parseargs.py:31
+#: BitTorrent/parseargs.py:35
 msgid "[OPTIONS] [TORRENTFILE]\n"
 msgstr "[INNSTILLINGER] [TORRENTFIL]\n"
 
-#: BitTorrent/parseargs.py:33
+#: BitTorrent/parseargs.py:37
 msgid "[OPTION] TRACKER_URL FILE [FILE]\n"
 msgstr "[INNSTILLING] SPORERURL FIL [FIL]\n"
 
-#: BitTorrent/parseargs.py:35
+#: BitTorrent/parseargs.py:39
 msgid "arguments are -\n"
 msgstr "argumenter er -\n"
 
-#: BitTorrent/parseargs.py:66
+#: BitTorrent/parseargs.py:70
 msgid " (defaults to "
 msgstr " (standard er "
 
-#: BitTorrent/parseargs.py:115 BitTorrent/parseargs.py:152
+#: BitTorrent/parseargs.py:109
+msgid "Temporary Internet Files"
+msgstr "Midlertidige internettfiler"
+
+#: BitTorrent/parseargs.py:110
+#, python-format
+msgid ""
+"Could not read %s: %s. You are probably using a broken Internet Explorer "
+"version that passed BitTorrent a filename that doesn't exist. To work around "
+"the problem, try clearing your Temporary Internet Files or right-click the "
+"link and save the .torrent file to disk first."
+msgstr ""
+"Kunne ikke lese %s:  %s.  Du bruker kanskje en ødelagt versjon av Internet "
+"Explorer, som har gitt BitTorrent et filnavn som ikke eksisterer.  For å "
+"unngå problemet, prøv å slette midlertidige internettfiler eller høyreklikk "
+"på lenken og lagre .torrentfilen til disk først."
+
+#: BitTorrent/parseargs.py:119 BitTorrent/parseargs.py:139
+#, python-format
+msgid "Could not read %s"
+msgstr "Kunne ikke få status for %s"
+
+#: BitTorrent/parseargs.py:124
+#, python-format
+msgid ""
+"Could not download or open \n"
+"%s\n"
+"Try using a web browser to download the torrent file."
+msgstr ""
+
+#: BitTorrent/parseargs.py:167 BitTorrent/parseargs.py:204
 msgid "unknown key "
 msgstr "ukjent nøkkel"
 
-#: BitTorrent/parseargs.py:121 BitTorrent/parseargs.py:131
+#: BitTorrent/parseargs.py:173 BitTorrent/parseargs.py:183
 msgid "parameter passed in at end with no value"
 msgstr "parameter sendt på slutten uten verdi"
 
-#: BitTorrent/parseargs.py:135
+#: BitTorrent/parseargs.py:187
 msgid "command line parsing failed at "
 msgstr "kommandolinjegjennomgang feilet ved "
 
-#: BitTorrent/parseargs.py:142
+#: BitTorrent/parseargs.py:194
 #, python-format
 msgid "Option %s is required."
 msgstr "Valget %s er nødvendig."
 
-#: BitTorrent/parseargs.py:144
+#: BitTorrent/parseargs.py:196
 #, python-format
 msgid "Must supply at least %d args."
 msgstr "Må gi minst %d argumenter."
 
-#: BitTorrent/parseargs.py:146
+#: BitTorrent/parseargs.py:198
 #, python-format
 msgid "Too many args - %d max."
 msgstr "For mange argumenter - maksimum %d."
 
-#: BitTorrent/parseargs.py:176
+#: BitTorrent/parseargs.py:228
 #, python-format
 msgid "wrong format of %s - %s"
 msgstr "Feil format av %s - %s"
+
+#: BitTorrent/configfile.py:125
+msgid "Could not permanently save options: "
+msgstr "Kunne ikke lagre oppsett permanent"
+
+#: BitTorrent/Rerequester.py:92
+#, python-format
+msgid "Tracker announce still not complete %d seconds after starting it"
+msgstr "Sporers annonsering er fortsatt ikke ferdig %d sekunder etter start"
+
+#: BitTorrent/Rerequester.py:162
+#, fuzzy
+msgid "Problem connecting to tracker, gethostbyname failed - "
+msgstr "Problem med å koble til sporer - "
+
+#: BitTorrent/Rerequester.py:175
+msgid "Problem connecting to tracker - "
+msgstr "Problem med å koble til sporer - "
+
+#: BitTorrent/Rerequester.py:202
+msgid "bad data from tracker - "
+msgstr "Feil i data fra sporer - "
+
+#: BitTorrent/Rerequester.py:213
+msgid "rejected by tracker - "
+msgstr "Avvist av sporer - "
+
+#: BitTorrent/Rerequester.py:219
+msgid ""
+"Aborting the torrent as it was rejected by the tracker while not connected "
+"to any peers. "
+msgstr ""
+"Avslutter torrent, ettersom den ble avvist av sporeren uten å ha blitt "
+"koblet til noen annen klient."
+
+#: BitTorrent/Rerequester.py:221
+msgid " Message from the tracker: "
+msgstr " Beskjed fra sporer: "
+
+#: BitTorrent/Rerequester.py:227
+msgid "warning from tracker - "
+msgstr "advarsel fra sporer: - "
 
 #: BitTorrent/parsedir.py:34
 msgid "Could not read directory "
@@ -1275,6 +2070,512 @@ msgstr "fjerner %s"
 #: BitTorrent/parsedir.py:149
 msgid "done checking"
 msgstr "ferdig med å sjekke"
+
+#: BitTorrent/RawServer.py:276
+msgid "lost server socket"
+msgstr "mistet tjenertilkobling"
+
+#: BitTorrent/RawServer.py:292
+msgid "Error handling accepted connection: "
+msgstr "Feil ved håndtering av akseptert forbindelse:"
+
+#: BitTorrent/RawServer.py:375
+#, python-format
+msgid "Have to exit due to the TCP stack flaking out. Please see the FAQ at %s"
+msgstr ""
+"Må avslutte fordi TCPforbindelsen svikter (TCP stack flaking out).  "
+"Vennligst se FAQ/OSS under %s"
+
+#: BitTorrent/HTTPHandler.py:20
+msgid "Mon"
+msgstr "Man"
+
+#: BitTorrent/HTTPHandler.py:20
+msgid "Tue"
+msgstr "Tir"
+
+#: BitTorrent/HTTPHandler.py:20
+msgid "Wed"
+msgstr "Ons"
+
+#: BitTorrent/HTTPHandler.py:20
+msgid "Thu"
+msgstr "Tor"
+
+#: BitTorrent/HTTPHandler.py:20
+msgid "Fri"
+msgstr "Fre"
+
+#: BitTorrent/HTTPHandler.py:20
+msgid "Sat"
+msgstr "Lør"
+
+#: BitTorrent/HTTPHandler.py:20
+msgid "Sun"
+msgstr "Søn"
+
+#: BitTorrent/HTTPHandler.py:22
+msgid "Jan"
+msgstr "Jan"
+
+#: BitTorrent/HTTPHandler.py:22
+msgid "Feb"
+msgstr "Feb"
+
+#: BitTorrent/HTTPHandler.py:22
+msgid "Mar"
+msgstr "Mar"
+
+#: BitTorrent/HTTPHandler.py:22
+msgid "Apr"
+msgstr "Apr"
+
+#: BitTorrent/HTTPHandler.py:22
+msgid "May"
+msgstr "Mai"
+
+#: BitTorrent/HTTPHandler.py:22
+msgid "Jun"
+msgstr "Jun"
+
+#: BitTorrent/HTTPHandler.py:23
+msgid "Jul"
+msgstr "Jul"
+
+#: BitTorrent/HTTPHandler.py:23
+msgid "Aug"
+msgstr "Aug"
+
+#: BitTorrent/HTTPHandler.py:23
+msgid "Sep"
+msgstr "Sep"
+
+#: BitTorrent/HTTPHandler.py:23
+msgid "Oct"
+msgstr "Okt"
+
+#: BitTorrent/HTTPHandler.py:23
+msgid "Nov"
+msgstr "Nov"
+
+#: BitTorrent/HTTPHandler.py:23
+msgid "Dec"
+msgstr "Des"
+
+#: BitTorrent/HTTPHandler.py:125
+#, python-format
+msgid "Compressed: %i  Uncompressed: %i\n"
+msgstr "Komprimert: %i Ukomprimert: %i\n"
+
+#: BitTorrent/makemetafile.py:60
+msgid ""
+"You can't specify the name of the .torrent file when generating multiple "
+"torrents at once"
+msgstr ""
+"Du kan ikke spesifisere navn på .torrentfilen når du genererer flere "
+"torrents på en gang"
+
+#: BitTorrent/makemetafile.py:75
+#, python-format
+msgid "Filesystem encoding \"%s\" is not supported in this version"
+msgstr "Filsystemkodingen \"%s\" støttes ikke i denne versjonen"
+
+#: BitTorrent/makemetafile.py:185
+#, python-format
+msgid ""
+"Could not convert file/directory name \"%s\" to utf-8 (%s). Either the "
+"assumed filesystem encoding \"%s\" is wrong or the filename contains illegal "
+"bytes."
+msgstr ""
+"Kunne ikke konvertere fil-/mappenavnet \"%s\" til utf-8 (%s).  Enten er "
+"antatt filsystemkoding \"%s\" feil, eller filnavnet inneholder ugyldige tegn."
+
+#: BitTorrent/makemetafile.py:190
+#, python-format
+msgid ""
+"File/directory name \"%s\" contains reserved unicode values that do not "
+"correspond to characters."
+msgstr ""
+"Fil-/mappenavnet \"%s\" inneholder reserverte unicodeverdier som ikke "
+"tilsvarer tegn."
+
+#: BitTorrent/StorageWrapper.py:53
+msgid "bad data in responsefile - total too small"
+msgstr "Feil data i responsfil - totalen for liten"
+
+#: BitTorrent/StorageWrapper.py:55
+msgid "bad data in responsefile - total too big"
+msgstr "Feil data i responsfil - totalen for stor"
+
+#: BitTorrent/StorageWrapper.py:100
+msgid "checking existing file"
+msgstr "sjekker eksisterende fil"
+
+#: BitTorrent/StorageWrapper.py:122
+msgid ""
+"--check_hashes 0 or fastresume info doesn't match file state (missing data)"
+msgstr ""
+"--check_hashes 0 eller hurtigfortsettelsesinfo stemmer ikke med filtilstand "
+"(Data mangler)"
+
+#: BitTorrent/StorageWrapper.py:131
+msgid "Bad fastresume info (files contain more data)"
+msgstr "Hurtigfortsettelsesinfo stemmer ikke (filen inneholder mer data)"
+
+#: BitTorrent/StorageWrapper.py:136
+msgid "Bad fastresume info (illegal value)"
+msgstr "Hurtigfortsettelsesinfo stemmer ikke (ugyldig verdi)"
+
+#: BitTorrent/StorageWrapper.py:252
+msgid "data corrupted on disk - maybe you have two copies running?"
+msgstr "Data ødelagt på disken - kjører du to kopier?"
+
+#: BitTorrent/StorageWrapper.py:284 BitTorrent/Storage.py:257
+msgid "Couldn't read fastresume data: "
+msgstr "Kunne ikke lese hurtigfortsettelsesdata:"
+
+#: BitTorrent/StorageWrapper.py:404
+msgid "told file complete on start-up, but piece failed hash check"
+msgstr ""
+"Ga beskjed om komplett fil ved oppstart, men delen feilet hash-kontrollen"
+
+#: BitTorrent/Storage.py:58
+#, python-format
+msgid "File %s belongs to another running torrent"
+msgstr "Filen %s hører til en annen kjørende torrent"
+
+#: BitTorrent/Storage.py:102
+#, python-format
+msgid "File %s already exists, but is not a regular file"
+msgstr "Filen %s eksisterer, men er ikke en vanlig fil"
+
+#: BitTorrent/Storage.py:181
+msgid "Short read - something truncated files?"
+msgstr "Lite data - Noe har forkortet filene?"
+
+#: BitTorrent/Storage.py:224
+msgid "Unsupported fastresume file format, maybe from another client version?"
+msgstr "Ukjent hurtigfortsettelsesformat.  Kanskje en annen klientversjon?"
+
+#: BitTorrent/Storage.py:240
+msgid "Fastresume info doesn't match file modification time"
+msgstr ""
+"Hurtigfortsettelsesinformasjon passer ikke med tidsstempelet for "
+"filmodifisering"
+
+#: BitTorrent/Storage.py:243
+msgid "Fastresume data doesn't match actual filesize"
+msgstr "Data for hurtigfortsettelse stemmer ikke med faktisk filstørrelse"
+
+#: BitTorrent/launchmanycore.py:65
+#, fuzzy
+msgid "Could not set signal handler: "
+msgstr "Kunne ikke sette signalhåndterer: "
+
+#: BitTorrent/launchmanycore.py:71 BitTorrent/launchmanycore.py:92
+#, python-format
+msgid "dropped \"%s\""
+msgstr "droppet \"%s\""
+
+#: BitTorrent/launchmanycore.py:95
+#, python-format
+msgid "added \"%s\""
+msgstr "la til \"%s\""
+
+#: BitTorrent/launchmanycore.py:121
+msgid "waiting for hash check"
+msgstr "Venter på hash-kontroll"
+
+#: BitTorrent/launchmanycore.py:139 BitTorrent/download.py:388
+msgid "downloading"
+msgstr "laster ned"
+
+#: BitTorrent/launchmanycore.py:234
+msgid "Rereading config file"
+msgstr "Leser konfigurasjonsfilen om igjen"
+
+#: BitTorrent/ConvertedMetainfo.py:51
+msgid ""
+"This seems to be an old Python version which does not support detecting the "
+"filesystem encoding. Assuming 'ascii'."
+msgstr ""
+"Dette ser ut til å være en gammel Pythonversjon, som ikke støtter oppdagelse "
+"av filsystemkoding.  Antar 'ascii'."
+
+#: BitTorrent/ConvertedMetainfo.py:58
+msgid "Python failed to autodetect filesystem encoding. Using 'ascii' instead."
+msgstr ""
+"Python kunne ikke filsystemkodingen automatisk.  Bruker 'ascii' i stedet."
+
+#: BitTorrent/ConvertedMetainfo.py:65
+#, python-format
+msgid "Filesystem encoding '%s' is not supported. Using 'ascii' instead."
+msgstr "Filsystemkoding '%s' støttes ikke.  Bruker 'ascii' i stedet."
+
+#: BitTorrent/ConvertedMetainfo.py:123
+msgid "Bad file path component: "
+msgstr "Feil i del av filstien:"
+
+#: BitTorrent/ConvertedMetainfo.py:188
+msgid ""
+"This .torrent file has been created with a broken tool and has incorrectly "
+"encoded filenames. Some or all of the filenames may appear different from "
+"what the creator of the .torrent file intended."
+msgstr ""
+"Denne .torrentfilen har blitt laget med et ødelagt verktøy og har uriktig "
+"kodede filnavn.  Noen eller alle filnavnene kan være forskjellige fra det "
+"personen som laget .torrentfilen har ment."
+
+#: BitTorrent/ConvertedMetainfo.py:194
+msgid ""
+"This .torrent file has been created with a broken tool and has bad character "
+"values that do not correspond to any real character. Some or all of the "
+"filenames may appear different from what the creator of the .torrent file "
+"intended."
+msgstr ""
+"Denne .torrentfilen har blitt laget med et ødelagt verktøy, og har "
+"tegnverdier som ikke tilsvarer virkelige tegn.  Noen eller alle filnavnene "
+"kan være forskjellig fra det personen som laget den har ment."
+
+#: BitTorrent/ConvertedMetainfo.py:201
+msgid ""
+"This .torrent file has been created with a broken tool and has incorrectly "
+"encoded filenames. The names used may still be correct."
+msgstr ""
+"Denne .torrentfilen har blitt laget med et ødelagt verktøy og har feilkodede "
+"filnavn.  Navnene kan fortsatt være riktige."
+
+#: BitTorrent/ConvertedMetainfo.py:206
+#, python-format
+msgid ""
+"The character set used on the local filesystem (\"%s\") cannot represent all "
+"characters used in the filename(s) of this torrent. Filenames have been "
+"changed from the original."
+msgstr ""
+"Tegnsettet i det lokale filsystemet (\"%s\") kan ikke vise alle tegn brukt i "
+"filnavnet/ene i denne torrenten.  Filnavnene har blitt endret fra originalen."
+
+#: BitTorrent/ConvertedMetainfo.py:212
+msgid ""
+"The Windows filesystem cannot handle some characters used in the filename(s) "
+"of this torrent.Filenames have been changed from the original."
+msgstr ""
+"Windows sitt filsystem kan ikke håndtere noen av tegnene i filnavnet/ene i "
+"denne torrenten.  Filnavn har blitt endret fra originalen."
+
+#: BitTorrent/ConvertedMetainfo.py:217
+msgid ""
+"This .torrent file has been created with a broken tool and has at least 1 "
+"file with an invalid file or directory name. However since all such files "
+"were marked as having length 0 those files are just ignored."
+msgstr ""
+"Denne .torrentfilen har blitt laget med et ødelagt verktøy, og har minst en "
+"fil eller en mappe med ugyldig navn, men ettersom alle slike filer har "
+"størrelse 0, er disse ignorert."
+
+#: BitTorrent/__init__.py:20
+msgid "Python 2.2.1 or newer required"
+msgstr "Krever Python 2.2.1 eller nyere"
+
+#: BitTorrent/Encoder.py:173
+msgid "Can't start two separate instances of the same torrent"
+msgstr "Kan ikke starte to instanser av samme torrent"
+
+#: BitTorrent/download.py:95
+msgid "maxport less than minport - no ports to check"
+msgstr "øverste port er lavere enn laveste port - ingen porter å sjekke"
+
+#: BitTorrent/download.py:107
+#, python-format
+msgid "Could not open a listening port: %s."
+msgstr "Kunne ikke åpne port å lytte på: %s."
+
+#: BitTorrent/download.py:109
+#, python-format
+msgid "Could not open a listening port: %s. "
+msgstr "Kunne ikke åpne port å lytte på: %s."
+
+#: BitTorrent/download.py:111
+msgid "Check your port range settings."
+msgstr "Sjekk portintervall-innstillingene."
+
+#: BitTorrent/download.py:216
+msgid "Initial startup"
+msgstr "Første oppstart"
+
+#: BitTorrent/download.py:269
+#, python-format
+msgid "Could not load fastresume data: %s. "
+msgstr "Kunne ikke laste inn hurtigfortsettelsesdata: %s."
+
+#: BitTorrent/download.py:270
+msgid "Will perform full hash check."
+msgstr "Vil foreta full hash-kontroll."
+
+#: BitTorrent/download.py:277
+#, python-format
+msgid "piece %d failed hash check, re-downloading it"
+msgstr "del %d feilet hash-kontroll, henter ned på nytt"
+
+#: BitTorrent/download.py:398
+msgid "download failed: "
+msgstr "nedlasting feilet:"
+
+#: BitTorrent/download.py:402
+msgid "IO Error: No space left on disk, or cannot create a file that large:"
+msgstr ""
+"Inn/Ut-feil: Ikke mer plass på disken, eller kan ikke opprette en så stor "
+"fil:"
+
+#: BitTorrent/download.py:405
+msgid "killed by IO error: "
+msgstr "drept av inn/ut-feil"
+
+#: BitTorrent/download.py:408
+msgid "killed by OS error: "
+msgstr "drept av operativsystemfeil:"
+
+#: BitTorrent/download.py:413
+msgid "killed by internal exception: "
+msgstr "drept av internt unntak:"
+
+#: BitTorrent/download.py:418
+msgid "Additional error when closing down due to error: "
+msgstr "Ekstra feil ved avslutning på grunn av feil:"
+
+#: BitTorrent/download.py:431
+msgid "Could not remove fastresume file after failure:"
+msgstr "Kunne ikke fjerne hurtigfortsettelsesfil etter at den feilet:"
+
+#: BitTorrent/download.py:448
+msgid "seeding"
+msgstr "lager frø"
+
+#: BitTorrent/download.py:471
+msgid "Could not write fastresume data: "
+msgstr "Kunne ikke skrive hurtigfortsettelsesdata:"
+
+#: BitTorrent/download.py:481
+msgid "shut down"
+msgstr "avslutt"
+
+#: BitTorrent/btformats.py:23
+msgid "bad metainfo - not a dictionary"
+msgstr "feil i metainfo - ikke en mappe"
+
+#: BitTorrent/btformats.py:26
+msgid "bad metainfo - bad pieces key"
+msgstr "feil i metainfo - feil (fil)del-nøkkel"
+
+#: BitTorrent/btformats.py:29
+msgid "bad metainfo - illegal piece length"
+msgstr "feil i metainfo - ulovlig dellengde"
+
+#: BitTorrent/btformats.py:32
+msgid "bad metainfo - bad name"
+msgstr "feil i metainfo - ugyldig navn"
+
+#: BitTorrent/btformats.py:34
+#, python-format
+msgid "name %s disallowed for security reasons"
+msgstr "navnet %s er ikke tillatt av sikkerhetsmessige årsaker"
+
+#: BitTorrent/btformats.py:36
+msgid "single/multiple file mix"
+msgstr "blanding av enkeltfiler og flere filer"
+
+#: BitTorrent/btformats.py:40 BitTorrent/btformats.py:50
+msgid "bad metainfo - bad length"
+msgstr "feil i metainfo - ugyldig lengde"
+
+#: BitTorrent/btformats.py:44
+msgid "bad metainfo - \"files\" is not a list of files"
+msgstr "feil i metainfo - \"files\" er ikke en filliste"
+
+#: BitTorrent/btformats.py:47
+msgid "bad metainfo - bad file value"
+msgstr "feil i metainfo - ugyldig filverdi"
+
+#: BitTorrent/btformats.py:53
+msgid "bad metainfo - bad path"
+msgstr "feil i metainfo - ugyldig sti"
+
+#: BitTorrent/btformats.py:56
+msgid "bad metainfo - bad path dir"
+msgstr "feil i metainfo - ugyldig sti til mappe"
+
+#: BitTorrent/btformats.py:58
+#, python-format
+msgid "path %s disallowed for security reasons"
+msgstr "stien %s er ikke tillat av sikkerhetsmessige årsaker"
+
+#: BitTorrent/btformats.py:69
+msgid "bad metainfo - duplicate path"
+msgstr "feil i metainfo - dobbel sti"
+
+#: BitTorrent/btformats.py:71
+msgid "bad metainfo - name used as bothfile and subdirectory name"
+msgstr "feil i metainfo - navnet er brukt både som fil og undermappenavn"
+
+#: BitTorrent/btformats.py:78
+msgid "bad metainfo - wrong object type"
+msgstr "feil i metainfo - feil objekttype"
+
+#: BitTorrent/btformats.py:81
+msgid "bad metainfo - no announce URL string"
+msgstr "feil i metainfo - ingen annonseringsURL"
+
+#: BitTorrent/btformats.py:88
+msgid "non-text failure reason"
+msgstr "ikketekstlig feilårsak"
+
+#: BitTorrent/btformats.py:92
+msgid "non-text warning message"
+msgstr "ikketekstlig advarsel"
+
+#: BitTorrent/btformats.py:97
+msgid "invalid entry in peer list1"
+msgstr "ugyldig forekomst i klientliste 1"
+
+#: BitTorrent/btformats.py:99
+msgid "invalid entry in peer list2"
+msgstr "ugyldig forekomst i klientliste 2"
+
+#: BitTorrent/btformats.py:102
+msgid "invalid entry in peer list3"
+msgstr "ugyldig forekomst i klientliste 3"
+
+#: BitTorrent/btformats.py:106
+msgid "invalid entry in peer list4"
+msgstr "ugyldig forekomst i klientliste 4"
+
+#: BitTorrent/btformats.py:108
+msgid "invalid peer list"
+msgstr "Ugyldig klientliste"
+
+#: BitTorrent/btformats.py:111
+msgid "invalid announce interval"
+msgstr "ugyldig annonseringsintervall"
+
+#: BitTorrent/btformats.py:114
+msgid "invalid min announce interval"
+msgstr "ugyldig minste annonseringsintervall"
+
+#: BitTorrent/btformats.py:116
+msgid "invalid tracker id"
+msgstr "ugyldig sporerID"
+
+#: BitTorrent/btformats.py:119
+msgid "invalid peer count"
+msgstr "Ugyldig antall klienter"
+
+#: BitTorrent/btformats.py:122
+msgid "invalid seed count"
+msgstr "Ygyldig antall frø"
+
+#: BitTorrent/btformats.py:125
+msgid "invalid \"last\" entry"
+msgstr "ugyldig \"siste\"-verdi"
 
 #: BitTorrent/track.py:40
 msgid "Port to listen on."
@@ -1467,10 +2768,6 @@ msgstr "Funksjonen \"get\" er ikke tilgjengelig hos denne sporeren."
 msgid "Requested download is not authorized for use with this tracker."
 msgstr "Forespurt nedlasting er ikke autorisert til å bruke denne sporeren."
 
-#: BitTorrent/track.py:850 btlaunchmanycurses.py:287
-msgid "error: "
-msgstr "feil:"
-
 #: BitTorrent/track.py:851
 msgid "run with no arguments for parameter explanations"
 msgstr "Kjør uten argumenter for forklaring på parametrene."
@@ -1479,1285 +2776,47 @@ msgstr "Kjør uten argumenter for forklaring på parametrene."
 msgid "# Shutting down: "
 msgstr "# Avslutter:"
 
-#: btdownloadcurses.py:45 btlaunchmanycurses.py:39
-msgid "Textmode GUI initialization failed, cannot proceed."
-msgstr ""
-"Oppstart av teksbasert grafisk brukergrensesnitt feilet, kan ikke fortsette."
+#~ msgid "Can't have both --responsefile and non-option arguments"
+#~ msgstr "Kan ikke ha både --responsefile og argumenter "
 
-#: btdownloadcurses.py:47 btlaunchmanycurses.py:41
-msgid ""
-"This download interface requires the standard Python module \"curses\", "
-"which is unfortunately not available for the native Windows port of Python. "
-"It is however available for the Cygwin port of Python, running on all Win32 "
-"systems (www.cygwin.com)."
-msgstr ""
-"Denne nedlastingen krever Pythonmodulen \"curses\", som dessverre ikke er "
-"tilgjengelig for Windowsversjonen av Python.  Den er derimot tilgjengelig "
-"for Cygwinversjonen (www.cygwin.com) av Python, som kjører på alle "
-"win32systemer."
+#~ msgid "file the server response was stored in, alternative to url"
+#~ msgstr "Filen tjenersvaret ble lagret i, alternativ til URL."
 
-#: btdownloadcurses.py:52 btlaunchmanycurses.py:46
-msgid "You may still use \"btdownloadheadless.py\" to download."
-msgstr "Du kan fortsatt bruke \"btdownloadheadless.py\" til nedlasting."
+#~ msgid "url to get file from, alternative to responsefile"
+#~ msgstr "URL å hente fil fra, alternativ til svarfil"
 
-#: btdownloadcurses.py:57 btdownloadheadless.py:39
-msgid "download complete!"
-msgstr "Nedlasting ferdig!"
+#~ msgid "must have responsefile as arg or parameter, not both"
+#~ msgstr "Du må ha responsfil som enten argument eller parameter, ikke begge."
 
-#: btdownloadcurses.py:62 btdownloadheadless.py:44
-msgid "<unknown>"
-msgstr "<ukjent>"
+#~ msgid "_Files/directories"
+#~ msgstr "_Filer_mapper"
 
-#: btdownloadcurses.py:65 btdownloadheadless.py:47
-#, python-format
-msgid "finishing in %d:%02d:%02d"
-msgstr "Ferdig om %d:%02d:%02d"
+#~ msgid "rate: %s"
+#~ msgstr "Forhold: %s"
 
-#: btdownloadcurses.py:151
-msgid "file:"
-msgstr "fil:"
+#~ msgid "Maximum upload "
+#~ msgstr "Maksimum opplasting"
 
-#: btdownloadcurses.py:152
-msgid "size:"
-msgstr "Størrelse:"
+#~ msgid "Download folder:"
+#~ msgstr "Nedlastingsmappe:"
 
-#: btdownloadcurses.py:153
-msgid "dest:"
-msgstr "mål:"
+#~ msgid "Default:"
+#~ msgstr "Standard:"
 
-#: btdownloadcurses.py:154
-msgid "progress:"
-msgstr "fremgang:"
+#~ msgid "Ask where to save each download"
+#~ msgstr "Spør om nedlastingsmappe for hver nedlasting."
 
-#: btdownloadcurses.py:155
-msgid "status:"
-msgstr "status:"
+#~ msgid "Download "
+#~ msgstr "Nedlasting"
 
-#: btdownloadcurses.py:156
-msgid "dl speed:"
-msgstr "nedl. hastighet:"
+#~ msgid "Upload "
+#~ msgstr "Nedlasting"
 
-#: btdownloadcurses.py:157
-msgid "ul speed:"
-msgstr "oppl. hastighet:"
+#~ msgid "Got Accept-Encoding: "
+#~ msgstr "Fikk aksept-koding:"
 
-#: btdownloadcurses.py:158
-msgid "sharing:"
-msgstr "deler:"
-
-#: btdownloadcurses.py:159
-msgid "seeds:"
-msgstr "frø:"
-
-#: btdownloadcurses.py:160
-msgid "peers:"
-msgstr "klienter:"
-
-#: btdownloadcurses.py:169 btdownloadheadless.py:94
-msgid "download succeeded"
-msgstr "Vellykket nedlasting"
-
-#: btdownloadcurses.py:213 btdownloadheadless.py:128
-#, python-format
-msgid "oo  (%.1f MB up / %.1f MB down)"
-msgstr "oo (%.1f MB opp / %.1f MB ned)"
-
-#: btdownloadcurses.py:216 btdownloadheadless.py:131
-#, python-format
-msgid "%.3f  (%.1f MB up / %.1f MB down)"
-msgstr "%.3f (%.1f MB opp / %.1f MB ned)"
-
-#: btdownloadcurses.py:222
-#, python-format
-msgid "%d seen now, plus %d distributed copies(%s)"
-msgstr "%d synlige nå, plus %d distribuerte kopier (%s)"
-
-#: btdownloadcurses.py:227 btdownloadheadless.py:142
-#, python-format
-msgid "%d distributed copies (next: %s)"
-msgstr "%d distribuerte kopier (neste: %s)"
-
-#: btdownloadcurses.py:249
-msgid "error(s):"
-msgstr "feil:"
-
-#: btdownloadcurses.py:258
-msgid "error:"
-msgstr "feil:"
-
-#: btdownloadcurses.py:261
-msgid ""
-"  #     IP                 Upload           Download     Completed  Speed"
-msgstr ""
-"  #     IP                 Opp              Ned          Ferdig      "
-"Hastighet"
-
-#: btdownloadcurses.py:306
-#, python-format
-msgid "downloading %d pieces, have %d fragments, %d of %d pieces completed"
-msgstr "laster ned %d deler, har %d biter, %d av %d deler ferdig"
-
-#: btdownloadcurses.py:336 btdownloadheadless.py:219
-msgid "You cannot specify both --save_as and --save_in"
-msgstr "Du kan ikke spesifisere både --save_as og --save_in"
-
-#: btdownloadcurses.py:404 btdownloadheadless.py:287
-msgid "must have responsefile as arg or parameter, not both"
-msgstr "Du må ha responsfil som enten argument eller parameter, ikke begge."
-
-#: btdownloadcurses.py:417 btdownloadheadless.py:300
-msgid "you must specify a .torrent file"
-msgstr "Du må oppgi en .torrentfil"
-
-#: btdownloadcurses.py:419 btdownloadheadless.py:302
-msgid "Error reading .torrent file: "
-msgstr "Feil ved lesing av .torrentfil:"
-
-#: btdownloadcurses.py:429
-msgid "These errors occurred during execution:"
-msgstr "Disse feilene oppstod under kjøring:"
-
-#: btdownloadgui.py:24 btmaketorrentgui.py:23
-msgid "Install Python 2.3 or greater"
-msgstr "Installér Python 2.3 eller nyere"
-
-#: btdownloadgui.py:38
-msgid "PyGTK 2.4 or newer required"
-msgstr "Krever PyGTK 2.4 eller nyere"
-
-#: btdownloadgui.py:104
-msgid "drag to reorder"
-msgstr "dra for å endre rekkefølge"
-
-#: btdownloadgui.py:105
-msgid "right-click for menu"
-msgstr "høyreklikk for meny"
-
-#: btdownloadgui.py:108
-#, python-format
-msgid "rate: %s"
-msgstr "Forhold: %s"
-
-#: btdownloadgui.py:111
-msgid "dialup"
-msgstr "oppringt"
-
-#: btdownloadgui.py:112
-msgid "DSL/cable 128k up"
-msgstr "DSL/kabel over 128k"
-
-#: btdownloadgui.py:113
-msgid "DSL/cable 256k up"
-msgstr "DSL/kabel over 256k"
-
-#: btdownloadgui.py:114
-msgid "DSL 768k up"
-msgstr "DSL over 768k"
-
-#: btdownloadgui.py:115
-msgid "T1"
-msgstr "T1"
-
-#: btdownloadgui.py:116
-msgid "T1/E1"
-msgstr "T1/E1"
-
-#: btdownloadgui.py:117
-msgid "E1"
-msgstr "E1"
-
-#: btdownloadgui.py:118
-msgid "T3"
-msgstr "T3"
-
-#: btdownloadgui.py:119
-msgid "OC3"
-msgstr "OC3"
-
-#: btdownloadgui.py:297
-msgid "Maximum upload "
-msgstr "Maksimum opplasting"
-
-#: btdownloadgui.py:310
-msgid "Temporarily stop all running torrents"
-msgstr "Stopp alle torrents midlertidig"
-
-#: btdownloadgui.py:311
-msgid "Resume downloading"
-msgstr "Fortsett nedlasting"
-
-#: btdownloadgui.py:350
-#, python-format
-msgid "New %s version available"
-msgstr "Ny %s versjon tilgjengelig"
-
-#: btdownloadgui.py:365
-#, python-format
-msgid "A newer version of %s is available.\n"
-msgstr "En nyere versjon av %s er tilgjengelig.\n"
-
-#: btdownloadgui.py:366
-#, python-format
-msgid "You are using %s, and the new version is %s.\n"
-msgstr "Du bruker %s, og den nye versjonen er %s.\n"
-
-#: btdownloadgui.py:367
-#, python-format
-msgid ""
-"You can always get the latest version from \n"
-"%s"
-msgstr ""
-"Du kan alltid få nyeste versjon fra \n"
-"%s"
-
-#: btdownloadgui.py:374 btdownloadgui.py:1789 btdownloadgui.py:1894
-msgid "Download _later"
-msgstr "Hent ned _senere"
-
-#: btdownloadgui.py:377 btdownloadgui.py:1753
-msgid "Download _now"
-msgstr "Hent ned _nå"
-
-#: btdownloadgui.py:383
-msgid "_Remind me later"
-msgstr "_Minn meg på det senere"
-
-#: btdownloadgui.py:415
-#, python-format
-msgid "About %s"
-msgstr "Om %s"
-
-#: btdownloadgui.py:430
-msgid "Beta"
-msgstr "Beta"
-
-#: btdownloadgui.py:432
-#, python-format
-msgid "Version %s"
-msgstr "Versjon %s"
-
-#: btdownloadgui.py:451
-msgid "Donate"
-msgstr "Donér"
-
-#: btdownloadgui.py:471
-#, python-format
-msgid "%s Activity Log"
-msgstr "%s aktivitetslogg"
-
-#: btdownloadgui.py:528
-msgid "Save log in:"
-msgstr "Lagre logg i:"
-
-#: btdownloadgui.py:539
-msgid "log saved"
-msgstr "Loggen er lagret"
-
-#: btdownloadgui.py:598
-msgid "log cleared"
-msgstr "Loggen er tømt"
-
-#: btdownloadgui.py:610
-#, python-format
-msgid "%s Settings"
-msgstr "%s innstillinger"
-
-#: btdownloadgui.py:621
-msgid "Saving"
-msgstr "Lagrer"
-
-#: btdownloadgui.py:623
-msgid "Download folder:"
-msgstr "Nedlastingsmappe:"
-
-#: btdownloadgui.py:630
-msgid "Default:"
-msgstr "Standard:"
-
-#: btdownloadgui.py:637
-msgid "Change..."
-msgstr "Endre..."
-
-#: btdownloadgui.py:641
-msgid "Ask where to save each download"
-msgstr "Spør om nedlastingsmappe for hver nedlasting."
-
-#: btdownloadgui.py:655
-msgid "Downloading"
-msgstr "Laster ned"
-
-#: btdownloadgui.py:657
-msgid "Starting additional torrents manually:"
-msgstr "Starter flere torrents manuelt:"
-
-#: btdownloadgui.py:666
-msgid "Always stops the _last running torrent"
-msgstr "Stopp alltid den _siste kjørende torrenten"
-
-#: btdownloadgui.py:672
-msgid "Always starts the torrent in _parallel"
-msgstr "Start alltid torrenten _parallelt"
-
-#: btdownloadgui.py:678
-msgid "_Asks each time"
-msgstr "Spør _hver gang"
-
-#: btdownloadgui.py:692
-msgid "Seed completed torrents:"
-msgstr "Så frø til ferdige torrents:"
-
-#: btdownloadgui.py:700 btdownloadgui.py:729
-msgid "until share ratio reaches "
-msgstr "til forholdet mellom opplasting og nedlasting når "
-
-#: btdownloadgui.py:706
-msgid " percent, or"
-msgstr " prosent, eller"
-
-#: btdownloadgui.py:712
-msgid "for "
-msgstr "i "
-
-#: btdownloadgui.py:718
-msgid " minutes, whichever comes first."
-msgstr " minutter, ettersom hva som kommer først."
-
-#: btdownloadgui.py:725
-msgid "Seed last completed torrent:"
-msgstr "Så frø til siste ferdige torrent:"
-
-#: btdownloadgui.py:735
-msgid " percent."
-msgstr "prosent."
-
-#: btdownloadgui.py:741
-msgid "\"0 percent\" means seed forever."
-msgstr "\"0 prosent\" betyr så frø for alltid."
-
-#: btdownloadgui.py:750
-msgid "Network"
-msgstr "Nettverk"
-
-#: btdownloadgui.py:752
-msgid "Look for available port:"
-msgstr "Se etter ledig port:"
-
-#: btdownloadgui.py:755
-msgid "starting at port: "
-msgstr "Starter på port:"
-
-#: btdownloadgui.py:768
-msgid "IP to report to the tracker:"
-msgstr "IP som rapporteres til tracker:"
-
-#: btdownloadgui.py:773
-msgid ""
-"(Has no effect unless you are on the\n"
-"same local network as the tracker)"
-msgstr ""
-"(Har ingen effekt hvis du ikke er på samme\n"
-"lokalnett som trackeren.)"
-
-#: btdownloadgui.py:778
-msgid "Potential Windows TCP stack fix"
-msgstr "Potensiell retting av Windows TCP stack"
-
-#: btdownloadgui.py:792
-msgid ""
-"Progress bar text is always black\n"
-"(requires restart)"
-msgstr ""
-"Fremdriftsindikatoren er alltid svart\n"
-"(Programmet må startes på nytt)"
-
-#: btdownloadgui.py:805
-msgid "Misc"
-msgstr "Diverse"
-
-#: btdownloadgui.py:812
-#, python-format
-msgid ""
-"WARNING: Changing these settings can\n"
-"prevent %s from functioning correctly."
-msgstr ""
-"ADVARSEL: Endring av disse innstillingene kan\n"
-"hindre at %s fungerer som det skal."
-
-#: btdownloadgui.py:820
-msgid "Option"
-msgstr "Valg"
-
-#: btdownloadgui.py:825
-msgid "Value"
-msgstr "Verdi"
-
-#: btdownloadgui.py:832
-msgid "Advanced"
-msgstr "Avansert"
-
-#: btdownloadgui.py:841
-msgid "Choose default download directory"
-msgstr "Velg standard nedlastingsmappe"
-
-#: btdownloadgui.py:902
-#, python-format
-msgid "Files in \"%s\""
-msgstr "Filer i \"%s\""
-
-#: btdownloadgui.py:911
-msgid "Apply"
-msgstr "Bruk"
-
-#: btdownloadgui.py:912
-msgid "Allocate"
-msgstr "Tilegn"
-
-#: btdownloadgui.py:913
-msgid "Never download"
-msgstr "Aldri last ned"
-
-#: btdownloadgui.py:914
-msgid "Decrease"
-msgstr "Reduser"
-
-#: btdownloadgui.py:915
-msgid "Increase"
-msgstr "Øk"
-
-#: btdownloadgui.py:925 btlaunchmanycurses.py:142
-msgid "Filename"
-msgstr "Filnavn"
-
-#: btdownloadgui.py:925
-msgid "Length"
-msgstr "Lengde"
-
-#: btdownloadgui.py:925
-msgid "%"
-msgstr "%"
-
-#: btdownloadgui.py:1089
-#, python-format
-msgid "Peers for \"%s\""
-msgstr "Klienter for \"%s\""
-
-#: btdownloadgui.py:1095
-msgid "IP address"
-msgstr "IPadresse"
-
-#: btdownloadgui.py:1095
-msgid "Client"
-msgstr "Klient"
-
-#: btdownloadgui.py:1095
-msgid "Connection"
-msgstr "Tilkobling"
-
-#: btdownloadgui.py:1095
-msgid "KB/s down"
-msgstr "kB/s ned"
-
-#: btdownloadgui.py:1095
-msgid "KB/s up"
-msgstr "kB/s opp"
-
-#: btdownloadgui.py:1095
-msgid "MB downloaded"
-msgstr "MB lastet ned"
-
-#: btdownloadgui.py:1095
-msgid "MB uploaded"
-msgstr "MB lastet opp"
-
-# Kommer opp feil i poEdit...
-# poEdit doesn't like this one...
-#: btdownloadgui.py:1095
-#, python-format
-msgid "% complete"
-msgstr "% ferdig"
-
-#: btdownloadgui.py:1095
-msgid "KB/s est. peer download"
-msgstr "KB/s beregnet klientnedlastingshastighet"
-
-#: btdownloadgui.py:1101
-msgid "Peer ID"
-msgstr "KlientID"
-
-#: btdownloadgui.py:1104 btdownloadgui.py:1107
-msgid "Interested"
-msgstr "Interessert"
-
-#: btdownloadgui.py:1104 btdownloadgui.py:1107
-msgid "Choked"
-msgstr "Overbelastet"
-
-#: btdownloadgui.py:1104
-msgid "Snubbed"
-msgstr "Døde"
-
-#: btdownloadgui.py:1107
-msgid "Optimistic upload"
-msgstr "optimistisk opplasting"
-
-#: btdownloadgui.py:1188
-msgid "remote"
-msgstr "fjern"
-
-#: btdownloadgui.py:1188
-msgid "local"
-msgstr "lokal"
-
-#: btdownloadgui.py:1224
-msgid "bad peer"
-msgstr "klientfeil"
-
-#: btdownloadgui.py:1234
-#, python-format
-msgid "%d ok"
-msgstr "%d ok"
-
-#: btdownloadgui.py:1235
-#, python-format
-msgid "%d bad"
-msgstr "%d ødelagt"
-
-#: btdownloadgui.py:1237
-msgid "banned"
-msgstr "bannlyst"
-
-#: btdownloadgui.py:1239
-msgid "ok"
-msgstr "ok"
-
-#: btdownloadgui.py:1275
-#, python-format
-msgid "Info for \"%s\""
-msgstr "Informasjon for \"%s\""
-
-#: btdownloadgui.py:1293
-msgid "Torrent name:"
-msgstr "Torrentnavn:"
-
-#: btdownloadgui.py:1298
-msgid "(trackerless torrent)"
-msgstr "(sporerløs torrent)"
-
-#: btdownloadgui.py:1301
-msgid "Announce url:"
-msgstr "annonseringsURL:"
-
-#: btdownloadgui.py:1305
-msgid ", in one file"
-msgstr ", i en fil"
-
-#: btdownloadgui.py:1307
-#, python-format
-msgid ", in %d files"
-msgstr ", i %d filer"
-
-#: btdownloadgui.py:1308
-msgid "Total size:"
-msgstr "Total størrelse:"
-
-#: btdownloadgui.py:1315
-msgid "Pieces:"
-msgstr "Deler: "
-
-#: btdownloadgui.py:1317
-msgid "Info hash:"
-msgstr "Infohash:"
-
-#: btdownloadgui.py:1327
-msgid "Save in:"
-msgstr "Lagre i:"
-
-#: btdownloadgui.py:1331
-msgid "File name:"
-msgstr "Filnavn:"
-
-#: btdownloadgui.py:1357
-msgid "Open directory"
-msgstr "Åpne mappe"
-
-#: btdownloadgui.py:1363
-msgid "Show file list"
-msgstr "Vis filliste"
-
-#: btdownloadgui.py:1458
-msgid "Torrent info"
-msgstr "Torrentinformasjon"
-
-#: btdownloadgui.py:1467 btdownloadgui.py:1890
-msgid "Remove torrent"
-msgstr "Fjern torrent"
-
-#: btdownloadgui.py:1471
-msgid "Abort torrent"
-msgstr "Avslutt torrent"
-
-#: btdownloadgui.py:1528
-#, python-format
-msgid ", will seed for %s"
-msgstr ", vil så frø i %s"
-
-#: btdownloadgui.py:1530
-msgid ", will seed indefinitely."
-msgstr ", vil så frø uendelig."
-
-#: btdownloadgui.py:1533
-#, python-format
-msgid "Done, share ratio: %d%%"
-msgstr "Ferdig, delingsforhold: %d%%"
-
-#: btdownloadgui.py:1536
-#, python-format
-msgid "Done, %s uploaded"
-msgstr "Ferdig, %s lastet opp"
-
-#: btdownloadgui.py:1568
-msgid "Torrent _info"
-msgstr "Torrent_informasjon"
-
-#: btdownloadgui.py:1569
-msgid "_Open directory"
-msgstr "_Åpne mappe"
-
-#: btdownloadgui.py:1570
-msgid "_Change location"
-msgstr "_Endre lagringssted"
-
-#: btdownloadgui.py:1572
-msgid "_File list"
-msgstr "_Filliste"
-
-#: btdownloadgui.py:1646
-#, python-format
-msgid "Are you sure you want to remove \"%s\"?"
-msgstr "Er du sikker på at du vil fjerne \"%s\"?"
-
-#: btdownloadgui.py:1649
-#, python-format
-msgid "Your share ratio for this torrent is %d%%. "
-msgstr "Delingsforholdet ditt for denne torrenten er %d%%."
-
-#: btdownloadgui.py:1651
-#, python-format
-msgid "You have uploaded %s to this torrent. "
-msgstr "Du har lastet opp %s til denne torrenten."
-
-#: btdownloadgui.py:1654
-msgid "Remove this torrent?"
-msgstr "Fjern denne torrenten?"
-
-#: btdownloadgui.py:1673
-msgid "Finished"
-msgstr "Ferdig"
-
-#: btdownloadgui.py:1674
-msgid "drag into list to seed"
-msgstr "dra inn i listen for å så frø"
-
-#: btdownloadgui.py:1677
-msgid "Failed"
-msgstr "Feilet"
-
-#: btdownloadgui.py:1678
-msgid "drag into list to resume"
-msgstr "dra inn i listen for å fortsette"
-
-#: btdownloadgui.py:1687
-msgid "Re_start"
-msgstr "Gjen_start"
-
-#: btdownloadgui.py:1688 btdownloadgui.py:1759 btdownloadgui.py:1795
-#: btdownloadgui.py:1900
-msgid "_Remove"
-msgstr "F_jern"
-
-#: btdownloadgui.py:1738
-msgid "Waiting"
-msgstr "Venter"
-
-#: btdownloadgui.py:1758 btdownloadgui.py:1794 btdownloadgui.py:1899
-msgid "_Finish"
-msgstr "_Gjør ferdig"
-
-#: btdownloadgui.py:1761 btdownloadgui.py:1790 btdownloadgui.py:1895
-msgid "_Abort"
-msgstr "_Avbryt"
-
-#: btdownloadgui.py:1776
-msgid "Paused"
-msgstr "Pause"
-
-#: btdownloadgui.py:1817
-msgid "Running"
-msgstr "Kjører"
-
-#: btdownloadgui.py:1841
-#, python-format
-msgid "Current up: %s"
-msgstr "Nåværende opp: %s"
-
-#: btdownloadgui.py:1842
-#, python-format
-msgid "Current down: %s"
-msgstr "Nåværende ned: %s"
-
-#: btdownloadgui.py:1848
-#, python-format
-msgid "Previous up: %s"
-msgstr "Forrige opp: %s"
-
-#: btdownloadgui.py:1849
-#, python-format
-msgid "Previous down: %s"
-msgstr "Forrige ned: %s"
-
-#: btdownloadgui.py:1855
-#, python-format
-msgid "Share ratio: %0.02f%%"
-msgstr "Delingsforhold: %0.02f%%"
-
-#: btdownloadgui.py:1858
-#, python-format
-msgid "%s peers, %s seeds. Totals from tracker: %s"
-msgstr "%s klienter, %s frø.  Totaler fra sporer: %s"
-
-#: btdownloadgui.py:1862
-#, python-format
-msgid "Distributed copies: %d; Next: %s"
-msgstr "Distribuerte kopier: %d; Neste: %s"
-
-#: btdownloadgui.py:1865
-#, python-format
-msgid "Pieces: %d total, %d complete, %d partial, %d active (%d empty)"
-msgstr "Deler: %d totalt, %d ferdig, %d delvis, %d aktive (%d tomme)"
-
-#: btdownloadgui.py:1869
-#, python-format
-msgid "%d bad pieces + %s in discarded requests"
-msgstr "%d ødelagte deler + %s i forkastede forespørsler"
-
-#: btdownloadgui.py:1903
-msgid "_Peer list"
-msgstr "_Klientliste"
-
-#: btdownloadgui.py:1962
-msgid "Done"
-msgstr "Ferdig"
-
-#: btdownloadgui.py:1977
-#, python-format
-msgid "%.1f%% done, %s remaining"
-msgstr "%.1f%% ferdig, %s gjenstår"
-
-#: btdownloadgui.py:1985
-msgid "Download "
-msgstr "Nedlasting"
-
-#: btdownloadgui.py:1987
-msgid "Upload "
-msgstr "Nedlasting"
-
-#: btdownloadgui.py:2002
-msgid "NA"
-msgstr "IT"
-
-#: btdownloadgui.py:2343
-#, python-format
-msgid "%s started"
-msgstr "%s startet"
-
-#: btdownloadgui.py:2356
-msgid "_Open torrent file"
-msgstr "_Åpne torrentfil"
-
-#: btdownloadgui.py:2357
-msgid "Make _new torrent"
-msgstr "Lag _ny torrent"
-
-#: btdownloadgui.py:2360
-msgid "_Pause/Play"
-msgstr "_Pause/Play"
-
-#: btdownloadgui.py:2362
-msgid "_Quit"
-msgstr "_Avslutt"
-
-#: btdownloadgui.py:2364
-msgid "Show/Hide _finished torrents"
-msgstr "Vis/Gjem _ferdige torrents"
-
-#: btdownloadgui.py:2366
-msgid "_Resize window to fit"
-msgstr "_Endre størrelsen på vinduet til å passe"
-
-#: btdownloadgui.py:2368
-msgid "_Log"
-msgstr "_Logg"
-
-#: btdownloadgui.py:2371
-msgid "_Settings"
-msgstr "Opp_sett"
-
-#: btdownloadgui.py:2374 btdownloadgui.py:2390
-msgid "_Help"
-msgstr "_Hjelp"
-
-#: btdownloadgui.py:2376
-msgid "_About"
-msgstr "_Om"
-
-#: btdownloadgui.py:2377
-msgid "_Donate"
-msgstr "_Donér"
-
-#: btdownloadgui.py:2381
-msgid "_File"
-msgstr "_Fil"
-
-#: btdownloadgui.py:2386
-msgid "_View"
-msgstr "_Vis"
-
-#: btdownloadgui.py:2533
-msgid "(stopped)"
-msgstr "(stoppet)"
-
-#: btdownloadgui.py:2545
-msgid "(multiple)"
-msgstr "(flere)"
-
-#: btdownloadgui.py:2659
-#, python-format
-msgid ""
-"%s help is at \n"
-"%s\n"
-"Would you like to go there now?"
-msgstr ""
-"Hjelp til %s er på \n"
-"%s\n"
-"Vil du gå dit nå?"
-
-#: btdownloadgui.py:2662
-msgid "Visit help web page?"
-msgstr "Gå til hjelpesiden?"
-
-#: btdownloadgui.py:2698
-msgid "There is one finished torrent in the list. "
-msgstr "Det er en fullført torrent i listen."
-
-#: btdownloadgui.py:2699
-msgid "Do you want to remove it?"
-msgstr "Vil du fjerne den?"
-
-#: btdownloadgui.py:2701
-#, python-format
-msgid "There are %d finished torrents in the list. "
-msgstr "Det er %d fullførte torrents i listen."
-
-#: btdownloadgui.py:2702
-msgid "Do you want to remove all of them?"
-msgstr "Vil du fjerne alle?"
-
-#: btdownloadgui.py:2704
-msgid "Remove all finished torrents?"
-msgstr "Fjerne alle fullførte torrents?"
-
-#: btdownloadgui.py:2711
-msgid "No finished torrents"
-msgstr "Ingen fullførte torrents"
-
-#: btdownloadgui.py:2712
-msgid "There are no finished torrents to remove."
-msgstr "Det er ingen fullførte torrents å fjerne."
-
-#: btdownloadgui.py:2756
-msgid "Open torrent:"
-msgstr "Åpne torrent:"
-
-#: btdownloadgui.py:2789
-msgid "Change save location for "
-msgstr "Endre lagringssted for "
-
-#: btdownloadgui.py:2815
-msgid "File exists!"
-msgstr "Filen eksisterer!"
-
-#: btdownloadgui.py:2816
-#, python-format
-msgid "\"%s\" already exists. Do you want to choose a different file name?"
-msgstr "\"%s\" eksisterer allerede.  Vil du lagre under et annet navn?"
-
-#: btdownloadgui.py:2834
-msgid "Save location for "
-msgstr "Lagringssted for "
-
-#: btdownloadgui.py:2944
-#, python-format
-msgid "(global message) : %s"
-msgstr "(global melding) : %s"
-
-#: btdownloadgui.py:2951
-#, python-format
-msgid "%s Error"
-msgstr "%s-feil"
-
-#: btdownloadgui.py:2957
-msgid "Multiple errors have occurred. Click OK to view the error log."
-msgstr "Det har oppstått flere feil.  Trykk OK for å se feilloggen."
-
-#: btdownloadgui.py:3087
-msgid "Stop running torrent?"
-msgstr "Stoppe kjørende torrent?"
-
-#: btdownloadgui.py:3088
-#, python-format
-msgid ""
-"You are about to start \"%s\". Do you want to stop the last running torrent "
-"as well?"
-msgstr ""
-"Du skal til å starte \"%s\".  Vil du stoppe den forrige kjørende torrenten "
-"også?"
-
-#: btdownloadgui.py:3098
-msgid "Have you donated?"
-msgstr "Har du donert?"
-
-#: btdownloadgui.py:3099
-#, python-format
-msgid "Welcome to the new version of %s. Have you donated?"
-msgstr "Velkommen til den nye versjonen av %s.  Har du donert?"
-
-#: btdownloadgui.py:3113
-msgid "Thanks!"
-msgstr "Takk!"
-
-#: btdownloadgui.py:3114
-msgid ""
-"Thanks for donating! To donate again, select \"Donate\" from the \"Help\" "
-"menu."
-msgstr ""
-"Takk for din donasjon! For å gi mer, velg \"Donér\" fra \"Hjelp\"menyen."
-
-#: btdownloadgui.py:3143
-msgid "Can't have both --responsefile and non-option arguments"
-msgstr "Kan ikke ha både --responsefile og argumenter "
-
-#: btdownloadgui.py:3173
-msgid "Temporary Internet Files"
-msgstr "Midlertidige internettfiler"
-
-#: btdownloadgui.py:3174
-#, python-format
-msgid ""
-"Could not read %s: %s. You are probably using a broken Internet Explorer "
-"version that passed BitTorrent a filename that doesn't exist. To work around "
-"the problem, try clearing your Temporary Internet Files or right-click the "
-"link and save the .torrent file to disk first."
-msgstr ""
-"Kunne ikke lese %s:  %s.  Du bruker kanskje en ødelagt versjon av Internet "
-"Explorer, som har gitt BitTorrent et filnavn som ikke eksisterer.  For å "
-"unngå problemet, prøv å slette midlertidige internettfiler eller høyreklikk "
-"på lenken og lagre .torrentfilen til disk først."
-
-#: btdownloadgui.py:3197
-#, python-format
-msgid "%s already running"
-msgstr "%s kjører allerede"
-
-#: btdownloadheadless.py:137
-#, python-format
-msgid "%d seen now, plus %d distributed copies (%s)"
-msgstr "%d synlig nå, plus %d distribuerte kopier (%s)"
-
-#: btdownloadheadless.py:144
-#, python-format
-msgid "%d seen now"
-msgstr "%d synlig nå"
-
-#: btdownloadheadless.py:147
-msgid "ERROR:\n"
-msgstr "FEIL:\n"
-
-#: btdownloadheadless.py:148
-msgid "saving:        "
-msgstr "lagrer:"
-
-#: btdownloadheadless.py:149
-msgid "percent done:  "
-msgstr "prosent ferdig:"
-
-#: btdownloadheadless.py:150
-msgid "time left:     "
-msgstr "gjenstående tid:"
-
-#: btdownloadheadless.py:151
-msgid "download to:   "
-msgstr "last ned til:"
-
-#: btdownloadheadless.py:152
-msgid "download rate: "
-msgstr "nedlastingshastighet:"
-
-#: btdownloadheadless.py:153
-msgid "upload rate:   "
-msgstr "opplastingshastighet:"
-
-#: btdownloadheadless.py:154
-msgid "share rating:  "
-msgstr "forhold mellom opp- og nedlasting:"
-
-#: btdownloadheadless.py:155
-msgid "seed status:   "
-msgstr "frø-status:"
-
-#: btdownloadheadless.py:156
-msgid "peer status:   "
-msgstr "klientstatus:"
-
-#: btlaunchmanycurses.py:59
-#, python-format
-msgid "ETA in %d:%02d:%02d"
-msgstr "Antatt ferdig om %d:%02d:%02d"
-
-#: btlaunchmanycurses.py:143
-msgid "Size"
-msgstr "Størrelse"
-
-#: btlaunchmanycurses.py:144
-msgid "Download"
-msgstr "Nedlastinger"
-
-#: btlaunchmanycurses.py:145
-msgid "Upload"
-msgstr "Opplastinger"
-
-#: btlaunchmanycurses.py:146 btlaunchmanycurses.py:239
-msgid "Totals:"
-msgstr "Totalt:"
-
-#: btlaunchmanycurses.py:205
-#, python-format
-msgid "    (%s) %s - %s peers %s seeds %s dist copies - %s up %s dn"
-msgstr "    (%s) %s - %s klienter %s frø %s distr. kopier - %s opp %s ned"
-
-#: btlaunchmanycurses.py:227 btlaunchmany.py:35
-msgid "no torrents"
-msgstr "ingen torrents"
-
-#: btlaunchmanycurses.py:265 btlaunchmany.py:49
-msgid "SYSTEM ERROR - EXCEPTION GENERATED"
-msgstr "SYSTEMFEIL - UNNTAK OPPSTÅTT"
-
-#: btlaunchmanycurses.py:285 btlaunchmany.py:64
-msgid "Warning: "
-msgstr "Advarsel:"
-
-#: btlaunchmanycurses.py:285 btlaunchmany.py:64
-msgid " is not a directory"
-msgstr " er ikke en mappe"
-
-#: btlaunchmanycurses.py:287
-msgid ""
-"\n"
-"run with no args for parameter explanations"
-msgstr ""
-"\n"
-"Kjør uten argumenter for forklaring på parametrene."
-
-#: btlaunchmanycurses.py:292 btlaunchmany.py:71
-msgid ""
-"\n"
-"EXCEPTION:"
-msgstr ""
-"\n"
-"UNNTAK:"
-
-#: btlaunchmany.py:66
-#, python-format
-msgid ""
-"error: %s\n"
-"run with no args for parameter explanations"
-msgstr ""
-"feil: %s\n"
-"Kjør uten argumenter for forklaring på parametrene."
-
-#: btmaketorrentgui.py:55
-#, python-format
-msgid "%s metafile creator %s"
-msgstr "%s metafilskaper %s"
-
-#: btmaketorrentgui.py:73
-msgid ""
-"Make .torrent metafiles for these files/directories:\n"
-"(Directories will become batch torrents)"
-msgstr ""
-"Lag .torrentfiler for disse filene/mappene:\n"
-"(Mapper blir til flerfilstorrents)"
-
-#: btmaketorrentgui.py:88
-msgid "_Files/directories"
-msgstr "_Filer_mapper"
-
-#: btmaketorrentgui.py:118
-msgid "Piece size:"
-msgstr "Delstørrelse:"
-
-#: btmaketorrentgui.py:135
-msgid "Use _tracker:"
-msgstr "Bruk _sporer:"
-
-#: btmaketorrentgui.py:165
-msgid "Use _DHT"
-msgstr "Bruk _DHT"
-
-#: btmaketorrentgui.py:171
-msgid "Nodes (optional):"
-msgstr "Noder (valgfritt):"
-
-#: btmaketorrentgui.py:203
-msgid "Comments:"
-msgstr "Kommentarer:"
-
-#: btmaketorrentgui.py:232
-msgid "Make"
-msgstr "Lag"
-
-#: btmaketorrentgui.py:405
-msgid "_Host"
-msgstr "_Vert"
-
-#: btmaketorrentgui.py:412
-msgid "_Port"
-msgstr "_Port"
-
-#: btmaketorrentgui.py:505
-msgid "Building torrents..."
-msgstr "Lager torrents..."
-
-#: btmaketorrentgui.py:513
-msgid "Checking file sizes..."
-msgstr "Kontrollerer filstørrelser..."
-
-#: btmaketorrentgui.py:531
-msgid "Start seeding"
-msgstr "Begynn å så frø"
-
-#: btmaketorrentgui.py:551
-msgid "building "
-msgstr "bygger opp"
-
-#: btmaketorrentgui.py:571
-msgid "Done."
-msgstr "Ferdig."
-
-#: btmaketorrentgui.py:572
-msgid "Done building torrents."
-msgstr "Ferdig med å lage torrents"
-
-#: btmaketorrentgui.py:580
-msgid "Error!"
-msgstr "Feil!"
-
-#: btmaketorrentgui.py:581
-msgid "Error building torrents: "
-msgstr "Feil mens torrents ble laget:"
-
-#: btmaketorrent.py:29
-msgid "optional human-readable comment to put in .torrent"
-msgstr "Valgfri leselig kommentar å legge i .torrentfilen"
-
-#: btmaketorrent.py:31
-msgid "optional target file for the torrent"
-msgstr "Valgfri målfil for torrenten"
-
-#: btreannounce.py:22
-#, python-format
-msgid "Usage: %s TRACKER_URL [TORRENTFILE [TORRENTFILE ... ] ]"
-msgstr "Bruk: %s SPORER_URL [TORRENTFIL [TORRENTFIL ... ] ]"
-
-#: btreannounce.py:31
-#, python-format
-msgid "old announce for %s: %s"
-msgstr "gammel annonsering av %s: %s"
-
-#: btrename.py:26
-#, python-format
-msgid "%s %s - change the suggested filename in a .torrent file"
-msgstr "%s %s - endre det foreslåtte navnet i en .torrentfil"
-
-#: btrename.py:31
-#, python-format
-msgid "Usage: %s TORRENTFILE NEW_FILE_NAME"
-msgstr "Bruk: %s TORRENTFIL NYTT_FILNAVN"
-
-#: btrename.py:38
-#, python-format
-msgid "old filename: %s"
-msgstr "gammelt filnavn: %s"
-
-#: btrename.py:40
-#, python-format
-msgid "new filename: %s"
-msgstr "nytt filnavn: %s"
-
-#: btrename.py:45
-msgid "done."
-msgstr "ferdig."
-
-#: btshowmetainfo.py:26
-#, python-format
-msgid "%s %s - decode %s metainfo files"
-msgstr "%s %s - dekod %s metainformasjonsfiler"
-
-#: btshowmetainfo.py:30
-#, python-format
-msgid "Usage: %s [TORRENTFILE [TORRENTFILE ... ] ]"
-msgstr "Bruk: %s [TORRENTFIL [TORRENTFIL ... ] ]"
-
-#: btshowmetainfo.py:42
-#, python-format
-msgid "metainfo file.: %s"
-msgstr "metainfofil.: %s"
-
-#: btshowmetainfo.py:43
-#, python-format
-msgid "info hash.....: %s"
-msgstr "info hash.....: %s"
-
-#: btshowmetainfo.py:47
-#, python-format
-msgid "file name.....: %s"
-msgstr "filnavn.......: %s"
-
-#: btshowmetainfo.py:49
-msgid "file size.....:"
-msgstr "filstørrelse..:"
-
-#: btshowmetainfo.py:52
-#, python-format
-msgid "directory name: %s"
-msgstr "mappenavn.....: %s"
-
-#: btshowmetainfo.py:53
-msgid "files.........: "
-msgstr "filer.........:"
-
-#: btshowmetainfo.py:63
-msgid "archive size..:"
-msgstr "arkivstørrelse:"
-
-#: btshowmetainfo.py:67
-#, python-format
-msgid "announce url..: %s"
-msgstr "annonseringsURL: %s"
-
-#: btshowmetainfo.py:68
-msgid "comment.......: \n"
-msgstr "kommentar.....: \n"
+#~ msgid "Could not delete cached metainfo file:"
+#~ msgstr "Kunne ikke slette cachet metainfofil:"
 
 #~ msgid "Choose existing folder"
 #~ msgstr "Velg eksisterende mappe"

@@ -18,6 +18,8 @@ from sha import sha
 from util import *
 from threading import Thread
 from socket import gethostbyname
+from const import *
+from random import sample
 
 TOKEN_UPDATE_INTERVAL = 5 * 60 # five minutes
 NUM_PEERS = 50 # number of peers to return
@@ -35,6 +37,8 @@ class UTNode(knode.KNodeBase):
         except:
             token = None
         if token:
+            assert type(token) == type("")
+            assert len(token) == 20
             df = self.conn().sendRequest('announce_peer', {'info_hash':info_hash,
                                                          'port':port,
                                                          'id':khashmir_id,
@@ -76,13 +80,13 @@ class UTKhashmir(khashmir.KhashmirBase):
     def expire_cached_tokens(self, loop=False):
         self.tcache.expire(time() - TOKEN_UPDATE_INTERVAL)
         if loop:
-            self.rawserver.add_task(self.expire_cached_tokens, TOKEN_UPDATE_INTERVAL, (True,))
+            self.rawserver.external_add_task(self.expire_cached_tokens, TOKEN_UPDATE_INTERVAL, (True,))
                                 
     def gen_token(self, loop=False):
         self.last_token = self.cur_token
         self.cur_token = sha(newID())
         if loop:
-            self.rawserver.add_task(self.gen_token, TOKEN_UPDATE_INTERVAL, (True,))
+            self.rawserver.external_add_task(self.gen_token, TOKEN_UPDATE_INTERVAL, (True,))
 
     def get_token(self, host, port):
         x = self.cur_token.copy()
@@ -116,12 +120,6 @@ class UTKhashmir(khashmir.KhashmirBase):
 
     def _got_host(self, host, port, callback):
         khashmir.KhashmirBase.addContact(self, host, port, callback)
-        
-    def krpc_find_node(self, target, id, _krpc_sender):
-        d = khashmir.KhashmirBase.krpc_find_node(self, target, id, _krpc_sender)
-        d['token'] = self.get_token(_krpc_sender[0], _krpc_sender[1])
-        return d
-            
 
     def announcePeer(self, info_hash, port, callback=None):
         """ stores the value for key in the global table, returns immediately, no status 
@@ -135,7 +133,7 @@ class UTKhashmir(khashmir.KhashmirBase):
                     pass
                 response=_storedValueHandler
             action = UTStoreValue(self, key, value, response, self.rawserver.add_task, "announcePeer")
-            self.rawserver.add_task(action.goWithNodes, 0, (nodes,))
+            self.rawserver.external_add_task(action.goWithNodes, 0, (nodes,))
             
         # this call is asynch
         self.findNode(info_hash, _storeValueForKey)
@@ -164,6 +162,27 @@ class UTKhashmir(khashmir.KhashmirBase):
             callback will be called with a list of values for each peer that returns unique values
             final callback will be an empty list - probably should change to 'more coming' arg
         """
+        nodes = self.table.findNodes(info_hash, invalid=True)
+        l = [x for x in nodes if x.invalid]
+        if len(l) > 4:
+            nodes = sample(l , 4) + self.table.findNodes(info_hash, invalid=False)[:4]
+        
+        # get locals
+        if searchlocal:
+            l = self.retrieveValues(info_hash)
+            if len(l) > 0:
+                self.rawserver.external_add_task(callback, 0, ([reducePeers(l)],))
+        else:
+            l = []
+        # create our search state
+        state = GetValue(self, info_hash, callback, self.rawserver.add_task, 'getPeers')
+        self.rawserver.external_add_task(state.goWithNodes, 0, (nodes, l))
+
+    def getPeersAndAnnounce(self, info_hash, port, callback, searchlocal = 1):
+        """ returns the values found for key in global table
+            callback will be called with a list of values for each peer that returns unique values
+            final callback will be an empty list - probably should change to 'more coming' arg
+        """
         nodes = self.table.findNodes(info_hash, invalid=False)
         nodes += self.table.findNodes(info_hash, invalid=True)
         
@@ -171,12 +190,13 @@ class UTKhashmir(khashmir.KhashmirBase):
         if searchlocal:
             l = self.retrieveValues(info_hash)
             if len(l) > 0:
-                self.rawserver.add_task(callback, 0, ([reducePeers(l)],))
+                self.rawserver.external_add_task(callback, 0, ([reducePeers(l)],))
         else:
             l = []
         # create our search state
-        state = GetValue(self, info_hash, callback, self.rawserver.add_task, 'getPeers')
-        self.rawserver.add_task(state.goWithNodes, 0, (nodes, l))
+        x = lambda a: a
+        state = GetAndStore(self, info_hash, port, callback, x, self.rawserver.add_task, 'getPeers', "announcePeer")
+        self.rawserver.external_add_task(state.goWithNodes, 0, (nodes, l))
 
     def krpc_get_peers(self, info_hash, id, _krpc_sender):
         sender = {'id' : id}

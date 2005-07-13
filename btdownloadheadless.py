@@ -25,7 +25,7 @@ from cStringIO import StringIO
 
 from BitTorrent.download import Feedback, Multitorrent
 from BitTorrent.defaultargs import get_defaults
-from BitTorrent.parseargs import printHelp
+from BitTorrent.parseargs import printHelp, open_arg
 from BitTorrent.zurllib import urlopen
 from BitTorrent.bencode import bdecode
 from BitTorrent.ConvertedMetainfo import ConvertedMetainfo
@@ -276,30 +276,27 @@ if __name__ == '__main__':
     uiname = 'btdownloadheadless'
     defaults = get_defaults(uiname)
 
+    metainfo = None
     if len(sys.argv) <= 1:
         printHelp(uiname, defaults)
         sys.exit(1)
     try:
         config, args = configfile.parse_configuration_and_args(defaults,
-                                      uiname, sys.argv[1:], 0, 1)
-        if args:
-            if config['responsefile']:
-                raise BTFailure, _("must have responsefile as arg or "
-                                   "parameter, not both")
-            config['responsefile'] = args[0]
-        try:
-            if config['responsefile']:
-                h = file(config['responsefile'], 'rb')
-                metainfo = h.read()
-                h.close()
-            elif config['url']:
-                h = urlopen(config['url'])
-                metainfo = h.read()
-                h.close()
-            else:
-                raise BTFailure(_("you must specify a .torrent file"))
-        except IOError, e:
-            raise BTFailure(_("Error reading .torrent file: "), str(e))
+                                       uiname, sys.argv[1:], 0, 1)
+
+        torrentfile = None
+        if len(args):
+            torrentfile = args[0]
+        for opt in ('responsefile', 'url'):
+            if config[opt]:
+                print '"--%s"' % opt, _("deprecated, do not use")
+                torrentfile = config[opt]
+        if torrentfile is not None:
+            metainfo, errors = open_arg(torrentfile)
+            if errors:
+                raise BTFailure(_("Error reading .torrent file: ") + '\n'.join(errors))
+        else:
+            raise BTFailure(_("you must specify a .torrent file"))
     except BTFailure, e:
         print str(e)
         sys.exit(1)

@@ -33,14 +33,14 @@ import gtk
 import pango
 import gobject
 import webbrowser
-from urllib import quote, url2pathname
+import urllib
 
 assert gtk.pygtk_version >= (2, 4), _("PyGTK 2.4 or newer required")
 
 from BitTorrent import HELP_URL, DONATE_URL, version, doc_root, languages, \
      is_frozen_exe, spawn, path_wrap
 from BitTorrent import configfile
-from BitTorrent.parseargs import makeHelp
+from BitTorrent.parseargs import makeHelp, open_arg
 from BitTorrent.defaultargs import get_defaults
 from BitTorrent import TorrentQueue
 from BitTorrent.TorrentQueue import RUNNING, QUEUED, KNOWN, ASKING_LOCATION
@@ -85,7 +85,6 @@ ui_options.extend([
     'max_files_open'  ,
     'forwarded_port'  ,
     'display_interval',
-    'pause'           ,
     'donated'         ,
     'notified'        ,
     ])
@@ -105,7 +104,7 @@ main_torrent_dnd_tip = _("drag to reorder")
 torrent_menu_tip = _("right-click for menu")
 torrent_tip_format = '%s:\n %s\n %s'
 
-rate_label = _("rate: %s")
+rate_label = ': %s'
 
 speed_classes = {
     (   4,    5):_("dialup"           ),
@@ -294,7 +293,7 @@ class RateSliderBox(gtk.VBox):
             if min_v <= value <= max_v:
                 conn_type = ' (%s)'%conn
                 break
-        label = _("Maximum upload ")+(rate_label % Rate(value*1024)) + \
+        label = _("Maximum upload rate")+(rate_label % Rate(value*1024)) + \
                 conn_type
         return label
 
@@ -434,15 +433,19 @@ class AboutWindow(object):
         self.vbox = gtk.VBox()
         self.vbox.set_size_request(250, -1)
 
-        credits_f = file(os.path.join(doc_root, 'credits.txt'))
-        l = credits_f.read()
-        credits_f.close()
-        label = gtk.Label(l.strip())
-        label.set_line_wrap(True)
-        label.set_selectable(True)
-        label.set_justify(gtk.JUSTIFY_CENTER)
-        label.set_size_request(250,-1)
-        self.vbox.pack_start(label, expand=False, fill=False)
+        for i, fn in enumerate(('credits', 'credits-l10n')):
+            if i != 0:
+                self.vbox.pack_start(gtk.HSeparator(), padding=SPACING,
+                                     expand=False, fill=False)
+            credits_f = file(os.path.join(doc_root, fn+'.txt'))
+            l = credits_f.read()
+            credits_f.close()
+            label = gtk.Label(l.strip())
+            label.set_line_wrap(True)
+            label.set_selectable(True)
+            label.set_justify(gtk.JUSTIFY_CENTER)
+            label.set_size_request(250,-1)
+            self.vbox.pack_start(label, expand=False, fill=False)
 
         self.scroll.add_with_viewport(self.vbox)
 
@@ -620,14 +623,13 @@ class SettingsWindow(object):
         self.saving_box.set_border_width(SPACING)
         self.notebook.append_page(self.saving_box, gtk.Label(_("Saving")))
 
-        self.dl_frame = gtk.Frame(_("Download folder:"))
+        self.dl_frame = gtk.Frame(_("Save new downloads in:"))
         self.saving_box.pack_start(self.dl_frame, expand=False, fill=False)
 
         self.dl_box = gtk.VBox(spacing=SPACING)
         self.dl_box.set_border_width(SPACING)
         self.dl_frame.add(self.dl_box)
         self.save_in_box = gtk.HBox(spacing=SPACING)
-        self.save_in_box.pack_start(gtk.Label(_("Default:")), expand=False, fill=False)
 
         self.dl_save_in = gtk.Entry()
         self.dl_save_in.set_editable(False)
@@ -638,7 +640,7 @@ class SettingsWindow(object):
         self.dl_save_in_button.connect('clicked', self.get_save_in)
         self.save_in_box.pack_start(self.dl_save_in_button, expand=False, fill=False)
         self.dl_box.pack_start(self.save_in_box, expand=False, fill=False)
-        self.dl_ask_checkbutton = gtk.CheckButton(_("Ask where to save each download"))
+        self.dl_ask_checkbutton = gtk.CheckButton(_("Ask where to save each new download"))
         self.dl_ask_checkbutton.set_active( bool(self.config['ask_for_save']) )
 
         def toggle_save(w):
@@ -1179,11 +1181,11 @@ class PeerListWindow(object):
             field = []
             field.append(peer['ip']) 
 
-            client, version = ClientIdentifier.identify_client(peer['id'])
+            client, version = ClientIdentifier.identify_client(peer['id']) 
             field.append(client + ' ' + version)
 
             if advanced_ui:
-                field.append(quote(peer['id'])) 
+                field.append(urllib.quote(peer['id'])) 
                 
             field.append(peer['initiation'] == 'R' and _("remote") or _("local"))
             dl = peer['download']
@@ -1219,7 +1221,7 @@ class PeerListWindow(object):
             field.append(client + ' ' + version)
 
             if advanced_ui:
-                field.append(quote(stats.peerid))
+                field.append(urllib.quote(stats.peerid))
 
             field.append(_("bad peer"))
 
@@ -1357,8 +1359,7 @@ class TorrentInfoWindow(object):
             opendirbutton = IconButton(_("Open directory"), stock=gtk.STOCK_OPEN)
             opendirbutton.connect('clicked', self.torrent_box.open_dir)
             lbbox.pack_start(opendirbutton, expand=False, fill=False)
-
-        opendirbutton.set_sensitive(self.torrent_box.can_open_dir())
+            opendirbutton.set_sensitive(self.torrent_box.can_open_dir())
 
         filelistbutton = IconButton(_("Show file list"), stock='gtk-index')
         if self.torrent_box.is_batch:
@@ -1471,7 +1472,8 @@ class TorrentBox(gtk.EventBox):
                                        _("Abort torrent"))
             
         self.cancelbutton.add(self.cancelimage)
-        self.cancelbutton.connect('clicked', self.confirm_remove)
+        # not using 'clicked' because we want to check for CTRL key
+        self.cancelbutton.connect('button-release-event', self.confirm_remove)
         
         self.buttonbox.pack_start(self.cancelbutton, expand=True, fill=False)
         self.buttonevbox.add(self.buttonbox)
@@ -1642,21 +1644,25 @@ class TorrentBox(gtk.EventBox):
         OpenPath.opendir(self.get_path_to_open())
 
 
-    def confirm_remove(self, widget):
-        message = _('Are you sure you want to remove "%s"?') % self.metainfo.name
-        if self.completion >= 1:
-            if self.up_down_ratio is not None:
-                message = _("Your share ratio for this torrent is %d%%. ")%(self.up_down_ratio*100) + message
-            else:
-                message = _("You have uploaded %s to this torrent. ")%(Size(self.uptotal)) + message
-            
-        d = MessageDialog(self.main.mainwindow,
-                          _("Remove this torrent?"),
-                          message, 
-                          type=gtk.MESSAGE_QUESTION,
-                          buttons=gtk.BUTTONS_OK_CANCEL,
-                          yesfunc=self.remove,
-                          )
+    def confirm_remove(self, widget, event):
+        state = event.get_state()
+        if state & gtk.gdk.CONTROL_MASK:
+            self.remove()
+        else:
+            message = _('Are you sure you want to remove "%s"?') % self.metainfo.name
+            if self.completion >= 1:
+                if self.up_down_ratio is not None:
+                    message = _("Your share ratio for this torrent is %d%%. ")%(self.up_down_ratio*100) + message
+                else:
+                    message = _("You have uploaded %s to this torrent. ")%(Size(self.uptotal)) + message
+
+            d = MessageDialog(self.main.mainwindow,
+                              _("Remove this torrent?"),
+                              message, 
+                              type=gtk.MESSAGE_QUESTION,
+                              buttons=gtk.BUTTONS_OK_CANCEL,
+                              yesfunc=self.remove,
+                              )
 
     def remove(self):
         self.main.torrentqueue.remove_torrent(self.infohash)
@@ -1982,9 +1988,9 @@ class RunningTorrentBox(DroppableTorrentBox):
         if 'numPeers' not in statistics:
             return
 
-        self.down_rate.set_text(_("Download ")+rate_label %
+        self.down_rate.set_text(_("Download rate")+rate_label %
                                 Rate(statistics['downRate']))
-        self.up_rate.set_text  (_("Upload "  )+rate_label %
+        self.up_rate.set_text  (_("Upload rate"  )+rate_label %
                                 Rate(statistics['upRate']))
 
         if advanced_ui:
@@ -2405,19 +2411,17 @@ class DownloadInfoFrame(object):
         
         self.rate_slider_box = RateSliderBox(self.config, self.torrentqueue)
 
-        self.ssb = gtk.VBox()
-        self.ssb.pack_end(self.ssbutton, expand=False, fill=True)
-
         self.controlbox = gtk.HBox(homogeneous=False)
          
-        self.controlbox.pack_start(self.ssb, expand=False, fill=False)
+        self.controlbox.pack_start(malign(self.ssbutton),
+                                   expand=False, fill=False)
         self.controlbox.pack_start(self.rate_slider_box,
-                                   expand=True, fill=True,
-                                   padding=SPACING//2)
-        self.controlbox.pack_start(get_logo(32), expand=False, fill=False,
-                                   padding=SPACING)
+                                   expand=True, fill=True, padding=SPACING//2)
+        self.controlbox.pack_start(malign(get_logo(32)),
+                                   expand=False, fill=False, padding=SPACING)
 
-        self.box2.pack_start(self.controlbox, expand=False, fill=False, padding=0)
+        self.box2.pack_start(self.controlbox,
+                             expand=False, fill=False, padding=0)
 
         self.paned = gtk.VPaned()
 
@@ -2504,7 +2508,7 @@ class DownloadInfoFrame(object):
                             target_type, time):
         file_uris = selection.data.split('\r\n')
         for file_uri in file_uris:
-            file_name = url2pathname(file_uri)
+            file_name = urllib.url2pathname(file_uri)
             file_name = file_name[7:]
             if os.name == 'nt':
                 file_name = file_name.strip('\\')
@@ -3138,13 +3142,12 @@ if __name__ == '__main__':
 
     advanced_ui = config['advanced']
 
-    if config['responsefile']:
-        if args:
-            raise BTFailure(_("Can't have both --responsefile and non-option "
-                              "arguments"))
-        newtorrents = [config['responsefile']]
-    else:
-        newtorrents = args
+    newtorrents = args
+    for opt in ('responsefile', 'url'):
+        if config[opt]:
+            print '"--%s"' % opt, _("deprecated, do not use")
+            newtorrents.append(config[opt])
+    
     controlsocket = ControlSocket(config)
 
     got_control_socket = True
@@ -3155,36 +3158,19 @@ if __name__ == '__main__':
         try:
             controlsocket.send_command('no-op')
         except BTFailure:
-            # XXX: this should pop up an error message for the user
-            raise
+            sys.stderr.write(_("Failed to create or send command "
+                               "through existing control socket.") + 
+                             _(" Closing all %s windows may fix the problem.")
+                             % app_name)
+            sys.exit(1)
 
     datas = []
     errors = []
     if newtorrents:
-        for filename in newtorrents:
-            f = None
-            try:
-                f = file(filename, 'rb')
-                data = f.read()
-                f.close()
-            except Exception, e:
-                if f is not None:
-                    f.close()
-                if _("Temporary Internet Files") in filename:
-                    errors.append(_("Could not read %s: %s. You are probably "
-                                    "using a broken Internet Explorer version "
-                                    "that passed BitTorrent a filename that "
-                                    "doesn't exist. To work around the problem, "
-                                    "try clearing your Temporary Internet Files "
-                                    "or right-click the link and save the "
-                                    ".torrent file to disk first.") %
-                                    (filename, str(e)))
-                else:
-                    errors.append('Could not read %s: %s' % (filename, str(e)))
-                
-            else:
-                datas.append(data)
-
+        for arg in newtorrents:
+            newdata, newerrors = open_arg(arg)
+            datas.append(newdata)
+            errors.extend(newerrors)
         # Not sure if anything really useful could be done if
         # these send_command calls fail
         if not got_control_socket:
@@ -3194,7 +3180,13 @@ if __name__ == '__main__':
                 controlsocket.send_command('show_error', error)
             sys.exit(0)
     elif not got_control_socket:
-        controlsocket.send_command('show_error', _("%s already running")%app_name)
+        try:
+            controlsocket.send_command('show_error', _("%s already running")%app_name)
+        except BTFailure:
+            sys.stderr.write(_("Failed to send command through "
+                               "existing control socket.") +
+                             _(" Closing all %s windows may fix the problem.")
+                             % app_name)
         sys.exit(1)
 
     gtk.threads_init()

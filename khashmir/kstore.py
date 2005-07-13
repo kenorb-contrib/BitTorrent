@@ -8,7 +8,6 @@
 # for the specific language governing rights and limitations under the
 # License.
 
-from UserDict import DictMixin
 from heapq import *
 from random import sample
 from BitTorrent.platform import bttime as time
@@ -39,7 +38,7 @@ class KItem:
 ## keeps oldest value for each key in one heap
 ## can efficiently expire all values older than a given time
 ## can insert one val at a time, or a list:  ks['key'] = 'value' or ks['key'] = ['v1', 'v2', 'v3']
-class KStore(DictMixin):
+class KStore:
     def __init__(self):
         self.d = {}
         self.q = []
@@ -69,8 +68,17 @@ class KStore(DictMixin):
     def __delitem__(self, key):
         del(self.d[key])
 
+    def __len__(self):
+        return len(self.d)
+    
     def keys(self):
         return self.d.keys()
+
+    def values(self):
+        return [self[key] for key in self.keys()]
+
+    def items(self):
+        return [(key, self[key]) for key in self.keys()]
 
     def expire(self, t):
         #.expire values inserted prior to t

@@ -80,7 +80,7 @@ class HTTPConnection(object):
             if self.headers.has_key('accept-encoding'):
                 ae = self.headers['accept-encoding']
                 if DEBUG:
-                    print _("Got Accept-Encoding: ") + ae + "\n"
+                    print "Got Accept-Encoding: " + ae + "\n"
             else:
                 #identity assumed if no header
                 ae = 'identity'

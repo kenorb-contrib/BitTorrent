@@ -488,13 +488,17 @@ class TorrentQueue(Feedback):
             self.other_torrents.remove(infohash)
         self.run_ui_task(self.ui.removed_torrent, infohash)
         del self.torrents[infohash]
-        filename = os.path.join(self.config['data_dir'], 'metainfo',
-                                infohash.encode('hex'))
-        try:
-            os.remove(filename)
-        except Exception, e:
-            self.global_error(WARNING, _("Could not delete cached metainfo file:")
-                              + str(e))
+
+        for d in ['metainfo', 'resume']:
+            filename = os.path.join(self.config['data_dir'], d,
+                                         infohash.encode('hex'))
+            try:
+                os.remove(filename)
+            except Exception, e:
+                self.global_error(WARNING,
+                                  (_("Could not delete cached %s file:")%d) +
+                                  str(e))
+
         self._dump_state()
 
     def set_save_location(self, infohash, dlpath):

@@ -185,9 +185,9 @@ def get_defaults(ui):
                "be created under this directory using the default name "
                "specified in the .torrent file. See also --save_as.")),
             ('responsefile', '',
-             _("file the server response was stored in, alternative to url")),
+             _("deprecated, do not use")),
             ('url', '',
-             _("url to get file from, alternative to responsefile")),
+             _("deprecated, do not use")),
             ('ask_for_save', 0,
              _("whether or not to ask for a location to save downloaded files in")),
             ])

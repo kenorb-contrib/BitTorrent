@@ -156,7 +156,10 @@ class Rerequester(object):
 
     def _rerequest(self, url, peerid):
         if self.config['ip']:
-            url += '&ip=' + gethostbyname(self.config['ip'])
+            try:
+                url += '&ip=' + gethostbyname(self.config['ip'])
+            except Exception, e:
+                self.errorfunc(WARNING, _("Problem connecting to tracker, gethostbyname failed - ") + str(e)) 
         request = Request(url)
         request.add_header('User-Agent', 'BitTorrent/' + version)
         if self.config['tracker_proxy']:
@@ -268,20 +271,17 @@ class DHTRerequester(Rerequester):
     def _rerequest(self, url, peerid):
         self.peers = ""
         try:
-            self.dht.getPeers(self.infohash, self._got_peers)
+            self.dht.getPeersAndAnnounce(self.infohash, self.port, self._got_peers)
         except Exception, e:
-            self._postrequest(errmsg="Trackerless lookup failed: " + str(e), peerid=self.wanted_peerid)
+            self._postrequest(errormsg="Trackerless lookup failed: " + str(e), peerid=self.wanted_peerid)
         
     def _got_peers(self, peers):
         if not self.howmany:
             return
         if not peers:
-            self.dht.announcePeer(self.infohash, self.port, self._announced_peers)
-            d = {'peers':self.peers}
-            self._postrequest(bencode(d), peerid=self.wanted_peerid)
+            self._postrequest(bencode({'peers':''}), peerid=self.wanted_peerid)
         else:
-            self.peers += peers[0]
-            
+            self._postrequest(bencode({'peers':peers[0]}), peerid=None)            
 
     def _announced_peers(self, nodes):
         pass

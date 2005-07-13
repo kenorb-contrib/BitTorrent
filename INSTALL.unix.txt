@@ -53,13 +53,13 @@ Then use setup and alien to generate a .deb format package:
 
 $ python setup.py bdist_dumb
 $ cd dist/
-$ alien BitTorrent-4.1.2.linux-i686.tar.gz
+$ alien BitTorrent-4.x.y.linux-i686.tar.gz
 
-you should now have a .deb package in: bittorrent-4.1.2.linux_i686-2_all.deb
+you should now have a .deb package in: bittorrent-4.x.y.linux_i686-2_all.deb
 
 then install the .deb:
 
-$ dpkg -i bittorrent-4.1.2.linux_i686-2_all.deb
+$ dpkg -i bittorrent-4.x.y.linux_i686-2_all.deb
 
 
 How to build an .rpm format package and install it:
@@ -71,4 +71,4 @@ $ python setup.py bdist_rpm
 
 Then install the .rpm:
 
-$ rpm -i dist/BitTorrent-4.1.2-1.noarch.rpm 
+$ rpm -i dist/BitTorrent-4.x.y-1.noarch.rpm 

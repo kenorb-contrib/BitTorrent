@@ -10,6 +10,8 @@
 
 from BitTorrent.platform import bttime as time
 from const import *
+from random import randrange
+from traceback import print_exc
 
 class KRateLimiter:
     # special rate limiter that drops entries that have been sitting in the queue for longer than self.age seconds
@@ -23,7 +25,7 @@ class KRateLimiter:
         self.age = age
         self.last = 0
         self.call_later = call_later
-
+        self.sent=self.dropped=0
         if self.rate == 0:
             self.rate = 1e10
             
@@ -33,16 +35,25 @@ class KRateLimiter:
             self.run(check=True)
 
     def run(self, check=False):
-        self.expire()
-
-        self.curr -= (time() - self.last) * self.rate
+        t = time()
+        self.expire(t)
+        self.curr -= (t - self.last) * self.rate
+        self.last = t
         if check:
             self.curr = max(self.curr, 0 - self.rate)
             
         while self.q and self.curr <= 0:
-            x, tup = self.q.pop()
+            n = randrange(0, len(self.q))
+            x, tup = self.q[n]
+            self.q = self.q[:n] + self.q[n+1:]
             self.curr += len(tup[0])
-            self.transport.sendto(*tup)
+            try:
+                self.transport.sendto(*tup)
+                self.sent+=1
+            except:
+                if tup[2][1] != 0:
+                    print ">>> sendto exception", tup
+                    print_exc()
             
         if self.q or self.curr > 0:
             self.running = True
@@ -51,8 +62,9 @@ class KRateLimiter:
         else:
             self.running = False
                           
-    def expire(self):
+    def expire(self, t=time()):
         if self.q:
-            expire_time = time() - self.age
-            while self.q[-1][0] < expire_time:
+            expire_time = t - self.age
+            while self.q and self.q[-1][0] < expire_time:
                 self.q.pop()
+                self.dropped+=1

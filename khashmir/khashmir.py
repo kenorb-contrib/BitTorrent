@@ -33,7 +33,7 @@ import traceback
 from BitTorrent.bencode import bencode, bdecode
 
 from defer import Deferred
-from random import randrange
+from random import randrange, sample
 
 from threading import Event
 
@@ -43,7 +43,7 @@ class KhashmirDBExcept(Exception):
 # this is the base class, has base functionality and find node, no key-value mappings
 class KhashmirBase:
     _Node = KNodeBase
-    def __init__(self, host, port, data_dir, rawserver=None, max_ul_rate=1024, checkpoint=True):
+    def __init__(self, host, port, data_dir, rawserver=None, max_ul_rate=1024, checkpoint=True, errfunc=None):
         if rawserver:
             self.rawserver = rawserver
         else:
@@ -101,13 +101,13 @@ class KhashmirBase:
         d = {}
         d['id'] = self.node.id
         d['rt'] = self._dumpRoutingTable()
-        self.refreshTable()
         try:
             f = open(os.path.join(self.ddir, "routing_table"), 'wb')
             f.write(bencode(d))
             f.close()
         except:
-            #print ">>> unable to dump routing table!"
+            #XXX real error here
+            print ">>> unable to dump routing table!", str(e)
             pass
         
         
@@ -133,7 +133,7 @@ class KhashmirBase:
         l = []
         for bucket in self.table.buckets:
             for node in bucket.l:
-                l.append({'id':node.id, 'host':node.host, 'port':node.port})
+                l.append({'id':node.id, 'host':node.host, 'port':node.port, 'age':int(node.age)})
         return l
         
             
@@ -155,8 +155,10 @@ class KhashmirBase:
     def findNode(self, id, callback, errback=None):
         """ returns the contact info for node, or the k closest nodes, from the global table """
         # get K nodes out of local table/cache, or the node we want
-        nodes = self.table.findNodes(id, invalid=False)
-        nodes += self.table.findNodes(id, invalid=True)
+        nodes = self.table.findNodes(id, invalid=True)
+        l = [x for x in nodes if x.invalid]
+        if len(l) > 4:
+            nodes = sample(l , 4) + self.table.findNodes(id, invalid=False)[:4]
 
         d = Deferred()
         if errback:
@@ -190,9 +192,26 @@ class KhashmirBase:
 
     def checkOldNode(self, old, new, contacted=False):
         ## these are the callbacks used when we ping the oldest node in a bucket
-        def _staleNodeHandler(dict):
+
+        def cmp(a, b):
+            if a[1] == 1 and b[1] == 0:
+                return -1
+            elif b[1] == 1 and a[1] == 0:
+                return 1
+            else:
+                return 0
+            
+        def _staleNodeHandler(dict, old=old, new=new, contacted=contacted):
             """ called if the pinged node never responds """
             if old.fails >= 2:
+                l = self.pingcache.get(old.id, [])
+                l.sort(cmp)
+                if l:
+                    n, nc = l[0]
+                    if (not contacted) and nc:
+                        l = l[1:] + [(new, contacted)]
+                        new = n
+                        contacted = nc
                 o = self.table.replaceStaleNode(old, new)
                 if o and o != new:
                     self.checkOldNode(o, new)
@@ -202,24 +221,26 @@ class KhashmirBase:
                     except KeyError:
                         pass
                 else:
-                    l = self.pingcache.get(old.id, [])
                     if l:
-                        del(self.pingcache[old.id])                    
+                        del(self.pingcache[old.id])
+                        l.sort(cmp)
                         for node in l:
                             self.insertNode(node[0], node[1])
             else:
                 l = self.pingcache.get(old.id, [])
                 if l:
                     del(self.pingcache[old.id])
-                self.insertNode(new)
+                self.insertNode(new, contacted)
                 for node in l:
                     self.insertNode(node[0], node[1])
                     
-        def _notStaleNodeHandler(dict):
+        def _notStaleNodeHandler(dict, old=old, new=new, contacted=contacted):
             """ called when we get a pong from the old node """
             self.table.insertNode(old, True)
             self.insertNode(new, contacted)
-            for node in self.pingcache.get(old.id, []):
+            l = self.pingcache.get(old.id, [])
+            l.sort(cmp)
+            for node in l:
                 self.insertNode(node[0], node[1])
             try:
                 del(self.pingcache[old.id])
@@ -266,7 +287,8 @@ class KhashmirBase:
         id = self.node.id[:-1] + chr((ord(self.node.id[-1]) + 1) % 256)
         self.findNode(id, callback)
         if auto:
-            self.rawserver.add_task(self.findCloseNodes, randrange(int(const.FIND_CLOSE_INTERVAL *0.9),
+            self.refreshTable()
+            self.rawserver.external_add_task(self.findCloseNodes, randrange(int(const.FIND_CLOSE_INTERVAL *0.9),
                                                                    int(const.FIND_CLOSE_INTERVAL *1.1)), (lambda a: True, True))
 
     def refreshTable(self, force=0):
@@ -275,11 +297,11 @@ class KhashmirBase:
         """
         def callback(nodes):
             pass
-    
-        for bucket in self.table.buckets:
-            if force or (time() - bucket.lastAccessed >= const.BUCKET_STALENESS):
-                id = newIDInRange(bucket.min, bucket.max)
-                self.findNode(id, callback)
+
+        refresh = [bucket for bucket in self.table.buckets if force or (len(bucket.l) < K) or len(filter(lambda a: a.invalid, bucket.l)) or (time() - bucket.lastAccessed > const.BUCKET_STALENESS)]
+        for bucket in refresh:
+            id = newIDInRange(bucket.min, bucket.max)
+            self.findNode(id, callback)
 
     def stats(self):
         """
@@ -332,13 +354,13 @@ class KhashmirRead(KhashmirBase):
         if searchlocal:
             l = self.retrieveValues(key)
             if len(l) > 0:
-                self.rawserver.add_task(callback, 0, (l,))
+                self.rawserver.external_add_task(callback, 0, (l,))
         else:
             l = []
         
         # create our search state
         state = GetValue(self, key, callback, self.rawserver.add_task)
-        self.rawserver.add_task(state.goWithNodes, 0, (nodes, l))
+        self.rawserver.external_add_task(state.goWithNodes, 0, (nodes, l))
 
     def krpc_find_value(self, key, id, _krpc_sender):
         sender = {'id' : id}

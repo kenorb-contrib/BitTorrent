@@ -10,7 +10,7 @@
 # for the specific language governing rights and limitations under the
 # License.
 
-# Written by Henry 'Pi' James and Loring Holden
+# Written by Henry 'Pi' James, Loring Holden and Matt Chisholm
 
 import gettext
 gettext.install('bittorrent', 'locale')
@@ -31,26 +31,45 @@ if len(argv) == 1:
     print
     exit(2) # common exit code for syntax error
 
+labels = {'metafile'   : _("metainfo file: %s"       ),
+          'infohash'   : _("info hash: %s"           ),
+          'filename'   : _("file name: %s"           ),
+          'filesize'   : _("file size:"              ),
+          'files'      : _("files:"                  ),
+          'dirname'    : _("directory name: %s"      ),
+          'archive'    : _("archive size:"           ),
+          'announce'   : _("tracker announce url: %s"),
+          'nodes'      : _("trackerless nodes:"      ),
+          'comment'    : _("comment:"                ),
+          }
+
+maxlength = max( [len(v[:v.index(':')]) for v in labels.values()] )
+# run through l10n-ed labels and make them all the same length
+for k,v in labels.items():
+    if ':' in v:
+        index = v.index(':')
+        newlabel = v.replace(':', '.'*(maxlength-index) + ':')
+        labels[k] = newlabel
+
 for metainfo_name in argv[1:]:
     metainfo_file = open(metainfo_name, 'rb')
     metainfo = bdecode(metainfo_file.read())
     metainfo_file.close()
-    announce = metainfo['announce']
     info = metainfo['info']
     info_hash = sha(bencode(info))
 
-    print _("metainfo file.: %s") % basename(metainfo_name)
-    print _("info hash.....: %s") % info_hash.hexdigest()
+    print labels['metafile'] % basename(metainfo_name)
+    print labels['infohash']  % info_hash.hexdigest()
     piece_length = info['piece length']
     if info.has_key('length'):
         # let's assume we just have a file
-        print _("file name.....: %s") % info['name']
+        print labels['filename'] % info['name']
         file_length = info['length']
-        name = _("file size.....:")
+        name = labels['filesize']
     else:
         # let's assume we have a directory structure
-        print _("directory name: %s") % info['name']
-        print _("files.........: ")
+        print labels['dirname'] % info['name']
+        print labels['files']
         file_length = 0;
         for file in info['files']:
             path = ''
@@ -60,12 +79,19 @@ for metainfo_name in argv[1:]:
                 path = path + item
             print '   %s (%d)' % (path, file['length'])
             file_length += file['length']
-        name = _("archive size..:")
+        name = labels['archive']
     piece_number, last_piece_length = divmod(file_length, piece_length)
     print '%s %i (%i * %i + %i)' \
           % (name,file_length, piece_number, piece_length, last_piece_length)
-    print _("announce url..: %s") % announce
-    print _("comment.......: \n")
+
+    if metainfo.has_key('announce'):
+        print labels['announce'] % metainfo['announce']
+    if metainfo.has_key('nodes'):
+        print labels['nodes']
+        for n in metainfo['nodes']:
+            print '\t%s\t:%d' % (n[0], n[1])
+        
+    print labels['comment']
     if metainfo.has_key('comment'):
         print metainfo['comment']
-        print
+    print

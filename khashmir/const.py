@@ -24,8 +24,8 @@ CHECKPOINT_INTERVAL = 60 * 5 # five minutes
 FIND_CLOSE_INTERVAL = 60 * 15 # fifteen minutes
 
 ### SEARCHING/STORING
-# concurrent xmlrpc calls per find node/value request!
-CONCURRENT_REQS = 4
+# concurrent krpc calls per find node/value request!
+CONCURRENT_REQS = K
 
 # how many hosts to post to
 STORE_REDUNDANCY = 3

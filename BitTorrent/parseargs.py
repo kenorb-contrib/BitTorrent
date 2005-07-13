@@ -10,6 +10,9 @@
 
 # Written by Bill Bumgarner and Bram Cohen
 
+import os
+import re
+import urllib
 from types import *
 from cStringIO import StringIO
 
@@ -17,6 +20,7 @@ from BitTorrent.obsoletepythonsupport import *
 
 from BitTorrent.defaultargs import MyBool, MYTRUE
 from BitTorrent import BTFailure, is_frozen_exe
+from BitTorrent.bencode import bdecode
 
 def makeHelp(uiname, defaults):
     ret = ''
@@ -86,6 +90,54 @@ def format_key(key):
         return '-%s'%key
     else:
         return '--%s'%key
+
+urlpat = re.compile('^\w+://')
+
+def open_arg(arg):
+    filename = arg
+    ret_data = None
+    errors = []
+    if os.access(filename, os.F_OK):
+        f = None
+        try:
+            f = file(filename, 'rb')
+            data = f.read()
+            f.close()
+        except Exception, e:
+            if f is not None:
+                f.close()
+            if _("Temporary Internet Files") in filename:
+                errors.append(_("Could not read %s: %s. You are probably "
+                                "using a broken Internet Explorer version "
+                                "that passed BitTorrent a filename that "
+                                "doesn't exist. To work around the problem, "
+                                "try clearing your Temporary Internet Files "
+                                "or right-click the link and save the "
+                                ".torrent file to disk first.") %
+                                (filename, str(e)))
+            else:
+                errors.append((_("Could not read %s") % filename) + (': %s' % str(e)))
+
+        else:
+            ret_data = data
+    elif urlpat.match(filename):
+        err_str = _("Could not download or open \n%s\n"
+                    "Try using a web browser to download the torrent file." %
+                    filename)
+        try:
+            u = urllib.urlopen(filename)
+            data = u.read()
+            u.close()
+            b = bdecode(data)
+        except Exception, e:
+            u.close()
+            errors.append(err_str + "\n(%s)" % e)
+        else:
+            u.close()
+            ret_data = data
+    else:
+        errors.append(_("Could not read %s") % filename)
+    return ret_data, errors
 
 def parseargs(argv, options, minargs=None, maxargs=None, presets=None):
     config = {}

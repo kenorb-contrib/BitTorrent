@@ -27,7 +27,7 @@ from time import time, strftime
 
 from BitTorrent.download import Feedback, Multitorrent
 from BitTorrent.defaultargs import get_defaults
-from BitTorrent.parseargs import printHelp
+from BitTorrent.parseargs import printHelp, open_arg
 from BitTorrent.zurllib import urlopen
 from BitTorrent.bencode import bdecode
 from BitTorrent.ConvertedMetainfo import ConvertedMetainfo
@@ -83,7 +83,7 @@ def fmtsize(n):
 
 class CursesDisplayer(object):
 
-    def __init__(self, scrwin, errlist, doneflag, reread_config):
+    def __init__(self, scrwin, errlist, doneflag, reread_config, ulrate):
         self.scrwin = scrwin
         self.errlist = errlist
         self.doneflag = doneflag
@@ -93,6 +93,7 @@ class CursesDisplayer(object):
 
         self.done = False
         self.reread_config = reread_config
+        self.ulrate = ulrate
         self.activity = ''
         self.status = ''
         self.progress = ''
@@ -189,6 +190,19 @@ class CursesDisplayer(object):
             self.doneflag.set()
         elif inchar in (ord('r'),ord('R')):
             self.reread_config()
+        elif inchar in (ord('u'),ord('U')):
+            curses.echo()
+            self.fieldwin.nodelay(0)
+            s = self.fieldwin.getstr(6,10)
+            curses.noecho()
+            self.fieldwin.nodelay(1)
+            r = None
+            try:
+                r = int(s)
+            except ValueError:
+                pass
+            if r is not None:
+                self.ulrate(r)
 
         if timeEst is not None:
             self.activity = fmttime(timeEst)
@@ -226,7 +240,7 @@ class CursesDisplayer(object):
             else:
                 self.seedStatus = _("%d distributed copies (next: %s)") % (
                     statistics['numCopies'], nextCopies)
-            self.peerStatus = '%d seen now' % statistics['numPeers']
+            self.peerStatus = _("%d seen now") % statistics['numPeers']
 
         self.fieldwin.erase()
         self.fieldwin.addnstr(0, 0, self.file, self.fieldw, curses.A_BOLD)
@@ -324,7 +338,11 @@ class DL(Feedback):
     def run(self, scrwin):
         def reread():
             self.multitorrent.rawserver.external_add_task(self.reread_config,0)
-        self.d = CursesDisplayer(scrwin, self.errlist, self.doneflag, reread)
+        def ulrate(value):
+            self.multitorrent.set_option('max_upload_rate', value)
+            self.torrent.set_option('max_upload_rate', value)
+
+        self.d = CursesDisplayer(scrwin, self.errlist, self.doneflag, reread, ulrate)
         try:
             self.multitorrent = Multitorrent(self.config, self.doneflag,
                                              self.global_error)
@@ -393,30 +411,27 @@ if __name__ == '__main__':
     uiname = 'btdownloadcurses'
     defaults = get_defaults(uiname)
 
+    metainfo = None
     if len(sys.argv) <= 1:
         printHelp(uiname, defaults)
         sys.exit(1)
     try:
         config, args = configfile.parse_configuration_and_args(defaults,
                                        uiname, sys.argv[1:], 0, 1)
-        if args:
-            if config['responsefile']:
-                raise BTFailure, _("must have responsefile as arg or "
-                                   "parameter, not both")
-            config['responsefile'] = args[0]
-        try:
-            if config['responsefile']:
-                h = file(config['responsefile'], 'rb')
-                metainfo = h.read()
-                h.close()
-            elif config['url']:
-                h = urlopen(config['url'])
-                metainfo = h.read()
-                h.close()
-            else:
-                raise BTFailure(_("you must specify a .torrent file"))
-        except IOError, e:
-            raise BTFailure(_("Error reading .torrent file: "), str(e))
+
+        torrentfile = None
+        if len(args):
+            torrentfile = args[0]
+        for opt in ('responsefile', 'url'):
+            if config[opt]:
+                print '"--%s"' % opt, _("deprecated, do not use")
+                torrentfile = config[opt]
+        if torrentfile is not None:
+            metainfo, errors = open_arg(torrentfile)
+            if errors:
+                raise BTFailure(_("Error reading .torrent file: ") + '\n'.join(errors))
+        else:
+            raise BTFailure(_("you must specify a .torrent file"))
     except BTFailure, e:
         print str(e)
         sys.exit(1)

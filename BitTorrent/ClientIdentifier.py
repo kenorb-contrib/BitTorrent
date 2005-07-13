@@ -22,6 +22,7 @@ matches = (
            ('-TS(?P<version>\d+)-+.+$'     , "TorrentStorm"        ),
            ('exbc(?P<bcver>.*)LORD.+$'     , "BitLord"             ),
            ('exbc(?P<bcver>.*).+$'         , "BitComet"            ),
+           ('-BC0(?P<version>\d+)-.+$'     , "BitComet"            ),
            ('FUTB(?P<bcver>.*).+$'         , "BitComet Mod1"       ),
            ('xUTB(?P<bcver>.*).+$'         , "BitComet Mod2"       ),
            ('A(?P<version>%s+)-+.+$'%v64p  , "ABC"                 ),

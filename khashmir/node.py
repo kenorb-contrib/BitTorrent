@@ -19,7 +19,8 @@ class Node:
         self.lastSeen = 0
         self.invalid = True
         self.id = self.host = self.port = ''
-    
+        self.age = time()
+        
     def init(self, id, host, port):
         self.id = id
         self.num = khash.intify(id)
@@ -34,6 +35,7 @@ class Node:
         self.num = khash.intify(self.id)
         self.port = dict['port']
         self.host = dict['host']
+        self.age = dict.get('age', self.age)
         return self
     
     def updateLastSeen(self):
@@ -49,7 +51,7 @@ class Node:
         return self._senderDict
     
     def __repr__(self):
-        return ">node <%s> %s<" % (self.id.encode('hex')[:4], (self.host, self.port))
+        return ">node <%s> %s<" % (self.id.encode('base64')[:4], (self.host, self.port))
     
     ## these comparators let us bisect/index a list full of nodes with either a node or an int/long
     def __lt__(self, a):

@@ -9,7 +9,7 @@
 # License.
 
 app_name = 'BitTorrent'
-version = '4.1.2'
+version = '4.1.3'
 
 URL = 'http://www.bittorrent.com/'
 DONATE_URL = URL + 'donate.html'
@@ -21,8 +21,13 @@ assert sys.version_info >= (2, 2, 1), _("Python 2.2.1 or newer required")
 import os
 import re
 
-languages = ["fr", "it", "no", "pt_BR"]
+languages = 'af,ar,da,de,es,fi,fr,he_IL,hu,it,ja,ko,nl,no,pt_BR,ro,ru,sk,sl,sq,sv,tr,zh_CN,zh_TW'.split(',')
 
+if os.name == 'posix':
+    if os.uname()[0] == "Darwin":
+        import gettext
+        gettext.install('bittorrent', 'locale')
+    
 def calc_unix_dirs():
     appdir = '%s-%s'%(app_name, version)
     ip = os.path.join('share', 'pixmaps', appdir)
@@ -31,6 +36,9 @@ def calc_unix_dirs():
     return ip, dp, lp
 
 app_root = os.path.split(os.path.abspath(sys.argv[0]))[0]
+if os.name == 'posix':
+    if os.uname()[0] == "Darwin":
+        app_root = app_root.encode('utf8')
 doc_root = app_root
 image_root  = os.path.join(app_root, 'images')
 locale_root = os.path.join(app_root, 'locale')
@@ -145,10 +153,15 @@ def spawn(torrentqueue, cmd, *args):
     if os.name == 'nt':
         # do proper argument quoting since exec/spawn on Windows doesn't
         args = ['"%s"'%a.replace('"', '\"') for a in args]
-        # BUG: if you get "OSError [Errno 8] Exec format error" on win32 here,
-        # it means you haven't set up your python files to be executable, but
-        # this should still work after building an exe with pygtk.
-        pid = os.spawnl(os.P_NOWAIT, path, *args)
+        if len(args) == 1:
+            os.startfile(args[0])
+        else:
+            # Note: if you get "OSError [Errno 8] Exec format error"
+            # on win32 here, it means you haven't set up your python
+            # files to be executable, but this should still work after
+            # building an exe with pygtk.
+            # P_NOWAIT, P_NOWAITO, P_DETACH all behave the same
+            pid = os.spawnl(os.P_NOWAIT, path, *args)
     else:
         forkback = os.fork()
         if forkback == 0:

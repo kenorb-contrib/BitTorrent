@@ -22,7 +22,7 @@ class KTable:
     def __init__(self, node):
         # this is the root node, a.k.a. US!
         self.node = node
-        self.buckets = [KBucket([], 0L, (2L**HASH_LENGTH) - 1)]
+        self.buckets = [KBucket([], 0L, 2L**HASH_LENGTH)]
         self.insertNode(node)
         
     def _bucketIndexForInt(self, num):
@@ -122,18 +122,21 @@ class KTable:
         # check to see if node is in the bucket already
         try:
             it = self.buckets[i].l.index(node.num)
+            xnode = self.buckets[i].l[it]
         except ValueError:
             # no
             pass
         else:
             if contacted:
+                node.age = xnode.age
                 # move node to end of bucket
-                xnode = self.buckets[i].l[it]
                 del(self.buckets[i].l[it])
                 # note that we removed the original and replaced it with the new one
                 # utilizing this nodes new contact info
                 self.buckets[i].l.append(node)
                 self.buckets[i].touch()
+            elif xnode.lastSeen != 0 and xnode.port == node.port and xnode.host == node.host:
+                xnode.updateLastSeen()
             return
         
         # we don't have this node, check to see if the bucket is full
@@ -167,7 +170,7 @@ class KTable:
             return stale[0]
             
         # bucket is full and all nodes are valid, check to see if self.node is in the bucket
-        if not (self.buckets[i].min <= self.node <= self.buckets[i].max):
+        if not (self.buckets[i].min <= self.node < self.buckets[i].max):
             return
         
         # this bucket is full and contains our node, split the bucket

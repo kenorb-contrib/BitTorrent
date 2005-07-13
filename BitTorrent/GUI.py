@@ -80,6 +80,9 @@ def ralign(obj):
 def valign(obj, amt):
     return align(obj,0.5,amt)
 
+def malign(obj):
+    return valign(obj, 0.5)
+
 factory = gtk.IconFactory()
 
 # these don't seem to be documented anywhere:
@@ -542,8 +545,8 @@ else:
 
             
     class FileOrFolderSelection(FileSelection):
-        select_file   = _("Select file"  )
-        select_folder = _("Select folder")
+        select_file   = _("Select a file"  )
+        select_folder = _("Select a folder")
 
         def __init__(self, *args, **kwargs):
             FileSelection.__init__(self, gtk.FILE_CHOOSER_ACTION_OPEN, *args,

@@ -14,13 +14,15 @@ import socket
 from BitTorrent.RawServer import RawServer
 from BitTorrent.platform import bttime
 import time
+from math import log10
 
 import sys
 from traceback import print_exc
 
-import khash as hash
+from khash import distance
 from cache import Cache
 from KRateLimiter import KRateLimiter
+from hammerlock import Hammerlock
 
 from const import *
 
@@ -48,9 +50,11 @@ class hostbroker(object):
     def __init__(self, server, addr, transport, call_later, max_ul_rate):
         self.server = server
         self.addr = addr
-        self.transport = KRateLimiter(transport, max_ul_rate, call_later)
+        self.transport = transport
+        self.rltransport = KRateLimiter(transport, max_ul_rate, call_later)
         self.call_later = call_later
         self.connections = Cache(touch_on_access=True)
+        self.hammerlock = Hammerlock(100, call_later)
         self.expire_connections(loop=True)
         
     def expire_connections(self, loop=False):
@@ -60,8 +64,9 @@ class hostbroker(object):
 
     def data_came_in(self, addr, datagram):
         #if addr != self.addr:
-        c = self.connectionForAddr(addr)
-        c.datagramReceived(datagram, addr)
+        if self.hammerlock.check(addr):
+            c = self.connectionForAddr(addr)
+            c.datagramReceived(datagram, addr)
 
     def connection_lost(self, socket):
         ## this is like, bad
@@ -71,7 +76,7 @@ class hostbroker(object):
         if addr == self.addr:
             raise KRPCSelfNodeError()
         if not self.connections.has_key(addr):
-            conn = KRPC(addr, self.server, self.transport, self.call_later)
+            conn = KRPC(addr, self.server, self.transport, self.rltransport, self.call_later)
             self.connections[addr] = conn
         else:
             conn = self.connections[addr]
@@ -81,9 +86,10 @@ class hostbroker(object):
 ## connection
 class KRPC:
     noisy = 0
-    def __init__(self, addr, server, transport, call_later):
+    def __init__(self, addr, server, transport, rltransport, call_later):
         self.call_later = call_later
         self.transport = transport
+        self.rltransport = rltransport        
         self.factory = server
         self.addr = addr
         self.tids = {}
@@ -94,7 +100,7 @@ class KRPC:
         ## send error
         out = bencode({TID:tid, TYP:ERR, ERR :msg})
         olen = len(out)
-        self.transport.sendto(out, 0, addr)
+        self.rltransport.sendto(out, 0, addr)
         return olen                 
 
     def datagramReceived(self, str, addr):
@@ -134,18 +140,49 @@ class KRPC:
                             out = bencode({TID : msg[TID], TYP : RSP, RSP : {}})
                         #	send response
                         olen = len(out)
-                        self.transport.sendto(out, 0, addr)
+                        self.rltransport.sendto(out, 0, addr)
 
                 else:
                     if self.noisy:
-                        print "don't know about method %s" % msg[REQ]
+                        #print "don't know about method %s" % msg[REQ]
+                        pass
                     # unknown method
                     out = bencode({TID:msg[TID], TYP:ERR, ERR : KRPC_ERROR_METHOD_UNKNOWN})
                     olen = len(out)
-                    self.transport.sendto(out, 0, addr)
+                    self.rltransport.sendto(out, 0, addr)
                 if self.noisy:
-                    print "%s %s >>> %s - %s %s %s" % (time.asctime(), addr, self.factory.node.port, 
-                                                    ilen, msg[REQ], olen)
+                    try:
+                        ndist = 10 * log10(2**160 * 1.0 / distance(self.factory.node.id, msg[ARG]['id']))
+                        ndist = int(ndist)
+                    except OverflowError:
+                        ndist = 999
+
+                    h = None
+                    if msg[ARG].has_key('target'):
+                        h = msg[ARG]['target']
+                    elif msg[ARG].has_key('info_hash'):
+                        h = msg[ARG]['info_hash']
+                    else:
+                        tdist = '-'
+
+                    if h != None:
+                        try:
+                            tdist = 10 * log10(2**160 * 1.0 / distance(self.factory.node.id, h))
+                            tdist = int(tdist)
+                        except OverflowError:
+                            tdist = 999
+
+                    t = time.localtime()
+                    t = "%2d-%2d-%2d %2d:%2d:%2d" % (t[0], t[1], t[2], t[3], t[4], t[5])
+                    print "%s %s %s >>> %s - %s %s %s - %s %s" % (t,
+                                                                  msg[ARG]['id'].encode('base64')[:4],
+                                                                  addr,
+                                                                  self.factory.node.port, 
+                                                                  ilen,
+                                                                  msg[REQ],
+                                                                  olen,
+                                                                  ndist,
+                                                                  tdist)
             elif msg[TYP] == RSP:
                 # if response
                 # 	lookup tid
