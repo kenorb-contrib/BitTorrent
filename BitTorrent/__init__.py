@@ -9,7 +9,7 @@
 # License.
 
 app_name = "BitTorrent"
-version = '4.0.3'
+version = '4.0.4'
 
 URL = 'http://www.bittorrent.com/'
 DONATE_URL = URL + 'donate.html'

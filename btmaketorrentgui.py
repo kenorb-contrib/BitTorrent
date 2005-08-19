@@ -31,11 +31,15 @@ from BitTorrent import configfile
 from BitTorrent.defaultargs import get_defaults
 from BitTorrent.makemetafile import make_meta_files
 from BitTorrent.parseargs import makeHelp
+from BitTorrent.ConvertedMetainfo import set_filesystem_encoding
 
 defaults = get_defaults('btmaketorrentgui')
 defconfig = dict([(name, value) for (name, value, doc) in defaults])
 del name, value, doc
 
+def sfe_ef(e,s):
+    print s
+set_filesystem_encoding(defconfig['filesystem_encoding'], sfe_ef)
 
 class MainWindow(Window):
 

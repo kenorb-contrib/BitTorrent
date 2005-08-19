@@ -10,7 +10,7 @@
 
 # Written by Bram Cohen and Matt Chisholm
 
-!define VERSION "4.0.3"
+!define VERSION "4.0.4"
 !define APPNAME "BitTorrent"
 Outfile ${APPNAME}-${VERSION}.exe
 Name "${APPNAME}"
@@ -129,33 +129,42 @@ FunctionEnd
 ; It is partly copied from: 
 ; http://nsis.sourceforge.net/archive/viewpage.php?pageid=326
 Function .onInit
-  Call QuitIt
-  ClearErrors
+	Call QuitIt
+	ClearErrors
 
-  ReadRegStr $R0 HKLM \
-  "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APPNAME}" \
-  "UninstallString"
-  StrCmp $R0 "" done
+	ReadRegStr $R0 HKLM \
+	"Software\Microsoft\Windows\CurrentVersion\Uninstall\${APPNAME}" \
+	"UninstallString"
+	StrCmp $R0 "" endofuninst
 
-  MessageBox MB_OKCANCEL|MB_ICONEXCLAMATION \
-  "Another version of ${APPNAME} is already installed. $\n$\nClick `OK` to \
-  remove the already installed version and continue installing this version. \ 
-  $\n$\nClick `Cancel` to cancel this installation." \
-  IDOK uninst
-  Abort
+	MessageBox MB_OKCANCEL|MB_ICONEXCLAMATION "${APPNAME} is already \
+	installed. $\n$\nClick `OK` to upgrade to ${APPNAME} ${VERSION}." \
+	IDOK uninst
+	Abort
   
-;Run the uninstaller
-uninst:
-  ExecWait '$R0 _?=$INSTDIR /S' ;Do not copy the uninstaller to a temp file
+	;Run the uninstaller
+	uninst:
+		;Do not copy the uninstaller to a temp file
+		ExecWait '$R0 _?=$INSTDIR /S' 
+		IfErrors no_remove_uninstaller
+		Goto endofuninst
+	no_remove_uninstaller: 
+		MessageBox MB_OK "Uninstallation failed. Aborting."
+		Abort
+	endofuninst:
 
-  IfErrors no_remove_uninstaller
+	MessageBox MB_OKCANCEL "${APPNAME} is 100% FREE, and it always will be. $\n$\n\
+	Some malicious websites are charging money for ${APPNAME}, committing credit card$\n\
+	fraud, and infecting computers with malicious software. If you did not download$\n\
+	this copy of ${APPNAME} from http://www.bittorrent.com/, PROTECT YOURSELF NOW!$\n\
+	* Check your computer for malicious software.$\n\
+	* Check your credit card bill for unauthorized charges.$\n\
+	* Cancel the installation NOW and download ${APPNAME} for free from $\n\
+	http://www.bittorrent.com/\
+	" IDOK done
 
-  Goto endofuninst
-  no_remove_uninstaller: 
-    MessageBox MB_OK "Uninstallation failed. Aborting."
-    Abort
-  endofuninst:
-done:
+	Abort
+	done:	
 
 FunctionEnd
 

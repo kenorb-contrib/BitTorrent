@@ -16,15 +16,15 @@ from sys import *
 from os.path import *
 from sha import *
 from BitTorrent.bencode import *
+from BitTorrent import app_name, version
 
 NAME, EXT = splitext(basename(argv[0]))
-VERSION = '20021207'
 
-print '%s %s - decode BitTorrent metainfo files' % (NAME, VERSION)
+print '%s %s - decode %s metainfo files' % (NAME, version, app_name)
 print
 
 if len(argv) == 1:
-    print '%s file1.torrent file2.torrent file3.torrent ...' % argv[0]
+    print '%s file1.torrent file2.torrent file3.torrent ...' % basename(argv[0])
     print
     exit(2) # common exit code for syntax error
 

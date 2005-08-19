@@ -12,11 +12,12 @@
 
 # Written by Henry 'Pi' James and Bram Cohen
 
-from sys import argv
+from os.path import basename
+from sys import argv, exit
 from BitTorrent.bencode import bencode, bdecode
 
 if len(argv) < 3:
-    print '%s http://new.uri:port/announce file1.torrent file2.torrent' % argv[0]
+    print '%s http://new.uri:port/announce file1.torrent file2.torrent' % basename(argv[0])
     print
     exit(2) # common exit code for syntax error
 

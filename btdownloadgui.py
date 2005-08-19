@@ -1305,7 +1305,7 @@ class TorrentInfoWindow(object):
         y+=1
 
         if not self.torrent_box.is_batch:
-            add_item('File name:', filename, y)
+            add_item('File name:', path_wrap(filename), y)
             y+=1
         
         self.vbox.pack_start(self.table)
@@ -2690,7 +2690,7 @@ class DownloadInfoFrame(object):
             if os.access(fullname, os.F_OK):
                 message = MessageDialog(self.mainwindow, 'File exists!',
                                         '"%s" already exists.'\
-                                        ' Do you want to choose a different file name?.'%name,
+                                        ' Do you want to choose a different file name?.'%path_wrap(name),
                                         buttons=gtk.BUTTONS_YES_NO,
                                         nofunc= lambda : self.got_location(infohash, fullname),
                                         yesfunc=lambda : self.get_save_location(infohash, metainfo, fullname),)

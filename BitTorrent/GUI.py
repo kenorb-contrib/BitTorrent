@@ -335,6 +335,12 @@ if gtk.pygtk_version < (2, 4, 1):
 
         def __init__(self, main, title='', fullname='', got_location_func=None, no_location_func=None, got_multiple_location_func=None, show=True):
             gtk.FileSelection.__init__(self)
+            from BitTorrent.ConvertedMetainfo import filesystem_encoding
+            self.fsenc = filesystem_encoding
+            try:
+                fullname.decode('utf8')
+            except:
+                fullname = fullname.decode(self.fsenc)
             self.main = main
             self.set_modal(gtk.TRUE)
             self.set_destroy_with_parent(gtk.TRUE)
@@ -408,6 +414,13 @@ else:
             gtk.FileChooserDialog.__init__(self, action=action, title=title,
                          buttons=(gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL,
                                   gtk.STOCK_OK, gtk.RESPONSE_OK))
+            
+            from BitTorrent.ConvertedMetainfo import filesystem_encoding
+            self.fsenc = filesystem_encoding
+            try:
+                fullname.decode('utf8')
+            except:
+                fullname = fullname.decode(self.fsenc)
             self.set_default_response(gtk.RESPONSE_OK)
             if action == gtk.FILE_CHOOSER_ACTION_CREATE_FOLDER:
                 self.convert_button_box = gtk.HBox()
@@ -435,16 +448,22 @@ else:
             self.set_destroy_with_parent(gtk.TRUE)
             if fullname:
                 if action == gtk.FILE_CHOOSER_ACTION_SELECT_FOLDER:
+                    if gtk.gtk_version < (2,6):
+                        fullname = fullname.encode(self.fsenc)
                     self.set_filename(fullname)
                 elif action == gtk.FILE_CHOOSER_ACTION_OPEN:
                     if fullname[-1] != os.sep:
                         fullname = fullname + os.sep
                     path, filename = os.path.split(fullname)
+                    if gtk.gtk_version < (2,6):
+                        path = path.encode(self.fsenc)
                     self.set_current_folder(path)
                 else:
                     if fullname[-1] == os.sep:
                         fullname = fullname[:-1]
                     path, filename = os.path.split(fullname)
+                    if gtk.gtk_version < (2,8):
+                        path = path.encode(self.fsenc)
                     self.set_current_folder(path)
                     self.set_current_name(filename)
             if got_multiple_location_func is not None:
@@ -472,7 +491,11 @@ else:
                     if self.got_multiple_location_func is not None:
                         self.got_multiple_location_func(self.get_filenames())
                 elif self.got_location_func is not None:
-                    self.got_location_func(self.get_filename())
+                    fn = self.get_filename()
+                    if fn:
+                        self.got_location_func(fn)
+                    else:
+                        self.no_location_func()
             else:
                 if self.no_location_func is not None:
                     self.no_location_func()

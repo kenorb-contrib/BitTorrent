@@ -314,7 +314,7 @@ class RawServer(object):
                     try:
                         code, msg = e
                     except:
-                        code = ENOBUFS
+                        code = e
                 if code == ENOBUFS:
                     self.errorfunc(CRITICAL, "Have to exit due to the TCP "
                                    "stack flaking out. "
