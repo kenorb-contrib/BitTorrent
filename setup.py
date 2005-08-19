@@ -20,19 +20,36 @@ gettext.install('bittorrent', 'locale')
 
 import sys
 from distutils.core import setup, Extension
-import BitTorrent
+from BitTorrent import version, languages
+from BitTorrent.platform import calc_unix_dirs
 
 import glob
 
-scripts = ["btdownloadgui.py", "btdownloadcurses.py", "btdownloadheadless.py",
-           "btmaketorrentgui.py", "btmaketorrent.py",
-           "btlaunchmany.py", "btlaunchmanycurses.py",
-           "bttrack.py", "btreannounce.py", "btrename.py", "btshowmetainfo.py"]
+symlinks = ["bittorrent" , "bittorrent-curses", "bittorrent-console",
+           "maketorrent",                      "maketorrent-console",
+                          "launchmany-curses", "launchmany-console",
+                                               "changetracker-console",
+                                               "torrentinfo-console",
+           "bittorrent-tracker",
+           ]
 
-img_root, doc_root, locale_root = BitTorrent.calc_unix_dirs()
+scripts = []
+
+for s in symlinks:
+    script = s+'.py'
+    if not os.access(s, os.F_OK):
+        os.symlink(script, s)
+    scripts.append(script)
+    os.chmod(script, 0755)
+
+use_scripts = symlinks
+if sys.argv[1:2] == ['sdist']:
+    use_scripts = scripts
+
+img_root, doc_root, locale_root = calc_unix_dirs()
 
 translations = []
-for l in BitTorrent.languages:
+for l in languages:
     translations.append (("%s/%s/LC_MESSAGES"          % (locale_root, l),
                           ["locale/%s/LC_MESSAGES/bittorrent.mo" % l]))
 
@@ -41,17 +58,22 @@ data_files = [ (img_root        , glob.glob('images/*png')+['images/bittorrent.i
                (doc_root        , ['credits.txt', 'credits-l10n.txt',
                                    'LICENSE.txt', 'README.txt',
                                    'TRACKERLESS.txt', 'redirdonate.html',
+                                   'public.key',
                                    ]       ),
                ] + translations
 
 setup(
     name = "BitTorrent",
-    version = BitTorrent.version,
+    version = version,
     author = "Bram Cohen",
     author_email = "bram@bitconjurer.org",
     url = "http://bittorrent.com/",
     license = "BitTorrent Open Source License",
-    scripts = scripts,
+    scripts = use_scripts,
     packages = ["BitTorrent", "khashmir"],
     data_files = data_files,
     )
+
+for s in symlinks:
+    if os.path.islink(s):
+        os.remove(s)

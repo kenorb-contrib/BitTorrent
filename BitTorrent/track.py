@@ -53,8 +53,8 @@ defaults = [
     ('reannounce_interval', 30 * 60,
      _("seconds downloaders should wait between reannouncements")),
     ('response_size', 50,
-     _("default number of peers to send in an info message if the client does "
-       "not specify a number")),
+     _("default number of peers to send an info message to if the "
+       "client does not specify a number")),
     ('timeout_check_interval', 5,
      _("time to wait between checking if any connections have timed out")),
     ('nat_check', 3, 
@@ -107,6 +107,8 @@ defaults = [
      _("scrape access allowed (can be none, specific or full)")),
     ('max_give', 200,
      _("maximum number of peers to give with any one request")),
+    ('initiate_rate', 10,
+     _("maximum number of tcp connections to open per second"))
     ] 
 
 def statefiletemplate(x):

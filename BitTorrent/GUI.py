@@ -18,7 +18,8 @@ import gobject
 import os
 import threading
 
-from BitTorrent import image_root, app_name, FAQ_URL
+from BitTorrent import app_name, FAQ_URL
+from BitTorrent.platform import image_root
 
 def lock_wrap(function, *args):
     gtk.threads_enter()
@@ -46,7 +47,7 @@ else:
     MAX_WINDOW_HEIGHT -= 32 # leave room for window decorations (could be any size)
     
 
-MIN_MULTI_PANE_HEIGHT = 160
+MIN_MULTI_PANE_HEIGHT = 107
 
 BT_TARGET_TYPE = 0
 EXTERNAL_TARGET_TYPE = 1
@@ -358,6 +359,12 @@ if gtk.pygtk_version < (2, 4, 1):
 
         def __init__(self, main, title='', fullname='', got_location_func=None, no_location_func=None, got_multiple_location_func=None, show=True):
             gtk.FileSelection.__init__(self)
+            from BitTorrent.ConvertedMetainfo import filesystem_encoding
+            self.fsenc = filesystem_encoding
+            try:
+                fullname.decode('utf8')
+            except:
+                fullname = fullname.decode(self.fsenc)
             self.main = main
             self.set_modal(True)
             self.set_destroy_with_parent(True)
@@ -431,6 +438,12 @@ else:
             gtk.FileChooserDialog.__init__(self, action=action, title=title,
                          buttons=(gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL,
                                   gtk.STOCK_OK, gtk.RESPONSE_OK))
+            from BitTorrent.ConvertedMetainfo import filesystem_encoding
+            self.fsenc = filesystem_encoding
+            try:
+                fullname.decode('utf8')
+            except:
+                fullname = fullname.decode(self.fsenc)
             self.set_default_response(gtk.RESPONSE_OK)
             if action == gtk.FILE_CHOOSER_ACTION_CREATE_FOLDER:
                 self.convert_button_box = gtk.HBox()
@@ -458,16 +471,22 @@ else:
             self.set_destroy_with_parent(True)
             if fullname:
                 if action == gtk.FILE_CHOOSER_ACTION_SELECT_FOLDER:
+                    if gtk.gtk_version < (2,6):
+                        fullname = fullname.encode(self.fsenc)
                     self.set_filename(fullname)
                 elif action == gtk.FILE_CHOOSER_ACTION_OPEN:
                     if fullname[-1] != os.sep:
                         fullname = fullname + os.sep
                     path, filename = os.path.split(fullname)
+                    if gtk.gtk_version < (2,6):
+                        path = path.encode(self.fsenc)
                     self.set_current_folder(path)
                 else:
                     if fullname[-1] == os.sep:
                         fullname = fullname[:-1]
                     path, filename = os.path.split(fullname)
+                    if gtk.gtk_version < (2,8):
+                        path = path.encode(self.fsenc)
                     self.set_current_folder(path)
                     self.set_current_name(filename)
             if got_multiple_location_func is not None:
@@ -495,7 +514,11 @@ else:
                     if self.got_multiple_location_func is not None:
                         self.got_multiple_location_func(self.get_filenames())
                 elif self.got_location_func is not None:
-                    self.got_location_func(self.get_filename())
+                    fn = self.get_filename()
+                    if fn:
+                        self.got_location_func(fn)
+                    else:
+                        self.no_location_func()
             else:
                 if self.no_location_func is not None:
                     self.no_location_func()

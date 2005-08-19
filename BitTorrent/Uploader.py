@@ -65,7 +65,7 @@ class Upload(object):
             self.buffer.append((index, begin, length))
             if self.connection.next_upload is None and \
                    self.connection.connection.is_flushed():
-                self.ratelimiter.queue(self.connection)
+                self.ratelimiter.queue(self.connection, self.connection.encoder.context.rlgroup)
 
     def got_cancel(self, index, begin, length):
         try:

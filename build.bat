@@ -13,9 +13,9 @@ rem For Python 2.4:
 rem set PYTHON=Python24
 
 rem For GTK 2.4:
-rem set WIMP_DIR_NAME=wimp
+set WIMP_DIR_NAME=wimp
 rem For GTK 2.6:
-set WIMP_DIR_NAME=MS-Windows
+rem set WIMP_DIR_NAME=MS-Windows
 
 del /F /S /Q build dist 
 c:\%PYTHON%\python.exe winmakei18n.py
@@ -51,4 +51,4 @@ copy %GTK_BASEPATH%\lib\gtk-2.0\2.4.0\engines\libwimp.dll dist\lib\gtk-2.0\2.4.0
 mkdir dist\share\themes\%WIMP_DIR_NAME%\gtk-2.0
 copy %GTK_BASEPATH%\share\themes\%WIMP_DIR_NAME%\gtk-2.0\gtkrc dist\share\themes\%WIMP_DIR_NAME%\gtk-2.0
 
-"C:\Program Files\NSIS\makensis.exe" bittorrent.nsi
+"C:\Program Files\NSIS\makensis.exe" installer.nsi

@@ -126,9 +126,16 @@ class ConvertedMetainfo(object):
                         self.bad_path = True
                         break
                 else:
-                    path = [(self._enforce_utf8(x), x) for x in path]
+                    p = []
+                    for x in path:
+                        p.append((self._enforce_utf8(x), x))
+                    path = p
                     self.orig_files.append('/'.join([x[0] for x in path]))
-                    r.append(([(self._to_fs_2(u), u, o) for u, o in path], i))
+                    k = []
+                    for u,o in path:
+                        tf2 = self._to_fs_2(u)
+                        k.append((tf2, u, o))
+                    r.append((k,i))
                     i += 1
             # If two or more file/subdirectory names in the same directory
             # would map to the same name after encoding conversions + Windows
@@ -262,7 +269,7 @@ class ConvertedMetainfo(object):
 
     def _to_fs_2(self, name):
         bad = False
-        if sys.platform == 'win32':
+        if sys.platform.startswith('win'):
             name, bad = self._fix_windows(name)
         name = name.decode('utf-8')
         try:
@@ -271,8 +278,11 @@ class ConvertedMetainfo(object):
             self.bad_conversion = True
             bad = True
             r = name.encode(filesystem_encoding, 'replace')
-            # 'replace' could possibly make the name unsupported by windows
-            # again, but I think this shouldn't happen with the 'mbcs'
-            # encoding. Could happen under Python 2.2 or if someone explicitly
-            # specifies a stupid encoding...
+
+        if sys.platform.startswith('win'):
+            # encoding to mbcs with or without 'replace' will make the
+            # name unsupported by windows again because it adds random
+            # '?' characters which are invalid windows filesystem
+            # character
+            r, bad = self._fix_windows(r)
         return (bad, r)

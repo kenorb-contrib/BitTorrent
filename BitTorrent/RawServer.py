@@ -23,6 +23,7 @@ from errno import EWOULDBLOCK, ENOBUFS
 
 from BitTorrent.platform import bttime
 from BitTorrent import WARNING, CRITICAL, FAQ_URL
+from BitTorrent.defer import Deferred
 
 try:
     from select import poll, error, POLLIN, POLLOUT, POLLERR, POLLHUP
@@ -34,6 +35,17 @@ except ImportError:
 NOLINGER = struct.pack('ii', 1, 0)
 
 
+class Handler(object):
+    def connection_started(self, s):
+        pass
+    def connection_failed(self, addr, exception):
+        pass
+    def connection_flushed(self, s):
+        pass
+    def data_came_in(self, addr, datagram):
+        pass
+
+    
 class SingleSocket(object):
 
     def __init__(self, raw_server, sock, handler, context, ip=None):
@@ -129,17 +141,18 @@ class RawServer(object):
         self.serversockets = {}
         self.live_contexts = {None : True}
         self.ident = thread.get_ident()
+        self.to_start = []
         self.add_task(self.scan_for_timeouts, config['timeout_check_interval'])
-        if sys.platform != 'win32':
-            self.wakeupfds = os.pipe()
-            self.poll.register(self.wakeupfds[0], POLLIN)
-        else:
+        if sys.platform.startswith('win'):
             # Windows doesn't support pipes with select(). Just prevent sleeps
             # longer than a second instead of proper wakeup for now.
             self.wakeupfds = (None, None)
             def wakeup():
                 self.add_task(wakeup, 1)
             wakeup()
+        else:
+            self.wakeupfds = os.pipe()
+            self.poll.register(self.wakeupfds[0], POLLIN)
 
     def add_context(self, context):
         self.live_contexts[context] = True
@@ -250,6 +263,32 @@ class RawServer(object):
         self.single_sockets[sock.fileno()] = s
         return s
 
+    def _get_initiate_rate(self):
+        rate = self.config['initiate_rate'] * 1.0
+        return rate
+    
+    def asynch_start_connection(self, dns, handler=None, context=None, do_bind=True):
+        rate = self._get_initiate_rate()
+        if rate and not self.to_start:
+            self.add_task(self._start_connection, 1 / rate)
+        self.to_start.insert(0, (dns, handler, context, do_bind))
+        if rate == 0:
+            self._start_connection()
+    
+    def _start_connection(self):
+        dns, handler, context, do_bind = self.to_start.pop()
+        try:
+            s = self.start_connection(dns, handler, context, do_bind)
+        except Exception, e:
+            handler.connection_failed(dns, e)
+        else:
+            handler.connection_started(s)
+        rate = self._get_initiate_rate()
+        if rate == 0 and self.to_start:
+            self._start_connection()
+        elif self.to_start:
+            self.add_task(self._start_connection, 1 / rate)
+        
     def wrap_socket(self, sock, handler, context=None, ip=None):
         sock.setblocking(0)
         self.poll.register(sock, POLLIN)
@@ -369,7 +408,7 @@ class RawServer(object):
                 try:
                     code, msg = e
                 except:
-                    code = ENOBUFS
+                    code = e
             if code == ENOBUFS:
                 self.errorfunc(CRITICAL,
                                _("Have to exit due to the TCP stack flaking "

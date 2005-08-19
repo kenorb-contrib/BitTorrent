@@ -10,37 +10,35 @@
 
 # Written by Bill Bumgarner and Bram Cohen
 
-import os
-import re
-import urllib
 from types import *
 from cStringIO import StringIO
 
 from BitTorrent.obsoletepythonsupport import *
 
 from BitTorrent.defaultargs import MyBool, MYTRUE
-from BitTorrent import BTFailure, is_frozen_exe
+from BitTorrent import BTFailure
 from BitTorrent.bencode import bdecode
+from BitTorrent.platform import is_frozen_exe
 
 def makeHelp(uiname, defaults):
     ret = ''
     ret += (_("Usage: %s ") % uiname)
-    if uiname.startswith('btlaunchmany'):
+    if uiname.startswith('launchmany'):
         ret += _("[OPTIONS] [TORRENTDIRECTORY]\n\n")
         ret += _("If a non-option argument is present it's taken as the value\n"
                  "of the torrent_dir option.\n")
-    elif uiname == 'btdownloadgui':
+    elif uiname == 'bittorrent':
         ret += _("[OPTIONS] [TORRENTFILES]\n")
-    elif uiname.startswith('btdownload'):
+    elif uiname.startswith('bittorrent'):
         ret += _("[OPTIONS] [TORRENTFILE]\n")
-    elif uiname == 'btmaketorrent':
+    elif uiname == 'maketorrent':
         ret += _("[OPTION] TRACKER_URL FILE [FILE]\n")
     ret += '\n'
     ret += _("arguments are -\n") + formatDefinitions(defaults, 80)
     return ret
 
 def printHelp(uiname, defaults):
-    if uiname[-3:] == 'gui' and is_frozen_exe:
+    if uiname in ('bittorrent','maketorrent') and is_frozen_exe:
         from BitTorrent.GUI import HelpWindow
         HelpWindow(None, makeHelp(uiname, defaults))
     else:
@@ -90,54 +88,6 @@ def format_key(key):
         return '-%s'%key
     else:
         return '--%s'%key
-
-urlpat = re.compile('^\w+://')
-
-def open_arg(arg):
-    filename = arg
-    ret_data = None
-    errors = []
-    if os.access(filename, os.F_OK):
-        f = None
-        try:
-            f = file(filename, 'rb')
-            data = f.read()
-            f.close()
-        except Exception, e:
-            if f is not None:
-                f.close()
-            if _("Temporary Internet Files") in filename:
-                errors.append(_("Could not read %s: %s. You are probably "
-                                "using a broken Internet Explorer version "
-                                "that passed BitTorrent a filename that "
-                                "doesn't exist. To work around the problem, "
-                                "try clearing your Temporary Internet Files "
-                                "or right-click the link and save the "
-                                ".torrent file to disk first.") %
-                                (filename, str(e)))
-            else:
-                errors.append((_("Could not read %s") % filename) + (': %s' % str(e)))
-
-        else:
-            ret_data = data
-    elif urlpat.match(filename):
-        err_str = _("Could not download or open \n%s\n"
-                    "Try using a web browser to download the torrent file." %
-                    filename)
-        try:
-            u = urllib.urlopen(filename)
-            data = u.read()
-            u.close()
-            b = bdecode(data)
-        except Exception, e:
-            u.close()
-            errors.append(err_str + "\n(%s)" % e)
-        else:
-            u.close()
-            ret_data = data
-    else:
-        errors.append(_("Could not read %s") % filename)
-    return ret_data, errors
 
 def parseargs(argv, options, minargs=None, maxargs=None, presets=None):
     config = {}
@@ -193,9 +143,9 @@ def parseargs(argv, options, minargs=None, maxargs=None, presets=None):
         if value is None:
             usage(_("Option %s is required.") % format_key(key))
     if minargs is not None and len(args) < minargs:
-        usage(_("Must supply at least %d args.") % minargs)
+        usage(_("Must supply at least %d arguments.") % minargs)
     if maxargs is not None and len(args) > maxargs:
-        usage(_("Too many args - %d max.") % maxargs)
+        usage(_("Too many arguments - %d maximum.") % maxargs)
     return (config, args)
 
 def parse_options(defaults, newvalues):

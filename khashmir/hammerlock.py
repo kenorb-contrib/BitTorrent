@@ -27,9 +27,7 @@ class Hammerlock:
     def check(self, addr):
         x = self.buckets[self.curr].get(addr, 0) + 1
         self.buckets[self.curr][addr] = x
-        x = 0
-        for bucket in self.buckets:
-            x += bucket.get(addr, 0)
+        x = sum([bucket.get(addr, 0) for bucket in self.buckets])
         if x >= self.rate:
             return False
         else:

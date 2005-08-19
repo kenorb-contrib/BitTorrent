@@ -332,4 +332,4 @@ class Connection(object):
         if self.complete:
             if self.next_upload is None and (self._partial_message is not None
                                              or self.upload.buffer):
-                self.encoder.ratelimiter.queue(self)
+                self.encoder.ratelimiter.queue(self, self.encoder.context.rlgroup)

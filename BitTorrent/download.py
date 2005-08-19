@@ -77,7 +77,8 @@ class Feedback(object):
 class Multitorrent(object):
 
     def __init__(self, config, doneflag, errorfunc, listen_fail_ok=False):
-        self.config = dict(config)
+        self.dht = None
+        self.config = config
         self.errorfunc = errorfunc
         self.rawserver = RawServer(doneflag, config, errorfunc=errorfunc,
                                    tos=config['peer_socket_tos'])
@@ -98,7 +99,8 @@ class Multitorrent(object):
         for port in xrange(self.config['minport'], self.config['maxport'] + 1):
             try:
                 self.singleport_listener.open_port(port, self.config)
-                self.dht = UTKhashmir(self.config['bind'], self.singleport_listener.get_port(), self.config['data_dir'], self.rawserver, int(self.config['max_upload_rate'] * 1024 * 0.02))
+                if self.config['start_trackerless_client']:
+                    self.dht = UTKhashmir(self.config['bind'], self.singleport_listener.get_port(), self.config['data_dir'], self.rawserver, int(self.config['max_upload_rate'] * 1024 * 0.02))
                 break
             except socketerror, e:
                 pass
@@ -116,7 +118,7 @@ class Multitorrent(object):
     def start_torrent(self, metainfo, config, feedback, filename):
         torrent = _SingleTorrent(self.rawserver, self.singleport_listener,
                                  self.ratelimiter, self.filepool, config, self.dht)
-        torrent.rlgroup = RateLimitedGroup(0, torrent.got_exception)
+        torrent.rlgroup = RateLimitedGroup(config['max_upload_rate'], torrent.got_exception)
         self.rawserver.add_context(torrent)
         def start():
             torrent.start_download(metainfo, feedback, filename)
@@ -189,7 +191,6 @@ class _SingleTorrent(object):
         self._singleport_listener = singleport_listener
         self._ratelimiter = ratelimiter
         self._filepool = filepool
-        self.config = dict(config)
         self._dht = dht
         self._storage = None
         self._storagewrapper = None
@@ -217,6 +218,7 @@ class _SingleTorrent(object):
         self.feedback = None
         self.errors = []
         self.rlgroup = None
+        self.config = config
         
     def start_download(self, *args, **kwargs):
         it = self._start_download(*args, **kwargs)
@@ -233,7 +235,6 @@ class _SingleTorrent(object):
     def _start_download(self, metainfo, feedback, save_path):
         self.feedback = feedback
         config = self.config
-        self._set_auto_uploads()
 
         self.infohash = metainfo.infohash
         self.total_bytes = metainfo.total_bytes
@@ -342,24 +343,32 @@ class _SingleTorrent(object):
             self.reported_port = self._singleport_listener.get_port()
             self.reserved_ports.append(self.reported_port)
 
+        if self._dht:
+            addContact = self._dht.addContact
+        else:
+            addContact = None
         self._encoder = Encoder(make_upload, downloader, choker,
                      len(metainfo.hashes), self._ratelimiter, self._rawserver,
-                     config, myid, schedfunc, self.infohash, self, self._dht.addContact, self.reported_port)
+                     config, myid, schedfunc, self.infohash, self, addContact, self.reported_port)
 
         self._singleport_listener.add_torrent(self.infohash, self._encoder)
         self._listening = True
         if metainfo.is_trackerless:
-            if len(self._dht.table.findNodes(metainfo.infohash, invalid=False)) < const.K:
-                for ip, port in metainfo.nodes:
-                    self._dht.addContact(ip, port)
-            self._rerequest = DHTRerequester(config,
-                schedfunc, self._encoder.how_many_connections,
-                self._encoder.start_connection, externalsched,
-                self._storagewrapper.get_amount_left, upmeasure.get_total,
-                downmeasure.get_total, self.reported_port, myid,
-                self.infohash, self._error, self.finflag, upmeasure.get_rate,
-                downmeasure.get_rate, self._encoder.ever_got_incoming,
-                self.internal_shutdown, self._announce_done, self._dht)
+            if not self._dht:
+                self._error(self, CRITICAL, _("Attempt to download a trackerless torrent with trackerless client turned off."))
+                return
+            else:
+                if len(self._dht.table.findNodes(metainfo.infohash, invalid=False)) < const.K:
+                    for ip, port in metainfo.nodes:
+                        self._dht.addContact(ip, port)
+                self._rerequest = DHTRerequester(config,
+                    schedfunc, self._encoder.how_many_connections,
+                    self._encoder.start_connection, externalsched,
+                    self._storagewrapper.get_amount_left, upmeasure.get_total,
+                    downmeasure.get_total, self.reported_port, myid,
+                    self.infohash, self._error, self.finflag, upmeasure.get_rate,
+                    downmeasure.get_rate, self._encoder.ever_got_incoming,
+                    self.internal_shutdown, self._announce_done, self._dht)
         else:
             self._rerequest = Rerequester(metainfo.announce, config,
                 schedfunc, self._encoder.how_many_connections,
@@ -378,7 +387,7 @@ class _SingleTorrent(object):
             self._encoder.ever_got_incoming, self._rerequest)
 
         self._announced = True
-        if len(self._dht.table.findNodes(self.infohash)) == 0:
+        if self._dht and len(self._dht.table.findNodes(self.infohash)) == 0:
             self._rawserver.add_task(self._dht.findCloseNodes, 5)
             self._rawserver.add_task(self._rerequest.begin, 20)
         else:
@@ -530,16 +539,12 @@ class _SingleTorrent(object):
     def set_option(self, option, value):
         if self.closed:
             return
-        if option not in self.config or self.config[option] == value:
+        if self.config.has_key(option) and self.config[option] == value:
             return
-        if option not in 'min_uploads max_uploads max_initiate max_allow_in '\
-           'data_dir ip max_upload_rate retaliate_to_garbled_data'.split():
-            return
+        self.config[option] = value
         if option == 'max_upload_rate':
             # make sure counters get reset so new rate applies immediately
-            self.check_time=1
-        self.config[option] = value
-        self._set_auto_uploads()
+            self.rlgroup.set_rate(value)
 
     def change_port(self):
         if not self._listening:
@@ -571,23 +576,6 @@ class _SingleTorrent(object):
         myid = myid + ('-' * (8-len(myid)))+sha(repr(time())+ ' ' +
                                      str(getpid())).digest()[-6:].encode('hex')
         return myid
-
-    def _set_auto_uploads(self):
-        uploads = self.config['max_uploads']
-        rate = self.config['max_upload_rate']
-        if uploads > 0:
-            pass
-        elif rate <= 0:
-            uploads = 7 # unlimited, just guess something here...
-        elif rate < 9:
-            uploads = 2
-        elif rate < 15:
-            uploads = 3
-        elif rate < 42:
-            uploads = 4
-        else:
-            uploads = int(sqrt(rate * .6))
-        self.config['max_uploads_internal'] = uploads
 
     def _error(self, level, text, exception=False):
         self.errors.append((time(), level, text))

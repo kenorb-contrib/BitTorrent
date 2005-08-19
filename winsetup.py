@@ -27,7 +27,7 @@ opts = {
     "includes":"pango,atk,gobject"
                ",encodings,encodings.*"
 #               ",cjkcodecs,cjkcodecs.*"
-               ",dns,dns.rdtypes.ANY.*,dns.rdtypes.IN.*"
+#               ",dns,dns.rdtypes.ANY.*,dns.rdtypes.IN.*"
     ,
 
 # Uncomment the following lines if you want a dist\ directory build by
@@ -57,14 +57,14 @@ for l in languages:
             gtk_mo.append(moname) 
     translations.append(("share\\locale\\%s\\LC_MESSAGES" % l, gtk_mo))
 
-setup(windows=[{'script': 'btdownloadgui.py',
+setup(windows=[{'script': 'bittorrent.py' ,
                 "icon_resources": [(1, "images\\bittorrent.ico")]},
-               {'script': 'btmaketorrentgui.py',
+               {'script': 'maketorrent.py',
                 "icon_resources": [(1, "images\\bittorrent.ico")]}],
       options=opts,
       data_files=[('',["credits.txt", "LICENSE.txt",
                        "README.txt", "redirdonate.html",
-                       "TRACKERLESS.txt",
+                       "TRACKERLESS.txt","public.key",
                        ]),
                   ("images", glob.glob("images\\*png")+["images\\bittorrent.ico"]),
                   ("images\\logo", glob.glob("images\\logo\\*png")),

@@ -73,6 +73,8 @@ common_options = [
     ('max_files_open', 50,
      _("the maximum number of files in a multifile torrent to keep open at a "
        "time, 0 means no limit. Used to avoid running out of file descriptors.")),
+    ('start_trackerless_client', MYTRUE,
+     _("Initialize a trackerless client.  This must be set to one in order to download trackerless torrents."))
     ]
 
 
@@ -93,9 +95,9 @@ rare_options = [
      _("maximum length slice to send to peers, close connection if a larger "
        "request is received")),
     ('max_rate_period', 20.0,
-     _("maximum amount of time to guess the current rate estimate represents")),
+     _("maximum time interval over which to estimate the current upload and download rates")),
     ('max_rate_period_seedtime', 100.0,
-     _("maximum amount of time to guess the current rate estimate represents")),
+     _("maximum time interval over which to estimate the current seed rate")),
     ('max_announce_retry_interval', 1800,
      _("maximum time to wait between retrying announces if they keep failing")),
     ('snub_time', 30.0,
@@ -120,20 +122,22 @@ rare_options = [
      _("close connections with RST and avoid the TCP TIME_WAIT state")),
     ('chop_max_allow_in', MYFALSE,
      _("force max_allow_in to stay below 30 on Win32")),
+    ('initiate_rate', 10,
+     _("initiate no more than this many connections per second"))
     ]
 
 
 def get_defaults(ui):
-    assert ui in ("btdownloadheadless", "btdownloadcurses"  , "btdownloadgui",
-                  "btlaunchmany"      , "btlaunchmanycurses",
-                  "btmaketorrent"     , "btmaketorrentgui")
-
+    assert ui in ("bittorrent" , "bittorrent-curses", "bittorrent-console" , 
+                  "maketorrent",                      "maketorrent-console",
+                                 "launchmany-curses", "launchmany-console" ,
+                  )
     r = []
 
-    if ui.startswith('btdownload') or ui.startswith('btlaunchmany'):
+    if ui.startswith('bittorrent') or ui.startswith('launchmany'):
         r.extend(common_options)
 
-    if ui == 'btdownloadgui':
+    if ui == 'bittorrent':
         r.extend([
             ('save_as', '',
              _("file name (for single-file torrents) or directory name (for "
@@ -151,6 +155,12 @@ def get_defaults(ui):
             ('last_torrent_ratio', 0,
              _("the minimum upload/download ratio, in percent, to achieve "
                "before stopping seeding the last torrent. 0 means no limit.")),
+            ('seed_forever', MYFALSE,
+             _("Seed each completed torrent indefinitely "
+               "(until the user cancels it)")),
+            ('seed_last_forever', MYTRUE,
+             _("Seed the last torrent indefinitely "
+               "(until the user cancels it)")),
             ('pause', MYFALSE,
              _("start downloader in paused state")),
             ('start_torrent_behavior', 'replace',
@@ -165,20 +175,20 @@ def get_defaults(ui):
              'whether or not to ask for a location to save downloaded files in'),
             ])
 
-    if ui in ('btdownloadcurses', 'btdownloadheadless'):
+    if ui in ('bittorrent-console', 'bittorrent-curses'):
         r.append(
             ('save_as', '',
              _("file name (for single-file torrents) or directory name (for "
                "batch torrents) to save the torrent as, overriding the "
                "default name in the torrent. See also --save_in")))
 
-    if ui.startswith('btdownload'):
+    if ui.startswith('bittorrent'):
         r.extend([
             ('max_uploads', -1,
              _("the maximum number of uploads to allow at once. -1 means a "
                "(hopefully) reasonable number based on --max_upload_rate. "
                "The automatic values are only sensible when running one "
-               "torrent at once.")),
+               "torrent at a time.")),
             ('save_in', '',
              _("local directory where the torrent contents will be saved. The "
                "file (single-file torrents) or directory (batch torrents) will "
@@ -192,13 +202,13 @@ def get_defaults(ui):
              _("whether or not to ask for a location to save downloaded files in")),
             ])
 
-    if ui.startswith('btlaunchmany'):
+    if ui.startswith('launchmany'):
         r.extend([
             ('max_uploads', 6,
              _("the maximum number of uploads to allow at once. -1 means a "
                "(hopefully) reasonable number based on --max_upload_rate. The "
                "automatic values are only sensible when running one torrent at "
-               "once.")),
+               "a time.")),
             ('save_in', '',
              _("local directory where the torrents will be saved, using a "
                "name determined by --saveas_style. If this is left empty "
@@ -221,22 +231,22 @@ def get_defaults(ui):
                 "overwrite files without warning and may present "
                 "security issues."
                 ) ),
-            ('display_path', ui == 'btlaunchmany' and MYTRUE or MYFALSE,
+            ('display_path', ui == 'launchmany-console' and MYTRUE or MYFALSE,
               _("whether to display the full path or the torrent contents for "
                 "each torrent") ),
             ])
 
-    if ui.startswith('btlaunchmany') or ui == 'btmaketorrentgui':
+    if ui.startswith('launchmany') or ui == 'maketorrent':
         r.append(
             ('torrent_dir', '',
              _("directory to look for .torrent files (semi-recursive)")),)
 
-    if ui in ('btdownloadcurses', 'btdownloadheadless'):
+    if ui in ('bittorrent-curses', 'bittorrent-console'):
         r.append(
             ('spew', MYFALSE,
              _("whether to display diagnostic info to stdout")))
 
-    if ui.startswith('btmaketorrent'):
+    if ui.startswith('maketorrent'):
         r.extend([
             ('piece_size_pow2', 18,
              _("which power of two to set the piece size to")),
@@ -251,7 +261,7 @@ def get_defaults(ui):
 
     r.extend(basic_options)
     
-    if ui.startswith('btdownload') or ui.startswith('btlaunchmany'):
+    if ui.startswith('bittorrent') or ui.startswith('launchmany'):
         r.extend(rare_options)
     
     return r

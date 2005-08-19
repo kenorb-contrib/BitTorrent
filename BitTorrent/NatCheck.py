@@ -30,14 +30,15 @@ class NatCheck(object):
         self.buffer = StringIO()
         self.next_len = 1
         self.next_func = self.read_header_len
-        try:
-            self.connection = rawserver.start_connection((ip, port), self)
-            self.connection.write(chr(len(protocol_name)) + protocol_name +
-                (chr(0) * 8) + downloadid)
-        except socketerror:
-            self.answer(False)
-        except IOError:
-            self.answer(False)
+        rawserver.asynch_start_connection((ip, port), self)
+
+    def connection_started(self, s):
+        self.connection = s
+        self.connection.write(chr(len(protocol_name)) + protocol_name +
+                              (chr(0) * 8) + self.downloadid)
+
+    def connection_failed(self, addr, exception):
+        self.answer(False)
 
     def answer(self, result):
         self.closed = True

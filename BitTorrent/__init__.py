@@ -9,121 +9,27 @@
 # License.
 
 app_name = 'BitTorrent'
-version = '4.1.3'
+version = '4.1.4'
 
 URL = 'http://www.bittorrent.com/'
 DONATE_URL = URL + 'donate.html'
 FAQ_URL = URL + 'FAQ.html'
 HELP_URL = URL + 'documentation.html'
+SEARCH_URL = 'http://search.bittorrent.com/search.jsp?query=%s'
 
 import sys
 assert sys.version_info >= (2, 2, 1), _("Python 2.2.1 or newer required")
 import os
-import re
 
-languages = 'af,ar,da,de,es,fi,fr,he_IL,hu,it,ja,ko,nl,no,pt_BR,ro,ru,sk,sl,sq,sv,tr,zh_CN,zh_TW'.split(',')
+from BitTorrent.platform import get_home_dir, is_frozen_exe
+
+languages = 'af,ar,bg,cs,da,de,es,es_MX,et,fi,fr,gr,he_IL,hr,hu,it,ja,ko,lt,ms,nl,nb_NO,pl,pt,pt_BR,ro,ru,sk,sl,sq,sv,tr,vi,zh_CN,zh_TW'.split(',')
 
 if os.name == 'posix':
     if os.uname()[0] == "Darwin":
         import gettext
         gettext.install('bittorrent', 'locale')
     
-def calc_unix_dirs():
-    appdir = '%s-%s'%(app_name, version)
-    ip = os.path.join('share', 'pixmaps', appdir)
-    dp = os.path.join('share', 'doc'    , appdir)
-    lp = os.path.join('share', 'locale')
-    return ip, dp, lp
-
-app_root = os.path.split(os.path.abspath(sys.argv[0]))[0]
-if os.name == 'posix':
-    if os.uname()[0] == "Darwin":
-        app_root = app_root.encode('utf8')
-doc_root = app_root
-image_root  = os.path.join(app_root, 'images')
-locale_root = os.path.join(app_root, 'locale')
-
-if not os.access(image_root, os.F_OK) or not os.access(locale_root, os.F_OK):
-    # we guess that probably we are installed on *nix in this case
-    # (I have no idea whether this is right or not -- matt)
-    if app_root[-4:] == '/bin':
-        # yep, installed on *nix
-        installed_prefix = app_root[:-4]
-        image_root, doc_root, locale_root = map(
-            lambda p: os.path.join(installed_prefix, p), calc_unix_dirs()
-            )
-
-
-# a cross-platform way to get user's home directory
-def get_config_dir():
-    shellvars = ['${APPDATA}', '${HOME}', '${USERPROFILE}']
-    dir_root = get_dir_root(shellvars)
-    if dir_root is None:
-        reg_dir = get_registry_dir('AppData')
-        if reg_dir is not None:
-            dir_root = reg_dir
-    return dir_root
-
-def get_home_dir():
-    shellvars = ['${HOME}', '${USERPROFILE}']
-    dir_root = get_dir_root(shellvars)
-    return dir_root
-
-def get_dir_root(shellvars):
-    def check_sysvars(x):
-        y = os.path.expandvars(x)
-        if y != x and os.path.isdir(y):
-            return y
-        return None
-
-    dir_root = None
-    for d in shellvars:
-        dir_root = check_sysvars(d)
-        if dir_root is not None:
-            break
-    else:
-        dir_root = os.path.expanduser('~')
-        if dir_root == '~' or not os.path.isdir(dir_root):
-            dir_root = None
-    return dir_root
-
-
-def get_registry_dir(value):
-    reg_dir = None 
-
-    find_pat = re.compile('%([A-Z_]+)%')
-    repl_pat = '${\\1}'
-    
-    if os.name == 'nt':
-        #from win32com.shell import shell, shellcon
-        #desktop = shell.SHGetPathFromIDList(shell.SHGetSpecialFolderLocation(0, shellcon.CSIDL_DESKTOPDIRECTORY))
-        import _winreg as wreg
-        try: 
-            key = wreg.OpenKey(wreg.HKEY_CURRENT_USER,
-                               r'Software\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders')
-            d = wreg.QueryValueEx(key, value)
-            reg_dir, a_random_number = os.path.expandvars(d)
-            reg_dir = find_pat.sub(repl_pat, reg_dir)
-            reg_dir = os.path.expandvars(reg_dir)
-            reg_dir = reg_dir.encode('mbcs')
-        except Exception, e:
-            pass
-
-        if reg_dir is not None and os.access(reg_dir, os.R_OK|os.W_OK):
-            pass
-        else:
-            reg_dir = None
-    return reg_dir
-
-def path_wrap(path):
-    return path
-
-if os.name == 'nt':
-    def path_wrap(path):
-        return path.decode('mbcs').encode('utf-8')
-
-
-is_frozen_exe = (os.name == 'nt') and hasattr(sys, 'frozen') and (sys.frozen == 'windows_exe')
 
 # hackery to get around bug in py2exe that tries to write log files to
 # application directories, which may not be writable by non-admin users
@@ -142,35 +48,7 @@ if is_frozen_exe:
                 baseclass.write(self, text, fname=fname)
     sys.stderr = Stderr()
 
-del sys
-
-def spawn(torrentqueue, cmd, *args):
-    ext = 'py'
-    if is_frozen_exe:
-        ext = 'exe'
-    path = os.path.join(app_root,cmd+'.'+ext)
-    args = [path] + list(args) # $0
-    if os.name == 'nt':
-        # do proper argument quoting since exec/spawn on Windows doesn't
-        args = ['"%s"'%a.replace('"', '\"') for a in args]
-        if len(args) == 1:
-            os.startfile(args[0])
-        else:
-            # Note: if you get "OSError [Errno 8] Exec format error"
-            # on win32 here, it means you haven't set up your python
-            # files to be executable, but this should still work after
-            # building an exe with pygtk.
-            # P_NOWAIT, P_NOWAITO, P_DETACH all behave the same
-            pid = os.spawnl(os.P_NOWAIT, path, *args)
-    else:
-        forkback = os.fork()
-        if forkback == 0:
-            if torrentqueue is not None:
-                #BUG: should we do this?
-                #torrentqueue.set_done()
-                torrentqueue.wrapped.controlsocket.close_socket()
-            pid = os.execl(path, *args)
-
+del sys, get_home_dir, is_frozen_exe
 
 INFO = 0
 WARNING = 1

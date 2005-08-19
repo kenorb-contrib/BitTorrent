@@ -26,6 +26,7 @@ def tobinary(i):
     return (chr(i >> 24) + chr((i >> 16) & 0xFF) +
         chr((i >> 8) & 0xFF) + chr(i & 0xFF))
 
+CONTROL_SOCKET_PORT = 46881
 
 class ControlsocketListener(object):
 
@@ -51,11 +52,22 @@ class MessageReceiver(object):
             l = toint(self._message)
             yield l
             action = self._message
-            yield 4
-            l = toint(self._message)
-            yield l
-            data = self._message
-            self.callback(action, data)
+            if action in ('no-op',):
+                self.callback(action, None)
+            else:
+                yield 4
+                l = toint(self._message)
+                yield l
+                data = self._message
+                if action in ('show_error',):
+                    self.callback(action, data)
+                else:
+                    yield 4
+                    l = toint(self._message)
+                    yield l
+                    path = self._message
+                    if action in ('start_torrent'):
+                        self.callback(action, data, path)
 
     # copied from Connecter.py
     def data_came_in(self, conn, s):
@@ -102,32 +114,33 @@ class ControlSocket(object):
 
     def create_socket_inet(self):
         try:
-            controlsocket = RawServer.create_serversocket(56881,
+            controlsocket = RawServer.create_serversocket(CONTROL_SOCKET_PORT,
                                                    '127.0.0.1', reuse=True)
         except socket.error, e:
             raise BTFailure(_("Could not create control socket: ")+str(e))
         self.controlsocket = controlsocket
 
-    def send_command_inet(self, rawserver, action, data = ''):
-        r = MessageReceiver(lambda action, data: None)
-        try:
-            conn = rawserver.start_connection(('127.0.0.1', 56881), r)
-        except socket.error, e:
-            raise BTFailure(_("Could not send command: ") + str(e))
-        conn.write(tobinary(len(action)))
-        conn.write(action)
-        conn.write(tobinary(len(data)))
-        conn.write(data)
+##    def send_command_inet(self, rawserver, action, data = ''):
+##        r = MessageReceiver(lambda action, data: None)
+##        try:
+##            conn = rawserver.start_connection(('127.0.0.1', CONTROL_SOCKET_PORT), r)
+##        except socket.error, e:
+##            raise BTFailure(_("Could not send command: ") + str(e))
+##        conn.write(tobinary(len(action)))
+##        conn.write(action)
+##        conn.write(tobinary(len(data)))
+##        conn.write(data)
 
     #blocking version without rawserver
-    def send_command_inet(self, action, data=''):
+    def send_command_inet(self, action, *datas):
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
-            s.connect(('127.0.0.1', 56881))
+            s.connect(('127.0.0.1', CONTROL_SOCKET_PORT))
             s.send(tobinary(len(action)))
             s.send(action)
-            s.send(tobinary(len(data)))
-            s.send(data)
+            for data in datas:
+                s.send(tobinary(len(data)))
+                s.send(data)
             s.close()
         except socket.error, e:
             s.close()
@@ -157,30 +170,31 @@ class ControlSocket(object):
             raise BTFailure(_("Could not create control socket: ")+str(e))
         self.controlsocket = controlsocket
 
-    def send_command_unix(self, rawserver, action, data = ''):
-        s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-        filename = self.socket_filename
-        try:
-            s.connect(filename)
-        except socket.error, e:
-            raise BTFailure(_("Could not send command: ") + str(e))
-        r = MessageReceiver(lambda action, data: None)
-        conn = rawserver.wrap_socket(s, r, ip = s.getpeername())
-        conn.write(tobinary(len(action)))
-        conn.write(action)
-        conn.write(tobinary(len(data)))
-        conn.write(data)
+##    def send_command_unix(self, rawserver, action, data = ''):
+##        s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+##        filename = self.socket_filename
+##        try:
+##            s.connect(filename)
+##        except socket.error, e:
+##            raise BTFailure(_("Could not send command: ") + str(e))
+##        r = MessageReceiver(lambda action, data: None)
+##        conn = rawserver.wrap_socket(s, r, ip = s.getpeername())
+##        conn.write(tobinary(len(action)))
+##        conn.write(action)
+##        conn.write(tobinary(len(data)))
+##        conn.write(data)
 
     # blocking version without rawserver
-    def send_command_unix(self, action, data=''):
+    def send_command_unix(self, action, *datas):
         s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
         filename = self.socket_filename
         try:
             s.connect(filename)
             s.send(tobinary(len(action)))
             s.send(action)
-            s.send(tobinary(len(data)))
-            s.send(data)
+            for data in datas:
+                s.send(tobinary(len(data)))
+                s.send(data)
             s.close()
         except socket.error, e:
             s.close()
@@ -190,9 +204,9 @@ class ControlSocket(object):
         self.rawserver.stop_listening(self.controlsocket)
         self.controlsocket.close()
 
-    if sys.platform != 'win32':
-        send_command = send_command_unix
-        create_socket = create_socket_unix
-    else:
+    if sys.platform.startswith('win'):
         send_command = send_command_inet
         create_socket = create_socket_inet
+    else:
+        send_command = send_command_unix
+        create_socket = create_socket_unix

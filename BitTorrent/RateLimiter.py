@@ -12,126 +12,33 @@
 
 from BitTorrent.platform import bttime
 
-
-class RateLimiter(object):
-    def __init__(self, sched):
-        self.sched = sched
-        self.last = None
-        self.upload_rate = 1e10
-        self.unitsize = 1e10
-        self.offset_amount = 0
-
-    def set_parameters(self, rate, unitsize):
-        if rate == 0:
-            rate = 1e10
-            unitsize = 17000
-        if unitsize > 17000:
-            # Since data is sent to peers in a round-robin fashion, max one
-            # full request at a time, setting this higher would send more data
-            # to peers that use request sizes larger than standard 16 KiB.
-            # 17000 instead of 16384 to allow room for metadata messages.
-            unitsize = 17000
-        self.upload_rate = rate * 1024
-        self.unitsize = unitsize
-        self.lasttime = bttime()
-        self.offset_amount = 0
-
-    def queue(self, conn):
-        assert conn.next_upload is None
-        if self.last is None:
-            self.last = conn
-            conn.next_upload = conn
-            self.try_send(True)
-        else:
-            conn.next_upload = self.last.next_upload
-            self.last.next_upload = conn
-            self.last = conn
-
-    def try_send(self, check_time=False):
-        t = bttime()
-        self.offset_amount -= (t - self.lasttime) * self.upload_rate
-        self.lasttime = t
-        if check_time:
-            self.offset_amount = max(self.offset_amount, 0)
-        cur = self.last.next_upload
-        while self.offset_amount <= 0:
-            try:
-                bytes = cur.send_partial(self.unitsize)
-            except KeyboardInterrupt:
-                raise
-            except Exception, e:
-                cur.encoder.context.rlgroup.got_exception(e)
-                cur = self.last.next_upload
-                bytes = 0
-
-            self.offset_amount += bytes
-            if bytes == 0 or not cur.connection.is_flushed():
-                if self.last is cur:
-                    self.last = None
-                    cur.next_upload = None
-                    break
-                else:
-                    self.last.next_upload = cur.next_upload
-                    cur.next_upload = None
-                    cur = self.last.next_upload
-            else:
-                self.last = cur
-                cur = cur.next_upload
-        else:
-            self.sched(self.try_send, self.offset_amount / self.upload_rate)
-
-    def clean_closed(self):
-        if self.last is None:
-            return
-        class Dummy(object):
-            def __init__(self, next):
-                self.next_upload = next
-            def send_partial(self, size):
-                return 0
-            closed = False
-        orig = self.last
-        if self.last.closed:
-            self.last = Dummy(self.last.next_upload)
-        c = self.last
-        while True:
-            if c.next_upload is orig:
-                c.next_upload = self.last
-                break
-            if c.next_upload.closed:
-                c.next_upload = Dummy(c.next_upload.next_upload)
-            c = c.next_upload
-
 class RateLimitedGroup(object):
     def __init__(self, rate, got_exception):
-        self.rate = rate * 1024
-        if self.rate == 0:
-            self.rate = 1e10
         self.got_exception = got_exception
-
         # limiting
         self.check_time = 0
         self.lasttime = bttime()
         self.offset_amount = 0
-
+        self.set_rate(rate)
         # accounting
         self.count = 0
         self.counts = []
         
+    def set_rate(self, new_rate):
+        self.rate = new_rate * 1024
+        self.check_time = 0
                  
 class MultiRateLimiter(object):
     def __init__(self, sched):
         self.sched = sched
         self.last = None
-        self.upload_rate = 1e10
-        self.unitsize = 1e10
+        self.upload_rate = 0
+        self.unitsize = 17000
         self.offset_amount = 0
         self.ctxs = [] # list of contexts with connections in the queue
         self.ctx_counts = {} # dict conn -> how many connections each context has
         
     def set_parameters(self, rate, unitsize):
-        if rate == 0:
-            rate = 1e10
-            unitsize = 17000
         if unitsize > 17000:
             # Since data is sent to peers in a round-robin fashion, max one
             # full request at a time, setting this higher would send more data
@@ -143,9 +50,8 @@ class MultiRateLimiter(object):
         self.lasttime = bttime()
         self.offset_amount = 0
 
-    def queue(self, conn):
+    def queue(self, conn, ctx):
         assert conn.next_upload is None
-        ctx = conn.encoder.context.rlgroup
         if ctx not in self.ctxs:
             ctx.check_time = 1
             self.ctxs.append(ctx)
@@ -173,7 +79,12 @@ class MultiRateLimiter(object):
 
 
         def minctx(a,b):
-            if a.offset_amount / a.rate < b.offset_amount / b.rate:
+            A = B = 0
+            if a.rate > 0:
+                A = a.offset_amount / a.rate
+            if b.rate > 0:
+                B = b.offset_amount / b.rate
+            if A <= B:
                     return a
             return b
         
@@ -198,8 +109,10 @@ class MultiRateLimiter(object):
                     cur = self.last.next_upload
                     bytes = 0
 
-                self.offset_amount += bytes
-                ctx.offset_amount += bytes
+                if self.upload_rate > 0:
+                    self.offset_amount += bytes
+                if ctx.rate > 0:
+                    ctx.offset_amount += bytes
                 ctx.count += bytes
                 
                 if bytes == 0 or not cur.connection.is_flushed():
@@ -231,9 +144,15 @@ class MultiRateLimiter(object):
                 cur = self.last.next_upload
                 ctx = cur.encoder.context.rlgroup
         else:
-            myDelay = self.offset_amount / self.upload_rate
-            minCtxDelay = min_offset.offset_amount / min_offset.rate
-            self.sched(self.try_send, max(myDelay, minCtxDelay))
+            myDelay = minCtxDelay = 0
+            if self.upload_rate > 0:
+                myDelay = self.offset_amount / self.upload_rate
+            if min_offset.rate > 0:
+                minCtxDelay = min_offset.offset_amount / min_offset.rate
+            if myDelay <= 0 and minCtxDelay <= 0:
+                return self.try_send()
+            else:
+                self.sched(self.try_send, max(myDelay, minCtxDelay))
 
 
     def clean_closed(self):

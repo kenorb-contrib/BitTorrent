@@ -12,13 +12,23 @@
 
 from socket import error as socketerror
 
+from BitTorrent import BTFailure
 from BitTorrent.Connecter import Connection
-from BitTorrent import BTFailure, is_frozen_exe
-
+from BitTorrent.platform import is_frozen_exe
 from BitTorrent.ClientIdentifier import identify_client
 
 # header, reserved, download id, my id, [length, message]
 
+class InitialConnectionHandler(object):
+    def __init__(self, parent, id):
+        self.parent = parent
+        self.id = id
+    def connection_started(self, s):
+        con = Connection(self.parent, s, self.id, True)
+        self.parent.connections[s] = con
+        s.handler = con
+    def connection_failed(self, addr):
+        pass
 
 class Encoder(object):
 
@@ -65,14 +75,8 @@ class Encoder(object):
                    dns not in self.spares:
                 self.spares.append(dns)
             return
-        try:
-            c = self.raw_server.start_connection(dns, None, self.context)
-        except socketerror:
-            pass
-        else:
-            con = Connection(self, c, id, True)
-            self.connections[c] = con
-            c.handler = con
+        self.raw_server.asynch_start_connection(dns, InitialConnectionHandler(self, id), self.context)
+
 
     def connection_completed(self, c):
         self.complete_connections[c] = 1
@@ -83,7 +87,7 @@ class Encoder(object):
             c.send_port(self.reported_port)
 
     def got_port(self, c):
-        if c.uses_dht and c.dht_port != None:
+        if self.addcontact and c.uses_dht and c.dht_port != None:
             self.addcontact(c.connection.ip, c.dht_port)
 
     def ever_got_incoming(self):
@@ -178,9 +182,8 @@ class SingleportListener(object):
         del self.torrents[infohash]
 
     def select_torrent(self, conn, infohash):
-        if infohash not in self.torrents:
-            return
-        self.torrents[infohash].singleport_connection(self, conn)
+        if infohash in self.torrents:
+            self.torrents[infohash].singleport_connection(self, conn)
 
     def external_connection_made(self, connection):
         con = Connection(self, connection, None, False)

@@ -1,23 +1,33 @@
 APP_NAME="bittorrent"
-LANGUAGES='af ar da de es fi fr he_IL hu it ja ko nl no pt_BR ro ru sk sl sq sv tr zh_CN zh_TW'
+LANGUAGES='af ar bg cs da de es es_MX et fi fr gr he_IL hr hu it ja ko lt ms nl nb_NO pl pt pt_BR ro ru sk sl sq sv tr vi zh_CN zh_TW'
 MESSAGES_PO="messages.pot"
 
 rm -f $APP_NAME.lis
+rm -f *~
 
 # create .pot file with most important strings first so that people
 # who start but don't finish translations end up translating the most
 # important parts
-ls bt*gui.py                  >> $APP_NAME.lis
-ls BitTorrent/GUI.py          >> $APP_NAME.lis
-ls BitTorrent/TorrentQueue.py >> $APP_NAME.lis
-ls BitTorrent/defaultargs.py  >> $APP_NAME.lis
-ls bt*.py                     >> $APP_NAME.lis
-ls *py                        >> $APP_NAME.lis
+ls bittorrent.py maketorrent.py >> $APP_NAME.lis
+ls BitTorrent/GUI.py           >> $APP_NAME.lis
+ls BitTorrent/TorrentQueue.py  >> $APP_NAME.lis
+ls BitTorrent/NewVersion.py    >> $APP_NAME.lis
+ls BitTorrent/defaultargs.py   >> $APP_NAME.lis
+ls *py                         >> $APP_NAME.lis
 # find everything else
 find . -name \*.py -type f | egrep -v '/(build)|(dist)|(test)/' >> $APP_NAME.lis
 
-xgettext -f $APP_NAME.lis -L Python -o - | \
-    sed -e 's/CHARSET/UTF-8/' > $MESSAGES_PO.nonunique
+xgettext -f $APP_NAME.lis -L Python -o -                        |\
+    sed -e 's/CHARSET/UTF-8/'                                   |\
+    sed -e 's/SOME DESCRIPTIVE TITLE./BitTorrent/'              |\
+    sed -e 's/YEAR/2005/'                                       |\
+    sed -e "s/THE PACKAGE'S COPYRIGHT HOLDER/BitTorrent, Inc./" |\
+    sed -e 's/PACKAGE/BitTorrent/'                              |\
+    sed -e 's/VERSION/4.2/'                                     |\
+    sed -e 's/FIRST AUTHOR/Matt Chisholm/'                      |\
+    sed -e 's/EMAIL@ADDRESS/matt (dash) translations (at) bittorrent (dot) com/' |\
+    sed -e 's/FULL NAME/Matt Chisholm/' > $MESSAGES_PO.nonunique
+
 
 msguniq $MESSAGES_PO.nonunique > $MESSAGES_PO
 rm -f $MESSAGES_PO.nonunique
@@ -25,7 +35,7 @@ rm -f $MESSAGES_PO.nonunique
 for lang in $LANGUAGES ; do 
     echo "making $lang"
     mkdir -p locale/$lang/LC_MESSAGES
-    msgmerge po/$lang.po $MESSAGES_PO \
+    msgmerge --no-fuzzy-matching po/$lang.po $MESSAGES_PO \
         > locale/$lang/LC_MESSAGES/$APP_NAME.po
     msgfmt -o locale/$lang/LC_MESSAGES/$APP_NAME.mo \
         locale/$lang/LC_MESSAGES/$APP_NAME.po

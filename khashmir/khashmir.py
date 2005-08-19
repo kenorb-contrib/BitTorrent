@@ -32,7 +32,7 @@ import traceback
 
 from BitTorrent.bencode import bencode, bdecode
 
-from defer import Deferred
+from BitTorrent.defer import Deferred
 from random import randrange, sample
 
 from threading import Event
@@ -60,7 +60,7 @@ class KhashmirBase:
         self.ddir = data_dir
         self.store = KStore()
         self.pingcache = {}
-        self.socket = self.rawserver.create_udpsocket(self.port, self.host, True)
+        self.socket = self.rawserver.create_udpsocket(self.port, self.host, False)
         self.udp = krpc.hostbroker(self, (self.host, self.port), self.socket, self.rawserver.add_task, self.max_ul_rate)
         self._load()
         self.rawserver.start_listening_udp(self.socket, self.udp)
@@ -77,7 +77,7 @@ class KhashmirBase:
         return n
     
     def __del__(self):
-        self.rawserver.stop_listen_udp(self.socket)
+        self.rawserver.stop_listening_udp(self.socket)
         self.socket.close()
         
     def _load(self):

@@ -13,7 +13,7 @@
 import os
 import sys
 
-from __init__ import get_home_dir, get_registry_dir
+from BitTorrent.platform import get_home_dir, get_registry_dir
 
 desktop = None
 

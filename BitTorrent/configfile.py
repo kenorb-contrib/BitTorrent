@@ -23,10 +23,13 @@ except ImportError:
 from ConfigParser import MissingSectionHeaderError, ParsingError
 
 from BitTorrent import parseargs
-from BitTorrent import ERROR, BTFailure
-from BitTorrent import app_name, version, is_frozen_exe, locale_root
-from __init__ import get_config_dir
+from BitTorrent import app_name, version, ERROR, BTFailure
+from BitTorrent.platform import get_config_dir, locale_root, is_frozen_exe
 
+TORRENT_CONFIG_FILE = 'torrent_config'
+
+alt_uiname = {'bittorrent':'btdownloadgui',
+              'maketorrent':'btmaketorrentgui',}
 
 def _read_config(filename):
     # check for bad config files (Windows corrupts them all the time)
@@ -51,6 +54,20 @@ def _read_config(filename):
         else:
             fp.close()
     return p
+
+
+def _write_config(error_callback, filename, p):
+    try:
+        f = file(filename, 'w')
+        p.write(f)
+        f.close()
+    except Exception, e:
+        try:
+            f.close()
+        except:
+            pass
+        error_callback(ERROR, _("Could not permanently save options: ")+
+                       str(e))
 
 
 def bad_config(filename):
@@ -110,21 +127,43 @@ def save_ui_config(defaults, section, save_options, error_callback):
             p.set(section, name, defaults[name])
         else:
             err_str = "Configuration option mismatch: '%s'" % name
+            print section, defaults
             if is_frozen_exe:
                 err_str = "You must quit %s and reinstall it. (%s)" % (app_name, err_str)
             error_callback(ERROR, err_str)
-    try:
-        f = file(filename, 'w')
-        p.write(f)
-        f.close()
-    except Exception, e:
-        try:
-            f.close()
-        except:
-            pass
-        error_callback(ERROR, _("Could not permanently save options: ")+
-                       str(e))
+    _write_config(error_callback, filename, p)
 
+
+def save_torrent_config(path, infohash, config, error_callback):
+    section = infohash.encode('hex')
+    filename = os.path.join(path, TORRENT_CONFIG_FILE)
+    p = _read_config(filename)
+    p.remove_section(section)
+    p.add_section(section)
+    for key, value in config.items():
+        p.set(section, key, value)
+    _write_config(error_callback, filename, p)
+
+def read_torrent_config(global_config, path, infohash, error_callback):
+    section = infohash.encode('hex')
+    filename = os.path.join(path, TORRENT_CONFIG_FILE)
+    p = _read_config(filename)
+    if not p.has_section(section):
+        return {}
+    else:
+        c = {}
+        for name, value in p.items(section):
+            if global_config.has_key(name):
+                c[name] = type(global_config[name])(value)
+        return c
+
+def remove_torrent_config(path, infohash, error_callback):
+    section = infohash.encode('hex')
+    filename = os.path.join(path, TORRENT_CONFIG_FILE)
+    p = _read_config(filename)
+    if p.has_section(section):
+        p.remove_section(section)
+    _write_config(error_callback, filename, p)
 
 def parse_configuration_and_args(defaults, uiname, arglist=[], minargs=0,
                                  maxargs=0):
@@ -142,9 +181,11 @@ def parse_configuration_and_args(defaults, uiname, arglist=[], minargs=0,
                                        presets)
     datadir = config['data_dir']
     if datadir:
-        if uiname in ('btdownloadgui', 'btmaketorrentgui'):
+        if uiname in ('bittorrent', 'maketorrent'):
             values = {}
             p = _read_config(os.path.join(datadir, 'ui_config'))
+            if not p.has_section(uiname) and p.has_section(alt_uiname[uiname]):
+                uiname = alt_uiname[uiname]
             if p.has_section(uiname):
                 for name, value in p.items(uiname):
                     if name in defconfig:
@@ -153,17 +194,15 @@ def parse_configuration_and_args(defaults, uiname, arglist=[], minargs=0,
             presets.update(values)
             config, args = parseargs.parseargs(arglist, defaults, minargs,
                                                maxargs, presets)
-        rdir = os.path.join(datadir, 'resume')
-        mdir = os.path.join(datadir, 'metainfo')
-        try:
-            if not os.path.exists(datadir):
-                os.mkdir(datadir, 0700)
-            if not os.path.exists(mdir):
-                os.mkdir(mdir, 0700)
-            if not os.path.exists(rdir):
-                os.mkdir(rdir, 0700)
-        except:
-            pass
+
+        for d in ('', 'resume', 'metainfo'):
+            ddir = os.path.join(datadir, d)
+            try:
+                if not os.path.exists(ddir):
+                    os.mkdir(ddir, 0700)
+            except:
+                pass
+            
 
     if config['language'] != '':
         try:

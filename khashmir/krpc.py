@@ -8,7 +8,7 @@
 # for the specific language governing rights and limitations under the
 # License.
 
-from defer import Deferred
+from BitTorrent.defer import Deferred
 from BitTorrent.bencode import bencode, bdecode
 import socket
 from BitTorrent.RawServer import RawServer

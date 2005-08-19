@@ -13,7 +13,6 @@ from actions import *
 from khash import newID
 from krpc import KRPCProtocolError, KRPCFailSilently
 from cache import Cache
-from defer import Deferred
 from sha import sha
 from util import *
 from threading import Thread

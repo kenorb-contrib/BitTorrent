@@ -11,6 +11,7 @@
 # Written by Bram Cohen
 
 from random import randrange
+from math import sqrt
 
 class Choker(object):
 
@@ -47,7 +48,7 @@ class Choker(object):
             if c.upload.interested and not c.download.is_snubbed():
                 preferred.append((-c.download.get_rate(), i))
         preferred.sort()
-        prefcount = min(len(preferred), self.config['max_uploads_internal'] -1)
+        prefcount = min(len(preferred), self._max_uploads() -1)
         mask = [0] * len(self.connections)
         for _, i in preferred[:prefcount]:
             mask[i] = 1
@@ -67,7 +68,7 @@ class Choker(object):
     def _rechoke_seed(self, force_new_unchokes = False):
         if force_new_unchokes:
             # number of unchokes per 30 second period
-            i = (self.config['max_uploads_internal'] + 2) // 3
+            i = (self._max_uploads() + 2) // 3
             # this is called 3 times in 30 seconds, if i==4 then unchoke 1+1+2
             # and so on; substract unchokes recently triggered by disconnects
             num_force_unchokes = max(0, (i + self.count % 3) // 3 - \
@@ -85,14 +86,14 @@ class Choker(object):
                     preferred.append((-u.unchoke_time, -u.get_rate(), i))
                 else:
                     preferred.append((1, -u.get_rate(), i))
-        num_kept = self.config['max_uploads_internal'] - num_force_unchokes
+        num_kept = self._max_uploads() - num_force_unchokes
         assert num_kept >= 0
         preferred.sort()
         preferred = preferred[:num_kept]
         mask = [0] * len(self.connections)
         for _, _, i in preferred:
             mask[i] = 1
-        num_nonpref = self.config['max_uploads_internal'] - len(preferred)
+        num_nonpref = self._max_uploads() - len(preferred)
         if force_new_unchokes:
             self.unchokes_since_last = 0
         else:
@@ -137,3 +138,20 @@ class Choker(object):
     def not_interested(self, connection):
         if not connection.upload.choked:
             self._rechoke()
+
+    def _max_uploads(self):
+        uploads = self.config['max_uploads']
+        rate = self.config['max_upload_rate']
+        if uploads > 0:
+            pass
+        elif rate <= 0:
+            uploads = 7 # unlimited, just guess something here...
+        elif rate < 9:
+            uploads = 2
+        elif rate < 15:
+            uploads = 3
+        elif rate < 42:
+            uploads = 4
+        else:
+            uploads = int(sqrt(rate * .6))
+        return uploads
