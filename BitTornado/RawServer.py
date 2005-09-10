@@ -84,7 +84,7 @@ class RawServer:
 
     def bind(self, port, bind = '', reuse = False,
                         ipv6_socket_style = 1, upnp = False):
-        self.sockethandler.bind(port, bind, reuse, ipv6_socket_style)
+        self.sockethandler.bind(port, bind, reuse, ipv6_socket_style, upnp)
 
     def find_and_bind(self, minport, maxport, bind = '', reuse = False,
                       ipv6_socket_style = 1, upnp = 0, randomizer = False):

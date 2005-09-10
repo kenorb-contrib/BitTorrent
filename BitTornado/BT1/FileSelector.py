@@ -88,7 +88,6 @@ class FileSelector:
         self.requestmorefunc = requestmorefunc
 
         if self.new_priority:
-            old_priority = self.priority
             self.priority = self.new_priority
             self.new_priority = None
             self.new_piece_priority = self._set_piece_priority(self.priority)

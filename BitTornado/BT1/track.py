@@ -255,7 +255,8 @@ class Tracker:
                 if y.get('nat',-1):
                     continue
                 gip = y.get('given_ip')
-                if gip and self.allow_local_override(ip, gip):
+                if is_valid_ip(gip) and (
+                    not self.only_local_override_ip or local_IPs.includes(ip) ):
                     ip = gip
                 self.natcheckOK(infohash,x,ip,y['port'],y['left'])
             
@@ -364,10 +365,6 @@ class Tracker:
         self.cachetime += 1     # raw clock, but more efficient for cache
         self.rawserver.add_task(self.cachetimeupdate,1)
 
-    def allow_local_override(self, ip, given_ip):
-        return is_valid_ip(given_ip) and (
-            not self.only_local_override_ip or local_IPs.includes(ip) )
-
     def aggregate_senddata(self, query):
         url = self.aggregate_forward+'?'+query
         if self.aggregate_password is not None:
@@ -410,7 +407,7 @@ class Tracker:
                     names = [ (self.allowed[hash]['name'],hash)
                               for hash in self.allowed.keys() ]
                 else:
-                    names = [ (none,hash)
+                    names = [ (None,hash)
                               for hash in self.allowed.keys() ]
             else:
                 names = [ (None,hash) for hash in self.downloads.keys() ]
@@ -591,17 +588,16 @@ class Tracker:
         downloaded = long(params('downloaded',''))
 
         peer = peers.get(myid)
+        islocal = local_IPs.includes(ip)
         mykey = params('key')
-        auth = not peer or peer.get('key', -1) == mykey or peer.get('ip') == ip
+        if peer:
+            auth = peer.get('key',-1) == mykey or peer.get('ip') == ip
 
         gip = params('ip')
-        local_override = gip and self.allow_local_override(ip, gip)
-        if local_override:
+        if is_valid_ip(gip) and (islocal or not self.only_local_override_ip):
             ip1 = gip
         else:
             ip1 = ip
-        if not auth and local_override and self.only_local_override_ip:
-            auth = True
 
         if params('numwant') is not None:
             rsize = min(int(params('numwant')),self.response_size)
@@ -609,8 +605,9 @@ class Tracker:
             rsize = self.response_size
 
         if event == 'stopped':
-            if peer and auth:
-                self.delete_peer(infohash,myid)
+            if peer:
+                if auth:
+                    self.delete_peer(infohash,myid)
         
         elif not peer:
             ts[myid] = clock()
@@ -620,7 +617,7 @@ class Tracker:
             if gip:
                 peer['given ip'] = gip
             if port:
-                if not self.natcheck or (local_override and self.only_local_override_ip):
+                if not self.natcheck or islocal:
                     peer['nat'] = 0
                     self.natcheckOK(infohash,myid,ip1,port,left)
                 else:
@@ -649,37 +646,36 @@ class Tracker:
             if peer['left']:
                 peer['left'] = left
 
-            recheck = False
-            if ip != peer['ip']:
-                peer['ip'] = ip
-                recheck = True
-            if gip != peer.get('given ip'):
-                if gip:
-                    peer['given ip'] = gip
-                elif peer.has_key('given ip'):
-                    del peer['given ip']
-                if local_override:
-                    if self.only_local_override_ip:
+            if port:
+                recheck = False
+                if ip != peer['ip']:
+                    peer['ip'] = ip
+                    recheck = True
+                if gip != peer.get('given ip'):
+                    if gip:
+                        peer['given ip'] = gip
+                    elif peer.has_key('given ip'):
+                        del peer['given ip']
+                    recheck = True
+
+                natted = peer.get('nat', -1)
+                if recheck:
+                    if natted == 0:
+                        l = self.becache[infohash]
+                        y = not peer['left']
+                        for x in l:
+                            del x[y][myid]
+                        if not self.natcheck or islocal:
+                            del peer['nat'] # restart NAT testing
+                if natted and natted < self.natcheck:
+                    recheck = True
+
+                if recheck:
+                    if not self.natcheck or islocal:
+                        peer['nat'] = 0
                         self.natcheckOK(infohash,myid,ip1,port,left)
                     else:
-                        recheck = True
-
-            if port and self.natcheck:
-                if recheck:
-                    if peer.has_key('nat'):
-                        if not peer['nat']:
-                            l = self.becache[infohash]
-                            y = not peer['left']
-                            for x in l:
-                                del x[y][myid]
-                        del peer['nat'] # restart NAT testing
-                else:
-                    natted = peer.get('nat', -1)
-                    if natted and natted < self.natcheck:
-                        recheck = True
-                        
-                if recheck:
-                    NatCheck(self.connectback_result,infohash,myid,ip1,port,self.rawserver)
+                        NatCheck(self.connectback_result,infohash,myid,ip1,port,self.rawserver)
 
         return rsize
 

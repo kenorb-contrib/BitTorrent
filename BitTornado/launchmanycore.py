@@ -25,7 +25,6 @@ from sys import argv, exit
 import sys, os
 from clock import clock
 from __init__ import createPeerID, mapbase64, version
-from threading import Event
 from cStringIO import StringIO
 from traceback import print_exc
 

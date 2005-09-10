@@ -32,7 +32,7 @@ class Statistics:
         self.storage_totalpieces = len(self.storage.hashes)
 
 
-    def set_dirstats(self, files, numpieces, piece_length):
+    def set_dirstats(self, files, piece_length):
         self.piecescomplete = 0
         self.placesopen = 0
         self.filelistupdated = Event()

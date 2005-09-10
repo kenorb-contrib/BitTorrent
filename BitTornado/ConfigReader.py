@@ -271,6 +271,10 @@ class configReader:
         self.buffering_checkbox.SetFont(self.default_font)
         self.buffering_checkbox.SetValue(self.config['buffer_reads'])
 
+        self.breakup_checkbox = wxCheckBox(panel, -1, "Break-up seed bitfield to foil ISP manipulation")
+        self.breakup_checkbox.SetFont(self.default_font)
+        self.breakup_checkbox.SetValue(self.config['breakup_seed_bitfield'])
+
         self.autoflush_checkbox = wxCheckBox(panel, -1, "Flush data to disk every 5 minutes")
         self.autoflush_checkbox.SetFont(self.default_font)
         self.autoflush_checkbox.SetValue(self.config['auto_flush'])
@@ -368,6 +372,7 @@ class configReader:
         block1sizer.Add(self.security_checkbox)
         block1sizer.Add(self.autokick_checkbox)
         block1sizer.Add(self.buffering_checkbox)
+        block1sizer.Add(self.breakup_checkbox)
         block1sizer.Add(self.autoflush_checkbox)
         if sys.version_info >= (2,3) and socket.has_ipv6:
             block1sizer.Add(self.ipv6enabled_checkbox)
@@ -490,6 +495,7 @@ class configReader:
             self.security_checkbox.SetValue(self.defaults['security'])
             self.autokick_checkbox.SetValue(self.defaults['auto_kick'])
             self.buffering_checkbox.SetValue(self.defaults['buffer_reads'])
+            self.breakup_checkbox.SetValue(self.defaults['breakup_seed_bitfield'])
             self.autoflush_checkbox.SetValue(self.defaults['auto_flush'])
             if sys.version_info >= (2,3) and socket.has_ipv6:
                 self.ipv6enabled_checkbox.SetValue(self.defaults['ipv6_enabled'])
@@ -538,6 +544,7 @@ class configReader:
                 self.config['write_buffer_size']=self.defaults['write_buffer_size']
             else:
                 self.config['write_buffer_size']=0
+            self.config['breakup_seed_bitfield']=int(self.breakup_checkbox.GetValue())
             if self.autoflush_checkbox.GetValue():
                 self.config['auto_flush']=5
             else:

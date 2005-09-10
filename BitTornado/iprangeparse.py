@@ -92,7 +92,7 @@ class IP_List:
             ip_beg = to_long_ipv6(ip_beg)
             ip_end = to_long_ipv6(ip_end)
             bb = ip_beg % (256*256*256*256)
-            if bb == ipv4addressmask:
+            if bb == ipv4addrmask:
                 ip_beg -= bb
                 ip_end -= bb
                 l = self.ipv4list
@@ -138,7 +138,7 @@ class IP_List:
         else:
             ip = to_long_ipv6(ip)
             bb = ip % (256*256*256*256)
-            if bb == ipv4addressmask:
+            if bb == ipv4addrmask:
                 ip -= bb
                 l = self.ipv4list
                 d = self.ipv4dict

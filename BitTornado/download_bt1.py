@@ -675,7 +675,7 @@ class BT1Download:
                     self.connecter, self.httpdownloader, self.ratelimiter,
                     self.rerequest_lastfailed, self.filedatflag)
         if self.info.has_key('files'):
-            self.statistics.set_dirstats(self.files, self.len_pieces, self.info['piece length'])
+            self.statistics.set_dirstats(self.files, self.info['piece length'])
         if self.config['spew']:
             self.spewflag.set()
 

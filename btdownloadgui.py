@@ -803,16 +803,17 @@ class DownloadInfoFrame:
             EVT_LEFT_DOWN(babble6, licenselink)
             EVT_LEFT_DOWN(credits, self.credits)
 
-            def closeAbout(self, frame = self):
-                frame.aboutBox.Close ()
+            def closeAbout(e, self = self):
+                if self.aboutBox:
+                    self.aboutBox.Close()
             EVT_BUTTON(self.aboutBox, okButton.GetId(), closeAbout)
-            def kill(self, frame = self):
+            def kill(e, self = self):
                 try:
-                    frame.RemoveIcon()
+                    self.aboutBox.RemoveIcon()
                 except:
                     pass
-                frame.aboutBox.Destroy()
-                frame.aboutBox = None
+                self.aboutBox.Destroy()
+                self.aboutBox = None
             EVT_CLOSE(self.aboutBox, kill)
 
             self.aboutBox.Show()
@@ -840,10 +841,11 @@ class DownloadInfoFrame:
             info = metainfo['info']
             info_hash = self.dow.infohash
             piece_length = info['piece length']
+            fileselector = self.dow.fileselector
 
             if (self.detailBox is not None):
                 try:
-                    self.detailBox.Close ()
+                    self.detailBox.Close()
                 except wxPyDeadObjectError, e:
                     self.detailBox = None
 
@@ -928,10 +930,11 @@ class DownloadInfoFrame:
                     fileList.SetStringItem(x, 0, path)
                     if file.has_key('md5sum'):
                         fileList.SetStringItem(x, 2, '    [' + str(file['md5sum']) + ']')
-                    p = self.dow.fileselector[x]
-                    item = self.fileList.GetItem(x)
-                    item.SetTextColour(self.prioritycolors[p+1])
-                    fileList.SetItem(item)
+                    if fileselector:
+                        p = fileselector[x]
+                        item = self.fileList.GetItem(x)
+                        item.SetTextColour(self.prioritycolors[p+1])
+                        fileList.SetItem(item)
                     x += 1
                     file_length += file['length']
                 fileList.SetColumnWidth(0,wxLIST_AUTOSIZE)
@@ -1024,7 +1027,7 @@ class DownloadInfoFrame:
             panel.SetSizer(border)
             panel.SetAutoLayout(True)
 
-            if fileListID:
+            if fileselector and fileListID:
                 def onRightClick(evt, self = self):
                     s = []
                     i = -1
@@ -1046,7 +1049,7 @@ class DownloadInfoFrame:
                     menu.Append(self.priorityIDs[1], "download first", kind=kind)
                     menu.Append(self.priorityIDs[2], "download normally", kind=kind)
                     menu.Append(self.priorityIDs[3], "download later", kind=kind)
-                    menu.Append(self.priorityIDs[0], "download never", kind=kind)
+                    menu.Append(self.priorityIDs[0], "download never (deletes)", kind=kind)
                     if oldstate is not None:
                         menu.Check(self.priorityIDs[oldstate+1], True)
 
@@ -1073,7 +1076,8 @@ class DownloadInfoFrame:
                 EVT_LIST_ITEM_RIGHT_CLICK(self.detailBox, fileListID, onRightClick)
 
             def closeDetail(evt, self = self):
-                self.detailBox.Close ()
+                if self.detailBox:
+                    self.detailBox.Close()
             EVT_BUTTON(self.detailBox, okButton.GetId(), closeDetail)
             def kill(evt, self = self):
                 try:
@@ -1184,16 +1188,17 @@ class DownloadInfoFrame:
             panel.SetSizer(border)
             panel.SetAutoLayout(True)
 
-            def closeCredits(self, frame = self):
-                frame.creditsBox.Close()
+            def closeCredits(e, self = self):
+                if self.creditsBox:
+                    self.creditsBox.Close()
             EVT_BUTTON(self.creditsBox, okButton.GetId(), closeCredits)
-            def kill(self, frame = self):
+            def kill(e, self = self):
                 try:
-                    frame.creditsBox.RemoveIcon()
+                    self.creditsBox.RemoveIcon()
                 except:
                     pass
-                frame.creditsBox.Destroy()
-                frame.creditsBox = None
+                self.creditsBox.Destroy()
+                self.creditsBox = None
             EVT_CLOSE(self.creditsBox, kill)
 
             self.creditsBox.Show()
@@ -2084,7 +2089,10 @@ class DownloadInfoFrame:
         self.flag.set()
         self.shuttingdown = True
         if self.taskbaricon:
-            self.frame.tbicon.RemoveIcon()
+            try:
+                self.frame.tbicon.RemoveIcon()
+            except:
+                pass
             try:
                 self.frame.tbicon.Destroy()
             except:

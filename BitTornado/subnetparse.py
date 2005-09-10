@@ -207,6 +207,8 @@ def _valid_ipv4(ip):
 
 def is_valid_ip(ip):
     try:
+        if not ip:
+            return False
         if is_ipv4(ip):
             _valid_ipv4(ip)
             return True
