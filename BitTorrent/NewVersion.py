@@ -17,14 +17,17 @@ import pickle
 import threading
 from sha import sha
 
+DEBUG = False
+
 from BitTorrent import ERROR, WARNING, BTFailure, version, app_name
 from BitTorrent import GetTorrent
 from BitTorrent.bencode import bdecode, bencode
-from BitTorrent.platform import os_version, spawn, get_temp_dir, doc_root
+from BitTorrent.platform import os_version, spawn, get_temp_dir, doc_root, is_frozen_exe
 from BitTorrent.ConvertedMetainfo import ConvertedMetainfo
 
-# needed for py2exe to include the public key lib
-from Crypto.PublicKey import DSA
+if is_frozen_exe or DEBUG:
+    # needed for py2exe to include the public key lib
+    from Crypto.PublicKey import DSA
 
 version_host = 'http://version.bittorrent.com/'
 download_url = 'http://bittorrent.com/download.html'
@@ -52,8 +55,6 @@ class Version(list):
 currentversion = Version.from_str(version)
 
 availableversion = None
-
-DEBUG = False
 
 class Updater(object):
     def __init__(self, threadwrap, newversionfunc, startfunc, installfunc, errorfunc):

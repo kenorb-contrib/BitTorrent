@@ -15,8 +15,8 @@
 import os
 os.system('sh ./makei18n.sh')
 
-import gettext
-gettext.install('bittorrent', 'locale')
+from BitTorrent.platform import install_translation
+install_translation()
 
 import sys
 from distutils.core import setup, Extension
@@ -24,6 +24,19 @@ from BitTorrent import version, languages
 from BitTorrent.platform import calc_unix_dirs
 
 import glob
+
+# detect case-insensitive filesystem
+case_sensitive_filesystem = True
+os.mkdir('FOO')
+try:
+    f = open('foo', 'w')
+except:
+    case_sensitive_filesystem = False
+else:
+    f.close()
+    os.remove('foo')
+os.rmdir('FOO')
+# done detecting case-insensitive filesystem
 
 symlinks = ["bittorrent" , "bittorrent-curses", "bittorrent-console",
            "maketorrent",                      "maketorrent-console",
@@ -43,7 +56,7 @@ for s in symlinks:
     os.chmod(script, 0755)
 
 use_scripts = symlinks
-if sys.argv[1:2] == ['sdist']:
+if sys.argv[1:2] == ['sdist'] or not case_sensitive_filesystem:
     use_scripts = scripts
 
 img_root, doc_root, locale_root = calc_unix_dirs()

@@ -43,6 +43,22 @@ opts = {
     }
 }
 
+# needed for py2exe to find win32com.shell; from http://starship.python.net/crew/theller/moin.cgi/WinShell
+if 1:
+    try:
+        import modulefinder, sys
+        import win32com
+        for p in win32com.__path__[1:]:
+            modulefinder.AddPackagePath("win32com", p)
+        for extra in ["win32com.shell"]: #,"win32com.mapi"
+            __import__(extra)
+            m = sys.modules[extra]
+            for p in m.__path__[1:]:
+                modulefinder.AddPackagePath(extra, p)
+    except ImportError:
+        # no build path setup, no worries.
+        pass
+
 translations = []
 for l in languages:
     translations.append(("locale\\%s\\LC_MESSAGES"                 % l,
@@ -50,7 +66,18 @@ for l in languages:
                           #"locale\\%s\\LC_MESSAGES\\bittorrent.po" % l,
                           ]))
     gtk_mo = []
-    gtk_path = "C:\\GTK\\share\\locale\\%s\\LC_MESSAGES" % l
+    
+    gtk_path = ""
+
+    import gtk
+
+    if (gtk.gtk_version[1] == 4):
+        gtk_path = os.path.join(os.environ["GTK_BASEPATH"], "lib\\locale\\%s\\LC_MESSAGES" % l)
+    elif (gtk.gtk_version[1] == 6):
+        gtk_path = os.path.join(os.environ["GTK_BASEPATH"], "share\\locale\\%s\\LC_MESSAGES" % l)
+    else:
+        raise Exception("Unknown gtk version, please locate gtk20.mo etc, and modify this script")
+    
     for fn in ("glib20.mo", "gtk20.mo", "gtk20-properties.mo"):
         moname = os.path.join(gtk_path, fn)
         if os.access(moname, os.F_OK):

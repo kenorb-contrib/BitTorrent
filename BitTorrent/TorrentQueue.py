@@ -14,8 +14,8 @@ from __future__ import division
 
 import os
 import sys
-import urllib
 import threading
+import traceback
 
 from BitTorrent.platform import bttime
 from BitTorrent.download import Feedback, Multitorrent
@@ -90,38 +90,50 @@ class TorrentQueue(Feedback):
         self.other_torrents = []
         self.last_save_time = 0
         self.last_version_check = 0
+        self.initialized = 0
 
     def run(self, ui, ui_wrap, startflag):
-        self.ui = ui
-        self.run_ui_task = ui_wrap
-        self.multitorrent = Multitorrent(self.config, self.doneflag,
-                                        self.global_error, listen_fail_ok=True)
-        self.rawserver = self.multitorrent.rawserver
-        self.controlsocket.set_rawserver(self.rawserver)
-        self.controlsocket.start_listening(self.external_command)
         try:
-            self._restore_state()
-        except BTFailure, e:
-            self.torrents = {}
-            self.running_torrents = []
-            self.queue = []
-            self.other_torrents = []
-            self.global_error(ERROR, _("Could not load saved state: ")+str(e))
-        else:
-            for infohash in self.running_torrents + self.queue + \
-                    self.other_torrents:
-                t = self.torrents[infohash]
-                if t.dlpath is not None:
-                    t.completion = self.multitorrent.get_completion(
-                        self.config, t.metainfo, t.dlpath)
-                state = t.state
-                if state == RUN_QUEUED:
-                    state = RUNNING
-                self.run_ui_task(self.ui.new_displayed_torrent, infohash,
-                                 t.metainfo, t.dlpath, state, t.config,
-                                 t.completion, t.uptotal, t.downtotal, )
-        self._check_queue()
-        startflag.set()
+            self.ui = ui
+            self.run_ui_task = ui_wrap
+            self.multitorrent = Multitorrent(self.config, self.doneflag,
+                                            self.global_error, listen_fail_ok=True)
+            self.rawserver = self.multitorrent.rawserver
+            self.controlsocket.set_rawserver(self.rawserver)
+            self.controlsocket.start_listening(self.external_command)
+            try:
+                self._restore_state()
+            except BTFailure, e:
+                self.torrents = {}
+                self.running_torrents = []
+                self.queue = []
+                self.other_torrents = []
+                self.global_error(ERROR, _("Could not load saved state: ")+str(e))
+            else:
+                for infohash in self.running_torrents + self.queue + \
+                        self.other_torrents:
+                    t = self.torrents[infohash]
+                    if t.dlpath is not None:
+                        t.completion = self.multitorrent.get_completion(
+                            self.config, t.metainfo, t.dlpath)
+                    state = t.state
+                    if state == RUN_QUEUED:
+                        state = RUNNING
+                    self.run_ui_task(self.ui.new_displayed_torrent, infohash,
+                                     t.metainfo, t.dlpath, state, t.config,
+                                     t.completion, t.uptotal, t.downtotal, )
+            self._check_queue()
+            self.initialized = 1
+            startflag.set()
+        except Exception, e:
+            # dump a normal exception traceback
+            traceback.print_exc()
+            # set the error flag
+            self.initialized = -1
+            # signal the gui thread to stop waiting
+            startflag.set()
+            return
+            
         self._queue_loop()
         self.multitorrent.rawserver.listen_forever()
         if self.doneflag.isSet():
@@ -460,7 +472,7 @@ class TorrentQueue(Feedback):
                 self.global_error(WARNING,
                                   (_("Could not delete cached %s file:")%d) +
                                   str(e))
-        ec = lambda level, message: self.error(t.metainfo, level, message)
+        ec = lambda level, message: self.global_error(level, message)
         configfile.remove_torrent_config(self.config['data_dir'],
                                          infohash, ec)
         self._dump_state()
@@ -550,10 +562,11 @@ class TorrentQueue(Feedback):
         if not ihash:
             oldvalue = self.config[option]
             self.config[option] = value
+            self.multitorrent.set_option(option, value)
             if option == 'pause':
-                if value and not oldvalue:
+                if value:# and not oldvalue:
                     self.set_zero_running_torrents()
-                elif not value and oldvalue:
+                elif not value:# and oldvalue:
                     self._check_queue()
         else:
             torrent = self.torrents[ihash]
@@ -561,7 +574,6 @@ class TorrentQueue(Feedback):
                 torrent.dl.set_option(option, value)
                 if option in ('forwarded_port', 'maxport'):
                     torrent.dl.change_port()
-                
         self._dump_config()
 
     def request_status(self, infohash, want_spew, want_fileinfo):
@@ -588,6 +600,8 @@ class TorrentQueue(Feedback):
                     ratio = 1e99
             if ulspeed <= 0 or ratio >= 1e99:
                 rem = 1e99
+            elif downtotal == 0:
+                rem = (torrent.metainfo.total_bytes * ratio - uptotal) / ulspeed
             else:
                 rem = (downtotal * ratio - uptotal) / ulspeed
             if self.queue and not torrent.dl.config['seed_forever']:
@@ -736,6 +750,11 @@ class TorrentQueue(Feedback):
 
     def finished(self, torrent):
         infohash = torrent.infohash
+        t = self.torrents[infohash]
+        totals = t.dl.get_total_transfer()
+        if t.downtotal == 0 and t.downtotal_old == 0 and totals[1] == 0:
+            self.set_config('seed_forever', True, infohash)
+            
         if infohash == self.starting_torrent:
             t = self.torrents[infohash]
             if self.queue:

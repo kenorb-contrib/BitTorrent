@@ -8,7 +8,6 @@
 # for the specific language governing rights and limitations under the
 # License.
 
-from heapq import *
 from random import sample
 from BitTorrent.platform import bttime as time
 
@@ -31,11 +30,11 @@ class KItem:
             return 0
 
     def __repr__(self):
-        return `(self.k, self.v, self.t - time())`
+        return `(self.k, self.v, time() - self.t)`
 
 ## in memory data store for distributed tracker
 ## keeps a list of values per key in dictionary
-## keeps oldest value for each key in one heap
+## keeps expiration for each key in a queue
 ## can efficiently expire all values older than a given time
 ## can insert one val at a time, or a list:  ks['key'] = 'value' or ks['key'] = ['v1', 'v2', 'v3']
 class KStore:
@@ -55,7 +54,6 @@ class KStore:
             l = self.d[key]
         except KeyError:
             self.d[key] = [x]
-            heappush(self.q, x)
         else:
             # this is slow
             try:
@@ -64,6 +62,7 @@ class KStore:
             except ValueError:
                 pass
             l.insert(0, x)
+        self.q.append(x)
 
     def __delitem__(self, key):
         del(self.d[key])
@@ -83,16 +82,17 @@ class KStore:
     def expire(self, t):
         #.expire values inserted prior to t
         try:
-            while self.q[0].t < t:
-                x = heappop(self.q)
-                l = self.d[x.k]
+            while self.q[0].t <= t:
+                x = self.q.pop(0)
                 try:
-                    while l[-1].t < t:
-                        l.pop()
-                    else:
-                        heappush(self.q, l[-1])
-                except IndexError:
-                    del(self.d[x.k])
+                    l = self.d[x.k]
+                    try:
+                        while l[-1].t <= t:
+                            l.pop()
+                    except IndexError:
+                        del(self.d[x.k])
+                except KeyError:
+                    pass
         except IndexError:
             pass
     

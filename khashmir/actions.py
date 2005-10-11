@@ -16,8 +16,23 @@ from khash import intify
 from ktable import KTable, K
 from util import unpackNodes
 from krpc import KRPCProtocolError, KRPCSelfNodeError
+from bisect import insort
 
-class ActionBase:
+class NodeWrap(object):
+    def __init__(self, node, target):
+        self.num = target
+        self.node = node
+
+    def __cmp__(self, o):
+        """ this function is for sorting nodes relative to the ID we are looking for """
+        x, y = self.num ^ o.num, self.num ^ self.node.num
+        if x > y:
+            return 1
+        elif x < y:
+            return -1
+        return 0
+        
+class ActionBase(object):
     """ base class for some long running asynchronous proccesses like finding nodes or values """
     def __init__(self, table, target, callback, callLater):
         self.table = table
@@ -25,6 +40,7 @@ class ActionBase:
         self.callLater = callLater
         self.num = intify(target)
         self.found = {}
+        self.foundq = []
         self.queried = {}
         self.queriedip = {}
         self.answered = {}
@@ -32,9 +48,9 @@ class ActionBase:
         self.outstanding = 0
         self.finished = 0
     
-        def sort(a, b, num=self.num):
+        def sort(a, b):
             """ this function is for sorting nodes relative to the ID we are looking for """
-            x, y = num ^ a.num, num ^ b.num
+            x, y = self.num ^ a.num, self.num ^ b.num
             if x > y:
                 return 1
             elif x < y:
@@ -83,6 +99,7 @@ class FindNode(ActionBase):
             n = self.table.Node().initWithDict(node)
             if not self.found.has_key(n.id):
                 self.found[n.id] = n
+                insort(self.foundq, NodeWrap(n, self.num))
                 self.table.insertNode(n, contacted=0)
         self.schedule()
         
@@ -92,9 +109,8 @@ class FindNode(ActionBase):
         """
         if self.finished:
             return
-        l = self.found.values()
-        l.sort(self.sort)
-        for node in l[:K]:
+        l = [wrapper.node for wrapper in self.foundq[:K]]
+        for node in l:
             if node.id == self.target:
                 self.finished=1
                 return self.callback([node])
@@ -131,7 +147,7 @@ class FindNode(ActionBase):
                 continue
             else:
                 self.found[node.id] = node
-        
+                insort(self.foundq, NodeWrap(node, self.num))
         self.schedule()
     
 
@@ -170,6 +186,7 @@ class GetValue(FindNode):
                 if not self.found.has_key(n.id):
                     self.table.insertNode(n)
                     self.found[n.id] = n
+                    insort(self.foundq, NodeWrap(n, self.num))
         elif dict.has_key('values'):
             def x(y, z=self.results):
                 if not z.has_key(y):
@@ -187,9 +204,7 @@ class GetValue(FindNode):
     def schedule(self):
         if self.finished:
             return
-        l = self.found.values()
-        l.sort(self.sort)
-        for node in l[:K]:
+        for node in [wrapper.node for wrapper in self.foundq[:K]]:
             if self.shouldQuery(node):
                 #xxx t.timeout = time.time() + GET_VALUE_TIMEOUT
                 try:
@@ -224,7 +239,7 @@ class GetValue(FindNode):
                 continue
             else:
                 self.found[node.id] = node
-            
+                insort(self.foundq, NodeWrap(node, self.num))
         self.schedule()
 
 

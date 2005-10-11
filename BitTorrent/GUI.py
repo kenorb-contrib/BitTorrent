@@ -27,9 +27,7 @@ def lock_wrap(function, *args):
     gtk.threads_leave()
 
 def gtk_wrap(function, *args):
-    gtk.threads_enter()
     gobject.idle_add(lock_wrap, function, *args)
-    gtk.threads_leave()
 
 SPACING = 8
 WINDOW_TITLE_LENGTH = 128 # do we need this?
@@ -50,10 +48,58 @@ else:
 MIN_MULTI_PANE_HEIGHT = 107
 
 BT_TARGET_TYPE = 0
-EXTERNAL_TARGET_TYPE = 1
+EXTERNAL_FILE_TYPE = 1
+EXTERNAL_STRING_TYPE = 2
 
-BT_TARGET       = ("application/x-bittorrent", gtk.TARGET_SAME_APP, BT_TARGET_TYPE      )
-EXTERNAL_TARGET = ("text/uri-list"           , 0                  , EXTERNAL_TARGET_TYPE)
+BT_TARGET              = ("application/x-bittorrent" , gtk.TARGET_SAME_APP, BT_TARGET_TYPE      )
+EXTERNAL_FILE          = ("text/uri-list"            , 0                  , EXTERNAL_FILE_TYPE  )
+
+#gtk(gdk actually) is totally unable to receive text drags
+#of any sort in windows because they're too lazy to use OLE.
+#this list is all the atoms I could possibly find so that
+#url dnd works on linux from any browser.
+EXTERNAL_TEXTPLAIN     = ("text/plain"               , 0                  , EXTERNAL_STRING_TYPE)
+EXTERNAL_TEXT          = ("TEXT"                     , 0                  , EXTERNAL_STRING_TYPE)
+EXTERNAL_COMPOUND_TEXT = ("COMPOUND_TEXT"            , 0                  , EXTERNAL_STRING_TYPE)
+EXTERNAL_MOZILLA       = ("text/x-moz-url"           , 0                  , EXTERNAL_STRING_TYPE)
+EXTERNAL_NETSCAPE      = ("_NETSCAPE_URL"            , 0                  , EXTERNAL_STRING_TYPE)
+EXTERNAL_HTML          = ("text/html"                , 0                  , EXTERNAL_STRING_TYPE)
+EXTERNAL_UNICODE       = ("text/unicode"             , 0                  , EXTERNAL_STRING_TYPE)
+EXTERNAL_UTF8          = ("text/plain;charset=utf-8" , 0                  , EXTERNAL_STRING_TYPE)
+EXTERNAL_UTF8_STRING   = ("UTF8_STRING"              , 0                  , EXTERNAL_STRING_TYPE)
+EXTERNAL_STRING        = ("STRING"                   , 0                  , EXTERNAL_STRING_TYPE)
+EXTERNAL_OLE2_DND      = ("OLE2_DND"                 , 0                  , EXTERNAL_STRING_TYPE)
+EXTERNAL_RTF           = ("Rich Text Format"         , 0                  , EXTERNAL_STRING_TYPE)
+#there should alse be text/plain;charset={current charset}
+
+TARGET_EXTERNAL = [EXTERNAL_FILE,
+                   EXTERNAL_TEXTPLAIN,
+                   EXTERNAL_TEXT,
+                   EXTERNAL_COMPOUND_TEXT,
+                   EXTERNAL_MOZILLA,
+                   EXTERNAL_NETSCAPE,
+                   EXTERNAL_HTML,
+                   EXTERNAL_UNICODE,
+                   EXTERNAL_UTF8,
+                   EXTERNAL_UTF8_STRING,
+                   EXTERNAL_STRING,
+                   EXTERNAL_OLE2_DND,
+                   EXTERNAL_RTF]
+
+TARGET_ALL = [BT_TARGET,
+              EXTERNAL_FILE,
+              EXTERNAL_TEXTPLAIN,
+              EXTERNAL_TEXT,
+              EXTERNAL_COMPOUND_TEXT,
+              EXTERNAL_MOZILLA,
+              EXTERNAL_NETSCAPE,
+              EXTERNAL_HTML,
+              EXTERNAL_UNICODE,
+              EXTERNAL_UTF8,
+              EXTERNAL_UTF8_STRING,
+              EXTERNAL_STRING,
+              EXTERNAL_OLE2_DND,
+              EXTERNAL_RTF]
 
 # a slightly hackish but very reliable way to get OS scrollbar width
 sw = gtk.ScrolledWindow()
@@ -90,7 +136,7 @@ factory = gtk.IconFactory()
 # ICON_SIZE_BUTTON        = 20x20
 # ICON_SIZE_LARGE_TOOLBAR = 24x24
 
-for n in 'broken finished info pause paused play queued running remove'.split():
+for n in 'broken finished info pause paused play queued running remove status-running status-natted status-stopped'.split():
     fn = os.path.join(image_root, ("%s.png"%n))
 
     pixbuf = gtk.gdk.pixbuf_new_from_file(fn)
@@ -100,6 +146,16 @@ for n in 'broken finished info pause paused play queued running remove'.split():
     factory.add('bt-%s'%n, set)
 
 factory.add_default()
+
+def load_large_toolbar_image(image, stockname):
+    # This is a hack to work around a bug in GTK 2.4 that causes
+    # gtk.ICON_SIZE_LARGE_TOOLBAR icons to be drawn at 18x18 instead
+    # of 24x24 under GTK 2.4 & win32
+    if os.name == 'nt' and gtk.gtk_version < (2, 6):
+        image.set_from_file(os.path.join(image_root, stockname[3:]+'.png'))
+    else:
+        image.set_from_stock(stockname, gtk.ICON_SIZE_LARGE_TOOLBAR)
+    
 
 def get_logo(size=32):
     fn = os.path.join(image_root, 'logo', 'bittorrent_%d.png'%size)
@@ -196,7 +252,10 @@ class IconButton(gtk.Button):
 class Window(gtk.Window):
     def __init__(self, *args):
         apply(gtk.Window.__init__, (self,)+args)
-        self.set_icon_from_file(os.path.join(image_root,'bittorrent.ico'))
+        iconname = os.path.join(image_root,'bittorrent.ico')
+        icon16 = gtk.gdk.pixbuf_new_from_file_at_size(iconname, 16, 16)
+        icon32 = gtk.gdk.pixbuf_new_from_file_at_size(iconname, 32, 32)
+        self.set_icon_list(icon16, icon32)
 
 
 class HelpWindow(Window):
@@ -267,8 +326,8 @@ class AutoScrollingWindow(ScrolledWindow):
         ScrolledWindow.__init__(self)
         self.drag_dest_set(gtk.DEST_DEFAULT_MOTION |
                            gtk.DEST_DEFAULT_DROP,
-                           [( "application/x-bittorrent",  gtk.TARGET_SAME_APP, BT_TARGET_TYPE )],
-                           gtk.gdk.ACTION_MOVE)
+                           TARGET_ALL,
+                           gtk.gdk.ACTION_MOVE|gtk.gdk.ACTION_COPY)
         self.connect('drag_motion'       , self.drag_motion       )
 #        self.connect('drag_data_received', self.drag_data_received)
         self.vscrolltimeout = None
@@ -286,6 +345,7 @@ class AutoScrollingWindow(ScrolledWindow):
             self.start_scrolling(amount)
         else:
             self.stop_scrolling()
+        return True
 
     def scroll_and_wait(self, amount, lock_held):
         if not lock_held:
@@ -316,7 +376,7 @@ class MessageDialog(gtk.MessageDialog):
                  type=gtk.MESSAGE_ERROR,
                  buttons=gtk.BUTTONS_OK,
                  yesfunc=None, nofunc=None,
-                 default=None
+                 default=gtk.RESPONSE_OK
                  ):
         gtk.MessageDialog.__init__(self, parent,
                                    self.flags,

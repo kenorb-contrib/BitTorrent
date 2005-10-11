@@ -10,13 +10,13 @@
 
 from BitTorrent.platform import bttime as time
 from const import *
-from random import randrange
+from random import randrange, shuffle
 from traceback import print_exc
 
 class KRateLimiter:
     # special rate limiter that drops entries that have been sitting in the queue for longer than self.age seconds
     # by default we toss anything that has less than 5 seconds to live
-    def __init__(self, transport, rate, call_later, age=(KRPC_TIMEOUT - 5)):
+    def __init__(self, transport, rate, call_later, rlcount, age=(KRPC_TIMEOUT - 5)):
         self.q = []
         self.transport = transport
         self.rate = rate
@@ -25,12 +25,13 @@ class KRateLimiter:
         self.age = age
         self.last = 0
         self.call_later = call_later
+        self.rlcount = rlcount
         self.sent=self.dropped=0
         if self.rate == 0:
             self.rate = 1e10
             
     def sendto(self, s, i, addr):
-        self.q.insert(0, (time(), (s, i, addr)))
+        self.q.append((time(), (s, i, addr)))
         if not self.running:
             self.run(check=True)
 
@@ -41,20 +42,21 @@ class KRateLimiter:
         self.last = t
         if check:
             self.curr = max(self.curr, 0 - self.rate)
-            
+
+        shuffle(self.q)
         while self.q and self.curr <= 0:
-            n = randrange(0, len(self.q))
-            x, tup = self.q[n]
-            self.q = self.q[:n] + self.q[n+1:]
-            self.curr += len(tup[0])
+            x, tup = self.q.pop()
+            size = len(tup[0])
+            self.curr += size
             try:
                 self.transport.sendto(*tup)
                 self.sent+=1
+                self.rlcount(size)
             except:
                 if tup[2][1] != 0:
                     print ">>> sendto exception", tup
                     print_exc()
-            
+        self.q.sort()
         if self.q or self.curr > 0:
             self.running = True
             # sleep for at least a half second
@@ -65,6 +67,6 @@ class KRateLimiter:
     def expire(self, t=time()):
         if self.q:
             expire_time = t - self.age
-            while self.q and self.q[-1][0] < expire_time:
-                self.q.pop()
+            while self.q and self.q[0][0] < expire_time:
+                self.q.pop(0)
                 self.dropped+=1

@@ -47,15 +47,18 @@ class KRPCSelfNodeError(Exception):
     pass
 
 class hostbroker(object):       
-    def __init__(self, server, addr, transport, call_later, max_ul_rate):
+    def __init__(self, server, addr, transport, call_later, max_ul_rate, config, rlcount):
         self.server = server
         self.addr = addr
         self.transport = transport
-        self.rltransport = KRateLimiter(transport, max_ul_rate, call_later)
+        self.rltransport = KRateLimiter(transport, max_ul_rate, call_later, rlcount)
         self.call_later = call_later
         self.connections = Cache(touch_on_access=True)
         self.hammerlock = Hammerlock(100, call_later)
         self.expire_connections(loop=True)
+        self.config = config
+        if not self.config.has_key('pause'):
+            self.config['pause'] = False
         
     def expire_connections(self, loop=False):
         self.connections.expire(bttime() - KRPC_CONNECTION_CACHE_TIME)
@@ -64,7 +67,7 @@ class hostbroker(object):
 
     def data_came_in(self, addr, datagram):
         #if addr != self.addr:
-        if self.hammerlock.check(addr):
+        if not self.config['pause'] and self.hammerlock.check(addr):
             c = self.connectionForAddr(addr)
             c.datagramReceived(datagram, addr)
 

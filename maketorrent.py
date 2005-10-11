@@ -14,8 +14,8 @@
 
 from __future__ import division
 
-import gettext
-gettext.install('bittorrent', 'locale')
+from BitTorrent.platform import install_translation
+install_translation()
 
 import os
 import sys
@@ -300,8 +300,7 @@ class MainWindow(Window):
     def check_buttons(self, *widgets):
         file_name = self.get_file()
         tracker = self.announce_entry.get_text()
-
-        if file_name is not None:
+        if file_name not in (None, ''):
             if self.config['use_tracker']:
                 if len(tracker) >= len('http://x.cc'):
                     self.makebutton.set_sensitive(True)

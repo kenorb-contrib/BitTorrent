@@ -13,9 +13,9 @@ rem For Python 2.4:
 rem set PYTHON=Python24
 
 rem For GTK 2.4:
-set WIMP_DIR_NAME=wimp
+rem set WIMP_DIR_NAME=wimp
 rem For GTK 2.6:
-rem set WIMP_DIR_NAME=MS-Windows
+set WIMP_DIR_NAME=MS-Windows
 
 del /F /S /Q build dist 
 c:\%PYTHON%\python.exe winmakei18n.py

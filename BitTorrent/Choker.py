@@ -45,7 +45,7 @@ class Choker(object):
         preferred = []
         for i in xrange(len(self.connections)):
             c = self.connections[i]
-            if c.upload.interested and not c.download.is_snubbed():
+            if c.upload.interested and not c.download.is_snubbed() and c.download.have.numfalse:
                 preferred.append((-c.download.get_rate(), i))
         preferred.sort()
         prefcount = min(len(preferred), self._max_uploads() -1)
@@ -58,7 +58,7 @@ class Choker(object):
             u = c.upload
             if mask[i]:
                 u.unchoke(self.count)
-            elif count > 0:
+            elif count > 0 and c.download.have.numfalse:
                 u.unchoke(self.count)
                 if u.interested:
                     count -= 1
@@ -80,7 +80,7 @@ class Choker(object):
         for i in xrange(len(self.connections)):
             c = self.connections[i]
             u = c.upload
-            if not u.choked and u.interested:
+            if not u.choked and u.interested and c.download.have.numfalse:
                 if u.unchoke_time > new_limit or (
                         u.buffer and c.connection.is_flushed()):
                     preferred.append((-u.unchoke_time, -u.get_rate(), i))
@@ -106,13 +106,13 @@ class Choker(object):
                 if not u.interested:
                     u.choke()
                 elif u.choked:
-                    if num_nonpref > 0 and c.connection.is_flushed():
+                    if num_nonpref > 0 and c.connection.is_flushed() and c.download.have.numfalse:
                         u.unchoke(self.count)
                         num_nonpref -= 1
                         if num_nonpref == 0:
                             last_unchoked = i
                 else:
-                    if num_nonpref == 0:
+                    if num_nonpref == 0 or not c.download.have.numfalse:
                         u.choke()
                     else:
                         num_nonpref -= 1

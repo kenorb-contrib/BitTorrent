@@ -74,7 +74,7 @@ common_options = [
      _("the maximum number of files in a multifile torrent to keep open at a "
        "time, 0 means no limit. Used to avoid running out of file descriptors.")),
     ('start_trackerless_client', MYTRUE,
-     _("Initialize a trackerless client.  This must be set to one in order to download trackerless torrents."))
+     _("Initialize a trackerless client.  This must be enabled in order to download trackerless torrents."))
     ]
 
 
@@ -120,10 +120,10 @@ rare_options = [
      _("address of HTTP proxy to use for tracker connections")),
     ('close_with_rst', 0,
      _("close connections with RST and avoid the TCP TIME_WAIT state")),
-    ('chop_max_allow_in', MYFALSE,
-     _("force max_allow_in to stay below 30 on Win32")),
-    ('initiate_rate', 10,
-     _("initiate no more than this many connections per second"))
+    ('min_ratelimiter_delay', 0.3,
+     _("minimum delay between upload pulses in seconds, smaller provides better short term accuracy but more CPU usage")),
+    ('twisted', -1,
+     _("Use Twisted network libraries for network connections. 1 means use twisted, 0 means do not use twisted, -1 means autodetect, and prefer twisted")),
     ]
 
 

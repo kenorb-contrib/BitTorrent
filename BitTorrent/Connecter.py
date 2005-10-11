@@ -55,6 +55,7 @@ class Connection(object):
     def __init__(self, encoder, connection, id, is_local):
         self.encoder = encoder
         self.connection = connection
+        self.connection.handler = self
         self.id = id
         self.ip = connection.ip
         self.locally_initiated = is_local
@@ -132,6 +133,7 @@ class Connection(object):
             self._partial_message = ''.join((tobinary(len(piece) + 9), PIECE,
                                     tobinary(index), tobinary(begin), piece))
         if bytes < len(self._partial_message):
+            self.upload.update_rate(bytes)
             self.connection.write(buffer(self._partial_message, 0, bytes))
             self._partial_message = buffer(self._partial_message, bytes)
             return bytes
@@ -148,6 +150,7 @@ class Connection(object):
         queue.extend(self._outqueue)
         self._outqueue = []
         queue = ''.join(queue)
+        self.upload.update_rate(len(queue))
         self.connection.write(queue)
         return len(queue)
 
@@ -329,7 +332,6 @@ class Connection(object):
         self._sever()
 
     def connection_flushed(self, connection):
-        if self.complete:
-            if self.next_upload is None and (self._partial_message is not None
-                                             or self.upload.buffer):
+        if self.complete and self.next_upload is None and (self._partial_message is not None
+                                             or (self.upload and self.upload.buffer)):
                 self.encoder.ratelimiter.queue(self, self.encoder.context.rlgroup)

@@ -34,11 +34,12 @@ class MultiRateLimiter(object):
         self.last = None
         self.upload_rate = 0
         self.unitsize = 17000
+        self.min_delay = 0.333
         self.offset_amount = 0
         self.ctxs = [] # list of contexts with connections in the queue
         self.ctx_counts = {} # dict conn -> how many connections each context has
         
-    def set_parameters(self, rate, unitsize):
+    def set_parameters(self, rate, unitsize, min_delay):
         if unitsize > 17000:
             # Since data is sent to peers in a round-robin fashion, max one
             # full request at a time, setting this higher would send more data
@@ -47,6 +48,7 @@ class MultiRateLimiter(object):
             unitsize = 17000
         self.upload_rate = rate * 1024
         self.unitsize = unitsize
+        self.min_delay = min_delay
         self.lasttime = bttime()
         self.offset_amount = 0
 
@@ -68,7 +70,9 @@ class MultiRateLimiter(object):
             self.last.next_upload = conn
             self.last = conn
 
-
+    def increase_offset(self, bytes):
+        self.offset_amount += bytes
+    
     def try_send(self, check_time = False):
         t = bttime()
         cur = self.last.next_upload
@@ -76,7 +80,6 @@ class MultiRateLimiter(object):
         self.offset_amount -= (t - self.lasttime) * self.upload_rate
         self.offset_amount = max(self.offset_amount, -1 * self.upload_rate)
         self.lasttime = t
-
 
         def minctx(a,b):
             A = B = 0
@@ -149,10 +152,8 @@ class MultiRateLimiter(object):
                 myDelay = self.offset_amount / self.upload_rate
             if min_offset.rate > 0:
                 minCtxDelay = min_offset.offset_amount / min_offset.rate
-            if myDelay <= 0 and minCtxDelay <= 0:
-                return self.try_send()
-            else:
-                self.sched(self.try_send, max(myDelay, minCtxDelay))
+            delay = max(self.min_delay, max(myDelay, minCtxDelay))
+            self.sched(self.try_send, delay)
 
 
     def clean_closed(self):

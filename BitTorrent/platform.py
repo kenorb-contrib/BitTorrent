@@ -17,6 +17,12 @@ import os
 import re
 import sys
 import time
+import gettext
+import locale
+if os.name == 'nt':
+    import win32api
+    from win32com.shell import shellcon, shell
+    
 
 from BitTorrent import app_name, version
 
@@ -34,11 +40,15 @@ if os_name == 'nt':
           (1, 4, 10): "98",
           (1, 4, 90): "ME",
           (2, 4,  0): "NT",
-          (2, 5,  0): "2K",
-          (2, 5,  1): "XP"}
+          (2, 5,  0): "2000",
+          (2, 5,  1): "XP"  ,
+          (2, 5,  2): "2003",
+          }
     wv = sys.getwindowsversion()
-    os_version = wh[(wv[3], wv[0], wv[1])]
-    del wh, wv
+    wk = (wv[3], wv[0], wv[1])
+    if wh.has_key(wk):
+        os_version = wh[wk]
+    del wh, wv, wk
 
 def calc_unix_dirs():
     appdir = '%s-%s'%(app_name, version)
@@ -65,29 +75,54 @@ if not os.access(image_root, os.F_OK) or not os.access(locale_root, os.F_OK):
             lambda p: os.path.join(installed_prefix, p), calc_unix_dirs()
             )
 
-
-# a cross-platform way to get user's home, config, and temp directories
-def get_config_dir():
+# a cross-platform way to get user's config directory
+def get_config_dir():    
     shellvars = ['${APPDATA}', '${HOME}', '${USERPROFILE}']
     dir_root = get_dir_root(shellvars)
-    if dir_root is None:
-        reg_dir = get_registry_dir('AppData')
-        if reg_dir is not None:
-            dir_root = reg_dir
+
+    if (dir_root is None) and (os.name == 'nt'):
+        app_dir = get_shell_dir(shellcon.CSIDL_APPDATA)
+        if app_dir is not None:
+            dir_root = app_dir
+
+    if dir_root is None and os.name == 'nt':
+        tmp_dir_root = os.path.split(sys.executable)[0]
+        if os.access(tmp_dir_root, os.R_OK|os.W_OK):
+            dir_root = tmp_dir_root
+
     return dir_root
 
 def get_home_dir():
     shellvars = ['${HOME}', '${USERPROFILE}']
     dir_root = get_dir_root(shellvars)
+
+    if (dir_root is None) and (os.name == 'nt'):
+        dir = get_shell_dir(shellcon.CSIDL_PROFILE)
+        if dir is None:
+            # there's no clear best fallback here
+            # MS discourages you from writing directly in the home dir,
+            # and sometimes (i.e. win98) there isn't one
+            dir = get_shell_dir(shellcon.CSIDL_DESKTOPDIRECTORY)
+            
+        dir_root = dir
+
     return dir_root
 
 def get_temp_dir():
     shellvars = ['${TMP}', '${TEMP}']
     dir_root = get_dir_root(shellvars, default_to_home=False)
+
+    #this method is preferred to the envvars
+    if os.name == 'nt':
+        try_dir_root = win32api.GetTempPath()
+        if try_dir_root is not None:
+            dir_root = try_dir_root
+    
     if dir_root is None:
         try_dir_root = None
         if os.name == 'nt':
-            try_dir_root = r'C:\WINDOWS\TEMP'
+            # this should basically never happen. GetTempPath always returns something
+            try_dir_root = r'C:\WINDOWS\Temp'
         elif os.name == 'posix':
             try_dir_root = '/tmp'
         if (try_dir_root is not None and
@@ -115,33 +150,16 @@ def get_dir_root(shellvars, default_to_home=True):
                 dir_root = None
     return dir_root
 
-
-def get_registry_dir(value):
-    reg_dir = None 
-
-    find_pat = re.compile('%([A-Z_]+)%')
-    repl_pat = '${\\1}'
-    
+# this function is the preferred way to get windows' paths
+def get_shell_dir(value):
+    dir = None
     if os.name == 'nt':
-        #from win32com.shell import shell, shellcon
-        #desktop = shell.SHGetPathFromIDList(shell.SHGetSpecialFolderLocation(0, shellcon.CSIDL_DESKTOPDIRECTORY))
-        import _winreg as wreg
-        try: 
-            key = wreg.OpenKey(wreg.HKEY_CURRENT_USER,
-                               r'Software\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders')
-            d = wreg.QueryValueEx(key, value)
-            reg_dir, a_random_number = os.path.expandvars(d)
-            reg_dir = find_pat.sub(repl_pat, reg_dir)
-            reg_dir = os.path.expandvars(reg_dir)
-            reg_dir = reg_dir.encode('mbcs')
-        except Exception, e:
+        try:
+            dir = shell.SHGetFolderPath(0, value, 0, 0)
+            dir = dir.encode('mbcs')
+        except:
             pass
-
-        if reg_dir is not None and os.access(reg_dir, os.R_OK|os.W_OK):
-            pass
-        else:
-            reg_dir = None
-    return reg_dir
+    return dir
 
 def path_wrap(path):
     return path
@@ -162,15 +180,10 @@ def spawn(torrentqueue, cmd, *args):
     if os.name == 'nt':
         # do proper argument quoting since exec/spawn on Windows doesn't
         args = ['"%s"'%a.replace('"', '\"') for a in args]
-        if len(args) == 1:
-            os.startfile(args[0])
-        else:
-            # Note: if you get "OSError [Errno 8] Exec format error"
-            # on win32 here, it means you haven't set up your python
-            # files to be executable, but this should still work after
-            # building an exe with pygtk.
-            # P_NOWAIT, P_NOWAITO, P_DETACH all behave the same
-            pid = os.spawnl(os.P_NOWAIT, path, *args)
+        argstr = ' '.join(args[1:])
+        # use ShellExecute instead of spawn*() because we don't want
+        # handles (like the controlsocket) to be duplicated        
+        win32api.ShellExecute(0, "open", args[0], argstr, None, 1) # 1 == SW_SHOW
     else:
         forkback = os.fork()
         if forkback == 0:
@@ -180,3 +193,30 @@ def spawn(torrentqueue, cmd, *args):
                 torrentqueue.wrapped.controlsocket.close_socket()
             pid = os.execl(path, *args)
 
+def _gettext_install(domain, localedir=None, languages=None, unicode=False):
+    # gettext on win32 does not use locale.getdefaultlocale() by default
+    # other os's will fall through and gettext.find() will do this task
+    if os_name == 'nt':
+        # this code is straight out of gettext.find()
+        if languages is None:
+            languages = []
+            for envar in ('LANGUAGE', 'LC_ALL', 'LC_MESSAGES', 'LANG'):
+                val = os.environ.get(envar)
+                if val:
+                    languages = val.split(':')
+                    break
+
+            # this is the important addition - since win32 does not typically
+            # have any enironment variable set, append the default locale before 'C'
+            languages.append(locale.getdefaultlocale()[0])
+            
+            if 'C' not in languages:
+                languages.append('C')
+
+    # this code is straight out of gettext.install        
+    t = gettext.translation(domain, localedir, languages=languages, fallback=True)
+    t.install(unicode)
+        
+
+def install_translation():
+    _gettext_install('bittorrent', locale_root)

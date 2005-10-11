@@ -13,22 +13,20 @@
 from socket import error as socketerror
 
 from BitTorrent import BTFailure
+from BitTorrent.RawServer_magic import Handler
 from BitTorrent.Connecter import Connection
 from BitTorrent.platform import is_frozen_exe
 from BitTorrent.ClientIdentifier import identify_client
 
 # header, reserved, download id, my id, [length, message]
 
-class InitialConnectionHandler(object):
+class InitialConnectionHandler(Handler):
     def __init__(self, parent, id):
         self.parent = parent
         self.id = id
     def connection_started(self, s):
         con = Connection(self.parent, s, self.id, True)
         self.parent.connections[s] = con
-        s.handler = con
-    def connection_failed(self, addr):
-        pass
 
 class Encoder(object):
 
@@ -75,7 +73,7 @@ class Encoder(object):
                    dns not in self.spares:
                 self.spares.append(dns)
             return
-        self.raw_server.asynch_start_connection(dns, InitialConnectionHandler(self, id), self.context)
+        self.raw_server.async_start_connection(dns, InitialConnectionHandler(self, id), self.context)
 
 
     def connection_completed(self, c):
@@ -111,12 +109,6 @@ class Encoder(object):
         if con.ip in self.banned:
             return
         m = self.config['max_allow_in']
-        if is_frozen_exe:
-            # chop max_allow_in to 55 to maybe prevent TCP stack flaking
-            m = min(m, 55)
-            if self.config['chop_max_allow_in']:
-                # chop max_allow_in to 30 to more aggressively prevent TCP stack flaking
-                m = min(m, 30)
         if m and len(self.connections) >= m:
             return
         self.connections[con.connection] = con
@@ -128,7 +120,7 @@ class Encoder(object):
         self.banned[ip] = None
 
 
-class SingleportListener(object):
+class SingleportListener(Handler):
 
     def __init__(self, rawserver):
         self.rawserver = rawserver
@@ -185,10 +177,9 @@ class SingleportListener(object):
         if infohash in self.torrents:
             self.torrents[infohash].singleport_connection(self, conn)
 
-    def external_connection_made(self, connection):
+    def connection_made(self, connection):
         con = Connection(self, connection, None, False)
         self.connections[connection] = con
-        connection.handler = con
 
     def replace_connection(self):
         pass

@@ -8,27 +8,27 @@ msgid ""
 msgstr ""
 "Project-Id-Version: BitTorrent 4.2\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2005-08-15 13:10-0700\n"
-"PO-Revision-Date: 2005-08-06 23:42-0700\n"
-"Last-Translator: Matt Chisholm <matt@bittorrent.com>\n"
+"POT-Creation-Date: 2005-10-05 17:16-0700\n"
+"PO-Revision-Date: 2005-09-20 11:51-0700\n"
+"Last-Translator: Jure Repinc <jlp@holodeck1.com>\n"
 "Language-Team: Slovenian <lugos-slo (at) lugos (dot) si>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Generator: KBabel 1.10.1\n"
+"X-Generator: Pootle 0.6.3.20050806\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: bittorrent.py:24 maketorrent.py:23
+#: bittorrent.py:22 maketorrent.py:23
 msgid "Install Python 2.3 or greater"
 msgstr "Namestite Python 2.3 ali novejši"
 
-#: bittorrent.py:38
+#: bittorrent.py:37
 msgid "PyGTK 2.4 or newer required"
 msgstr "Potreben je PyGTK 2,4 ali novejši"
 
 #: bittorrent.py:108
 msgid "drag to reorder"
-msgstr "povlecite za razvrščanje"
+msgstr "povleci za razvrščanje"
 
 #: bittorrent.py:109
 msgid "right-click for menu"
@@ -40,15 +40,15 @@ msgstr "klicni dostop"
 
 #: bittorrent.py:116
 msgid "DSL/cable 128k up"
-msgstr "Kabel/DSL 128kb pošiljanje"
+msgstr "Kabel/DSL 128k gor"
 
 #: bittorrent.py:117
 msgid "DSL/cable 256k up"
-msgstr "Kabel/DSL 256kb pošiljanje"
+msgstr "Kabel/DSL 256k gor"
 
 #: bittorrent.py:118
 msgid "DSL 768k up"
-msgstr "Kabel/DSL 768kb pošiljanje"
+msgstr "DSL 768k gor"
 
 #: bittorrent.py:119
 msgid "T1"
@@ -72,52 +72,56 @@ msgstr "OC3"
 
 #: bittorrent.py:263
 msgid "Enter torrent URL"
-msgstr ""
+msgstr "Vnesi povezavo do torrent datoteke"
 
 #: bittorrent.py:264
 msgid "Enter the URL of a torrent file to open:"
-msgstr ""
+msgstr "Vnesi URL povezavo do torrent datoteke za odpiranje:"
 
-#: bittorrent.py:339
-msgid "Maximum upload rate"
-msgstr "Najvišja hitrost pošiljanja"
+#: bittorrent.py:310
+msgid "Maximum upload rate:"
+msgstr "Največja hitrost pošiljanja:"
 
-#: bittorrent.py:352
+#: bittorrent.py:374
 msgid "Temporarily stop all running torrents"
-msgstr "Začasno ustavi vse tekoče torrente"
+msgstr "Začasno ustavi vse delujoče torrente"
 
-#: bittorrent.py:353
+#: bittorrent.py:375
 msgid "Resume downloading"
 msgstr "Nadaljuj prenašanje"
 
-#: bittorrent.py:392
-msgid "Not connected"
-msgstr ""
+#: bittorrent.py:414 bittorrent.py:1961
+msgid "Paused"
+msgstr "Ustavljeno"
 
-#: bittorrent.py:394
+#: bittorrent.py:416
+msgid "No torrents"
+msgstr "Brez torrentov"
+
+#: bittorrent.py:418
 msgid "Running normally"
-msgstr ""
-
-#: bittorrent.py:396
-msgid "Firewalled/NATted"
-msgstr ""
+msgstr "Normalna povezava"
 
 #: bittorrent.py:420
+msgid "Firewalled/NATted"
+msgstr "Za požarnim zidom/NAT"
+
+#: bittorrent.py:456
 #, python-format
 msgid "New %s version available"
 msgstr "Na voljo je nova različica %s"
 
-#: bittorrent.py:435
+#: bittorrent.py:471
 #, python-format
 msgid "A newer version of %s is available.\n"
 msgstr "Na voljo je novejša različica %s.\n"
 
-#: bittorrent.py:436
+#: bittorrent.py:472
 #, python-format
 msgid "You are using %s, and the new version is %s.\n"
 msgstr "Uporabljate različico %s, na voljo je različica %s.\n"
 
-#: bittorrent.py:437
+#: bittorrent.py:473
 #, python-format
 msgid ""
 "You can always get the latest version from \n"
@@ -126,129 +130,133 @@ msgstr ""
 "Najnovejšo različico lahko vedno dobite na\n"
 "%s"
 
-#: bittorrent.py:444 bittorrent.py:1934 bittorrent.py:2067
+#: bittorrent.py:480 bittorrent.py:1974 bittorrent.py:2113
 msgid "Download _later"
 msgstr "Prenesi _kasneje"
 
-#: bittorrent.py:447 bittorrent.py:1898
+#: bittorrent.py:483 bittorrent.py:1938
 msgid "Download _now"
 msgstr "Prenesi _sedaj"
 
-#: bittorrent.py:453
+#: bittorrent.py:489
 msgid "_Remind me later"
 msgstr "_Opomni me kasneje"
 
-#: bittorrent.py:491
+#: bittorrent.py:527
 #, python-format
 msgid "About %s"
 msgstr "O %s"
 
-#: bittorrent.py:506
+#: bittorrent.py:542
 msgid "Beta"
 msgstr "Beta"
 
-#: bittorrent.py:508
+#: bittorrent.py:544
 #, python-format
 msgid "Version %s"
 msgstr "Različica %s"
 
-#: bittorrent.py:531
+#: bittorrent.py:571
 msgid "Donate"
-msgstr "Darovanje"
+msgstr "Darujte"
 
-#: bittorrent.py:551
+#: bittorrent.py:591
 #, python-format
 msgid "%s Activity Log"
 msgstr "Dnevnik dejavnosti za %s"
 
-#: bittorrent.py:608
+#: bittorrent.py:648
 msgid "Save log in:"
 msgstr "Shrani dnevnik v:"
 
-#: bittorrent.py:619
+#: bittorrent.py:659
 msgid "log saved"
 msgstr "dnevnik shranjen"
 
-#: bittorrent.py:678
+#: bittorrent.py:718
 msgid "log cleared"
 msgstr "dnevnik izpraznjen"
 
-#: bittorrent.py:708
+#: bittorrent.py:748
 #, python-format
 msgid "%s Settings"
 msgstr "Nastavitve za %s"
 
-#: bittorrent.py:719
+#: bittorrent.py:759
 msgid "Saving"
 msgstr "Shranjevanje"
 
-#: bittorrent.py:721
+#: bittorrent.py:761
 msgid "Save new downloads in:"
-msgstr "Shrani nove dokumente v:"
+msgstr "Shrani prenešene datoteke v:"
 
-#: bittorrent.py:734
+#: bittorrent.py:774
 msgid "Change..."
-msgstr "Spremeni ..."
+msgstr "Spremeni..."
 
-#: bittorrent.py:740
+#: bittorrent.py:780
 msgid "Ask where to save each new download"
 msgstr "Vprašaj kam shraniti vsak nov prenos"
 
-#: bittorrent.py:749
+#: bittorrent.py:789
 msgid "Downloading"
 msgstr "Prenašanje"
 
-#: bittorrent.py:751
+#: bittorrent.py:791
 msgid "Starting additional torrents manually:"
 msgstr "Ročno zaganjanje dodatnih torrentov:"
 
-#: bittorrent.py:760
+#: bittorrent.py:800
 msgid "Always stops the _last running torrent"
 msgstr "Zaustavi _nazadnje zagnan torrent"
 
-#: bittorrent.py:766
+#: bittorrent.py:806
 msgid "Always starts the torrent in _parallel"
 msgstr "Zažene torrent _vzporedno"
 
-#: bittorrent.py:772
+#: bittorrent.py:812
 msgid "_Asks each time"
-msgstr "Vsakokrat v_praša"
+msgstr "Vsakokrat _vpraša"
 
-#: bittorrent.py:789
+#: bittorrent.py:829
 msgid "Seeding"
-msgstr ""
+msgstr "Sejanje"
 
-#: bittorrent.py:791
+#: bittorrent.py:831
 msgid ""
 "Seed completed torrents: until share ratio reaches [_] percent, or for [_] "
 "minutes, whichever comes first."
 msgstr ""
+"Sej zaključene torrente: dokler razmerje izmenjave ne doseže [_] odstotkov, "
+"ali vsaj [_] minut. Karkoli se zgodi prej."
 
-#: bittorrent.py:835 bittorrent.py:869
+#: bittorrent.py:875 bittorrent.py:909
 msgid "Seed indefinitely"
-msgstr ""
+msgstr "Sej za nedoločen čas"
 
-#: bittorrent.py:843
+#: bittorrent.py:883
 msgid "Seed last completed torrent: until share ratio reaches [_] percent."
 msgstr ""
+"Sej nazadnje zaključen torrent: dokler razmerje izmenjave ne doseže [_] "
+"odstotkov."
 
-#: bittorrent.py:881
+#: bittorrent.py:921
 msgid "Network"
 msgstr "Omrežje"
 
-#: bittorrent.py:883
+#: bittorrent.py:923
 msgid "Look for available port:"
 msgstr "Preveri razpoložljiva vrata:"
 
-#: bittorrent.py:886
+#: bittorrent.py:926
 msgid "starting at port: "
 msgstr "začni z vrati: "
 
-#: bittorrent.py:899
+#: bittorrent.py:939
 msgid "IP to report to the tracker:"
 msgstr "Sledilniku sporoči ta IP:"
 
-#: bittorrent.py:904
+#: bittorrent.py:944
 msgid ""
 "(Has no effect unless you are on the\n"
 "same local network as the tracker)"
@@ -256,23 +264,23 @@ msgstr ""
 "(Učinkuje le, če ste na istem krajevnem\n"
 "omrežju kot je sledilnik)"
 
-#: bittorrent.py:911
+#: bittorrent.py:951
 msgid "Potential Windows TCP stack fix"
-msgstr "Možen popravek za sklad TCP za Windows"
+msgstr "Možen popravek za sklad Windows TCP"
 
-#: bittorrent.py:922
+#: bittorrent.py:962
 msgid ""
 "Progress bar text is always black\n"
 "(requires restart)"
 msgstr ""
-"Besedilo v prikazu napredka vedno črno\n"
+"Besedilo o prikazu napredka vedno črno\n"
 "(potreben ponovni zagon)"
 
-#: bittorrent.py:928
+#: bittorrent.py:968
 msgid "Misc"
 msgstr "Razno"
 
-#: bittorrent.py:935
+#: bittorrent.py:975
 #, python-format
 msgid ""
 "WARNING: Changing these settings can\n"
@@ -281,478 +289,474 @@ msgstr ""
 "OPOZORILO: Spreminjanje teh nastavitev lahko\n"
 "povzroči nepravilno delovanje programa %s."
 
-#: bittorrent.py:943
+#: bittorrent.py:983
 msgid "Option"
 msgstr "Možnost"
 
-#: bittorrent.py:948
+#: bittorrent.py:988
 msgid "Value"
 msgstr "Vrednost"
 
-#: bittorrent.py:955
+#: bittorrent.py:995
 msgid "Advanced"
 msgstr "Napredno"
 
-#: bittorrent.py:964
+#: bittorrent.py:1004
 msgid "Choose default download directory"
 msgstr "Izbor privzete mape za prenose"
 
-#: bittorrent.py:1025
+#: bittorrent.py:1065
 #, python-format
 msgid "Files in \"%s\""
 msgstr "Datoteke v »%s«"
 
-#: bittorrent.py:1034
+#: bittorrent.py:1074
 msgid "Apply"
 msgstr "Uveljavi"
 
-#: bittorrent.py:1035
+#: bittorrent.py:1075
 msgid "Allocate"
 msgstr "Dodeli"
 
-#: bittorrent.py:1036
+#: bittorrent.py:1076
 msgid "Never download"
 msgstr "Nikoli ne prenesi"
 
-#: bittorrent.py:1037
+#: bittorrent.py:1077
 msgid "Decrease"
 msgstr "Zmanjšaj"
 
-#: bittorrent.py:1038
+#: bittorrent.py:1078
 msgid "Increase"
 msgstr "Zvečaj"
 
-#: bittorrent.py:1048 launchmany-curses.py:142
+#: bittorrent.py:1088 launchmany-curses.py:142
 msgid "Filename"
 msgstr "Ime datoteke"
 
-#: bittorrent.py:1048
+#: bittorrent.py:1088
 msgid "Length"
 msgstr "Velikost"
 
-#: bittorrent.py:1048
+#: bittorrent.py:1088
 msgid "%"
 msgstr "%"
 
-#: bittorrent.py:1212
+#: bittorrent.py:1252
 #, python-format
 msgid "Peers for \"%s\""
 msgstr "Vrstniki za »%s«"
 
-#: bittorrent.py:1218
+#: bittorrent.py:1258
 msgid "IP address"
 msgstr "Naslov IP"
 
-#: bittorrent.py:1218
+#: bittorrent.py:1258
 msgid "Client"
 msgstr "Odjemalec"
 
-#: bittorrent.py:1218
+#: bittorrent.py:1258
 msgid "Connection"
 msgstr "Povezava"
 
-#: bittorrent.py:1218
+#: bittorrent.py:1258
 msgid "KB/s down"
 msgstr "KiB/s dol"
 
-#: bittorrent.py:1218
+#: bittorrent.py:1258
 msgid "KB/s up"
 msgstr "KiB/s gor"
 
-#: bittorrent.py:1218
+#: bittorrent.py:1258
 msgid "MB downloaded"
 msgstr "MiB dol"
 
-#: bittorrent.py:1218
+#: bittorrent.py:1258
 msgid "MB uploaded"
 msgstr "MiB gor"
 
-#: bittorrent.py:1218
+#: bittorrent.py:1258
 #, python-format
 msgid "% complete"
 msgstr "% zaključeno"
 
-#: bittorrent.py:1218
+#: bittorrent.py:1258
 msgid "KB/s est. peer download"
 msgstr "Vrstnikov sprejem (KiB/s)"
 
-#: bittorrent.py:1224
+#: bittorrent.py:1264
 msgid "Peer ID"
 msgstr "ID vrstnika"
 
-#: bittorrent.py:1227 bittorrent.py:1230
+#: bittorrent.py:1267 bittorrent.py:1270
 msgid "Interested"
 msgstr "Zanimanje"
 
-#: bittorrent.py:1227 bittorrent.py:1230
+#: bittorrent.py:1267 bittorrent.py:1270
 msgid "Choked"
-msgstr ""
+msgstr "Zamašeno"
 
-#: bittorrent.py:1227
+#: bittorrent.py:1267
 msgid "Snubbed"
-msgstr ""
+msgstr "Zavrnjeno"
 
-#: bittorrent.py:1230
+#: bittorrent.py:1270
 msgid "Optimistic upload"
 msgstr "Optimistično pošiljanje"
 
-#: bittorrent.py:1311
+#: bittorrent.py:1351
 msgid "remote"
 msgstr "oddaljena"
 
-#: bittorrent.py:1311
+#: bittorrent.py:1351
 msgid "local"
 msgstr "krajevna"
 
-#: bittorrent.py:1347
+#: bittorrent.py:1387
 msgid "bad peer"
 msgstr "slab vrstnik"
 
-#: bittorrent.py:1357
+#: bittorrent.py:1397
 #, python-format
 msgid "%d ok"
 msgstr "%d v redu"
 
-#: bittorrent.py:1358
+#: bittorrent.py:1398
 #, python-format
 msgid "%d bad"
 msgstr "%d slabo"
 
-#: bittorrent.py:1360
+#: bittorrent.py:1400
 msgid "banned"
 msgstr "izobčen"
 
-#: bittorrent.py:1362
+#: bittorrent.py:1402
 msgid "ok"
 msgstr "v redu"
 
-#: bittorrent.py:1398
+#: bittorrent.py:1438
 #, python-format
 msgid "Info for \"%s\""
 msgstr "Podatki za »%s«"
 
-#: bittorrent.py:1416
+#: bittorrent.py:1456
 msgid "Torrent name:"
 msgstr "Ime torrenta:"
 
-#: bittorrent.py:1421
+#: bittorrent.py:1461
 msgid "(trackerless torrent)"
 msgstr "(torrent brez sledilnika)"
 
-#: bittorrent.py:1424
+#: bittorrent.py:1464
 msgid "Announce url:"
 msgstr "URL objave:"
 
-#: bittorrent.py:1428
+#: bittorrent.py:1468
 msgid ", in one file"
 msgstr ", v eni datoteki"
 
-#: bittorrent.py:1430
+#: bittorrent.py:1470
 #, python-format
 msgid ", in %d files"
 msgstr ", v %d datotekah"
 
-#: bittorrent.py:1431
+#: bittorrent.py:1471
 msgid "Total size:"
 msgstr "Skupna velikost:"
 
-#: bittorrent.py:1438
+#: bittorrent.py:1478
 msgid "Pieces:"
 msgstr "Delcev:"
 
-#: bittorrent.py:1440
+#: bittorrent.py:1480
 msgid "Info hash:"
 msgstr "Izvleček:"
 
-#: bittorrent.py:1450
+#: bittorrent.py:1490
 msgid "Save in:"
 msgstr "Shrani v:"
 
-#: bittorrent.py:1454
+#: bittorrent.py:1494
 msgid "File name:"
 msgstr "Ime datoteke:"
 
-#: bittorrent.py:1480
+#: bittorrent.py:1520
 msgid "Open directory"
 msgstr "Odpri mapo"
 
-#: bittorrent.py:1485
+#: bittorrent.py:1525
 msgid "Show file list"
 msgstr "Prikaži seznam datotek"
 
-#: bittorrent.py:1581
+#: bittorrent.py:1621
 msgid "Torrent info"
 msgstr "Podatki o torrentu"
 
-#: bittorrent.py:1590 bittorrent.py:2034
+#: bittorrent.py:1630 bittorrent.py:2080
 msgid "Remove torrent"
 msgstr "Odstrani torrent"
 
-#: bittorrent.py:1594
+#: bittorrent.py:1634
 msgid "Abort torrent"
 msgstr "Prekliči torrent"
 
-#: bittorrent.py:1661
+#: bittorrent.py:1701
 #, python-format
 msgid ", will seed for %s"
-msgstr "sejanje še %s"
+msgstr ", sejanje še %s"
 
-#: bittorrent.py:1663
+#: bittorrent.py:1703
 msgid ", will seed indefinitely."
-msgstr "sejanje za nedoločen čas."
+msgstr ", sejanje za nedoločen čas."
 
-#: bittorrent.py:1666
+#: bittorrent.py:1706
 #, python-format
 msgid "Done, share ratio: %d%%"
 msgstr "Zaključeno, razmerje izmenjave: %d%%"
 
-#: bittorrent.py:1669
+#: bittorrent.py:1709
 #, python-format
 msgid "Done, %s uploaded"
 msgstr "Zaključeno, poslano %s"
 
-#: bittorrent.py:1688
+#: bittorrent.py:1728
 msgid "Torrent _info"
 msgstr "_Podatki o torrentu"
 
-#: bittorrent.py:1694
+#: bittorrent.py:1734
 msgid "_Open directory"
 msgstr "_Odpri mapo"
 
-#: bittorrent.py:1701
+#: bittorrent.py:1741
 msgid "_Change location"
 msgstr "_Spremeni lokacijo"
 
-#: bittorrent.py:1711
+#: bittorrent.py:1751
 msgid "_File list"
 msgstr "Seznam _datotek"
 
-#: bittorrent.py:1793
+#: bittorrent.py:1833
 #, python-format
 msgid "Are you sure you want to remove \"%s\"?"
 msgstr "Ste prepričani, da želite odstraniti »%s«?"
 
-#: bittorrent.py:1796
+#: bittorrent.py:1836
 #, python-format
 msgid "Your share ratio for this torrent is %d%%. "
 msgstr "Razmerje izmenjave za ta torrent je %d%%. "
 
-#: bittorrent.py:1798
+#: bittorrent.py:1838
 #, python-format
 msgid "You have uploaded %s to this torrent. "
 msgstr "Poslali ste %s tega torrenta. "
 
-#: bittorrent.py:1801
+#: bittorrent.py:1841
 msgid "Remove this torrent?"
 msgstr "Odstranim ta torrent?"
 
-#: bittorrent.py:1820
+#: bittorrent.py:1860
 msgid "Finished"
 msgstr "Zaključeno"
 
-#: bittorrent.py:1821
+#: bittorrent.py:1861
 msgid "drag into list to seed"
 msgstr "povlecite na seznam za sejanje"
 
-#: bittorrent.py:1824
+#: bittorrent.py:1864
 msgid "Failed"
 msgstr "Spodletelo"
 
-#: bittorrent.py:1825
+#: bittorrent.py:1865
 msgid "drag into list to resume"
 msgstr "povlecite na seznam za nadaljevanje"
 
-#: bittorrent.py:1833
+#: bittorrent.py:1873
 msgid "Re_start"
 msgstr "Ponovni _zagon"
 
-#: bittorrent.py:1834 bittorrent.py:1904 bittorrent.py:1940 bittorrent.py:2063
+#: bittorrent.py:1874 bittorrent.py:1944 bittorrent.py:1980 bittorrent.py:2109
 msgid "_Remove"
 msgstr "Ods_trani"
 
-#: bittorrent.py:1884
+#: bittorrent.py:1924
 msgid "Waiting"
 msgstr "Čakanje"
 
-#: bittorrent.py:1903 bittorrent.py:1939 bittorrent.py:2062
+#: bittorrent.py:1943 bittorrent.py:1979 bittorrent.py:2108
 msgid "_Finish"
 msgstr "_Zaključi"
 
-#: bittorrent.py:1906 bittorrent.py:1935 bittorrent.py:2068
+#: bittorrent.py:1946 bittorrent.py:1975 bittorrent.py:2114
 msgid "_Abort"
 msgstr "P_rekliči"
 
-#: bittorrent.py:1921
-msgid "Paused"
-msgstr "Ustavljeno"
-
-#: bittorrent.py:1962
+#: bittorrent.py:2008
 msgid "Running"
 msgstr "Prenašanje"
 
-#: bittorrent.py:1986
+#: bittorrent.py:2032
 #, python-format
 msgid "Current up: %s"
 msgstr "Trenutno gor: %s"
 
-#: bittorrent.py:1987
+#: bittorrent.py:2033
 #, python-format
 msgid "Current down: %s"
 msgstr "Trenutno dol: %s"
 
-#: bittorrent.py:1993
+#: bittorrent.py:2039
 #, python-format
 msgid "Previous up: %s"
 msgstr "Prej gor: %s"
 
-#: bittorrent.py:1994
+#: bittorrent.py:2040
 #, python-format
 msgid "Previous down: %s"
 msgstr "Prej dol: %s"
 
-#: bittorrent.py:2000
+#: bittorrent.py:2046
 #, python-format
 msgid "Share ratio: %0.02f%%"
 msgstr "Razmerje izmenjave: %0.02f%%"
 
-#: bittorrent.py:2003
+#: bittorrent.py:2049
 #, python-format
 msgid "%s peers, %s seeds. Totals from tracker: %s"
 msgstr "%s vrstnikov, %s semen. Skupno: %s"
 
-#: bittorrent.py:2007
+#: bittorrent.py:2053
 #, python-format
 msgid "Distributed copies: %d; Next: %s"
 msgstr "Porazdeljenih kopij: %d. Naslednje: %s"
 
-#: bittorrent.py:2010
+#: bittorrent.py:2056
 #, python-format
 msgid "Pieces: %d total, %d complete, %d partial, %d active (%d empty)"
 msgstr "Delcev: %d skupno, %d zaključenih, %d delnih, %d dejavnih (%d praznih)"
 
-#: bittorrent.py:2014
+#: bittorrent.py:2060
 #, python-format
 msgid "%d bad pieces + %s in discarded requests"
 msgstr "%d slabih delcev + %s v zavrženih zahtevkih"
 
-#: bittorrent.py:2046
+#: bittorrent.py:2092
 msgid "_Peer list"
 msgstr "Seznam _vrstnikov"
 
-#: bittorrent.py:2050
+#: bittorrent.py:2096
 msgid "_Seed indefinitely"
-msgstr ""
+msgstr "Sej za _nedoločen čas"
 
-#: bittorrent.py:2124
+#: bittorrent.py:2170
 msgid "Done"
 msgstr "Zaključeno"
 
-#: bittorrent.py:2139
+#: bittorrent.py:2185
 #, python-format
 msgid "%.1f%% done, %s remaining"
 msgstr "%.1f%% zaključeno, %s do konca"
 
-#: bittorrent.py:2147
+#: bittorrent.py:2193
 msgid "Download rate"
 msgstr "Hitrost prenosa"
 
-#: bittorrent.py:2149
+#: bittorrent.py:2195
 msgid "Upload rate"
 msgstr "Hitrost pošiljanja"
 
-#: bittorrent.py:2164
+#: bittorrent.py:2210
 msgid "NA"
 msgstr "-"
 
-#: bittorrent.py:2510
+#: bittorrent.py:2608
 #, python-format
 msgid "%s started"
 msgstr "%s zagnan"
 
-#: bittorrent.py:2523
+#: bittorrent.py:2621
 msgid "_Open torrent file"
 msgstr "_Odpri datoteko torrent"
 
-#: bittorrent.py:2524
+#: bittorrent.py:2622
 msgid "Open torrent _URL"
-msgstr ""
+msgstr "Odpri _pot do torrenta"
 
-#: bittorrent.py:2525
+#: bittorrent.py:2623
 msgid "Make _new torrent"
 msgstr "_Ustvari nov torrent"
 
-#: bittorrent.py:2528
+#: bittorrent.py:2626
 msgid "_Pause/Play"
 msgstr "_Zaustavi/nadaljuj"
 
-#: bittorrent.py:2530
+#: bittorrent.py:2628
 msgid "_Quit"
 msgstr "_Končaj"
 
-#: bittorrent.py:2532
+#: bittorrent.py:2630
 msgid "Show/Hide _finished torrents"
 msgstr "_Prikaži/skrij zaključene torrente"
 
-#: bittorrent.py:2534
+#: bittorrent.py:2632
 msgid "_Resize window to fit"
 msgstr "_Velikost okna prilagodi vsebini"
 
-#: bittorrent.py:2536
+#: bittorrent.py:2634
 msgid "_Log"
 msgstr "_Dnevnik"
 
-#: bittorrent.py:2539
+#: bittorrent.py:2637
 msgid "_Settings"
 msgstr "_Nastavitve"
 
-#: bittorrent.py:2542 bittorrent.py:2558
+#: bittorrent.py:2640 bittorrent.py:2656
 msgid "_Help"
 msgstr "_Pomoč"
 
-#: bittorrent.py:2544
+#: bittorrent.py:2642
 msgid "_About"
 msgstr "_O"
 
-#: bittorrent.py:2545
+#: bittorrent.py:2643
 msgid "_Donate"
 msgstr "_Darovanje"
 
-#: bittorrent.py:2549
+#: bittorrent.py:2647
 msgid "_File"
 msgstr "_Datoteka"
 
-#: bittorrent.py:2554
+#: bittorrent.py:2652
 msgid "_View"
 msgstr "_Videz"
 
-#: bittorrent.py:2597
-msgid "Search"
-msgstr ""
+#: bittorrent.py:2693
+msgid "Search for torrents"
+msgstr "Iskanje torrentov"
 
-#: bittorrent.py:2753
+#: bittorrent.py:2810
 msgid "(stopped)"
 msgstr "(ustavljeno)"
 
-#: bittorrent.py:2765
+#: bittorrent.py:2822
 msgid "(multiple)"
 msgstr "(več)"
 
-#: bittorrent.py:2892
+#: bittorrent.py:2949
 #, python-format
 msgid "Already downloading %s installer"
-msgstr ""
+msgstr "Namestitev za %s se že prenaša"
 
-#: bittorrent.py:2896
+#: bittorrent.py:2953
 #, python-format
 msgid "Install new %s now?"
-msgstr ""
+msgstr "Naj sedaj namestim novi %s?"
 
-#: bittorrent.py:2897
+#: bittorrent.py:2954
 #, python-format
 msgid "Do you want to quit %s and install the new version, %s, now?"
-msgstr ""
+msgstr "Želite sedaj zapreti %s in namestiti novo različico %s?"
 
-#: bittorrent.py:2913
+#: bittorrent.py:2970
 #, python-format
 msgid ""
 "%s help is at \n"
@@ -763,99 +767,110 @@ msgstr ""
 "%s\n"
 "Jo želite obiskati?"
 
-#: bittorrent.py:2916
+#: bittorrent.py:2973
 msgid "Visit help web page?"
 msgstr "Spletna stran s pomočjo"
 
-#: bittorrent.py:2952
+#: bittorrent.py:3009
 msgid "There is one finished torrent in the list. "
 msgstr "Na seznamu je en zaključen torrent. "
 
-#: bittorrent.py:2953
+#: bittorrent.py:3010
 msgid "Do you want to remove it?"
 msgstr "Ga želite odstraniti?"
 
-#: bittorrent.py:2955
+#: bittorrent.py:3012
 #, python-format
 msgid "There are %d finished torrents in the list. "
 msgstr "Na seznamu je %d zaključenih torrentov. "
 
-#: bittorrent.py:2956
+#: bittorrent.py:3013
 msgid "Do you want to remove all of them?"
 msgstr "Jih želite odstraniti?"
 
-#: bittorrent.py:2958
+#: bittorrent.py:3015
 msgid "Remove all finished torrents?"
 msgstr "Odstranim vse zaključene torrente?"
 
-#: bittorrent.py:2965
+#: bittorrent.py:3022
 msgid "No finished torrents"
 msgstr "Ni zaključenih torrentov"
 
-#: bittorrent.py:2966
+#: bittorrent.py:3023
 msgid "There are no finished torrents to remove."
 msgstr "Za odstranitev ni na voljo nobenega zaključenega torrenta."
 
-#: bittorrent.py:3021
+#: bittorrent.py:3078
 msgid "Open torrent:"
 msgstr "Odpri torrent"
 
-#: bittorrent.py:3052
+#: bittorrent.py:3109
 msgid "Change save location for "
 msgstr "Spremeni lokacijo za "
 
-#: bittorrent.py:3079
+#: bittorrent.py:3136
 msgid "File exists!"
 msgstr "Datoteka obstaja!"
 
-#: bittorrent.py:3080
+#: bittorrent.py:3137
 #, python-format
 msgid "\"%s\" already exists. Do you want to choose a different file name?"
 msgstr "»%s« že obstaja. Želite izbrati drugačno ime datoteke?"
 
-#: bittorrent.py:3098
+#: bittorrent.py:3155
 msgid "Save location for "
 msgstr "Lokacija za "
 
-#: bittorrent.py:3211
+#: bittorrent.py:3173
+msgid "Directory exists!"
+msgstr ""
+
+#: bittorrent.py:3174
+#, python-format
+msgid ""
+"\"%s\" already exists. Do you intend to create an identical, duplicate "
+"directory inside the existing directory?"
+msgstr ""
+
+#: bittorrent.py:3287
 #, python-format
 msgid "(global message) : %s"
 msgstr "(globalno sporočilo) : %s"
 
-#: bittorrent.py:3221
+#: bittorrent.py:3297
 #, python-format
 msgid "%s Error"
 msgstr "Napaka %s"
 
-#: bittorrent.py:3227
+#: bittorrent.py:3303
 msgid "Multiple errors have occurred. Click OK to view the error log."
 msgstr "Prišlo je do večih napak. Kliknite »V redu« za ogled dnevnika."
 
-#: bittorrent.py:3366
+#: bittorrent.py:3457
 msgid "Stop running torrent?"
 msgstr "Naj zaustavim torrent?"
 
-#: bittorrent.py:3367
+#: bittorrent.py:3458
 #, python-format
 msgid ""
 "You are about to start \"%s\". Do you want to stop the last running torrent "
 "as well?"
 msgstr "Zagnali boste »%s«. Želite zaustaviti nazadnje zagnan torrent?"
 
-#: bittorrent.py:3377
+#: bittorrent.py:3468
 msgid "Have you donated?"
 msgstr "Ste že darovali?"
 
-#: bittorrent.py:3378
+#: bittorrent.py:3469
 #, python-format
 msgid "Welcome to the new version of %s. Have you donated?"
 msgstr "Dobrodošli v novi različici %sa. Ste že darovali?"
 
-#: bittorrent.py:3392
+#: bittorrent.py:3483
 msgid "Thanks!"
 msgstr "Hvala!"
 
-#: bittorrent.py:3393
+#: bittorrent.py:3484
 msgid ""
 "Thanks for donating! To donate again, select \"Donate\" from the \"Help\" "
 "menu."
@@ -863,38 +878,44 @@ msgstr ""
 "Hvala za darovanje! Za ponovno darovanje iz menija »Pomoč« izberite "
 "»Darovanje«."
 
-#: bittorrent.py:3408
+#: bittorrent.py:3504
 msgid "(enter search terms here)"
-msgstr ""
+msgstr "(sem vnesite pogoje za iskanje)"
 
-#: bittorrent.py:3438 BitTorrent/defaultargs.py:198
-#: BitTorrent/defaultargs.py:200 bittorrent-console.py:295
+#: bittorrent.py:3596 BitTorrent/defaultargs.py:200
+#: BitTorrent/defaultargs.py:202 bittorrent-console.py:295
 #: bittorrent-curses.py:429
 msgid "deprecated, do not use"
-msgstr ""
+msgstr "neodobreno, ne uporabljajte"
 
-#: bittorrent.py:3451
+#: bittorrent.py:3615
 msgid "Failed to create or send command through existing control socket."
 msgstr ""
+"Ni bilo moč ustvariti nove ali poslati ukaza skozi obstoječo vtičnico za "
+"nadzor."
 
-#: bittorrent.py:3453 bittorrent.py:3479
+#: bittorrent.py:3617 bittorrent.py:3646
 #, python-format
 msgid " Closing all %s windows may fix the problem."
-msgstr ""
+msgstr "To težavo lahko odpravi zaprtje vseh oken %s."
 
-#: bittorrent.py:3475
+#: bittorrent.py:3642
 #, python-format
 msgid "%s already running"
 msgstr "%s že teče"
 
-#: bittorrent.py:3477
+#: bittorrent.py:3644
 msgid "Failed to send command through existing control socket."
+msgstr "Ni bilo moč poslati ukaza skozi obstoječo vtičnico za nadzor."
+
+#: bittorrent.py:3668
+msgid "Could not start the TorrentQueue, see above for errors."
 msgstr ""
 
 #: maketorrent.py:60
 #, python-format
 msgid "%s torrent file creator %s"
-msgstr "%s - ustvarjalec torrenta %s"
+msgstr "%s ustvarjalec torrentov %s"
 
 #: maketorrent.py:72
 msgid "Make torrent file for this file/directory:"
@@ -932,197 +953,197 @@ msgstr "Komentar:"
 msgid "Make"
 msgstr "Ustvari"
 
-#: maketorrent.py:362
+#: maketorrent.py:361
 msgid "_Host"
 msgstr "_Gostitelj"
 
-#: maketorrent.py:369
+#: maketorrent.py:368
 msgid "_Port"
 msgstr "_Vrata"
 
-#: maketorrent.py:462
+#: maketorrent.py:461
 msgid "Building torrents..."
 msgstr "Ustvarjanje torrentov..."
 
-#: maketorrent.py:470
+#: maketorrent.py:469
 msgid "Checking file sizes..."
 msgstr "Preverjanje velikosti datotek ..."
 
-#: maketorrent.py:488
+#: maketorrent.py:487
 msgid "Start seeding"
 msgstr "Prični sejati"
 
-#: maketorrent.py:508
+#: maketorrent.py:507
 msgid "building "
 msgstr "ustvarjanje "
 
-#: maketorrent.py:528
+#: maketorrent.py:527
 msgid "Done."
 msgstr "Zaključeno."
 
-#: maketorrent.py:529
+#: maketorrent.py:528
 msgid "Done building torrents."
 msgstr "Ustvarjanje torrentov je zaključeno."
 
-#: maketorrent.py:537
+#: maketorrent.py:536
 msgid "Error!"
 msgstr "Napaka!"
 
-#: maketorrent.py:538
+#: maketorrent.py:537
 msgid "Error building torrents: "
 msgstr "Napaka pri ustvarjanju torrentov: "
 
-#: BitTorrent/GUI.py:153
+#: BitTorrent/GUI.py:161
 #, python-format
 msgid "%d days"
 msgstr "%d dni"
 
-#: BitTorrent/GUI.py:155
+#: BitTorrent/GUI.py:163
 #, python-format
 msgid "1 day %d hours"
 msgstr "1 dan %d ur"
 
-#: BitTorrent/GUI.py:157
+#: BitTorrent/GUI.py:165
 #, python-format
 msgid "%d:%02d hours"
 msgstr "%d %02d ur"
 
-#: BitTorrent/GUI.py:159
+#: BitTorrent/GUI.py:167
 #, python-format
 msgid "%d:%02d minutes"
 msgstr "%d:%02d minut"
 
-#: BitTorrent/GUI.py:161
+#: BitTorrent/GUI.py:169
 #, python-format
 msgid "%d seconds"
 msgstr "%d sekund"
 
-#: BitTorrent/GUI.py:163
+#: BitTorrent/GUI.py:171
 msgid "0 seconds"
 msgstr "0 sekund"
 
-#: BitTorrent/GUI.py:205
+#: BitTorrent/GUI.py:216
 #, python-format
 msgid "%s Help"
 msgstr "Pomoč za %s"
 
-#: BitTorrent/GUI.py:212
+#: BitTorrent/GUI.py:223
 msgid "Frequently Asked Questions:"
 msgstr "Pogosto zastavljena vprašanja:"
 
-#: BitTorrent/GUI.py:217
+#: BitTorrent/GUI.py:228
 msgid "Go"
 msgstr "Pojdi"
 
-#: BitTorrent/GUI.py:450 BitTorrent/GUI.py:508
+#: BitTorrent/GUI.py:461 BitTorrent/GUI.py:519
 msgid "Choose an existing folder..."
 msgstr "Izberi obstoječo mapo..."
 
-#: BitTorrent/GUI.py:460
+#: BitTorrent/GUI.py:471
 msgid "All Files"
 msgstr "Vse datoteke"
 
-#: BitTorrent/GUI.py:465
+#: BitTorrent/GUI.py:476
 msgid "Torrents"
 msgstr "Torrenti"
 
-#: BitTorrent/GUI.py:505
+#: BitTorrent/GUI.py:516
 msgid "Create a new folder..."
 msgstr "Ustvari novo mapo..."
 
-#: BitTorrent/GUI.py:571
+#: BitTorrent/GUI.py:582
 msgid "Select a file"
 msgstr "Izberite datoteko"
 
-#: BitTorrent/GUI.py:572
+#: BitTorrent/GUI.py:583
 msgid "Select a folder"
 msgstr "Izberite mapo"
 
-#: BitTorrent/TorrentQueue.py:109
+#: BitTorrent/TorrentQueue.py:112
 msgid "Could not load saved state: "
 msgstr "Ni moč naložiti shranjenega stanja: "
 
-#: BitTorrent/TorrentQueue.py:191
+#: BitTorrent/TorrentQueue.py:204
 msgid "Could not save UI state: "
 msgstr "Ni moč shraniti stanja uporabniškega vmesnika: "
 
-#: BitTorrent/TorrentQueue.py:201 BitTorrent/TorrentQueue.py:203
-#: BitTorrent/TorrentQueue.py:281 BitTorrent/TorrentQueue.py:284
-#: BitTorrent/TorrentQueue.py:294 BitTorrent/TorrentQueue.py:306
-#: BitTorrent/TorrentQueue.py:323
+#: BitTorrent/TorrentQueue.py:214 BitTorrent/TorrentQueue.py:216
+#: BitTorrent/TorrentQueue.py:294 BitTorrent/TorrentQueue.py:297
+#: BitTorrent/TorrentQueue.py:307 BitTorrent/TorrentQueue.py:319
+#: BitTorrent/TorrentQueue.py:336
 msgid "Invalid state file contents"
 msgstr "vsebina datoteke s stanjem ni veljavna"
 
-#: BitTorrent/TorrentQueue.py:216
+#: BitTorrent/TorrentQueue.py:229
 msgid "Error reading file "
 msgstr "Napaka pri branju datoteke "
 
-#: BitTorrent/TorrentQueue.py:218
+#: BitTorrent/TorrentQueue.py:231
 msgid "cannot restore state completely"
 msgstr "ni moč povsem obnoviti stanja"
 
-#: BitTorrent/TorrentQueue.py:221
+#: BitTorrent/TorrentQueue.py:234
 msgid "Invalid state file (duplicate entry)"
 msgstr "Neveljavna datoteka s stanjem (podvojen vnos)"
 
-#: BitTorrent/TorrentQueue.py:227 BitTorrent/TorrentQueue.py:232
+#: BitTorrent/TorrentQueue.py:240 BitTorrent/TorrentQueue.py:245
 msgid "Corrupt data in "
 msgstr "Pokvarjeni podatki v "
 
-#: BitTorrent/TorrentQueue.py:228 BitTorrent/TorrentQueue.py:233
+#: BitTorrent/TorrentQueue.py:241 BitTorrent/TorrentQueue.py:246
 msgid " , cannot restore torrent ("
 msgstr " , ni moč obnoviti torrenta ("
 
-#: BitTorrent/TorrentQueue.py:252
+#: BitTorrent/TorrentQueue.py:265
 msgid "Invalid state file (bad entry)"
 msgstr "Neveljavna datoteka s stanjem (napačen vnos)"
 
-#: BitTorrent/TorrentQueue.py:271
+#: BitTorrent/TorrentQueue.py:284
 msgid "Bad UI state file"
 msgstr "Napačna datoteka s stanjem uporabniškega vmesnika"
 
-#: BitTorrent/TorrentQueue.py:275
+#: BitTorrent/TorrentQueue.py:288
 msgid "Bad UI state file version"
 msgstr "Napačna različica datoteke s stanjem uporabniškega vmesnika"
 
-#: BitTorrent/TorrentQueue.py:277
+#: BitTorrent/TorrentQueue.py:290
 msgid "Unsupported UI state file version (from newer client version?)"
 msgstr ""
 "Nepodprta različica datoteke s stanjem uporabniškega vmesnika (od novejše "
 "različice odjemalca?)"
 
-#: BitTorrent/TorrentQueue.py:461
+#: BitTorrent/TorrentQueue.py:474
 #, python-format
 msgid "Could not delete cached %s file:"
-msgstr ""
+msgstr "Ni moč izbrisati datoteke %s, ki je v predpomnilniku:"
 
-#: BitTorrent/TorrentQueue.py:487
+#: BitTorrent/TorrentQueue.py:500
 #, python-format
 msgid "This is not a valid torrent file. (%s)"
 msgstr "Neveljavna datoteka torrent. (%s)"
 
-#: BitTorrent/TorrentQueue.py:495
+#: BitTorrent/TorrentQueue.py:508
 msgid "This torrent (or one with the same contents) is already running."
-msgstr "Ta torrent (ali nek drug z enako vsebino) že teče."
+msgstr "Ta torrent (ali nek drug z enako vsebino) se že prenaša."
 
-#: BitTorrent/TorrentQueue.py:499
+#: BitTorrent/TorrentQueue.py:512
 msgid "This torrent (or one with the same contents) is already waiting to run."
 msgstr "Ta torrent (ali nek drug z enako vsebino) že čaka v vrsti."
 
-#: BitTorrent/TorrentQueue.py:506
+#: BitTorrent/TorrentQueue.py:519
 #, python-format
 msgid "Torrent in unknown state %d"
 msgstr "Torrent v neznanem stanju %d"
 
-#: BitTorrent/TorrentQueue.py:523
+#: BitTorrent/TorrentQueue.py:536
 msgid "Could not write file "
 msgstr "Ni moč zapisati datoteke "
 
-#: BitTorrent/TorrentQueue.py:525
+#: BitTorrent/TorrentQueue.py:538
 msgid "torrent will not be restarted correctly on client restart"
 msgstr "po ponovnem zagonu odjemalca torrent ne bo pravilno zagnan"
 
-#: BitTorrent/TorrentQueue.py:629
+#: BitTorrent/TorrentQueue.py:644
 #, python-format
 msgid ""
 "Can't run more than %d torrents simultaneously. For more info see the FAQ at "
@@ -1130,7 +1151,7 @@ msgid ""
 msgstr ""
 "Ni moč poganjati več kot %d torrentov obenem. Več o tem na tej strani %s."
 
-#: BitTorrent/TorrentQueue.py:745
+#: BitTorrent/TorrentQueue.py:760
 msgid ""
 "Not starting torrent as there are other torrents waiting to run, and this "
 "one already meets the settings for when to stop seeding."
@@ -1138,7 +1159,7 @@ msgstr ""
 "Torrent ne bo zagnan, saj na zagon čakajo drugi torrenti. Ta torrent pa že "
 "ustreza nastavitvam za zaustavitev sejanja."
 
-#: BitTorrent/TorrentQueue.py:752
+#: BitTorrent/TorrentQueue.py:767
 msgid ""
 "Not starting torrent as it already meets the settings for when to stop "
 "seeding the last completed torrent."
@@ -1146,35 +1167,37 @@ msgstr ""
 "Torrent ne bo zagnan, saj ta torrent že ustreza nastavitvam za zaustavitev "
 "sejanja."
 
-#: BitTorrent/NewVersion.py:86
+#: BitTorrent/NewVersion.py:87
 #, python-format
 msgid "Could not get latest version from %s"
-msgstr ""
+msgstr "Ni moč dobiti najnovejše različice od %s"
 
-#: BitTorrent/NewVersion.py:91
+#: BitTorrent/NewVersion.py:92
 #, python-format
 msgid "Could not parse new version string from %s"
-msgstr ""
+msgstr "Ni moč razčleniti niza z novo različico od %s"
 
-#: BitTorrent/NewVersion.py:197
+#: BitTorrent/NewVersion.py:198
 #, python-format
 msgid ""
 "Could not find a suitable temporary location to save the %s %s installer."
 msgstr ""
+"Ni moč najti ustreznega začasnega prostora za shranitev namestitve za %s %s."
 
-#: BitTorrent/NewVersion.py:216
+#: BitTorrent/NewVersion.py:217
 #, python-format
 msgid "No torrent file available for %s %s installer."
-msgstr ""
+msgstr "Ni moč najti datoteke torrent za namestitev za %s %s."
 
-#: BitTorrent/NewVersion.py:226
+#: BitTorrent/NewVersion.py:227
 #, python-format
 msgid "%s %s installer appears to be corrupt or missing."
 msgstr ""
+"Izgleda, da je namestitev za %s %s poškodovana, ali pa je ni moč najti."
 
-#: BitTorrent/NewVersion.py:233
+#: BitTorrent/NewVersion.py:234
 msgid "Cannot launch installer on this OS"
-msgstr ""
+msgstr "Na tem operacijskem sistemu ni moč zagnati namestitve"
 
 #: BitTorrent/defaultargs.py:32
 msgid ""
@@ -1182,70 +1205,81 @@ msgid ""
 "state is saved. Defaults to subdirectory 'data' of the bittorrent config "
 "directory."
 msgstr ""
+"mapa, v kateri so shranjeni spremenljivi podatki. Na primer za hitro "
+"nadaljevanje in o stanju uporabniškega vmesnika. Privzeto podmapa »data« v "
+"mapi z nastavitvami za BitTorrent."
 
 #: BitTorrent/defaultargs.py:36
 msgid ""
 "character encoding used on the local filesystem. If left empty, "
 "autodetected. Autodetection doesn't work under python versions older than 2.3"
 msgstr ""
+"kodiranje znakov, ki je v uporabi na krajevnem datotečnem sistemu. Če je "
+"prazno, je zaznava samodejna (potreben Python 2.3 ali novejši)."
 
 #: BitTorrent/defaultargs.py:40
 msgid "ISO Language code to use"
-msgstr "ISO koda jezika ki naj ga uporabim"
+msgstr "ISO koda jezika, ki naj se uporabi"
 
 #: BitTorrent/defaultargs.py:45
 msgid ""
 "ip to report to the tracker (has no effect unless you are on the same local "
 "network as the tracker)"
 msgstr ""
+"IP za prijavo sledilniku (nima učinka, če niste na istem lokalnem omrežju "
+"kot sledilnik)"
 
 #: BitTorrent/defaultargs.py:48
 msgid ""
 "world-visible port number if it's different from the one the client listens "
 "on locally"
 msgstr ""
+"globalno prikazan vhod, če je ta različen od vhoda, na katerega je povezan "
+"klient lokalno"
 
 #: BitTorrent/defaultargs.py:51
 msgid "minimum port to listen on, counts up if unavailable"
-msgstr ""
+msgstr "najmanjši vhod za povezavo, če je nedosegljiv, se poveča"
 
 #: BitTorrent/defaultargs.py:53
 msgid "maximum port to listen on"
-msgstr ""
+msgstr "največji vhod za povezavo"
 
 #: BitTorrent/defaultargs.py:55 BitTorrent/track.py:44
 msgid "ip to bind to locally"
-msgstr ""
+msgstr "IP za lokalno povezavo"
 
 #: BitTorrent/defaultargs.py:57
 msgid "seconds between updates of displayed information"
-msgstr ""
+msgstr "razlika med posodobitvijo prikazanih informacij v sekundah"
 
 #: BitTorrent/defaultargs.py:59
 msgid "minutes to wait between requesting more peers"
-msgstr ""
+msgstr "počakaj toliko časa, preden zahtevaš več vrstnikov"
 
 #: BitTorrent/defaultargs.py:61
 msgid "minimum number of peers to not do rerequesting"
-msgstr ""
+msgstr "najmanjše število vrstnikov, brez ponavljanja zahteve"
 
 #: BitTorrent/defaultargs.py:63
 msgid "number of peers at which to stop initiating new connections"
-msgstr ""
+msgstr "število vrstnikov, pri katerih ustavim vzpostavljanje novih povezav"
 
 #: BitTorrent/defaultargs.py:65
 msgid ""
 "maximum number of connections to allow, after this new incoming connections "
 "will be immediately closed"
 msgstr ""
+"največje število dovoljenih povezav, ostale prihajajoče povezave bodo "
+"neumudoma prekinjene"
 
 #: BitTorrent/defaultargs.py:68
 msgid "whether to check hashes on disk"
-msgstr ""
+msgstr "preverjanje zgoscevalnih funkcij na pogonu"
 
 #: BitTorrent/defaultargs.py:70
 msgid "maximum kB/s to upload at, 0 means no limit"
-msgstr ""
+msgstr "najvišja možna hitrost pošiljanja podatkov, 0 pomeni brez omejitve"
 
 #: BitTorrent/defaultargs.py:72
 msgid "the number of uploads to fill out to with extra optimistic unchokes"
@@ -1259,8 +1293,8 @@ msgstr ""
 
 #: BitTorrent/defaultargs.py:77
 msgid ""
-"Initialize a trackerless client.  This must be set to one in order to "
-"download trackerless torrents."
+"Initialize a trackerless client.  This must be enabled in order to download "
+"trackerless torrents."
 msgstr ""
 
 #: BitTorrent/defaultargs.py:83
@@ -1328,7 +1362,7 @@ msgstr ""
 
 #: BitTorrent/defaultargs.py:114
 msgid "do not connect to several peers that have the same IP address"
-msgstr ""
+msgstr "ne povezuj se na vrstnike, ki imajo isti IP naslov"
 
 #: BitTorrent/defaultargs.py:116
 msgid "if nonzero, set the TOS option for peer connections to this value"
@@ -1341,7 +1375,7 @@ msgstr ""
 
 #: BitTorrent/defaultargs.py:120
 msgid "address of HTTP proxy to use for tracker connections"
-msgstr "naslov HTTP proxyja za povezavo do trackerja"
+msgstr "naslov HTTP proxyja za povezavo do sledilnika"
 
 #: BitTorrent/defaultargs.py:122 BitTorrent/track.py:48
 msgid "close connections with RST and avoid the TCP TIME_WAIT state"
@@ -1352,51 +1386,58 @@ msgid "force max_allow_in to stay below 30 on Win32"
 msgstr ""
 
 #: BitTorrent/defaultargs.py:126
-msgid "initiate no more than this many connections per second"
+msgid ""
+"initiate no more than this many connections per second, 0 means no limit"
 msgstr ""
 
-#: BitTorrent/defaultargs.py:143
+#: BitTorrent/defaultargs.py:128
+msgid ""
+"minimum delay between upload pulses in seconds, smaller provides better "
+"short term accuracy but more CPU usage"
+msgstr ""
+
+#: BitTorrent/defaultargs.py:145
 msgid ""
 "file name (for single-file torrents) or directory name (for batch torrents) "
 "to save the torrent as, overriding the default name in the torrent. See also "
 "--save_in, if neither is specified the user will be asked for save location"
 msgstr ""
 
-#: BitTorrent/defaultargs.py:148
+#: BitTorrent/defaultargs.py:150
 msgid "display advanced user interface"
 msgstr "prikaži napredni grafični vmesnik"
 
-#: BitTorrent/defaultargs.py:150
+#: BitTorrent/defaultargs.py:152
 msgid ""
 "the maximum number of minutes to seed a completed torrent before stopping "
 "seeding"
 msgstr ""
 
-#: BitTorrent/defaultargs.py:153
+#: BitTorrent/defaultargs.py:155
 msgid ""
 "the minimum upload/download ratio, in percent, to achieve before stopping "
 "seeding. 0 means no limit."
 msgstr ""
 
-#: BitTorrent/defaultargs.py:156
+#: BitTorrent/defaultargs.py:158
 msgid ""
 "the minimum upload/download ratio, in percent, to achieve before stopping "
 "seeding the last torrent. 0 means no limit."
 msgstr ""
 
-#: BitTorrent/defaultargs.py:159
+#: BitTorrent/defaultargs.py:161
 msgid "Seed each completed torrent indefinitely (until the user cancels it)"
-msgstr ""
+msgstr "Sej vsak dokončan torrent za nedoločen čas (do preklica)"
 
-#: BitTorrent/defaultargs.py:162
+#: BitTorrent/defaultargs.py:164
 msgid "Seed the last torrent indefinitely (until the user cancels it)"
-msgstr ""
+msgstr "Sej zadnji torrent za nedoločen čas (do preklica)"
 
-#: BitTorrent/defaultargs.py:165
+#: BitTorrent/defaultargs.py:167
 msgid "start downloader in paused state"
 msgstr ""
 
-#: BitTorrent/defaultargs.py:167
+#: BitTorrent/defaultargs.py:169
 msgid ""
 "specifies how the app should behave when the user manually tries to start "
 "another torrent: \"replace\" means always replace the running torrent with "
@@ -1404,21 +1445,21 @@ msgid ""
 "\"ask\" means ask the user each time."
 msgstr ""
 
-#: BitTorrent/defaultargs.py:181
+#: BitTorrent/defaultargs.py:183
 msgid ""
 "file name (for single-file torrents) or directory name (for batch torrents) "
 "to save the torrent as, overriding the default name in the torrent. See also "
 "--save_in"
 msgstr ""
 
-#: BitTorrent/defaultargs.py:188 BitTorrent/defaultargs.py:208
+#: BitTorrent/defaultargs.py:190 BitTorrent/defaultargs.py:210
 msgid ""
 "the maximum number of uploads to allow at once. -1 means a (hopefully) "
 "reasonable number based on --max_upload_rate. The automatic values are only "
 "sensible when running one torrent at a time."
 msgstr ""
 
-#: BitTorrent/defaultargs.py:193
+#: BitTorrent/defaultargs.py:195
 msgid ""
 "local directory where the torrent contents will be saved. The file (single-"
 "file torrents) or directory (batch torrents) will be created under this "
@@ -1426,22 +1467,22 @@ msgid ""
 "save_as."
 msgstr ""
 
-#: BitTorrent/defaultargs.py:202
+#: BitTorrent/defaultargs.py:204
 msgid "whether or not to ask for a location to save downloaded files in"
 msgstr "naj vprašam kam hočete shraniti prenose"
 
-#: BitTorrent/defaultargs.py:213
+#: BitTorrent/defaultargs.py:215
 msgid ""
 "local directory where the torrents will be saved, using a name determined by "
 "--saveas_style. If this is left empty each torrent will be saved under the "
 "directory of the corresponding .torrent file"
 msgstr ""
 
-#: BitTorrent/defaultargs.py:218 BitTorrent/track.py:77
+#: BitTorrent/defaultargs.py:220 BitTorrent/track.py:77
 msgid "how often to rescan the torrent directory, in seconds"
 msgstr "kolikokrat (v sekundah) naj pregledam torrent mapo"
 
-#: BitTorrent/defaultargs.py:220
+#: BitTorrent/defaultargs.py:222
 msgid ""
 "How to name torrent downloads: 1: use name OF torrent file (minus ."
 "torrent);  2: use name encoded IN torrent file;  3: create a directory with "
@@ -1453,28 +1494,28 @@ msgid ""
 "security issues."
 msgstr ""
 
-#: BitTorrent/defaultargs.py:235
+#: BitTorrent/defaultargs.py:237
 msgid ""
 "whether to display the full path or the torrent contents for each torrent"
 msgstr ""
 
-#: BitTorrent/defaultargs.py:242
+#: BitTorrent/defaultargs.py:244
 msgid "directory to look for .torrent files (semi-recursive)"
 msgstr "mapa kjer naj iščem .torrent datoteke (pol-rekurzivno)"
 
-#: BitTorrent/defaultargs.py:247
+#: BitTorrent/defaultargs.py:249
 msgid "whether to display diagnostic info to stdout"
 msgstr "naj prikažem diagnostične podatke na standarni izhod"
 
-#: BitTorrent/defaultargs.py:252
+#: BitTorrent/defaultargs.py:254
 msgid "which power of two to set the piece size to"
 msgstr ""
 
-#: BitTorrent/defaultargs.py:254
+#: BitTorrent/defaultargs.py:256
 msgid "default tracker name"
-msgstr ""
+msgstr "privzeto ime sledilnika"
 
-#: BitTorrent/defaultargs.py:257
+#: BitTorrent/defaultargs.py:259
 msgid ""
 "if false then make a trackerless torrent, instead of announce URL, use "
 "reliable node in form of <ip>:<port> or an empty string to pull some nodes "
@@ -1533,7 +1574,7 @@ msgstr "shranjujem:"
 
 #: bittorrent-console.py:151
 msgid "file size:     "
-msgstr ""
+msgstr "velikost datoteke:"
 
 #: bittorrent-console.py:152
 msgid "percent done:  "
@@ -1561,11 +1602,11 @@ msgstr ""
 
 #: bittorrent-console.py:158
 msgid "seed status:   "
-msgstr ""
+msgstr "stanje sejanja:"
 
 #: bittorrent-console.py:159
 msgid "peer status:   "
-msgstr ""
+msgstr "stanje vrstnikov:"
 
 #: bittorrent-console.py:222 bittorrent-curses.py:356
 msgid "You cannot specify both --save_as and --save_in"
@@ -1574,7 +1615,7 @@ msgstr "Ne morete istočasno določiti --save_as in --save_in"
 #: bittorrent-console.py:240 bittorrent-curses.py:374
 #: BitTorrent/launchmanycore.py:69
 msgid "shutting down"
-msgstr ""
+msgstr "ustavljanje"
 
 #: bittorrent-console.py:247 bittorrent-curses.py:381
 #: BitTorrent/launchmanycore.py:232
@@ -1615,7 +1656,7 @@ msgstr "velikost:"
 
 #: bittorrent-curses.py:156
 msgid "dest:"
-msgstr ""
+msgstr "cilj:"
 
 #: bittorrent-curses.py:157
 msgid "progress:"
@@ -1639,20 +1680,20 @@ msgstr "delite:"
 
 #: bittorrent-curses.py:162
 msgid "seeds:"
-msgstr ""
+msgstr "sejalnikov:"
 
 #: bittorrent-curses.py:163
 msgid "peers:"
-msgstr ""
+msgstr "vrstnikov:"
 
 #: bittorrent-curses.py:238
 #, python-format
 msgid "%d seen now, plus %d distributed copies(%s)"
-msgstr ""
+msgstr "%d videnih, dodatno %d distribuiranih kopij(%s)"
 
 #: bittorrent-curses.py:265
 msgid "error(s):"
-msgstr "napak:"
+msgstr "napaka(e):"
 
 #: bittorrent-curses.py:274
 msgid "error:"
@@ -1666,7 +1707,7 @@ msgstr "# IP Pošiljanje Sprejemanje Končano Hitrost"
 #: bittorrent-curses.py:322
 #, python-format
 msgid "downloading %d pieces, have %d fragments, %d of %d pieces completed"
-msgstr ""
+msgstr "prenašam %d delcev, imam %d fragmentov, %d od %d delcev končanih"
 
 #: bittorrent-curses.py:446
 msgid "These errors occurred during execution:"
@@ -1722,7 +1763,7 @@ msgstr ""
 #: launchmany-curses.py:59
 #, python-format
 msgid "ETA in %d:%02d:%02d"
-msgstr ""
+msgstr "Ocena prihoda v %d:%02d:%02d"
 
 #: launchmany-curses.py:143
 msgid "Size"
@@ -1734,16 +1775,16 @@ msgstr "Prenos"
 
 #: launchmany-curses.py:145
 msgid "Upload"
-msgstr ""
+msgstr "Pošlji"
 
 #: launchmany-curses.py:146 launchmany-curses.py:239
 msgid "Totals:"
-msgstr ""
+msgstr "Skupaj:"
 
 #: launchmany-curses.py:205
 #, python-format
 msgid "    (%s) %s - %s peers %s seeds %s dist copies - %s up %s dn"
-msgstr ""
+msgstr "(%s) %s - %s vrstnikov %s sejalnikov %s dist kopij - %s gor %s dol"
 
 #: launchmany-curses.py:287 BitTorrent/track.py:852
 msgid "error: "
@@ -1757,7 +1798,7 @@ msgstr ""
 
 #: maketorrent-console.py:29
 msgid "optional human-readable comment to put in .torrent"
-msgstr ""
+msgstr "vstavi berljiv komentar v .torrent, po izbiri"
 
 #: maketorrent-console.py:31
 msgid "optional target file for the torrent"
@@ -1817,6 +1858,123 @@ msgstr ""
 #: torrentinfo-console.py:43
 msgid "comment:"
 msgstr "komentar:"
+
+#: BitTorrent/ConvertedMetainfo.py:51
+msgid ""
+"This seems to be an old Python version which does not support detecting the "
+"filesystem encoding. Assuming 'ascii'."
+msgstr ""
+"Izgleda, da imate staro različico Python-a, ki ne podpira samodejnega "
+"zaznavanja kodiranja znakov. Privzemam »ASCII«."
+
+#: BitTorrent/ConvertedMetainfo.py:58
+msgid "Python failed to autodetect filesystem encoding. Using 'ascii' instead."
+msgstr ""
+"Python ni uspel samodejno zaznati kodiranja znakov. Uporabljam »ASCII«."
+
+#: BitTorrent/ConvertedMetainfo.py:65
+#, python-format
+msgid "Filesystem encoding '%s' is not supported. Using 'ascii' instead."
+msgstr "Kodiranje znakov »%s« ni podprto. Uporabljam »ASCII«."
+
+#: BitTorrent/ConvertedMetainfo.py:123
+msgid "Bad file path component: "
+msgstr "Napačna pot do datoteke: "
+
+#: BitTorrent/ConvertedMetainfo.py:195
+msgid ""
+"This .torrent file has been created with a broken tool and has incorrectly "
+"encoded filenames. Some or all of the filenames may appear different from "
+"what the creator of the .torrent file intended."
+msgstr ""
+"Ta datoteka .torrent je bila ustvarjena s pokvarjenim programom in ima "
+"napačno zakodirana imena datotek. Nekatera ali vsa imena datotek so lahko "
+"prikazana drugače, kot si je zamislil ustvarjalec datoteke .torrent."
+
+#: BitTorrent/ConvertedMetainfo.py:201
+msgid ""
+"This .torrent file has been created with a broken tool and has bad character "
+"values that do not correspond to any real character. Some or all of the "
+"filenames may appear different from what the creator of the .torrent file "
+"intended."
+msgstr ""
+"Ta datoteka .torrent je bila ustvarjena s pokvarjenim programom in vsebuje "
+"napačne vrednosti za znake, ki ne ustrezajo nobenemu pravemu znaku. Nekatera "
+"ali vsa imena datotek so lahko prikazana drugače, kot si je zamislil "
+"ustvarjalec datoteke .torrent."
+
+#: BitTorrent/ConvertedMetainfo.py:208
+msgid ""
+"This .torrent file has been created with a broken tool and has incorrectly "
+"encoded filenames. The names used may still be correct."
+msgstr ""
+"Ta datoteka .torrent je bila ustvarjena s pokvarjenim programom in ima "
+"napačno zakodirana imena datotek. Uporabljena imena so lahko kljub temu "
+"pravilna."
+
+#: BitTorrent/ConvertedMetainfo.py:213
+#, python-format
+msgid ""
+"The character set used on the local filesystem (\"%s\") cannot represent all "
+"characters used in the filename(s) of this torrent. Filenames have been "
+"changed from the original."
+msgstr ""
+"Nabor znakov na krajevnem datotečnem sistemu (»%s«) ne more predstaviti vseh "
+"znakov, ki so uporabljeni za imena datotek v tem torrent-u. Imena datotek so "
+"bila prilagojena."
+
+#: BitTorrent/ConvertedMetainfo.py:219
+msgid ""
+"The Windows filesystem cannot handle some characters used in the filename(s) "
+"of this torrent.Filenames have been changed from the original."
+msgstr ""
+
+#: BitTorrent/ConvertedMetainfo.py:224
+msgid ""
+"This .torrent file has been created with a broken tool and has at least 1 "
+"file with an invalid file or directory name. However since all such files "
+"were marked as having length 0 those files are just ignored."
+msgstr ""
+"Ta datoteka .torrent je bila ustvarjena s pokvarjenim programom in vsebuje "
+"vsaj eno datoteko z napačnim imenom datoteke ali mape. Ker pa imajo vse take "
+"datoteke velikost 0, bodo spregledane."
+
+#: BitTorrent/Encoder.py:177
+msgid "Can't start two separate instances of the same torrent"
+msgstr "Ni moč začeti dveh ločenih kopij istega torrent-a"
+
+#: BitTorrent/GetTorrent.py:31 BitTorrent/GetTorrent.py:80
+#, python-format
+msgid "Could not read %s"
+msgstr "Ni moč zapisati datoteke %s"
+
+#: BitTorrent/GetTorrent.py:38
+#, python-format
+msgid ""
+"Could not download or open \n"
+"%s\n"
+"Try using a web browser to download the torrent file."
+msgstr ""
+"Ni mogoče prenesti ali odpreti \n"
+"%s\n"
+"Poskusite z prenesti torrent z drugim brskalnikom."
+
+#: BitTorrent/GetTorrent.py:70
+msgid "Temporary Internet Files"
+msgstr "Začasne datoteke interneta"
+
+#: BitTorrent/GetTorrent.py:71
+#, python-format
+msgid ""
+"Could not read %s: %s. You are probably using a broken Internet Explorer "
+"version that passed BitTorrent a filename that doesn't exist. To work around "
+"the problem, try clearing your Temporary Internet Files or right-click the "
+"link and save the .torrent file to disk first."
+msgstr ""
+"Ni moč brati %s: %s. Verjetno uporabljate pokvarjeno različico Internet "
+"Explorerja, ki je BitTorrentu predal ime datoteke, ki ne obstaja. Poskusite "
+"izbrisati začasne datoteke interneta ali pa z desnim gumbom kliknite na "
+"povezavo in datoteko torrent najpej shranite na disk."
 
 #: BitTorrent/HTTPHandler.py:20
 msgid "Mon"
@@ -1899,6 +2057,57 @@ msgstr "Dec"
 msgid "Compressed: %i  Uncompressed: %i\n"
 msgstr "Stisnjeno: %i  Razširjeno: %i\n"
 
+#: BitTorrent/RawServer.py:315
+msgid "lost server socket"
+msgstr "strežniška vtičnica izgubljena"
+
+#: BitTorrent/RawServer.py:331
+msgid "Error handling accepted connection: "
+msgstr "Napaka pri ravnanju s sprejeto povezavo: "
+
+#: BitTorrent/RawServer.py:416
+#, python-format
+msgid "Have to exit due to the TCP stack flaking out. Please see the FAQ at %s"
+msgstr ""
+"Zaradi nezanesljivega sklada TCP je potreben izhod. Več o tem na strani %s"
+
+#: BitTorrent/Rerequester.py:92
+#, python-format
+msgid "Tracker announce still not complete %d seconds after starting it"
+msgstr "Objava sledilnika po %d sekundah še vedno ni zaključena"
+
+#: BitTorrent/Rerequester.py:162
+msgid "Problem connecting to tracker, gethostbyname failed - "
+msgstr "Težava pri povezovanju s sledilnikom, gethostbyname ni uspel -"
+
+#: BitTorrent/Rerequester.py:175
+msgid "Problem connecting to tracker - "
+msgstr "Težava pri povezovanju s sledilnikom - "
+
+#: BitTorrent/Rerequester.py:202
+msgid "bad data from tracker - "
+msgstr "napačni podatki sledilnika - "
+
+#: BitTorrent/Rerequester.py:213
+msgid "rejected by tracker - "
+msgstr "zavrnitev s strani sledilnika - "
+
+#: BitTorrent/Rerequester.py:219
+msgid ""
+"Aborting the torrent as it was rejected by the tracker while not connected "
+"to any peers. "
+msgstr ""
+"Preklic torrenta, ker ga je sledilnik zavrnil in ni povezave z nobenim "
+"vrstnikom. "
+
+#: BitTorrent/Rerequester.py:221
+msgid " Message from the tracker: "
+msgstr "Sporočilo sledilnika: "
+
+#: BitTorrent/Rerequester.py:227
+msgid "warning from tracker - "
+msgstr "opozorilo sledilnika - "
+
 #: BitTorrent/Storage.py:58
 #, python-format
 msgid "File %s belongs to another running torrent"
@@ -1919,16 +2128,19 @@ msgstr ""
 "Nepodprta oblika datoteke za hitro nadaljevanje. Mogoče je iz druge "
 "različice odjemalca?"
 
-#: BitTorrent/Storage.py:240
-msgid "Fastresume info doesn't match file modification time"
-msgstr "Podatki za hitro nadaljevanje se ne ujemajo s časom spremembe datoteke"
-
-#: BitTorrent/Storage.py:243
-msgid "Fastresume data doesn't match actual filesize"
+#: BitTorrent/Storage.py:238
+msgid "Another program appears to have moved, renamed, or deleted the file."
 msgstr ""
-"Podatki za hitro nadaljevanje se ne ujemajo z dejansko velikostjo datoteke"
 
-#: BitTorrent/Storage.py:257 BitTorrent/StorageWrapper.py:284
+#: BitTorrent/Storage.py:240
+msgid "Another program appears to have modified the file."
+msgstr ""
+
+#: BitTorrent/Storage.py:242
+msgid "Another program appears to have changed the file size."
+msgstr ""
+
+#: BitTorrent/Storage.py:255 BitTorrent/StorageWrapper.py:284
 msgid "Couldn't read fastresume data: "
 msgstr "Ni moč prebrati podatkov za hitro nadaljevanje: "
 
@@ -1976,164 +2188,6 @@ msgstr "neveljaven benkodiran niz"
 #: BitTorrent/bencode.py:75
 msgid "invalid bencoded value (data after valid prefix)"
 msgstr "neveljavna benkodirana vrednost (podatki za veljavnim predlogom)"
-
-#: BitTorrent/launchmanycore.py:65
-msgid "Could not set signal handler: "
-msgstr ""
-
-#: BitTorrent/launchmanycore.py:71 BitTorrent/launchmanycore.py:92
-#, python-format
-msgid "dropped \"%s\""
-msgstr "odvržen \"%s\""
-
-#: BitTorrent/launchmanycore.py:95
-#, python-format
-msgid "added \"%s\""
-msgstr "dodan \"%s\""
-
-#: BitTorrent/launchmanycore.py:121
-msgid "waiting for hash check"
-msgstr ""
-
-#: BitTorrent/launchmanycore.py:139 BitTorrent/download.py:397
-msgid "downloading"
-msgstr "prenašam"
-
-#: BitTorrent/launchmanycore.py:234
-msgid "Rereading config file"
-msgstr ""
-
-#: BitTorrent/makemetafile.py:60
-msgid ""
-"You can't specify the name of the .torrent file when generating multiple "
-"torrents at once"
-msgstr ""
-
-#: BitTorrent/makemetafile.py:75
-#, python-format
-msgid "Filesystem encoding \"%s\" is not supported in this version"
-msgstr ""
-
-#: BitTorrent/makemetafile.py:185
-#, python-format
-msgid ""
-"Could not convert file/directory name \"%s\" to utf-8 (%s). Either the "
-"assumed filesystem encoding \"%s\" is wrong or the filename contains illegal "
-"bytes."
-msgstr ""
-
-#: BitTorrent/makemetafile.py:190
-#, python-format
-msgid ""
-"File/directory name \"%s\" contains reserved unicode values that do not "
-"correspond to characters."
-msgstr ""
-
-#: BitTorrent/parsedir.py:34
-msgid "Could not read directory "
-msgstr "Ni mogoče prebrati mapo"
-
-#: BitTorrent/parsedir.py:43
-msgid "Could not stat "
-msgstr ""
-
-#: BitTorrent/parsedir.py:74
-#, python-format
-msgid "removing %s (will re-add)"
-msgstr ""
-
-#: BitTorrent/parsedir.py:84 BitTorrent/parsedir.py:98
-#, python-format
-msgid "**warning** %s is a duplicate torrent for %s"
-msgstr ""
-
-#: BitTorrent/parsedir.py:130
-#, python-format
-msgid "**warning** %s has errors"
-msgstr "**opozorilo** %s vsebuje napake"
-
-#: BitTorrent/parsedir.py:138
-msgid "... successful"
-msgstr "... uspešno"
-
-#: BitTorrent/parsedir.py:145
-#, python-format
-msgid "removing %s"
-msgstr "odstranjam %s"
-
-#: BitTorrent/parsedir.py:149
-msgid "done checking"
-msgstr "končano preverjanje"
-
-#: BitTorrent/Rerequester.py:92
-#, python-format
-msgid "Tracker announce still not complete %d seconds after starting it"
-msgstr "Objava sledilnika po %d sekundah še vedno ni zaključena"
-
-#: BitTorrent/Rerequester.py:162
-msgid "Problem connecting to tracker, gethostbyname failed - "
-msgstr ""
-
-#: BitTorrent/Rerequester.py:175
-msgid "Problem connecting to tracker - "
-msgstr "Težava pri povezovanju s sledilnikom - "
-
-#: BitTorrent/Rerequester.py:202
-msgid "bad data from tracker - "
-msgstr "napačni podatki sledilnika - "
-
-#: BitTorrent/Rerequester.py:213
-msgid "rejected by tracker - "
-msgstr "zavrnitev s strani sledilnika - "
-
-#: BitTorrent/Rerequester.py:219
-msgid ""
-"Aborting the torrent as it was rejected by the tracker while not connected "
-"to any peers. "
-msgstr ""
-"Preklic torrenta, ker ga je sledilnik zavrnil in ni povezave z nobenim "
-"vrstnikom. "
-
-#: BitTorrent/Rerequester.py:221
-msgid " Message from the tracker: "
-msgstr "Sporočilo sledilnika: "
-
-#: BitTorrent/Rerequester.py:227
-msgid "warning from tracker - "
-msgstr "opozorilo sledilnika - "
-
-#: BitTorrent/GetTorrent.py:31 BitTorrent/GetTorrent.py:80
-#, python-format
-msgid "Could not read %s"
-msgstr "Ni moč zapisati datoteke %s"
-
-#: BitTorrent/GetTorrent.py:38
-#, python-format
-msgid ""
-"Could not download or open \n"
-"%s\n"
-"Try using a web browser to download the torrent file."
-msgstr ""
-"Ni mogoče prenesti ali odpreti \n"
-"%s\n"
-"Poskusite z prenesti torrent z drugim brskalnikom."
-
-#: BitTorrent/GetTorrent.py:70
-msgid "Temporary Internet Files"
-msgstr "Začasne datoteke interneta"
-
-#: BitTorrent/GetTorrent.py:71
-#, python-format
-msgid ""
-"Could not read %s: %s. You are probably using a broken Internet Explorer "
-"version that passed BitTorrent a filename that doesn't exist. To work around "
-"the problem, try clearing your Temporary Internet Files or right-click the "
-"link and save the .torrent file to disk first."
-msgstr ""
-"Ni moč brati %s: %s. Verjetno uporabljate pokvarjeno različico Internet "
-"Explorerja, ki je BitTorrentu predal ime datoteke, ki ne obstaja. Poskusite "
-"izbrisati začasne datoteke interneta ali pa z desnim gumbom kliknite na "
-"povezavo in datoteko torrent najpej shranite na disk."
 
 #: BitTorrent/btformats.py:23
 msgid "bad metainfo - not a dictionary"
@@ -2211,51 +2265,182 @@ msgstr "ne-besedilno opozorilo"
 
 #: BitTorrent/btformats.py:97
 msgid "invalid entry in peer list1"
-msgstr ""
+msgstr "napačen vnos vrstnikov spisek1"
 
 #: BitTorrent/btformats.py:99
 msgid "invalid entry in peer list2"
-msgstr ""
+msgstr "napačen vnos vrstnikov spisek2"
 
 #: BitTorrent/btformats.py:102
 msgid "invalid entry in peer list3"
-msgstr ""
+msgstr "napačen vnos vrstnikov spisek3"
 
 #: BitTorrent/btformats.py:106
 msgid "invalid entry in peer list4"
-msgstr ""
+msgstr "napačen vnos vrstnikov spisek4"
 
 #: BitTorrent/btformats.py:108
 msgid "invalid peer list"
-msgstr ""
+msgstr "napačen spisek vrstnikov"
 
 #: BitTorrent/btformats.py:111
 msgid "invalid announce interval"
-msgstr ""
+msgstr "napačen interval najavljanja"
 
 #: BitTorrent/btformats.py:114
 msgid "invalid min announce interval"
-msgstr ""
+msgstr "najmanjši interval najavljanja napačen"
 
 #: BitTorrent/btformats.py:116
 msgid "invalid tracker id"
-msgstr ""
+msgstr "napačen id sledilnika"
 
 #: BitTorrent/btformats.py:119
 msgid "invalid peer count"
-msgstr ""
+msgstr "napačno število vrstnikov"
 
 #: BitTorrent/btformats.py:122
 msgid "invalid seed count"
-msgstr ""
+msgstr "napačno število sejalnikov"
 
 #: BitTorrent/btformats.py:125
 msgid "invalid \"last\" entry"
+msgstr "\"zadnji\" vnos napačen"
+
+#: BitTorrent/launchmanycore.py:65
+msgid "Could not set signal handler: "
 msgstr ""
+
+#: BitTorrent/launchmanycore.py:71 BitTorrent/launchmanycore.py:92
+#, python-format
+msgid "dropped \"%s\""
+msgstr "odvržen \"%s\""
+
+#: BitTorrent/launchmanycore.py:95
+#, python-format
+msgid "added \"%s\""
+msgstr "dodan \"%s\""
+
+#: BitTorrent/launchmanycore.py:121
+msgid "waiting for hash check"
+msgstr ""
+
+#: BitTorrent/launchmanycore.py:139 BitTorrent/download.py:396
+msgid "downloading"
+msgstr "prenašam"
+
+#: BitTorrent/launchmanycore.py:234
+msgid "Rereading config file"
+msgstr "Ponovno berem konfiguracijsko datoteko"
+
+#: BitTorrent/parseargs.py:25
+#, python-format
+msgid "Usage: %s "
+msgstr "Poraba: %s"
+
+#: BitTorrent/parseargs.py:27
+msgid ""
+"[OPTIONS] [TORRENTDIRECTORY]\n"
+"\n"
+msgstr ""
+
+#: BitTorrent/parseargs.py:28
+msgid ""
+"If a non-option argument is present it's taken as the value\n"
+"of the torrent_dir option.\n"
+msgstr ""
+
+#: BitTorrent/parseargs.py:31
+msgid "[OPTIONS] [TORRENTFILES]\n"
+msgstr ""
+
+#: BitTorrent/parseargs.py:33
+msgid "[OPTIONS] [TORRENTFILE]\n"
+msgstr ""
+
+#: BitTorrent/parseargs.py:35
+msgid "[OPTION] TRACKER_URL FILE [FILE]\n"
+msgstr ""
+
+#: BitTorrent/parseargs.py:37
+msgid "arguments are -\n"
+msgstr "argumenti so -\n"
+
+#: BitTorrent/parseargs.py:68
+msgid " (defaults to "
+msgstr "(privzeto v"
+
+#: BitTorrent/parseargs.py:117 BitTorrent/parseargs.py:154
+msgid "unknown key "
+msgstr "neznana tipka"
+
+#: BitTorrent/parseargs.py:123 BitTorrent/parseargs.py:133
+msgid "parameter passed in at end with no value"
+msgstr ""
+
+#: BitTorrent/parseargs.py:137
+msgid "command line parsing failed at "
+msgstr "preverjanje vnosne vrstice se je ponesrečilo pri"
+
+#: BitTorrent/parseargs.py:144
+#, python-format
+msgid "Option %s is required."
+msgstr "Nastavitev %s je potrebna"
+
+#: BitTorrent/parseargs.py:146
+#, python-format
+msgid "Must supply at least %d arguments."
+msgstr ""
+
+#: BitTorrent/parseargs.py:148
+#, python-format
+msgid "Too many arguments - %d maximum."
+msgstr "Preveč argumentov - %d največ."
+
+#: BitTorrent/parseargs.py:178
+#, python-format
+msgid "wrong format of %s - %s"
+msgstr "napačen format %s - %s"
+
+#: BitTorrent/parsedir.py:34
+msgid "Could not read directory "
+msgstr "Ni mogoče prebrati mapo"
+
+#: BitTorrent/parsedir.py:43
+msgid "Could not stat "
+msgstr ""
+
+#: BitTorrent/parsedir.py:74
+#, python-format
+msgid "removing %s (will re-add)"
+msgstr ""
+
+#: BitTorrent/parsedir.py:84 BitTorrent/parsedir.py:98
+#, python-format
+msgid "**warning** %s is a duplicate torrent for %s"
+msgstr "**opozorilo** %s je dvojniški torrent za %s"
+
+#: BitTorrent/parsedir.py:130
+#, python-format
+msgid "**warning** %s has errors"
+msgstr "**opozorilo** %s vsebuje napake"
+
+#: BitTorrent/parsedir.py:138
+msgid "... successful"
+msgstr "... uspešno"
+
+#: BitTorrent/parsedir.py:145
+#, python-format
+msgid "removing %s"
+msgstr "odstranjam %s"
+
+#: BitTorrent/parsedir.py:149
+msgid "done checking"
+msgstr "končano preverjanje"
 
 #: BitTorrent/track.py:40
 msgid "Port to listen on."
-msgstr ""
+msgstr "Vhod za povezave."
 
 #: BitTorrent/track.py:42
 msgid "file to store recent downloader info in"
@@ -2328,11 +2513,11 @@ msgstr ""
 
 #: BitTorrent/track.py:87
 msgid "a URL to redirect the info page to"
-msgstr ""
+msgstr "URL za preusmeritev info strani"
 
 #: BitTorrent/track.py:89
 msgid "whether to display names from allowed dir"
-msgstr ""
+msgstr "prikaz imen iz dovoljenega imenika"
 
 #: BitTorrent/track.py:91
 msgid "file containing x-icon data to return when browser requests favicon.ico"
@@ -2370,7 +2555,7 @@ msgid "maximum number of peers to give with any one request"
 msgstr ""
 
 #: BitTorrent/track.py:111
-msgid "maximum number of tcp connections to open per second"
+msgid "maximum number of tcp connections to open per second, 0 means no limit"
 msgstr ""
 
 #: BitTorrent/track.py:163
@@ -2378,6 +2563,8 @@ msgid ""
 "your file may exist elsewhere in the universe\n"
 "but alas, not here\n"
 msgstr ""
+"vaša datoteka morebiti obstaja kje drugje v univerzi,\n"
+" toda žal, ne tukaj\n"
 
 #: BitTorrent/track.py:248
 #, python-format
@@ -2391,7 +2578,7 @@ msgstr ""
 
 #: BitTorrent/track.py:307
 msgid "# Log Started: "
-msgstr ""
+msgstr "# Zapisnik zagnan:"
 
 #: BitTorrent/track.py:309
 msgid "**warning** could not redirect stdout to log file: "
@@ -2399,7 +2586,7 @@ msgstr ""
 
 #: BitTorrent/track.py:317
 msgid "# Log reopened: "
-msgstr ""
+msgstr "# Zapisnik ponovno odprt:"
 
 #: BitTorrent/track.py:319
 msgid "**warning** could not reopen logfile"
@@ -2427,384 +2614,153 @@ msgstr ""
 
 #: BitTorrent/track.py:861
 msgid "# Shutting down: "
-msgstr ""
-
-#: BitTorrent/Encoder.py:177
-msgid "Can't start two separate instances of the same torrent"
-msgstr "Ni moč začeti dveh ločenih kopij istega torrent-a"
+msgstr "# Ustavljam:"
 
 #: BitTorrent/__init__.py:21
 msgid "Python 2.2.1 or newer required"
 msgstr "Potreben je Python 2.2.1 ali novejši"
 
-#: BitTorrent/ConvertedMetainfo.py:51
-msgid ""
-"This seems to be an old Python version which does not support detecting the "
-"filesystem encoding. Assuming 'ascii'."
-msgstr ""
-"Izgleda, da imate staro različico Python-a, ki ne podpira samodejnega "
-"zaznavanja kodiranja znakov. Privzemam »ASCII«."
-
-#: BitTorrent/ConvertedMetainfo.py:58
-msgid "Python failed to autodetect filesystem encoding. Using 'ascii' instead."
-msgstr ""
-"Python ni uspel samodejno zaznati kodiranja znakov. Uporabljam »ASCII«."
-
-#: BitTorrent/ConvertedMetainfo.py:65
-#, python-format
-msgid "Filesystem encoding '%s' is not supported. Using 'ascii' instead."
-msgstr "Kodiranje znakov »%s« ni podprto. Uporabljam »ASCII«."
-
-#: BitTorrent/ConvertedMetainfo.py:123
-msgid "Bad file path component: "
-msgstr "Napačna pot do datoteke: "
-
-#: BitTorrent/ConvertedMetainfo.py:195
-msgid ""
-"This .torrent file has been created with a broken tool and has incorrectly "
-"encoded filenames. Some or all of the filenames may appear different from "
-"what the creator of the .torrent file intended."
-msgstr ""
-"Ta datoteka .torrent je bila ustvarjena s pokvarjenim programom in ima "
-"napačno zakodirana imena datotek. Nekatera ali vsa imena datotek so lahko "
-"prikazana drugače, kot si je zamislil ustvarjalec datoteke .torrent."
-
-#: BitTorrent/ConvertedMetainfo.py:201
-msgid ""
-"This .torrent file has been created with a broken tool and has bad character "
-"values that do not correspond to any real character. Some or all of the "
-"filenames may appear different from what the creator of the .torrent file "
-"intended."
-msgstr ""
-"Ta datoteka .torrent je bila ustvarjena s pokvarjenim programom in vsebuje "
-"napačne vrednosti za znake, ki ne ustrezajo nobenemu pravemu znaku. Nekatera "
-"ali vsa imena datotek so lahko prikazana drugače, kot si je zamislil "
-"ustvarjalec datoteke .torrent."
-
-#: BitTorrent/ConvertedMetainfo.py:208
-msgid ""
-"This .torrent file has been created with a broken tool and has incorrectly "
-"encoded filenames. The names used may still be correct."
-msgstr ""
-"Ta datoteka .torrent je bila ustvarjena s pokvarjenim programom in ima "
-"napačno zakodirana imena datotek. Uporabljena imena so lahko kljub temu "
-"pravilna."
-
-#: BitTorrent/ConvertedMetainfo.py:213
-#, python-format
-msgid ""
-"The character set used on the local filesystem (\"%s\") cannot represent all "
-"characters used in the filename(s) of this torrent. Filenames have been "
-"changed from the original."
-msgstr ""
-"Nabor znakov na krajevnem datotečnem sistemu (»%s«) ne more predstaviti vseh "
-"znakov, ki so uporabljeni za imena datotek v tem torrent-u. Imena datotek so "
-"bila prilagojena."
-
-#: BitTorrent/ConvertedMetainfo.py:219
-msgid ""
-"The Windows filesystem cannot handle some characters used in the filename(s) "
-"of this torrent.Filenames have been changed from the original."
-msgstr ""
-
-#: BitTorrent/ConvertedMetainfo.py:224
-msgid ""
-"This .torrent file has been created with a broken tool and has at least 1 "
-"file with an invalid file or directory name. However since all such files "
-"were marked as having length 0 those files are just ignored."
-msgstr ""
-"Ta datoteka .torrent je bila ustvarjena s pokvarjenim programom in vsebuje "
-"vsaj eno datoteko z napačnim imenom datoteke ali mape. Ker pa imajo vse take "
-"datoteke velikost 0, bodo spregledane."
-
-#: BitTorrent/RawServer.py:315
-msgid "lost server socket"
-msgstr "strežniška vtičnica izgubljena"
-
-#: BitTorrent/RawServer.py:331
-msgid "Error handling accepted connection: "
-msgstr "Napaka pri ravnanju s sprejeto povezavo: "
-
-#: BitTorrent/RawServer.py:414
-#, python-format
-msgid "Have to exit due to the TCP stack flaking out. Please see the FAQ at %s"
-msgstr ""
-"Zaradi nezanesljivega sklada TCP je potreben izhod. Več o tem na strani %s"
-
 #: BitTorrent/configfile.py:69
 msgid "Could not permanently save options: "
-msgstr ""
+msgstr "Nastavitve ne bodo ostale shranjene:"
 
-#: BitTorrent/controlsocket.py:120 BitTorrent/controlsocket.py:170
+#: BitTorrent/controlsocket.py:134 BitTorrent/controlsocket.py:185
 msgid "Could not create control socket: "
 msgstr ""
 
-#: BitTorrent/controlsocket.py:147 BitTorrent/controlsocket.py:201
+#: BitTorrent/controlsocket.py:162 BitTorrent/controlsocket.py:216
 msgid "Could not send command: "
 msgstr "Ni bilo mogoče poslati ukaza:"
 
-#: BitTorrent/controlsocket.py:157
+#: BitTorrent/controlsocket.py:172
 msgid "Could not create control socket: already in use"
 msgstr ""
 
-#: BitTorrent/controlsocket.py:162
+#: BitTorrent/controlsocket.py:177
 msgid "Could not remove old control socket filename:"
 msgstr ""
 
-#: BitTorrent/download.py:96
+#: BitTorrent/controlsocket.py:239
+msgid "Global mutex already created."
+msgstr ""
+
+#: BitTorrent/controlsocket.py:253
+msgid "Could not find an open port!"
+msgstr ""
+
+#: BitTorrent/controlsocket.py:262
+msgid "Could not create application data directory!"
+msgstr ""
+
+#: BitTorrent/controlsocket.py:278
+msgid "Could not acquire global mutex lock for controlsocket file!"
+msgstr ""
+
+#: BitTorrent/download.py:97
 msgid "maxport less than minport - no ports to check"
 msgstr ""
 
-#: BitTorrent/download.py:109
+#: BitTorrent/download.py:110
 #, python-format
 msgid "Could not open a listening port: %s."
-msgstr "Ni mogoče odpreti porta: %s."
+msgstr "Ni mogoče odpreti vrat: %s."
 
-#: BitTorrent/download.py:111
+#: BitTorrent/download.py:112
 #, python-format
 msgid "Could not open a listening port: %s. "
 msgstr ""
 
-#: BitTorrent/download.py:113
+#: BitTorrent/download.py:114
 msgid "Check your port range settings."
 msgstr ""
 
-#: BitTorrent/download.py:217
+#: BitTorrent/download.py:216
 msgid "Initial startup"
+msgstr "Začetni zagon"
+
+#: BitTorrent/download.py:269
+#, python-format
+msgid "Could not load fastresume data: %s."
 msgstr ""
 
 #: BitTorrent/download.py:270
-#, python-format
-msgid "Could not load fastresume data: %s. "
-msgstr ""
-
-#: BitTorrent/download.py:271
 msgid "Will perform full hash check."
 msgstr ""
 
-#: BitTorrent/download.py:278
+#: BitTorrent/download.py:277
 #, python-format
 msgid "piece %d failed hash check, re-downloading it"
 msgstr ""
 
-#: BitTorrent/download.py:358
+#: BitTorrent/download.py:357
 msgid ""
 "Attempt to download a trackerless torrent with trackerless client turned off."
 msgstr ""
 
-#: BitTorrent/download.py:407
+#: BitTorrent/download.py:406
 msgid "download failed: "
 msgstr "prenos ni uspel:"
 
-#: BitTorrent/download.py:411
+#: BitTorrent/download.py:410
 msgid "IO Error: No space left on disk, or cannot create a file that large:"
 msgstr ""
 "IO napaka: Ni več prostora na disku, ali pa ni mogoče ustvariti tako velike "
 "datoteke:"
 
-#: BitTorrent/download.py:414
+#: BitTorrent/download.py:413
 msgid "killed by IO error: "
-msgstr ""
+msgstr "končano zaradi napake IO:"
 
-#: BitTorrent/download.py:417
+#: BitTorrent/download.py:416
 msgid "killed by OS error: "
-msgstr ""
+msgstr "končano zaradi napake OS:"
 
-#: BitTorrent/download.py:422
+#: BitTorrent/download.py:421
 msgid "killed by internal exception: "
 msgstr ""
 
-#: BitTorrent/download.py:427
+#: BitTorrent/download.py:426
 msgid "Additional error when closing down due to error: "
-msgstr ""
+msgstr "Dodatna napaka ob zapiranju zaradi napake:"
 
-#: BitTorrent/download.py:440
+#: BitTorrent/download.py:439
 msgid "Could not remove fastresume file after failure:"
 msgstr ""
 
-#: BitTorrent/download.py:457
+#: BitTorrent/download.py:456
 msgid "seeding"
-msgstr ""
+msgstr "sejem"
 
-#: BitTorrent/download.py:480
+#: BitTorrent/download.py:479
 msgid "Could not write fastresume data: "
-msgstr ""
+msgstr "Zapis podatkov za hitro nadaljevanje ni mogoč:"
 
-#: BitTorrent/download.py:490
+#: BitTorrent/download.py:489
 msgid "shut down"
-msgstr ""
+msgstr "izklop"
 
-#: BitTorrent/parseargs.py:25
-#, python-format
-msgid "Usage: %s "
-msgstr "Poraba: %s"
-
-#: BitTorrent/parseargs.py:27
+#: BitTorrent/makemetafile.py:60
 msgid ""
-"[OPTIONS] [TORRENTDIRECTORY]\n"
-"\n"
+"You can't specify the name of the .torrent file when generating multiple "
+"torrents at once"
 msgstr ""
 
-#: BitTorrent/parseargs.py:28
+#: BitTorrent/makemetafile.py:75
+#, python-format
+msgid "Filesystem encoding \"%s\" is not supported in this version"
+msgstr "Kodiranje datotečnega sistema \"%s\" ni podprto v tej verziji"
+
+#: BitTorrent/makemetafile.py:185
+#, python-format
 msgid ""
-"If a non-option argument is present it's taken as the value\n"
-"of the torrent_dir option.\n"
+"Could not convert file/directory name \"%s\" to utf-8 (%s). Either the "
+"assumed filesystem encoding \"%s\" is wrong or the filename contains illegal "
+"bytes."
 msgstr ""
 
-#: BitTorrent/parseargs.py:31
-msgid "[OPTIONS] [TORRENTFILES]\n"
-msgstr ""
-
-#: BitTorrent/parseargs.py:33
-msgid "[OPTIONS] [TORRENTFILE]\n"
-msgstr ""
-
-#: BitTorrent/parseargs.py:35
-msgid "[OPTION] TRACKER_URL FILE [FILE]\n"
-msgstr ""
-
-#: BitTorrent/parseargs.py:37
-msgid "arguments are -\n"
-msgstr ""
-
-#: BitTorrent/parseargs.py:68
-msgid " (defaults to "
-msgstr ""
-
-#: BitTorrent/parseargs.py:117 BitTorrent/parseargs.py:154
-msgid "unknown key "
-msgstr "neznana tipka"
-
-#: BitTorrent/parseargs.py:123 BitTorrent/parseargs.py:133
-msgid "parameter passed in at end with no value"
-msgstr ""
-
-#: BitTorrent/parseargs.py:137
-msgid "command line parsing failed at "
-msgstr ""
-
-#: BitTorrent/parseargs.py:144
+#: BitTorrent/makemetafile.py:190
 #, python-format
-msgid "Option %s is required."
-msgstr "Nastavitev %s je potrebna"
-
-#: BitTorrent/parseargs.py:146
-#, python-format
-msgid "Must supply at least %d arguments."
+msgid ""
+"File/directory name \"%s\" contains reserved unicode values that do not "
+"correspond to characters."
 msgstr ""
-
-#: BitTorrent/parseargs.py:148
-#, python-format
-msgid "Too many arguments - %d maximum."
-msgstr ""
-
-#: BitTorrent/parseargs.py:178
-#, python-format
-msgid "wrong format of %s - %s"
-msgstr "napačna oblika %s - %s"
-
-#~ msgid "%s %s - change the suggested filename in a .torrent file"
-#~ msgstr "%s %s - spremeni predlog imena datoteke v torrentu"
-
-#~ msgid "Usage: %s TORRENTFILE NEW_FILE_NAME"
-#~ msgstr "Uporaba: %s TORRENT NOVO_IME_DATOTEKE"
-
-#~ msgid "old filename: %s"
-#~ msgstr "staro ime datoteke: %s"
-
-#~ msgid "new filename: %s"
-#~ msgstr "novo ime datoteke: %s"
-
-#~ msgid "done."
-#~ msgstr "opravljeno."
-
-#~ msgid "Seed completed torrents:"
-#~ msgstr "Sej zaključene torrente:"
-
-#~ msgid "until share ratio reaches "
-#~ msgstr "dokler razmerje izmenjave ne doseže "
-
-#~ msgid " percent, or"
-#~ msgstr "odstotkov,"
-
-#~ msgid "for "
-#~ msgstr "ali "
-
-#~ msgid " minutes, whichever comes first."
-#~ msgstr " minut, karkoli se zgodi prej."
-
-#~ msgid "Seed last completed torrent:"
-#~ msgstr "Sej nazadnje zaključen torrent:"
-
-#~ msgid " percent."
-#~ msgstr "odstotkov."
-
-#~ msgid "\"0 percent\" means seed forever."
-#~ msgstr "»0 odstotkov« pomeni sejanje za vedno."
-
-#~ msgid "Can't have both --responsefile and non-option arguments"
-#~ msgstr ""
-#~ "Ni možno hkrati uporabljati --responsefile in argumentov brez možnosti"
-
-#~ msgid "Version check failed: no DNS library"
-#~ msgstr "Preverjanje različice spodletelo: ni knjižnice za DNS"
-
-#~ msgid "DNS query failed"
-#~ msgstr "Poizvedba DNS je spodletela"
-
-#~ msgid "number of received TXT fields is not 1"
-#~ msgstr "število prejetih polj TXT ni enako 1"
-
-#~ msgid "number of strings in reply is not 1?"
-#~ msgstr "število nizov v odgovoru ni enako 1?"
-
-#~ msgid "Could not parse new version string"
-#~ msgstr "Ni moč razčleniti niza za novo različico"
-
-#~ msgid ""
-#~ "A newer version of BitTorrent is available.\n"
-#~ "You can always get the latest version from\n"
-#~ "%s."
-#~ msgstr ""
-#~ "Na voljo je nova različica BitTorrent-a.\n"
-#~ "Najnovejšo različico lahko vedno dobite na\n"
-#~ "%s."
-
-#~ msgid "Version check failed: "
-#~ msgstr "Preverjanje različice je spodletelo: "
-
-#~ msgid "_Files/directories"
-#~ msgstr "_Datoteke/mape"
-
-#~ msgid "rate: %s"
-#~ msgstr "(hitrost): %s"
-
-#~ msgid "Maximum upload "
-#~ msgstr "Najhitrejše pošiljanje "
-
-#~ msgid "Download folder:"
-#~ msgstr "Mapa za prenose:"
-
-#~ msgid "Default:"
-#~ msgstr "Privzeto"
-
-#~ msgid "Ask where to save each download"
-#~ msgstr "Vprašaj, kam naj se shrani vsak prenos"
-
-#~ msgid "Download "
-#~ msgstr "Sprejemanje "
-
-#~ msgid "Upload "
-#~ msgstr "Pošiljanje "
-
-#~ msgid "Choose existing folder"
-#~ msgstr "Izberite obstoječo mapo"
-
-#~ msgid "Create new folder"
-#~ msgstr "Ustvarite novo mapo"
-
-#~ msgid "Got Accept-Encoding: "
-#~ msgstr "Prejet Accept-Encoding: "
-
-#~ msgid "Could not delete cached metainfo file:"
-#~ msgstr "Ni moč izbrisati datoteke z meta-podatki iz predpomnilnika:"

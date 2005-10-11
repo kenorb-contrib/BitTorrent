@@ -13,6 +13,7 @@
 import os
 import sys
 import gettext
+import locale
 
 # Python 2.2 doesn't have RawConfigParser
 try:
@@ -21,7 +22,6 @@ except ImportError:
     from ConfigParser import ConfigParser as RawConfigParser
 
 from ConfigParser import MissingSectionHeaderError, ParsingError
-
 from BitTorrent import parseargs
 from BitTorrent import app_name, version, ERROR, BTFailure
 from BitTorrent.platform import get_config_dir, locale_root, is_frozen_exe
@@ -84,15 +84,12 @@ def bad_config(filename):
 
 def get_config(defaults, section):
     dir_root = get_config_dir()
-    if dir_root is None and os.name == 'nt':
-        tmp_dir_root = os.path.split(sys.executable)[0]
-        if os.access(tmp_dir_root, os.R_OK|os.W_OK):
-            dir_root = tmp_dir_root
 
     if dir_root is None:
         return {}
 
     configdir = os.path.join(dir_root, '.bittorrent')
+        
     if not os.path.isdir(configdir):
         try:
             os.mkdir(configdir, 0700)
@@ -203,14 +200,14 @@ def parse_configuration_and_args(defaults, uiname, arglist=[], minargs=0,
             except:
                 pass
             
-
     if config['language'] != '':
         try:
             lang = gettext.translation('bittorrent', locale_root,
                                        languages=[config['language']])
             lang.install()
         except IOError:
-            raise BTFailure('Could not find translation for language "%s"' %
-                            config['language'])
+            # don't raise an error, just continue untranslated
+            raise BTFailure('Could not find translation for language "%s"\n' %
+                            config['language'])                
     
     return config, args

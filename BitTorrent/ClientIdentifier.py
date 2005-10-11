@@ -13,47 +13,72 @@
 
 import re
 
-v64p = '[\da-zA-Z.-]'
+v64p = '[\da-zA-Z.-]{3}'
 
 matches = (
-           ('-AZ(?P<version>\d+)-+.+$'     , "Azureus"             ),
-           ('M(?P<version>\d-\d-\d)--.+$'  , "BitTorrent"          ),
-           ('T(?P<version>%s+)-+.+$'%v64p  , "BitTornado"          ),
-           ('-TS(?P<version>\d+)-+.+$'     , "TorrentStorm"        ),
-           ('exbc(?P<bcver>.*)LORD.+$'     , "BitLord"             ),
-           ('exbc(?P<bcver>.*).+$'         , "BitComet"            ),
-           ('-BC0(?P<version>\d+)-.+$'     , "BitComet"            ),
-           ('FUTB(?P<bcver>.*).+$'         , "BitComet Mod1"       ),
-           ('xUTB(?P<bcver>.*).+$'         , "BitComet Mod2"       ),
-           ('A(?P<version>%s+)-+.+$'%v64p  , "ABC"                 ),
-           ('S(?P<version>%s+)-+.+$'%v64p  , "Shadow's"            ),
-           ('-G3.+$'                       , "G3Torrent"           ),
-           ('-LT(?P<version>\d+)-+.+$'     , "libtorrent"          ),
-           ('Mbrst(?P<version>\d-\d-\d).+$', "burst!"              ),
-           ('eX.+$'                        , "eXeem"               ),
-           ('\x00\x02BS.+$'                , "BitSpirit v2"        ),
-           ('.*(?=HTTPBT$|UDP0$).+$'       , "BitSpirit"           ),
+           ('-AZ(?P<version>\d+)-+.+$'       , "Azureus"              ),
+           ('M(?P<version>\d-\d-\d)--.+$'    , "BitTorrent"           ),
+           ('T(?P<version>%s)-+.+$'%v64p     , "BitTornado"           ),
+           ('-TS(?P<version>\d+)-+.+$'       , "TorrentStorm"         ),
+           ('exbc(?P<bcver>.+)LORD.+$'       , "BitLord"              ),
+           ('exbc(?P<bcver>[^-][^-]+)(?!---).+$', "BitComet"          ),
+           ('-BC0(?P<version>\d+)-.+$'       , "BitComet"             ),
+           ('FUTB(?P<bcver>.+).+$'           , "BitComet Mod1"        ),
+           ('xUTB(?P<bcver>.+).+$'           , "BitComet Mod2"        ),
+           ('A(?P<version>%s)-+.+$'%v64p     , "ABC"                  ),
+           ('S(?P<version>%s)-+.+$'%v64p     , "Shadow's"             ),
+           (chr(0)*12 + 'aa.+$'              , "Experimental 3.2.1b2" ),
+           (chr(0)*12 + '.+$'                , "BitTorrent (obsolete)"),
+           ('-G3.+$'                         , "G3Torrent"            ),
+           ('-LT(?P<version>\d+)-+.+$'       , "libtorrent"           ),
+           ('-lt(?P<version>\d+)-+.+$'       , "libtorrent"           ),
+           ('Mbrst(?P<version>\d-\d-\d).+$'  , "burst!"               ),
+           ('eX.+$'                          , "eXeem"                ),
+           ('\x00\x02BS.+(?P<strver>UDP0|HTTPBT)$', "BitSpirit v2"    ),
+           ('\x00[\x02|\x00]BS.+$'           , "BitSpirit v2"         ),
+           ('.*(?P<strver>UDP0|HTTPBT)$'     , "BitSpirit"            ),
+           ('-BOWP?(?P<version>\d+)-.+$'     , "Bits on Wheels"       ),
+           ('(?P<rsver>.+)RSAnonymous.+$'    , "Rufus Anonymous"      ),
+           ('(?P<rsver>.+)RS.+$'             , "Rufus"                ),
+           ('-ML(?P<version>(\d\.)+\d)-+.+$' , "MLDonkey"             ),
+           ('-UT(?P<version>\d+)-+.+$'       , u"\xb5Torrent"         ),
+           ('346------.+$'                   , "TorrentTopia 1.70"    ),
 # Clients I've never actually seen in a peer list:           
-           ('-BB(?P<version>\d+)-+.+$'     , "BitBuddy"            ),
-           ('-CT(?P<version>\d+)-+.+$'     , "CTorrent"            ),
-           ('-MT(?P<version>\d+)-+.+$'     , "MoonlightTorrent"    ),
-           ('-BX(?P<version>\d+)-+.+$'     , "BitTorrent X"        ),
-           ('-TN(?P<version>\d+)-+.+$'     , "TorrentDotNET"       ),
-           ('-SS(?P<version>\d+)-+.+$'     , "SwarmScope"          ),
-           ('-XT(?P<version>\d+)-+.+$'     , "XanTorrent"          ),
-           ('U(?P<version>\d+)-+.+$'       , "UPnP NAT Bit Torrent"),
-           ('-BOWP?(?P<version>\d+)-.+$'   , "Bits on Wheels"      ),
-# added by Ed Savage-Jones :
-           ('-AR(?P<version>\d+)-+.+$'     , "Arctic"              ),
-           ('(?P<rsver>.*)BM.+$'           , "BitMagnet"           ),
-           ('BG(?P<version>\d+).+$'        , "BtGetit"             ),
-           ('-eX.+$'                       , "eXeem beta"          ),
-           ('Plus.+$'                      , "Plus! II"            ),
-           ('(?P<rsver>.*)RS.+$'           , "Rufus"               ),
-           ('XBT(?P<version>\d+)-+.+$'     , "XBT"                 ),
-           ('-ZT(?P<version>\d+)-+.+$'     , "ZipTorrent"          ),
-# Unknown peerids
-           (chr(0)*12 + '.+$'              , "\\0 * 12"            ),
+           ('exbc..---.+$'                   , "BitVampire 1.3.1"     ),
+           ('-BB(?P<version>\d+)-+.+$'       , "BitBuddy"             ),
+           ('-CT(?P<version>\d+)-+.+$'       , "CTorrent"             ),
+           ('-MT(?P<version>\d+)-+.+$'       , "MoonlightTorrent"     ),
+           ('-BX(?P<version>\d+)-+.+$'       , "BitTorrent X"         ),
+           ('-TN(?P<version>\d+)-+.+$'       , "TorrentDotNET"        ),
+           ('-SS(?P<version>\d+)-+.+$'       , "SwarmScope"           ),
+           ('-XT(?P<version>\d+)-+.+$'       , "XanTorrent"           ),
+           ('U(?P<version>\d+)-+.+$'         , "UPnP NAT Bit Torrent" ),
+           ('-AR(?P<version>\d+)-+.+$'       , "Arctic"               ),
+           ('(?P<rsver>.+)BM.+$'             , "BitMagnet"            ),
+           ('BG(?P<version>\d+).+$'          , "BTGetit"              ),
+           ('-eX(?P<version>[\dA-Fa-f]+)-.+$',"eXeem beta"            ),
+           ('Plus12(?P<strver>\w+)-.+$'      , "Plus! II"             ),
+           ('XBT(?P<version>\d+)-+.+$'       , "XBT"                  ),
+           ('-ZT(?P<version>\d+)-+.+$'       , "ZipTorrent"           ),
+           ('-BitE\?(?P<version>\d+)-.+$'    , "BitEruct"             ),
+# Guesses based on Rufus source code, never seen in the wild:
+           ('OP.+$'                          , "Opera"                ),
+           ('-BS(?P<version>\d+)-+.+$'       , "BTSlave"              ),
+           ('-SB(?P<version>\d+)-+.+$'       , "SwiftBit"             ),
+           ('-SN(?P<version>\d+)-+.+$'       , "ShareNET"             ),
+           ('-bk(?P<version>\d+)-+.+$'       , "BitKitten"            ),
+           ('-SZ(?P<version>\d+)-+.+$'       , "Shareaza"             ),
+           ('-KT(?P<version>\d+)-+.+$'       , "KTorrent"             ),
+           ('-MP(?P<version>\d+)-+.+$'       , "MooPolice"            ),
+           ('-PO(?P<version>\d+)-+.+$'       , "PO (unknown)"         ),
+           ('-UR(?P<version>\d+)-+.+$'       , "UR (unknown)"         ),
+           ('Deadman Walking-.+$'            , "Deadman"              ),
+           ('270------.+$'                   , "GreedBT 2.7.0"        ),
+           ('XTORR302.+$'                    , "TorrenTres 0.0.2"     ),
+           ('turbobt(?P<version>\d\.\d).+$'  , "TurboBT"              ),
+           ('DansClient.+$'                  , "XanTorrent"           ),
+# Patterns that should be executed last
+           ('.*Azureus.*'                    , "Azureus 2.0.3.2"      ),
            )
 
 matches = [(re.compile(pattern, re.DOTALL), name) for pattern, name in matches]
@@ -92,15 +117,33 @@ def identify_client(peerid, log=None):
             elif d.has_key('bcver'):
                 bcver = d['bcver']
                 version += str(ord(bcver[0])) + '.'
-                version += str(ord(bcver[1])/10)
-                version += str(ord(bcver[1])%10)
+                if len(bcver) > 1:
+                    version += str(ord(bcver[1])/10)
+                    version += str(ord(bcver[1])%10)
             elif d.has_key('rsver'):
                 rsver = d['rsver']
                 version += str(ord(rsver[0])) + '.'
-                version += str(ord(rsver[1])/10) + '.'
-                version += str(ord(rsver[1])%10)
+                if len(rsver) > 1:
+                    version += str(ord(rsver[1])/10) + '.'
+                    version += str(ord(rsver[1])%10)
+            elif d.has_key('strver'):
+                version = d['strver']
             break
-    if client == 'unknown' and log is not None:
+    if client == 'unknown':
+        # try to identify Shareaza
+        shareaza = True
+        if chr(0) in peerid[:15]:
+            shareaza = False
+        else:
+            for i in range(16,len(peerid)):
+                 if ord(peerid[i]) != (ord(peerid[i % 16]) ^ ord(peerid[15 - (i % 16)])):
+                    shareaza = False
+                    break
+        if shareaza:
+            client = "Shareaza"
+        
+        
+    if log is not None and 'unknown' in client:
         if not unknown_clients.has_key(peerid):
             unknown_clients[peerid] = True
             log.write('%s\n'%peerid)

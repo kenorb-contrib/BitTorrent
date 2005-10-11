@@ -9,27 +9,31 @@
 # License.
 
 app_name = 'BitTorrent'
-version = '4.1.4'
+version = '4.1.5'
 
 URL = 'http://www.bittorrent.com/'
 DONATE_URL = URL + 'donate.html'
 FAQ_URL = URL + 'FAQ.html'
 HELP_URL = URL + 'documentation.html'
-SEARCH_URL = 'http://search.bittorrent.com/search.jsp?query=%s'
+SEARCH_URL = 'http://search.bittorrent.com/search.jsp?client=%(client)s&query=%(query)s'
 
 import sys
 assert sys.version_info >= (2, 2, 1), _("Python 2.2.1 or newer required")
 import os
+import time
+
+branch = None
+if os.access('.cdv', os.F_OK):
+    branch = os.path.split(os.path.realpath(os.path.split(sys.argv[0])[0]))[1]
 
 from BitTorrent.platform import get_home_dir, is_frozen_exe
 
-languages = 'af,ar,bg,cs,da,de,es,es_MX,et,fi,fr,gr,he_IL,hr,hu,it,ja,ko,lt,ms,nl,nb_NO,pl,pt,pt_BR,ro,ru,sk,sl,sq,sv,tr,vi,zh_CN,zh_TW'.split(',')
+languages = 'af,ar,bg,ca,cs,da,de,es,es_MX,eo,et,fi,fr,ga,gr,he_IL,hr,hu,hy,it,ja,ka,ko,lt,ms,nl,nb_NO,pl,pt,pt_BR,ro,ru,sk,sl,sq,sv,th,tr,uk,vi,zh_CN,zh_TW'.split(',')
 
 if os.name == 'posix':
     if os.uname()[0] == "Darwin":
-        import gettext
-        gettext.install('bittorrent', 'locale')
-    
+        from BitTorrent.platform import install_translation
+        install_translation()
 
 # hackery to get around bug in py2exe that tries to write log files to
 # application directories, which may not be writable by non-admin users
@@ -37,15 +41,31 @@ if is_frozen_exe:
     baseclass = sys.stderr.__class__
     class Stderr(baseclass):
         logroot = get_home_dir()
+
         if logroot is None:
             logroot = os.path.splitdrive(sys.executable)[0]
             if logroot[-1] != os.sep:
                 logroot += os.sep
         logname = os.path.splitext(os.path.split(sys.executable)[1])[0] + '_errors.log'
         logpath = os.path.join(logroot, logname)
+
+        def __init__(self):        
+            self.just_wrote_newline = True
+        
         def write(self, text, alert=None, fname=logpath):
+            output = text
+
+            if self.just_wrote_newline and not text.startswith('[%s ' % version):
+                output = '[%s %s] %s' % (version, time.strftime('%Y-%m-%d %H:%M:%S'), text)
+                
             if 'GtkWarning' not in text:
-                baseclass.write(self, text, fname=fname)
+                baseclass.write(self, output, fname=fname)
+
+            if output[-1] == '\n':
+                self.just_wrote_newline = True
+            else:
+                self.just_wrote_newline = False
+                
     sys.stderr = Stderr()
 
 del sys, get_home_dir, is_frozen_exe
@@ -57,7 +77,7 @@ CRITICAL = 3
 
 class BTFailure(Exception):
     pass
-
+        
 class BTShutdown(BTFailure):
     pass
 

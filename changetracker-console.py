@@ -12,8 +12,8 @@
 
 # Written by Henry 'Pi' James and Bram Cohen
 
-import gettext
-gettext.install('bittorrent', 'locale')
+from BitTorrent.platform import install_translation
+install_translation()
 
 from os.path import basename
 from sys import argv, exit

@@ -32,7 +32,7 @@ def bucket_stats(l):
     return {'min':min, 'max':max, 'avg':avg}
 
 def compact_peer_info(ip, port):
-    return ''.join([chr(int(i)) for i in ip.split('.')]) + pack('!H', port)
+    return pack('!BBBBH', *([int(i) for i in ip.split('.')] + [port]))
 
 def packPeers(peers):
     return map(lambda a: compact_peer_info(a[0], a[1]), peers)

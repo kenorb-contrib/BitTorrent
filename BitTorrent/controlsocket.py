@@ -13,11 +13,16 @@
 import os
 import socket
 import sys
+if sys.platform.startswith('win'):
+    import win32api
+    import win32event
+    import winerror
 
 from binascii import b2a_hex
 
-from BitTorrent.RawServer import RawServer
-from BitTorrent import BTFailure
+from BitTorrent.RawServer_magic import RawServer, Handler
+from BitTorrent.platform import get_home_dir, get_config_dir
+from BitTorrent import BTFailure, app_name
 
 def toint(s):
     return int(b2a_hex(s), 16)
@@ -28,12 +33,12 @@ def tobinary(i):
 
 CONTROL_SOCKET_PORT = 46881
 
-class ControlsocketListener(object):
+class ControlsocketListener(Handler):
 
     def __init__(self, callback):
         self.callback = callback
 
-    def external_connection_made(self, connection):
+    def connection_made(self, connection):
         connection.handler = MessageReceiver(self.callback)
 
 
@@ -52,6 +57,7 @@ class MessageReceiver(object):
             l = toint(self._message)
             yield l
             action = self._message
+            
             if action in ('no-op',):
                 self.callback(action, None)
             else:
@@ -103,7 +109,14 @@ class MessageReceiver(object):
 class ControlSocket(object):
 
     def __init__(self, config):
+        self.port = CONTROL_SOCKET_PORT
+        self.mutex = None
+        self.master = 0
+
         self.socket_filename = os.path.join(config['data_dir'], 'ui_socket')
+
+        self.rawserver = None
+        self.controlsocket = None
 
     def set_rawserver(self, rawserver):
         self.rawserver = rawserver
@@ -112,12 +125,14 @@ class ControlSocket(object):
         self.rawserver.start_listening(self.controlsocket,
                                   ControlsocketListener(callback))
 
-    def create_socket_inet(self):
+    def create_socket_inet(self, port = CONTROL_SOCKET_PORT):
+        
         try:
-            controlsocket = RawServer.create_serversocket(CONTROL_SOCKET_PORT,
-                                                   '127.0.0.1', reuse=True)
+            controlsocket = RawServer.create_serversocket(port,
+                                                          '127.0.0.1', reuse=True)
         except socket.error, e:
             raise BTFailure(_("Could not create control socket: ")+str(e))
+
         self.controlsocket = controlsocket
 
 ##    def send_command_inet(self, rawserver, action, data = ''):
@@ -135,7 +150,7 @@ class ControlSocket(object):
     def send_command_inet(self, action, *datas):
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
-            s.connect(('127.0.0.1', CONTROL_SOCKET_PORT))
+            s.connect(('127.0.0.1', self.port))
             s.send(tobinary(len(action)))
             s.send(action)
             for data in datas:
@@ -162,12 +177,10 @@ class ControlSocket(object):
                 raise BTFailure(_("Could not remove old control socket filename:")
                                 + str(e))
         try:
-            controlsocket = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-            controlsocket.setblocking(0)
-            controlsocket.bind(filename)
-            controlsocket.listen(5)
+            controlsocket = RawServer.create_unixserversocket(filename)
         except socket.error, e:
             raise BTFailure(_("Could not create control socket: ")+str(e))
+
         self.controlsocket = controlsocket
 
 ##    def send_command_unix(self, rawserver, action, data = ''):
@@ -204,9 +217,92 @@ class ControlSocket(object):
         self.rawserver.stop_listening(self.controlsocket)
         self.controlsocket.close()
 
+    def get_sic_path(self):
+        dir = get_config_dir()
+        configdir = os.path.join(dir, '.bittorrent')
+        filename = os.path.join(configdir, ".btcontrol")
+        return filename
+
+    def create_sic_socket(self):
+        obtain_mutex = 1
+        mutex = win32event.CreateMutex(None, obtain_mutex, app_name)
+
+        # prevent the PyHANDLE from going out of scope, ints are fine
+        self.mutex = int(mutex)
+        mutex.Detach()
+
+        lasterror = win32api.GetLastError()
+        
+        if lasterror == winerror.ERROR_ALREADY_EXISTS:
+            raise BTFailure(_("Global mutex already created."))
+
+        self.master = 1
+
+        # where is the lower limit of the window random port pool? this should stop there
+        port_limit = 50000
+        while self.port < port_limit:
+            try:
+                self.create_socket_inet(self.port)
+                break
+            except BTFailure:
+                self.port += 1
+
+        if self.port >= port_limit:
+            raise BTFailure(_("Could not find an open port!"))
+
+        filename = self.get_sic_path()
+        (path, name) = os.path.split(filename)
+        try:
+            os.makedirs(path)
+        except OSError, e:
+            # 17 is dir exists
+            if e.errno != 17:
+                BTFailure(_("Could not create application data directory!"))
+        file = open(filename, "w")
+        file.write(str(self.port))
+        file.close()
+        
+        # we're done writing the control file, release the mutex so other instances can lock it and read the file
+        # but don't destroy the handle until the application closes, so that the names mutex is still around
+        win32event.ReleaseMutex(self.mutex)
+
+    def discover_sic_socket(self):
+        # mutex exists and has been opened (not created). wait for it so we can read the file
+        r = win32event.WaitForSingleObject(self.mutex, win32event.INFINITE)
+
+        # WAIT_OBJECT_0 means the mutex was obtained
+        # WAIT_ABANDONED means the mutex was obtained, and it had previously been abandoned
+        if (r != win32event.WAIT_OBJECT_0) and (r != win32event.WAIT_ABANDONED):
+            BTFailure(_("Could not acquire global mutex lock for controlsocket file!"))
+
+        filename = self.get_sic_path()
+        try:
+            file = open(filename, "r")
+            self.port = int(file.read())
+            file.close()
+        except:
+            self.port = CONTROL_SOCKET_PORT
+            if (r != win32event.WAIT_ABANDONED):
+                sys.stderr.write(_("A previous instance of BT was not cleaned up properly. Continuing."))
+                # what I should really do here is assume the role of master.
+        
+        # we're done reading the control file, release the mutex so other instances can lock it and read the file
+        win32event.ReleaseMutex(self.mutex)
+
+    def close_sic_socket(self):
+        if self.master:
+            r = win32event.WaitForSingleObject(self.mutex, win32event.INFINITE)
+            filename = self.get_sic_path()
+            os.remove(filename)
+            self.master = 0
+            win32event.ReleaseMutex(self.mutex)
+            # close it so the named mutex goes away
+            win32api.CloseHandle(self.mutex)
+            self.mutex = None
+
     if sys.platform.startswith('win'):
         send_command = send_command_inet
-        create_socket = create_socket_inet
+        create_socket = create_sic_socket
     else:
         send_command = send_command_unix
         create_socket = create_socket_unix

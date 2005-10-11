@@ -36,10 +36,21 @@ NOLINGER = struct.pack('ii', 1, 0)
 
 
 class Handler(object):
+
+    # there is only a semantic difference between "made" and "started".
+    # I prefer "started"
     def connection_started(self, s):
+        self.connection_made(s)
+    def connection_made(self, s):
         pass
+
+    def connection_lost(self, s):
+        pass
+
+    # Maybe connection_lost should just have a default 'None' exception parameter
     def connection_failed(self, addr, exception):
         pass
+    
     def connection_flushed(self, s):
         pass
     def data_came_in(self, addr, datagram):
@@ -120,7 +131,6 @@ class SingleSocket(object):
 def default_error_handler(level, message):
     print message
 
-
 class RawServer(object):
 
     def __init__(self, doneflag, config, noisy=True,
@@ -185,6 +195,14 @@ class RawServer(object):
         for k in tokill:
             if k.socket is not None:
                 self._close_socket(k)
+
+    def create_unixserversocket(filename):
+        server = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        server.setblocking(0)
+        server.bind(filename)
+        server.listen(5)
+        return server
+    create_unixserversocket = staticmethod(create_unixserversocket)
 
     def create_serversocket(port, bind='', reuse=False, tos=0):
         server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -262,18 +280,10 @@ class RawServer(object):
         s = SingleSocket(self, sock, handler, context, dns[0])
         self.single_sockets[sock.fileno()] = s
         return s
-
-    def _get_initiate_rate(self):
-        rate = self.config['initiate_rate'] * 1.0
-        return rate
     
-    def asynch_start_connection(self, dns, handler=None, context=None, do_bind=True):
-        rate = self._get_initiate_rate()
-        if rate and not self.to_start:
-            self.add_task(self._start_connection, 1 / rate)
+    def async_start_connection(self, dns, handler=None, context=None, do_bind=True):
         self.to_start.insert(0, (dns, handler, context, do_bind))
-        if rate == 0:
-            self._start_connection()
+        self._start_connection()
     
     def _start_connection(self):
         dns, handler, context, do_bind = self.to_start.pop()
@@ -283,11 +293,6 @@ class RawServer(object):
             handler.connection_failed(dns, e)
         else:
             handler.connection_started(s)
-        rate = self._get_initiate_rate()
-        if rate == 0 and self.to_start:
-            self._start_connection()
-        elif self.to_start:
-            self.add_task(self._start_connection, 1 / rate)
         
     def wrap_socket(self, sock, handler, context=None, ip=None):
         sock.setblocking(0)
@@ -325,7 +330,7 @@ class RawServer(object):
                         self.single_sockets[newsock.fileno()] = nss
                         self.poll.register(newsock, POLLIN)
                         self._make_wrapped_call(handler. \
-                           external_connection_made, (nss,), context=context)
+                           connection_made, (nss,), context=context)
                     except socket.error, e:
                         self.errorfunc(WARNING,
                                        _("Error handling accepted connection: ") +
@@ -365,7 +370,7 @@ class RawServer(object):
                     s.try_write()
                     if s.is_flushed():
                         self._make_wrapped_call(s.handler.connection_flushed,
-                                                (s,), s)
+                                                (s,))
 
     def _pop_externally_added(self):
         while self.externally_added_tasks:
@@ -410,6 +415,8 @@ class RawServer(object):
                 except:
                     code = e
             if code == ENOBUFS:
+                # log the traceback so we can see where the exception is coming from
+                print_exc(file = sys.stderr)
                 self.errorfunc(CRITICAL,
                                _("Have to exit due to the TCP stack flaking "
                                  "out. Please see the FAQ at %s") % FAQ_URL)

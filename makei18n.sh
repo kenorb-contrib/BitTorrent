@@ -1,5 +1,5 @@
 APP_NAME="bittorrent"
-LANGUAGES='af ar bg cs da de es es_MX et fi fr gr he_IL hr hu it ja ko lt ms nl nb_NO pl pt pt_BR ro ru sk sl sq sv tr vi zh_CN zh_TW'
+LANGUAGES='af ar bg ca cs da de es es_MX eo et fi fr ga gr he_IL hr hu hy it ja ka ko lt ms nl nb_NO pl pt pt_BR ro ru sk sl sq sv th tr uk vi zh_CN zh_TW'
 MESSAGES_PO="messages.pot"
 
 rm -f $APP_NAME.lis
@@ -36,6 +36,7 @@ for lang in $LANGUAGES ; do
     echo "making $lang"
     mkdir -p locale/$lang/LC_MESSAGES
     msgmerge --no-fuzzy-matching po/$lang.po $MESSAGES_PO \
+        | egrep -v '^#~' \
         > locale/$lang/LC_MESSAGES/$APP_NAME.po
     msgfmt -o locale/$lang/LC_MESSAGES/$APP_NAME.mo \
         locale/$lang/LC_MESSAGES/$APP_NAME.po

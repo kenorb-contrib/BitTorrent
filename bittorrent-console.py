@@ -14,8 +14,8 @@
 
 from __future__ import division
 
-import gettext
-gettext.install('bittorrent', 'locale')
+from BitTorrent.platform import install_translation
+install_translation()
 
 import sys
 import os

@@ -6,20 +6,20 @@ msgid ""
 msgstr ""
 "Project-Id-Version: BitTorrent 4.2\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2005-08-15 13:10-0700\n"
-"PO-Revision-Date: 2005-08-09 09:23-0700\n"
-"Last-Translator: Tamas Szanto <tszanto@interware.hu>\n"
+"POT-Creation-Date: 2005-10-05 17:16-0700\n"
+"PO-Revision-Date: 2005-10-03 13:27-0700\n"
+"Last-Translator: esoxxx <esox13@freemail.hu>\n"
 "Language-Team: Hungarian <bugs (at) bittorrent (dot) com>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "X-Generator: Pootle 0.6.3.20050806\n"
 
-#: bittorrent.py:24 maketorrent.py:23
+#: bittorrent.py:22 maketorrent.py:23
 msgid "Install Python 2.3 or greater"
 msgstr "Kérem telepítse a Python 2.3-as vagy újabb verzióját"
 
-#: bittorrent.py:38
+#: bittorrent.py:37
 msgid "PyGTK 2.4 or newer required"
 msgstr "A PyGTK 2.4-es vagy újabb verziója szükséges"
 
@@ -75,46 +75,50 @@ msgstr "Torrent URL megadása"
 msgid "Enter the URL of a torrent file to open:"
 msgstr "Adja meg a megnyitni kívánt torrent URL-jét:"
 
-#: bittorrent.py:339
-msgid "Maximum upload rate"
-msgstr "Maximális feltöltési sebesség"
+#: bittorrent.py:310
+msgid "Maximum upload rate:"
+msgstr ""
 
-#: bittorrent.py:352
+#: bittorrent.py:374
 msgid "Temporarily stop all running torrents"
 msgstr "Az összes futó torrent ideiglenes leállítása"
 
-#: bittorrent.py:353
+#: bittorrent.py:375
 msgid "Resume downloading"
 msgstr "A letöltés folytatása"
 
-#: bittorrent.py:392
-msgid "Not connected"
-msgstr "Nincs kapcsolat"
+#: bittorrent.py:414 bittorrent.py:1961
+msgid "Paused"
+msgstr "Szünetel"
 
-#: bittorrent.py:394
+#: bittorrent.py:416
+msgid "No torrents"
+msgstr ""
+
+#: bittorrent.py:418
 msgid "Running normally"
 msgstr "Normál működés"
 
-#: bittorrent.py:396
+#: bittorrent.py:420
 msgid "Firewalled/NATted"
 msgstr "Tűzfal vagy NAT aktív"
 
-#: bittorrent.py:420
+#: bittorrent.py:456
 #, python-format
 msgid "New %s version available"
 msgstr "Új %s-verzió jelent meg"
 
-#: bittorrent.py:435
+#: bittorrent.py:471
 #, python-format
 msgid "A newer version of %s is available.\n"
 msgstr "Megjelent %s egy új változata.\n"
 
-#: bittorrent.py:436
+#: bittorrent.py:472
 #, python-format
 msgid "You are using %s, and the new version is %s.\n"
 msgstr "Most ezt használja: %s, az új verzió: %s.\n"
 
-#: bittorrent.py:437
+#: bittorrent.py:473
 #, python-format
 msgid ""
 "You can always get the latest version from \n"
@@ -123,99 +127,99 @@ msgstr ""
 "A legújabb változat mindig letölthető innen:\n"
 "%s"
 
-#: bittorrent.py:444 bittorrent.py:1934 bittorrent.py:2067
+#: bittorrent.py:480 bittorrent.py:1974 bittorrent.py:2113
 msgid "Download _later"
 msgstr "L_etöltés később"
 
-#: bittorrent.py:447 bittorrent.py:1898
+#: bittorrent.py:483 bittorrent.py:1938
 msgid "Download _now"
 msgstr "_Letöltés most"
 
-#: bittorrent.py:453
+#: bittorrent.py:489
 msgid "_Remind me later"
 msgstr "Emlékeztetés _később"
 
-#: bittorrent.py:491
+#: bittorrent.py:527
 #, python-format
 msgid "About %s"
 msgstr "Névjegy: %s"
 
-#: bittorrent.py:506
+#: bittorrent.py:542
 msgid "Beta"
 msgstr "Béta"
 
-#: bittorrent.py:508
+#: bittorrent.py:544
 #, python-format
 msgid "Version %s"
 msgstr "Verzió: %s"
 
-#: bittorrent.py:531
+#: bittorrent.py:571
 msgid "Donate"
 msgstr "Adomány küldése"
 
-#: bittorrent.py:551
+#: bittorrent.py:591
 #, python-format
 msgid "%s Activity Log"
 msgstr "Műveletnapló - %s"
 
-#: bittorrent.py:608
+#: bittorrent.py:648
 msgid "Save log in:"
 msgstr "A napló mentése ide:"
 
-#: bittorrent.py:619
+#: bittorrent.py:659
 msgid "log saved"
 msgstr "a napló elmentve"
 
-#: bittorrent.py:678
+#: bittorrent.py:718
 msgid "log cleared"
 msgstr "a napló törölve"
 
-#: bittorrent.py:708
+#: bittorrent.py:748
 #, python-format
 msgid "%s Settings"
 msgstr "Beállítások: %s"
 
-#: bittorrent.py:719
+#: bittorrent.py:759
 msgid "Saving"
 msgstr "Mentés"
 
-#: bittorrent.py:721
+#: bittorrent.py:761
 msgid "Save new downloads in:"
 msgstr "Új letöltések mentése ide:"
 
-#: bittorrent.py:734
+#: bittorrent.py:774
 msgid "Change..."
 msgstr "Módosítás..."
 
-#: bittorrent.py:740
+#: bittorrent.py:780
 msgid "Ask where to save each new download"
 msgstr "Rákérdezés minden új letöltés helyére"
 
-#: bittorrent.py:749
+#: bittorrent.py:789
 msgid "Downloading"
 msgstr "Letöltés"
 
-#: bittorrent.py:751
+#: bittorrent.py:791
 msgid "Starting additional torrents manually:"
 msgstr "További torrent kézi indítása esetén:"
 
-#: bittorrent.py:760
+#: bittorrent.py:800
 msgid "Always stops the _last running torrent"
 msgstr "Álljon le előbb az _utolsó aktív torrent"
 
-#: bittorrent.py:766
+#: bittorrent.py:806
 msgid "Always starts the torrent in _parallel"
 msgstr "_Párhuzamosan induljon a már aktív torrentekkel"
 
-#: bittorrent.py:772
+#: bittorrent.py:812
 msgid "_Asks each time"
 msgstr "Rákér_dezés mindig"
 
-#: bittorrent.py:789
+#: bittorrent.py:829
 msgid "Seeding"
 msgstr "Megosztás"
 
-#: bittorrent.py:791
+#: bittorrent.py:831
 msgid ""
 "Seed completed torrents: until share ratio reaches [_] percent, or for [_] "
 "minutes, whichever comes first."
@@ -223,33 +227,33 @@ msgstr ""
 "A befejezett torrentek maradjanak megosztva, amíg a megosztási arány eléri a"
 "(z) [_] százalékot, illetve [_] percig, amelyik előbb bekövetkezik."
 
-#: bittorrent.py:835 bittorrent.py:869
+#: bittorrent.py:875 bittorrent.py:909
 msgid "Seed indefinitely"
 msgstr "Megosztás korlátlan ideig"
 
-#: bittorrent.py:843
+#: bittorrent.py:883
 msgid "Seed last completed torrent: until share ratio reaches [_] percent."
 msgstr ""
 "Az utolsó befejezett torrent maradjon megosztva, amíg a megosztási arány "
 "eléri a(z) [_] százalékot."
 
-#: bittorrent.py:881
+#: bittorrent.py:921
 msgid "Network"
 msgstr "Hálózat"
 
-#: bittorrent.py:883
+#: bittorrent.py:923
 msgid "Look for available port:"
 msgstr "Szabad port keresése:"
 
-#: bittorrent.py:886
+#: bittorrent.py:926
 msgid "starting at port: "
 msgstr "Kezdőport: "
 
-#: bittorrent.py:899
+#: bittorrent.py:939
 msgid "IP to report to the tracker:"
 msgstr "A trackernek jelentett IP-cím:"
 
-#: bittorrent.py:904
+#: bittorrent.py:944
 msgid ""
 "(Has no effect unless you are on the\n"
 "same local network as the tracker)"
@@ -257,11 +261,11 @@ msgstr ""
 "(Csak akkor van hatása, ha egy helyi hálózaton\n"
 "van a gép a követővel)"
 
-#: bittorrent.py:911
+#: bittorrent.py:951
 msgid "Potential Windows TCP stack fix"
 msgstr "Javítás egy olyan Windows-os TCP-veremhibához, amely gondot okozhat"
 
-#: bittorrent.py:922
+#: bittorrent.py:962
 msgid ""
 "Progress bar text is always black\n"
 "(requires restart)"
@@ -269,11 +273,11 @@ msgstr ""
 "Az állapotjelző szövege mindig fekete legyen\n"
 "(újraindítás szükséges)"
 
-#: bittorrent.py:928
+#: bittorrent.py:968
 msgid "Misc"
 msgstr "Egyéb"
 
-#: bittorrent.py:935
+#: bittorrent.py:975
 #, python-format
 msgid ""
 "WARNING: Changing these settings can\n"
@@ -282,480 +286,476 @@ msgstr ""
 "FIGYELEM: ha megváltoztatja ezeket a beállításokat,\n"
 "lehet, hogy %s nem fog megfelelően működni."
 
-#: bittorrent.py:943
+#: bittorrent.py:983
 msgid "Option"
 msgstr "Opció"
 
-#: bittorrent.py:948
+#: bittorrent.py:988
 msgid "Value"
 msgstr "Érték"
 
-#: bittorrent.py:955
+#: bittorrent.py:995
 msgid "Advanced"
 msgstr "Speciális"
 
-#: bittorrent.py:964
+#: bittorrent.py:1004
 msgid "Choose default download directory"
 msgstr "Válassza ki az alapértelmezett letöltési könyvtárat"
 
-#: bittorrent.py:1025
+#: bittorrent.py:1065
 #, python-format
 msgid "Files in \"%s\""
 msgstr "Fájlok itt: \"%s\""
 
-#: bittorrent.py:1034
+#: bittorrent.py:1074
 msgid "Apply"
 msgstr "Alkalmazás"
 
-#: bittorrent.py:1035
+#: bittorrent.py:1075
 msgid "Allocate"
 msgstr "Lefoglalás"
 
-#: bittorrent.py:1036
+#: bittorrent.py:1076
 msgid "Never download"
 msgstr "Letöltés: soha"
 
-#: bittorrent.py:1037
+#: bittorrent.py:1077
 msgid "Decrease"
 msgstr "Csökkentés"
 
-#: bittorrent.py:1038
+#: bittorrent.py:1078
 msgid "Increase"
 msgstr "Növelés"
 
-#: bittorrent.py:1048 launchmany-curses.py:142
+#: bittorrent.py:1088 launchmany-curses.py:142
 msgid "Filename"
 msgstr "Fájlnév"
 
-#: bittorrent.py:1048
+#: bittorrent.py:1088
 msgid "Length"
 msgstr "Hossz"
 
-#: bittorrent.py:1048
+#: bittorrent.py:1088
 msgid "%"
 msgstr "%"
 
-#: bittorrent.py:1212
+#: bittorrent.py:1252
 #, python-format
 msgid "Peers for \"%s\""
 msgstr "Partnerek - \"%s\""
 
-#: bittorrent.py:1218
+#: bittorrent.py:1258
 msgid "IP address"
 msgstr "IP-cím"
 
-#: bittorrent.py:1218
+#: bittorrent.py:1258
 msgid "Client"
 msgstr "Kliens"
 
-#: bittorrent.py:1218
+#: bittorrent.py:1258
 msgid "Connection"
 msgstr "Kapcsolat"
 
-#: bittorrent.py:1218
+#: bittorrent.py:1258
 msgid "KB/s down"
 msgstr "KB/s le"
 
-#: bittorrent.py:1218
+#: bittorrent.py:1258
 msgid "KB/s up"
 msgstr "KB/s fel"
 
-#: bittorrent.py:1218
+#: bittorrent.py:1258
 msgid "MB downloaded"
 msgstr "MB letöltve"
 
-#: bittorrent.py:1218
+#: bittorrent.py:1258
 msgid "MB uploaded"
 msgstr "MB feltöltve"
 
-#: bittorrent.py:1218
+#: bittorrent.py:1258
 #, python-format
 msgid "% complete"
 msgstr "% kész"
 
-#: bittorrent.py:1218
+#: bittorrent.py:1258
 msgid "KB/s est. peer download"
 msgstr "KB/s becsült letöltés a partnerekről"
 
-#: bittorrent.py:1224
+#: bittorrent.py:1264
 msgid "Peer ID"
 msgstr "Partnerazonosító"
 
-#: bittorrent.py:1227 bittorrent.py:1230
+#: bittorrent.py:1267 bittorrent.py:1270
 msgid "Interested"
 msgstr "Érdeklődő"
 
-#: bittorrent.py:1227 bittorrent.py:1230
+#: bittorrent.py:1267 bittorrent.py:1270
 msgid "Choked"
 msgstr "Akadozik"
 
-#: bittorrent.py:1227
+#: bittorrent.py:1267
 msgid "Snubbed"
 msgstr "Teljesen lelassult"
 
-#: bittorrent.py:1230
+#: bittorrent.py:1270
 msgid "Optimistic upload"
 msgstr "Optimista feltöltés"
 
-#: bittorrent.py:1311
+#: bittorrent.py:1351
 msgid "remote"
 msgstr "távoli"
 
-#: bittorrent.py:1311
+#: bittorrent.py:1351
 msgid "local"
 msgstr "helyi"
 
-#: bittorrent.py:1347
+#: bittorrent.py:1387
 msgid "bad peer"
 msgstr "hibás partner"
 
-#: bittorrent.py:1357
+#: bittorrent.py:1397
 #, python-format
 msgid "%d ok"
 msgstr "%d OK"
 
-#: bittorrent.py:1358
+#: bittorrent.py:1398
 #, python-format
 msgid "%d bad"
 msgstr "%d rossz"
 
-#: bittorrent.py:1360
+#: bittorrent.py:1400
 msgid "banned"
 msgstr "kitiltva"
 
-#: bittorrent.py:1362
+#: bittorrent.py:1402
 msgid "ok"
 msgstr "OK"
 
-#: bittorrent.py:1398
+#: bittorrent.py:1438
 #, python-format
 msgid "Info for \"%s\""
 msgstr "\"%s\" jellemzői"
 
-#: bittorrent.py:1416
+#: bittorrent.py:1456
 msgid "Torrent name:"
 msgstr "Torrentnév:"
 
-#: bittorrent.py:1421
+#: bittorrent.py:1461
 msgid "(trackerless torrent)"
 msgstr "(tracker nélküli torrent)"
 
-#: bittorrent.py:1424
+#: bittorrent.py:1464
 msgid "Announce url:"
 msgstr "Bejelentési URL:"
 
-#: bittorrent.py:1428
+#: bittorrent.py:1468
 msgid ", in one file"
 msgstr "(1 fájl)"
 
-#: bittorrent.py:1430
+#: bittorrent.py:1470
 #, python-format
 msgid ", in %d files"
 msgstr "(%d fájl)"
 
-#: bittorrent.py:1431
+#: bittorrent.py:1471
 msgid "Total size:"
 msgstr "Teljes méret:"
 
-#: bittorrent.py:1438
+#: bittorrent.py:1478
 msgid "Pieces:"
 msgstr "Darabok:"
 
-#: bittorrent.py:1440
+#: bittorrent.py:1480
 msgid "Info hash:"
 msgstr "Hasítóérték:"
 
-#: bittorrent.py:1450
+#: bittorrent.py:1490
 msgid "Save in:"
 msgstr "Mentési könyvtár:"
 
-#: bittorrent.py:1454
+#: bittorrent.py:1494
 msgid "File name:"
 msgstr "Fájlnév:"
 
-#: bittorrent.py:1480
+#: bittorrent.py:1520
 msgid "Open directory"
 msgstr "A könyvtár megnyitása"
 
-#: bittorrent.py:1485
+#: bittorrent.py:1525
 msgid "Show file list"
 msgstr "A fájllista megjelenítése"
 
-#: bittorrent.py:1581
+#: bittorrent.py:1621
 msgid "Torrent info"
 msgstr "Torrentjellemzők"
 
-#: bittorrent.py:1590 bittorrent.py:2034
+#: bittorrent.py:1630 bittorrent.py:2080
 msgid "Remove torrent"
 msgstr "Torrent eltávolítása"
 
-#: bittorrent.py:1594
+#: bittorrent.py:1634
 msgid "Abort torrent"
 msgstr "A torrent megszakítása"
 
-#: bittorrent.py:1661
+#: bittorrent.py:1701
 #, python-format
 msgid ", will seed for %s"
 msgstr ", publikálva marad még eddig: %s"
 
-#: bittorrent.py:1663
+#: bittorrent.py:1703
 msgid ", will seed indefinitely."
 msgstr ", korlátlan ideig publikálva marad."
 
-#: bittorrent.py:1666
+#: bittorrent.py:1706
 #, python-format
 msgid "Done, share ratio: %d%%"
 msgstr "Kész, megosztási arány: %d%%"
 
-#: bittorrent.py:1669
+#: bittorrent.py:1709
 #, python-format
 msgid "Done, %s uploaded"
 msgstr "Kész, %s feltöltve"
 
-#: bittorrent.py:1688
+#: bittorrent.py:1728
 msgid "Torrent _info"
 msgstr "A torrent _jellemzői"
 
-#: bittorrent.py:1694
+#: bittorrent.py:1734
 msgid "_Open directory"
 msgstr "A köny_vtár megnyitása"
 
-#: bittorrent.py:1701
+#: bittorrent.py:1741
 msgid "_Change location"
 msgstr "A könyvtár mó_dosítása"
 
-#: bittorrent.py:1711
+#: bittorrent.py:1751
 msgid "_File list"
 msgstr "_Fájllista"
 
-#: bittorrent.py:1793
+#: bittorrent.py:1833
 #, python-format
 msgid "Are you sure you want to remove \"%s\"?"
 msgstr "Biztosan el szeretné távolítani ezt: \"%s\"?"
 
-#: bittorrent.py:1796
+#: bittorrent.py:1836
 #, python-format
 msgid "Your share ratio for this torrent is %d%%. "
 msgstr "A megosztási arány ennél a torrentnél: %d%% "
 
-#: bittorrent.py:1798
+#: bittorrent.py:1838
 #, python-format
 msgid "You have uploaded %s to this torrent. "
 msgstr "A feltöltés befejeződött ebbe a torrentbe: %s. "
 
-#: bittorrent.py:1801
+#: bittorrent.py:1841
 msgid "Remove this torrent?"
 msgstr "Eltávolítja a torrentet?"
 
-#: bittorrent.py:1820
+#: bittorrent.py:1860
 msgid "Finished"
 msgstr "Befejezve"
 
-#: bittorrent.py:1821
+#: bittorrent.py:1861
 msgid "drag into list to seed"
 msgstr "húzza át a listába, ha publikálni szeretné"
 
-#: bittorrent.py:1824
+#: bittorrent.py:1864
 msgid "Failed"
 msgstr "Hiba"
 
-#: bittorrent.py:1825
+#: bittorrent.py:1865
 msgid "drag into list to resume"
 msgstr "húzza át a listába, ha folytatni szeretné"
 
-#: bittorrent.py:1833
+#: bittorrent.py:1873
 msgid "Re_start"
 msgstr "Új_raindítás"
 
-#: bittorrent.py:1834 bittorrent.py:1904 bittorrent.py:1940 bittorrent.py:2063
+#: bittorrent.py:1874 bittorrent.py:1944 bittorrent.py:1980 bittorrent.py:2109
 msgid "_Remove"
 msgstr "_Eltávolítás"
 
-#: bittorrent.py:1884
+#: bittorrent.py:1924
 msgid "Waiting"
 msgstr "Várakozik"
 
-#: bittorrent.py:1903 bittorrent.py:1939 bittorrent.py:2062
+#: bittorrent.py:1943 bittorrent.py:1979 bittorrent.py:2108
 msgid "_Finish"
 msgstr "_Befejezés"
 
-#: bittorrent.py:1906 bittorrent.py:1935 bittorrent.py:2068
+#: bittorrent.py:1946 bittorrent.py:1975 bittorrent.py:2114
 msgid "_Abort"
 msgstr "Me_gszakítás"
 
-#: bittorrent.py:1921
-msgid "Paused"
-msgstr "Szünetel"
-
-#: bittorrent.py:1962
+#: bittorrent.py:2008
 msgid "Running"
 msgstr "Fut"
 
-#: bittorrent.py:1986
+#: bittorrent.py:2032
 #, python-format
 msgid "Current up: %s"
 msgstr "Jelenleg fel: %s"
 
-#: bittorrent.py:1987
+#: bittorrent.py:2033
 #, python-format
 msgid "Current down: %s"
 msgstr "Jelenleg le: %s"
 
-#: bittorrent.py:1993
+#: bittorrent.py:2039
 #, python-format
 msgid "Previous up: %s"
 msgstr "Előző fel: %s"
 
-#: bittorrent.py:1994
+#: bittorrent.py:2040
 #, python-format
 msgid "Previous down: %s"
 msgstr "Előző le: %s"
 
-#: bittorrent.py:2000
+#: bittorrent.py:2046
 #, python-format
 msgid "Share ratio: %0.02f%%"
 msgstr "Megosztási arány: %0.02f%%"
 
-#: bittorrent.py:2003
+#: bittorrent.py:2049
 #, python-format
 msgid "%s peers, %s seeds. Totals from tracker: %s"
 msgstr "%s partner, %s publikáció. Összesen a követőtől: %s"
 
-#: bittorrent.py:2007
+#: bittorrent.py:2053
 #, python-format
 msgid "Distributed copies: %d; Next: %s"
 msgstr "Szétosztott másolatok száma: %d, következő: %s"
 
-#: bittorrent.py:2010
+#: bittorrent.py:2056
 #, python-format
 msgid "Pieces: %d total, %d complete, %d partial, %d active (%d empty)"
 msgstr "Darabok: összesen %d, %d kész, %d részleges, %d aktív (%d üres)"
 
-#: bittorrent.py:2014
+#: bittorrent.py:2060
 #, python-format
 msgid "%d bad pieces + %s in discarded requests"
 msgstr "%d hibás darab + %s az eldobott kérésekben"
 
-#: bittorrent.py:2046
+#: bittorrent.py:2092
 msgid "_Peer list"
 msgstr "_Partnerlista"
 
-#: bittorrent.py:2050
+#: bittorrent.py:2096
 msgid "_Seed indefinitely"
 msgstr "Megosztás _korlátlan ideig"
 
-#: bittorrent.py:2124
+#: bittorrent.py:2170
 msgid "Done"
 msgstr "Kész"
 
-#: bittorrent.py:2139
+#: bittorrent.py:2185
 #, python-format
 msgid "%.1f%% done, %s remaining"
 msgstr "%.1f%% kész, %s van hátra"
 
-#: bittorrent.py:2147
+#: bittorrent.py:2193
 msgid "Download rate"
 msgstr "Letöltési érték"
 
-#: bittorrent.py:2149
+#: bittorrent.py:2195
 msgid "Upload rate"
 msgstr "Feltöltési érték"
 
-#: bittorrent.py:2164
+#: bittorrent.py:2210
 msgid "NA"
 msgstr "-"
 
-#: bittorrent.py:2510
+#: bittorrent.py:2608
 #, python-format
 msgid "%s started"
 msgstr "A %s elindult"
 
-#: bittorrent.py:2523
+#: bittorrent.py:2621
 msgid "_Open torrent file"
 msgstr "_Torrentfájl megnyitása"
 
-#: bittorrent.py:2524
+#: bittorrent.py:2622
 msgid "Open torrent _URL"
 msgstr "Torrent URL megny_itása"
 
-#: bittorrent.py:2525
+#: bittorrent.py:2623
 msgid "Make _new torrent"
 msgstr "Ú_j torrent készítése"
 
-#: bittorrent.py:2528
+#: bittorrent.py:2626
 msgid "_Pause/Play"
 msgstr "_Szünet/Folytatás"
 
-#: bittorrent.py:2530
+#: bittorrent.py:2628
 msgid "_Quit"
 msgstr "_Kilépés"
 
-#: bittorrent.py:2532
+#: bittorrent.py:2630
 msgid "Show/Hide _finished torrents"
 msgstr "A befejeződött torrentek m_utatása (be/ki)"
 
-#: bittorrent.py:2534
+#: bittorrent.py:2632
 msgid "_Resize window to fit"
 msgstr "Az ablak méretének ki_igazítása"
 
-#: bittorrent.py:2536
+#: bittorrent.py:2634
 msgid "_Log"
 msgstr "_Napló"
 
-#: bittorrent.py:2539
+#: bittorrent.py:2637
 msgid "_Settings"
 msgstr "_Beállítások"
 
-#: bittorrent.py:2542 bittorrent.py:2558
+#: bittorrent.py:2640 bittorrent.py:2656
 msgid "_Help"
 msgstr "_Súgó"
 
-#: bittorrent.py:2544
+#: bittorrent.py:2642
 msgid "_About"
 msgstr "_Névjegy"
 
-#: bittorrent.py:2545
+#: bittorrent.py:2643
 msgid "_Donate"
 msgstr "_Adomány küldése"
 
-#: bittorrent.py:2549
+#: bittorrent.py:2647
 msgid "_File"
 msgstr "_Fájl"
 
-#: bittorrent.py:2554
+#: bittorrent.py:2652
 msgid "_View"
 msgstr "Né_zet"
 
-#: bittorrent.py:2597
-msgid "Search"
-msgstr "Keresés"
+#: bittorrent.py:2693
+msgid "Search for torrents"
+msgstr ""
 
-#: bittorrent.py:2753
+#: bittorrent.py:2810
 msgid "(stopped)"
 msgstr "(leállt)"
 
-#: bittorrent.py:2765
+#: bittorrent.py:2822
 msgid "(multiple)"
 msgstr "(többszörös)"
 
-#: bittorrent.py:2892
+#: bittorrent.py:2949
 #, python-format
 msgid "Already downloading %s installer"
 msgstr "Már folyik a(z) %s telepítő letöltése "
 
-#: bittorrent.py:2896
+#: bittorrent.py:2953
 #, python-format
 msgid "Install new %s now?"
 msgstr "Szeretne most új %s alkalmazást telepíteni?"
 
-#: bittorrent.py:2897
+#: bittorrent.py:2954
 #, python-format
 msgid "Do you want to quit %s and install the new version, %s, now?"
 msgstr ""
 "Ki szeretne most lépni a(z) %s alkalmazásból, hogy feltelepítse az új "
 "programváltozatot (%s)? "
 
-#: bittorrent.py:2913
+#: bittorrent.py:2970
 #, python-format
 msgid ""
 "%s help is at \n"
@@ -766,80 +766,91 @@ msgstr ""
 "%s\n"
 "Meg szeretné nyitni az oldalt?"
 
-#: bittorrent.py:2916
+#: bittorrent.py:2973
 msgid "Visit help web page?"
 msgstr "Dokumentációs weblap"
 
-#: bittorrent.py:2952
+#: bittorrent.py:3009
 msgid "There is one finished torrent in the list. "
 msgstr "Egy befejeződött torrent szerepel a listában. "
 
-#: bittorrent.py:2953
+#: bittorrent.py:3010
 msgid "Do you want to remove it?"
 msgstr "El szeretné távolítani?"
 
-#: bittorrent.py:2955
+#: bittorrent.py:3012
 #, python-format
 msgid "There are %d finished torrents in the list. "
 msgstr "%d már befejeződött torrent szerepel a listában. "
 
-#: bittorrent.py:2956
+#: bittorrent.py:3013
 msgid "Do you want to remove all of them?"
 msgstr "El szeretné távolítani az összeset?"
 
-#: bittorrent.py:2958
+#: bittorrent.py:3015
 msgid "Remove all finished torrents?"
 msgstr "El szeretné távolítani az összes befejezett torrentet?"
 
-#: bittorrent.py:2965
+#: bittorrent.py:3022
 msgid "No finished torrents"
 msgstr "Nincs befejezett torrent"
 
-#: bittorrent.py:2966
+#: bittorrent.py:3023
 msgid "There are no finished torrents to remove."
 msgstr "Nincs eltávolítható, már befejeződött torrent."
 
-#: bittorrent.py:3021
+#: bittorrent.py:3078
 msgid "Open torrent:"
 msgstr "Torrent megnyitása:"
 
-#: bittorrent.py:3052
+#: bittorrent.py:3109
 msgid "Change save location for "
 msgstr "A mentési hely megváltoztatása "
 
-#: bittorrent.py:3079
+#: bittorrent.py:3136
 msgid "File exists!"
 msgstr "Már létezik ilyen fájl!"
 
-#: bittorrent.py:3080
+#: bittorrent.py:3137
 #, python-format
 msgid "\"%s\" already exists. Do you want to choose a different file name?"
 msgstr "\"%s\" már létezik. Szeretne más fájlnevet választani?"
 
-#: bittorrent.py:3098
+#: bittorrent.py:3155
 msgid "Save location for "
 msgstr "Mentési hely "
 
-#: bittorrent.py:3211
+#: bittorrent.py:3173
+msgid "Directory exists!"
+msgstr ""
+
+#: bittorrent.py:3174
+#, python-format
+msgid ""
+"\"%s\" already exists. Do you intend to create an identical, duplicate "
+"directory inside the existing directory?"
+msgstr ""
+
+#: bittorrent.py:3287
 #, python-format
 msgid "(global message) : %s"
 msgstr "(globális üzenet): %s"
 
-#: bittorrent.py:3221
+#: bittorrent.py:3297
 #, python-format
 msgid "%s Error"
 msgstr "%s-hiba"
 
-#: bittorrent.py:3227
+#: bittorrent.py:3303
 msgid "Multiple errors have occurred. Click OK to view the error log."
 msgstr ""
 "Több hiba is történt. Kattintson az OK gombra a hibanapló megtekintéséhez."
 
-#: bittorrent.py:3366
+#: bittorrent.py:3457
 msgid "Stop running torrent?"
 msgstr "Le szeretné állítani a futó torrentet?"
 
-#: bittorrent.py:3367
+#: bittorrent.py:3458
 #, python-format
 msgid ""
 "You are about to start \"%s\". Do you want to stop the last running torrent "
@@ -847,20 +858,20 @@ msgid ""
 msgstr ""
 "\"%s\" indítására készül. Le szeretné állítani az utolsó futó torrentet is?"
 
-#: bittorrent.py:3377
+#: bittorrent.py:3468
 msgid "Have you donated?"
 msgstr "Küldött már adományt?"
 
-#: bittorrent.py:3378
+#: bittorrent.py:3469
 #, python-format
 msgid "Welcome to the new version of %s. Have you donated?"
 msgstr "Üdvözöljük a %s új verziójában! Küldött már adományt?"
 
-#: bittorrent.py:3392
+#: bittorrent.py:3483
 msgid "Thanks!"
 msgstr "Köszönjük!"
 
-#: bittorrent.py:3393
+#: bittorrent.py:3484
 msgid ""
 "Thanks for donating! To donate again, select \"Donate\" from the \"Help\" "
 "menu."
@@ -868,37 +879,41 @@ msgstr ""
 "Adományát köszönjük! Ha további adományt szeretne küldeni, használja az "
 "\"Adomány küldése\" menüpontot a \"Súgó\" menüben."
 
-#: bittorrent.py:3408
+#: bittorrent.py:3504
 msgid "(enter search terms here)"
 msgstr "(írja be ide a keresett szavakat)"
 
-#: bittorrent.py:3438 BitTorrent/defaultargs.py:198
-#: BitTorrent/defaultargs.py:200 bittorrent-console.py:295
+#: bittorrent.py:3596 BitTorrent/defaultargs.py:200
+#: BitTorrent/defaultargs.py:202 bittorrent-console.py:295
 #: bittorrent-curses.py:429
 msgid "deprecated, do not use"
 msgstr "elavult, kérjük ne használja"
 
-#: bittorrent.py:3451
+#: bittorrent.py:3615
 msgid "Failed to create or send command through existing control socket."
 msgstr ""
 "Nem sikerült létrehozni vagy elküldeni egy parancsot a már létrehozott "
 "vezérlőaljazaton keresztül."
 
-#: bittorrent.py:3453 bittorrent.py:3479
+#: bittorrent.py:3617 bittorrent.py:3646
 #, python-format
 msgid " Closing all %s windows may fix the problem."
 msgstr "Lehet, hogy az összes %s ablak bezárása megszünteti a hibát."
 
-#: bittorrent.py:3475
+#: bittorrent.py:3642
 #, python-format
 msgid "%s already running"
 msgstr "%s már fut"
 
-#: bittorrent.py:3477
+#: bittorrent.py:3644
 msgid "Failed to send command through existing control socket."
 msgstr ""
 "Nem sikerült elküldeni egy parancsot a már létrehozott vezérlőaljazaton "
 "keresztül."
+
+#: bittorrent.py:3668
+msgid "Could not start the TorrentQueue, see above for errors."
+msgstr ""
 
 #: maketorrent.py:60
 #, python-format
@@ -941,199 +956,199 @@ msgstr "Megjegyzések:"
 msgid "Make"
 msgstr "Elkészítés"
 
-#: maketorrent.py:362
+#: maketorrent.py:361
 msgid "_Host"
 msgstr "_Gépnév"
 
-#: maketorrent.py:369
+#: maketorrent.py:368
 msgid "_Port"
 msgstr "_Port"
 
-#: maketorrent.py:462
+#: maketorrent.py:461
 msgid "Building torrents..."
 msgstr "Torrentek felépítése..."
 
-#: maketorrent.py:470
+#: maketorrent.py:469
 msgid "Checking file sizes..."
 msgstr "A fájlméretek ellenőrzése..."
 
-#: maketorrent.py:488
+#: maketorrent.py:487
 msgid "Start seeding"
 msgstr "A publikáció megkezdése"
 
-#: maketorrent.py:508
+#: maketorrent.py:507
 msgid "building "
 msgstr "felépítés "
 
-#: maketorrent.py:528
+#: maketorrent.py:527
 msgid "Done."
 msgstr "Kész."
 
-#: maketorrent.py:529
+#: maketorrent.py:528
 msgid "Done building torrents."
 msgstr "A torrentek felépítése befejeződött."
 
-#: maketorrent.py:537
+#: maketorrent.py:536
 msgid "Error!"
 msgstr "Hiba!"
 
-#: maketorrent.py:538
+#: maketorrent.py:537
 msgid "Error building torrents: "
 msgstr "Hiba történt a torrentek felépítésekor: "
 
-#: BitTorrent/GUI.py:153
+#: BitTorrent/GUI.py:161
 #, python-format
 msgid "%d days"
 msgstr "%d nap"
 
-#: BitTorrent/GUI.py:155
+#: BitTorrent/GUI.py:163
 #, python-format
 msgid "1 day %d hours"
 msgstr "1 nap %d óra"
 
-#: BitTorrent/GUI.py:157
+#: BitTorrent/GUI.py:165
 #, python-format
 msgid "%d:%02d hours"
 msgstr "%d:%02d óra"
 
-#: BitTorrent/GUI.py:159
+#: BitTorrent/GUI.py:167
 #, python-format
 msgid "%d:%02d minutes"
 msgstr "%d:%02d perc"
 
-#: BitTorrent/GUI.py:161
+#: BitTorrent/GUI.py:169
 #, python-format
 msgid "%d seconds"
 msgstr "%d másodperc"
 
-#: BitTorrent/GUI.py:163
+#: BitTorrent/GUI.py:171
 msgid "0 seconds"
 msgstr "0 másodperc"
 
-#: BitTorrent/GUI.py:205
+#: BitTorrent/GUI.py:216
 #, python-format
 msgid "%s Help"
 msgstr "Súgó - %s"
 
-#: BitTorrent/GUI.py:212
+#: BitTorrent/GUI.py:223
 msgid "Frequently Asked Questions:"
 msgstr "Gyakran feltett kérdések:"
 
-#: BitTorrent/GUI.py:217
+#: BitTorrent/GUI.py:228
 msgid "Go"
 msgstr "Ugrás"
 
-#: BitTorrent/GUI.py:450 BitTorrent/GUI.py:508
+#: BitTorrent/GUI.py:461 BitTorrent/GUI.py:519
 msgid "Choose an existing folder..."
 msgstr "Válasszon ki egy könyvtárat..."
 
-#: BitTorrent/GUI.py:460
+#: BitTorrent/GUI.py:471
 msgid "All Files"
 msgstr "Minden fájl"
 
-#: BitTorrent/GUI.py:465
+#: BitTorrent/GUI.py:476
 msgid "Torrents"
 msgstr "Torrentek"
 
-#: BitTorrent/GUI.py:505
+#: BitTorrent/GUI.py:516
 msgid "Create a new folder..."
 msgstr "Új könyvtár létrehozása..."
 
-#: BitTorrent/GUI.py:571
+#: BitTorrent/GUI.py:582
 msgid "Select a file"
 msgstr "Fájlválasztás"
 
-#: BitTorrent/GUI.py:572
+#: BitTorrent/GUI.py:583
 msgid "Select a folder"
 msgstr "Könyvtárválasztás"
 
-#: BitTorrent/TorrentQueue.py:109
+#: BitTorrent/TorrentQueue.py:112
 msgid "Could not load saved state: "
 msgstr "Nem sikerült betölteni az elmentett állapotot: "
 
-#: BitTorrent/TorrentQueue.py:191
+#: BitTorrent/TorrentQueue.py:204
 msgid "Could not save UI state: "
 msgstr "Nem sikerült elmenteni a kezelőfelület állapotát: "
 
-#: BitTorrent/TorrentQueue.py:201 BitTorrent/TorrentQueue.py:203
-#: BitTorrent/TorrentQueue.py:281 BitTorrent/TorrentQueue.py:284
-#: BitTorrent/TorrentQueue.py:294 BitTorrent/TorrentQueue.py:306
-#: BitTorrent/TorrentQueue.py:323
+#: BitTorrent/TorrentQueue.py:214 BitTorrent/TorrentQueue.py:216
+#: BitTorrent/TorrentQueue.py:294 BitTorrent/TorrentQueue.py:297
+#: BitTorrent/TorrentQueue.py:307 BitTorrent/TorrentQueue.py:319
+#: BitTorrent/TorrentQueue.py:336
 msgid "Invalid state file contents"
 msgstr "Érvénytelen tartalmú állapotleíró fájl"
 
-#: BitTorrent/TorrentQueue.py:216
+#: BitTorrent/TorrentQueue.py:229
 msgid "Error reading file "
 msgstr "Hiba történt egy fájl olvasásakor "
 
-#: BitTorrent/TorrentQueue.py:218
+#: BitTorrent/TorrentQueue.py:231
 msgid "cannot restore state completely"
 msgstr "nem lehet teljesen visszatölteni az állapotot"
 
-#: BitTorrent/TorrentQueue.py:221
+#: BitTorrent/TorrentQueue.py:234
 msgid "Invalid state file (duplicate entry)"
 msgstr "Érvénytelen állapotfájl (duplikált bejegyzés)"
 
-#: BitTorrent/TorrentQueue.py:227 BitTorrent/TorrentQueue.py:232
+#: BitTorrent/TorrentQueue.py:240 BitTorrent/TorrentQueue.py:245
 msgid "Corrupt data in "
 msgstr "Hibás adatok itt: "
 
-#: BitTorrent/TorrentQueue.py:228 BitTorrent/TorrentQueue.py:233
+#: BitTorrent/TorrentQueue.py:241 BitTorrent/TorrentQueue.py:246
 msgid " , cannot restore torrent ("
 msgstr ", nem lehet visszaállítani a torrentet ("
 
-#: BitTorrent/TorrentQueue.py:252
+#: BitTorrent/TorrentQueue.py:265
 msgid "Invalid state file (bad entry)"
 msgstr "Érvénytelen állapotfájl (hibás bejegyzés)"
 
-#: BitTorrent/TorrentQueue.py:271
+#: BitTorrent/TorrentQueue.py:284
 msgid "Bad UI state file"
 msgstr "Érvénytelen felületleíró állapotfájl"
 
-#: BitTorrent/TorrentQueue.py:275
+#: BitTorrent/TorrentQueue.py:288
 msgid "Bad UI state file version"
 msgstr "A felület állapotleíró fájlja hibás verziójú"
 
-#: BitTorrent/TorrentQueue.py:277
+#: BitTorrent/TorrentQueue.py:290
 msgid "Unsupported UI state file version (from newer client version?)"
 msgstr ""
 "Nem támogatott verziójú felületállapot-fájl (lehet, hogy egy újabb verziójú "
 "klienstől származik)"
 
-#: BitTorrent/TorrentQueue.py:461
+#: BitTorrent/TorrentQueue.py:474
 #, python-format
 msgid "Could not delete cached %s file:"
 msgstr "Nem törölhető a gyorsítótárból a %s fájl:"
 
-#: BitTorrent/TorrentQueue.py:487
+#: BitTorrent/TorrentQueue.py:500
 #, python-format
 msgid "This is not a valid torrent file. (%s)"
 msgstr "Ez nem egy érvényes torrent-fájl. (%s)"
 
-#: BitTorrent/TorrentQueue.py:495
+#: BitTorrent/TorrentQueue.py:508
 msgid "This torrent (or one with the same contents) is already running."
 msgstr "Ez a torrent (vagy egy másik, de ugyanezzel a tartalommal) már fut."
 
-#: BitTorrent/TorrentQueue.py:499
+#: BitTorrent/TorrentQueue.py:512
 msgid "This torrent (or one with the same contents) is already waiting to run."
 msgstr ""
 "Ez a torrent (vagy egy másik, de ugyanezzel a tartalommal) már elő van "
 "készítve a futtatáshoz."
 
-#: BitTorrent/TorrentQueue.py:506
+#: BitTorrent/TorrentQueue.py:519
 #, python-format
 msgid "Torrent in unknown state %d"
 msgstr "A torrent állapota ismeretlen: %d"
 
-#: BitTorrent/TorrentQueue.py:523
+#: BitTorrent/TorrentQueue.py:536
 msgid "Could not write file "
 msgstr "Nem sikerült írni egy fájlba "
 
-#: BitTorrent/TorrentQueue.py:525
+#: BitTorrent/TorrentQueue.py:538
 msgid "torrent will not be restarted correctly on client restart"
 msgstr "a torrent nem fog tudni újraindulni a kliens következő indításakor"
 
-#: BitTorrent/TorrentQueue.py:629
+#: BitTorrent/TorrentQueue.py:644
 #, python-format
 msgid ""
 "Can't run more than %d torrents simultaneously. For more info see the FAQ at "
@@ -1142,7 +1157,7 @@ msgstr ""
 "Egyszerre legfeljebb %d torrent futhat. Részletesebb információ a FAQ-ban "
 "található, itt: %s."
 
-#: BitTorrent/TorrentQueue.py:745
+#: BitTorrent/TorrentQueue.py:760
 msgid ""
 "Not starting torrent as there are other torrents waiting to run, and this "
 "one already meets the settings for when to stop seeding."
@@ -1150,7 +1165,7 @@ msgstr ""
 "A torrent nem lesz elindítva, mert más torrentek várnak elindításra, és ez a "
 "torrent már teljesítette a leállítási feltételeket."
 
-#: BitTorrent/TorrentQueue.py:752
+#: BitTorrent/TorrentQueue.py:767
 msgid ""
 "Not starting torrent as it already meets the settings for when to stop "
 "seeding the last completed torrent."
@@ -1158,35 +1173,36 @@ msgstr ""
 "A torrent nem lesz elindítva, mert már teljesítette az utolsó torrent "
 "leállítási feltételeit."
 
-#: BitTorrent/NewVersion.py:86
+#: BitTorrent/NewVersion.py:87
 #, python-format
 msgid "Could not get latest version from %s"
-msgstr ""
+msgstr "A %s legujjabb verzioja nem volt megszerezhető."
 
-#: BitTorrent/NewVersion.py:91
+#: BitTorrent/NewVersion.py:92
 #, python-format
 msgid "Could not parse new version string from %s"
-msgstr ""
+msgstr "%s nem tartalmazta az uj verzio betulancat."
 
-#: BitTorrent/NewVersion.py:197
+#: BitTorrent/NewVersion.py:198
 #, python-format
 msgid ""
 "Could not find a suitable temporary location to save the %s %s installer."
 msgstr ""
+"A %s es a %s reszere nem talaltatott megfelelo ideiglenes tarolohely.  "
 
-#: BitTorrent/NewVersion.py:216
+#: BitTorrent/NewVersion.py:217
 #, python-format
 msgid "No torrent file available for %s %s installer."
-msgstr ""
+msgstr "A %s %s betelepito szamara nincs torrent fajl."
 
-#: BitTorrent/NewVersion.py:226
+#: BitTorrent/NewVersion.py:227
 #, python-format
 msgid "%s %s installer appears to be corrupt or missing."
-msgstr ""
+msgstr "A %s %s telepito nem talalhato, vagy hibas."
 
-#: BitTorrent/NewVersion.py:233
+#: BitTorrent/NewVersion.py:234
 msgid "Cannot launch installer on this OS"
-msgstr ""
+msgstr "Ezen a rendszeren a telepito nem indithato."
 
 #: BitTorrent/defaultargs.py:32
 msgid ""
@@ -1284,11 +1300,9 @@ msgstr ""
 
 #: BitTorrent/defaultargs.py:77
 msgid ""
-"Initialize a trackerless client.  This must be set to one in order to "
-"download trackerless torrents."
+"Initialize a trackerless client.  This must be enabled in order to download "
+"trackerless torrents."
 msgstr ""
-"Követő nélküli kliens inicializálása. Az értékét állítsa 1-re, ha követő "
-"nélküli torrenteket szeretne letölteni."
 
 #: BitTorrent/defaultargs.py:83
 msgid "number of seconds to pause between sending keepalives"
@@ -1403,10 +1417,17 @@ msgstr ""
 "rendszereken"
 
 #: BitTorrent/defaultargs.py:126
-msgid "initiate no more than this many connections per second"
-msgstr "másodpercenként legfeljebb ennyi kapcsolatot lehessen létrehozni"
+msgid ""
+"initiate no more than this many connections per second, 0 means no limit"
+msgstr ""
 
-#: BitTorrent/defaultargs.py:143
+#: BitTorrent/defaultargs.py:128
+msgid ""
+"minimum delay between upload pulses in seconds, smaller provides better "
+"short term accuracy but more CPU usage"
+msgstr ""
+
+#: BitTorrent/defaultargs.py:145
 msgid ""
 "file name (for single-file torrents) or directory name (for batch torrents) "
 "to save the torrent as, overriding the default name in the torrent. See also "
@@ -1417,18 +1438,18 @@ msgstr ""
 "megadott alapértelmezett nevet. Lásd még a --save_in paramétert, ha egyik "
 "sincs megadva, akkor a program bekéri a mentési helyet"
 
-#: BitTorrent/defaultargs.py:148
+#: BitTorrent/defaultargs.py:150
 msgid "display advanced user interface"
 msgstr "szakértőknek szánt, kibővített felhasználói felület megjelenítése"
 
-#: BitTorrent/defaultargs.py:150
+#: BitTorrent/defaultargs.py:152
 msgid ""
 "the maximum number of minutes to seed a completed torrent before stopping "
 "seeding"
 msgstr ""
 "befejezett torrent esetén a publikálás max. ennyi ideig folytatódjon (perc)"
 
-#: BitTorrent/defaultargs.py:153
+#: BitTorrent/defaultargs.py:155
 msgid ""
 "the minimum upload/download ratio, in percent, to achieve before stopping "
 "seeding. 0 means no limit."
@@ -1436,7 +1457,7 @@ msgstr ""
 "a publikálás leállításához szükséges minimális feltöltés/letöltés arány "
 "(százalékban). 0 esetén nincs korlátozás."
 
-#: BitTorrent/defaultargs.py:156
+#: BitTorrent/defaultargs.py:158
 msgid ""
 "the minimum upload/download ratio, in percent, to achieve before stopping "
 "seeding the last torrent. 0 means no limit."
@@ -1444,23 +1465,23 @@ msgstr ""
 "az utolsó publikálás leállításához szükséges minimális feltöltés/letöltés "
 "arány (százalékban). 0 esetén nincs korlátozás."
 
-#: BitTorrent/defaultargs.py:159
+#: BitTorrent/defaultargs.py:161
 msgid "Seed each completed torrent indefinitely (until the user cancels it)"
 msgstr ""
 "Minden befejezett torrent megosztását korlátlan ideig kell folytatni (amíg a "
 "felhasználó be nem zárja)"
 
-#: BitTorrent/defaultargs.py:162
+#: BitTorrent/defaultargs.py:164
 msgid "Seed the last torrent indefinitely (until the user cancels it)"
 msgstr ""
 "Az utolsó torrent megosztását korlátlan ideig kell folytatni (amíg a "
 "felhasználó be nem zárja)"
 
-#: BitTorrent/defaultargs.py:165
+#: BitTorrent/defaultargs.py:167
 msgid "start downloader in paused state"
 msgstr "a letöltő szünetelt állapotban induljon"
 
-#: BitTorrent/defaultargs.py:167
+#: BitTorrent/defaultargs.py:169
 msgid ""
 "specifies how the app should behave when the user manually tries to start "
 "another torrent: \"replace\" means always replace the running torrent with "
@@ -1472,7 +1493,7 @@ msgstr ""
 "előtt, \"add\" esetén az új torrent a meglevőkkel párhuzamosan fog futni, "
 "\"ask\" esetén a program mindig megkérdezi, mi történjen."
 
-#: BitTorrent/defaultargs.py:181
+#: BitTorrent/defaultargs.py:183
 msgid ""
 "file name (for single-file torrents) or directory name (for batch torrents) "
 "to save the torrent as, overriding the default name in the torrent. See also "
@@ -1482,14 +1503,14 @@ msgstr ""
 "vagy könyvtárnév (több fájlt tartalmazó torrent esetén), felülbírálja a "
 "torrentben megadott alapértelmezett nevet. Lásd még: --save_in"
 
-#: BitTorrent/defaultargs.py:188 BitTorrent/defaultargs.py:208
+#: BitTorrent/defaultargs.py:190 BitTorrent/defaultargs.py:210
 msgid ""
 "the maximum number of uploads to allow at once. -1 means a (hopefully) "
 "reasonable number based on --max_upload_rate. The automatic values are only "
 "sensible when running one torrent at a time."
 msgstr ""
 
-#: BitTorrent/defaultargs.py:193
+#: BitTorrent/defaultargs.py:195
 msgid ""
 "local directory where the torrent contents will be saved. The file (single-"
 "file torrents) or directory (batch torrents) will be created under this "
@@ -1501,11 +1522,11 @@ msgstr ""
 "torrent esetén) ebben a könyvtárban lesz létrehozva a torrentfájlban "
 "megadott alapértelmezett névvel. Lásd még a --save_as paramétert."
 
-#: BitTorrent/defaultargs.py:202
+#: BitTorrent/defaultargs.py:204
 msgid "whether or not to ask for a location to save downloaded files in"
 msgstr "a program megkérdezze-e, hová kell lementeni a letöltött fájlokat"
 
-#: BitTorrent/defaultargs.py:213
+#: BitTorrent/defaultargs.py:215
 msgid ""
 "local directory where the torrents will be saved, using a name determined by "
 "--saveas_style. If this is left empty each torrent will be saved under the "
@@ -1515,11 +1536,11 @@ msgstr ""
 "opcióval megadott néven. Ha ez üresen marad, akkor a torrentfájl könyvtárába "
 "történik a mentés."
 
-#: BitTorrent/defaultargs.py:218 BitTorrent/track.py:77
+#: BitTorrent/defaultargs.py:220 BitTorrent/track.py:77
 msgid "how often to rescan the torrent directory, in seconds"
 msgstr "a torrentkönyvtár átvizsgálási időköze (másodperc)"
 
-#: BitTorrent/defaultargs.py:220
+#: BitTorrent/defaultargs.py:222
 msgid ""
 "How to name torrent downloads: 1: use name OF torrent file (minus ."
 "torrent);  2: use name encoded IN torrent file;  3: create a directory with "
@@ -1540,29 +1561,29 @@ msgstr ""
 "szerint. FIGYELEM: az 1. és 2. módszer esetén visszajelzés nélkül "
 "felülíródhatnak fájlok és biztonsági problémák adódhatnak."
 
-#: BitTorrent/defaultargs.py:235
+#: BitTorrent/defaultargs.py:237
 msgid ""
 "whether to display the full path or the torrent contents for each torrent"
 msgstr ""
 "a teljes elérési út vagy a torrent tartalma megjelenjen-e minden torrentnél"
 
-#: BitTorrent/defaultargs.py:242
+#: BitTorrent/defaultargs.py:244
 msgid "directory to look for .torrent files (semi-recursive)"
 msgstr "a torrentfájlok keresési könyvtára (félig rekurzív)"
 
-#: BitTorrent/defaultargs.py:247
+#: BitTorrent/defaultargs.py:249
 msgid "whether to display diagnostic info to stdout"
 msgstr "a program kiírjon-e diagnosztikai üzeneteket a standard kimenetre"
 
-#: BitTorrent/defaultargs.py:252
+#: BitTorrent/defaultargs.py:254
 msgid "which power of two to set the piece size to"
 msgstr "2 melyik hatványa legyen a darabméret"
 
-#: BitTorrent/defaultargs.py:254
+#: BitTorrent/defaultargs.py:256
 msgid "default tracker name"
 msgstr "alapértelmezett követőnév"
 
-#: BitTorrent/defaultargs.py:257
+#: BitTorrent/defaultargs.py:259
 msgid ""
 "if false then make a trackerless torrent, instead of announce URL, use "
 "reliable node in form of <ip>:<port> or an empty string to pull some nodes "
@@ -1700,7 +1721,7 @@ msgstr ""
 
 #: bittorrent-curses.py:54
 msgid "You may still use \"bittorrent-console\" to download."
-msgstr ""
+msgstr "A bittorrent-iranyito kozpont tovabbra is hasznalhato letoltesre."
 
 #: bittorrent-curses.py:154
 msgid "file:"
@@ -1925,6 +1946,129 @@ msgstr "követő nélküli csomópontok:"
 msgid "comment:"
 msgstr "megjegyzés:"
 
+#: BitTorrent/ConvertedMetainfo.py:51
+msgid ""
+"This seems to be an old Python version which does not support detecting the "
+"filesystem encoding. Assuming 'ascii'."
+msgstr ""
+"Valószínűleg egy régi Python-verzió van telepítve, mely nem támogatja a "
+"fájlrendszer kódolásának lekérdezését. Az 'ascii' kódolás lesz érvényes."
+
+#: BitTorrent/ConvertedMetainfo.py:58
+msgid "Python failed to autodetect filesystem encoding. Using 'ascii' instead."
+msgstr ""
+"A Python nem tudta lekérdezni a fájlrendszer kódolását. Az 'ascii' kódolás "
+"lesz érvényes."
+
+#: BitTorrent/ConvertedMetainfo.py:65
+#, python-format
+msgid "Filesystem encoding '%s' is not supported. Using 'ascii' instead."
+msgstr ""
+"A program nem támogatja a(z) '%s' fájlrendszer-kódolást. Az 'ascii' kódolás "
+"lesz érvényes."
+
+#: BitTorrent/ConvertedMetainfo.py:123
+msgid "Bad file path component: "
+msgstr "Hibás komponens az elérési útban: "
+
+#: BitTorrent/ConvertedMetainfo.py:195
+msgid ""
+"This .torrent file has been created with a broken tool and has incorrectly "
+"encoded filenames. Some or all of the filenames may appear different from "
+"what the creator of the .torrent file intended."
+msgstr ""
+"Ez a torrentfájl hibás eszközzel lett létrehozva, hibás kódolású fájlneveket "
+"tartalmaz. A fájlnevek másként fognak megjelenni, mint ahogy azt a "
+"torrentfájl készítője akarta."
+
+#: BitTorrent/ConvertedMetainfo.py:201
+msgid ""
+"This .torrent file has been created with a broken tool and has bad character "
+"values that do not correspond to any real character. Some or all of the "
+"filenames may appear different from what the creator of the .torrent file "
+"intended."
+msgstr ""
+"Ez a torrentfájl hibás eszközzel lett létrehozva, olyan hibás "
+"karakterértékeket tartalmaz, amelyek nem felelnek meg valódi karakternek. "
+"Egyes fájlnevek másként fognak megjelenni, mint ahogy azt a torrentfájl "
+"készítője akarta."
+
+#: BitTorrent/ConvertedMetainfo.py:208
+msgid ""
+"This .torrent file has been created with a broken tool and has incorrectly "
+"encoded filenames. The names used may still be correct."
+msgstr ""
+"Ez a torrentfájl hibás eszközzel lett létrehozva, hibás kódolású fájlneveket "
+"tartalmaz. Ennek ellenére előfordulhat, hogy a nevek nem tartalmaznak hibát."
+
+#: BitTorrent/ConvertedMetainfo.py:213
+#, python-format
+msgid ""
+"The character set used on the local filesystem (\"%s\") cannot represent all "
+"characters used in the filename(s) of this torrent. Filenames have been "
+"changed from the original."
+msgstr ""
+"A helyi fájlrendszer kódolása (\"%s\") nem tudja az ebben a torrentfájlban "
+"található összes fájlnevet helyesen kezelni. A fájlnevek megváltoztak az "
+"eredetihez képest."
+
+#: BitTorrent/ConvertedMetainfo.py:219
+msgid ""
+"The Windows filesystem cannot handle some characters used in the filename(s) "
+"of this torrent.Filenames have been changed from the original."
+msgstr ""
+"A Windows fájlrendszere nem tudja az ebben a torrentfájlban található összes "
+"fájlnév karaktereit helyesen kezelni. A fájlnevek megváltoztak az eredetihez "
+"képest."
+
+#: BitTorrent/ConvertedMetainfo.py:224
+msgid ""
+"This .torrent file has been created with a broken tool and has at least 1 "
+"file with an invalid file or directory name. However since all such files "
+"were marked as having length 0 those files are just ignored."
+msgstr ""
+"Ez a torrentfájl hibás eszközzel lett létrehozva, legalább egy fájl- vagy "
+"könyvtárnév hibás benne. Azonban ezek a fájlok mind 0 hosszúságúnak vannak "
+"jelölve, ezért ezt a hibát figyelmen kívül tudja hagyni a program."
+
+#: BitTorrent/Encoder.py:177
+msgid "Can't start two separate instances of the same torrent"
+msgstr "Nem indítható két külön példány ugyanazzal a torrenttel"
+
+#: BitTorrent/GetTorrent.py:31 BitTorrent/GetTorrent.py:80
+#, python-format
+msgid "Could not read %s"
+msgstr "Egy stat művelet nem sikerült %s"
+
+#: BitTorrent/GetTorrent.py:38
+#, python-format
+msgid ""
+"Could not download or open \n"
+"%s\n"
+"Try using a web browser to download the torrent file."
+msgstr ""
+"Nem sikerült letölteni vagy megnyitni: \n"
+"%s\n"
+"Próbálja meg webböngészővel letölteni a torrentfájlt."
+
+#: BitTorrent/GetTorrent.py:70
+msgid "Temporary Internet Files"
+msgstr "Ideiglenes internetes fájlok"
+
+#: BitTorrent/GetTorrent.py:71
+#, python-format
+msgid ""
+"Could not read %s: %s. You are probably using a broken Internet Explorer "
+"version that passed BitTorrent a filename that doesn't exist. To work around "
+"the problem, try clearing your Temporary Internet Files or right-click the "
+"link and save the .torrent file to disk first."
+msgstr ""
+"Nem sikerült olvasni - %s: %s. Valószínűleg egy olyan, hibás Internet "
+"Explorer-verziót használ, amely nem létező fájlnevet adott át a BitTorrent-"
+"kliensnek. A hiba elhárításához törölje ki az Temponary Internet Files "
+"könyvtárát vagy kattintson a jobb gombbal a linkre, és mentse el előbb "
+"lemezre a torrentfájlt."
+
 #: BitTorrent/HTTPHandler.py:20
 msgid "Mon"
 msgstr "H"
@@ -2006,6 +2150,60 @@ msgstr "dec."
 msgid "Compressed: %i  Uncompressed: %i\n"
 msgstr "Tömörített: %i, nem tömörített: %i\n"
 
+#: BitTorrent/RawServer.py:315
+msgid "lost server socket"
+msgstr "elveszett a kiszolgáló aljazata"
+
+#: BitTorrent/RawServer.py:331
+msgid "Error handling accepted connection: "
+msgstr "Hiba történt az elfogadott kapcsolatok kezelésében: "
+
+#: BitTorrent/RawServer.py:416
+#, python-format
+msgid "Have to exit due to the TCP stack flaking out. Please see the FAQ at %s"
+msgstr "Ki kellett lépni a TCP-verem hibája miatt. Olvassa el a FAQ-ot itt: %s"
+
+#: BitTorrent/Rerequester.py:92
+#, python-format
+msgid "Tracker announce still not complete %d seconds after starting it"
+msgstr ""
+"A követő bejelentése még mindig nem fejeződött be, pedig már %d másodperc "
+"eltelt az indítás óta"
+
+#: BitTorrent/Rerequester.py:162
+msgid "Problem connecting to tracker, gethostbyname failed - "
+msgstr ""
+"Nem sikerült csatlakozni a követőhöz, a gethostbyname függvényhívás nem "
+"sikerült -  "
+
+#: BitTorrent/Rerequester.py:175
+msgid "Problem connecting to tracker - "
+msgstr "Hiba történt a követőhöz való kapcsolódáskor - "
+
+#: BitTorrent/Rerequester.py:202
+msgid "bad data from tracker - "
+msgstr "hibás adatok érkeztek a követőtől - "
+
+#: BitTorrent/Rerequester.py:213
+msgid "rejected by tracker - "
+msgstr "a követő elutasította - "
+
+#: BitTorrent/Rerequester.py:219
+msgid ""
+"Aborting the torrent as it was rejected by the tracker while not connected "
+"to any peers. "
+msgstr ""
+"A torrent megszakadt, mert a követő elutasította, és egy partnerrel sem volt "
+"kapcsolatban. "
+
+#: BitTorrent/Rerequester.py:221
+msgid " Message from the tracker: "
+msgstr " Üzenet a követőtől: "
+
+#: BitTorrent/Rerequester.py:227
+msgid "warning from tracker - "
+msgstr "figyelmeztetés a követőtől - "
+
 #: BitTorrent/Storage.py:58
 #, python-format
 msgid "File %s belongs to another running torrent"
@@ -2026,18 +2224,19 @@ msgstr ""
 "Nem támogatott gyorsfolytatási fájlformátum, lehet, hogy más verziójú "
 "klienstől származik"
 
+#: BitTorrent/Storage.py:238
+msgid "Another program appears to have moved, renamed, or deleted the file."
+msgstr ""
+
 #: BitTorrent/Storage.py:240
-msgid "Fastresume info doesn't match file modification time"
+msgid "Another program appears to have modified the file."
 msgstr ""
-"A gyorsfolytatási adatokból vett fájlmódosítási dátum nem egyezik meg a "
-"ténylegessel"
 
-#: BitTorrent/Storage.py:243
-msgid "Fastresume data doesn't match actual filesize"
+#: BitTorrent/Storage.py:242
+msgid "Another program appears to have changed the file size."
 msgstr ""
-"A gyorsfolytatási adatokból vett fájlméretek nem egyeznek a ténylegessel"
 
-#: BitTorrent/Storage.py:257 BitTorrent/StorageWrapper.py:284
+#: BitTorrent/Storage.py:255 BitTorrent/StorageWrapper.py:284
 msgid "Couldn't read fastresume data: "
 msgstr "nem sikerült beolvasni a gyors folytatáshoz szükséges adatokat: "
 
@@ -2085,176 +2284,6 @@ msgstr "érvénytelen bináris kódolású sztring"
 msgid "invalid bencoded value (data after valid prefix)"
 msgstr ""
 "érvénytelen bináris kódolású érték (adat áll az utolsó érvényes utótag után)"
-
-#: BitTorrent/launchmanycore.py:65
-msgid "Could not set signal handler: "
-msgstr "Nem sikerült beállítani szignálkezelőt: "
-
-#: BitTorrent/launchmanycore.py:71 BitTorrent/launchmanycore.py:92
-#, python-format
-msgid "dropped \"%s\""
-msgstr "eldobva: \"%s\""
-
-#: BitTorrent/launchmanycore.py:95
-#, python-format
-msgid "added \"%s\""
-msgstr "hozzáadva: \"%s\""
-
-#: BitTorrent/launchmanycore.py:121
-msgid "waiting for hash check"
-msgstr "várakozás a hasítóértékek ellenőrzésére"
-
-#: BitTorrent/launchmanycore.py:139 BitTorrent/download.py:397
-msgid "downloading"
-msgstr "letöltés"
-
-#: BitTorrent/launchmanycore.py:234
-msgid "Rereading config file"
-msgstr "A konfigurációs fájl újraolvasása"
-
-#: BitTorrent/makemetafile.py:60
-msgid ""
-"You can't specify the name of the .torrent file when generating multiple "
-"torrents at once"
-msgstr ""
-"A torrentfájl neve nem adható meg, ha egyszerre több torrent generálása "
-"történik"
-
-#: BitTorrent/makemetafile.py:75
-#, python-format
-msgid "Filesystem encoding \"%s\" is not supported in this version"
-msgstr "Ez a programverzió nem támogatja a(z) \"%s\" fájlrendszer-kódolást."
-
-#: BitTorrent/makemetafile.py:185
-#, python-format
-msgid ""
-"Could not convert file/directory name \"%s\" to utf-8 (%s). Either the "
-"assumed filesystem encoding \"%s\" is wrong or the filename contains illegal "
-"bytes."
-msgstr ""
-"Nem sikerült átkonvertálni a(z) \"%s\" fájl- vagy könyvtárnevet UTF-8 "
-"kódolásra (%s). Vagy hibás a feltételezett fájlrendszer-kódolás (\"%s\") "
-"vagy nem megengedett bájtokat tartalmaz a sztring."
-
-#: BitTorrent/makemetafile.py:190
-#, python-format
-msgid ""
-"File/directory name \"%s\" contains reserved unicode values that do not "
-"correspond to characters."
-msgstr ""
-"A(z) \"%s\" fájl- vagy könyvtárnév olyan speciális Unicode-karaktereket "
-"tartalmaz, melyek nem valódi karaktert reprezentálnak."
-
-#: BitTorrent/parsedir.py:34
-msgid "Could not read directory "
-msgstr "Nem sikerült olvasni ebből a könyvtárból "
-
-#: BitTorrent/parsedir.py:43
-msgid "Could not stat "
-msgstr "Egy stat művelet nem sikerült "
-
-#: BitTorrent/parsedir.py:74
-#, python-format
-msgid "removing %s (will re-add)"
-msgstr "%s eltávolítása (újból hozzá lesz adva)"
-
-#: BitTorrent/parsedir.py:84 BitTorrent/parsedir.py:98
-#, python-format
-msgid "**warning** %s is a duplicate torrent for %s"
-msgstr "**figyelem**: %s egy duplikált torrent (az eredeti: %s)"
-
-#: BitTorrent/parsedir.py:130
-#, python-format
-msgid "**warning** %s has errors"
-msgstr "**figyelem**: %s hibákat tartalmaz"
-
-#: BitTorrent/parsedir.py:138
-msgid "... successful"
-msgstr "... sikerült"
-
-#: BitTorrent/parsedir.py:145
-#, python-format
-msgid "removing %s"
-msgstr "%s eltávolítása"
-
-#: BitTorrent/parsedir.py:149
-msgid "done checking"
-msgstr "az ellenőrzés befejeződött"
-
-#: BitTorrent/Rerequester.py:92
-#, python-format
-msgid "Tracker announce still not complete %d seconds after starting it"
-msgstr ""
-"A követő bejelentése még mindig nem fejeződött be, pedig már %d másodperc "
-"eltelt az indítás óta"
-
-#: BitTorrent/Rerequester.py:162
-msgid "Problem connecting to tracker, gethostbyname failed - "
-msgstr ""
-"Nem sikerült csatlakozni a követőhöz, a gethostbyname függvényhívás nem "
-"sikerült -  "
-
-#: BitTorrent/Rerequester.py:175
-msgid "Problem connecting to tracker - "
-msgstr "Hiba történt a követőhöz való kapcsolódáskor - "
-
-#: BitTorrent/Rerequester.py:202
-msgid "bad data from tracker - "
-msgstr "hibás adatok érkeztek a követőtől - "
-
-#: BitTorrent/Rerequester.py:213
-msgid "rejected by tracker - "
-msgstr "a követő elutasította - "
-
-#: BitTorrent/Rerequester.py:219
-msgid ""
-"Aborting the torrent as it was rejected by the tracker while not connected "
-"to any peers. "
-msgstr ""
-"A torrent megszakadt, mert a követő elutasította, és egy partnerrel sem volt "
-"kapcsolatban. "
-
-#: BitTorrent/Rerequester.py:221
-msgid " Message from the tracker: "
-msgstr " Üzenet a követőtől: "
-
-#: BitTorrent/Rerequester.py:227
-msgid "warning from tracker - "
-msgstr "figyelmeztetés a követőtől - "
-
-#: BitTorrent/GetTorrent.py:31 BitTorrent/GetTorrent.py:80
-#, python-format
-msgid "Could not read %s"
-msgstr "Egy stat művelet nem sikerült %s"
-
-#: BitTorrent/GetTorrent.py:38
-#, python-format
-msgid ""
-"Could not download or open \n"
-"%s\n"
-"Try using a web browser to download the torrent file."
-msgstr ""
-"Nem sikerült letölteni vagy megnyitni: \n"
-"%s\n"
-"Próbálja meg webböngészővel letölteni a torrentfájlt."
-
-#: BitTorrent/GetTorrent.py:70
-msgid "Temporary Internet Files"
-msgstr "Ideiglenes internetes fájlok"
-
-#: BitTorrent/GetTorrent.py:71
-#, python-format
-msgid ""
-"Could not read %s: %s. You are probably using a broken Internet Explorer "
-"version that passed BitTorrent a filename that doesn't exist. To work around "
-"the problem, try clearing your Temporary Internet Files or right-click the "
-"link and save the .torrent file to disk first."
-msgstr ""
-"Nem sikerült olvasni - %s: %s. Valószínűleg egy olyan, hibás Internet "
-"Explorer-verziót használ, amely nem létező fájlnevet adott át a BitTorrent-"
-"kliensnek. A hiba elhárításához törölje ki az Temponary Internet Files "
-"könyvtárát vagy kattintson a jobb gombbal a linkre, és mentse el előbb "
-"lemezre a torrentfájlt."
 
 #: BitTorrent/btformats.py:23
 msgid "bad metainfo - not a dictionary"
@@ -2374,6 +2403,141 @@ msgstr "érvénytelen publikációszám"
 #: BitTorrent/btformats.py:125
 msgid "invalid \"last\" entry"
 msgstr "érvénytelen \"utolsó\" bejegyzés"
+
+#: BitTorrent/launchmanycore.py:65
+msgid "Could not set signal handler: "
+msgstr "Nem sikerült beállítani szignálkezelőt: "
+
+#: BitTorrent/launchmanycore.py:71 BitTorrent/launchmanycore.py:92
+#, python-format
+msgid "dropped \"%s\""
+msgstr "eldobva: \"%s\""
+
+#: BitTorrent/launchmanycore.py:95
+#, python-format
+msgid "added \"%s\""
+msgstr "hozzáadva: \"%s\""
+
+#: BitTorrent/launchmanycore.py:121
+msgid "waiting for hash check"
+msgstr "várakozás a hasítóértékek ellenőrzésére"
+
+#: BitTorrent/launchmanycore.py:139 BitTorrent/download.py:396
+msgid "downloading"
+msgstr "letöltés"
+
+#: BitTorrent/launchmanycore.py:234
+msgid "Rereading config file"
+msgstr "A konfigurációs fájl újraolvasása"
+
+#: BitTorrent/parseargs.py:25
+#, python-format
+msgid "Usage: %s "
+msgstr "Használat: %s "
+
+#: BitTorrent/parseargs.py:27
+msgid ""
+"[OPTIONS] [TORRENTDIRECTORY]\n"
+"\n"
+msgstr ""
+"[OPCIÓK] [TORRENTKÖNYTÁR]\n"
+"\n"
+
+#: BitTorrent/parseargs.py:28
+msgid ""
+"If a non-option argument is present it's taken as the value\n"
+"of the torrent_dir option.\n"
+msgstr ""
+"Ha opció nélküli érték van megadva, akkor azt a program a\n"
+"torrent_dir opció értékének veszi.\n"
+
+#: BitTorrent/parseargs.py:31
+msgid "[OPTIONS] [TORRENTFILES]\n"
+msgstr "[OPCIÓK] [TORRENTFÁJLOK]\n"
+
+#: BitTorrent/parseargs.py:33
+msgid "[OPTIONS] [TORRENTFILE]\n"
+msgstr "[OPCIÓK] [TORRENTFÁJL]\n"
+
+#: BitTorrent/parseargs.py:35
+msgid "[OPTION] TRACKER_URL FILE [FILE]\n"
+msgstr "[OPCIÓ] KÖVETŐ_URL FÁJL [FÁJL]\n"
+
+#: BitTorrent/parseargs.py:37
+msgid "arguments are -\n"
+msgstr "az argumentumok -\n"
+
+#: BitTorrent/parseargs.py:68
+msgid " (defaults to "
+msgstr " (alapértelmezés: "
+
+#: BitTorrent/parseargs.py:117 BitTorrent/parseargs.py:154
+msgid "unknown key "
+msgstr "ismeretlen kulcs "
+
+#: BitTorrent/parseargs.py:123 BitTorrent/parseargs.py:133
+msgid "parameter passed in at end with no value"
+msgstr "az átadott paraméterhez nincs megadva érték"
+
+#: BitTorrent/parseargs.py:137
+msgid "command line parsing failed at "
+msgstr "a parancssor feldolgozásában hiba történt itt: "
+
+#: BitTorrent/parseargs.py:144
+#, python-format
+msgid "Option %s is required."
+msgstr "A(z) %s opciót kötelező megadni."
+
+#: BitTorrent/parseargs.py:146
+#, python-format
+msgid "Must supply at least %d arguments."
+msgstr "Legalább %d argumentumot meg kell adni."
+
+#: BitTorrent/parseargs.py:148
+#, python-format
+msgid "Too many arguments - %d maximum."
+msgstr "Tul sok parameter - maximalisan %d megengedett."
+
+#: BitTorrent/parseargs.py:178
+#, python-format
+msgid "wrong format of %s - %s"
+msgstr "hibás formátum: %s - %s"
+
+#: BitTorrent/parsedir.py:34
+msgid "Could not read directory "
+msgstr "Nem sikerült olvasni ebből a könyvtárból "
+
+#: BitTorrent/parsedir.py:43
+msgid "Could not stat "
+msgstr "Egy stat művelet nem sikerült "
+
+#: BitTorrent/parsedir.py:74
+#, python-format
+msgid "removing %s (will re-add)"
+msgstr "%s eltávolítása (újból hozzá lesz adva)"
+
+#: BitTorrent/parsedir.py:84 BitTorrent/parsedir.py:98
+#, python-format
+msgid "**warning** %s is a duplicate torrent for %s"
+msgstr "**figyelem**: %s egy duplikált torrent (az eredeti: %s)"
+
+#: BitTorrent/parsedir.py:130
+#, python-format
+msgid "**warning** %s has errors"
+msgstr "**figyelem**: %s hibákat tartalmaz"
+
+#: BitTorrent/parsedir.py:138
+msgid "... successful"
+msgstr "... sikerült"
+
+#: BitTorrent/parsedir.py:145
+#, python-format
+msgid "removing %s"
+msgstr "%s eltávolítása"
+
+#: BitTorrent/parsedir.py:149
+msgid "done checking"
+msgstr "az ellenőrzés befejeződött"
 
 #: BitTorrent/track.py:40
 msgid "Port to listen on."
@@ -2520,7 +2684,7 @@ msgid "maximum number of peers to give with any one request"
 msgstr "a kérést adható partnerek max. száma"
 
 #: BitTorrent/track.py:111
-msgid "maximum number of tcp connections to open per second"
+msgid "maximum number of tcp connections to open per second, 0 means no limit"
 msgstr ""
 
 #: BitTorrent/track.py:163
@@ -2582,425 +2746,160 @@ msgstr "argumentumok nélkül indítva lehet leírást kérni a paraméterekről
 msgid "# Shutting down: "
 msgstr "# Lezárás: "
 
-#: BitTorrent/Encoder.py:177
-msgid "Can't start two separate instances of the same torrent"
-msgstr "Nem indítható két külön példány ugyanazzal a torrenttel"
-
 #: BitTorrent/__init__.py:21
 msgid "Python 2.2.1 or newer required"
 msgstr "A Python 2.2.1-es vagy újabb verziója szükséges"
-
-#: BitTorrent/ConvertedMetainfo.py:51
-msgid ""
-"This seems to be an old Python version which does not support detecting the "
-"filesystem encoding. Assuming 'ascii'."
-msgstr ""
-"Valószínűleg egy régi Python-verzió van telepítve, mely nem támogatja a "
-"fájlrendszer kódolásának lekérdezését. Az 'ascii' kódolás lesz érvényes."
-
-#: BitTorrent/ConvertedMetainfo.py:58
-msgid "Python failed to autodetect filesystem encoding. Using 'ascii' instead."
-msgstr ""
-"A Python nem tudta lekérdezni a fájlrendszer kódolását. Az 'ascii' kódolás "
-"lesz érvényes."
-
-#: BitTorrent/ConvertedMetainfo.py:65
-#, python-format
-msgid "Filesystem encoding '%s' is not supported. Using 'ascii' instead."
-msgstr ""
-"A program nem támogatja a(z) '%s' fájlrendszer-kódolást. Az 'ascii' kódolás "
-"lesz érvényes."
-
-#: BitTorrent/ConvertedMetainfo.py:123
-msgid "Bad file path component: "
-msgstr "Hibás komponens az elérési útban: "
-
-#: BitTorrent/ConvertedMetainfo.py:195
-msgid ""
-"This .torrent file has been created with a broken tool and has incorrectly "
-"encoded filenames. Some or all of the filenames may appear different from "
-"what the creator of the .torrent file intended."
-msgstr ""
-"Ez a torrentfájl hibás eszközzel lett létrehozva, hibás kódolású fájlneveket "
-"tartalmaz. A fájlnevek másként fognak megjelenni, mint ahogy azt a "
-"torrentfájl készítője akarta."
-
-#: BitTorrent/ConvertedMetainfo.py:201
-msgid ""
-"This .torrent file has been created with a broken tool and has bad character "
-"values that do not correspond to any real character. Some or all of the "
-"filenames may appear different from what the creator of the .torrent file "
-"intended."
-msgstr ""
-"Ez a torrentfájl hibás eszközzel lett létrehozva, olyan hibás "
-"karakterértékeket tartalmaz, amelyek nem felelnek meg valódi karakternek. "
-"Egyes fájlnevek másként fognak megjelenni, mint ahogy azt a torrentfájl "
-"készítője akarta."
-
-#: BitTorrent/ConvertedMetainfo.py:208
-msgid ""
-"This .torrent file has been created with a broken tool and has incorrectly "
-"encoded filenames. The names used may still be correct."
-msgstr ""
-"Ez a torrentfájl hibás eszközzel lett létrehozva, hibás kódolású fájlneveket "
-"tartalmaz. Ennek ellenére előfordulhat, hogy a nevek nem tartalmaznak hibát."
-
-#: BitTorrent/ConvertedMetainfo.py:213
-#, python-format
-msgid ""
-"The character set used on the local filesystem (\"%s\") cannot represent all "
-"characters used in the filename(s) of this torrent. Filenames have been "
-"changed from the original."
-msgstr ""
-"A helyi fájlrendszer kódolása (\"%s\") nem tudja az ebben a torrentfájlban "
-"található összes fájlnevet helyesen kezelni. A fájlnevek megváltoztak az "
-"eredetihez képest."
-
-#: BitTorrent/ConvertedMetainfo.py:219
-msgid ""
-"The Windows filesystem cannot handle some characters used in the filename(s) "
-"of this torrent.Filenames have been changed from the original."
-msgstr ""
-"A Windows fájlrendszere nem tudja az ebben a torrentfájlban található összes "
-"fájlnév karaktereit helyesen kezelni. A fájlnevek megváltoztak az eredetihez "
-"képest."
-
-#: BitTorrent/ConvertedMetainfo.py:224
-msgid ""
-"This .torrent file has been created with a broken tool and has at least 1 "
-"file with an invalid file or directory name. However since all such files "
-"were marked as having length 0 those files are just ignored."
-msgstr ""
-"Ez a torrentfájl hibás eszközzel lett létrehozva, legalább egy fájl- vagy "
-"könyvtárnév hibás benne. Azonban ezek a fájlok mind 0 hosszúságúnak vannak "
-"jelölve, ezért ezt a hibát figyelmen kívül tudja hagyni a program."
-
-#: BitTorrent/RawServer.py:315
-msgid "lost server socket"
-msgstr "elveszett a kiszolgáló aljazata"
-
-#: BitTorrent/RawServer.py:331
-msgid "Error handling accepted connection: "
-msgstr "Hiba történt az elfogadott kapcsolatok kezelésében: "
-
-#: BitTorrent/RawServer.py:414
-#, python-format
-msgid "Have to exit due to the TCP stack flaking out. Please see the FAQ at %s"
-msgstr "Ki kellett lépni a TCP-verem hibája miatt. Olvassa el a FAQ-ot itt: %s"
 
 #: BitTorrent/configfile.py:69
 msgid "Could not permanently save options: "
 msgstr "Nem sikerült elmenteni a beállításokat: "
 
-#: BitTorrent/controlsocket.py:120 BitTorrent/controlsocket.py:170
+#: BitTorrent/controlsocket.py:134 BitTorrent/controlsocket.py:185
 msgid "Could not create control socket: "
 msgstr "Nem sikerült létrehozni egy vezérlőaljazatot: "
 
-#: BitTorrent/controlsocket.py:147 BitTorrent/controlsocket.py:201
+#: BitTorrent/controlsocket.py:162 BitTorrent/controlsocket.py:216
 msgid "Could not send command: "
 msgstr "Nem sikerült elküldeni ezt a parancsot: "
 
-#: BitTorrent/controlsocket.py:157
+#: BitTorrent/controlsocket.py:172
 msgid "Could not create control socket: already in use"
 msgstr "Nem sikerült létrehozni egy vezérlőaljazatot: már foglalt"
 
-#: BitTorrent/controlsocket.py:162
+#: BitTorrent/controlsocket.py:177
 msgid "Could not remove old control socket filename:"
 msgstr "Nem sikerült eltávolítani egy régi vezérlőaljazat-fájlnevet:"
 
-#: BitTorrent/download.py:96
+#: BitTorrent/controlsocket.py:239
+msgid "Global mutex already created."
+msgstr ""
+
+#: BitTorrent/controlsocket.py:253
+msgid "Could not find an open port!"
+msgstr ""
+
+#: BitTorrent/controlsocket.py:262
+msgid "Could not create application data directory!"
+msgstr ""
+
+#: BitTorrent/controlsocket.py:278
+msgid "Could not acquire global mutex lock for controlsocket file!"
+msgstr ""
+
+#: BitTorrent/download.py:97
 msgid "maxport less than minport - no ports to check"
 msgstr "a maxport érték kisebb a minportnál, nincs használható port"
 
-#: BitTorrent/download.py:109
+#: BitTorrent/download.py:110
 #, python-format
 msgid "Could not open a listening port: %s."
 msgstr "Nem sikerült megnyitni egy figyelési portot: %s."
 
-#: BitTorrent/download.py:111
+#: BitTorrent/download.py:112
 #, python-format
 msgid "Could not open a listening port: %s. "
 msgstr "Nem sikerült megnyitni egy figyelési portot: %s. "
 
-#: BitTorrent/download.py:113
+#: BitTorrent/download.py:114
 msgid "Check your port range settings."
 msgstr "Ellenőrizze a megadott porttartományt."
 
-#: BitTorrent/download.py:217
+#: BitTorrent/download.py:216
 msgid "Initial startup"
 msgstr "Kezdeti indulás"
 
-#: BitTorrent/download.py:270
+#: BitTorrent/download.py:269
 #, python-format
-msgid "Could not load fastresume data: %s. "
-msgstr "Nem sikerült betölteni a gyorsfolytatási adatokat: %s. "
+msgid "Could not load fastresume data: %s."
+msgstr ""
 
-#: BitTorrent/download.py:271
+#: BitTorrent/download.py:270
 msgid "Will perform full hash check."
 msgstr "Teljes ellenőrzés lesz végrehajtva a hasítóértékeken."
 
-#: BitTorrent/download.py:278
+#: BitTorrent/download.py:277
 #, python-format
 msgid "piece %d failed hash check, re-downloading it"
 msgstr "a(z) %d. darab hasítóértéke hibás, újbóli letöltés"
 
-#: BitTorrent/download.py:358
+#: BitTorrent/download.py:357
 msgid ""
 "Attempt to download a trackerless torrent with trackerless client turned off."
 msgstr ""
 "Követő nélküli torrentet próbált letölteni a követő nélküli kliens "
 "kikapcsolása mellett."
 
-#: BitTorrent/download.py:407
+#: BitTorrent/download.py:406
 msgid "download failed: "
 msgstr "a letöltés nem sikerült: "
 
-#: BitTorrent/download.py:411
+#: BitTorrent/download.py:410
 msgid "IO Error: No space left on disk, or cannot create a file that large:"
 msgstr ""
 "IO-hiba: nem maradt szabad hely a lemezen, vagy nem sikerült ilyen nagy "
 "fájlt létrehozni:"
 
-#: BitTorrent/download.py:414
+#: BitTorrent/download.py:413
 msgid "killed by IO error: "
 msgstr "kilépés IO-hiba miatt: "
 
-#: BitTorrent/download.py:417
+#: BitTorrent/download.py:416
 msgid "killed by OS error: "
 msgstr "kilépés OS-hiba miatt: "
 
-#: BitTorrent/download.py:422
+#: BitTorrent/download.py:421
 msgid "killed by internal exception: "
 msgstr "kilépés belső kivétel fellépése miatt: "
 
-#: BitTorrent/download.py:427
+#: BitTorrent/download.py:426
 msgid "Additional error when closing down due to error: "
 msgstr "További hiba történt egy másik hiba miatti lezáráskor: "
 
-#: BitTorrent/download.py:440
+#: BitTorrent/download.py:439
 msgid "Could not remove fastresume file after failure:"
 msgstr "Nem sikerült eltávolítani egy hiba után a gyorsfolytatási adatokat:"
 
-#: BitTorrent/download.py:457
+#: BitTorrent/download.py:456
 msgid "seeding"
 msgstr "publikálás"
 
-#: BitTorrent/download.py:480
+#: BitTorrent/download.py:479
 msgid "Could not write fastresume data: "
 msgstr "Nem sikerült kiírni a gyorsfolytatási adatokat: "
 
-#: BitTorrent/download.py:490
+#: BitTorrent/download.py:489
 msgid "shut down"
 msgstr "lezárás"
 
-#: BitTorrent/parseargs.py:25
-#, python-format
-msgid "Usage: %s "
-msgstr "Használat: %s "
-
-#: BitTorrent/parseargs.py:27
+#: BitTorrent/makemetafile.py:60
 msgid ""
-"[OPTIONS] [TORRENTDIRECTORY]\n"
-"\n"
+"You can't specify the name of the .torrent file when generating multiple "
+"torrents at once"
 msgstr ""
-"[OPCIÓK] [TORRENTKÖNYTÁR]\n"
-"\n"
+"A torrentfájl neve nem adható meg, ha egyszerre több torrent generálása "
+"történik"
 
-#: BitTorrent/parseargs.py:28
+#: BitTorrent/makemetafile.py:75
+#, python-format
+msgid "Filesystem encoding \"%s\" is not supported in this version"
+msgstr "Ez a programverzió nem támogatja a(z) \"%s\" fájlrendszer-kódolást."
+
+#: BitTorrent/makemetafile.py:185
+#, python-format
 msgid ""
-"If a non-option argument is present it's taken as the value\n"
-"of the torrent_dir option.\n"
+"Could not convert file/directory name \"%s\" to utf-8 (%s). Either the "
+"assumed filesystem encoding \"%s\" is wrong or the filename contains illegal "
+"bytes."
 msgstr ""
-"Ha opció nélküli érték van megadva, akkor azt a program a\n"
-"torrent_dir opció értékének veszi.\n"
+"Nem sikerült átkonvertálni a(z) \"%s\" fájl- vagy könyvtárnevet UTF-8 "
+"kódolásra (%s). Vagy hibás a feltételezett fájlrendszer-kódolás (\"%s\") "
+"vagy nem megengedett bájtokat tartalmaz a sztring."
 
-#: BitTorrent/parseargs.py:31
-msgid "[OPTIONS] [TORRENTFILES]\n"
-msgstr "[OPCIÓK] [TORRENTFÁJLOK]\n"
-
-#: BitTorrent/parseargs.py:33
-msgid "[OPTIONS] [TORRENTFILE]\n"
-msgstr "[OPCIÓK] [TORRENTFÁJL]\n"
-
-#: BitTorrent/parseargs.py:35
-msgid "[OPTION] TRACKER_URL FILE [FILE]\n"
-msgstr "[OPCIÓ] KÖVETŐ_URL FÁJL [FÁJL]\n"
-
-#: BitTorrent/parseargs.py:37
-msgid "arguments are -\n"
-msgstr "az argumentumok -\n"
-
-#: BitTorrent/parseargs.py:68
-msgid " (defaults to "
-msgstr " (alapértelmezés: "
-
-#: BitTorrent/parseargs.py:117 BitTorrent/parseargs.py:154
-msgid "unknown key "
-msgstr "ismeretlen kulcs "
-
-#: BitTorrent/parseargs.py:123 BitTorrent/parseargs.py:133
-msgid "parameter passed in at end with no value"
-msgstr "az átadott paraméterhez nincs megadva érték"
-
-#: BitTorrent/parseargs.py:137
-msgid "command line parsing failed at "
-msgstr "a parancssor feldolgozásában hiba történt itt: "
-
-#: BitTorrent/parseargs.py:144
+#: BitTorrent/makemetafile.py:190
 #, python-format
-msgid "Option %s is required."
-msgstr "A(z) %s opciót kötelező megadni."
-
-#: BitTorrent/parseargs.py:146
-#, python-format
-msgid "Must supply at least %d arguments."
-msgstr "Legalább %d argumentumot meg kell adni."
-
-#: BitTorrent/parseargs.py:148
-#, python-format
-msgid "Too many arguments - %d maximum."
+msgid ""
+"File/directory name \"%s\" contains reserved unicode values that do not "
+"correspond to characters."
 msgstr ""
-
-#: BitTorrent/parseargs.py:178
-#, python-format
-msgid "wrong format of %s - %s"
-msgstr "hibás formátum: %s - %s"
-
-#~ msgid ""
-#~ "the maximum number of uploads to allow at once. -1 means a (hopefully) "
-#~ "reasonable number based on --max_upload_rate. The automatic values are "
-#~ "only sensible when running one torrent at once."
-#~ msgstr ""
-#~ "egyszerre legfeljebb ennyi feltöltés lehetséges. -1 esetén a --"
-#~ "max_upload_rate értéke alapján lesz meghatározva ez a szám. Az "
-#~ "automatikusan meghatározott érték általában akkor elfogadható, ha "
-#~ "egyszerre csak egy torrent fut."
-
-#~ msgid "%s %s - change the suggested filename in a .torrent file"
-#~ msgstr "%s %s - a javasolt fájlnév megváltoztatása egy torrentfájlban"
-
-#~ msgid "Usage: %s TORRENTFILE NEW_FILE_NAME"
-#~ msgstr "Használat: %s TORRENTFÁJL ÚJ_FÁJLNÉV"
-
-#~ msgid "old filename: %s"
-#~ msgstr "régi fájlnév: %s"
-
-#~ msgid "new filename: %s"
-#~ msgstr "új fájlnév: %s"
-
-#~ msgid "done."
-#~ msgstr "kész."
-
-#~ msgid ""
-#~ "default number of peers to send in an info message if the client does not "
-#~ "specify a number"
-#~ msgstr ""
-#~ "alapértelmezésben ennyi partner küld tájékoztató üzenetet, ha a kliens "
-#~ "nem adja meg ezt az értéket"
-
-#~ msgid "Seed completed torrents:"
-#~ msgstr "A befejezett torrentek publikálása:"
-
-#~ msgid "until share ratio reaches "
-#~ msgstr "amíg a megosztási arány eléri ezt: "
-
-#~ msgid " percent, or"
-#~ msgstr " százalék, vagy"
-
-#~ msgid "for "
-#~ msgstr "ennyi ideig: "
-
-#~ msgid " minutes, whichever comes first."
-#~ msgstr " perc (amelyik hamarabb bekövetkezik)"
-
-#~ msgid "Seed last completed torrent:"
-#~ msgstr "Az utolsó befejezett torrent publikálása:"
-
-#~ msgid " percent."
-#~ msgstr " százalék"
-
-#~ msgid "\"0 percent\" means seed forever."
-#~ msgstr "\"0 százalék\" esetén korlátlan ideig"
-
-#~ msgid "Can't have both --responsefile and non-option arguments"
-#~ msgstr ""
-#~ "A --responsefile opcióval nem lehet más, nem opció jellegű argumentumot "
-#~ "használni"
-
-#~ msgid "Version check failed: no DNS library"
-#~ msgstr "A verzióellenőrzés nem sikerült: nincs DNS-programkönyvtár"
-
-#~ msgid "DNS query failed"
-#~ msgstr "Egy DNS-lekérdezés nem sikerült"
-
-#~ msgid "number of received TXT fields is not 1"
-#~ msgstr "a kapott TXT mezők száma nem 1"
-
-#~ msgid "number of strings in reply is not 1?"
-#~ msgstr "a válaszban levő sztringek száma nem 1?"
-
-#~ msgid "Could not parse new version string"
-#~ msgstr "Nem sikerült értelmezni az új verziósztringet"
-
-#~ msgid ""
-#~ "A newer version of BitTorrent is available.\n"
-#~ "You can always get the latest version from\n"
-#~ "%s."
-#~ msgstr ""
-#~ "Megjelent egy új BitTorrent-verzió.\n"
-#~ "A legutóbbi verzió mindig letölthető innen:\n"
-#~ "%s."
-
-#~ msgid "Version check failed: "
-#~ msgstr "A verzióellenőrzés hibát talált: "
-
-#~ msgid "maximum amount of time to guess the current rate estimate represents"
-#~ msgstr ""
-#~ "az aktuális sebesség becslésének meghatározásához felhasznált idő maximuma"
-
-#~ msgid "file the server response was stored in, alternative to url"
-#~ msgstr "a kiszolgáló válaszát tartalmazó fájl, URL helyett használható"
-
-#~ msgid "url to get file from, alternative to responsefile"
-#~ msgstr "a fájl letöltési URL-je, válaszfájl helyett használható"
-
-#~ msgid "must have responsefile as arg or parameter, not both"
-#~ msgstr ""
-#~ "a válaszfájlnak vagy argumentumnak vagy paraméternek kell lennie, "
-#~ "mindkettő nem lehet"
-
-#~ msgid "Must supply at least %d args."
-#~ msgstr "Legalább %d argumentumot meg kell adni."
-
-#~ msgid "Too many args - %d max."
-#~ msgstr "Túl sok argumentum - max. %d lehet"
-
-#~ msgid "_Files/directories"
-#~ msgstr "_Fájlok/könyvtárak"
-
-#~ msgid "rate: %s"
-#~ msgstr "ráta: %s"
-
-#~ msgid "Maximum upload "
-#~ msgstr "Maximális feltöltés "
-
-#~ msgid "Download folder:"
-#~ msgstr "Letöltési könyvtár:"
-
-#~ msgid "Default:"
-#~ msgstr "Alapértelmezés:"
-
-#~ msgid "Ask where to save each download"
-#~ msgstr "Rákérdezés mindig a letöltési könyvtárra"
-
-#~ msgid "Download "
-#~ msgstr "Letöltés "
-
-#~ msgid "Upload "
-#~ msgstr "Feltöltés "
-
-#~ msgid "Got Accept-Encoding: "
-#~ msgstr "Ez az Accept-Encoding érték érkezett: "
-
-#~ msgid "Could not delete cached metainfo file:"
-#~ msgstr "Nem sikerült törölni egy metainformációs fájlt a gyorsítótárból:"
+"A(z) \"%s\" fájl- vagy könyvtárnév olyan speciális Unicode-karaktereket "
+"tartalmaz, melyek nem valódi karaktert reprezentálnak."

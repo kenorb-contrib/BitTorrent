@@ -69,8 +69,8 @@ class UTStoreValue(StoreValue):
 class UTKhashmir(khashmir.KhashmirBase):
     _Node = UTNode
 
-    def setup(self, host, port, data_dir, checkpoint=True):
-        khashmir.KhashmirBase.setup(self, host, port,data_dir, checkpoint)
+    def setup(self, host, port, data_dir, rlcount, checkpoint=True):
+        khashmir.KhashmirBase.setup(self, host, port,data_dir, rlcount, checkpoint)
         self.cur_token = self.last_token = sha('')
         self.tcache = Cache()
         self.gen_token(loop=True)

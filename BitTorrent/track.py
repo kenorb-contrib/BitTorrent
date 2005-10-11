@@ -26,7 +26,7 @@ from cStringIO import StringIO
 from BitTorrent.obsoletepythonsupport import *
 
 from BitTorrent.parseargs import parseargs, formatDefinitions
-from BitTorrent.RawServer import RawServer
+from BitTorrent.RawServer_magic import RawServer
 from BitTorrent.HTTPHandler import HTTPHandler, months, weekdays
 from BitTorrent.parsedir import parsedir
 from BitTorrent.NatCheck import NatCheck
@@ -107,8 +107,8 @@ defaults = [
      _("scrape access allowed (can be none, specific or full)")),
     ('max_give', 200,
      _("maximum number of peers to give with any one request")),
-    ('initiate_rate', 10,
-     _("maximum number of tcp connections to open per second"))
+    ('twisted', -1,
+     _("Use Twisted network libraries for network connections. 1 means use twisted, 0 means do not use twisted, -1 means autodetect, and prefer twisted")),
     ] 
 
 def statefiletemplate(x):

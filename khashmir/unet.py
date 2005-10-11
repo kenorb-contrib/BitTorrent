@@ -14,7 +14,7 @@
 # usage: knet.py <num_nodes> <start_port> <ip_address>
 
 from utkhashmir import UTKhashmir
-from BitTorrent.RawServer import RawServer
+from BitTorrent.RawServer_magic import RawServer
 from BitTorrent.defaultargs import common_options, rare_options
 from random import randrange
 from threading import Event

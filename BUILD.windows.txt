@@ -7,6 +7,22 @@ http://gladewin32.sourceforge.net/
 Install pygtk 2.4:
 http://www.pcpm.ucl.ac.be/~gustin/win32_ports/
 
+Install pycrypto 2.0:
+http://www.amk.ca/python/code/crypto
+
+Install python-win32gui
+https://sourceforge.net/projects/pywin32/
+
+Install twisted 2.0.1
+http://twistedmatrix.com/projects/core/
+
+Download mfc71.dll from here 
+http://starship.python.net/crew/mhammond/win32/
+and stick it in your C:\windows\system32\ directory
+
+Install pysystray 
+http://sourceforge.net/projects/pysystray
+
 Install GNUWin32 Gettext:
 http://gnuwin32.sourceforge.net/packages/gettext.htm
 
@@ -15,6 +31,9 @@ http://starship.python.net/crew/theller/py2exe/
 
 Install the nullsoft (NSIS) installer:
 http://www.nullsoft.com/free/nsis/
+
+Install InstallOptionsEx (extract it in the NSIS folder):
+http://nsis.sourceforge.net/wiki/InstallOptionsEx    
 
 Install the Processes NSIS plugin:
 http://nsis.sourceforge.net/archive/viewpage.php?pageid=542
@@ -40,7 +59,7 @@ into the dist directory. See build.bat for details.
 
 Run NSIS on bittorrent.nsi:
 
-c:\progra~1\nsis\makensis.exe bittorrent.nsi
+c:\progra~1\nsis\makensis.exe installer.nsi
 
 This will create an installer called BitTorrent-{VERSION}.exe .  The
 installer is completely self-contained and will work on any Windows

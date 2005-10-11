@@ -14,8 +14,8 @@
 
 from __future__ import division
 
-import gettext
-gettext.install('bittorrent', 'locale')
+from BitTorrent.platform import install_translation
+install_translation()
 
 DOWNLOAD_SCROLL_RATE = 1
 
@@ -202,9 +202,9 @@ class CursesDisplayer(object):
             line = "%3d %s%s%s%s" % (ii+1, name, size, dnrate, uprate)
             self._display_line(line, True)
             if peers + seeds:
-                datastr = _("    (%s) %s - %s peers %s seeds %s dist copies - %s up %s dn") % (
+                datastr = _("    (%s) %s - %s peers %s seeds %s dist copies - %s dn %s up") % (
                     progress, status, peers, seeds, dist,
-                    fmtsize(upamt), fmtsize(dnamt) )
+                    fmtsize(dnamt), fmtsize(upamt) )
             else:
                 datastr = '    '+status+' ('+progress+')'
             self._display_line(datastr)

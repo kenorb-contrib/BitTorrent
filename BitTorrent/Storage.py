@@ -235,13 +235,11 @@ class Storage(object):
             if os.path.exists(filename):
                 fsize = os.path.getsize(filename)
             else:
-                fsize = 0
+                raise BTFailure(_("Another program appears to have moved, renamed, or deleted the file."))
             if fsize > 0 and mtime != os.path.getmtime(filename):
-                raise BTFailure(_("Fastresume info doesn't match file "
-                                  "modification time"))
+                raise BTFailure(_("Another program appears to have modified the file."))
             if size != fsize:
-                raise BTFailure(_("Fastresume data doesn't match actual "
-                                  "filesize"))
+                raise BTFailure(_("Another program appears to have changed the file size."))
         if not return_filelist:
             return amount_done
         if resumefile is None:
@@ -254,7 +252,7 @@ class Storage(object):
             r = array(typecode)
             r.fromfile(resumefile, numpieces)
         except Exception, e:
-            raise BTFailure(_("Couldn't read fastresume data: ") + str(e))
+            raise BTFailure(_("Couldn't read fastresume data: ") + str(e) + '.')
         for i in range(numpieces):
             if r[i] >= 0:
                 # last piece goes "past the end", doesn't matter

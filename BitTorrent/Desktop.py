@@ -13,35 +13,21 @@
 import os
 import sys
 
-from BitTorrent.platform import get_home_dir, get_registry_dir
-
+from BitTorrent.platform import get_home_dir, get_shell_dir
+if os.name == 'nt':
+    from win32com.shell import shellcon
+    
 desktop = None
 
-homedir = get_home_dir()
-if homedir == None :
-    if os.name == 'nt':
-        desktop = os.path.splitdrive(sys.executable)[0]
-        if desktop[-1] != os.sep:
-            desktop += os.sep
-
-        reg_dir = get_registry_dir('Desktop')
-        if reg_dir is not None:
-            desktop = reg_dir
-        else:
-            tmp_desktop = os.path.join(desktop, 'WINDOWS', 'Desktop')
-            if os.access(tmp_desktop, os.R_OK|os.W_OK):
-                desktop = tmp_desktop
-    else:
-        desktop = '/tmp/'
-
+if os.name == 'nt':
+    desktop = get_shell_dir(shellcon.CSIDL_DESKTOPDIRECTORY)
 else:
-    desktop = homedir
-    if os.name in ('mac', 'posix', 'nt'):
-
-        tmp_desktop = os.path.join(homedir, 'Desktop')
-        if os.access(tmp_desktop, os.R_OK|os.W_OK):
-            desktop = tmp_desktop + os.sep
-
-            reg_dir = get_registry_dir('Desktop')
-            if reg_dir is not None:
-                desktop = reg_dir
+    homedir = get_home_dir()
+    if homedir == None :
+        desktop = '/tmp/'
+    else:
+        desktop = homedir
+        if os.name in ('mac', 'posix'):
+            tmp_desktop = os.path.join(homedir, 'Desktop')
+            if os.access(tmp_desktop, os.R_OK|os.W_OK):
+                desktop = tmp_desktop + os.sep

@@ -19,6 +19,7 @@ from BitTorrent.defaultargs import MyBool, MYTRUE
 from BitTorrent import BTFailure
 from BitTorrent.bencode import bdecode
 from BitTorrent.platform import is_frozen_exe
+from BitTorrent.RawServer_magic import switch_rawserver
 
 def makeHelp(uiname, defaults):
     ret = ''
@@ -146,6 +147,13 @@ def parseargs(argv, options, minargs=None, maxargs=None, presets=None):
         usage(_("Must supply at least %d arguments.") % minargs)
     if maxargs is not None and len(args) > maxargs:
         usage(_("Too many arguments - %d maximum.") % maxargs)
+
+    if config.has_key('twisted'):
+        if config['twisted'] == 0:
+            switch_rawserver('untwisted')
+        elif config['twisted'] == 1:
+            switch_rawserver('twisted')
+    
     return (config, args)
 
 def parse_options(defaults, newvalues):

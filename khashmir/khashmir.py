@@ -15,7 +15,7 @@ from BitTorrent.platform import bttime as time
 from sha import sha
 
 from BitTorrent.defaultargs import common_options, rare_options
-from BitTorrent.RawServer import RawServer
+from BitTorrent.RawServer_magic import RawServer
 
 from ktable import KTable, K
 from knode import *
@@ -40,10 +40,13 @@ from threading import Event
 class KhashmirDBExcept(Exception):
     pass
 
+def foo(bytes):
+    pass
+    
 # this is the base class, has base functionality and find node, no key-value mappings
 class KhashmirBase:
     _Node = KNodeBase
-    def __init__(self, host, port, data_dir, rawserver=None, max_ul_rate=1024, checkpoint=True, errfunc=None):
+    def __init__(self, host, port, data_dir, rawserver=None, max_ul_rate=1024, checkpoint=True, errfunc=None, rlcount=foo, config={'pause':False}):
         if rawserver:
             self.rawserver = rawserver
         else:
@@ -52,16 +55,17 @@ class KhashmirBase:
             self.rawserver = RawServer(self.flag, d)
         self.max_ul_rate = max_ul_rate
         self.socket = None
-        self.setup(host, port, data_dir, checkpoint)
-        
-    def setup(self, host, port, data_dir, checkpoint=True):
+        self.config = config
+        self.setup(host, port, data_dir, rlcount, checkpoint)
+
+    def setup(self, host, port, data_dir, rlcount, checkpoint=True):
         self.host = host
         self.port = port
         self.ddir = data_dir
         self.store = KStore()
         self.pingcache = {}
         self.socket = self.rawserver.create_udpsocket(self.port, self.host, False)
-        self.udp = krpc.hostbroker(self, (self.host, self.port), self.socket, self.rawserver.add_task, self.max_ul_rate)
+        self.udp = krpc.hostbroker(self, (self.host, self.port), self.socket, self.rawserver.add_task, self.max_ul_rate, self.config, rlcount)
         self._load()
         self.rawserver.start_listening_udp(self.socket, self.udp)
         self.last = time()
@@ -77,8 +81,9 @@ class KhashmirBase:
         return n
     
     def __del__(self):
-        self.rawserver.stop_listening_udp(self.socket)
-        self.socket.close()
+        if self.socket is not None:
+            self.rawserver.stop_listening_udp(self.socket)
+            self.socket.close()
         
     def _load(self):
         do_load = False
@@ -187,8 +192,11 @@ class KhashmirBase:
                 self.checkOldNode(old, n, contacted)
             else:
                 l = self.pingcache.get(old.id, [])
-                l.append((n, contacted))
-                self.pingcache[old.id] = l
+                if len(l) < 10 or contacted:
+                    l.append((n, contacted))
+                    self.pingcache[old.id] = l
+
+                
 
     def checkOldNode(self, old, new, contacted=False):
         ## these are the callbacks used when we ping the oldest node in a bucket
@@ -284,10 +292,12 @@ class KhashmirBase:
             This will allow us to populate our table with nodes on our network closest to our own.
             This is called as soon as we start up with an empty table
         """
-        id = self.node.id[:-1] + chr((ord(self.node.id[-1]) + 1) % 256)
-        self.findNode(id, callback)
+        if not self.config['pause']:
+            id = self.node.id[:-1] + chr((ord(self.node.id[-1]) + 1) % 256)
+            self.findNode(id, callback)
         if auto:
-            self.refreshTable()
+            if not self.config['pause']:
+                self.refreshTable()
             self.rawserver.external_add_task(self.findCloseNodes, randrange(int(const.FIND_CLOSE_INTERVAL *0.9),
                                                                    int(const.FIND_CLOSE_INTERVAL *1.1)), (lambda a: True, True))
 

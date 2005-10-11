@@ -13,8 +13,8 @@
 # Written by John Hoffman
 
 if __name__ == '__main__':
-    import gettext
-    gettext.install('bittorrent', 'locale')
+    from BitTorrent.platform import install_translation
+    install_translation()
 
 import sys
 import os

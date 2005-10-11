@@ -30,7 +30,7 @@ from khashmir.node import Node
 from khashmir.ktable import KTable
 from khashmir.util import packPeers, compact_peer_info
 
-ignore = ['core', 'CVS', 'Thumbs.db']
+ignore = ['core', 'CVS', 'Thumbs.db', 'desktop.ini']
 
 noncharacter_translate = {}
 for i in range(0xD800, 0xE000):

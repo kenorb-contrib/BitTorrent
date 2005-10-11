@@ -12,8 +12,8 @@
 
 # Written by Henry 'Pi' James, Loring Holden and Matt Chisholm
 
-import gettext
-gettext.install('bittorrent', 'locale')
+from BitTorrent.platform import install_translation
+install_translation()
 
 from sys import *
 from os.path import *

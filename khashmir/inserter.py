@@ -12,7 +12,7 @@
 usage = "usage: inserter.py <contact host> <contact port>"
 
 from utkhashmir import UTKhashmir
-from BitTorrent.RawServer import RawServer
+from BitTorrent.RawServer_magic import RawServer
 from BitTorrent.defaultargs import common_options, rare_options
 from khashmir.khash import newID
 from random import randrange

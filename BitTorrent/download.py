@@ -43,7 +43,7 @@ from BitTorrent.Encoder import Encoder, SingleportListener
 from BitTorrent.RateLimiter import MultiRateLimiter as RateLimiter
 from BitTorrent.RateLimiter import RateLimitedGroup
 
-from BitTorrent.RawServer import RawServer
+from BitTorrent.RawServer_magic import RawServer
 from BitTorrent.Rerequester import Rerequester, DHTRerequester
 from BitTorrent.DownloaderFeedback import DownloaderFeedback
 from BitTorrent.RateMeasure import RateMeasure
@@ -83,11 +83,12 @@ class Multitorrent(object):
         self.rawserver = RawServer(doneflag, config, errorfunc=errorfunc,
                                    tos=config['peer_socket_tos'])
         self.singleport_listener = SingleportListener(self.rawserver)
-        self._find_port(listen_fail_ok)
-        self.filepool = FilePool(config['max_files_open'])
         self.ratelimiter = RateLimiter(self.rawserver.add_task)
         self.ratelimiter.set_parameters(config['max_upload_rate'],
-                                        config['upload_unit_size'])
+                                        config['upload_unit_size'],
+                                        config['min_ratelimiter_delay'])
+        self._find_port(listen_fail_ok)
+        self.filepool = FilePool(config['max_files_open'])
         set_filesystem_encoding(config['filesystem_encoding'],
                                                  errorfunc)
 
@@ -100,7 +101,12 @@ class Multitorrent(object):
             try:
                 self.singleport_listener.open_port(port, self.config)
                 if self.config['start_trackerless_client']:
-                    self.dht = UTKhashmir(self.config['bind'], self.singleport_listener.get_port(), self.config['data_dir'], self.rawserver, int(self.config['max_upload_rate'] * 1024 * 0.02))
+                    self.dht = UTKhashmir(self.config['bind'], 
+                                            self.singleport_listener.get_port(), 
+                                            self.config['data_dir'], self.rawserver, 
+                                            int(self.config['max_upload_rate'] * 1024 * 0.02), 
+                                            rlcount=self.ratelimiter.increase_offset,
+                                            config=self.config)
                 break
             except socketerror, e:
                 pass
@@ -134,12 +140,10 @@ class Multitorrent(object):
         self.config[option] = value
         if option == 'max_files_open':
             self.filepool.set_max_files_open(value)
-        elif option == 'max_upload_rate':
-            self.ratelimiter.set_parameters(value,
-                                            self.config['upload_unit_size'])
-        elif option == 'upload_unit_size':
+        elif option in ['max_upload_rate', 'upload_unit_size', 'min_ratelimiter_delay']:
             self.ratelimiter.set_parameters(self.config['max_upload_rate'],
-                                            value)
+                                            self.config['upload_unit_size'],
+                                            self.config['min_ratelimiter_delay'])
         elif option == 'maxport':
             if not self.config['minport'] <= self.singleport_listener.port <= \
                    self.config['maxport']:
@@ -267,8 +271,8 @@ class _SingleTorrent(object):
                         resumefile = None
                 except Exception, e:
                     self._error(WARNING,
-                                _("Could not load fastresume data: %s. ") % str(e) +
-                                _("Will perform full hash check."))
+                                _("Could not load fastresume data: %s.") % str(e)
+                                + ' ' + _("Will perform full hash check."))
                     if resumefile is not None:
                         resumefile.close()
                     resumefile = None
@@ -314,6 +318,7 @@ class _SingleTorrent(object):
         upmeasure_seedtime = Measure(config['max_rate_period_seedtime'])
         downmeasure = Measure(config['max_rate_period'])
         self._upmeasure = upmeasure
+        self._upmeasure_seedtime = upmeasure_seedtime
         self._downmeasure = downmeasure
         self._ratemeasure = RateMeasure(self._storagewrapper.
                                         amount_left_with_partials)

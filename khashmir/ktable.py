@@ -28,6 +28,9 @@ class KTable:
     def _bucketIndexForInt(self, num):
         """the index of the bucket that should hold int"""
         return bisect_left(self.buckets, num)
+
+    def bucketForInt(self, num):
+        return self.buckets[self._bucketIndexForInt(num)]
     
     def findNodes(self, id, invalid=True):
         """
@@ -48,11 +51,11 @@ class KTable:
         
         # if this node is already in our table then return it
         try:
-            index = self.buckets[i].l.index(num)
+            node = self.buckets[i].getNodeWithInt(num)
         except ValueError:
             pass
         else:
-            return [self.buckets[i].l[index]]
+            return [node]
             
         # don't have the node, get the K closest nodes
         nodes = nodes + self.buckets[i].l
@@ -84,25 +87,21 @@ class KTable:
         # transfer nodes to new bucket
         for anode in a.l[:]:
             if anode.num >= a.max:
-                a.l.remove(anode)
-                b.l.append(anode)
+                a.removeNode(anode)
+                b.addNode(anode)
     
     def replaceStaleNode(self, stale, new):
         """this is used by clients to replace a node returned by insertNode after
         it fails to respond to a Pong message"""
         i = self._bucketIndexForInt(stale.num)
-        try:
-            it = self.buckets[i].l.index(stale.num)
-        except ValueError:
-            if new:
-                return self.insertNode(new)
-            else:
-                return
-    
-        del(self.buckets[i].l[it])
-        if new:
-            self.buckets[i].l.append(new)
-            self.buckets[i].touch()
+
+        if self.buckets[i].hasNode(stale):
+            self.buckets[i].removeNode(stale)
+        if new and self.buckets[i].hasNode(new):
+            self.buckets[i].seenNode(new)
+        elif new:
+            self.buckets[i].addNode(new)
+
         return
     
     def insertNode(self, node, contacted=1, nocheck=False):
@@ -120,30 +119,20 @@ class KTable:
         # get the bucket for this node
         i = self._bucketIndexForInt(node.num)
         # check to see if node is in the bucket already
-        try:
+        if self.buckets[i].hasNode(node):
             it = self.buckets[i].l.index(node.num)
             xnode = self.buckets[i].l[it]
-        except ValueError:
-            # no
-            pass
-        else:
             if contacted:
                 node.age = xnode.age
-                # move node to end of bucket
-                del(self.buckets[i].l[it])
-                # note that we removed the original and replaced it with the new one
-                # utilizing this nodes new contact info
-                self.buckets[i].l.append(node)
-                self.buckets[i].touch()
+                self.buckets[i].seenNode(node)
             elif xnode.lastSeen != 0 and xnode.port == node.port and xnode.host == node.host:
                 xnode.updateLastSeen()
             return
         
         # we don't have this node, check to see if the bucket is full
-        if len(self.buckets[i].l) < K:
+        if not self.buckets[i].bucketFull():
             # no, append this node and return
-            self.buckets[i].l.append(node)
-            self.buckets[i].touch()
+            self.buckets[i].addNode(node)
             return
 
         # full bucket, check to see if any nodes are invalid
@@ -155,12 +144,15 @@ class KTable:
                 return -1
             return 0
         
-        invalid = [n for n in self.buckets[i].l if n.invalid]
+        invalid = [x for x in self.buckets[i].invalid.values() if x.invalid]
         if len(invalid) and not nocheck:
             invalid.sort(ls)
-            if (invalid[0].lastSeen == 0 and invalid[0].fails < MAX_FAILURES):
+            while invalid and not self.buckets[i].hasNode(invalid[0]):
+                del(self.buckets[i].invalid[invalid[0].num])
+                invalid = invalid[1:]
+            if invalid and (invalid[0].lastSeen == 0 and invalid[0].fails < MAX_FAILURES):
                 return invalid[0]
-            else:
+            elif invalid:
                 self.replaceStaleNode(invalid[0], node)
                 return
 
@@ -194,6 +186,8 @@ class KTable:
         else:
             tstamp = n.lastSeen
             n.updateLastSeen()
+            bucket = self.bucketForInt(n.num)
+            bucket.seenNode(n)
             return tstamp
     
     def invalidateNode(self, n):
@@ -201,6 +195,8 @@ class KTable:
             forget about node n - use when you know that node is invalid
         """
         n.invalid = True
+        self.bucket = self.bucketForInt(n.num)
+        self.bucket.invalidateNode(n)
     
     def nodeFailed(self, node):
         """ call this when a node fails to respond to a message, to invalidate that node """
@@ -220,6 +216,8 @@ class KBucket:
     __slots__ = ('min', 'max', 'lastAccessed')
     def __init__(self, contents, min, max):
         self.l = contents
+        self.index = {}
+        self.invalid = {}
         self.min = min
         self.max = max
         self.lastAccessed = time()
@@ -238,9 +236,50 @@ class KBucket:
         self.l.sort(self.lacmp)
         
     def getNodeWithInt(self, num):
-        if num in self.l: return num
-        else: raise ValueError
+        try:
+            node = self.index[num]
+        except KeyError:
+            raise ValueError
+        return node
+    
+    def addNode(self, node):
+        if len(self.l) >= K:
+            return
+        if self.index.has_key(node.num):
+            return
+        self.l.append(node)
+        self.index[node.num] = node
+        self.touch()
+
+    def removeNode(self, node):
+        assert self.index.has_key(node.num)
+        del(self.l[self.l.index(node.num)])
+        del(self.index[node.num])
+        try:
+            del(self.invalid[node.num])
+        except KeyError:
+            pass
+        self.touch()
+
+    def invalidateNode(self, node):
+        self.invalid[node.num] = node
+
+    def seenNode(self, node):
+        try:
+            del(self.invalid[node.num])
+        except KeyError:
+            pass
+        it = self.l.index(node.num)
+        del(self.l[it])
+        self.l.append(node)
+        self.index[node.num] = node
         
+    def hasNode(self, node):
+        return self.index.has_key(node.num)
+
+    def bucketFull(self):
+        return len(self.l) >= K
+    
     def __repr__(self):
         return "<KBucket %d items (%d to %d)>" % (len(self.l), self.min, self.max)
     

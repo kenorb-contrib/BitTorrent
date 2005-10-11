@@ -52,11 +52,13 @@ class Upload(object):
         if piece is None:
             self.connection.close()
             return None
-        self.measure.update_rate(len(piece))
-        self.totalup.update_rate(len(piece))
-        self.totalup2.update_rate(len(piece))
         return (index, begin, piece)
 
+    def update_rate(self, bytes):
+        self.measure.update_rate(bytes)
+        self.totalup.update_rate(bytes)
+        self.totalup2.update_rate(bytes)
+        
     def got_request(self, index, begin, length):
         if not self.interested or length > self.max_slice_length:
             self.connection.close()
