@@ -551,12 +551,17 @@ class AboutWindow(object):
             if i != 0:
                 self.vbox.pack_start(gtk.HSeparator(), padding=SPACING,
                                      expand=False, fill=False)
-            credits_f = file(os.path.join(doc_root, fn+'.txt'))
-            l = credits_f.read()
+            filename = os.path.join(doc_root, fn+'.txt')
+            l = ''
+            if not os.access(filename, os.F_OK|os.R_OK):
+                l = _("Couldn't open %s") % filename
+            else:
+                credits_f = file(filename)
+                l = credits_f.read()
+                credits_f.close()
             if os.name == 'nt':
                 # gtk ignores blank lines on win98
                 l = l.replace('\n\n', '\n\t\n')
-            credits_f.close()
             label = gtk.Label(l.strip())
             label.set_line_wrap(True)
             label.set_selectable(True)

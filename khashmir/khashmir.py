@@ -9,11 +9,12 @@
 # License.
 
 import const
+from socket import gethostbyname
 
 from BitTorrent.platform import bttime as time
 
 from sha import sha
-
+import re
 from BitTorrent.defaultargs import common_options, rare_options
 from BitTorrent.RawServer_magic import RawServer
 
@@ -35,7 +36,9 @@ from BitTorrent.bencode import bencode, bdecode
 from BitTorrent.defer import Deferred
 from random import randrange, sample
 
-from threading import Event
+from threading import Event, Thread
+
+ip_pat = re.compile('[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}')
 
 class KhashmirDBExcept(Exception):
     pass
@@ -142,10 +145,7 @@ class KhashmirBase:
         return l
         
             
-
-    #######
-    #######  LOCAL INTERFACE    - use these methods!
-    def addContact(self, host, port, callback=None):
+    def _addContact(self, host, port, callback=None):
         """
             ping this node and add the contact info to the table on pong!
         """
@@ -155,6 +155,23 @@ class KhashmirBase:
         except krpc.KRPCSelfNodeError:
             # our own node
             pass
+
+
+    #######
+    #######  LOCAL INTERFACE    - use these methods!
+    def addContact(self, ip, port, callback=None):
+        """
+            ping this node and add the contact info to the table on pong!
+        """
+        if ip_pat.match(ip):
+            self._addContact(ip, port)
+        else:
+            def go(ip=ip, port=port):
+                ip = gethostbyname(ip)
+                self.rawserver.external_add_task(self._addContact, 0, (ip, port))
+            t = Thread(target=go)
+            t.start()
+
 
     ## this call is async!
     def findNode(self, id, callback, errback=None):

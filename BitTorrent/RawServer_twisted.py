@@ -54,7 +54,6 @@ import twisted.copyright
 if int(twisted.copyright.version.split('.')[0]) < 2:
     raise ImportError("RawServer_twisted requires twisted 2.0.0 or greater")
 
-from twisted.internet.error import CannotListenError
 from twisted.internet.protocol import DatagramProtocol, Protocol, Factory, ClientFactory
 from twisted.protocols.policies import TimeoutMixin
 
@@ -485,7 +484,7 @@ class RawServer(RawServerMixin):
 
         try:        
             listening_port = reactor.listenTCP(s.port, s.factory, interface=s.bind)
-        except CannotListenError, e:
+        except error.CannotListenError, e:
             raise e.socketError       
         listening_port.listening = 1
         s.listening_port = listening_port
@@ -505,7 +504,7 @@ class RawServer(RawServerMixin):
                          
         try:        
             listening_port = reactor.listenUDP(s.port, s.protocol, interface=s.bind)
-        except CannotListenError, e:
+        except error.CannotListenError, e:
             raise e.socketError       
         listening_port.listening = 1
         s.listening_port = listening_port
@@ -548,9 +547,8 @@ class RawServer(RawServerMixin):
         try:
             listening_port.stopListening()
             listening_port.listening = 0
-        except:
-            print_exc()
-            traceback.print_stack()
+        except error.NotListeningError:
+            pass
         del self.listening_handlers[serversocket]
 
     def stop_listening_udp(self, serversocket):

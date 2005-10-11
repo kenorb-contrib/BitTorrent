@@ -17,7 +17,7 @@
 !include "MUI.nsh"
 
 
-!define VERSION "4.1.5-Beta"
+!define VERSION "4.1.6-Beta"
 !define APPNAME "BitTorrent"
 Outfile ${APPNAME}-${VERSION}.exe
 Name "${APPNAME}"
