@@ -232,7 +232,8 @@ class Connecter:
         elif t == UNCHOKE:
             c.download.got_unchoke()
         elif t == INTERESTED:
-            c.upload.got_interested()
+            if not c.download.have.complete():
+                c.upload.got_interested()
         elif t == NOT_INTERESTED:
             c.upload.got_not_interested()
         elif t == HAVE:
@@ -243,14 +244,16 @@ class Connecter:
             if i >= self.numpieces:
                 connection.close()
                 return
-            c.download.got_have(i)
+            if c.download.got_have(i):
+                c.upload.got_not_interested()
         elif t == BITFIELD:
             try:
                 b = Bitfield(self.numpieces, message[1:])
             except ValueError:
                 connection.close()
                 return
-            c.download.got_have_bitfield(b)
+            if c.download.got_have_bitfield(b):
+                c.upload.got_not_interested()
         elif t == REQUEST:
             if len(message) != 13:
                 connection.close()

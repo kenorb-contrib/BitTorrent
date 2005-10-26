@@ -89,7 +89,8 @@ defaults = [
     ('logfile', '', 'file to write the tracker logs, use - for stdout (default)'),
     ('allow_get', 0, 'use with allowed_dir; adds a /file?hash={hash} url that allows users to download the torrent file'),
     ('keep_dead', 0, 'keep dead torrents after they expire (so they still show up on your /scrape and web page)'),
-    ('scrape_allowed', 'full', 'scrape access allowed (can be none, specific or full)')
+    ('scrape_allowed', 'full', 'scrape access allowed (can be none, specific or full)'),
+    ('dedicated_seed_id', '', 'allows tracker to monitor dedicated seed(s) and flag torrents as seeded'),
   ]
 
 def statefiletemplate(x):
@@ -155,8 +156,8 @@ def isotime(secs = None):
 http_via_filter = re.compile(' for ([0-9.]+)\Z')
 
 def _get_forwarded_ip(headers):
-    if headers.has_key('http_x_forwarded_for'):
-        header = headers['http_x_forwarded_for']
+    header = headers.get('x-forwarded-for')
+    if header:
         try:
             x,y = header.split(',')
         except:
@@ -164,17 +165,21 @@ def _get_forwarded_ip(headers):
         if not local_IPs.includes(x):
             return x
         return y
-    if headers.has_key('http_client_ip'):
-        return headers['http_client_ip']
-    if headers.has_key('http_via'):
-        x = http_via_filter.search(headers['http_via'])
+    header = headers.get('client-ip')
+    if header:
+        return header
+    header = headers.get('via')
+    if header:
+        x = http_via_filter.search(header)
         try:
             return x.group(1)
         except:
             pass
-    if headers.has_key('http_from'):
-        return headers['http_from']
-    return None
+    header = headers.get('from')
+    #if header:
+    #    return header
+    #return None
+    return header
 
 def get_forwarded_ip(headers):
     x = _get_forwarded_ip(headers)
@@ -357,6 +362,9 @@ class Tracker:
             except:
                 self.aggregate_forward = send
                 self.aggregate_password = None
+
+        self.dedicated_seed_id = config['dedicated_seed_id']
+        self.is_seeded = {}
 
         self.cachetime = 0
         self.cachetimeupdate()
@@ -869,8 +877,14 @@ class Tracker:
                              params('tracker'), not params('left'),
                              return_type, rsize)
 
-        if paramslist.has_key('scrape'):
+        if paramslist.has_key('scrape'):    # deprecated
             data['scrape'] = self.scrapedata(infohash, False)
+
+        if self.dedicated_seed_id:
+            if params('seed_id') == self.dedicated_seed_id and params('left') == 0:
+                self.is_seeded[infohash] = True
+            if params('check_seeded') and self.is_seeded.get(infohash):
+                data['seeded'] = 1
             
         return (200, 'OK', {'Content-Type': 'text/plain', 'Pragma': 'no-cache'}, bencode(data))
 

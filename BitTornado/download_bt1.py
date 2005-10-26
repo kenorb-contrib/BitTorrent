@@ -155,6 +155,8 @@ defaults = [
         "whether to lock access to files being read"),
     ('auto_flush', 0,
         "minutes between automatic flushes to disk (0 = disabled)"),
+    ('dedicated_seed_id', '',
+        "code to send to tracker identifying as a dedicated seed"),
     ]
 
 argslistheader = 'Arguments are:\n\n'
@@ -651,7 +653,7 @@ class BT1Download:
             return self.rerequest.last_failed
         return False
 
-    def startRerequester(self):
+    def startRerequester(self, seededfunc = None, force_rapid_update = False):
         if self.response.has_key('announce-list'):
             trackerlist = self.response['announce-list']
         else:
@@ -665,7 +667,8 @@ class BT1Download:
             self.myid, self.infohash, self.config['http_timeout'],
             self.errorfunc, self.excfunc, self.config['max_initiate'],
             self.doneflag, self.upmeasure.get_rate, self.downmeasure.get_rate,
-            self.unpauseflag )
+            self.unpauseflag, self.config['dedicated_seed_id'],
+            seededfunc, force_rapid_update )
 
         self.rerequest.start()
 

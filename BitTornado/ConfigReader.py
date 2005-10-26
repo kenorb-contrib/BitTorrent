@@ -290,12 +290,12 @@ class configReader:
         self.gui_forcegreenonfirewall_checkbox.SetValue(self.config['gui_forcegreenonfirewall'])
 
 
-        self.minport_data = wxSpinCtrl(panel, -1, '', (-1,-1), (self.FONT*7, -1))
+        self.minport_data = wxSpinCtrl(panel, -1, '', (-1,-1), (self.FONT*8, -1))
         self.minport_data.SetFont(self.default_font)
         self.minport_data.SetRange(1,65535)
         self.minport_data.SetValue(self.config['minport'])
 
-        self.maxport_data = wxSpinCtrl(panel, -1, '', (-1,-1), (self.FONT*7, -1))
+        self.maxport_data = wxSpinCtrl(panel, -1, '', (-1,-1), (self.FONT*8, -1))
         self.maxport_data.SetFont(self.default_font)
         self.maxport_data.SetRange(1,65535)
         self.maxport_data.SetValue(self.config['maxport'])

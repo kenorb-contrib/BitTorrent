@@ -353,7 +353,7 @@ class DownloadInfoFrame:
 
             self.connChoiceLabel = StaticText('Settings for ')
             slideSizer.Add (self.connChoiceLabel, 0, wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL)
-            self.connChoice = wxChoice (panel, -1, (-1, -1), (self.FONT*11, -1),
+            self.connChoice = wxChoice (panel, -1, (-1, -1), (self.FONT*12, -1),
                                         choices = connChoiceList)
             self.connChoice.SetFont(self.default_font)
             self.connChoice.SetSelection(0)
@@ -440,7 +440,7 @@ class DownloadInfoFrame:
             self.frame.Fit()
             self.panel = panel
             self.border = border
-            self.addwidth = aboutText.GetBestSize().GetWidth() + fileDetails.GetBestSize().GetWidth() + (self.FONT*14)
+            self.addwidth = aboutText.GetBestSize().GetWidth() + fileDetails.GetBestSize().GetWidth() + (self.FONT*16)
             self.fnsizer = fnsizer
             self.colSizer = colSizer
             minsize = self.colSizer.GetSize()
@@ -2088,49 +2088,48 @@ class DownloadInfoFrame:
         self.uiflag.set()
         self.flag.set()
         self.shuttingdown = True
-        if self.taskbaricon:
-            try:
-                self.frame.tbicon.RemoveIcon()
-            except:
-                pass
-            try:
-                self.frame.tbicon.Destroy()
-            except:
-                pass
-        if (self.detailBox is not None):
-            try:
-                self.detailBox.Close ()
-            except wxPyDeadObjectError, e:
-                self.detailBox = None
-        if (self.aboutBox is not None):
-            try:
-                self.aboutBox.Close ()
-            except wxPyDeadObjectError, e:
-                self.aboutBox = None
-        if (self.creditsBox is not None):
-            try:
-                self.creditsBox.Close ()
-            except wxPyDeadObjectError, e:
-                self.creditsBox = None
-        if (self.advBox is not None):
-            try:
-                self.advBox.Close ()
-            except wxPyDeadObjectError, e:
-                self.advBox = None
 
-        if (self.statusIconHelpBox is not None):
-            try:
-                self.statusIconHelpBox.Close ()
-            except wxPyDeadObjectError, e:
-                self.statusIconHelpBox = None
-        self.configfile.Close()
+        try:
+            self.frame.tbicon.RemoveIcon()
+        except:
+            pass
+        try:
+            self.frame.tbicon.Destroy()
+        except:
+            pass
+        try:
+            self.detailBox.Close()
+        except:
+            self.detailBox = None
+        try:
+            self.aboutBox.Close()
+        except:
+            self.aboutBox = None
+        try:
+            self.creditsBox.Close()
+        except:
+            self.creditsBox = None
+        try:
+            self.advBox.Close()
+        except:
+            self.advBox = None
+        try:
+            self.statusIconHelpBox.Close()
+        except:
+            self.statusIconHelpBox = None
         try:
             self.frame.RemoveIcon()
         except:
             pass
         self.frame.Destroy()
-        self.icon.Destroy()
-        self.finicon.Destroy()
+        try:
+            self.icon.Destroy()
+        except:
+            pass
+        try:
+            self.finicon.Destroy()
+        except:
+            pass
 
     def exception(self):
         data = StringIO()

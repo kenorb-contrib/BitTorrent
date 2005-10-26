@@ -76,6 +76,7 @@ class Connection:
             self.connection.write(chr(len(protocol_name)) + protocol_name + 
                 option_pattern + self.Encoder.download_id)
         if ext_handshake:
+            self.Encoder.connecter.external_connection_made += 1
             self.connection.write(self.Encoder.my_id)
             self.next_len, self.next_func = 20, self.read_peer_id
         else:

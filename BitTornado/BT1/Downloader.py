@@ -137,6 +137,8 @@ class SingleDownload:
         if not self.interested:
             self.interested = True
             self.connection.send_interested()
+            if not self.choked:
+                self.last2 = clock()
 
     def send_not_interested(self):
         if self.interested:
@@ -264,25 +266,24 @@ class SingleDownload:
         else:
             self.downloader.totalmeasure.update_rate(self.downloader.storage.piece_length)
             self.peermeasure.update_rate(self.downloader.storage.piece_length)
-        if self.have[index]:
-            return
-        self.have[index] = True
-        self.downloader.picker.got_have(index)
-        if self.have.complete():
-            self.downloader.picker.became_seed()
-            if self.downloader.picker.am_I_complete():
-                self.downloader.add_disconnected_seed(self.connection.get_readable_id())
-                self.connection.close()
-                return
-        if self.downloader.endgamemode:
-            self.fix_download_endgame()
-        elif ( not self.downloader.paused
-               and not self.downloader.picker.is_blocked(index)
-               and self.downloader.storage.do_I_have_requests(index) ):
-            if not self.choked:
-                self._request_more()
-            else:
-                self.send_interested()
+        if not self.have[index]:
+            self.have[index] = True
+            self.downloader.picker.got_have(index)
+            if self.have.complete():
+                self.downloader.picker.became_seed()
+                if self.downloader.picker.am_I_complete():
+                    self.downloader.add_disconnected_seed(self.connection.get_readable_id())
+                    self.connection.close()
+            elif self.downloader.endgamemode:
+                self.fix_download_endgame()
+            elif ( not self.downloader.paused
+                   and not self.downloader.picker.is_blocked(index)
+                   and self.downloader.storage.do_I_have_requests(index) ):
+                if not self.choked:
+                    self._request_more()
+                else:
+                    self.send_interested()
+        return self.have.complete()
 
     def _check_interests(self):
         if self.interested or self.downloader.paused:
@@ -300,7 +301,7 @@ class SingleDownload:
                 self.connection.send_bitfield(have.tostring()) # be nice, show you're a seed too
             self.connection.close()
             self.downloader.add_disconnected_seed(self.connection.get_readable_id())
-            return
+            return False
         self.have = have
         if have.complete():
             self.downloader.picker.got_seed()
@@ -313,14 +314,16 @@ class SingleDownload:
                 if self.have[piece]:
                     self.send_interested()
                     break
-            return
-        self._check_interests()
+        else:
+            self._check_interests()
+        return have.complete()
 
     def get_rate(self):
         return self.measure.get_rate()
 
     def is_snubbed(self):
-        if not self.choked and clock() - self.last2 > self.downloader.snub_time:
+        if ( self.interested and not self.choked
+             and clock() - self.last2 > self.downloader.snub_time ):
             for index, begin, length in self.active_requests:
                 self.connection.send_cancel(index, begin, length)
             self.got_choke()    # treat it just like a choke

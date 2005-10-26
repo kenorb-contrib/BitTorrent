@@ -56,7 +56,8 @@ class Rerequester:
             connect, externalsched, amount_left, up, down,
             port, ip, myid, infohash, timeout, errorfunc, excfunc,
             maxpeers, doneflag, upratefunc, downratefunc,
-            unpauseflag = fakeflag(True)):
+            unpauseflag = fakeflag(True),
+            seed_id = '', seededfunc = None, force_rapid_update = False ):
 
         self.excfunc = excfunc
         newtrackerlist = []        
@@ -90,6 +91,12 @@ class Rerequester:
         self.upratefunc = upratefunc
         self.downratefunc = downratefunc
         self.unpauseflag = unpauseflag
+        if seed_id:
+            self.url += '&seed_id='+quote(seed_id)
+        self.seededfunc = seededfunc
+        if seededfunc:
+            self.url += '&check_seeded=1'
+        self.force_rapid_update = force_rapid_update
         self.last_failed = True
         self.never_succeeded = True
         self.errorcodes = {}
@@ -104,7 +111,8 @@ class Rerequester:
     def c(self):
         if self.stopped:
             return
-        if not self.unpauseflag.isSet() and self.howmany() < self.minpeers:
+        if not self.unpauseflag.isSet() and (
+            self.howmany() < self.minpeers or self.force_rapid_update ):
             self.announce(3, self._c)
         else:
             self._c()
@@ -123,6 +131,8 @@ class Rerequester:
     def _d(self):
         if self.never_succeeded:
             self.sched(self.d, 60)  # retry in 60 seconds
+        elif self.force_rapid_update:
+            return
         else:
             self.sched(self.d, self.announce_interval)
 
@@ -337,7 +347,9 @@ class Rerequester:
             else:
                 if r.get('num peers', 1000) > ps * 1.2:
                     self.last = None
-        if peers:
+        if self.seededfunc and r.get('seeded'):
+            self.seededfunc()
+        elif peers:
             shuffle(peers)
             self.connect(peers)
         callback()
