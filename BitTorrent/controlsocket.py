@@ -9,6 +9,7 @@
 # License.
 
 # Written my Uoti Urpala
+from __future__ import generators
 
 import os
 import socket
@@ -218,8 +219,8 @@ class ControlSocket(object):
         self.controlsocket.close()
 
     def get_sic_path(self):
-        dir = get_config_dir()
-        configdir = os.path.join(dir, '.bittorrent')
+        directory = get_config_dir()
+        configdir = os.path.join(directory, '.bittorrent')
         filename = os.path.join(configdir, ".btcontrol")
         return filename
 
@@ -258,9 +259,9 @@ class ControlSocket(object):
             # 17 is dir exists
             if e.errno != 17:
                 BTFailure(_("Could not create application data directory!"))
-        file = open(filename, "w")
-        file.write(str(self.port))
-        file.close()
+        f = open(filename, "w")
+        f.write(str(self.port))
+        f.close()
         
         # we're done writing the control file, release the mutex so other instances can lock it and read the file
         # but don't destroy the handle until the application closes, so that the names mutex is still around
@@ -277,9 +278,9 @@ class ControlSocket(object):
 
         filename = self.get_sic_path()
         try:
-            file = open(filename, "r")
-            self.port = int(file.read())
-            file.close()
+            f = open(filename, "r")
+            self.port = int(f.read())
+            f.close()
         except:
             self.port = CONTROL_SOCKET_PORT
             if (r != win32event.WAIT_ABANDONED):

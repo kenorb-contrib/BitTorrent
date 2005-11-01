@@ -62,7 +62,7 @@ def make_meta_files(url,
 
     if not filesystem_encoding:
         try:
-            sys.getfilesystemencoding
+            getattr(sys, 'getfilesystemencoding')
         except AttributeError:
             pass
         else:

@@ -25,6 +25,7 @@ from ConfigParser import MissingSectionHeaderError, ParsingError
 from BitTorrent import parseargs
 from BitTorrent import app_name, version, ERROR, BTFailure
 from BitTorrent.platform import get_config_dir, locale_root, is_frozen_exe
+from BitTorrent.defaultargs import MYTRUE
 
 TORRENT_CONFIG_FILE = 'torrent_config'
 
@@ -151,7 +152,11 @@ def read_torrent_config(global_config, path, infohash, error_callback):
         c = {}
         for name, value in p.items(section):
             if global_config.has_key(name):
-                c[name] = type(global_config[name])(value)
+                t = type(global_config[name])
+                if t == bool:
+                    c[name] = value in ('1', 'True', MYTRUE, True)
+                else:
+                    c[name] = type(global_config[name])(value)
         return c
 
 def remove_torrent_config(path, infohash, error_callback):
@@ -207,7 +212,7 @@ def parse_configuration_and_args(defaults, uiname, arglist=[], minargs=0,
             lang.install()
         except IOError:
             # don't raise an error, just continue untranslated
-            raise BTFailure('Could not find translation for language "%s"\n' %
-                            config['language'])                
+            sys.stderr.write('Could not find translation for language "%s"\n' %
+                             config['language'])                
     
     return config, args

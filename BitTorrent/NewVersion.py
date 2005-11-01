@@ -12,7 +12,7 @@
 
 import os
 import sys
-import urllib
+import zurllib
 import pickle
 import threading
 from sha import sha
@@ -80,7 +80,7 @@ class Updater(object):
         url = self.version_site + currentversion.name()
         self.debug('Updater.get_available() hitting url %s' % url)
         try:
-            u = urllib.urlopen(url)
+            u = zurllib.urlopen(url)
             s = u.read()
             s = s.strip()
         except:
@@ -116,7 +116,7 @@ class Updater(object):
 
         self.torrentfile = None
         torrentfile, terrors = GetTorrent.get_url(self.installer_url)
-        signfile = urllib.urlopen(self.installer_url + '.sign')
+        signfile = zurllib.urlopen(self.installer_url + '.sign')
         try:
             signature = pickle.load(signfile)
         except:

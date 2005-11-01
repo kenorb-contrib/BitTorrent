@@ -18,8 +18,11 @@ import gobject
 import os
 import threading
 
-from BitTorrent import app_name, FAQ_URL
-from BitTorrent.platform import image_root
+assert gtk.gtk_version   >= (2, 2), "GTK 2.2 or newer required"
+assert gtk.pygtk_version >= (2, 2), "PyGTK 2.2 or newer required"
+
+from BitTorrent import app_name, FAQ_URL, languages, language_names
+from BitTorrent.platform import image_root, read_language_file, write_language_file
 
 def lock_wrap(function, *args):
     gtk.threads_enter()
@@ -202,19 +205,19 @@ class Rate(Size):
 
 class Duration(float):
     """displays duration in human-readable format"""
-    def __str__(value):
-        if value > 365 * 24 * 60 * 60:
+    def __str__(self):
+        if self > 365 * 24 * 60 * 60:
             return '?'
-        elif value >= 172800:
-            return _("%d days") % (value//86400) # 2 days or longer
-        elif value >= 86400:
-            return _("1 day %d hours") % ((value-86400)//3600) # 1-2 days
-        elif value >= 3600:
-            return _("%d:%02d hours") % (value//3600, (value%3600)//60) # 1 h - 1 day
-        elif value >= 60:
-            return _("%d:%02d minutes") % (value//60, value%60) # 1 minute to 1 hour
-        elif value >= 0:
-            return _("%d seconds") % int(value)
+        elif self >= 172800:
+            return _("%d days") % (self//86400) # 2 days or longer
+        elif self >= 86400:
+            return _("1 day %d hours") % ((self-86400)//3600) # 1-2 days
+        elif self >= 3600:
+            return _("%d:%02d hours") % (self//3600, (self%3600)//60) # 1 h - 1 day
+        elif self >= 60:
+            return _("%d:%02d minutes") % (self//60, self%60) # 1 minute to 1 hour
+        elif self >= 0:
+            return _("%d seconds") % int(self)
         else:
             return _("0 seconds")
 
@@ -247,6 +250,46 @@ class IconButton(gtk.Button):
         self.hbox.pack_start(self.label)
 
         self.add(halign(self.hbox, 0.5))
+
+
+class LanguageChooser(gtk.Frame):
+    def __init__(self):
+        gtk.Frame.__init__(self, "Translate %s into:" % app_name)
+        self.set_border_width(SPACING)
+        
+        model = gtk.ListStore(*[gobject.TYPE_STRING] * 2)
+        default = model.append(("System default", ''))
+
+        lang = read_language_file()
+        for l in languages:
+            it = model.append((language_names[l].encode('utf8'), l))
+            if l == lang:
+                default = it
+
+        self.combo = gtk.ComboBox(model)
+        cell = gtk.CellRendererText()
+        self.combo.pack_start(cell, True)
+        self.combo.add_attribute(cell, 'text', 0)
+
+        if default is not None:
+            self.combo.set_active_iter(default)
+
+        self.combo.connect('changed', self.changed)
+        box = gtk.VBox(spacing=SPACING)
+        box.set_border_width(SPACING)
+        box.pack_start(self.combo)
+        l = gtk.Label("You must restart %s for the\nlanguage "
+                      "setting to take effect." % app_name)
+        l.set_alignment(0,1)
+        l.set_line_wrap(True)
+        box.pack_start(l)
+        self.add(box)
+
+    def changed(self, *a):
+        it = self.combo.get_active_iter()
+        model = self.combo.get_model()
+        code = model.get(it, 1)[0]
+        write_language_file(code)
 
 
 class Window(gtk.Window):
@@ -628,12 +671,11 @@ else:
 
             
     class FileOrFolderSelection(FileSelection):
-        select_file   = _("Select a file"  )
-        select_folder = _("Select a folder")
-
         def __init__(self, *args, **kwargs):
             FileSelection.__init__(self, gtk.FILE_CHOOSER_ACTION_OPEN, *args,
                                    **kwargs)
+            self.select_file   = _("Select a file"  )
+            self.select_folder = _("Select a folder")
             self.convert_button_box = gtk.HBox()
             self.convert_button = gtk.Button(self.select_folder)
             self.convert_button.connect('clicked', self.change_action)

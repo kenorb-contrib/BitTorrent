@@ -97,12 +97,27 @@ class MainWindow(Window):
         # Piece size
         self.table.attach(ralign(gtk.Label(_("Piece size:"))),0,1,y,y+1,
                           xoptions=gtk.FILL, yoptions=0)
-        self.piece_size = gtk.combo_box_new_text()
-        self.piece_size.offset = 15
-        for i in range(7):
-            self.piece_size.append_text(str(Size(2**(i+self.piece_size.offset))))
-        self.piece_size.set_active(self.config['piece_size_pow2'] -
-                                   self.piece_size.offset)
+
+        if gtk.pygtk_version >= (2,4):
+            self.piece_size = gtk.combo_box_new_text()
+            self.piece_size.offset = 15
+            for i in range(7):
+                self.piece_size.append_text(str(Size(2**(i+self.piece_size.offset))))
+            self.piece_size.set_active(self.config['piece_size_pow2'] -
+                                       self.piece_size.offset)
+        else:
+            # For PyGTK 2.2 and earlier
+            self.piece_size = gtk.OptionMenu()
+            self.piece_size.offset = 15
+            menu = gtk.Menu()
+            for i in range(7):
+                item = gtk.MenuItem(str(Size(2**(i+self.piece_size.offset))))
+                menu.append(item)
+            self.piece_size.set_menu(menu)
+            self.piece_size.set_history(self.config['piece_size_pow2'] -
+                                        self.piece_size.offset)
+            self.piece_size.get_active = self.piece_size.get_history
+
         self.piece_size_box = gtk.HBox(spacing=SPACING)
         self.piece_size_box.pack_start(self.piece_size,
                                        expand=False, fill=False)
@@ -206,6 +221,24 @@ class MainWindow(Window):
         self.buttonbox = gtk.HBox(homogeneous=True, spacing=SPACING)
 
         self.quitbutton = gtk.Button(stock=gtk.STOCK_CLOSE)
+##=======
+##        # Piece size
+##        self.table.attach(ralign(gtk.Label('Piece size:')),0,1,y,y+1,
+##                          xoptions=gtk.FILL, yoptions=0)
+
+
+##        self.piece_size_box = gtk.HBox(spacing=SPACING)
+##        self.piece_size_box.pack_start(self.piece_size, expand=False, fill=False)
+##        self.table.attach(self.piece_size_box,1,2,y,y+1, xoptions=gtk.FILL|gtk.EXPAND, yoptions=0)
+##        y+=1
+
+
+##        self.box.pack_start(self.table, expand=True, fill=True)
+
+##        self.buttonbox = gtk.HBox(homogeneous=True, spacing=SPACING)
+
+##        self.quitbutton = gtk.Button(stock=gtk.STOCK_QUIT)
+##>>>>>>> remote
         self.quitbutton.connect('clicked', self.quit)
         self.buttonbox.pack_start(self.quitbutton, expand=True, fill=True)
 
@@ -254,8 +287,8 @@ class MainWindow(Window):
         else:
             fn = Desktop.desktop 
 
-        selector = FileOrFolderSelection(self, fullname=fn, 
-                       got_multiple_location_func=self.add_files)
+        FileOrFolderSelection(self, fullname=fn, 
+                              got_multiple_location_func=self.add_files)
     
     def add_files(self, names):
         for name in names:
@@ -491,8 +524,8 @@ class ProgressDialog(gtk.Dialog):
         self.complete()
 
     def seed(self, widget=None):
-        for file in self.file_list:
-            spawn(None, 'bittorrent', file+EXTENSION, '--save_as', file)
+        for f in self.file_list:
+            spawn(None, 'bittorrent', file+EXTENSION, '--save_as', f)
         self.cancel()
 
     def cancel(self, widget=None):
@@ -542,13 +575,13 @@ class ProgressDialog(gtk.Dialog):
 def run():
     config, args = configfile.parse_configuration_and_args(defaults,
                                     'maketorrent', [], 0, None)
-    w = MainWindow(config)
+    MainWindow(config)
 
 
 if __name__ == '__main__':
     config, args = configfile.parse_configuration_and_args(defaults,
                                     'maketorrent', sys.argv[1:], 0, None)
-    w = AppWindow(config)
+    AppWindow(config)
     try:
         gtk.main()
     except KeyboardInterrupt:

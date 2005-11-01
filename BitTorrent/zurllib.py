@@ -5,8 +5,23 @@
 # compression and then decompress the output if a compressed response is
 # received while maintaining the API.
 #
-# by Robert Stone 2/22/2003 
+# by Robert Stone 2/22/2003
+# extended by Matt Chisholm
 #
+
+from BitTorrent.platform import user_agent
+import urllib2
+OldOpenerDirector = urllib2.OpenerDirector
+
+class MyOpenerDirector(OldOpenerDirector):
+    def __init__(self):
+        OldOpenerDirector.__init__(self)
+        server_version = user_agent
+        self.addheaders = [('User-agent', server_version)]
+
+urllib2.OpenerDirector = MyOpenerDirector
+
+del urllib2
 
 from urllib import *
 from urllib2 import *

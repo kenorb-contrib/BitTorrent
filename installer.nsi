@@ -17,8 +17,10 @@
 !include "MUI.nsh"
 
 
-!define VERSION "4.1.6-Beta"
-!define APPNAME "BitTorrent"
+; replaced by winprepnsi.py
+!define VERSION "%VERSION%"
+!define APPNAME "%APP_NAME%"
+
 Outfile ${APPNAME}-${VERSION}.exe
 Name "${APPNAME}"
 
@@ -98,26 +100,29 @@ Var HWND
 Var DLGITEM
 
 Function uninstall
+
+    ;; IMPORTANT: We cannot ever run any old installers, because they might delete the
+    ;; old installation directory, including any data the user might have stored there.
+    ;; Newer uninstallers play nice, but we cannot tell them apart.
+
     ; check here too, since this page is run either way
-    Call GetUninstallString
-    Pop $R0
+    ;Call GetUninstallString
+    ;Pop $R0
 
-    StrCmp $R0 "" nextuninst
+    ;StrCmp $R0 "" nextuninst
 
-    ;Run the uninstaller
-    ;Do not copy the uninstaller to a temp file
-    ExecWait '$R0 /S'
-    IfErrors 0 nextuninst
-    ExecWait '$R0 /S'
-    Sleep 2000
-    IfErrors no_remove_uninstaller
-    Goto nextuninst
-    no_remove_uninstaller:
-        Call MagicUninstall
+    ;;Run the uninstaller
+    ;;Do not copy the uninstaller to a temp file
+    ;ExecWait '$R0 /S'
+    ;IfErrors 0 nextuninst
+    ;ExecWait '$R0 /S'
+    ;Sleep 2000
+    ;IfErrors no_remove_uninstaller
+    ;Goto nextuninst
+    ;no_remove_uninstaller:
+    ;    Call MagicUninstall
 
     nextuninst:
-        # just in case
-        Call MagicUninstall
         Call QuitIt
         ClearErrors
         Delete $INSTDIR\btdownloadgui.exe
@@ -128,11 +133,15 @@ Function uninstall
         IfErrors deleteerror    
         Delete $INSTDIR\maketorrent.exe
         IfErrors deleteerror
+        Delete $INSTDIR\choose_language.exe
+        IfErrors deleteerror
         goto endofdelete
         deleteerror:    
             MessageBox MB_OK "Removing old BitTorrent exe files failed. You must quit BitTorrent and uninstall it before installing this version."
             Abort
     endofdelete:    
+
+    Call MagicUninstall
 
     endofuninst:
 FunctionEnd
@@ -341,6 +350,8 @@ Function ${UN}QuitIt
     Call ${UN}CheckForIt
     StrCpy $KILLEXENAME "maketorrent.exe"
     Call ${UN}CheckForIt
+    StrCpy $KILLEXENAME "choose_language.exe"
+    Call ${UN}CheckForIt
     StrCpy $KILLEXENAME ""
 FunctionEnd
 !macroend
@@ -367,10 +378,40 @@ Function ${UN}MagicUninstall
   Pop $R0
   StrCmp $R0 "" 0 remove
   StrCpy $R0 $INSTDIR
- remove:  
-  RMDir /r "$R0"
+ remove:
+     
+
+  ; some users like to store important data in our directory
+  ; be nice to them
+  ;RMDir /r "$R0"
+
+  Delete "$R0\*.exe"
+  Delete "$R0\*.pyd"
+  Delete "$R0\*.dll"
+  Delete "$R0\library.zip"
+  RMDir /r "$R0\images"
+  RMDir /r "$R0\lib"
+  RMDir /r "$R0\etc"
+  RMDir /r "$R0\share"
+  RMDir /r "$R0\locale"
+  Delete "$R0\redirdonate.html"
+  Delete "$R0\credits.txt"
+  Delete "$R0\credits-l10n.txt"
+  Delete "$R0\LICENSE.txt"
+  Delete "$R0\README.txt"
+  Delete "$R0\public.key"
+
+  ClearErrors
+  RMDir "$R0"
+  
+  IfErrors 0 dontwarn
+  MessageBox MB_OK "Not deleting $R0,$\r$\nbecause there are extra files or directories in it, or it is in use."   
+ dontwarn:  
+  
   SetShellVarContext all
+
   RMDir /r "$SMPROGRAMS\${APPNAME}"
+  
 FunctionEnd
 !macroend
 
@@ -391,6 +432,8 @@ FunctionEnd
 !insertmacro MagicUninstall "un." 
 
 Function .onInit
+    BringToFront
+
     Call QuitIt
     ClearErrors
 
@@ -508,9 +551,10 @@ Section "Install" SecInstall
   ; Add items to start menu
   SetShellVarContext all
   CreateDirectory "$SMPROGRAMS\${APPNAME}"
-  CreateShortCut "$SMPROGRAMS\${APPNAME}\Downloader.lnk"   "$INSTDIR\${EXENAME}"
-  CreateShortCut "$SMPROGRAMS\${APPNAME}\Make Torrent.lnk" "$INSTDIR\maketorrent.exe"
-  CreateShortCut "$SMPROGRAMS\${APPNAME}\Donate.lnk"       "$INSTDIR\redirdonate.html"
+  CreateShortCut "$SMPROGRAMS\${APPNAME}\Downloader.lnk"      "$INSTDIR\${EXENAME}"
+  CreateShortCut "$SMPROGRAMS\${APPNAME}\Make Torrent.lnk"    "$INSTDIR\maketorrent.exe"
+  CreateShortCut "$SMPROGRAMS\${APPNAME}\Donate.lnk"          "$INSTDIR\redirdonate.html"
+  CreateShortCut "$SMPROGRAMS\${APPNAME}\Choose Language.lnk" "$INSTDIR\choose_language.exe"
 
   BringToFront
   endofinstall:

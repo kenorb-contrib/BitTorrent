@@ -21,6 +21,9 @@ class Preferences(object):
         return self
 
     def getDict(self):
+        return dict(self._options)
+
+    def getDifference(self):
         if self._parent:
             return dict([(x, y) for x, y in self._options.items() if y != self._parent.get(x, None)])
         else:

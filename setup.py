@@ -63,8 +63,10 @@ img_root, doc_root, locale_root = calc_unix_dirs()
 
 translations = []
 for l in languages:
-    translations.append (("%s/%s/LC_MESSAGES"          % (locale_root, l),
-                          ["locale/%s/LC_MESSAGES/bittorrent.mo" % l]))
+    path = os.path.join('locale', l, 'LC_MESSAGES', 'bittorrent.mo')
+    if os.access(path, os.F_OK):
+        translations.append((os.path.join(locale_root, l, 'LC_MESSAGES'), 
+                             [path,]))
 
 data_files = [ (img_root        , glob.glob('images/*png')+['images/bittorrent.ico',]),
                (img_root+'/logo', glob.glob('images/logo/bittorrent_[0-9]*.png')     ),

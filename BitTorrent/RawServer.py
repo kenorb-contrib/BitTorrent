@@ -157,12 +157,13 @@ class RawServer(object):
             # Windows doesn't support pipes with select(). Just prevent sleeps
             # longer than a second instead of proper wakeup for now.
             self.wakeupfds = (None, None)
-            def wakeup():
-                self.add_task(wakeup, 1)
-            wakeup()
+            self._wakeup()
         else:
             self.wakeupfds = os.pipe()
             self.poll.register(self.wakeupfds[0], POLLIN)
+
+    def _wakeup(self):
+        self.add_task(self._wakeup, 1)
 
     def add_context(self, context):
         self.live_contexts[context] = True
@@ -303,12 +304,13 @@ class RawServer(object):
 
     # must be called from the main thread
     def install_sigint_handler(self):
-        def handler(signum, frame):
-            self.external_add_task(self.doneflag.set, 0)
-            # Allow pressing ctrl-c multiple times to raise KeyboardInterrupt,
-            # in case the program is in an infinite loop
-            signal.signal(signal.SIGINT, signal.default_int_handler)
-        signal.signal(signal.SIGINT, handler)
+        signal.signal(signal.SIGINT, self._handler)
+
+    def _handler(self, signum, frame):
+        self.external_add_task(self.doneflag.set, 0)
+        # Allow pressing ctrl-c multiple times to raise KeyboardInterrupt,
+        # in case the program is in an infinite loop
+        signal.signal(signal.SIGINT, signal.default_int_handler)
 
     def _handle_events(self, events):
         for sock, event in events:
@@ -322,7 +324,7 @@ class RawServer(object):
                     handler, context = self.listening_handlers[sock]
                     try:
                         newsock, addr = s.accept()
-                    except socket.error:
+                    except socket.error, e:
                         continue
                     try:
                         newsock.setblocking(0)
@@ -355,7 +357,7 @@ class RawServer(object):
                         if code != EWOULDBLOCK:
                             self._close_socket(s)
                         continue
-                    if data == '':
+                    if data == '' and not self.udp_sockets.has_key(s):
                         self._close_socket(s)
                     else:
                         if not self.udp_sockets.has_key(s):
@@ -370,7 +372,7 @@ class RawServer(object):
                     s.try_write()
                     if s.is_flushed():
                         self._make_wrapped_call(s.handler.connection_flushed,
-                                                (s,))
+                                                (s,), s)
 
     def _pop_externally_added(self):
         while self.externally_added_tasks:
@@ -421,6 +423,7 @@ class RawServer(object):
                                _("Have to exit due to the TCP stack flaking "
                                  "out. Please see the FAQ at %s") % FAQ_URL)
                 return -1
+            #self.errorfunc(CRITICAL, str(e))
         except KeyboardInterrupt:
             print_exc()
             return -1

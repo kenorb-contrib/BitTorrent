@@ -73,3 +73,19 @@ class BasicTests(unittest.TestCase):
         self.k['foo'] = 'bar'
         self.k['foo'] = 'bar'
         self.assertEqual(self.k['foo'], ['bar'])
+
+    def testSample(self):
+        for i in xrange(2):
+            self.k['foo'] = i
+        l = self.k.sample('foo', 5)
+        l.sort()
+        self.assertEqual(l, [0, 1])
+
+        for i in xrange(10):
+            for i in xrange(10):
+                self.k['bar'] = i
+            l = self.k.sample('bar', 5)
+            self.assertEqual(len(l), 5)
+            for i in xrange(len(l)):
+                self.assert_(l[i] not in l[i+1:])
+        

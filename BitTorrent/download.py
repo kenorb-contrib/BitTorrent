@@ -85,8 +85,7 @@ class Multitorrent(object):
         self.singleport_listener = SingleportListener(self.rawserver)
         self.ratelimiter = RateLimiter(self.rawserver.add_task)
         self.ratelimiter.set_parameters(config['max_upload_rate'],
-                                        config['upload_unit_size'],
-                                        config['min_ratelimiter_delay'])
+                                        config['upload_unit_size'])
         self._find_port(listen_fail_ok)
         self.filepool = FilePool(config['max_files_open'])
         set_filesystem_encoding(config['filesystem_encoding'],
@@ -104,7 +103,7 @@ class Multitorrent(object):
                     self.dht = UTKhashmir(self.config['bind'], 
                                             self.singleport_listener.get_port(), 
                                             self.config['data_dir'], self.rawserver, 
-                                            int(self.config['max_upload_rate'] * 1024 * 0.02), 
+                                            int(self.config['max_upload_rate'] * 1024 * 0.01), 
                                             rlcount=self.ratelimiter.increase_offset,
                                             config=self.config)
                 break
@@ -132,18 +131,12 @@ class Multitorrent(object):
         return torrent
 
     def set_option(self, option, value):
-        if option not in self.config or self.config[option] == value:
-            return
-        if option not in 'max_upload_rate upload_unit_size '\
-               'max_files_open minport maxport'.split():
-            return
         self.config[option] = value
-        if option == 'max_files_open':
-            self.filepool.set_max_files_open(value)
-        elif option in ['max_upload_rate', 'upload_unit_size', 'min_ratelimiter_delay']:
+        if option in ['max_upload_rate', 'upload_unit_size']:
             self.ratelimiter.set_parameters(self.config['max_upload_rate'],
-                                            self.config['upload_unit_size'],
-                                            self.config['min_ratelimiter_delay'])
+                                            self.config['upload_unit_size'])
+        elif option == 'max_files_open':
+            self.filepool.set_max_files_open(value)
         elif option == 'maxport':
             if not self.config['minport'] <= self.singleport_listener.port <= \
                    self.config['maxport']:
@@ -364,8 +357,8 @@ class _SingleTorrent(object):
                 return
             else:
                 if len(self._dht.table.findNodes(metainfo.infohash, invalid=False)) < const.K:
-                    for ip, port in metainfo.nodes:
-                        self._dht.addContact(ip, port)
+                    for host, port in metainfo.nodes:
+                        self._dht.addContact(host, port)
                 self._rerequest = DHTRerequester(config,
                     schedfunc, self._encoder.how_many_connections,
                     self._encoder.start_connection, externalsched,

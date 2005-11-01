@@ -30,8 +30,7 @@ matches = (
            (chr(0)*12 + 'aa.+$'              , "Experimental 3.2.1b2" ),
            (chr(0)*12 + '.+$'                , "BitTorrent (obsolete)"),
            ('-G3.+$'                         , "G3Torrent"            ),
-           ('-LT(?P<version>\d+)-+.+$'       , "libtorrent"           ),
-           ('-lt(?P<version>\d+)-+.+$'       , "libtorrent"           ),
+           ('-[Ll][Tt](?P<version>\d+)-+.+$' , "libtorrent"           ),
            ('Mbrst(?P<version>\d-\d-\d).+$'  , "burst!"               ),
            ('eX.+$'                          , "eXeem"                ),
            ('\x00\x02BS.+(?P<strver>UDP0|HTTPBT)$', "BitSpirit v2"    ),
@@ -40,9 +39,11 @@ matches = (
            ('-BOWP?(?P<version>\d+)-.+$'     , "Bits on Wheels"       ),
            ('(?P<rsver>.+)RSAnonymous.+$'    , "Rufus Anonymous"      ),
            ('(?P<rsver>.+)RS.+$'             , "Rufus"                ),
-           ('-ML(?P<version>(\d\.)+\d)-+.+$' , "MLDonkey"             ),
+           ('-ML(?P<version>(\d\.)+\d)(?:\.(?P<strver>CVS))?-+.+$',"MLDonkey"),
            ('-UT(?P<version>\d+)-+.+$'       , u"\xb5Torrent"         ),
            ('346------.+$'                   , "TorrentTopia 1.70"    ),
+           ('OP(?P<strver>\d{4}).+$'         , "Opera"                ),
+           ('-S(?P<version>10059)-+.+$'      , "S (unknown)"          ),
 # Clients I've never actually seen in a peer list:           
            ('exbc..---.+$'                   , "BitVampire 1.3.1"     ),
            ('-BB(?P<version>\d+)-+.+$'       , "BitBuddy"             ),
@@ -57,18 +58,18 @@ matches = (
            ('(?P<rsver>.+)BM.+$'             , "BitMagnet"            ),
            ('BG(?P<version>\d+).+$'          , "BTGetit"              ),
            ('-eX(?P<version>[\dA-Fa-f]+)-.+$',"eXeem beta"            ),
-           ('Plus12(?P<strver>\w+)-.+$'      , "Plus! II"             ),
-           ('XBT(?P<version>\d+)-+.+$'       , "XBT"                  ),
+           ('Plus12(?P<rc>[\dR]+)-.+$'       , "Plus! II"             ),
+           ('XBT(?P<version>\d+)[d-]-.+$'    , "XBT"                  ),
            ('-ZT(?P<version>\d+)-+.+$'       , "ZipTorrent"           ),
            ('-BitE\?(?P<version>\d+)-.+$'    , "BitEruct"             ),
+           ('O(?P<version>%s)-+.+$'%v64p     , "Osprey Permaseed"     ),
 # Guesses based on Rufus source code, never seen in the wild:
-           ('OP.+$'                          , "Opera"                ),
            ('-BS(?P<version>\d+)-+.+$'       , "BTSlave"              ),
            ('-SB(?P<version>\d+)-+.+$'       , "SwiftBit"             ),
            ('-SN(?P<version>\d+)-+.+$'       , "ShareNET"             ),
            ('-bk(?P<version>\d+)-+.+$'       , "BitKitten"            ),
            ('-SZ(?P<version>\d+)-+.+$'       , "Shareaza"             ),
-           ('-KT(?P<version>\d+)-+.+$'       , "KTorrent"             ),
+           ('-KT(?P<version>\d+)(?P<rc>R\d+)-+.+$' , "KTorrent"       ),
            ('-MP(?P<version>\d+)-+.+$'       , "MooPolice"            ),
            ('-PO(?P<version>\d+)-+.+$'       , "PO (unknown)"         ),
            ('-UR(?P<version>\d+)-+.+$'       , "UR (unknown)"         ),
@@ -126,21 +127,25 @@ def identify_client(peerid, log=None):
                 if len(rsver) > 1:
                     version += str(ord(rsver[1])/10) + '.'
                     version += str(ord(rsver[1])%10)
-            elif d.has_key('strver'):
-                version = d['strver']
+            if d.has_key('strver'):
+                if d['strver'] is not None:
+                    version += d['strver']
+            if d.has_key('rc'):
+                rc = 'RC ' + d['rc'][1:]
+                if version:
+                    version += ' '
+                version += rc
             break
     if client == 'unknown':
-        # try to identify Shareaza
-        shareaza = True
-        if chr(0) in peerid[:15]:
-            shareaza = False
-        else:
-            for i in range(16,len(peerid)):
-                 if ord(peerid[i]) != (ord(peerid[i % 16]) ^ ord(peerid[15 - (i % 16)])):
-                    shareaza = False
-                    break
-        if shareaza:
-            client = "Shareaza"
+        # identify Shareaza 2.0 - 2.1
+        if len(peerid) == 20 and chr(0) not in peerid[:15]:
+            shareaza = True
+            for i in range(16,20):
+                 if ord(peerid[i]) != (ord(peerid[i - 16]) ^ ord(peerid[31 - i])):
+                     shareaza = False
+                     break
+            if shareaza:
+                client = "Shareaza"
         
         
     if log is not None and 'unknown' in client:

@@ -49,6 +49,9 @@ class Node:
     
     def senderDict(self):
         return self._senderDict
+
+    def __hash__(self):
+        return self.id.__hash__()
     
     def __repr__(self):
         return ">node <%s> %s<" % (self.id.encode('base64')[:4], (self.host, self.port))

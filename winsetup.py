@@ -61,33 +61,38 @@ if 1:
 
 translations = []
 for l in languages:
-    translations.append(("locale\\%s\\LC_MESSAGES"                 % l,
-                         ["locale\\%s\\LC_MESSAGES\\bittorrent.mo" % l,
-                          #"locale\\%s\\LC_MESSAGES\\bittorrent.po" % l,
-                          ]))
-    gtk_mo = []
-    
-    gtk_path = ""
+    path = os.path.join('locale', l, 'LC_MESSAGES', 'bittorrent.mo')
+    if os.access(path, os.F_OK):
+        translations.append(("locale\\%s\\LC_MESSAGES"                 % l,
+                             ["locale\\%s\\LC_MESSAGES\\bittorrent.mo" % l,
+                              #"locale\\%s\\LC_MESSAGES\\bittorrent.po" % l,
+                              ]))
+        gtk_mo = []
+        
+        gtk_path = ""
 
-    import gtk
+        import gtk
 
-    if (gtk.gtk_version[1] == 4):
-        gtk_path = os.path.join(os.environ["GTK_BASEPATH"], "lib\\locale\\%s\\LC_MESSAGES" % l)
-    elif (gtk.gtk_version[1] == 6):
-        gtk_path = os.path.join(os.environ["GTK_BASEPATH"], "share\\locale\\%s\\LC_MESSAGES" % l)
-    else:
-        raise Exception("Unknown gtk version, please locate gtk20.mo etc, and modify this script")
-    
-    for fn in ("glib20.mo", "gtk20.mo", "gtk20-properties.mo"):
-        moname = os.path.join(gtk_path, fn)
-        if os.access(moname, os.F_OK):
-            gtk_mo.append(moname) 
-    translations.append(("share\\locale\\%s\\LC_MESSAGES" % l, gtk_mo))
+        if (gtk.gtk_version[1] == 4):
+            gtk_path = os.path.join(os.environ["GTK_BASEPATH"], "lib\\locale\\%s\\LC_MESSAGES" % l)
+        elif (gtk.gtk_version[1] == 6):
+            gtk_path = os.path.join(os.environ["GTK_BASEPATH"], "share\\locale\\%s\\LC_MESSAGES" % l)
+        else:
+            raise Exception("Unknown gtk version, please locate gtk20.mo etc, and modify this script")
+        
+        for fn in ("glib20.mo", "gtk20.mo", "gtk20-properties.mo"):
+            moname = os.path.join(gtk_path, fn)
+            if os.access(moname, os.F_OK):
+                gtk_mo.append(moname) 
+        translations.append(("share\\locale\\%s\\LC_MESSAGES" % l, gtk_mo))
 
 setup(windows=[{'script': 'bittorrent.py' ,
                 "icon_resources": [(1, "images\\bittorrent.ico")]},
                {'script': 'maketorrent.py',
-                "icon_resources": [(1, "images\\bittorrent.ico")]}],
+                "icon_resources": [(1, "images\\bittorrent.ico")]},
+               {'script': 'choose_language.py',
+                "icon_resources": [(1, "images\\bittorrent.ico")]},
+               ],
       options=opts,
       data_files=[('',["credits.txt", "LICENSE.txt",
                        "README.txt", "redirdonate.html",

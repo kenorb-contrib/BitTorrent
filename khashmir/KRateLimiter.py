@@ -9,6 +9,7 @@
 # License.
 
 from BitTorrent.platform import bttime as time
+from BitTorrent.CurrentRateMeasure import Measure
 from const import *
 from random import randrange, shuffle
 from traceback import print_exc
@@ -16,7 +17,7 @@ from traceback import print_exc
 class KRateLimiter:
     # special rate limiter that drops entries that have been sitting in the queue for longer than self.age seconds
     # by default we toss anything that has less than 5 seconds to live
-    def __init__(self, transport, rate, call_later, rlcount, age=(KRPC_TIMEOUT - 5)):
+    def __init__(self, transport, rate, call_later, rlcount, rate_period, age=(KRPC_TIMEOUT - 5)):
         self.q = []
         self.transport = transport
         self.rate = rate
@@ -26,6 +27,7 @@ class KRateLimiter:
         self.last = 0
         self.call_later = call_later
         self.rlcount = rlcount
+        self.measure = Measure(rate_period)
         self.sent=self.dropped=0
         if self.rate == 0:
             self.rate = 1e10
@@ -52,6 +54,7 @@ class KRateLimiter:
                 self.transport.sendto(*tup)
                 self.sent+=1
                 self.rlcount(size)
+                self.measure.update_rate(size)
             except:
                 if tup[2][1] != 0:
                     print ">>> sendto exception", tup

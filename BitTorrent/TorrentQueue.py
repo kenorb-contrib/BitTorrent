@@ -242,7 +242,8 @@ class TorrentQueue(Feedback):
             t.metainfo.reported_errors = True # suppress redisplay on restart
             if infohash != t.metainfo.infohash:
                 self.global_error(ERROR, _("Corrupt data in ")+path+
-                                  _(" , cannot restore torrent (")+str(e)+")")
+                                  _(" , cannot restore torrent (")+'infohash mismatch'+")")
+                # BUG cannot localize due to string freeze
                 return None
             if len(line) == 41:
                 t.dlpath = None
@@ -355,8 +356,11 @@ class TorrentQueue(Feedback):
         for infohash in self.running_torrents:
             t = self.torrents[infohash]
             myminratio = minratio
-            if t.dl and t.dl.config['seed_forever']: 
-                myminratio = 1e99
+            if t.dl:
+                if self.queue and t.dl.config['seed_last_forever']:
+                    myminratio = 1e99
+                elif t.dl.config['seed_forever']: 
+                    myminratio = 1e99
             if t.state == RUN_QUEUED:
                 continue
             totals = t.dl.get_total_transfer()
@@ -574,6 +578,7 @@ class TorrentQueue(Feedback):
                 torrent.dl.set_option(option, value)
                 if option in ('forwarded_port', 'maxport'):
                     torrent.dl.change_port()
+            torrent.config[option] = value
         self._dump_config()
 
     def request_status(self, infohash, want_spew, want_fileinfo):
@@ -593,10 +598,6 @@ class TorrentQueue(Feedback):
             else:
                 ratio = torrent.dl.config['last_torrent_ratio'] / 100
                 if torrent.dl.config['seed_last_forever']:
-                    ratio = 1e99
-                if not self.config['seed_forever'] and \
-                       torrent.dl.config['seed_forever']:
-                    # respect torrent-specific seed_forever regardless of queue
                     ratio = 1e99
             if ulspeed <= 0 or ratio >= 1e99:
                 rem = 1e99
@@ -758,15 +759,15 @@ class TorrentQueue(Feedback):
         if infohash == self.starting_torrent:
             t = self.torrents[infohash]
             if self.queue:
-                ratio = t.dl.config['next_torrent_ratio'] / 100
-                if t.dl.config['seed_forever']: 
+                ratio = t.config['next_torrent_ratio'] / 100
+                if t.config['seed_forever']: 
                     ratio = 1e99
                 msg = _("Not starting torrent as there are other torrents "
                         "waiting to run, and this one already meets the "
                         "settings for when to stop seeding.")
             else:
-                ratio = t.dl.config['last_torrent_ratio'] / 100
-                if t.dl.config['seed_last_forever']:
+                ratio = t.config['last_torrent_ratio'] / 100
+                if t.config['seed_last_forever']:
                     ratio = 1e99
                 msg = _("Not starting torrent as it already meets the "
                         "settings for when to stop seeding the last "

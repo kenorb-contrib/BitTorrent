@@ -46,7 +46,7 @@ elif os.name == 'mac':
     launchpath = launchpath_mac
 elif os.name == 'posix':
     for b in posix_browsers:
-        if os.system('which %s >/dev/null'%b) == 0:
+        if os.system("which '%s' >/dev/null 2>&1" % b.replace("'","\\'")) == 0:
             can_launch_files = True
             default_posix_browser = b
             launchpath = launchpath_posix

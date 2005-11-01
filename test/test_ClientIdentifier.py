@@ -38,7 +38,8 @@ def test(peerid):
         out = repr(peerid)
 
     if client != 'unknown':
-        print 'identified %s %s\t(from %s)' % (client, version, out)
+        print 'identified %s %s\t(from %s)' % (client.encode('utf8'),
+                                               version, out)
     else:
         print 'failed:\t\t\t\t', out
 
@@ -153,7 +154,7 @@ def run_tests():
      '\x2D\x43\x54\x31\x33\x30\x34\x2D\x9C\x74\x41\xCE\xD7\x3E\x6E\x98\x41\x1F\x67\xD7'),
     ('BitVampire 1.3.1', '', # (spoofs BitComet 0.54 with extra '---'),',
      '\x65\x78\x62\x63\x00\x36\x2D\x2D\x2D\x55\x21\xE5\xF0\x3A\x78\xC3\x3F\x54\x21\xF1'),
-    ('Plus! II', 'R10',
+    ('Plus! II', 'RC 10',
      '\x50\x6C\x75\x73\x31\x32\x52\x31\x30\x2D\x66\x4E\x36\x6E\x69\x32\x41\x7A\x4F\x4B'),
     ('GreedBT 2.7.0', '',
      '\x32\x37\x30\x2D\x2D\x2D\x2D\x2D\x2D\x68\x34\x69\x66\x4B\x7A\x4B\x6E\x4A\x4F\x50'),
@@ -173,8 +174,10 @@ def run_tests():
      '\x2D\x50\x4F\x30\x30\x30\x31\x2D\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'),
     ('UR (unknown)', '0.1.1.2',
      '\x2D\x55\x52\x30\x31\x31\x32\x2D\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'),
-    ('Opera', '', # 8.5 ?
+    ('Opera', '7685', 
      'OP7685f2c1495b1680bf'),
+    ('KTorrent', '1.1 RC 1',
+     '-KT11R1-693649213030'),
     ):
         id_client, id_version = ClientIdentifier.identify_client(peerid)
         show = False

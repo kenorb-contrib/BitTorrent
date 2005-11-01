@@ -18,7 +18,7 @@ from util import *
 from threading import Thread
 from socket import gethostbyname
 from const import *
-from random import sample
+from kstore import sample
 
 TOKEN_UPDATE_INTERVAL = 5 * 60 # five minutes
 NUM_PEERS = 50 # number of peers to return

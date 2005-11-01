@@ -138,11 +138,18 @@ class CursesDisplayer(object):
             self.scrwin.border(ord('|'),ord('|'),ord('-'),ord('-'),ord(' '),ord(' '),ord(' '),ord(' '))
         except:
             pass
-        self.headerwin.addnstr(0, 2, '#', self.mainwinw - 25, curses.A_BOLD)
-        self.headerwin.addnstr(0, 4, _("Filename"), self.mainwinw - 25, curses.A_BOLD)
-        self.headerwin.addnstr(0, self.mainwinw - 24, _("Size"    ), 4, curses.A_BOLD)
-        self.headerwin.addnstr(0, self.mainwinw - 18, _("Download"), 8, curses.A_BOLD)
-        self.headerwin.addnstr(0, self.mainwinw -  6, _("Upload"  ), 6, curses.A_BOLD)
+        rcols = (_("Size"),_("Download"),_("Upload"))
+        rwids = (8, 10, 10)
+        rwid = sum(rwids)
+        start = self.mainwinw - rwid
+        self.headerwin.addnstr(0, 2, '#', start, curses.A_BOLD)
+        self.headerwin.addnstr(0, 4, _("Filename"), start, curses.A_BOLD)
+
+        for s,w in zip(rcols, rwids):
+            st = start + max(w - len(s), 0)
+            self.headerwin.addnstr(0, st, s[:w], len(s[:w]), curses.A_BOLD)
+            start += w
+
         self.totalwin.addnstr(0, self.mainwinw - 27, _("Totals:"), 7, curses.A_BOLD)
 
         self._display_messages()

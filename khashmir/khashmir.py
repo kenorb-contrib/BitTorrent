@@ -34,7 +34,8 @@ import traceback
 from BitTorrent.bencode import bencode, bdecode
 
 from BitTorrent.defer import Deferred
-from random import randrange, sample
+from random import randrange
+from kstore import sample
 
 from threading import Event, Thread
 

@@ -1,3 +1,4 @@
+# -*- coding: UTF-8 -*-
 # The contents of this file are subject to the BitTorrent Open Source License
 # Version 1.0 (the License).  You may not copy or use this file, in either
 # source code or executable form, except in compliance with the License.  You
@@ -9,7 +10,7 @@
 # License.
 
 app_name = 'BitTorrent'
-version = '4.1.6'
+version = '4.1.7'
 
 URL = 'http://www.bittorrent.com/'
 DONATE_URL = URL + 'donate.html'
@@ -28,7 +29,45 @@ if os.access('.cdv', os.F_OK):
 
 from BitTorrent.platform import get_home_dir, is_frozen_exe
 
-languages = 'af,ar,bg,ca,cs,da,de,es,es_MX,eo,et,fi,fr,ga,gr,he_IL,hr,hu,hy,it,ja,ka,ko,lt,ms,nl,nb_NO,pl,pt,pt_BR,ro,ru,sk,sl,sq,sv,th,tr,uk,vi,zh_CN,zh_TW'.split(',')
+# http://people.w3.org/rishida/names/languages.html
+language_names = {
+    'af'   :u'Afrikaans'            ,    'bg'   :u'Български'            ,
+    'da'   :u'Dansk'                ,    'ca'   :u'Català'               ,
+    'cs'   :u'Čeština'              ,    'de'   :u'Deutsch'              ,
+    'en'   :u'English'              ,    'es'   :u'Español'              ,
+    'es_MX':u'Español de Mexico '   ,    'fr'   :u'Français'             ,
+    'gr'   :u'Ελληνικά'             ,    'hu'   :u'Magyar'               ,
+    'it'   :u'Italiano'             ,    'nl'   :u'Nederlands'           ,
+    'nb_NO':u'Norsk bokmål'         ,    'pl'   :u'Polski'               ,
+    'pt'   :u'Português'            ,    'pt_BR':u'Português do Brasil'  ,
+    'ro'   :u'Română'               ,    'ru'   :u'Русский'              ,
+    'sk'   :u'Slovenský'            ,    'sl'   :u'Slovensko'            ,
+    'sv'   :u'Svenska'              ,    'tr'   :u'Türkçe'               ,
+    'vi'   :u'Tiếng Việt'           ,
+    'zh_CN':u'简体中文'               , # Simplified
+    'zh_TW':u'繁體中文'               , # Traditional
+    }
+
+unfinished_language_names = {
+    'ar'   :u'العربية'       ,    'eo'   :u'Esperanto'            ,
+    'eu'   :u'Euskara'              ,    'et'   :u'Eesti'                ,
+    'fi'   :u'Suomi'                ,    'ga'   :u'Gaeilge'              ,
+    'he_IL':u'עברית'                ,    'hr'   :u'Hrvatski'             ,
+    'hy'   :u'Հայերեն'       ,    'in'   :u'Bahasa indonesia'     ,
+    'ja'   :u'日本語'            ,    'ka'   :u'ქართული ენა',
+    'ko'   :u'한국어'            ,    'lt'   :u'Lietuvių'        ,
+    'ms'   :u'Bahasa melayu'        ,    'ml'   :u'Malayalam'            ,
+    'sq'   :u'Shqipe'                ,    'th'   :u'ภาษาไทย'              ,
+    'tlh'  :u'tlhIngan-Hol'         ,    'uk'   :u'Українська'           ,
+    'hi'   :u'हिन्दी'                  ,    'cy'   :u'Cymraeg'              ,
+    'is'   :u'Íslenska'             ,    'nn_NO':u'Norsk Nynorsk'        ,
+    'te'   :u'	తెలుగు'              ,
+    }
+
+#language_names.update(unfinished_language_names)
+
+languages = language_names.keys()
+languages.sort()
 
 if os.name == 'posix':
     if os.uname()[0] == "Darwin":

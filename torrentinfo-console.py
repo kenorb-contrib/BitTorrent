@@ -43,7 +43,7 @@ labels = {'metafile'   : _("metainfo file: %s"       ),
           'comment'    : _("comment:"                ),
           }
 
-maxlength = max( [len(v[:v.index(':')]) for v in labels.values()] )
+maxlength = max( [len(v[:v.find(':')]) for v in labels.values()] )
 # run through l10n-ed labels and make them all the same length
 for k,v in labels.items():
     if ':' in v:

@@ -11,7 +11,7 @@
 from BitTorrent.defer import Deferred
 from BitTorrent.bencode import bencode, bdecode
 import socket
-from BitTorrent.RawServer import RawServer
+from BitTorrent.RawServer_magic import Handler
 from BitTorrent.platform import bttime
 import time
 from math import log10
@@ -46,12 +46,12 @@ class KRPCServerError(Exception):
 class KRPCSelfNodeError(Exception):
     pass
 
-class hostbroker(object):       
+class hostbroker(Handler):       
     def __init__(self, server, addr, transport, call_later, max_ul_rate, config, rlcount):
         self.server = server
         self.addr = addr
         self.transport = transport
-        self.rltransport = KRateLimiter(transport, max_ul_rate, call_later, rlcount)
+        self.rltransport = KRateLimiter(transport, max_ul_rate, call_later, rlcount, config['max_rate_period'])
         self.call_later = call_later
         self.connections = Cache(touch_on_access=True)
         self.hammerlock = Hammerlock(100, call_later)
@@ -225,15 +225,16 @@ class KRPC:
         s = bencode(msg)
         d = Deferred()
         self.tids[msg[TID]] = d
-        def timeOut(tids = self.tids, id = msg[TID]):
-            if tids.has_key(id):
-                df = tids[id]
-                del(tids[id])
-                df.errback(KRPC_ERROR_TIMEOUT)
-        self.call_later(timeOut, KRPC_TIMEOUT)
+        self.call_later(self.timeOut, KRPC_TIMEOUT, (msg[TID],))
         self.call_later(self._send, 0, (s, d))
         return d
- 
+
+    def timeOut(self, id):
+        if self.tids.has_key(id):
+            df = self.tids[id]
+            del(self.tids[id])
+            df.errback(KRPC_ERROR_TIMEOUT)
+
     def _send(self, s, d):
         try:
             self.transport.sendto(s, 0, self.addr)

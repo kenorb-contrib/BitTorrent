@@ -49,6 +49,10 @@ if os_name == 'nt':
     if wh.has_key(wk):
         os_version = wh[wk]
     del wh, wv, wk
+elif os_name == 'posix':
+    os_version = os.uname()[0]
+
+user_agent = "M" + version.replace('.', '-') + "--(%s/%s)" % (os_name, os_version)
 
 def calc_unix_dirs():
     appdir = '%s-%s'%(app_name, version)
@@ -91,6 +95,12 @@ def get_config_dir():
             dir_root = tmp_dir_root
 
     return dir_root
+
+def get_cache_dir():
+    dir = None
+    if os.name == 'nt':
+        dir = get_shell_dir(shellcon.CSIDL_INTERNET_CACHE)
+    return dir
 
 def get_home_dir():
     shellvars = ['${HOME}', '${USERPROFILE}']
@@ -185,13 +195,18 @@ def spawn(torrentqueue, cmd, *args):
         # handles (like the controlsocket) to be duplicated        
         win32api.ShellExecute(0, "open", args[0], argstr, None, 1) # 1 == SW_SHOW
     else:
-        forkback = os.fork()
-        if forkback == 0:
-            if torrentqueue is not None:
-                #BUG: should we do this?
-                #torrentqueue.set_done()
-                torrentqueue.wrapped.controlsocket.close_socket()
-            pid = os.execl(path, *args)
+        if os.access(path, os.X_OK):
+            forkback = os.fork()
+            if forkback == 0:
+                if torrentqueue is not None:
+                    #BUG: should we do this?
+                    #torrentqueue.set_done()
+                    torrentqueue.wrapped.controlsocket.close_socket()
+                os.execl(path, *args)
+        else:
+            #BUG: what should we do here?
+            pass
+        
 
 def _gettext_install(domain, localedir=None, languages=None, unicode=False):
     # gettext on win32 does not use locale.getdefaultlocale() by default
@@ -216,7 +231,50 @@ def _gettext_install(domain, localedir=None, languages=None, unicode=False):
     # this code is straight out of gettext.install        
     t = gettext.translation(domain, localedir, languages=languages, fallback=True)
     t.install(unicode)
-        
+
+
+def language_path():
+    config_dir = get_config_dir()
+    lang_file_name = os.path.join(config_dir, '.bittorrent', 'data', 'language')
+    return lang_file_name
+
+
+def read_language_file():
+    lang_file_name = language_path()
+    lang = None
+    if os.access(lang_file_name, os.F_OK|os.R_OK):
+        mode = 'r'
+        if sys.version_info >= (2, 3):
+            mode = 'U'
+        lang_file = open(lang_file_name, mode)
+        lang_line = lang_file.readline()
+        lang_file.close()
+        if lang_line:
+            lang = ''
+            for i in lang_line[:5]:
+                if not i.isalpha() and i != '_':
+                    break
+                lang += i
+            if lang == '':
+                lang = None
+    return lang
+
+
+def write_language_file(lang):
+    lang_file_name = language_path()
+    lang_file = open(lang_file_name, 'w')
+    lang_file.write(lang)
+    lang_file.close()
+
 
 def install_translation():
-    _gettext_install('bittorrent', locale_root)
+    languages = None
+    try:
+        lang = read_language_file()
+        if lang is not None:
+            languages = [lang,]
+    except:
+        #pass
+        from traceback import print_exc
+        print_exc()
+    _gettext_install('bittorrent', locale_root, languages=languages)

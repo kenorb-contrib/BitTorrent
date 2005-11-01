@@ -8,7 +8,18 @@
 # for the specific language governing rights and limitations under the
 # License.
 
-from random import sample
+try:
+    from random import sample
+except ImportError:
+    from random import choice
+    def sample(l, n):
+        if len(l) <= n:
+            return l
+        d = {}
+        while len(d) < n:
+            d[choice(l)] = 1
+        return d.keys()
+    
 from BitTorrent.platform import bttime as time
 
 class KItem:
@@ -29,6 +40,9 @@ class KItem:
         else:
             return 0
 
+    def __hash__(self):
+        return self.v.__hash__()
+    
     def __repr__(self):
         return `(self.k, self.v, time() - self.t)`
 

@@ -10,6 +10,7 @@
 
 # Written by Bram Cohen
 
+from RawServer_magic import Handler
 from cStringIO import StringIO
 from sys import stdout
 import time
@@ -159,7 +160,7 @@ class HTTPConnection(object):
             self.connection.shutdown(1)
 
 
-class HTTPHandler(object):
+class HTTPHandler(Handler):
 
     def __init__(self, getfunc, minflush):
         self.connections = {}
@@ -167,7 +168,7 @@ class HTTPHandler(object):
         self.minflush = minflush
         self.lastflush = time.time()
 
-    def external_connection_made(self, connection):
+    def connection_made(self, connection):
         self.connections[connection] = HTTPConnection(self, connection)
 
     def connection_flushed(self, connection):

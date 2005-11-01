@@ -48,15 +48,14 @@ class ActionBase(object):
         self.outstanding = 0
         self.finished = 0
     
-        def sort(a, b):
-            """ this function is for sorting nodes relative to the ID we are looking for """
-            x, y = self.num ^ a.num, self.num ^ b.num
-            if x > y:
-                return 1
-            elif x < y:
-                return -1
-            return 0
-        self.sort = sort
+    def sort(self, a, b):
+        """ this function is for sorting nodes relative to the ID we are looking for """
+        x, y = self.num ^ a.num, self.num ^ b.num
+        if x > y:
+            return 1
+        elif x < y:
+            return -1
+        return 0
 
     def shouldQuery(self, node):
         if node.id == self.table.node.id:
@@ -129,14 +128,23 @@ class FindNode(ActionBase):
         if self.outstanding == 0:
             ## all done!!
             self.finished=1
+            self._cleanup()
             self.callLater(self.callback, 0, (l[:K],))
-    
+
+    def _cleanup(self):
+        self.foundq = None
+        self.found = None
+        self.queried = None
+        self.queriedip = None
+        self.answered = None
+
     def makeMsgFailed(self, node):
-        def defaultGotNodes(err, self=self, node=node):
-            self.outstanding = self.outstanding - 1
-            self.schedule()
-        return defaultGotNodes
-    
+        return self._defaultGotNodes
+
+    def _defaultGotNodes(self, err):
+        self.outstanding = self.outstanding - 1
+        self.schedule()
+
     def goWithNodes(self, nodes):
         """
             this starts the process, our argument is a transaction with t.extras being our list of nodes
@@ -226,6 +234,7 @@ class GetValue(FindNode):
         if self.outstanding == 0:
             ## all done, didn't find it!!
             self.finished=1
+            self._cleanup()
             self.callLater(self.callback,0, ([],))
 
     ## get value
@@ -285,6 +294,7 @@ class StoreValue(ActionBase):
             except IndexError:
                 if self.outstanding == 0:
                     self.finished = 1
+                    self._cleanup()
                     self.callback(self.stored)
                 return
             else:

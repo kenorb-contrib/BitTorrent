@@ -12,6 +12,23 @@
 
 from BitTorrent.platform import bttime
 
+def minctx(a,b):
+    A = B = 0
+    if a.rate > 0:
+        A = a.offset_amount / a.rate
+    if b.rate > 0:
+        B = b.offset_amount / b.rate
+    if A <= B:
+            return a
+    return b
+
+class Dummy(object):
+    def __init__(self, next):
+        self.next_upload = next
+    def send_partial(self, size):
+        return 0
+    closed = False
+
 class RateLimitedGroup(object):
     def __init__(self, rate, got_exception):
         self.got_exception = got_exception
@@ -34,12 +51,11 @@ class MultiRateLimiter(object):
         self.last = None
         self.upload_rate = 0
         self.unitsize = 17000
-        self.min_delay = 0.333
         self.offset_amount = 0
         self.ctxs = [] # list of contexts with connections in the queue
         self.ctx_counts = {} # dict conn -> how many connections each context has
         
-    def set_parameters(self, rate, unitsize, min_delay):
+    def set_parameters(self, rate, unitsize):
         if unitsize > 17000:
             # Since data is sent to peers in a round-robin fashion, max one
             # full request at a time, setting this higher would send more data
@@ -48,7 +64,6 @@ class MultiRateLimiter(object):
             unitsize = 17000
         self.upload_rate = rate * 1024
         self.unitsize = unitsize
-        self.min_delay = min_delay
         self.lasttime = bttime()
         self.offset_amount = 0
 
@@ -81,16 +96,6 @@ class MultiRateLimiter(object):
         self.offset_amount = max(self.offset_amount, -1 * self.upload_rate)
         self.lasttime = t
 
-        def minctx(a,b):
-            A = B = 0
-            if a.rate > 0:
-                A = a.offset_amount / a.rate
-            if b.rate > 0:
-                B = b.offset_amount / b.rate
-            if A <= B:
-                    return a
-            return b
-        
         for ctx in self.ctxs:
             if ctx.lasttime != t:
                 ctx.offset_amount -=(t - ctx.lasttime) * ctx.rate
@@ -152,19 +157,13 @@ class MultiRateLimiter(object):
                 myDelay = self.offset_amount / self.upload_rate
             if min_offset.rate > 0:
                 minCtxDelay = min_offset.offset_amount / min_offset.rate
-            delay = max(self.min_delay, max(myDelay, minCtxDelay))
+            delay = max(myDelay, minCtxDelay)
             self.sched(self.try_send, delay)
 
 
     def clean_closed(self):
         if self.last is None:
             return
-        class Dummy(object):
-            def __init__(self, next):
-                self.next_upload = next
-            def send_partial(self, size):
-                return 0
-            closed = False
         orig = self.last
         if self.last.closed:
             self.last = Dummy(self.last.next_upload)

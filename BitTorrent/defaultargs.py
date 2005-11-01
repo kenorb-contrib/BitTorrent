@@ -27,6 +27,8 @@ class MyBool(object):
 MYTRUE = MyBool(True)
 MYFALSE = MyBool(False)
 
+from BitTorrent import languages
+
 basic_options = [
     ('data_dir', '',
      _("directory under which variable data such as fastresume information "
@@ -37,7 +39,7 @@ basic_options = [
        "If left empty, autodetected. "
        "Autodetection doesn't work under python versions older than 2.3")),
     ('language', '',
-     _("ISO Language code to use")),
+     _("ISO Language code to use") + ': ' + ', '.join(languages)),
     ]
 
 common_options = [
@@ -120,8 +122,6 @@ rare_options = [
      _("address of HTTP proxy to use for tracker connections")),
     ('close_with_rst', 0,
      _("close connections with RST and avoid the TCP TIME_WAIT state")),
-    ('min_ratelimiter_delay', 0,
-     _("minimum delay between upload pulses in seconds, smaller provides better short term accuracy but more CPU usage")),
     ('twisted', -1,
      _("Use Twisted network libraries for network connections. 1 means use twisted, 0 means do not use twisted, -1 means autodetect, and prefer twisted")),
     ]

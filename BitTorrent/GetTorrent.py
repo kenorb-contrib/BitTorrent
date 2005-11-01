@@ -15,10 +15,21 @@
 
 import os
 import re
-import urllib
+import zurllib
 from bencode import bdecode
+from BitTorrent.platform import get_cache_dir
 
 urlpat = re.compile('^\w+://')
+
+def get_quietly(arg):
+    (data, errors) = get(arg)
+    # If there's an error opening a file from the IE cache,
+    # act like we simply didn't get a file (because we didn't)
+    if errors:
+        cache = get_cache_dir()
+        if (cache is not None) and (cache in arg):
+            errors = []
+    return data, errors
 
 def get(arg):
     data = None
@@ -40,7 +51,7 @@ def get_url(url):
                 url)
     u = None
     try:
-        u = urllib.urlopen(url)
+        u = zurllib.urlopen(url)
         data = u.read()
         u.close()
         b = bdecode(data)
@@ -67,16 +78,6 @@ def get_file(filename):
     except Exception, e:
         if f is not None:
             f.close()
-        if _("Temporary Internet Files") in filename:
-            errors.append(_("Could not read %s: %s. You are probably "
-                            "using a broken Internet Explorer version "
-                            "that passed BitTorrent a filename that "
-                            "doesn't exist. To work around the problem, "
-                            "try clearing your Temporary Internet Files "
-                            "or right-click the link and save the "
-                            ".torrent file to disk first.") %
-                            (filename, str(e)))
-        else:
-            errors.append((_("Could not read %s") % filename) + (': %s' % str(e)))
+        errors.append((_("Could not read %s") % filename) + (': %s' % str(e)))
 
     return data, errors

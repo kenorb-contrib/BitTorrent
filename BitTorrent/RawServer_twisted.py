@@ -17,10 +17,10 @@ import signal
 import struct
 import thread
 from cStringIO import StringIO
-from traceback import print_exc
+from traceback import print_exc, print_stack
 
-from BitTorrent import WARNING, CRITICAL, FAQ_URL
-
+from BitTorrent import BTFailure, WARNING, CRITICAL, FAQ_URL
+    
 noSignals = True
 
 if os.name == 'nt':
@@ -120,8 +120,18 @@ class ConnectionWrapper(object):
         try:        
             address = self.transport.getPeer()
         except:
-            # udp, for example
-            address = self.transport.getHost()
+            try:
+                # udp, for example
+                address = self.transport.getHost()
+            except:
+                if not self.transport.__dict__.has_key("state"):
+                    self.transport.state = "NO STATE!"
+                sys.stderr.write("UNKNOWN HOST/PEER: " + str(self.transport) + ":" + str(self.transport.state)+ ":" + str(self.handler) + "\n")
+                print_stack()
+                # fallback incase the unknown happens,
+                # there's no use raising an exception
+                address = ("unknown", -1)
+                pass
 
         try:            
             self.ip = address.host
@@ -153,6 +163,15 @@ class ConnectionWrapper(object):
 
     def is_flushed(self):
         return self.buffer.is_flushed()
+
+    def shutdown(self, how):
+        if how == socket.SHUT_WR:
+            self.transport.loseWriteConnection()
+            self.buffer.stopWriting()
+        elif how == socket.SHUT_RD:
+            self.transport.stopListening()
+        else:
+            self.close()
             
     def close(self):
         self.buffer.stopWriting()
@@ -291,6 +310,10 @@ class CallbackDatagramProtocol(CallbackConnection, DatagramProtocol):
         self.can_timeout = 0
         self.attachTransport(self.transport, self.connection, ())
         DatagramProtocol.startProtocol(self)
+
+    def connectionRefused(self):
+        # we don't use these at all for udp, so skip the CallbackConnection
+        DatagramProtocol.connectionRefused(self)
         
 class OutgoingConnectionFactory(ClientFactory):
         
@@ -307,11 +330,10 @@ class OutgoingConnectionFactory(ClientFactory):
             
         self.rawserver._remove_socket(self.connection)
 
-class Unimplemented(Exception):
-    pass
-
 def UnimplementedWarning(msg):
-    print "UnimplementedWarning: " + str(msg)
+    #ok, I think people get the message
+    #print "UnimplementedWarning: " + str(msg)
+    pass
 
 #Encoder calls stop_listening(socket) then socket.close()
 #to us they mean the same thing, so swallow the second call
@@ -371,16 +393,13 @@ class RawServerMixin(object):
 
     # must be called from the main thread
     def install_sigint_handler(self):
-        def handler(signum, frame):
-            self.external_add_task(self.doneflag.set, 0)
-            # Allow pressing ctrl-c multiple times to raise KeyboardInterrupt,
-            # in case the program is in an infinite loop
-            signal.signal(signal.SIGINT, signal.default_int_handler)
-        signal.signal(signal.SIGINT, handler)
+        signal.signal(signal.SIGINT, self._handler)
 
-
-def _sl(x):
-    return str(len(x))
+    def _handler(self, signum, frame):
+        self.external_add_task(self.doneflag.set, 0)
+        # Allow pressing ctrl-c multiple times to raise KeyboardInterrupt,
+        # in case the program is in an infinite loop
+        signal.signal(signal.SIGINT, signal.default_int_handler)
 
 class RawServer(RawServerMixin):
 
@@ -393,50 +412,6 @@ class RawServer(RawServerMixin):
         self.udp_sockets = {}
         self.live_contexts = {None : 1}
         self.listened = 0
-
-        #l2 = task.LoopingCall(self._print_connection_count)
-        #l2.start(5)
-
-    def _log(self, msg):
-        f = open("connections.txt", "a")
-        print str(msg)
-        f.write(str(msg) + "\n")
-        f.close()
-
-    def _print_connection_count(self):
-        c = len(self.single_sockets)
-        u = len(self.udp_sockets)
-        c -= u
-        s = "Connections(" + str(id(self)) + "): tcp(" + str(c) + ") upd(" + str(u) + ")"
-        self._log(s)
-
-        d = dict()
-        for s in self.single_sockets:
-            state = "None"
-            if s.transport:
-                try:
-                    state = s.transport.state
-                except:
-                    state = "has transport"
-            else:
-                state = "No transport"
-            if not d.has_key(state):
-                d[state] = 0
-            d[state] += 1
-        self._log(d)
-
-        sizes = "lh(" + _sl(self.listening_handlers)
-        sizes += ") ss(" + _sl(self.single_sockets)
-        sizes += ") us(" + _sl(self.udp_sockets)
-        sizes += ") lc(" + _sl(self.live_contexts) + ")"
-        self._log(sizes)
-        
-        sizes = ""
-        i = 0
-        for lc in self.live_contexts:
-            sizes += str(i) + ":" + _sl(self.live_contexts[lc]) + " "
-            i += 1
-        self._log(sizes)
         
     def add_context(self, context):
         self.live_contexts[context] = 1
@@ -485,7 +460,10 @@ class RawServer(RawServerMixin):
         try:        
             listening_port = reactor.listenTCP(s.port, s.factory, interface=s.bind)
         except error.CannotListenError, e:
-            raise e.socketError       
+            if e[0] != 0:
+                raise e.socketError
+            else:
+                raise
         listening_port.listening = 1
         s.listening_port = listening_port
         
@@ -565,7 +543,7 @@ class RawServer(RawServerMixin):
         bindaddr = None
         if do_bind:
             bindaddr = self.config['bind']
-            if bindaddr and len(binadder) >= 0:
+            if bindaddr and len(bindaddr) >= 0:
                 bindaddr = (bindaddr, 0)
             else:
                 bindaddr = None
@@ -597,7 +575,7 @@ class RawServer(RawServerMixin):
         self.listened = 1
         
         l = task.LoopingCall(self.stop)
-        l.start(1)
+        l.start(1, now = False)
         
         if noSignals:
             reactor.run(installSignalHandlers=False)
@@ -628,3 +606,4 @@ class RawServer(RawServerMixin):
             s.handler = None
 
         del self.single_sockets[s]
+        
