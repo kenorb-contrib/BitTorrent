@@ -7,9 +7,9 @@ msgid ""
 msgstr ""
 "Project-Id-Version: BitTorrent 4.2\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2005-11-01 12:25-0800\n"
-"PO-Revision-Date: 2005-08-19 09:03-0700\n"
-"Last-Translator: Gabriel Beecham <gabriel_beecham@yahoo.co.uk>\n"
+"POT-Creation-Date: 2005-11-15 14:20-0800\n"
+"PO-Revision-Date: 2005-11-07 13:30-0800\n"
+"Last-Translator: Gareth Peoples <garethppls@iol.ie>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -90,7 +90,7 @@ msgstr ""
 
 #: bittorrent.py:407
 msgid "Running normally"
-msgstr ""
+msgstr "Ag siuil de gnáth"
 
 #: bittorrent.py:409
 msgid "Firewalled/NATted"
@@ -99,7 +99,7 @@ msgstr ""
 #: bittorrent.py:445
 #, python-format
 msgid "New %s version available"
-msgstr ""
+msgstr "Tá ceann nua %s le fháil"
 
 #: bittorrent.py:460
 #, python-format
@@ -109,7 +109,7 @@ msgstr ""
 #: bittorrent.py:461
 #, python-format
 msgid "You are using %s, and the new version is %s.\n"
-msgstr ""
+msgstr "Tá tú ag usáid %s agus tá an ceann nua %s.\n"
 
 #: bittorrent.py:462
 #, python-format
@@ -117,14 +117,16 @@ msgid ""
 "You can always get the latest version from \n"
 "%s"
 msgstr ""
+"Tá tú abalta an ceann nua a fháil i gcónaí ó \n"
+" %s"
 
 #: bittorrent.py:469 bittorrent.py:1795
 msgid "Download _later"
-msgstr ""
+msgstr "Íoslodáil níos deanaí"
 
 #: bittorrent.py:472 bittorrent.py:1783
 msgid "Download _now"
-msgstr ""
+msgstr "Íoslodáil anois"
 
 #: bittorrent.py:478
 msgid "_Remind me later"
@@ -133,7 +135,7 @@ msgstr ""
 #: bittorrent.py:516
 #, python-format
 msgid "About %s"
-msgstr ""
+msgstr "Gach rud faoi %s"
 
 #: bittorrent.py:531
 msgid "Beta"
@@ -185,7 +187,7 @@ msgstr ""
 
 #: bittorrent.py:771
 msgid "Change..."
-msgstr ""
+msgstr "Athraigh..."
 
 #: bittorrent.py:777
 msgid "Ask where to save each new download"
@@ -193,11 +195,11 @@ msgstr ""
 
 #: bittorrent.py:786
 msgid "Downloading"
-msgstr ""
+msgstr "Ag ioslódáil"
 
 #: bittorrent.py:788
 msgid "Starting additional torrents manually:"
-msgstr ""
+msgstr "Ag tosnaíonn níos mo torrents"
 
 #: bittorrent.py:797
 msgid "Always stops the _last running torrent"
@@ -209,7 +211,7 @@ msgstr ""
 
 #: bittorrent.py:809
 msgid "_Asks each time"
-msgstr ""
+msgstr "Ag cur ceist gach uair"
 
 #: bittorrent.py:826
 msgid "Seeding"
@@ -231,15 +233,15 @@ msgstr ""
 
 #: bittorrent.py:925
 msgid "Network"
-msgstr ""
+msgstr "Gréasán"
 
 #: bittorrent.py:927
 msgid "Look for available port:"
-msgstr ""
+msgstr "Ag torthaíocht port breise"
 
 #: bittorrent.py:930
 msgid "starting at port: "
-msgstr ""
+msgstr "Ag tosnú ar port:"
 
 #: bittorrent.py:943
 msgid "IP to report to the tracker:"
@@ -270,7 +272,7 @@ msgstr ""
 
 #: bittorrent.py:981
 msgid "Option"
-msgstr ""
+msgstr "Rogha"
 
 #: bittorrent.py:986
 msgid "Value"
@@ -1136,33 +1138,33 @@ msgid ""
 "seeding the last completed torrent."
 msgstr ""
 
-#: BitTorrent/NewVersion.py:87
+#: BitTorrent/NewVersion.py:92
 #, python-format
 msgid "Could not get latest version from %s"
 msgstr ""
 
-#: BitTorrent/NewVersion.py:92
+#: BitTorrent/NewVersion.py:97
 #, python-format
 msgid "Could not parse new version string from %s"
 msgstr ""
 
-#: BitTorrent/NewVersion.py:198
+#: BitTorrent/NewVersion.py:213
 #, python-format
 msgid ""
 "Could not find a suitable temporary location to save the %s %s installer."
 msgstr ""
 
-#: BitTorrent/NewVersion.py:217
+#: BitTorrent/NewVersion.py:232
 #, python-format
 msgid "No torrent file available for %s %s installer."
 msgstr ""
 
-#: BitTorrent/NewVersion.py:227
+#: BitTorrent/NewVersion.py:242
 #, python-format
 msgid "%s %s installer appears to be corrupt or missing."
 msgstr ""
 
-#: BitTorrent/NewVersion.py:234
+#: BitTorrent/NewVersion.py:249
 msgid "Cannot launch installer on this OS"
 msgstr ""
 
@@ -2238,17 +2240,17 @@ msgstr ""
 msgid "shut down"
 msgstr ""
 
-#: BitTorrent/__init__.py:22
-msgid "Python 2.2.1 or newer required"
+#: BitTorrent/RawServer_magic.py:32
+#, python-format
+msgid "Too late to switch RawServer backends, %s has already been used."
 msgstr ""
 
 #: BitTorrent/Encoder.py:169
 msgid "Can't start two separate instances of the same torrent"
 msgstr ""
 
-#: BitTorrent/RawServer_magic.py:22
-#, python-format
-msgid "Too late to switch RawServer backends, %s has already been used."
+#: BitTorrent/__init__.py:22
+msgid "Python 2.2.1 or newer required"
 msgstr ""
 
 #: BitTorrent/parseargs.py:26

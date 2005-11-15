@@ -7,9 +7,9 @@ msgid ""
 msgstr ""
 "Project-Id-Version: BitTorrent 4.2\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2005-11-01 12:25-0800\n"
-"PO-Revision-Date: 2005-10-17 05:25-0700\n"
-"Last-Translator: Priit Laes <amd@store20.com>\n"
+"POT-Creation-Date: 2005-11-15 14:20-0800\n"
+"PO-Revision-Date: 2005-11-12 09:36-0800\n"
+"Last-Translator: eerik mägi <eerik46@gmail.com>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -222,6 +222,8 @@ msgid ""
 "Seed completed torrents: until share ratio reaches [_] percent, or for [_] "
 "minutes, whichever comes first."
 msgstr ""
+"Seemenda lõpetatud torrenteid: kuni jagamistase jõuab [_] protsendini või "
+"[_] minutit. Oleneb, et kumb enne lõpetab."
 
 #: bittorrent.py:879 bittorrent.py:913
 msgid "Seed indefinitely"
@@ -292,7 +294,7 @@ msgstr ""
 
 #: bittorrent.py:1002
 msgid "Choose default download directory"
-msgstr ""
+msgstr "Vali vaikimisi tavaline kaust, kuhu asjad alla laadida."
 
 #: bittorrent.py:1063
 #, python-format
@@ -301,7 +303,7 @@ msgstr ""
 
 #: bittorrent.py:1072
 msgid "Apply"
-msgstr ""
+msgstr "Nõus"
 
 #: bittorrent.py:1073
 msgid "Allocate"
@@ -309,65 +311,65 @@ msgstr ""
 
 #: bittorrent.py:1074
 msgid "Never download"
-msgstr ""
+msgstr "Mitte kunagi alla laadida"
 
 #: bittorrent.py:1075
 msgid "Decrease"
-msgstr ""
+msgstr "Kahanda"
 
 #: bittorrent.py:1076
 msgid "Increase"
-msgstr ""
+msgstr "Tõsta"
 
 #: bittorrent.py:1086 launchmany-curses.py:146
 msgid "Filename"
-msgstr ""
+msgstr "Faili nimi"
 
 #: bittorrent.py:1086
 msgid "Length"
-msgstr ""
+msgstr "Suurus"
 
 #: bittorrent.py:1086
 msgid "%"
-msgstr ""
+msgstr "%"
 
 #: bittorrent.py:1250
 #, python-format
 msgid "Peers for \"%s\""
-msgstr ""
+msgstr "Jagajad \"%s\"-le"
 
 #: bittorrent.py:1256
 msgid "IP address"
-msgstr ""
+msgstr "IP aadress"
 
 #: bittorrent.py:1256
 msgid "Client"
-msgstr ""
+msgstr "Klient"
 
 #: bittorrent.py:1256
 msgid "Connection"
-msgstr ""
+msgstr "Ühendus"
 
 #: bittorrent.py:1256
 msgid "KB/s down"
-msgstr ""
+msgstr "KB/s allalaadimine"
 
 #: bittorrent.py:1256
 msgid "KB/s up"
-msgstr ""
+msgstr "KB/s üleslaadmine"
 
 #: bittorrent.py:1256
 msgid "MB downloaded"
-msgstr ""
+msgstr "MB allaleatud"
 
 #: bittorrent.py:1256
 msgid "MB uploaded"
-msgstr ""
+msgstr "MB üleslaetud"
 
 #: bittorrent.py:1256
 #, python-format
 msgid "% complete"
-msgstr ""
+msgstr "% valmis"
 
 #: bittorrent.py:1256
 msgid "KB/s est. peer download"
@@ -391,7 +393,7 @@ msgstr ""
 
 #: bittorrent.py:1268
 msgid "Optimistic upload"
-msgstr ""
+msgstr "Optimistlik üleslaadimine"
 
 #: bittorrent.py:1353
 msgid "remote"
@@ -399,21 +401,21 @@ msgstr ""
 
 #: bittorrent.py:1353
 msgid "local"
-msgstr ""
+msgstr "Lokaalne"
 
 #: bittorrent.py:1389
 msgid "bad peer"
-msgstr ""
+msgstr "Halb jagaja"
 
 #: bittorrent.py:1399
 #, python-format
 msgid "%d ok"
-msgstr ""
+msgstr "%d korras"
 
 #: bittorrent.py:1400
 #, python-format
 msgid "%d bad"
-msgstr ""
+msgstr "%d mitte korras"
 
 #: bittorrent.py:1402
 msgid "banned"
@@ -421,16 +423,16 @@ msgstr ""
 
 #: bittorrent.py:1404
 msgid "ok"
-msgstr ""
+msgstr "ok"
 
 #: bittorrent.py:1440
 #, python-format
 msgid "Info for \"%s\""
-msgstr ""
+msgstr "Info \"%s\"-le"
 
 #: bittorrent.py:1458
 msgid "Torrent name:"
-msgstr ""
+msgstr "Torrenti nimi"
 
 #: bittorrent.py:1463
 msgid "(trackerless torrent)"
@@ -442,16 +444,16 @@ msgstr ""
 
 #: bittorrent.py:1470
 msgid ", in one file"
-msgstr ""
+msgstr ", ühes failis"
 
 #: bittorrent.py:1472
 #, python-format
 msgid ", in %d files"
-msgstr ""
+msgstr ", %d failis"
 
 #: bittorrent.py:1473
 msgid "Total size:"
-msgstr ""
+msgstr "Suurus kokku:"
 
 #: bittorrent.py:1480
 msgid "Pieces:"
@@ -463,19 +465,19 @@ msgstr ""
 
 #: bittorrent.py:1492
 msgid "Save in:"
-msgstr ""
+msgstr "Salvestuskoht:"
 
 #: bittorrent.py:1496
 msgid "File name:"
-msgstr ""
+msgstr "Faili nimi:"
 
 #: bittorrent.py:1522
 msgid "Open directory"
-msgstr ""
+msgstr "Ava kaust"
 
 #: bittorrent.py:1527
 msgid "Show file list"
-msgstr ""
+msgstr "Näita failinimekirja"
 
 #: bittorrent.py:1561
 msgid "drag to reorder"
@@ -487,15 +489,15 @@ msgstr "menüü valimiseks tee parem hiireklikk "
 
 #: bittorrent.py:1627
 msgid "Torrent info"
-msgstr ""
+msgstr "Torrenti info"
 
 #: bittorrent.py:1636 bittorrent.py:2101
 msgid "Remove torrent"
-msgstr ""
+msgstr "Eemalda torrent"
 
 #: bittorrent.py:1640
 msgid "Abort torrent"
-msgstr ""
+msgstr "Peata torrent"
 
 #: bittorrent.py:1707
 #, python-format
@@ -504,33 +506,33 @@ msgstr ""
 
 #: bittorrent.py:1709
 msgid ", will seed indefinitely."
-msgstr ""
+msgstr ", seemenda igaveseni."
 
 #: bittorrent.py:1712
 #, python-format
 msgid "Done, share ratio: %d%%"
-msgstr ""
+msgstr "Valmis, jagamistase %d%%"
 
 #: bittorrent.py:1715
 #, python-format
 msgid "Done, %s uploaded"
-msgstr ""
+msgstr "Valmis, %s üleslaetud"
 
 #: bittorrent.py:1718 bittorrent.py:2156
 msgid "Done"
-msgstr ""
+msgstr "Valmis"
 
 #: bittorrent.py:1737
 msgid "Torrent _info"
-msgstr ""
+msgstr "Torrenti _info"
 
 #: bittorrent.py:1741
 msgid "_Open directory"
-msgstr ""
+msgstr "_Ava kaust"
 
 #: bittorrent.py:1745
 msgid "_File list"
-msgstr ""
+msgstr "_Faili nimekiri"
 
 #: bittorrent.py:1747
 msgid "_Peer list"
@@ -538,37 +540,37 @@ msgstr ""
 
 #: bittorrent.py:1757
 msgid "_Change location"
-msgstr ""
+msgstr "_Muuda asukohta"
 
 #: bittorrent.py:1760
 msgid "_Seed indefinitely"
-msgstr ""
+msgstr "_Seemendada igaveseni"
 
 #: bittorrent.py:1780
 msgid "Re_start"
-msgstr ""
+msgstr "Alustada _uuesti"
 
 #: bittorrent.py:1791
 msgid "_Finish"
-msgstr ""
+msgstr "_Lõpeta"
 
 #: bittorrent.py:1792
 msgid "_Remove"
-msgstr ""
+msgstr "_Eemalda"
 
 #: bittorrent.py:1799
 msgid "_Abort"
-msgstr ""
+msgstr "_Peata"
 
 #: bittorrent.py:1880
 #, python-format
 msgid "Are you sure you want to remove \"%s\"?"
-msgstr ""
+msgstr "Kas sa oled kindel, et soovid eemaldada \"%s\"?"
 
 #: bittorrent.py:1883
 #, python-format
 msgid "Your share ratio for this torrent is %d%%. "
-msgstr ""
+msgstr "Sinu jagamistase selle torrentiga on %d%%"
 
 #: bittorrent.py:1885
 #, python-format
@@ -577,31 +579,31 @@ msgstr ""
 
 #: bittorrent.py:1888
 msgid "Remove this torrent?"
-msgstr ""
+msgstr "Eemalda see torrent?"
 
 #: bittorrent.py:1910
 msgid "Finished"
-msgstr ""
+msgstr "Lõpetatud"
 
 #: bittorrent.py:1911
 msgid "drag into list to seed"
-msgstr ""
+msgstr "lohista nimekirja, et seemendada"
 
 #: bittorrent.py:1914
 msgid "Failed"
-msgstr ""
+msgstr "Ebaõnnestus"
 
 #: bittorrent.py:1915
 msgid "drag into list to resume"
-msgstr ""
+msgstr "lohista nimekirja, et jätkata"
 
 #: bittorrent.py:1974
 msgid "Waiting"
-msgstr ""
+msgstr "Ootab"
 
 #: bittorrent.py:2028
 msgid "Running"
-msgstr ""
+msgstr "Töötab"
 
 #: bittorrent.py:2053
 #, python-format
@@ -655,11 +657,11 @@ msgstr ""
 
 #: bittorrent.py:2179
 msgid "Download rate"
-msgstr ""
+msgstr "Allalaadimise tase"
 
 #: bittorrent.py:2181
 msgid "Upload rate"
-msgstr ""
+msgstr "Üleslaadimise tase"
 
 #: bittorrent.py:2196
 msgid "NA"
@@ -672,27 +674,27 @@ msgstr ""
 
 #: bittorrent.py:2633
 msgid "_Open torrent file"
-msgstr ""
+msgstr "_Ava torrenti fail"
 
 #: bittorrent.py:2634
 msgid "Open torrent _URL"
-msgstr ""
+msgstr "Ava torrent _interneti kaudu"
 
 #: bittorrent.py:2635
 msgid "Make _new torrent"
-msgstr ""
+msgstr "Tee _uus torrent"
 
 #: bittorrent.py:2638
 msgid "_Pause/Play"
-msgstr ""
+msgstr "_Paus/Edasi"
 
 #: bittorrent.py:2640
 msgid "_Quit"
-msgstr ""
+msgstr "_Välju"
 
 #: bittorrent.py:2642
 msgid "Show/Hide _finished torrents"
-msgstr ""
+msgstr "Näita/Peida _lõpetatud torrenteid"
 
 #: bittorrent.py:2644
 msgid "_Resize window to fit"
@@ -704,35 +706,35 @@ msgstr ""
 
 #: bittorrent.py:2649
 msgid "_Settings"
-msgstr ""
+msgstr "_Seaded"
 
 #: bittorrent.py:2652 bittorrent.py:2668
 msgid "_Help"
-msgstr ""
+msgstr "_Abi"
 
 #: bittorrent.py:2654
 msgid "_About"
-msgstr ""
+msgstr "_Info"
 
 #: bittorrent.py:2655
 msgid "_Donate"
-msgstr ""
+msgstr "_Anneta raha"
 
 #: bittorrent.py:2659
 msgid "_File"
-msgstr ""
+msgstr "_Fail"
 
 #: bittorrent.py:2664
 msgid "_View"
-msgstr ""
+msgstr "_Vaata"
 
 #: bittorrent.py:2705
 msgid "Search for torrents"
-msgstr ""
+msgstr "Otsi torrenteid"
 
 #: bittorrent.py:2848
 msgid "(stopped)"
-msgstr ""
+msgstr "(peatatud)"
 
 #: bittorrent.py:2860
 msgid "(multiple)"
@@ -987,7 +989,7 @@ msgstr ""
 #: BitTorrent/GUI.py:214
 #, python-format
 msgid "1 day %d hours"
-msgstr ""
+msgstr "1 päev ja %d tundi"
 
 #: BitTorrent/GUI.py:216
 #, python-format
@@ -1146,33 +1148,33 @@ msgid ""
 "seeding the last completed torrent."
 msgstr ""
 
-#: BitTorrent/NewVersion.py:87
+#: BitTorrent/NewVersion.py:92
 #, python-format
 msgid "Could not get latest version from %s"
 msgstr ""
 
-#: BitTorrent/NewVersion.py:92
+#: BitTorrent/NewVersion.py:97
 #, python-format
 msgid "Could not parse new version string from %s"
 msgstr ""
 
-#: BitTorrent/NewVersion.py:198
+#: BitTorrent/NewVersion.py:213
 #, python-format
 msgid ""
 "Could not find a suitable temporary location to save the %s %s installer."
 msgstr ""
 
-#: BitTorrent/NewVersion.py:217
+#: BitTorrent/NewVersion.py:232
 #, python-format
 msgid "No torrent file available for %s %s installer."
 msgstr ""
 
-#: BitTorrent/NewVersion.py:227
+#: BitTorrent/NewVersion.py:242
 #, python-format
 msgid "%s %s installer appears to be corrupt or missing."
 msgstr ""
 
-#: BitTorrent/NewVersion.py:234
+#: BitTorrent/NewVersion.py:249
 msgid "Cannot launch installer on this OS"
 msgstr ""
 
@@ -2248,18 +2250,18 @@ msgstr ""
 msgid "shut down"
 msgstr ""
 
-#: BitTorrent/__init__.py:22
-msgid "Python 2.2.1 or newer required"
+#: BitTorrent/RawServer_magic.py:32
+#, python-format
+msgid "Too late to switch RawServer backends, %s has already been used."
 msgstr ""
 
 #: BitTorrent/Encoder.py:169
 msgid "Can't start two separate instances of the same torrent"
 msgstr ""
 
-#: BitTorrent/RawServer_magic.py:22
-#, python-format
-msgid "Too late to switch RawServer backends, %s has already been used."
-msgstr ""
+#: BitTorrent/__init__.py:22
+msgid "Python 2.2.1 or newer required"
+msgstr "Vaja on Python 2.2.1 või uuemat"
 
 #: BitTorrent/parseargs.py:26
 #, python-format

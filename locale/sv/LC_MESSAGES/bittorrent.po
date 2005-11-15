@@ -6,9 +6,9 @@ msgid ""
 msgstr ""
 "Project-Id-Version: BitTorrent 4.2\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2005-11-01 14:43-0800\n"
-"PO-Revision-Date: 2005-11-01 00:46-0800\n"
-"Last-Translator: Essi <agah@kth.se>\n"
+"POT-Creation-Date: 2005-11-15 17:53-0800\n"
+"PO-Revision-Date: 2005-11-11 10:42-0800\n"
+"Last-Translator: translate4me <matt-translate4me@bittorrent.com>\n"
 "Language-Team: LANGUAGE <bugs (at) bittorrent (dot) com>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -23,7 +23,7 @@ msgstr "Installera Python 2.3 eller senare"
 
 #: bittorrent.py:36
 msgid "PyGTK 2.4 or newer required"
-msgstr "PyGTK 2.4 eller nyare krävs"
+msgstr "PyGTK 2.4 eller senare krävs"
 
 #: bittorrent.py:242
 msgid "Enter torrent URL"
@@ -71,7 +71,7 @@ msgstr "OC3"
 
 #: bittorrent.py:299
 msgid "Maximum upload rate:"
-msgstr "Maximal upladdnings hastighet"
+msgstr "Maximal upladdningshastighet"
 
 #: bittorrent.py:363
 msgid "Temporarily stop all running torrents"
@@ -1164,17 +1164,17 @@ msgstr ""
 "Startar inte torrent då denna redan möter de krav som satts för när den "
 "senast färdiga torrenten skall sluta seedas."
 
-#: BitTorrent/NewVersion.py:87
+#: BitTorrent/NewVersion.py:92
 #, python-format
 msgid "Could not get latest version from %s"
 msgstr "Kunde inte motta den senaste versionen från %s"
 
-#: BitTorrent/NewVersion.py:92
+#: BitTorrent/NewVersion.py:97
 #, python-format
 msgid "Could not parse new version string from %s"
 msgstr "Kunde inte tolka den nya version-strängen från %s"
 
-#: BitTorrent/NewVersion.py:198
+#: BitTorrent/NewVersion.py:213
 #, python-format
 msgid ""
 "Could not find a suitable temporary location to save the %s %s installer."
@@ -1182,17 +1182,17 @@ msgstr ""
 "Kunde inte finna en lämplig tillfällig lagringsplats för %s %s "
 "installationen."
 
-#: BitTorrent/NewVersion.py:217
+#: BitTorrent/NewVersion.py:232
 #, python-format
 msgid "No torrent file available for %s %s installer."
 msgstr "Ingen torrentfil tillgänglig för %s %s installationen."
 
-#: BitTorrent/NewVersion.py:227
+#: BitTorrent/NewVersion.py:242
 #, python-format
 msgid "%s %s installer appears to be corrupt or missing."
 msgstr "%s %s installationen verkar vara korrupt eller saknas."
 
-#: BitTorrent/NewVersion.py:234
+#: BitTorrent/NewVersion.py:249
 msgid "Cannot launch installer on this OS"
 msgstr "Kan ej starta installationen under detta OS"
 
@@ -1409,6 +1409,9 @@ msgid ""
 "Use Twisted network libraries for network connections. 1 means use twisted, "
 "0 means do not use twisted, -1 means autodetect, and prefer twisted"
 msgstr ""
+"Använd Tvinnade nätverk-bibliotek för nätverksanslutningar. 1 betyder använd "
+"tvinnade, 0 betyder använd inte tvinnade, -1 betyder upptäck automatiskt, "
+"och föredra tvinnade"
 
 #: BitTorrent/defaultargs.py:143
 msgid ""
@@ -1701,10 +1704,10 @@ msgid ""
 "It is however available for the Cygwin port of Python, running on all Win32 "
 "systems (www.cygwin.com)."
 msgstr ""
-"Denna nerladdnings gränssnitt kräver den standar Python modul \"curses\", "
-"som olyckligtvis inte är tillgänglig för den tillhörande porten till Python. "
-"Den är däremot tillgänglig för Cygwin porten till Python, som körs i alla "
-"Win32 system (www.cygwin.com)."
+"Detta nerladdningsgränssnitt kräver standard Python modul \"curses\", som "
+"olyckligtvis inte är tillgänglig för den tillhörande porten till Python. Den "
+"är däremot tillgänglig för Cygwin porten till Python, som körs i alla Win32 "
+"system (www.cygwin.com)."
 
 #: bittorrent-curses.py:54
 msgid "You may still use \"bittorrent-console\" to download."
@@ -2130,10 +2133,10 @@ msgstr ""
 "Tvingas att avsluta på grund av TCP stack flacking out. Vänligen se FAQ vid %"
 "s"
 
-#: BitTorrent/RawServer_magic.py:22
+#: BitTorrent/RawServer_magic.py:32
 #, python-format
 msgid "Too late to switch RawServer backends, %s has already been used."
-msgstr ""
+msgstr "För sent att byta RawServer backends, %s har redan använts."
 
 #: BitTorrent/Rerequester.py:92
 #, python-format
@@ -2261,7 +2264,7 @@ msgstr "ogiltigt metainfo -  inte en katalog"
 
 #: BitTorrent/btformats.py:26
 msgid "bad metainfo - bad pieces key"
-msgstr ""
+msgstr "ogiltigt metainfo - tangent för ogiltiga bitar"
 
 #: BitTorrent/btformats.py:29
 msgid "bad metainfo - illegal piece length"
@@ -2377,39 +2380,39 @@ msgstr "ogiltig \"last\" inmatning"
 msgid "Could not permanently save options: "
 msgstr "Kunde inte spara alternativ permanent:"
 
-#: BitTorrent/controlsocket.py:135 BitTorrent/controlsocket.py:183
+#: BitTorrent/controlsocket.py:135 BitTorrent/controlsocket.py:186
 msgid "Could not create control socket: "
 msgstr "Kunde inte skapa kontroll socket:"
 
-#: BitTorrent/controlsocket.py:163 BitTorrent/controlsocket.py:215
+#: BitTorrent/controlsocket.py:166 BitTorrent/controlsocket.py:218
 msgid "Could not send command: "
 msgstr "Kunde inte skicka kommando:"
 
-#: BitTorrent/controlsocket.py:173
+#: BitTorrent/controlsocket.py:176
 msgid "Could not create control socket: already in use"
 msgstr "Kunde inte skapa kontroll socket: används redan"
 
-#: BitTorrent/controlsocket.py:178
+#: BitTorrent/controlsocket.py:181
 msgid "Could not remove old control socket filename:"
 msgstr "Kunde inte ta bort gamla kontroll socket filnamn:"
 
-#: BitTorrent/controlsocket.py:238
+#: BitTorrent/controlsocket.py:241
 msgid "Global mutex already created."
 msgstr "Global mutex redan skapad."
 
-#: BitTorrent/controlsocket.py:252
+#: BitTorrent/controlsocket.py:255
 msgid "Could not find an open port!"
 msgstr "Kunde inte finna en öppen port!"
 
-#: BitTorrent/controlsocket.py:261
+#: BitTorrent/controlsocket.py:264
 msgid "Could not create application data directory!"
 msgstr "Kunde inte skapa applikations informations-katalog"
 
-#: BitTorrent/controlsocket.py:277
+#: BitTorrent/controlsocket.py:280
 msgid "Could not acquire global mutex lock for controlsocket file!"
-msgstr ""
+msgstr "Kunde inte få globalt mutex-lås för kontroll-socket fil!"
 
-#: BitTorrent/controlsocket.py:287
+#: BitTorrent/controlsocket.py:290
 msgid "A previous instance of BT was not cleaned up properly. Continuing."
 msgstr "En tidigare installation av BT var inte rensad. Fortsätter."
 
@@ -2728,6 +2731,10 @@ msgid ""
 "set, torrents in this directory show up on infopage/scrape whether they have "
 "peers or not"
 msgstr ""
+"tillåt endast nerladdningar för .torrents i denna katalog (och rekursivt i "
+"underkataloger till kataloger som inte själva har några .torrent-filer). Om "
+"inställt, visas torrents i denna katalog på infopage/scrape vare sig de har "
+"peers eller inte"
 
 #: BitTorrent/track.py:79
 msgid ""

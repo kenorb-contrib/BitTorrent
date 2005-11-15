@@ -50,7 +50,7 @@ def foo(bytes):
 # this is the base class, has base functionality and find node, no key-value mappings
 class KhashmirBase:
     _Node = KNodeBase
-    def __init__(self, host, port, data_dir, rawserver=None, max_ul_rate=1024, checkpoint=True, errfunc=None, rlcount=foo, config={'pause':False}):
+    def __init__(self, host, port, data_dir, rawserver=None, max_ul_rate=1024, checkpoint=True, errfunc=None, rlcount=foo, config={'pause':False, 'max_rate_period':20}):
         if rawserver:
             self.rawserver = rawserver
         else:

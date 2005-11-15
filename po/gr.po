@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: BitTorrent 4.2\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2005-11-01 12:25-0800\n"
+"POT-Creation-Date: 2005-11-15 14:20-0800\n"
 "PO-Revision-Date: 2005-10-20 21:34-0700\n"
 "Last-Translator: Nikolaos Gryspolakis <gryspnik@gmail.com>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1175,35 +1175,35 @@ msgstr ""
 "Δεν γίνεται η εκκίνηση του torrent επειδή ήδη συμπλήρωσε τις ρυθμίσεις του "
 "για το πότε να στματήσει να διαμοιράζει το πιο πρόσφατο ολοκληρωμένο torrent."
 
-#: BitTorrent/NewVersion.py:87
+#: BitTorrent/NewVersion.py:92
 #, python-format
 msgid "Could not get latest version from %s"
 msgstr "Αποτυχία ανάκτησης της καινούργιας έκδοσης απο %s"
 
-#: BitTorrent/NewVersion.py:92
+#: BitTorrent/NewVersion.py:97
 #, python-format
 msgid "Could not parse new version string from %s"
 msgstr "Αποτυχία προσπέλασης έκδοσης παραμέτρου από %s"
 
-#: BitTorrent/NewVersion.py:198
+#: BitTorrent/NewVersion.py:213
 #, python-format
 msgid ""
 "Could not find a suitable temporary location to save the %s %s installer."
 msgstr ""
 "Αποτυχία εύρεσης κατάλληλης τοποθεσίας αποθήκευσης για τον %s %s εφαρμοστή."
 
-#: BitTorrent/NewVersion.py:217
+#: BitTorrent/NewVersion.py:232
 #, python-format
 msgid "No torrent file available for %s %s installer."
 msgstr "Δεν υπάρχει διαθέσιμο αρχείο torrent για τον %s %s εφαρμοστή"
 
-#: BitTorrent/NewVersion.py:227
+#: BitTorrent/NewVersion.py:242
 #, python-format
 msgid "%s %s installer appears to be corrupt or missing."
 msgstr ""
 "%s %s του αρχείου εγκατάστασης φαίνεται να είναι κατεστραμένο ή λείπει."
 
-#: BitTorrent/NewVersion.py:234
+#: BitTorrent/NewVersion.py:249
 msgid "Cannot launch installer on this OS"
 msgstr "Αποτυχία εκκίνησης του εφαρμοστή σε αυτή την πλατφόρμα συστήματος."
 
@@ -2317,17 +2317,17 @@ msgstr "Αδυναμία εγγραφής δεδομένων επαναφορά�
 msgid "shut down"
 msgstr "κλείσιμο"
 
-#: BitTorrent/__init__.py:22
-msgid "Python 2.2.1 or newer required"
+#: BitTorrent/RawServer_magic.py:32
+#, python-format
+msgid "Too late to switch RawServer backends, %s has already been used."
 msgstr ""
 
 #: BitTorrent/Encoder.py:169
 msgid "Can't start two separate instances of the same torrent"
 msgstr ""
 
-#: BitTorrent/RawServer_magic.py:22
-#, python-format
-msgid "Too late to switch RawServer backends, %s has already been used."
+#: BitTorrent/__init__.py:22
+msgid "Python 2.2.1 or newer required"
 msgstr ""
 
 #: BitTorrent/parseargs.py:26

@@ -70,10 +70,17 @@ mkdir dist\share\themes\%WIMP_DIR_NAME%\gtk-2.0
 copy %GTK_BASEPATH%\share\themes\%WIMP_DIR_NAME%\gtk-2.0\gtkrc dist\share\themes\%WIMP_DIR_NAME%\gtk-2.0
 @if errorlevel 1 goto error
 
-c:\%PYTHON%\python.exe winprepnsi.py installer.nsi installer.temp.nsi
+c:\%PYTHON%\python.exe windows_installer\winprepnsi.py windows_installer\installer.nsi installer.temp.nsi
 @if errorlevel 1 goto error
+@rem This makes it much easier on the install script
+cp windows_installer\installer.directory.ini .
+cp windows_installer\installer.upgrade.ini .
+cp windows_installer\installer.warning.rtf .
 "C:\Program Files\NSIS\makensis.exe" installer.temp.nsi
 @if errorlevel 1 goto error
+del installer.directory.ini
+del installer.upgrade.ini
+del installer.warning.rtf
 del installer.temp.nsi
 @if errorlevel 1 goto error
 

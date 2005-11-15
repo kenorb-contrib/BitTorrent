@@ -525,7 +525,7 @@ class ProgressDialog(gtk.Dialog):
 
     def seed(self, widget=None):
         for f in self.file_list:
-            spawn(None, 'bittorrent', file+EXTENSION, '--save_as', f)
+            spawn(None, 'bittorrent', f+EXTENSION, '--save_as', f)
         self.cancel()
 
     def cancel(self, widget=None):

@@ -43,7 +43,7 @@ class ControlsocketListener(Handler):
         connection.handler = MessageReceiver(self.callback)
 
 
-class MessageReceiver(object):
+class MessageReceiver(Handler):
 
     def __init__(self, callback):
         self.callback = callback
@@ -159,7 +159,10 @@ class ControlSocket(object):
                 s.send(data)
             s.close()
         except socket.error, e:
-            s.close()
+            try:
+                s.close()
+            except:
+                pass
             raise BTFailure(_("Could not send command: ") + str(e))
 
     def create_socket_unix(self):

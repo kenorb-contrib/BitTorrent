@@ -3660,7 +3660,7 @@ if __name__ == '__main__':
     errors = []
     if newtorrents:
         for arg in newtorrents:
-            newdata, newerrors = GetTorrent.get(arg)
+            newdata, newerrors = GetTorrent.get_quietly(arg)
             if newdata:
                 datas.append(newdata)
             errors.extend(newerrors)

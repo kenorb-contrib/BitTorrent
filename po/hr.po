@@ -7,9 +7,9 @@ msgid ""
 msgstr ""
 "Project-Id-Version: BitTorrent 4.2\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2005-11-01 12:25-0800\n"
-"PO-Revision-Date: 2005-10-18 13:34-0700\n"
-"Last-Translator: ZeroKillaz <zerokillaz@yahoo.com>\n"
+"POT-Creation-Date: 2005-11-15 14:20-0800\n"
+"PO-Revision-Date: 2005-11-02 19:01-0800\n"
+"Last-Translator: djryback <djryback@yahoo.com>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -22,11 +22,11 @@ msgstr "Instalirajte Python 2.3 ili veći"
 
 #: bittorrent.py:36
 msgid "PyGTK 2.4 or newer required"
-msgstr "PyGTK 2.4 ili veći je potreban"
+msgstr "PyGTK 2.4 ili noviji je potreban"
 
 #: bittorrent.py:242
 msgid "Enter torrent URL"
-msgstr "Unesite URL od .torrent file-a"
+msgstr "Unesite URL torrent-a"
 
 #: bittorrent.py:243
 msgid "Enter the URL of a torrent file to open:"
@@ -38,15 +38,15 @@ msgstr "Dialup veza"
 
 #: bittorrent.py:280
 msgid "DSL/cable 128k up"
-msgstr "DSL/kabel 128k ili veće"
+msgstr "DSL/kabel 128k ili  brža"
 
 #: bittorrent.py:281
 msgid "DSL/cable 256k up"
-msgstr "DSL/cable 256k ili veće"
+msgstr "DSL/kablovska 256k ili brža"
 
 #: bittorrent.py:282
 msgid "DSL 768k up"
-msgstr "DSL 768k ili veće"
+msgstr "DSL 768k ili brža"
 
 #: bittorrent.py:283
 msgid "T1"
@@ -70,7 +70,7 @@ msgstr "OC3 veza"
 
 #: bittorrent.py:299
 msgid "Maximum upload rate:"
-msgstr "Maximalan upload rate:"
+msgstr "Maximalna brzina upload-a:"
 
 #: bittorrent.py:363
 msgid "Temporarily stop all running torrents"
@@ -94,7 +94,7 @@ msgstr "Normalan rad"
 
 #: bittorrent.py:409
 msgid "Firewalled/NATted"
-msgstr "Postavljen vatreni zid"
+msgstr "Postavljen firewall"
 
 #: bittorrent.py:445
 #, python-format
@@ -122,7 +122,7 @@ msgstr ""
 
 #: bittorrent.py:469 bittorrent.py:1795
 msgid "Download _later"
-msgstr "Nastavi _kasnije"
+msgstr "Nastavi_kasnije"
 
 #: bittorrent.py:472 bittorrent.py:1783
 msgid "Download _now"
@@ -199,7 +199,7 @@ msgstr "Preuzimam"
 
 #: bittorrent.py:788
 msgid "Starting additional torrents manually:"
-msgstr "Pokreni dodatne torrent-e ručno:"
+msgstr "Pokrećem dodatne torrent-e ručno:"
 
 #: bittorrent.py:797
 msgid "Always stops the _last running torrent"
@@ -1161,33 +1161,33 @@ msgid ""
 "seeding the last completed torrent."
 msgstr ""
 
-#: BitTorrent/NewVersion.py:87
+#: BitTorrent/NewVersion.py:92
 #, python-format
 msgid "Could not get latest version from %s"
 msgstr ""
 
-#: BitTorrent/NewVersion.py:92
+#: BitTorrent/NewVersion.py:97
 #, python-format
 msgid "Could not parse new version string from %s"
 msgstr ""
 
-#: BitTorrent/NewVersion.py:198
+#: BitTorrent/NewVersion.py:213
 #, python-format
 msgid ""
 "Could not find a suitable temporary location to save the %s %s installer."
 msgstr ""
 
-#: BitTorrent/NewVersion.py:217
+#: BitTorrent/NewVersion.py:232
 #, python-format
 msgid "No torrent file available for %s %s installer."
 msgstr ""
 
-#: BitTorrent/NewVersion.py:227
+#: BitTorrent/NewVersion.py:242
 #, python-format
 msgid "%s %s installer appears to be corrupt or missing."
 msgstr ""
 
-#: BitTorrent/NewVersion.py:234
+#: BitTorrent/NewVersion.py:249
 msgid "Cannot launch installer on this OS"
 msgstr ""
 
@@ -2263,17 +2263,17 @@ msgstr ""
 msgid "shut down"
 msgstr ""
 
-#: BitTorrent/__init__.py:22
-msgid "Python 2.2.1 or newer required"
+#: BitTorrent/RawServer_magic.py:32
+#, python-format
+msgid "Too late to switch RawServer backends, %s has already been used."
 msgstr ""
 
 #: BitTorrent/Encoder.py:169
 msgid "Can't start two separate instances of the same torrent"
 msgstr ""
 
-#: BitTorrent/RawServer_magic.py:22
-#, python-format
-msgid "Too late to switch RawServer backends, %s has already been used."
+#: BitTorrent/__init__.py:22
+msgid "Python 2.2.1 or newer required"
 msgstr ""
 
 #: BitTorrent/parseargs.py:26

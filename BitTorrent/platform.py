@@ -22,7 +22,8 @@ import locale
 if os.name == 'nt':
     import win32api
     from win32com.shell import shellcon, shell
-    
+elif os.name == 'posix' and os.uname()[0] == 'Darwin':
+    from Foundation import NSBundle
 
 from BitTorrent import app_name, version
 
@@ -62,10 +63,13 @@ def calc_unix_dirs():
     return ip, dp, lp
 
 app_root = os.path.split(os.path.abspath(sys.argv[0]))[0]
+doc_root = app_root
+osx = False
 if os.name == 'posix':
     if os.uname()[0] == "Darwin":
         app_root = app_root.encode('utf8')
-doc_root = app_root
+        doc_root = NSBundle.mainBundle().resourcePath()
+        osx = True
 image_root  = os.path.join(app_root, 'images')
 locale_root = os.path.join(app_root, 'locale')
 

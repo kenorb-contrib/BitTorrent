@@ -44,7 +44,8 @@ class RateLimitedGroup(object):
     def set_rate(self, new_rate):
         self.rate = new_rate * 1024
         self.check_time = 0
-                 
+        self.offset_amount = 0
+        
 class MultiRateLimiter(object):
     def __init__(self, sched):
         self.sched = sched
@@ -97,6 +98,8 @@ class MultiRateLimiter(object):
         self.lasttime = t
 
         for ctx in self.ctxs:
+            if ctx.rate == 0:
+                ctx.offset_amount = 0
             if ctx.lasttime != t:
                 ctx.offset_amount -=(t - ctx.lasttime) * ctx.rate
                 ctx.lasttime = t
@@ -105,8 +108,7 @@ class MultiRateLimiter(object):
 
         min_offset = reduce(minctx, self.ctxs)
         ctx = cur.encoder.context.rlgroup
-        
-        while self.offset_amount <= 0 and min_offset.offset_amount <= 0:
+        while (self.offset_amount <= 0 and min_offset.offset_amount <= 0) or self.upload_rate == 0:
             if ctx.offset_amount <= 0:
                 try:
                     bytes = cur.send_partial(self.unitsize)
@@ -122,7 +124,7 @@ class MultiRateLimiter(object):
                 if ctx.rate > 0:
                     ctx.offset_amount += bytes
                 ctx.count += bytes
-                
+
                 if bytes == 0 or not cur.connection.is_flushed():
                     if self.last is cur:
                         self.last = None

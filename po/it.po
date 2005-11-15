@@ -8,9 +8,9 @@ msgid ""
 msgstr ""
 "Project-Id-Version: BitTorrent 4.2\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2005-11-01 12:25-0800\n"
-"PO-Revision-Date: 2005-10-22 16:19-0700\n"
-"Last-Translator: Fulvio <fulbor74@excite.it>\n"
+"POT-Creation-Date: 2005-11-15 14:20-0800\n"
+"PO-Revision-Date: 2005-11-10 22:29-0800\n"
+"Last-Translator: translate4me <matt-translate4me@bittorrent.com>\n"
 "Language-Team: Italian <kde-i18n-it@mail.kde.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -37,19 +37,19 @@ msgstr "Inserisci l'URL di un file torrent da aprire:"
 
 #: bittorrent.py:279
 msgid "dialup"
-msgstr "dial up"
+msgstr "connessione"
 
 #: bittorrent.py:280
 msgid "DSL/cable 128k up"
-msgstr "DSL/cavo 128k"
+msgstr "DSL/cavo 128k e superiore"
 
 #: bittorrent.py:281
 msgid "DSL/cable 256k up"
-msgstr "DSL/cavo 256k"
+msgstr "DSL/cavo 256k e superiore"
 
 #: bittorrent.py:282
 msgid "DSL 768k up"
-msgstr "DSL 768k"
+msgstr "DSL 768k e superiore"
 
 #: bittorrent.py:283
 msgid "T1"
@@ -73,7 +73,7 @@ msgstr "OC3"
 
 #: bittorrent.py:299
 msgid "Maximum upload rate:"
-msgstr "Tasso massimo di invio:"
+msgstr "Velocità massima di invio:"
 
 #: bittorrent.py:363
 msgid "Temporarily stop all running torrents"
@@ -165,7 +165,7 @@ msgstr "%s Registro Attività"
 
 #: bittorrent.py:645
 msgid "Save log in:"
-msgstr "Salva Log in:"
+msgstr "Salva registro in:"
 
 #: bittorrent.py:656
 msgid "log saved"
@@ -202,7 +202,7 @@ msgstr "Download in corso"
 
 #: bittorrent.py:788
 msgid "Starting additional torrents manually:"
-msgstr "Avvia manualmente i torrent addizionali:"
+msgstr "Avvia manualmente i torrent supplementari:"
 
 #: bittorrent.py:797
 msgid "Always stops the _last running torrent"
@@ -225,8 +225,8 @@ msgid ""
 "Seed completed torrents: until share ratio reaches [_] percent, or for [_] "
 "minutes, whichever comes first."
 msgstr ""
-"Seed dei torrent completati: fino al raggiungimento del [_] %, o per [_] "
-"minuti, qualunque sia il primo."
+"Seed dei torrent completati: fino al raggiungimento [_] % del tasso di "
+"condivisione, o per [_] minuti, qualunque sia il primo."
 
 #: bittorrent.py:879 bittorrent.py:913
 msgid "Seed indefinitely"
@@ -248,7 +248,7 @@ msgstr "cerca una porta disponibile:"
 
 #: bittorrent.py:930
 msgid "starting at port: "
-msgstr "inizializzazione alla porta:"
+msgstr "inizia alla porta:"
 
 #: bittorrent.py:943
 msgid "IP to report to the tracker:"
@@ -266,7 +266,8 @@ msgstr ""
 msgid ""
 "Progress bar text is always black\n"
 "(requires restart)"
-msgstr "Il testo nella barra di progresso è sempre nero (non richiede riavvio)"
+msgstr ""
+"Il testo nella barra di progresso è sempre nero/n (non richiede riavvio)"
 
 #: bittorrent.py:966
 msgid "Misc"
@@ -295,7 +296,7 @@ msgstr "Avanzate"
 
 #: bittorrent.py:1002
 msgid "Choose default download directory"
-msgstr "Scegli cartella predefinita i download"
+msgstr "Scegli directory predefinita dei download"
 
 #: bittorrent.py:1063
 #, python-format
@@ -308,7 +309,7 @@ msgstr "Applica"
 
 #: bittorrent.py:1073
 msgid "Allocate"
-msgstr "Posiziona"
+msgstr "Alloca"
 
 #: bittorrent.py:1074
 msgid "Never download"
@@ -316,11 +317,11 @@ msgstr "Non scaricare mai"
 
 #: bittorrent.py:1075
 msgid "Decrease"
-msgstr "Decrementa"
+msgstr "Diminuisci"
 
 #: bittorrent.py:1076
 msgid "Increase"
-msgstr "Incrementa"
+msgstr "Aumenta"
 
 #: bittorrent.py:1086 launchmany-curses.py:146
 msgid "Filename"
@@ -337,11 +338,11 @@ msgstr "%"
 #: bittorrent.py:1250
 #, python-format
 msgid "Peers for \"%s\""
-msgstr "Fonti per \"%s\""
+msgstr "Peer per \"%s\""
 
 #: bittorrent.py:1256
 msgid "IP address"
-msgstr "indirizzo IP"
+msgstr "Indirizzo IP"
 
 #: bittorrent.py:1256
 msgid "Client"
@@ -374,11 +375,11 @@ msgstr "% completato"
 
 #: bittorrent.py:1256
 msgid "KB/s est. peer download"
-msgstr "KB/s stimati scaricamento dalla fonte"
+msgstr "KB/s stimati download peer"
 
 #: bittorrent.py:1262
 msgid "Peer ID"
-msgstr "IP fonte"
+msgstr "IP peer"
 
 #: bittorrent.py:1265 bittorrent.py:1268
 msgid "Interested"
@@ -406,7 +407,7 @@ msgstr "locale"
 
 #: bittorrent.py:1389
 msgid "bad peer"
-msgstr "fonte errata"
+msgstr "peer errato"
 
 #: bittorrent.py:1399
 #, python-format
@@ -462,7 +463,7 @@ msgstr "Parti:"
 
 #: bittorrent.py:1482
 msgid "Info hash:"
-msgstr "Informazioni hash:"
+msgstr "Hash informazioni:"
 
 #: bittorrent.py:1492
 msgid "Save in:"
@@ -474,7 +475,7 @@ msgstr "Nome file:"
 
 #: bittorrent.py:1522
 msgid "Open directory"
-msgstr "Apri cartella"
+msgstr "Apri directory"
 
 #: bittorrent.py:1527
 msgid "Show file list"
@@ -503,11 +504,11 @@ msgstr "Interrompi torrent"
 #: bittorrent.py:1707
 #, python-format
 msgid ", will seed for %s"
-msgstr "effettuerà la distribuzione della fonte completa per %s"
+msgstr ", effettuerà la distribuzione del seed per %s"
 
 #: bittorrent.py:1709
 msgid ", will seed indefinitely."
-msgstr "effettuerà la distribuzione della fonte completa all'infinito."
+msgstr ", effettuerà la distribuzione della fonte completa all'infinito."
 
 #: bittorrent.py:1712
 #, python-format
@@ -529,7 +530,7 @@ msgstr "Info sul torrent"
 
 #: bittorrent.py:1741
 msgid "_Open directory"
-msgstr "Apri cartella"
+msgstr "Apri directory"
 
 #: bittorrent.py:1745
 msgid "_File list"
@@ -545,7 +546,7 @@ msgstr "Cambia posizione"
 
 #: bittorrent.py:1760
 msgid "_Seed indefinitely"
-msgstr "Seed infinito"
+msgstr "Seed indefinito"
 
 #: bittorrent.py:1780
 msgid "Re_start"
@@ -566,12 +567,12 @@ msgstr "Interrompi"
 #: bittorrent.py:1880
 #, python-format
 msgid "Are you sure you want to remove \"%s\"?"
-msgstr "Sei sicuro che vuoi rimuovere \"%s\"?"
+msgstr "Sei sicuro di voler rimuovere \"%s\"?"
 
 #: bittorrent.py:1883
 #, python-format
 msgid "Your share ratio for this torrent is %d%%. "
-msgstr "il tuo rapporto di condivisione per questo torrent è %d%%."
+msgstr "il tuo tasso di condivisione per questo torrent è %d%%."
 
 #: bittorrent.py:1885
 #, python-format
@@ -629,12 +630,12 @@ msgstr "Precedente in entrata: %s"
 #: bittorrent.py:2067
 #, python-format
 msgid "Share ratio: %0.02f%%"
-msgstr "Rapporto di condivisione: %0.02f%%"
+msgstr "Tasso di condivisione: %0.02f%%"
 
 #: bittorrent.py:2070
 #, python-format
 msgid "%s peers, %s seeds. Totals from tracker: %s"
-msgstr "%s fonti, %s fonti complete. Totali dal tracker: %s"
+msgstr "%s peer, %s fonti complete. Totali dal tracker: %s"
 
 #: bittorrent.py:2074
 #, python-format
@@ -658,7 +659,7 @@ msgstr "%.1f%% completato, %s rimanente"
 
 #: bittorrent.py:2179
 msgid "Download rate"
-msgstr "Tasso di scaricamento"
+msgstr "Tasso di download"
 
 #: bittorrent.py:2181
 msgid "Upload rate"
@@ -823,7 +824,7 @@ msgstr "Posizione di salvataggio per "
 
 #: bittorrent.py:3215
 msgid "Directory exists!"
-msgstr "Cartella già esistente!"
+msgstr "Directory già esistente!"
 
 #: bittorrent.py:3216
 #, python-format
@@ -831,8 +832,8 @@ msgid ""
 "\"%s\" already exists. Do you intend to create an identical, duplicate "
 "directory inside the existing directory?"
 msgstr ""
-"\"%s\" già esistente. Vuoi creare un duplicato della cartella all'interno di "
-"quella già esistente?"
+"\"%s\" già esistente. Vuoi creare un duplicato della directory all'interno "
+"di quella già esistente?"
 
 #: bittorrent.py:3339
 #, python-format
@@ -911,7 +912,7 @@ msgstr "Invio del comando attraverso il socket di controllo esistente fallito."
 msgid "Could not start the TorrentQueue, see above for errors."
 msgstr ""
 "Impossibile far partire la coda del torrent, guardare sopra per leggere gli "
-"errori che hanno causato il problema"
+"errori che hanno causato il problema."
 
 #: maketorrent.py:60
 #, python-format
@@ -920,15 +921,15 @@ msgstr "%s creatore metafile %s"
 
 #: maketorrent.py:72
 msgid "Make torrent file for this file/directory:"
-msgstr "Crea il file torrent per file/cartella"
+msgstr "Crea il file torrent per questo file/directory:"
 
 #: maketorrent.py:77
 msgid "Choose..."
-msgstr "Cambia..."
+msgstr "Scegli..."
 
 #: maketorrent.py:87
 msgid "(Directories will become batch torrents)"
-msgstr "(Le cartelle diverranno torrent batch)"
+msgstr "(Le directory diverranno torrent batch)"
 
 #: maketorrent.py:98
 msgid "Piece size:"
@@ -972,7 +973,7 @@ msgstr "Controllo dimensioni file..."
 
 #: maketorrent.py:520
 msgid "Start seeding"
-msgstr "Inizio distribuzione fonte completa"
+msgstr "Inizio seeding"
 
 #: maketorrent.py:540
 msgid "building "
@@ -1162,7 +1163,7 @@ msgid ""
 msgstr ""
 "Non avvio il torrent poiché ci sono altri torrent in attesa di esecuzione, e "
 "questo corrisponde già alle impostazioni di quando smettere di distribuire "
-"la fonte completa."
+"il seeding."
 
 #: BitTorrent/TorrentQueue.py:772
 msgid ""
@@ -1170,36 +1171,36 @@ msgid ""
 "seeding the last completed torrent."
 msgstr ""
 "Non avvio il torrent poiché questo corrisponde già alle impostazioni di "
-"quando smettere di distribuire la fonte dell'ultimo torrent completato."
+"quando smettere il seeding dell'ultimo torrent completato."
 
-#: BitTorrent/NewVersion.py:87
+#: BitTorrent/NewVersion.py:92
 #, python-format
 msgid "Could not get latest version from %s"
 msgstr "Impossibile ottenere l'ultima versione da %s"
 
-#: BitTorrent/NewVersion.py:92
+#: BitTorrent/NewVersion.py:97
 #, python-format
 msgid "Could not parse new version string from %s"
 msgstr "Impossibile analizzare la stringa nuova versione da %s"
 
-#: BitTorrent/NewVersion.py:198
+#: BitTorrent/NewVersion.py:213
 #, python-format
 msgid ""
 "Could not find a suitable temporary location to save the %s %s installer."
 msgstr ""
 "Impossibile trovare una locazione temporanea dove salvare l'installer %s %s."
 
-#: BitTorrent/NewVersion.py:217
+#: BitTorrent/NewVersion.py:232
 #, python-format
 msgid "No torrent file available for %s %s installer."
 msgstr "Nessun torrent disponibile per l'installer %s %s."
 
-#: BitTorrent/NewVersion.py:227
+#: BitTorrent/NewVersion.py:242
 #, python-format
 msgid "%s %s installer appears to be corrupt or missing."
 msgstr "L'installer %s %s sembra essere corrotto o mancante."
 
-#: BitTorrent/NewVersion.py:234
+#: BitTorrent/NewVersion.py:249
 msgid "Cannot launch installer on this OS"
 msgstr "Impossibile lanciare l'installer su questo Sistema Operativo"
 
@@ -1209,9 +1210,9 @@ msgid ""
 "state is saved. Defaults to subdirectory 'data' of the bittorrent config "
 "directory."
 msgstr ""
-"la cartella nella quale i dati variabili come le informazioni fastresume e "
-"lo stato GUI sono salvate. Default nella sottocartella 'data' della cartella "
-"config di bittorrent."
+"la directory nella quale i dati variabili come le informazioni fastresume e "
+"lo stato GUI sono salvate. Default nella sottodirectory 'data' della "
+"directory config di bittorrent."
 
 #: BitTorrent/defaultargs.py:38
 msgid ""
@@ -1372,7 +1373,8 @@ msgstr ""
 
 #: BitTorrent/defaultargs.py:109
 msgid "number of downloads at which to switch from random to rarest first"
-msgstr "numero di scaricamenti al quale passare da casuale a prima il più raro"
+msgstr ""
+"numero di scaricamenti al quale passare, da casuale a prima il più raro"
 
 #: BitTorrent/defaultargs.py:111
 msgid "how many bytes to write into network buffers at once."
@@ -1426,7 +1428,7 @@ msgid ""
 "to save the torrent as, overriding the default name in the torrent. See also "
 "--save_in, if neither is specified the user will be asked for save location"
 msgstr ""
-"nome file (per torrent a file-singolo) o nome cartella (per torrent batch) "
+"nome file (per torrent a file-singolo) o nome directory (per torrent batch) "
 "da usare per salvare il torrent, che prevarrà sul nome di default nel "
 "torrent. Vedi anche --save_in, se nessuno è specificato all'utente sarà "
 "richiesta la posizione del salvataggio"
@@ -1439,22 +1441,25 @@ msgstr "mostra interfaccia utente avanzata"
 msgid ""
 "the maximum number of minutes to seed a completed torrent before stopping "
 "seeding"
-msgstr "10"
+msgstr ""
+"il numero massimo di minuti per distribuire la fonte completa del torrent "
+"completato prima di interrompere il seeding"
 
 #: BitTorrent/defaultargs.py:153
 msgid ""
 "the minimum upload/download ratio, in percent, to achieve before stopping "
 "seeding. 0 means no limit."
-msgstr "1"
+msgstr ""
+"la velocità minima di invio/download, in percentuale, da ottenere prima di "
+"interrompere il seeding. 0 vuol dire senza limite."
 
 #: BitTorrent/defaultargs.py:156
 msgid ""
 "the minimum upload/download ratio, in percent, to achieve before stopping "
 "seeding the last torrent. 0 means no limit."
 msgstr ""
-"il rapporto minimo invii/scaricamenti, in percentuale, da raggiungere prima "
-"di smettere di distribuire la fonte completa dell'ultimo torrent. 0 "
-"significa nessun limite."
+"la velocità minima di invio/download, in percentuale, da ottenere prima di "
+"interrompere il seeding dell'ultimo torrent. 0 vuol dire senza limite."
 
 #: BitTorrent/defaultargs.py:159
 msgid "Seed each completed torrent indefinitely (until the user cancels it)"
@@ -1480,10 +1485,10 @@ msgid ""
 "\"ask\" means ask the user each time."
 msgstr ""
 "specifica come l'applicazione dovrebbe comportarsi quando l'utente prova ad "
-"avviare manualmente un altro torrent: \"replace\" significa rimpiazza sempre "
-"il torrent in esecuzione con quello nuovo, \"add\" significa aggiungi sempre "
-"il torrent in esecuzione in parallelo, e \"ask\" significa chiedi all'utente "
-"ogni volta."
+"avviare manualmente un altro torrent: \"replace\" significa sostituisci "
+"sempre il torrent in esecuzione con quello nuovo, \"add\" significa aggiungi "
+"sempre il torrent in esecuzione in parallelo, e \"ask\" significa chiedi "
+"all'utente ogni volta."
 
 #: BitTorrent/defaultargs.py:181
 msgid ""
@@ -1491,7 +1496,7 @@ msgid ""
 "to save the torrent as, overriding the default name in the torrent. See also "
 "--save_in"
 msgstr ""
-"nome file (per torrent a file-singolo) o nome cartella (per batch torrent) "
+"nome file (per torrent a file-singolo) o nome directory (per batch torrent) "
 "da usare per salvare il torrent, che prevarrà sul nome di default nel "
 "torrent. Vedi anche --save_in"
 
@@ -1501,9 +1506,9 @@ msgid ""
 "reasonable number based on --max_upload_rate. The automatic values are only "
 "sensible when running one torrent at a time."
 msgstr ""
-"il numero massimo di invii consentiti in una volta. -1 significa () un "
-"numero ragionevole basato su --max_upload_rate.I valori automatici sono "
-"sensibili solo eseguendo un torrent alla volta."
+"il numero massimo di invii consentiti in una volta. -1 significa "
+"(idealmente) un numero ragionevole basato su --max_upload_rate.I valori "
+"automatici sono sensibili solo eseguendo un torrent alla volta."
 
 #: BitTorrent/defaultargs.py:193
 msgid ""
@@ -1512,9 +1517,9 @@ msgid ""
 "directory using the default name specified in the .torrent file. See also --"
 "save_as."
 msgstr ""
-"cartella locale dove i contenuti del torrent saranno salvati. Il file "
-"(torrent a file-singolo) o la cartella (torrent batch) saranno creati sotto "
-"questa cartella usando il nome di default specificato nel file .torrent. "
+"directory locale dove i contenuti del torrent saranno salvati. Il file "
+"(torrent a file-singolo) o la directory (torrent batch) saranno creati sotto "
+"questa directory usando il nome di default specificato nel file .torrent. "
 "Vedi anche --save_as."
 
 #: BitTorrent/defaultargs.py:202
@@ -1527,13 +1532,13 @@ msgid ""
 "--saveas_style. If this is left empty each torrent will be saved under the "
 "directory of the corresponding .torrent file"
 msgstr ""
-"cartella locale dove i torrent saranno salvati, usando un nome determinato "
+"directory locale dove i torrent saranno salvati, usando un nome determinato "
 "da --saveas_style. Se questo viene lasciato vuoto ogni torrent sarà salvato "
-"sotto la cartella del file .torrent corrispondente"
+"sotto la directory del file .torrent corrispondente"
 
 #: BitTorrent/defaultargs.py:218 BitTorrent/track.py:77
 msgid "how often to rescan the torrent directory, in seconds"
-msgstr "quanto spesso riesaminare la cartella torrent, in secondi"
+msgstr "quanto spesso riesaminare la directory torrent, in secondi"
 
 #: BitTorrent/defaultargs.py:220
 msgid ""
@@ -1548,13 +1553,13 @@ msgid ""
 msgstr ""
 "Come dare un nome agli scaricamenti torrent: 1: usare il nome DEL file "
 "torrent (senza .torrent);  2: usare il nome codificato NEL file torrent;  3: "
-"creare una cartella col nome DEL file torrent (senza .torrent) e salvare in "
-"quella cartella usando il nome codificato NEL file torrent;  4: se il nome "
+"creare una directory col nome DEL file torrent (senza .torrent) e salvare in "
+"quella directory usando il nome codificato NEL file torrent;  4: se il nome "
 "DEL file torrent (senza .torrent) e il nome codificato NEL file torrent sono "
-"identici, usare quel nome (punti 1 e 2), altrimenti creare una cartella "
-"intermedia come nel punto 3;  AVVERTENZA: le opzioni 1 e 2 hanno la capacità "
-"di sovrascrivere i file senza preavviso e possono presentare problemi di "
-"sicurezza."
+"identici, usare quel nome (punti 1 e 2), altrimenti creare una "
+"directoryintermedia come nel punto 3;  AVVERTENZA: le opzioni 1 e 2 hanno la "
+"capacità di sovrascrivere i file senza preavviso e possono presentare "
+"problemi di sicurezza."
 
 #: BitTorrent/defaultargs.py:235
 msgid ""
@@ -1564,7 +1569,7 @@ msgstr ""
 
 #: BitTorrent/defaultargs.py:242
 msgid "directory to look for .torrent files (semi-recursive)"
-msgstr "cartella da esaminare per i file .torrent (semi-ricorsiva)"
+msgstr "directory da esaminare per i file .torrent (semi-ricorsiva)"
 
 #: BitTorrent/defaultargs.py:247
 msgid "whether to display diagnostic info to stdout"
@@ -1590,7 +1595,7 @@ msgstr ""
 
 #: bittorrent-console.py:41 bittorrent-curses.py:59
 msgid "download complete!"
-msgstr "Scaricamento completato!"
+msgstr "download completato!"
 
 #: bittorrent-console.py:46 bittorrent-curses.py:64
 msgid "<unknown>"
@@ -2410,20 +2415,20 @@ msgstr "Impossibile scrivere dati fastresume: "
 msgid "shut down"
 msgstr "chiusura"
 
-#: BitTorrent/__init__.py:22
-msgid "Python 2.2.1 or newer required"
-msgstr "E' necessario Python 2.2.1 o successivo"
-
-#: BitTorrent/Encoder.py:169
-msgid "Can't start two separate instances of the same torrent"
-msgstr "Non si possono avviare due istanze separate dello stesso torrent"
-
-#: BitTorrent/RawServer_magic.py:22
+#: BitTorrent/RawServer_magic.py:32
 #, python-format
 msgid "Too late to switch RawServer backends, %s has already been used."
 msgstr ""
 "Troppo in ritardo per commutare backend RawServer, %s è stato già "
 "utilizzato. "
+
+#: BitTorrent/Encoder.py:169
+msgid "Can't start two separate instances of the same torrent"
+msgstr "Non si possono avviare due istanze separate dello stesso torrent"
+
+#: BitTorrent/__init__.py:22
+msgid "Python 2.2.1 or newer required"
+msgstr "E' necessario Python 2.2.1 o successivo"
 
 #: BitTorrent/parseargs.py:26
 #, python-format

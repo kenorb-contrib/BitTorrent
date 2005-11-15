@@ -8,7 +8,7 @@
 # for the specific language governing rights and limitations under the
 # License.
 
-# Written by Bram Cohen, Uoti Urpala
+# Written by Greg Hazel
 
 import os
 import sys

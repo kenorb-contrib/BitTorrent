@@ -10,7 +10,7 @@
 # License.
 
 app_name = 'BitTorrent'
-version = '4.1.7'
+version = '4.1.8'
 
 URL = 'http://www.bittorrent.com/'
 DONATE_URL = URL + 'donate.html'
@@ -49,7 +49,9 @@ language_names = {
     }
 
 unfinished_language_names = {
-    'ar'   :u'العربية'       ,    'eo'   :u'Esperanto'            ,
+    'ar'   :u'العربية'       ,
+    'bs'   :u'Bosanski'             ,
+    'eo'   :u'Esperanto'            ,
     'eu'   :u'Euskara'              ,    'et'   :u'Eesti'                ,
     'fi'   :u'Suomi'                ,    'ga'   :u'Gaeilge'              ,
     'he_IL':u'עברית'                ,    'hr'   :u'Hrvatski'             ,

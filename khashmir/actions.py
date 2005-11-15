@@ -66,6 +66,12 @@ class ActionBase(object):
             return True
         return False
     
+    def _cleanup(self):
+        self.foundq = None
+        self.found = None
+        self.queried = None
+        self.queriedip = None
+
     def goWithNodes(self, t):
         pass
     
@@ -130,13 +136,6 @@ class FindNode(ActionBase):
             self.finished=1
             self._cleanup()
             self.callLater(self.callback, 0, (l[:K],))
-
-    def _cleanup(self):
-        self.foundq = None
-        self.found = None
-        self.queried = None
-        self.queriedip = None
-        self.answered = None
 
     def makeMsgFailed(self, node):
         return self._defaultGotNodes

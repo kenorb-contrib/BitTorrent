@@ -22,9 +22,12 @@ DEBUG = False
 from BitTorrent import ERROR, WARNING, BTFailure, version, app_name
 from BitTorrent import GetTorrent
 from BitTorrent.bencode import bdecode, bencode
-from BitTorrent.platform import os_version, spawn, get_temp_dir, doc_root, is_frozen_exe
+from BitTorrent.platform import os_version, spawn, get_temp_dir, doc_root, is_frozen_exe, osx
 from BitTorrent.ConvertedMetainfo import ConvertedMetainfo
 
+if osx:
+    from Foundation import NSAutoreleasePool
+    
 if is_frozen_exe or DEBUG:
     # needed for py2exe to include the public key lib
     from Crypto.PublicKey import DSA
@@ -71,7 +74,9 @@ class Updater(object):
             self.version_site += 'win32/'
             if os_version != 'XP':
                 self.version_site += 'legacy/'
-
+        elif osx:
+            self.version_site += 'osx/'
+            
     def debug(self, message):
         if DEBUG:
             self.threadwrap(self.errorfunc, WARNING, message)
@@ -116,12 +121,16 @@ class Updater(object):
 
         self.torrentfile = None
         torrentfile, terrors = GetTorrent.get_url(self.installer_url)
-        signfile = zurllib.urlopen(self.installer_url + '.sign')
+        signature = None
         try:
-            signature = pickle.load(signfile)
+            signfile = zurllib.urlopen(self.installer_url + '.sign')
         except:
-            self.debug('Updater.get() failed to load signfile %s' % signfile)
-            signature = None
+            self.debug('Updater.get() failed to get signfile %s.sign' % self.installer_url)
+        else:
+            try:
+                signature = pickle.load(signfile)
+            except:
+                self.debug('Updater.get() failed to load signfile %s' % signfile)
         
         if terrors:
             self.threadwrap(self.errorfunc, WARNING, '\n'.join(terrors))
@@ -156,6 +165,8 @@ class Updater(object):
         t.start()
 
     def _check(self):
+        if osx:
+            pool = NSAutoreleasePool.alloc().init()
         self.get()
         if self.version > currentversion:
             self.threadwrap(self.newversionfunc, self.version, download_url)
@@ -165,12 +176,16 @@ class Updater(object):
             return True
         if os.name == 'nt':
             return True
+        elif osx:
+            return True
         else:
             return False
 
     def calc_installer_name(self):
         if os.name == 'nt':
             ext = 'exe'
+        elif osx:
+            ext = 'dmg'
         elif os.name == 'posix' and DEBUG: 
             ext = 'tar.gz' 
         else:

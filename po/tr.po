@@ -7,9 +7,9 @@ msgid ""
 msgstr ""
 "Project-Id-Version: BitTorrent 4.2\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2005-11-01 12:25-0800\n"
-"PO-Revision-Date: 2005-10-28 23:31-0700\n"
-"Last-Translator: Elnur Mehdi <elnur.mehdi@gmail.com>\n"
+"POT-Creation-Date: 2005-11-15 14:20-0800\n"
+"PO-Revision-Date: 2005-11-11 15:10-0800\n"
+"Last-Translator: translate4me <matt-translate4me@bittorrent.com>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -18,7 +18,7 @@ msgstr ""
 
 #: bittorrent.py:22 maketorrent.py:23
 msgid "Install Python 2.3 or greater"
-msgstr "Python 2.3 yada daha üst versiyonu yükleyin"
+msgstr "Python 2.3 ya da daha üst sürümü yükleyin"
 
 #: bittorrent.py:36
 msgid "PyGTK 2.4 or newer required"
@@ -38,15 +38,15 @@ msgstr "çevirmeli"
 
 #: bittorrent.py:280
 msgid "DSL/cable 128k up"
-msgstr "DSL/kablo 128k"
+msgstr "DSL/kablo 128k ve üstü"
 
 #: bittorrent.py:281
 msgid "DSL/cable 256k up"
-msgstr "DSL/kablo 256k"
+msgstr "DSL/kablo 256k ve üstü"
 
 #: bittorrent.py:282
 msgid "DSL 768k up"
-msgstr "DSL/kablo 768k"
+msgstr "DSL/kablo 768k ve üstü"
 
 #: bittorrent.py:283
 msgid "T1"
@@ -74,15 +74,15 @@ msgstr "Maksimum gönderme hızı:"
 
 #: bittorrent.py:363
 msgid "Temporarily stop all running torrents"
-msgstr "Bütün torrentleri geçici olarak durdur"
+msgstr "Çalışan tüm torrentleri geçici olarak durdur"
 
 #: bittorrent.py:364
 msgid "Resume downloading"
-msgstr "Yüklemeleri devam ettir"
+msgstr "İndirmeye devam et"
 
 #: bittorrent.py:403 bittorrent.py:1998
 msgid "Paused"
-msgstr "Duraklatılmış"
+msgstr "Duraklatıldı"
 
 #: bittorrent.py:405
 msgid "No torrents"
@@ -94,7 +94,7 @@ msgstr "Normal çalışıyor"
 
 #: bittorrent.py:409
 msgid "Firewalled/NATted"
-msgstr "Güvenlik Duvarı/NAT arkasında"
+msgstr "Güvenlik Duvarı/NAT var"
 
 #: bittorrent.py:445
 #, python-format
@@ -104,12 +104,12 @@ msgstr "Yeni %s sürümü mevcut"
 #: bittorrent.py:460
 #, python-format
 msgid "A newer version of %s is available.\n"
-msgstr "%s ten daha yeni bir versiyon sunuldu \n"
+msgstr "%s sürümünden daha yeni bir sürüm sunuldu.\n"
 
 #: bittorrent.py:461
 #, python-format
 msgid "You are using %s, and the new version is %s.\n"
-msgstr "%s kullanıyorsunuz, en son sürüm %s.\n"
+msgstr "%s kullanıyorsunuz; en son sürüm ise %s.\n"
 
 #: bittorrent.py:462
 #, python-format
@@ -183,7 +183,7 @@ msgstr "Kaydediyor"
 
 #: bittorrent.py:758
 msgid "Save new downloads in:"
-msgstr "Yeni yüklemeyi buraya kaydet:"
+msgstr "Yeni indirilenleri buraya kaydet:"
 
 #: bittorrent.py:771
 msgid "Change..."
@@ -211,7 +211,7 @@ msgstr "Torrent'i her zaman paralel olarak başlatır"
 
 #: bittorrent.py:809
 msgid "_Asks each time"
-msgstr "Her zaman sorar"
+msgstr "Her seferinde sorar"
 
 #: bittorrent.py:826
 msgid "Seeding"
@@ -255,7 +255,7 @@ msgid ""
 "(Has no effect unless you are on the\n"
 "same local network as the tracker)"
 msgstr ""
-"(İzleyici gibi aynı yerel ağ içerisinde\n"
+"(İzleyici ile aynı yerel ağ içerisinde\n"
 " olmadığınız sürece bir etkisi yok)"
 
 #: bittorrent.py:960
@@ -384,11 +384,11 @@ msgstr "İlgili"
 
 #: bittorrent.py:1265 bittorrent.py:1268
 msgid "Choked"
-msgstr "Tıkalı"
+msgstr "Boğuldu"
 
 #: bittorrent.py:1265
 msgid "Snubbed"
-msgstr "Hiçe say"
+msgstr "Reddedildi"
 
 #: bittorrent.py:1268
 msgid "Optimistic upload"
@@ -527,7 +527,7 @@ msgstr "Torrent _bilgisi"
 
 #: bittorrent.py:1741
 msgid "_Open directory"
-msgstr "_Dizini aç"
+msgstr "Dizini _aç"
 
 #: bittorrent.py:1745
 msgid "_File list"
@@ -607,12 +607,12 @@ msgstr "Çalışıyor"
 #: bittorrent.py:2053
 #, python-format
 msgid "Current up: %s"
-msgstr "Şuanki yükleme: %s"
+msgstr "Şu anki yükleme: %s"
 
 #: bittorrent.py:2054
 #, python-format
 msgid "Current down: %s"
-msgstr "Şuanki indirme: %s"
+msgstr "Şu anki indirme: %s"
 
 #: bittorrent.py:2060
 #, python-format
@@ -642,7 +642,7 @@ msgstr "Dağıtık kopyalar: %d; Sonraki: %s"
 #: bittorrent.py:2077
 #, python-format
 msgid "Pieces: %d total, %d complete, %d partial, %d active (%d empty)"
-msgstr "Parçalar: toplam %d,%d tamamlanan, %d parçalı, %d aktif (%d boş)"
+msgstr "Parçalar: %d toplam, %d tamamlanan, %d parçalı, %d aktif (%d boş)"
 
 #: bittorrent.py:2081
 #, python-format
@@ -664,7 +664,7 @@ msgstr "Yükleme hızı"
 
 #: bittorrent.py:2196
 msgid "NA"
-msgstr ""
+msgstr "Geçerli Değil"
 
 #: bittorrent.py:2620
 #, python-format
@@ -677,7 +677,7 @@ msgstr "Torrent dosyası aç"
 
 #: bittorrent.py:2634
 msgid "Open torrent _URL"
-msgstr "Torrent aç _URL"
+msgstr "Torrent _URL aç"
 
 #: bittorrent.py:2635
 msgid "Make _new torrent"
@@ -773,7 +773,7 @@ msgstr "Yardım web sayfasını ziyaret etmek istiyor musunuz?"
 
 #: bittorrent.py:3048
 msgid "There is one finished torrent in the list. "
-msgstr "Listede bir tane tamamlanmış torrent mevcut."
+msgstr "Listede bir tane tamamlanmış torrent var."
 
 #: bittorrent.py:3049
 msgid "Do you want to remove it?"
@@ -782,7 +782,7 @@ msgstr "Onu kaldırmak istiyor musunuz?"
 #: bittorrent.py:3051
 #, python-format
 msgid "There are %d finished torrents in the list. "
-msgstr "Listede %d adet tamamlanmış torrent mevcut."
+msgstr "Listede %d adet tamamlanmış torrent var."
 
 #: bittorrent.py:3052
 msgid "Do you want to remove all of them?"
@@ -794,11 +794,11 @@ msgstr "Tamamlanmış bütün torrentler kaldırılsın mı?"
 
 #: bittorrent.py:3062
 msgid "No finished torrents"
-msgstr "Tamamlanmış torrent mevcut değil"
+msgstr "Tamamlanmış torrent yok"
 
 #: bittorrent.py:3063
 msgid "There are no finished torrents to remove."
-msgstr "Kaldırılacak, tamamlanmış torrent mevcut değil."
+msgstr "Kaldırılacak tamamlanmış torrent yok."
 
 #: bittorrent.py:3119
 msgid "Open torrent:"
@@ -823,7 +823,7 @@ msgstr "Kaydetme yeri"
 
 #: bittorrent.py:3215
 msgid "Directory exists!"
-msgstr "Dizin mevcut!"
+msgstr "Dizin var!"
 
 #: bittorrent.py:3216
 #, python-format
@@ -870,7 +870,7 @@ msgstr "Bağış yaptınız mı?"
 #: bittorrent.py:3521
 #, python-format
 msgid "Welcome to the new version of %s. Have you donated?"
-msgstr "\"%s\" uygulamasının yeni sürümüne hoş geldiniz. Bağış yatınız mı?"
+msgstr "\"%s\" uygulamasının yeni sürümüne hoş geldiniz. Bağış yaptınız mı?"
 
 #: bittorrent.py:3536
 msgid "Thanks!"
@@ -893,8 +893,7 @@ msgstr "iptal edildi, kullanmayın"
 #: bittorrent.py:3650
 msgid "Failed to create or send command through existing control socket."
 msgstr ""
-"Varolan kontrol yuvasında komut oluşturma veya bu yuvadan komut gönderme "
-"başarısız oldu."
+"Varolan kontrol yuvasından komut oluşturma veya gönderme başarısız oldu."
 
 #: bittorrent.py:3652 bittorrent.py:3681
 #, python-format
@@ -925,7 +924,7 @@ msgstr "Bu dosya/dizin için torrent dosyası oluştur:"
 
 #: maketorrent.py:77
 msgid "Choose..."
-msgstr "Seç:"
+msgstr "Seç..."
 
 #: maketorrent.py:87
 msgid "(Directories will become batch torrents)"
@@ -937,15 +936,15 @@ msgstr "Parça boyutu:"
 
 #: maketorrent.py:130
 msgid "Use _tracker:"
-msgstr "İzleyici kullan"
+msgstr "İzleyici kullan:"
 
 #: maketorrent.py:160
 msgid "Use _DHT:"
-msgstr "_DHT kullan"
+msgstr "_DHT kullan:"
 
 #: maketorrent.py:166
 msgid "Nodes (optional):"
-msgstr "Düğümler (opsiyonel)"
+msgstr "Düğümler (opsiyonel):"
 
 #: maketorrent.py:199
 msgid "Comments:"
@@ -1063,18 +1062,18 @@ msgstr "Bir klasör seç"
 
 #: BitTorrent/TorrentQueue.py:111
 msgid "Could not load saved state: "
-msgstr "Kaydedilmiş durumu yükleyemiyor:"
+msgstr "Kaydedilmiş durum yüklenemedi:"
 
 #: BitTorrent/TorrentQueue.py:203
 msgid "Could not save UI state: "
-msgstr "UI durumunu kaydedemiyor:"
+msgstr "UI durumu kaydedilemedi:"
 
 #: BitTorrent/TorrentQueue.py:213 BitTorrent/TorrentQueue.py:215
 #: BitTorrent/TorrentQueue.py:294 BitTorrent/TorrentQueue.py:297
 #: BitTorrent/TorrentQueue.py:307 BitTorrent/TorrentQueue.py:319
 #: BitTorrent/TorrentQueue.py:336
 msgid "Invalid state file contents"
-msgstr "Geçersiz durum dosya içerikleri"
+msgstr "Geçersiz durum dosyası içerikleri"
 
 #: BitTorrent/TorrentQueue.py:228
 msgid "Error reading file "
@@ -1082,7 +1081,7 @@ msgstr "Dosya okuma hatası"
 
 #: BitTorrent/TorrentQueue.py:230
 msgid "cannot restore state completely"
-msgstr "durumu tamamen geri yükeleyemiyor"
+msgstr "durum tamamen geri yükelenemiyor"
 
 #: BitTorrent/TorrentQueue.py:233
 msgid "Invalid state file (duplicate entry)"
@@ -1094,7 +1093,7 @@ msgstr "Bozuk veri"
 
 #: BitTorrent/TorrentQueue.py:240 BitTorrent/TorrentQueue.py:245
 msgid " , cannot restore torrent ("
-msgstr ", torrenti geri yükeleyemiyor ("
+msgstr ", torrent geri yükelenemiyor ("
 
 #: BitTorrent/TorrentQueue.py:265
 msgid "Invalid state file (bad entry)"
@@ -1106,17 +1105,17 @@ msgstr "Hatalı UI durum dosyası"
 
 #: BitTorrent/TorrentQueue.py:288
 msgid "Bad UI state file version"
-msgstr ""
+msgstr "Hatalı UI durum dosyası sürümü"
 
 #: BitTorrent/TorrentQueue.py:290
 msgid "Unsupported UI state file version (from newer client version?)"
 msgstr ""
-"Desteklenmeyen UI durum dosya sürümü (daha yeni bir istemci sürümünden mi?)"
+"Desteklenmeyen UI durum dosyası sürümü (daha yeni bir istemci sürümünden mi?)"
 
 #: BitTorrent/TorrentQueue.py:477
 #, python-format
 msgid "Could not delete cached %s file:"
-msgstr "Önbelleğe alınmış %s adlı dosya silinemiyor:"
+msgstr "Önbelleğe alınmış %s dosyası silinemiyor:"
 
 #: BitTorrent/TorrentQueue.py:503
 #, python-format
@@ -1125,12 +1124,13 @@ msgstr "Bu geçerli bir torrent dosyası değil. (%s)"
 
 #: BitTorrent/TorrentQueue.py:511
 msgid "This torrent (or one with the same contents) is already running."
-msgstr "Bu torrent (ya da aynı içeriğe sahip başka bir tane) halen çalışıyor."
+msgstr ""
+"Bu torrent (ya da aynı içeriğe sahip başka bir tanesi) halen çalışıyor."
 
 #: BitTorrent/TorrentQueue.py:515
 msgid "This torrent (or one with the same contents) is already waiting to run."
 msgstr ""
-"Bu torrent (ya da aynı içeriğe sahip başka bir tane) halen çalışmak için "
+"Bu torrent (ya da aynı içeriğe sahip başka bir tanesi) halen çalışmak için "
 "bekliyor."
 
 #: BitTorrent/TorrentQueue.py:522
@@ -1162,8 +1162,9 @@ msgid ""
 "Not starting torrent as there are other torrents waiting to run, and this "
 "one already meets the settings for when to stop seeding."
 msgstr ""
-"Torrent başlatılmıyor zira çalışmayı bekleyen başka torrentler de mevcut ve "
-"bu torrent, kaynak bulmanın ne zaman durdurulacağı ayarlarını karşılıyor."
+"Torrent başlatılmıyor zira çalışmayı bekleyen başka torrentler de var ve bu "
+"torrent, kaynak bulmanın ne zaman durdurulacağına ilişkin ayarları zaten "
+"karşılıyor."
 
 #: BitTorrent/TorrentQueue.py:772
 msgid ""
@@ -1171,36 +1172,35 @@ msgid ""
 "seeding the last completed torrent."
 msgstr ""
 "Torrent başlatılmıyor zira en son tamamlanan torrent için kaynak bulmanın ne "
-"zaman durdurulacağı ayarlarını karşılıyor."
+"zaman durdurulacağına ilişkin ayarları zaten karşılıyor."
 
-#: BitTorrent/NewVersion.py:87
+#: BitTorrent/NewVersion.py:92
 #, python-format
 msgid "Could not get latest version from %s"
 msgstr "%s adresinden son sürüm alınamıyor"
 
-#: BitTorrent/NewVersion.py:92
+#: BitTorrent/NewVersion.py:97
 #, python-format
 msgid "Could not parse new version string from %s"
 msgstr "Yeni sürüm karakter dizgesi \"%s\" bilgisinden ayrıştırılamıyor"
 
-#: BitTorrent/NewVersion.py:198
+#: BitTorrent/NewVersion.py:213
 #, python-format
 msgid ""
 "Could not find a suitable temporary location to save the %s %s installer."
 msgstr "%s %s yükleyicisini kaydetmek için uygun bir geçici dizin bulunamadı."
 
-#: BitTorrent/NewVersion.py:217
+#: BitTorrent/NewVersion.py:232
 #, python-format
 msgid "No torrent file available for %s %s installer."
-msgstr ""
-"%s %s yükleyicisi için kullanılabilir bir torrent dosyası mevcut değil."
+msgstr "%s %s yükleyicisi için kullanılabilir bir torrent dosyası yok."
 
-#: BitTorrent/NewVersion.py:227
+#: BitTorrent/NewVersion.py:242
 #, python-format
 msgid "%s %s installer appears to be corrupt or missing."
 msgstr "%s %s yükleyicisi bozuk ya da yok."
 
-#: BitTorrent/NewVersion.py:234
+#: BitTorrent/NewVersion.py:249
 msgid "Cannot launch installer on this OS"
 msgstr "Bu işletim sistemi üzerinde yükleyici çalıştırılamıyor"
 
@@ -1210,8 +1210,8 @@ msgid ""
 "state is saved. Defaults to subdirectory 'data' of the bittorrent config "
 "directory."
 msgstr ""
-"hızlı sürdürme bilgisi ve GUI durumu gibi değişken verilerinin kaydedileceği "
-"dizin. Bittorrent yapılandırma dizinin alt dizini olan 'data' dizini "
+"hızlı devam etme bilgisi ve GUI durumu gibi değişken verilerin kaydedildiği "
+"dizin. Bittorrent yapılandırma dizininin alt dizini olan 'data' dizini "
 "varsayılan dizindir."
 
 #: BitTorrent/defaultargs.py:38
@@ -1219,13 +1219,13 @@ msgid ""
 "character encoding used on the local filesystem. If left empty, "
 "autodetected. Autodetection doesn't work under python versions older than 2.3"
 msgstr ""
-"yerel dosya sisteminde kullanılanılacak karakter kodlaması. Boş "
-"bırakıldığında, otomatik olarak bulunacaktır. Otomatik bulma işlemi, 2.3'den "
-"küçük python sürümleri altında çalışmaz."
+"yerel dosya sisteminde kullanılacak karakter kodlaması. Boş bırakıldığında, "
+"otomatik olarak bulunacaktır. Otomatik bulma işlemi, 2.3'ten küçük python "
+"sürümleri altında çalışmaz."
 
 #: BitTorrent/defaultargs.py:42
 msgid "ISO Language code to use"
-msgstr "Kullanılacak ISO Dil kodlaması"
+msgstr "Kullanılacak ISO Dil kodu"
 
 #: BitTorrent/defaultargs.py:47
 msgid ""
@@ -1279,7 +1279,7 @@ msgid ""
 "will be immediately closed"
 msgstr ""
 "izin verilecek en fazla bağlantı sayısı, bundan sonra yeni gelen bağlantılar "
-"derhal durdurulacaktır"
+"derhal kapatılacaktır"
 
 #: BitTorrent/defaultargs.py:70
 msgid "whether to check hashes on disk"
@@ -1291,7 +1291,7 @@ msgstr "Yükleme için maksimum kB/s, 0 sınırsız anlamına gelir"
 
 #: BitTorrent/defaultargs.py:74
 msgid "the number of uploads to fill out to with extra optimistic unchokes"
-msgstr ""
+msgstr "ekstra iyimser boğulmamalarla, doldurulacak yükleme sayısı "
 
 #: BitTorrent/defaultargs.py:76
 msgid ""
@@ -1299,8 +1299,8 @@ msgid ""
 "means no limit. Used to avoid running out of file descriptors."
 msgstr ""
 "çok dosyalı torrentde bir anda açık tutulabilecek maksimum dosya sayısı, 0 "
-"sınırsız anlamına gelir. Dosya tanımlanyıcılarının aşımı problemini "
-"engellemek için kullanılır."
+"sınırsız anlamına gelir. Dosya tanımlayıcısı kalmaması problemini engellemek "
+"için kullanılır."
 
 #: BitTorrent/defaultargs.py:79
 msgid ""
@@ -1312,7 +1312,8 @@ msgstr ""
 
 #: BitTorrent/defaultargs.py:85
 msgid "number of seconds to pause between sending keepalives"
-msgstr "keepalive mesajı göndermeleri arasında beklenilecek saniye sayısı"
+msgstr ""
+"keepalive (canlı tut) mesajı göndermeleri arasında beklenilecek saniye sayısı"
 
 #: BitTorrent/defaultargs.py:87
 msgid "how many bytes to query for per request."
@@ -1351,7 +1352,7 @@ msgid ""
 "maximum time interval over which to estimate the current upload and download "
 "rates"
 msgstr ""
-"geçerli yükleme ve indirme hızlarının tahmin edileceği maksimum zaman aralığı"
+"güncel yükleme ve indirme hızlarının tahmin edileceği maksimum zaman aralığı"
 
 #: BitTorrent/defaultargs.py:102
 msgid "maximum time interval over which to estimate the current seed rate"
@@ -1361,7 +1362,7 @@ msgstr "yürürlükteki kaynak oranının tahmin edileceği maksimum zaman aral�
 msgid "maximum time to wait between retrying announces if they keep failing"
 msgstr ""
 "eğer başarısız olurlarsa duyuruları yeniden deneme arasında beklenecek "
-"maksimum zaman"
+"maksimum süre"
 
 #: BitTorrent/defaultargs.py:106
 msgid ""
@@ -1385,7 +1386,7 @@ msgid ""
 "hostile peers that send incorrect data"
 msgstr ""
 "yanlış veri gönderen, hata sonucu ya da kasten saldırgan eşlerin "
-"adreslerinden daha fazla bağlantıyı reddet"
+"adreslerinden artık bağlantıları reddet"
 
 #: BitTorrent/defaultargs.py:116
 msgid "do not connect to several peers that have the same IP address"
@@ -1428,8 +1429,8 @@ msgid ""
 msgstr ""
 "torrentdeki varsayılan adı ezerek, onu farklı kaydetmek için kullanılacak "
 "dosya adı (tek dosyalı torrentler için) veya dizin adı (toplu iş torrentleri "
-"için). Aynı zamanda --save_in başlığına bakın, eğer değer belirtilmemişse, "
-"kullanıcıya kayıt yeri için sorulacaktır"
+"için). Aynı zamanda --save_in başlığına bakın, eğer hiçbiri belirtilmemişse, "
+"kullanıcıya kayıt yeri sorulacaktır"
 
 #: BitTorrent/defaultargs.py:148
 msgid "display advanced user interface"
@@ -1440,7 +1441,7 @@ msgid ""
 "the maximum number of minutes to seed a completed torrent before stopping "
 "seeding"
 msgstr ""
-"seed işlemi durdurulmadan önce, tamamlanmış bir torrentin seed edileceği "
+"kaynak işlemi durdurulmadan önce, tamamlanmış bir torrentin kaynak edileceği "
 "maksimum dakika sayısı"
 
 #: BitTorrent/defaultargs.py:153
@@ -1448,25 +1449,25 @@ msgid ""
 "the minimum upload/download ratio, in percent, to achieve before stopping "
 "seeding. 0 means no limit."
 msgstr ""
-"seed işlemi durdurulmadan önce elde edilmesi gereken yüzde cinsinden minimum "
-"gönderme/indirme oranı. 0, sınırsız anlamına gelir."
+"kaynak işlemi durdurulmadan önce elde edilmesi gereken yüzde cinsinden "
+"minimum gönderme/indirme oranı. 0, sınırsız anlamına gelir."
 
 #: BitTorrent/defaultargs.py:156
 msgid ""
 "the minimum upload/download ratio, in percent, to achieve before stopping "
 "seeding the last torrent. 0 means no limit."
 msgstr ""
-"son torrentin seed işlemi durdurulmadan önce elde edilmesi gereken yüzde "
+"son torrentin kaynak işlemi durdurulmadan önce elde edilmesi gereken yüzde "
 "cinsinden minimum gönderme/indirme oranı. 0, sınırsız anlamına gelir."
 
 #: BitTorrent/defaultargs.py:159
 msgid "Seed each completed torrent indefinitely (until the user cancels it)"
 msgstr ""
-"Tamamlanan her torrenti süresiz olarak seed et (kullanıcı iptal edene kadar)"
+"Tamamlanan her torrenti süresiz olarak kaynakla (kullanıcı iptal edene kadar)"
 
 #: BitTorrent/defaultargs.py:162
 msgid "Seed the last torrent indefinitely (until the user cancels it)"
-msgstr "Son torrenti süresiz olarak seed et (kullanıcı iptal edene kadar)"
+msgstr "Son torrenti süresiz olarak kaynakla (kullanıcı iptal edene kadar)"
 
 #: BitTorrent/defaultargs.py:165
 msgid "start downloader in paused state"
@@ -1479,10 +1480,10 @@ msgid ""
 "the new one, \"add\" means always add the running torrent in parallel, and "
 "\"ask\" means ask the user each time."
 msgstr ""
-"kullanıcı el ile diğer bir torrenti başlatmaya çalıştığı zaman uygulamanın "
-"nasıl davranacağını belirler: \"değiştir\", çalışan torrenti her zaman yeni "
-"olanla değiştir anlamına, \"ekle\", çalışan torrenti her zaman paralel "
-"olarak ekle anlamına ve \"sor\", her zaman kullanıcıya sor anlamına gelir."
+"kullanıcı başka bir torrenti elle başlatmaya çalıştığı zaman uygulamanın "
+"nasıl davranacağını belirler: değiştir\", çalışan torrenti her zaman "
+"yenisiyle değiştir, \"ekle\", çalışan torrenti her zaman paralel olarak ekle "
+"ve \"sor\" ise her seferinde kullanıcıya sor anlamına gelir."
 
 #: BitTorrent/defaultargs.py:181
 msgid ""
@@ -1490,8 +1491,8 @@ msgid ""
 "to save the torrent as, overriding the default name in the torrent. See also "
 "--save_in"
 msgstr ""
-"torrentin içindeki varsayılan adı iptal ederek, torrenti farklı kaydetmek "
-"için dosya adı (tek dosyalı torrentler için) veya dizin adı (toplu "
+"torrentin içindeki varsayılan adı hükümsüz sayarak, torrenti farklı "
+"kaydetmek için dosya adı (tek dosyalı torrentler için) veya dizin adı (toplu "
 "torrentler için). Aynı zamanda --save_in'e bakın"
 
 #: BitTorrent/defaultargs.py:188 BitTorrent/defaultargs.py:208
@@ -1501,7 +1502,7 @@ msgid ""
 "sensible when running one torrent at a time."
 msgstr ""
 "Bir defada izin verilen maksimum yükleme sayısı. -1, --max_upload_rate "
-"anahatarına dayanan makul (umulan budur) bir rakam anlamına gelir. Otomatik "
+"değerine dayanan makul (umulan budur) bir rakam anlamına gelir. Otomatik "
 "değerler yalnızca aynı anda tek bir torrent çalışırken anlamlıdır."
 
 #: BitTorrent/defaultargs.py:193
@@ -1512,9 +1513,9 @@ msgid ""
 "save_as."
 msgstr ""
 "torrent içeriklerinin kaydedileceği yerel dizin. Dosya (tek dosyalı "
-"torrenler) veya dizin (çok dosyalı torrentler) .torrent dosyasında "
-"belirtilen varsayılan isim kullanılarak  bu dizin altında oluşturulacak. "
-"Aynı zamanda --save_as'e bakabilirsiniz."
+"torrentler) veya dizin (çok dosyalı torrentler) torrent dosyasında "
+"belirtilen varsayılan isim kullanılarak  bu dizin altında oluşturulacaktır. "
+"Aynı zamanda --save_as'e bakın."
 
 #: BitTorrent/defaultargs.py:202
 msgid "whether or not to ask for a location to save downloaded files in"
@@ -1526,9 +1527,9 @@ msgid ""
 "--saveas_style. If this is left empty each torrent will be saved under the "
 "directory of the corresponding .torrent file"
 msgstr ""
-"torrentlerin, --saveas_style ile belirlenmiş bir ad ile kaydedileceği yerel "
-"dizin. Eğer bu boş bırakılırsa her bir torrent, ilişkin .torrent dosyasının "
-"dizini altına kaydedilecek."
+"torrentlerin, --saveas_style tarafından belirlenmiş bir ad ile kaydedileceği "
+"yerel dizin. Eğer bu boş bırakılırsa her bir torrent, ilişkin .torrent "
+"dosyasının dizini altına kaydedilir."
 
 #: BitTorrent/defaultargs.py:218 BitTorrent/track.py:77
 msgid "how often to rescan the torrent directory, in seconds"
@@ -1550,9 +1551,9 @@ msgstr ""
 "dosyasının adına (eksi .torrent) sahip bir dizin oluştur ve o dizin "
 "içerisine torrent dosyası içinde kodlanmış ad ile kaydet; 4: eğer torrent "
 "dosyasının adı (eksi .torrent) ve torrent dosyasının içinde kodlanmış ad "
-"özdeş ise o adı kullan (stil 1/2), değilse stil 3'deki gibi ara bir dizin "
-"oluştur; UYARI: seçenekler 1 ve 2 uyarı vermeden dosyaların üzerine yazma "
-"kabiliyetine sahiptir ve güvenlik problemleri oluşturabilirler."
+"özdeş ise o adı kullan (stil 1/2), değilse stil 3'teki gibi ara bir dizin "
+"oluştur; DİKKAT: seçenek 1 ve 2 uyarı vermeden dosyaların üzerine yazma "
+"kabiliyetine sahip olup, güvenlik problemleri oluşturabilirler."
 
 #: BitTorrent/defaultargs.py:235
 msgid ""
@@ -1567,11 +1568,11 @@ msgstr ".torrent dosyalarının aranacağı dizin (yarı-özyineli)"
 
 #: BitTorrent/defaultargs.py:247
 msgid "whether to display diagnostic info to stdout"
-msgstr "stdout'a kontrol bilgisinin gösterilip gösterilmeyeceği"
+msgstr "diagnostik bilgisinin stdout'a gösterilip gösterilmeyeceği"
 
 #: BitTorrent/defaultargs.py:252
 msgid "which power of two to set the piece size to"
-msgstr "parça boyutunun ayarlanacağı ikinin kuvveti"
+msgstr "parça boyutunun ayarlanacağı ikinin üssü"
 
 #: BitTorrent/defaultargs.py:254
 msgid "default tracker name"
@@ -1593,7 +1594,7 @@ msgstr "indirme tamamlandı!"
 
 #: bittorrent-console.py:46 bittorrent-curses.py:64
 msgid "<unknown>"
-msgstr "<bilinmeyen>"
+msgstr "<bilinmiyor>"
 
 #: bittorrent-console.py:49 bittorrent-curses.py:67
 #, python-format
@@ -2399,18 +2400,18 @@ msgstr "Hızlı sürdürme verisi yazılamadı:"
 msgid "shut down"
 msgstr "kapat"
 
-#: BitTorrent/__init__.py:22
-msgid "Python 2.2.1 or newer required"
-msgstr "Python 2.2.1 veya daha yenisi gerekli"
+#: BitTorrent/RawServer_magic.py:32
+#, python-format
+msgid "Too late to switch RawServer backends, %s has already been used."
+msgstr ""
 
 #: BitTorrent/Encoder.py:169
 msgid "Can't start two separate instances of the same torrent"
 msgstr "Aynı torrentin iki ayrı örneği başlatılamaz"
 
-#: BitTorrent/RawServer_magic.py:22
-#, python-format
-msgid "Too late to switch RawServer backends, %s has already been used."
-msgstr ""
+#: BitTorrent/__init__.py:22
+msgid "Python 2.2.1 or newer required"
+msgstr "Python 2.2.1 veya daha yenisi gerekli"
 
 #: BitTorrent/parseargs.py:26
 #, python-format

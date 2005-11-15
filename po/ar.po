@@ -7,9 +7,9 @@ msgid ""
 msgstr ""
 "Project-Id-Version: BitTorrent 4.2\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2005-11-01 12:25-0800\n"
-"PO-Revision-Date: 2005-10-18 14:17-0700\n"
-"Last-Translator: Mosa AAA <moessss@yahoo.com>\n"
+"POT-Creation-Date: 2005-11-15 14:20-0800\n"
+"PO-Revision-Date: 2005-11-08 11:39-0800\n"
+"Last-Translator: Matt Chisholm <matt@bittorrent.com>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -18,11 +18,11 @@ msgstr ""
 
 #: bittorrent.py:22 maketorrent.py:23
 msgid "Install Python 2.3 or greater"
-msgstr "سجّل Python 2.3 أو أجدد"
+msgstr "قم بتنصيب Python 2.3 أو أحدث"
 
 #: bittorrent.py:36
 msgid "PyGTK 2.4 or newer required"
-msgstr "مطلوب PyGTK 2.4 أو أجدد"
+msgstr "مطلوب PyGTK 2.4 أو إصدارة أحدث"
 
 #: bittorrent.py:242
 msgid "Enter torrent URL"
@@ -34,19 +34,19 @@ msgstr "أدخل رابط ملف التورنت للفتح:"
 
 #: bittorrent.py:279
 msgid "dialup"
-msgstr "خط الهاتف"
+msgstr "اتصال باستخدام المودم/خط الهاتف"
 
 #: bittorrent.py:280
 msgid "DSL/cable 128k up"
-msgstr "دي أس أل (DSL) أو شريط (cable) 128 كيلو سرعة إرسال"
+msgstr "دي أس أل (DSL) / كيبل بسرعة إرسال 128 كيلو"
 
 #: bittorrent.py:281
 msgid "DSL/cable 256k up"
-msgstr "دي أس أل (DSL) أو شريط (cable) 256كيلو سرعة إرسال"
+msgstr "دي أس أل (DSL) / كيبل بسرعة إرسال 256 كيلو"
 
 #: bittorrent.py:282
 msgid "DSL 768k up"
-msgstr "دي أس أل (DSL) 768 كيلو سرعة إرسال"
+msgstr "دي أس أل (DSL) بسرعة إرسال 768 كيلو"
 
 #: bittorrent.py:283
 msgid "T1"
@@ -70,11 +70,11 @@ msgstr "أو سي 3 (OC3)"
 
 #: bittorrent.py:299
 msgid "Maximum upload rate:"
-msgstr "الحد الاعلى للتحميل :"
+msgstr "الحد الاعلى للتحويل:"
 
 #: bittorrent.py:363
 msgid "Temporarily stop all running torrents"
-msgstr "تشغيل كلّ التورنت "
+msgstr "إيقاف مؤقت لجميع ملفات التورنت   "
 
 #: bittorrent.py:364
 msgid "Resume downloading"
@@ -82,7 +82,7 @@ msgstr "إستئناف التّحميل"
 
 #: bittorrent.py:403 bittorrent.py:1998
 msgid "Paused"
-msgstr "ايقاف مؤقت"
+msgstr "إيقاف مؤقت"
 
 #: bittorrent.py:405
 msgid "No torrents"
@@ -90,33 +90,33 @@ msgstr "لاتوجد ملفات تورنت"
 
 #: bittorrent.py:407
 msgid "Running normally"
-msgstr "يعمل بكفاءة"
+msgstr "يعمل بشكل طبيعي"
 
 #: bittorrent.py:409
 msgid "Firewalled/NATted"
-msgstr "جدار ناري / NAT"
+msgstr "جدار ناري "
 
 #: bittorrent.py:445
 #, python-format
 msgid "New %s version available"
-msgstr "جديد %s يوجد إصدار"
+msgstr "يوجد إصدار جديد %s"
 
 #: bittorrent.py:460
 #, python-format
 msgid "A newer version of %s is available.\n"
-msgstr "%s يوجد إصدار جديد من  \n"
+msgstr "يوجد إصدار جديد من %s  \n"
 
 #: bittorrent.py:461
 #, python-format
 msgid "You are using %s, and the new version is %s.\n"
-msgstr "، والإصدار الجديد هو %s أنت تستخدم الإصدار%s\n"
+msgstr "أنت تستخدم الإصدار %s، بينما الإصدارالجديد هو %s. \n"
 
 #: bittorrent.py:462
 #, python-format
 msgid ""
 "You can always get the latest version from \n"
 "%s"
-msgstr "يمكنك دائمًا الحصول على الإصدار الجديد من%s"
+msgstr "بإمكانك الحصول على الإصدار الجديد من n\\%s "
 
 #: bittorrent.py:469 bittorrent.py:1795
 msgid "Download _later"
@@ -137,17 +137,17 @@ msgstr "عن %s"
 
 #: bittorrent.py:531
 msgid "Beta"
-msgstr "بيتا"
+msgstr "تجريبية"
 
 #: bittorrent.py:533
 #, python-format
 msgid "Version %s"
-msgstr "الإصدار %s"
+msgstr "%s الإصدار  "
 
 #: bittorrent.py:549
 #, python-format
 msgid "Couldn't open %s"
-msgstr "لايمكن فتح %s"
+msgstr "%s لايمكن فتح   "
 
 #: bittorrent.py:568
 msgid "Donate"
@@ -160,7 +160,7 @@ msgstr "%s سجل النشاط"
 
 #: bittorrent.py:645
 msgid "Save log in:"
-msgstr "حفظ السجل في :"
+msgstr ":حفظ السجل في "
 
 #: bittorrent.py:656
 msgid "log saved"
@@ -181,27 +181,27 @@ msgstr "حفظ"
 
 #: bittorrent.py:758
 msgid "Save new downloads in:"
-msgstr "حفظ الملفات المحمله في :"
+msgstr ": حفظ الملفات المحمله في   "
 
 #: bittorrent.py:771
 msgid "Change..."
-msgstr "تغيير ..."
+msgstr "... تغيير   "
 
 #: bittorrent.py:777
 msgid "Ask where to save each new download"
-msgstr "إسأل عن مكان حفظ كل ملف"
+msgstr "إسأل عن مكان حفظ كل مرة"
 
 #: bittorrent.py:786
 msgid "Downloading"
-msgstr "تحميل"
+msgstr "التحميل مستمر"
 
 #: bittorrent.py:788
 msgid "Starting additional torrents manually:"
-msgstr "تشغيل التورنت الإضافية يدويا"
+msgstr ": تشغيل التورنت الإضافية يدويا"
 
 #: bittorrent.py:797
 msgid "Always stops the _last running torrent"
-msgstr "دائما أوقف آخر تورنت مازال يعمل"
+msgstr "دائماً أوقف آخر تورنت الذي لايزال يعمل"
 
 #: bittorrent.py:803
 msgid "Always starts the torrent in _parallel"
@@ -220,8 +220,8 @@ msgid ""
 "Seed completed torrents: until share ratio reaches [_] percent, or for [_] "
 "minutes, whichever comes first."
 msgstr ""
-"وزع التورنت المكتملة: حتى تصل نسبة المشاركة إلى [_] مئوية، أو [_]دقيقةأيهما "
-"يتم أولاَ"
+"وزع التورنت المكتملة: حتى تصل نسبة المشاركة إلى [_] مئوية،أو [_]دقيقةأيهما "
+"يتحقق أولاً"
 
 #: bittorrent.py:879 bittorrent.py:913
 msgid "Seed indefinitely"
@@ -237,27 +237,31 @@ msgstr "الشبكة"
 
 #: bittorrent.py:927
 msgid "Look for available port:"
-msgstr "إبحث عن منفذ متوفر:"
+msgstr ": إبحث عن منفذ متوفر  "
 
 #: bittorrent.py:930
 msgid "starting at port: "
-msgstr "بداية عند منفذ:"
+msgstr ":بداية عند منفذ"
 
 #: bittorrent.py:943
 msgid "IP to report to the tracker:"
-msgstr "سيقوم الآي بي بتبليغ المتتبع:"
+msgstr ": سيقوم الآي بي بتبليغ المتتبع"
 
 #: bittorrent.py:948
 msgid ""
 "(Has no effect unless you are on the\n"
 "same local network as the tracker)"
-msgstr "(ليس لها تأثير إلا إذا كنت على نفس الشبكة المحلية للمتتبع)"
+msgstr ""
+"ليس لها تأثير إلا إذا كنت على\n"
+"نفس الشبكة المحلية للمتتبع"
 
 #: bittorrent.py:960
 msgid ""
 "Progress bar text is always black\n"
 "(requires restart)"
-msgstr "نص شريط التحميل دائما أسود (يتطلب إعادة التشغيل)."
+msgstr ""
+"نص شريط التحميل دائما أسود\n"
+"(يتطلب إعادة التشغيل)"
 
 #: bittorrent.py:966
 msgid "Misc"
@@ -270,7 +274,7 @@ msgid ""
 "prevent %s from functioning correctly."
 msgstr ""
 "تحذير : تغير هذه الاعدادات قد \n"
-" يمنع %s من العمل بشكل جيد."
+"من العمل بشكل جيد %s يمنع  "
 
 #: bittorrent.py:981
 msgid "Option"
@@ -282,16 +286,16 @@ msgstr "قيمة"
 
 #: bittorrent.py:993
 msgid "Advanced"
-msgstr "متقدمة"
+msgstr "متقدم"
 
 #: bittorrent.py:1002
 msgid "Choose default download directory"
-msgstr "اختر دليل التنزيل الأساسي"
+msgstr "اختر دليل الحفظ الإفتراضي"
 
 #: bittorrent.py:1063
 #, python-format
 msgid "Files in \"%s\""
-msgstr "ملفات في \"%s\""
+msgstr "\"%s\" ملفات في  "
 
 #: bittorrent.py:1072
 msgid "Apply"
@@ -303,7 +307,7 @@ msgstr "خصص"
 
 #: bittorrent.py:1074
 msgid "Never download"
-msgstr "لا تحمل أبدا"
+msgstr "لا تحمل أبداً"
 
 #: bittorrent.py:1075
 msgid "Decrease"
@@ -328,7 +332,7 @@ msgstr "%"
 #: bittorrent.py:1250
 #, python-format
 msgid "Peers for \"%s\""
-msgstr "النظراء لـ\"%s\""
+msgstr "\"%s\" الأنداد لـ         "
 
 #: bittorrent.py:1256
 msgid "IP address"
@@ -348,7 +352,7 @@ msgstr "كيلو بت/ث تحميل"
 
 #: bittorrent.py:1256
 msgid "KB/s up"
-msgstr "كيلو بت/ث رفع"
+msgstr "كيلو بت/ث نقل"
 
 #: bittorrent.py:1256
 msgid "MB downloaded"
@@ -356,16 +360,16 @@ msgstr "ميجا بايت تم تحميلها"
 
 #: bittorrent.py:1256
 msgid "MB uploaded"
-msgstr "ميجابايت تم رفعها"
+msgstr "ميجابايت تم نقلها"
 
 #: bittorrent.py:1256
 #, python-format
 msgid "% complete"
-msgstr "% مكتمل"
+msgstr " مكتمل %"
 
 #: bittorrent.py:1256
 msgid "KB/s est. peer download"
-msgstr "كيلو بت/ ث سرعة الند التقديرية"
+msgstr "كيلو بت/ ث سرعة التحميل التقديرية للند"
 
 #: bittorrent.py:1262
 msgid "Peer ID"
@@ -377,7 +381,7 @@ msgstr "مهتم"
 
 #: bittorrent.py:1265 bittorrent.py:1268
 msgid "Choked"
-msgstr "مختنق"
+msgstr "مزدحم"
 
 #: bittorrent.py:1265
 msgid "Snubbed"
@@ -402,12 +406,12 @@ msgstr "ند سيئ"
 #: bittorrent.py:1399
 #, python-format
 msgid "%d ok"
-msgstr "%d جيد"
+msgstr "جيد %d   "
 
 #: bittorrent.py:1400
 #, python-format
 msgid "%d bad"
-msgstr "%d سيئ"
+msgstr " سيئ %d"
 
 #: bittorrent.py:1402
 msgid "banned"
@@ -415,16 +419,16 @@ msgstr "ممنوع"
 
 #: bittorrent.py:1404
 msgid "ok"
-msgstr "حسنا"
+msgstr "موافق"
 
 #: bittorrent.py:1440
 #, python-format
 msgid "Info for \"%s\""
-msgstr "معلومات لـ \"%s\""
+msgstr "\"%s\" معلومات لـ   "
 
 #: bittorrent.py:1458
 msgid "Torrent name:"
-msgstr "اسم التورنت:"
+msgstr ":اسم التورنت "
 
 #: bittorrent.py:1463
 msgid "(trackerless torrent)"
@@ -432,7 +436,7 @@ msgstr "(تورنت غير متتبع)"
 
 #: bittorrent.py:1466
 msgid "Announce url:"
-msgstr "أعلن عنوان الموقع:"
+msgstr ": عنوان الموقع الإعلان"
 
 #: bittorrent.py:1470
 msgid ", in one file"
@@ -441,27 +445,27 @@ msgstr "،في ملف واحد"
 #: bittorrent.py:1472
 #, python-format
 msgid ", in %d files"
-msgstr "،في %d ملف"
+msgstr "ملفات %d في  "
 
 #: bittorrent.py:1473
 msgid "Total size:"
-msgstr "الحجم الكلي:"
+msgstr ":الحجم الكلي"
 
 #: bittorrent.py:1480
 msgid "Pieces:"
-msgstr "قطع:"
+msgstr ":قطع"
 
 #: bittorrent.py:1482
 msgid "Info hash:"
-msgstr "معلومات الهاش :"
+msgstr ":معلومات الهاش "
 
 #: bittorrent.py:1492
 msgid "Save in:"
-msgstr "احفظ في"
+msgstr ":احفظ في"
 
 #: bittorrent.py:1496
 msgid "File name:"
-msgstr "اسم الملف:"
+msgstr ":اسم الملف"
 
 #: bittorrent.py:1522
 msgid "Open directory"
@@ -473,7 +477,7 @@ msgstr "أظهر قائمة الملفات"
 
 #: bittorrent.py:1561
 msgid "drag to reorder"
-msgstr "أجرف لإعادة التّرتيب"
+msgstr "اسحب لإعادة التّرتيب"
 
 #: bittorrent.py:1562
 msgid "right-click for menu"
@@ -494,7 +498,7 @@ msgstr "قم بإلغاء التورنت"
 #: bittorrent.py:1707
 #, python-format
 msgid ", will seed for %s"
-msgstr "،ستوزع إلى %s"
+msgstr "،%s ستوزع حتى  "
 
 #: bittorrent.py:1709
 msgid ", will seed indefinitely."
@@ -503,12 +507,12 @@ msgstr "ستوزع بشكل غير محدود"
 #: bittorrent.py:1712
 #, python-format
 msgid "Done, share ratio: %d%%"
-msgstr "تمت بحمد الله، نسبة المشاركة: %d%%"
+msgstr " %d%% :تم التحميل بحمد الله، نسبة المشاركة "
 
 #: bittorrent.py:1715
 #, python-format
 msgid "Done, %s uploaded"
-msgstr "تمت بحمد الله، %s رفعت"
+msgstr "تم نقلها %s ، تم التحميل بحمد الله   "
 
 #: bittorrent.py:1718 bittorrent.py:2156
 msgid "Done"
@@ -544,7 +548,7 @@ msgstr "إعادة"
 
 #: bittorrent.py:1791
 msgid "_Finish"
-msgstr "إتمام_"
+msgstr "إنهاء_"
 
 #: bittorrent.py:1792
 msgid "_Remove"
@@ -557,17 +561,17 @@ msgstr "قطع/إنهاء_"
 #: bittorrent.py:1880
 #, python-format
 msgid "Are you sure you want to remove \"%s\"?"
-msgstr "هل أنت متأكد أنك تريد إزالة \"%s\"?"
+msgstr "؟ \"%s\" هل أنت متأكد أنك تريد إزالة  "
 
 #: bittorrent.py:1883
 #, python-format
 msgid "Your share ratio for this torrent is %d%%. "
-msgstr "%d%% هي نسبة مشاركتك في هذا التورنت "
+msgstr "هي نسبة مشاركتك في هذا التورنت %d%% "
 
 #: bittorrent.py:1885
 #, python-format
 msgid "You have uploaded %s to this torrent. "
-msgstr "لقد حملت إلى هذا التورنت %s"
+msgstr "لهذا التورنت %s لقد قمت بنقل        "
 
 #: bittorrent.py:1888
 msgid "Remove this torrent?"
@@ -595,42 +599,42 @@ msgstr "انتظار"
 
 #: bittorrent.py:2028
 msgid "Running"
-msgstr "عاملة"
+msgstr "مستمر"
 
 #: bittorrent.py:2053
 #, python-format
 msgid "Current up: %s"
-msgstr "التحميل الحالي: %s"
+msgstr " %s : النقل الحالي  "
 
 #: bittorrent.py:2054
 #, python-format
 msgid "Current down: %s"
-msgstr "التنزيل الحالي: %s"
+msgstr "%s : التحميل الحالي "
 
 #: bittorrent.py:2060
 #, python-format
 msgid "Previous up: %s"
-msgstr "التحميل السابق: %s"
+msgstr "%s : النقل السابق"
 
 #: bittorrent.py:2061
 #, python-format
 msgid "Previous down: %s"
-msgstr "التنزيل السابق: %s"
+msgstr " %s : التحميل السابق "
 
 #: bittorrent.py:2067
 #, python-format
 msgid "Share ratio: %0.02f%%"
-msgstr "معدل المشاركة: %0.02f%%"
+msgstr "%0.02f%% : نسبة المشاركة "
 
 #: bittorrent.py:2070
 #, python-format
 msgid "%s peers, %s seeds. Totals from tracker: %s"
-msgstr "%s بير , %s سييد. المجموع من التراكر: %s"
+msgstr "ند %s يوجد موزع %s يوجد %s : المجموع من التراكر"
 
 #: bittorrent.py:2074
 #, python-format
 msgid "Distributed copies: %d; Next: %s"
-msgstr "النسخ الموزعه : %d ; التالي : %s"
+msgstr "%d :  النسخ الموزعه %s : التالي    "
 
 #: bittorrent.py:2077
 #, python-format
@@ -640,12 +644,12 @@ msgstr "الاجزاء: %d total, %d اكتمل , %d جزء, %d نشط (%d فا�
 #: bittorrent.py:2081
 #, python-format
 msgid "%d bad pieces + %s in discarded requests"
-msgstr "%d  اجزاء متعطلة + %s في طلبات"
+msgstr "  أجزاء متعطلة %d + في طلبات مرفوضة %s"
 
 #: bittorrent.py:2171
 #, python-format
 msgid "%.1f%% done, %s remaining"
-msgstr ""
+msgstr "%.1f%% تم          %s والباقي"
 
 #: bittorrent.py:2179
 msgid "Download rate"
@@ -653,7 +657,7 @@ msgstr "نسبة التحميل"
 
 #: bittorrent.py:2181
 msgid "Upload rate"
-msgstr "نسبة الرفع"
+msgstr "نسبة النقل"
 
 #: bittorrent.py:2196
 msgid "NA"
@@ -662,7 +666,7 @@ msgstr "غير موجود"
 #: bittorrent.py:2620
 #, python-format
 msgid "%s started"
-msgstr " %s ابتداء"
+msgstr " %s ابتدأ"
 
 #: bittorrent.py:2633
 msgid "_Open torrent file"
@@ -690,7 +694,7 @@ msgstr "أظهر/أخفي التورنت المكتملة"
 
 #: bittorrent.py:2644
 msgid "_Resize window to fit"
-msgstr ""
+msgstr "أعد قياس النافذة للمطابقة"
 
 #: bittorrent.py:2646
 msgid "_Log"
@@ -735,17 +739,17 @@ msgstr "(متعدد)"
 #: bittorrent.py:2987
 #, python-format
 msgid "Already downloading %s installer"
-msgstr "تم تحميله ، %sيتم تنصيبه"
+msgstr "%s يتم تحميل ملف التنصيب لـ "
 
 #: bittorrent.py:2991
 #, python-format
 msgid "Install new %s now?"
-msgstr "تنصيب الـ %sالجديد الآن ؟"
+msgstr "الجديد الآن؟ %s تنصيب الـ     "
 
 #: bittorrent.py:2992
 #, python-format
 msgid "Do you want to quit %s and install the new version, %s, now?"
-msgstr "هل تريد الخروج %s وتنصيب النسخة الجديدة من %s الآن ؟"
+msgstr "؟%s والقيام بتنصيب %s هل تريد الخروج من "
 
 #: bittorrent.py:3008
 #, python-format
@@ -753,7 +757,7 @@ msgid ""
 "%s help is at \n"
 "%s\n"
 "Would you like to go there now?"
-msgstr ""
+msgstr "موجودة في %s المساعدة التابعة لـ %sهل تريد الإنتقال إلى هناك؟"
 
 #: bittorrent.py:3011
 msgid "Visit help web page?"
@@ -770,7 +774,7 @@ msgstr "هل تريد حذفه؟"
 #: bittorrent.py:3051
 #, python-format
 msgid "There are %d finished torrents in the list. "
-msgstr "يوجدد %d ملفات تورنت مكتملة في القائمة ."
+msgstr "ملفات تورنت مكتملة في القائمة %d يوجد  "
 
 #: bittorrent.py:3052
 msgid "Do you want to remove all of them?"
@@ -790,7 +794,7 @@ msgstr "لا يوجد تورنت مكتمل للحذف"
 
 #: bittorrent.py:3119
 msgid "Open torrent:"
-msgstr "افتح تورنت:"
+msgstr ":افتح تورنت"
 
 #: bittorrent.py:3150
 msgid "Change save location for "
@@ -798,12 +802,12 @@ msgstr "غير موقع الحفظ لـ"
 
 #: bittorrent.py:3177
 msgid "File exists!"
-msgstr "الملف موجود!"
+msgstr "!الملف موجود"
 
 #: bittorrent.py:3178
 #, python-format
 msgid "\"%s\" already exists. Do you want to choose a different file name?"
-msgstr "\"%s\" موجود مسبقاً ، هل تريد انت ختار اسم اخر للملف ؟"
+msgstr " موجود مسبقاً \"%s\" هل تريد أن تختار اسم آخر للملف ؟"
 
 #: bittorrent.py:3197
 msgid "Save location for "
@@ -811,7 +815,7 @@ msgstr "احفظ الموقع لـ"
 
 #: bittorrent.py:3215
 msgid "Directory exists!"
-msgstr "المجلد موجود!"
+msgstr "!المجلد موجود"
 
 #: bittorrent.py:3216
 #, python-format
@@ -819,32 +823,33 @@ msgid ""
 "\"%s\" already exists. Do you intend to create an identical, duplicate "
 "directory inside the existing directory?"
 msgstr ""
-" \"%s\" موجود مسبقاً ، هل تريد انشاء مجلد جديد داخل المجلد الموجود مسبقاً ؟"
+"موجود مسبقاً \"%s\"هل تريد انشاء مجلد جديد بنفس الإسم داخل المجلد الموجود "
+"مسبقاً ؟"
 
 #: bittorrent.py:3339
 #, python-format
 msgid "(global message) : %s"
-msgstr ""
+msgstr "%s :(رسالة عامة)         "
 
 #: bittorrent.py:3346
 #, python-format
 msgid "%s Error"
-msgstr "%s اخطاء"
+msgstr "%s خطأ"
 
 #: bittorrent.py:3352
 msgid "Multiple errors have occurred. Click OK to view the error log."
-msgstr ""
+msgstr "لقد حدثت عدة أخطاء اضغط موافق لرؤية سجل الأخطاء"
 
 #: bittorrent.py:3508
 msgid "Stop running torrent?"
-msgstr ""
+msgstr "إيقاف التورنت المشتغلة؟"
 
 #: bittorrent.py:3509
 #, python-format
 msgid ""
 "You are about to start \"%s\". Do you want to stop the last running torrent "
 "as well?"
-msgstr ""
+msgstr "\"%s\" أنت على وشك ابتداءهل تريد إيقاف آخر تورنت مشتغل؟  "
 
 #: bittorrent.py:3520
 msgid "Have you donated?"
@@ -1141,33 +1146,33 @@ msgid ""
 "seeding the last completed torrent."
 msgstr ""
 
-#: BitTorrent/NewVersion.py:87
+#: BitTorrent/NewVersion.py:92
 #, python-format
 msgid "Could not get latest version from %s"
 msgstr ""
 
-#: BitTorrent/NewVersion.py:92
+#: BitTorrent/NewVersion.py:97
 #, python-format
 msgid "Could not parse new version string from %s"
 msgstr ""
 
-#: BitTorrent/NewVersion.py:198
+#: BitTorrent/NewVersion.py:213
 #, python-format
 msgid ""
 "Could not find a suitable temporary location to save the %s %s installer."
 msgstr ""
 
-#: BitTorrent/NewVersion.py:217
+#: BitTorrent/NewVersion.py:232
 #, python-format
 msgid "No torrent file available for %s %s installer."
 msgstr ""
 
-#: BitTorrent/NewVersion.py:227
+#: BitTorrent/NewVersion.py:242
 #, python-format
 msgid "%s %s installer appears to be corrupt or missing."
 msgstr ""
 
-#: BitTorrent/NewVersion.py:234
+#: BitTorrent/NewVersion.py:249
 msgid "Cannot launch installer on this OS"
 msgstr ""
 
@@ -2243,17 +2248,17 @@ msgstr ""
 msgid "shut down"
 msgstr ""
 
-#: BitTorrent/__init__.py:22
-msgid "Python 2.2.1 or newer required"
+#: BitTorrent/RawServer_magic.py:32
+#, python-format
+msgid "Too late to switch RawServer backends, %s has already been used."
 msgstr ""
 
 #: BitTorrent/Encoder.py:169
 msgid "Can't start two separate instances of the same torrent"
 msgstr ""
 
-#: BitTorrent/RawServer_magic.py:22
-#, python-format
-msgid "Too late to switch RawServer backends, %s has already been used."
+#: BitTorrent/__init__.py:22
+msgid "Python 2.2.1 or newer required"
 msgstr ""
 
 #: BitTorrent/parseargs.py:26

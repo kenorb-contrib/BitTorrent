@@ -9,10 +9,11 @@ include images/logo/bittorrent_[0-9]*.png
 include credits.txt credits-l10n.txt LICENSE.txt README.txt redirdonate.html INSTALL.unix.txt TRACKERLESS.txt MANIFEST.in public.key
 
 # include windows build stuffs in the source
-include installer.nsi build.bat winsetup.py BUILD.windows.txt
+include installer.nsi installer.directory.ini installer.upgrade.ini installer.warning.rtf
+include build.bat winprepnsi.py winmakei18n.py winsetup.py BUILD.windows.txt
 
 # localization stuffs
-include makei18n.sh locale/*/LC_MESSAGES/bittorrent* po/*po
+include makei18n.sh language_codes.py locale/*/LC_MESSAGES/bittorrent* po/*po
 
 # include all top level scripts
 include bittorrent.py
