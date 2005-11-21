@@ -1,5 +1,5 @@
 # The contents of this file are subject to the BitTorrent Open Source License
-# Version 1.0 (the License).  You may not copy or use this file, in either
+# Version 1.1 (the License).  You may not copy or use this file, in either
 # source code or executable form, except in compliance with the License.  You
 # may obtain a copy of the License at http://www.bittorrent.com/license/.
 #
@@ -23,8 +23,13 @@ if os.name == 'nt':
     import win32api
     from win32com.shell import shellcon, shell
 elif os.name == 'posix' and os.uname()[0] == 'Darwin':
-    from Foundation import NSBundle
-
+    has_pyobjc = False
+    try:
+        from Foundation import NSBundle
+        has_pyobjc = True
+    except ImportError:
+        pass
+    
 from BitTorrent import app_name, version
 
 if sys.platform.startswith('win'):
@@ -67,9 +72,10 @@ doc_root = app_root
 osx = False
 if os.name == 'posix':
     if os.uname()[0] == "Darwin":
-        app_root = app_root.encode('utf8')
-        doc_root = NSBundle.mainBundle().resourcePath()
-        osx = True
+        doc_root = app_root = app_root.encode('utf8')
+        if has_pyobjc:
+            doc_root = NSBundle.mainBundle().resourcePath()
+            osx = True
 image_root  = os.path.join(app_root, 'images')
 locale_root = os.path.join(app_root, 'locale')
 

@@ -12,7 +12,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: BitTorrent 4.2\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2005-11-15 14:20-0800\n"
+"POT-Creation-Date: 2005-11-20 23:00-0800\n"
 "PO-Revision-Date: 2005-11-15 14:12-0800\n"
 "Last-Translator: Matt Chisholm <matt@bittorrent.com>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -2323,9 +2323,9 @@ msgstr ""
 msgid "Can't start two separate instances of the same torrent"
 msgstr ""
 
-#: BitTorrent/__init__.py:22
-msgid "Python 2.2.1 or newer required"
-msgstr "需要 Python 2.2.1 或以上版本"
+#: BitTorrent/configfile.py:70
+msgid "Could not permanently save options: "
+msgstr "不能永久儲存設定："
 
 #: BitTorrent/parseargs.py:26
 #, python-format
@@ -2651,39 +2651,39 @@ msgstr "十二月"
 msgid "Compressed: %i  Uncompressed: %i\n"
 msgstr "壓縮後: %i  未壓縮: %i\n"
 
-#: BitTorrent/controlsocket.py:135 BitTorrent/controlsocket.py:183
+#: BitTorrent/controlsocket.py:135 BitTorrent/controlsocket.py:186
 msgid "Could not create control socket: "
 msgstr "不能建立控制 socket："
 
-#: BitTorrent/controlsocket.py:163 BitTorrent/controlsocket.py:215
+#: BitTorrent/controlsocket.py:166 BitTorrent/controlsocket.py:218
 msgid "Could not send command: "
 msgstr "不能傳送指令："
 
-#: BitTorrent/controlsocket.py:173
+#: BitTorrent/controlsocket.py:176
 msgid "Could not create control socket: already in use"
 msgstr "不能建立控制 socket：已經使用中"
 
-#: BitTorrent/controlsocket.py:178
+#: BitTorrent/controlsocket.py:181
 msgid "Could not remove old control socket filename:"
 msgstr "不能重新命名舊的控制 socket 檔名："
 
-#: BitTorrent/controlsocket.py:238
+#: BitTorrent/controlsocket.py:241
 msgid "Global mutex already created."
 msgstr ""
 
-#: BitTorrent/controlsocket.py:252
+#: BitTorrent/controlsocket.py:255
 msgid "Could not find an open port!"
 msgstr "找不到任何開啟的連接埠！"
 
-#: BitTorrent/controlsocket.py:261
+#: BitTorrent/controlsocket.py:264
 msgid "Could not create application data directory!"
 msgstr "無法建立存放程式資料的目錄！"
 
-#: BitTorrent/controlsocket.py:277
+#: BitTorrent/controlsocket.py:280
 msgid "Could not acquire global mutex lock for controlsocket file!"
 msgstr ""
 
-#: BitTorrent/controlsocket.py:287
+#: BitTorrent/controlsocket.py:290
 msgid "A previous instance of BT was not cleaned up properly. Continuing."
 msgstr "上一次執行 BT 後未清理殘餘檔案，會繼續。"
 
@@ -2732,9 +2732,9 @@ msgstr ""
 "%s\n"
 "請嘗試改用網頁瀏覽器下載 torrent 檔。"
 
-#: BitTorrent/configfile.py:70
-msgid "Could not permanently save options: "
-msgstr "不能永久儲存設定："
+#: BitTorrent/__init__.py:22
+msgid "Python 2.2.1 or newer required"
+msgstr "需要 Python 2.2.1 或以上版本"
 
 #: BitTorrent/RawServer.py:322
 msgid "lost server socket"

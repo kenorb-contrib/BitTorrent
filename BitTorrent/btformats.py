@@ -1,5 +1,5 @@
 # The contents of this file are subject to the BitTorrent Open Source License
-# Version 1.0 (the License).  You may not copy or use this file, in either
+# Version 1.1 (the License).  You may not copy or use this file, in either
 # source code or executable form, except in compliance with the License.  You
 # may obtain a copy of the License at http://www.bittorrent.com/license/.
 #
@@ -79,7 +79,22 @@ def check_message(message, check_paths=True):
     check_info(message.get('info'), check_paths)
     if type(message.get('announce')) != str and type(message.get('nodes')) != list:
         raise BTFailure, _("bad metainfo - no announce URL string")
+    if message.has_key('nodes'):
+        check_nodes(message.get('nodes'))
 
+def check_nodes(nodes):
+    ## note, these strings need changing
+    for node in nodes:
+        if type(node) != list:
+            raise BTFailure, _("bad metainfo - wrong object type") + "0"
+        if len(node) != 2:
+            raise BTFailure, _("bad metainfo - wrong object type") + "1"
+        host, port = node
+        if type(host) != str:
+            raise BTFailure, _("bad metainfo - wrong object type") + "2"
+        if type(port) != int:
+            raise BTFailure, _("bad metainfo - wrong object type") + "3"
+        
 def check_peers(message):
     if type(message) != dict:
         raise BTFailure

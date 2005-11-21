@@ -7,9 +7,9 @@ msgid ""
 msgstr ""
 "Project-Id-Version: BitTorrent 4.2\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2005-11-15 14:20-0800\n"
-"PO-Revision-Date: 2005-08-15 00:50-0700\n"
-"Last-Translator: Kestas Ermanas <Kestas@gmail.com>\n"
+"POT-Creation-Date: 2005-11-20 23:00-0800\n"
+"PO-Revision-Date: 2005-11-20 22:59-0800\n"
+"Last-Translator: Matt Chisholm <matt@bittorrent.com>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -70,7 +70,7 @@ msgstr "OC3"
 
 #: bittorrent.py:299
 msgid "Maximum upload rate:"
-msgstr ""
+msgstr "Didžiausia išsiuntimo sparta"
 
 #: bittorrent.py:363
 msgid "Temporarily stop all running torrents"
@@ -82,11 +82,11 @@ msgstr "Testi siuntimą"
 
 #: bittorrent.py:403 bittorrent.py:1998
 msgid "Paused"
-msgstr ""
+msgstr "Sustabdyta"
 
 #: bittorrent.py:405
 msgid "No torrents"
-msgstr ""
+msgstr "Nėra torrentų"
 
 #: bittorrent.py:407
 msgid "Running normally"
@@ -94,22 +94,22 @@ msgstr "Veikimas normalus"
 
 #: bittorrent.py:409
 msgid "Firewalled/NATted"
-msgstr "Firewalled/NATted"
+msgstr "Ugniasienė/NATas"
 
 #: bittorrent.py:445
 #, python-format
 msgid "New %s version available"
-msgstr "Nauja %s versija prieinama"
+msgstr "Jau yra nauja %s versija"
 
 #: bittorrent.py:460
 #, python-format
 msgid "A newer version of %s is available.\n"
-msgstr "Naujesne versija %s yra prieinama. \n"
+msgstr "Jau yra naujesne versija %s.\n"
 
 #: bittorrent.py:461
 #, python-format
 msgid "You are using %s, and the new version is %s.\n"
-msgstr ""
+msgstr "Jūs naudojate %s, naujesnė %s versija yra.\n"
 
 #: bittorrent.py:462
 #, python-format
@@ -117,99 +117,101 @@ msgid ""
 "You can always get the latest version from \n"
 "%s"
 msgstr ""
+"Visuomet galite gauti naujausią iš \n"
+"%s"
 
 #: bittorrent.py:469 bittorrent.py:1795
 msgid "Download _later"
-msgstr ""
+msgstr "Parsiusk_vėliau"
 
 #: bittorrent.py:472 bittorrent.py:1783
 msgid "Download _now"
-msgstr ""
+msgstr "Siųsk_dabar"
 
 #: bittorrent.py:478
 msgid "_Remind me later"
-msgstr ""
+msgstr "_primink man vėliau"
 
 #: bittorrent.py:516
 #, python-format
 msgid "About %s"
-msgstr ""
+msgstr "Apie %s"
 
 #: bittorrent.py:531
 msgid "Beta"
-msgstr ""
+msgstr "Beta"
 
 #: bittorrent.py:533
 #, python-format
 msgid "Version %s"
-msgstr ""
+msgstr "%s versija"
 
 #: bittorrent.py:549
 #, python-format
 msgid "Couldn't open %s"
-msgstr ""
+msgstr "Negaliu atverti %s"
 
 #: bittorrent.py:568
 msgid "Donate"
-msgstr ""
+msgstr "Paaukok"
 
 #: bittorrent.py:588
 #, python-format
 msgid "%s Activity Log"
-msgstr ""
+msgstr "%s darbo įrašai"
 
 #: bittorrent.py:645
 msgid "Save log in:"
-msgstr ""
+msgstr "Saugok įrašus:"
 
 #: bittorrent.py:656
 msgid "log saved"
-msgstr ""
+msgstr "įrašai išsaugoti"
 
 #: bittorrent.py:715
 msgid "log cleared"
-msgstr ""
+msgstr "įrašai išvalyti"
 
 #: bittorrent.py:745
 #, python-format
 msgid "%s Settings"
-msgstr ""
+msgstr "%s nuostatos"
 
 #: bittorrent.py:756
 msgid "Saving"
-msgstr ""
+msgstr "Saugau"
 
 #: bittorrent.py:758
 msgid "Save new downloads in:"
-msgstr ""
+msgstr "Saugok naujus siuntimus ..."
 
 #: bittorrent.py:771
 msgid "Change..."
-msgstr ""
+msgstr "Pakeisti ..."
 
 #: bittorrent.py:777
 msgid "Ask where to save each new download"
-msgstr ""
+msgstr "Klausk kur saugoti kiekvieną naują siuntimą"
 
 #: bittorrent.py:786
 msgid "Downloading"
-msgstr ""
+msgstr "Parsiunčiu"
 
 #: bittorrent.py:788
 msgid "Starting additional torrents manually:"
-msgstr ""
+msgstr "Pradėk papildomus torrentus "
 
 #: bittorrent.py:797
 msgid "Always stops the _last running torrent"
-msgstr ""
+msgstr "Visuomet sustabdyk paskutinį veikiantį torrentą"
 
 #: bittorrent.py:803
 msgid "Always starts the torrent in _parallel"
-msgstr ""
+msgstr "Visuomet paleisk torrentą kartu"
 
 #: bittorrent.py:809
 msgid "_Asks each time"
-msgstr ""
+msgstr "_Paklausk kiekvieną sykį"
 
 #: bittorrent.py:826
 msgid "Seeding"
@@ -231,7 +233,7 @@ msgstr ""
 
 #: bittorrent.py:925
 msgid "Network"
-msgstr ""
+msgstr "Tinklas"
 
 #: bittorrent.py:927
 msgid "Look for available port:"
@@ -2247,8 +2249,8 @@ msgstr ""
 msgid "Can't start two separate instances of the same torrent"
 msgstr ""
 
-#: BitTorrent/__init__.py:22
-msgid "Python 2.2.1 or newer required"
+#: BitTorrent/configfile.py:70
+msgid "Could not permanently save options: "
 msgstr ""
 
 #: BitTorrent/parseargs.py:26
@@ -2573,39 +2575,39 @@ msgstr ""
 msgid "Compressed: %i  Uncompressed: %i\n"
 msgstr ""
 
-#: BitTorrent/controlsocket.py:135 BitTorrent/controlsocket.py:183
+#: BitTorrent/controlsocket.py:135 BitTorrent/controlsocket.py:186
 msgid "Could not create control socket: "
 msgstr ""
 
-#: BitTorrent/controlsocket.py:163 BitTorrent/controlsocket.py:215
+#: BitTorrent/controlsocket.py:166 BitTorrent/controlsocket.py:218
 msgid "Could not send command: "
 msgstr ""
 
-#: BitTorrent/controlsocket.py:173
+#: BitTorrent/controlsocket.py:176
 msgid "Could not create control socket: already in use"
 msgstr ""
 
-#: BitTorrent/controlsocket.py:178
+#: BitTorrent/controlsocket.py:181
 msgid "Could not remove old control socket filename:"
 msgstr ""
 
-#: BitTorrent/controlsocket.py:238
+#: BitTorrent/controlsocket.py:241
 msgid "Global mutex already created."
 msgstr ""
 
-#: BitTorrent/controlsocket.py:252
+#: BitTorrent/controlsocket.py:255
 msgid "Could not find an open port!"
 msgstr ""
 
-#: BitTorrent/controlsocket.py:261
+#: BitTorrent/controlsocket.py:264
 msgid "Could not create application data directory!"
 msgstr ""
 
-#: BitTorrent/controlsocket.py:277
+#: BitTorrent/controlsocket.py:280
 msgid "Could not acquire global mutex lock for controlsocket file!"
 msgstr ""
 
-#: BitTorrent/controlsocket.py:287
+#: BitTorrent/controlsocket.py:290
 msgid "A previous instance of BT was not cleaned up properly. Continuing."
 msgstr ""
 
@@ -2648,8 +2650,8 @@ msgid ""
 "Try using a web browser to download the torrent file."
 msgstr ""
 
-#: BitTorrent/configfile.py:70
-msgid "Could not permanently save options: "
+#: BitTorrent/__init__.py:22
+msgid "Python 2.2.1 or newer required"
 msgstr ""
 
 #: BitTorrent/RawServer.py:322

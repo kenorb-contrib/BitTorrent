@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: BitTorrent 4.2\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2005-11-15 14:20-0800\n"
+"POT-Creation-Date: 2005-11-20 23:00-0800\n"
 "PO-Revision-Date: 2005-11-11 06:32-0800\n"
 "Last-Translator: translate4me <matt-translate4me@bittorrent.com>\n"
 "Language-Team: St0fF <bugs (at) bittorrent (dot) com>\n"
@@ -2469,9 +2469,9 @@ msgstr ""
 "Es können keine zwei separate Instanzen des selben Torrents heruntergeladen "
 "werden."
 
-#: BitTorrent/__init__.py:22
-msgid "Python 2.2.1 or newer required"
-msgstr "Python 2.2.1 oder neuer benötigt"
+#: BitTorrent/configfile.py:70
+msgid "Could not permanently save options: "
+msgstr "Konnte Optionen nicht dauerhaft speichern:"
 
 #: BitTorrent/parseargs.py:26
 #, python-format
@@ -2832,42 +2832,42 @@ msgstr "Dez"
 msgid "Compressed: %i  Uncompressed: %i\n"
 msgstr "Komprimiert: %i  Unkomprimiert: %i\n"
 
-#: BitTorrent/controlsocket.py:135 BitTorrent/controlsocket.py:183
+#: BitTorrent/controlsocket.py:135 BitTorrent/controlsocket.py:186
 msgid "Could not create control socket: "
 msgstr "Konnte keine Kontrollverbindung erstellen:"
 
-#: BitTorrent/controlsocket.py:163 BitTorrent/controlsocket.py:215
+#: BitTorrent/controlsocket.py:166 BitTorrent/controlsocket.py:218
 msgid "Could not send command: "
 msgstr "Konnte keinen Befehl senden:"
 
-#: BitTorrent/controlsocket.py:173
+#: BitTorrent/controlsocket.py:176
 msgid "Could not create control socket: already in use"
 msgstr "Konnte keine Kontrollverbindung erstellen: bereits in Verwendung"
 
-#: BitTorrent/controlsocket.py:178
+#: BitTorrent/controlsocket.py:181
 msgid "Could not remove old control socket filename:"
 msgstr "Konnte Dateinamen einer alten Kontrollverbindung nicht löschen:"
 
 # Anmerkung Georg: Mutex kann nicht übersetzt werden,
 # weil es bereits in der Programmierersprache verankert ist.
-#: BitTorrent/controlsocket.py:238
+#: BitTorrent/controlsocket.py:241
 msgid "Global mutex already created."
 msgstr "Ein globaler Mutex wurde schon erstellt."
 
 # Fachbegriff Port ist gebräuchlich.
-#: BitTorrent/controlsocket.py:252
+#: BitTorrent/controlsocket.py:255
 msgid "Could not find an open port!"
 msgstr "Konnte keinen offenen Port finden."
 
-#: BitTorrent/controlsocket.py:261
+#: BitTorrent/controlsocket.py:264
 msgid "Could not create application data directory!"
 msgstr "Konnte das Datenverzeichnis der Anwendung nicht erstellen."
 
-#: BitTorrent/controlsocket.py:277
+#: BitTorrent/controlsocket.py:280
 msgid "Could not acquire global mutex lock for controlsocket file!"
 msgstr "Konnte keine globale Mutex-Sperre für die Socket-Steuerdatei erhalten."
 
-#: BitTorrent/controlsocket.py:287
+#: BitTorrent/controlsocket.py:290
 msgid "A previous instance of BT was not cleaned up properly. Continuing."
 msgstr ""
 "Eine frühere Instanz von BitTorrent war nicht sauber beendet. Setze fort."
@@ -2923,9 +2923,9 @@ msgstr ""
 "weder herunterladen noch öffnen.Versuchen Sie, die .torrent-Datei mit einem "
 "Web-Browser herunterzuladen."
 
-#: BitTorrent/configfile.py:70
-msgid "Could not permanently save options: "
-msgstr "Konnte Optionen nicht dauerhaft speichern:"
+#: BitTorrent/__init__.py:22
+msgid "Python 2.2.1 or newer required"
+msgstr "Python 2.2.1 oder neuer benötigt"
 
 #: BitTorrent/RawServer.py:322
 msgid "lost server socket"

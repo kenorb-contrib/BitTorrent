@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: BitTorrent 4.2\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2005-11-15 14:20-0800\n"
+"POT-Creation-Date: 2005-11-20 23:00-0800\n"
 "PO-Revision-Date: 2005-11-15 05:38-0800\n"
 "Last-Translator: translate4me <matt-translate4me@bittorrent.com>\n"
 "Language-Team: Hungarian <bugs (at) bittorrent (dot) com>\n"
@@ -2427,9 +2427,9 @@ msgstr "Nem lehet RawServer motort cserélni, mert %s már ki lett választva. "
 msgid "Can't start two separate instances of the same torrent"
 msgstr "Nem indítható két külön példány ugyanazzal a torrenttel"
 
-#: BitTorrent/__init__.py:22
-msgid "Python 2.2.1 or newer required"
-msgstr "A Python 2.2.1-es vagy újabb verziója szükséges"
+#: BitTorrent/configfile.py:70
+msgid "Could not permanently save options: "
+msgstr "Nem sikerült elmenteni a beállításokat: "
 
 #: BitTorrent/parseargs.py:26
 #, python-format
@@ -2790,40 +2790,40 @@ msgstr "dec."
 msgid "Compressed: %i  Uncompressed: %i\n"
 msgstr "Tömörített: %i, nem tömörített: %i\n"
 
-#: BitTorrent/controlsocket.py:135 BitTorrent/controlsocket.py:183
+#: BitTorrent/controlsocket.py:135 BitTorrent/controlsocket.py:186
 msgid "Could not create control socket: "
 msgstr "Nem sikerült létrehozni egy vezérlőaljazatot: "
 
-#: BitTorrent/controlsocket.py:163 BitTorrent/controlsocket.py:215
+#: BitTorrent/controlsocket.py:166 BitTorrent/controlsocket.py:218
 msgid "Could not send command: "
 msgstr "Nem sikerült elküldeni ezt a parancsot: "
 
-#: BitTorrent/controlsocket.py:173
+#: BitTorrent/controlsocket.py:176
 msgid "Could not create control socket: already in use"
 msgstr "Nem sikerült létrehozni egy vezérlőaljazatot: már foglalt"
 
-#: BitTorrent/controlsocket.py:178
+#: BitTorrent/controlsocket.py:181
 msgid "Could not remove old control socket filename:"
 msgstr "Nem sikerült eltávolítani egy régi vezérlőaljazat-fájlnevet:"
 
-#: BitTorrent/controlsocket.py:238
+#: BitTorrent/controlsocket.py:241
 msgid "Global mutex already created."
 msgstr "A globális mutex már létre lett hozva."
 
-#: BitTorrent/controlsocket.py:252
+#: BitTorrent/controlsocket.py:255
 msgid "Could not find an open port!"
 msgstr "Nem sikerült nyitott portot találni."
 
-#: BitTorrent/controlsocket.py:261
+#: BitTorrent/controlsocket.py:264
 msgid "Could not create application data directory!"
 msgstr "Nem sikerült létrehozni az alkalmazás adatkönyvtárát."
 
-#: BitTorrent/controlsocket.py:277
+#: BitTorrent/controlsocket.py:280
 msgid "Could not acquire global mutex lock for controlsocket file!"
 msgstr ""
 "Nem sikerült megkapni a globális mutex zárolást a controlsocket fájlhoz."
 
-#: BitTorrent/controlsocket.py:287
+#: BitTorrent/controlsocket.py:290
 msgid "A previous instance of BT was not cleaned up properly. Continuing."
 msgstr ""
 "A BitTorrent előző példánya nem lett megfelelően megszüntetve. Folytatás."
@@ -2877,9 +2877,9 @@ msgstr ""
 "%s\n"
 "Próbálja meg webböngészővel letölteni a torrentfájlt."
 
-#: BitTorrent/configfile.py:70
-msgid "Could not permanently save options: "
-msgstr "Nem sikerült elmenteni a beállításokat: "
+#: BitTorrent/__init__.py:22
+msgid "Python 2.2.1 or newer required"
+msgstr "A Python 2.2.1-es vagy újabb verziója szükséges"
 
 #: BitTorrent/RawServer.py:322
 msgid "lost server socket"

@@ -1,5 +1,5 @@
 # The contents of this file are subject to the BitTorrent Open Source License
-# Version 1.0 (the License).  You may not copy or use this file, in either
+# Version 1.1 (the License).  You may not copy or use this file, in either
 # source code or executable form, except in compliance with the License.  You
 # may obtain a copy of the License at http://www.bittorrent.com/license/.
 #
@@ -358,7 +358,7 @@ class _SingleTorrent(object):
             else:
                 if len(self._dht.table.findNodes(metainfo.infohash, invalid=False)) < const.K:
                     for host, port in metainfo.nodes:
-                        self._dht.addContact(host, port)
+                            self._dht.addContact(host, port)
                 self._rerequest = DHTRerequester(config,
                     schedfunc, self._encoder.how_many_connections,
                     self._encoder.start_connection, externalsched,

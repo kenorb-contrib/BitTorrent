@@ -1,6 +1,6 @@
 # -*- coding: UTF-8 -*-
 # The contents of this file are subject to the BitTorrent Open Source License
-# Version 1.0 (the License).  You may not copy or use this file, in either
+# Version 1.1 (the License).  You may not copy or use this file, in either
 # source code or executable form, except in compliance with the License.  You
 # may obtain a copy of the License at http://www.bittorrent.com/license/.
 #
@@ -10,7 +10,7 @@
 # License.
 
 app_name = 'BitTorrent'
-version = '4.1.8'
+version = '4.2.0'
 
 URL = 'http://www.bittorrent.com/'
 DONATE_URL = URL + 'donate.html'
@@ -49,11 +49,10 @@ language_names = {
     }
 
 unfinished_language_names = {
-    'ar'   :u'العربية'       ,
-    'bs'   :u'Bosanski'             ,
-    'eo'   :u'Esperanto'            ,
-    'eu'   :u'Euskara'              ,    'et'   :u'Eesti'                ,
-    'fi'   :u'Suomi'                ,    'ga'   :u'Gaeilge'              ,
+    'ar'   :u'العربية'       ,    'bs'   :u'Bosanski'             ,
+    'eo'   :u'Esperanto'            ,    'eu'   :u'Euskara'              ,
+    'et'   :u'Eesti'                ,    'fi'   :u'Suomi'                ,
+    'ga'   :u'Gaeilge'              ,    'gl'   :u'Galego'               ,
     'he_IL':u'עברית'                ,    'hr'   :u'Hrvatski'             ,
     'hy'   :u'Հայերեն'       ,    'in'   :u'Bahasa indonesia'     ,
     'ja'   :u'日本語'            ,    'ka'   :u'ქართული ენა',
@@ -63,7 +62,7 @@ unfinished_language_names = {
     'tlh'  :u'tlhIngan-Hol'         ,    'uk'   :u'Українська'           ,
     'hi'   :u'हिन्दी'                  ,    'cy'   :u'Cymraeg'              ,
     'is'   :u'Íslenska'             ,    'nn_NO':u'Norsk Nynorsk'        ,
-    'te'   :u'	తెలుగు'              ,
+    'te'   :u'తెలుగు'             ,
     }
 
 #language_names.update(unfinished_language_names)

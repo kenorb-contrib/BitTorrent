@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: BitTorrent 4.2\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2005-11-15 14:20-0800\n"
+"POT-Creation-Date: 2005-11-20 23:00-0800\n"
 "PO-Revision-Date: 2005-11-11 03:59-0800\n"
 "Last-Translator: translate4me <matt-translate4me@bittorrent.com>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -2393,9 +2393,9 @@ msgstr "For sent at skifte RawServer-motor, %s har allerede været brugt."
 msgid "Can't start two separate instances of the same torrent"
 msgstr "Den samme torrent kan ikke startes to forskellige steder fra"
 
-#: BitTorrent/__init__.py:22
-msgid "Python 2.2.1 or newer required"
-msgstr "Python 2.2.1 eller nyere er påkrævet"
+#: BitTorrent/configfile.py:70
+msgid "Could not permanently save options: "
+msgstr "Kunne ikke gemme indstillingerne permanent: "
 
 #: BitTorrent/parseargs.py:26
 #, python-format
@@ -2744,39 +2744,39 @@ msgstr "Dec"
 msgid "Compressed: %i  Uncompressed: %i\n"
 msgstr "Komprimeret: %i Ukomprimeret: %i\n"
 
-#: BitTorrent/controlsocket.py:135 BitTorrent/controlsocket.py:183
+#: BitTorrent/controlsocket.py:135 BitTorrent/controlsocket.py:186
 msgid "Could not create control socket: "
 msgstr "Kunne ikke oprette kontrolsokkel: "
 
-#: BitTorrent/controlsocket.py:163 BitTorrent/controlsocket.py:215
+#: BitTorrent/controlsocket.py:166 BitTorrent/controlsocket.py:218
 msgid "Could not send command: "
 msgstr "Kunne ikke sende kommando: "
 
-#: BitTorrent/controlsocket.py:173
+#: BitTorrent/controlsocket.py:176
 msgid "Could not create control socket: already in use"
 msgstr "Kunne ikke oprette kontrolsokkel: allerede i brug"
 
-#: BitTorrent/controlsocket.py:178
+#: BitTorrent/controlsocket.py:181
 msgid "Could not remove old control socket filename:"
 msgstr "Kunne ikke fjerne gammelt kontrolsokkel-filnavn:"
 
-#: BitTorrent/controlsocket.py:238
+#: BitTorrent/controlsocket.py:241
 msgid "Global mutex already created."
 msgstr "Global mutex allerede oprettet."
 
-#: BitTorrent/controlsocket.py:252
+#: BitTorrent/controlsocket.py:255
 msgid "Could not find an open port!"
 msgstr "Kunne ikke finde en åben port!"
 
-#: BitTorrent/controlsocket.py:261
+#: BitTorrent/controlsocket.py:264
 msgid "Could not create application data directory!"
 msgstr "Kunne ikke oprette program-data mappe!"
 
-#: BitTorrent/controlsocket.py:277
+#: BitTorrent/controlsocket.py:280
 msgid "Could not acquire global mutex lock for controlsocket file!"
 msgstr "Kunne ikke anskaffe global mutex lås for kontrolsokkelfil!"
 
-#: BitTorrent/controlsocket.py:287
+#: BitTorrent/controlsocket.py:290
 msgid "A previous instance of BT was not cleaned up properly. Continuing."
 msgstr "En tidligere version af BT blev ikke fjernet ordentligt. Fortsætter."
 
@@ -2829,9 +2829,9 @@ msgstr ""
 "%s\n"
 "Prøv at bruge en webbrowser til at downloade torrent-filen med."
 
-#: BitTorrent/configfile.py:70
-msgid "Could not permanently save options: "
-msgstr "Kunne ikke gemme indstillingerne permanent: "
+#: BitTorrent/__init__.py:22
+msgid "Python 2.2.1 or newer required"
+msgstr "Python 2.2.1 eller nyere er påkrævet"
 
 #: BitTorrent/RawServer.py:322
 msgid "lost server socket"

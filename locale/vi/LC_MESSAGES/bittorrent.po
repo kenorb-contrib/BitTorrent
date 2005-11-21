@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: BitTorrent 4.2\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2005-11-15 17:53-0800\n"
+"POT-Creation-Date: 2005-11-21 17:00-0800\n"
 "PO-Revision-Date: 2005-11-14 02:02-0800\n"
 "Last-Translator: translate4me <matt-translate4me@bittorrent.com>\n"
 "Language-Team: Vietnamese <gnomevi-list@lists.sourceforge.net>\n"
@@ -1928,107 +1928,223 @@ msgstr "các nút không có công cụ theo dõi:"
 msgid "comment:"
 msgstr "chú thích:"
 
-#: BitTorrent/ConvertedMetainfo.py:51
-msgid ""
-"This seems to be an old Python version which does not support detecting the "
-"filesystem encoding. Assuming 'ascii'."
-msgstr ""
-"Có thể đây là phần mềm Python phiên bản cũ và nó không hỗ trợ dò tìm bộ mã "
-"hóa hệ thống tập tin. Giả sử 'ascii'."
+#: BitTorrent/controlsocket.py:135 BitTorrent/controlsocket.py:186
+msgid "Could not create control socket: "
+msgstr "Không thể tạo cơ chế truyền thông điều khiển:"
 
-#: BitTorrent/ConvertedMetainfo.py:58
-msgid "Python failed to autodetect filesystem encoding. Using 'ascii' instead."
-msgstr ""
-"Python thất bại khi tự động dò tìm bộ mã hóa hệ thống tập tin. Hãy sử dụng "
-"'ascii' thay thế."
+#: BitTorrent/controlsocket.py:166 BitTorrent/controlsocket.py:218
+msgid "Could not send command: "
+msgstr "Không gửi được lệnh:"
 
-#: BitTorrent/ConvertedMetainfo.py:65
+#: BitTorrent/controlsocket.py:176
+msgid "Could not create control socket: already in use"
+msgstr "Không thể tạo cơ chế truyền thông điều khiển: đang được sử dụng"
+
+#: BitTorrent/controlsocket.py:181
+msgid "Could not remove old control socket filename:"
+msgstr "Không thể gỡ bỏ tên tập tin cơ chế truyền thông điều khiển cũ:"
+
+#: BitTorrent/controlsocket.py:241
+msgid "Global mutex already created."
+msgstr "Mutex toàn cầu đã được tạo."
+
+#: BitTorrent/controlsocket.py:255
+msgid "Could not find an open port!"
+msgstr "Không thể tìm được một cổng mở!"
+
+#: BitTorrent/controlsocket.py:264
+msgid "Could not create application data directory!"
+msgstr "Không thể tạo được thư mục dữ liệu ứng dụng!"
+
+#: BitTorrent/controlsocket.py:280
+msgid "Could not acquire global mutex lock for controlsocket file!"
+msgstr ""
+"Không thể yêu cầu khóa mutex toàn cầu cho tập tin của cơ chế truyền thông "
+"điều khiển!"
+
+#: BitTorrent/controlsocket.py:290
+msgid "A previous instance of BT was not cleaned up properly. Continuing."
+msgstr "Một ví dụ trước của BT đã không được làm sạch đúng. Đang tiếp tục."
+
+#: BitTorrent/bencode.py:73
+msgid "not a valid bencoded string"
+msgstr "không phải là một chuỗi mã hóa b hợp lệ"
+
+#: BitTorrent/bencode.py:75
+msgid "invalid bencoded value (data after valid prefix)"
+msgstr "giá trị mã hóa b không hợp lệ (dữ liệu sau tiền tố hợp lệ)"
+
+#: BitTorrent/parseargs.py:26
 #, python-format
-msgid "Filesystem encoding '%s' is not supported. Using 'ascii' instead."
-msgstr ""
-"Không hỗ trợ bộ mã hóa hệ thống tập tin '%s'. Hãy sử dụng 'ascii' thay thế."
+msgid "Usage: %s "
+msgstr "Cách sử dụng: %s"
 
-#: BitTorrent/ConvertedMetainfo.py:123
-msgid "Bad file path component: "
-msgstr "Thành phần đường dẫn tập tin sai:"
-
-#: BitTorrent/ConvertedMetainfo.py:195
+#: BitTorrent/parseargs.py:28
 msgid ""
-"This .torrent file has been created with a broken tool and has incorrectly "
-"encoded filenames. Some or all of the filenames may appear different from "
-"what the creator of the .torrent file intended."
+"[OPTIONS] [TORRENTDIRECTORY]\n"
+"\n"
 msgstr ""
-"Tập tin .dòng này đã được tạo bởi một công cụ bị hỏng và có tên tập tin được "
-"mã hóa không đúng. Một số hay tất cả các tên tập tin này có thể sẽ hiển thị "
-"khác so với công cụ tạo tập tin của tập tin .dòng chỉ định."
+"[CÁCTÙYCHỌN][THƯMỤCDÒNG]\n"
+"\n"
 
-#: BitTorrent/ConvertedMetainfo.py:201
+#: BitTorrent/parseargs.py:29
 msgid ""
-"This .torrent file has been created with a broken tool and has bad character "
-"values that do not correspond to any real character. Some or all of the "
-"filenames may appear different from what the creator of the .torrent file "
-"intended."
+"If a non-option argument is present it's taken as the value\n"
+"of the torrent_dir option.\n"
 msgstr ""
-"Tập tin .dòng này đã được tạo bởi một công cụ bị hỏng và có giá trị ký tự "
-"sai không tương ứng với ký tự thật nào. Một số hay tất cả tên tập tin này có "
-"thể sẽ hiển thị khác so với công cụ tạo tập tin của tập tin .dòng chỉ định."
+"Nếu có một đối số không phải là tùy chọn thì coi nó là giá trị \n"
+"của các tùy chọn của thư mục_dòng.\n"
 
-#: BitTorrent/ConvertedMetainfo.py:208
-msgid ""
-"This .torrent file has been created with a broken tool and has incorrectly "
-"encoded filenames. The names used may still be correct."
-msgstr ""
-"Tập tin .dòng này đã được tạo bởi một công cụ bị hỏng và có tên tập tin được "
-"mã hóa cho đúng. Tên được sử dụng có thể vẫn đúng."
+#: BitTorrent/parseargs.py:32
+msgid "[OPTIONS] [TORRENTFILES]\n"
+msgstr "[CÁCTÙYCHỌN][CÁCTẬPTINDÒNG]\n"
 
-#: BitTorrent/ConvertedMetainfo.py:213
+#: BitTorrent/parseargs.py:34
+msgid "[OPTIONS] [TORRENTFILE]\n"
+msgstr "[CÁCTÙYCHỌN] [TẬPTINDÒNG]\n"
+
+#: BitTorrent/parseargs.py:36
+msgid "[OPTION] TRACKER_URL FILE [FILE]\n"
+msgstr "[TÙYCHỌN] ĐỊA_CHỈ_MẠNG_CỦA_TẬP_TIN_THEO_DÕI [TẬPTIN]\n"
+
+#: BitTorrent/parseargs.py:38
+msgid "arguments are -\n"
+msgstr "các đối số là-\n"
+
+#: BitTorrent/parseargs.py:69
+msgid " (defaults to "
+msgstr "(mặc định cho "
+
+#: BitTorrent/parseargs.py:118 BitTorrent/parseargs.py:162
+msgid "unknown key "
+msgstr "khóa không xác định"
+
+#: BitTorrent/parseargs.py:124 BitTorrent/parseargs.py:134
+msgid "parameter passed in at end with no value"
+msgstr "tham số được gởi qua tại điểm đầu không có giá trị"
+
+#: BitTorrent/parseargs.py:138
+msgid "command line parsing failed at "
+msgstr "không phân tách dòng lệnh được tại"
+
+#: BitTorrent/parseargs.py:145
 #, python-format
-msgid ""
-"The character set used on the local filesystem (\"%s\") cannot represent all "
-"characters used in the filename(s) of this torrent. Filenames have been "
-"changed from the original."
-msgstr ""
-"Bộ ký tự được dùng trong hệ thống tập tin cục bộ (\"%s\") không thể thể hiện "
-"tất cả mọi ký tự được sử dụng trong tên tập tin của dòng này. Tên tập tin đã "
-"được thay đổi từ tên đầu tiên."
+msgid "Option %s is required."
+msgstr "Tùy chọn %s được yêu cầu"
 
-#: BitTorrent/ConvertedMetainfo.py:219
-msgid ""
-"The Windows filesystem cannot handle some characters used in the filename(s) "
-"of this torrent.Filenames have been changed from the original."
-msgstr ""
-"Hệ thống tập tin Windows không thể xử lý một số ký tự được dùng trong tên "
-"tập tin của dòng này. Tên tập tin đã được thay đổi từ tên đầu tiên."
-
-#: BitTorrent/ConvertedMetainfo.py:224
-msgid ""
-"This .torrent file has been created with a broken tool and has at least 1 "
-"file with an invalid file or directory name. However since all such files "
-"were marked as having length 0 those files are just ignored."
-msgstr ""
-"Tập tin .dòng này đã được tạo bởi một công cụ bị hỏng và có ít nhất một tập "
-"tin có tên tập tin hay tên thư mục không hợp lệ. Tuy nhiên, vì mọi tập tin "
-"như vậy đã được đánh dấu có độ dài là 0 và các tập tin này được bỏ qua."
-
-#: BitTorrent/Encoder.py:169
-msgid "Can't start two separate instances of the same torrent"
-msgstr "Không thể khởi động hai trường hợp riêng của cùng một dòng"
-
-#: BitTorrent/GetTorrent.py:42 BitTorrent/GetTorrent.py:81
+#: BitTorrent/parseargs.py:147
 #, python-format
-msgid "Could not read %s"
-msgstr "Không đọc được %s."
+msgid "Must supply at least %d arguments."
+msgstr "Cần phải cung cấp ít nhất %d đối số."
 
-#: BitTorrent/GetTorrent.py:49
+#: BitTorrent/parseargs.py:149
 #, python-format
-msgid ""
-"Could not download or open \n"
-"%s\n"
-"Try using a web browser to download the torrent file."
+msgid "Too many arguments - %d maximum."
+msgstr "Quá nhiều đối số — %d là tối đa."
+
+#: BitTorrent/parseargs.py:186
+#, python-format
+msgid "wrong format of %s - %s"
+msgstr "định dạng của %s không đúng-%s"
+
+#: BitTorrent/configfile.py:70
+msgid "Could not permanently save options: "
+msgstr "Không thể lưu vĩnh viễn các tùy chọn:"
+
+#: BitTorrent/Rerequester.py:92
+#, python-format
+msgid "Tracker announce still not complete %d seconds after starting it"
 msgstr ""
-"Không thể tải về hay mở\n"
-"%s\n"
-"Hãy thử sử dụng trình duyệt Web để tải về tập tin dòng."
+"Thông báo công cụ theo dõi chưa hoàn thành trong %d giây sau khi khởi động nó"
+
+#: BitTorrent/Rerequester.py:162
+msgid "Problem connecting to tracker, gethostbyname failed - "
+msgstr ""
+"Lỗi trong khi kết nối đến công cụ theo dõi, gethostbyname (gọi máy chủ theo "
+"tên)đã thất bại-"
+
+#: BitTorrent/Rerequester.py:175
+msgid "Problem connecting to tracker - "
+msgstr "Lỗi trong khi kết nối đến công cụ theo dõi - "
+
+#: BitTorrent/Rerequester.py:202
+msgid "bad data from tracker - "
+msgstr "dữ liệu sai từ công cụ theo dõi-"
+
+#: BitTorrent/Rerequester.py:213
+msgid "rejected by tracker - "
+msgstr "công cụ theo dõi đã từ chối-"
+
+#: BitTorrent/Rerequester.py:219
+msgid ""
+"Aborting the torrent as it was rejected by the tracker while not connected "
+"to any peers. "
+msgstr ""
+"Đang bỏ dở dòng vì bị công cụ theo dõi từ chối trong khi không kết nối đến "
+"bất kỳ đồng đẳng nào."
+
+#: BitTorrent/Rerequester.py:221
+msgid " Message from the tracker: "
+msgstr "Thông điệp từ công cụ theo dõi:"
+
+#: BitTorrent/Rerequester.py:227
+msgid "warning from tracker - "
+msgstr "cảnh báo từ công cụ theo dõi-"
+
+#: BitTorrent/parsedir.py:34
+msgid "Could not read directory "
+msgstr "Không đọc được thư mục"
+
+#: BitTorrent/parsedir.py:43
+msgid "Could not stat "
+msgstr "Không thể tìm các thông tin về tình trạng tập tin"
+
+#: BitTorrent/parsedir.py:74
+#, python-format
+msgid "removing %s (will re-add)"
+msgstr "đang gỡ bỏ %s (sẽ thêm lại)"
+
+#: BitTorrent/parsedir.py:84 BitTorrent/parsedir.py:98
+#, python-format
+msgid "**warning** %s is a duplicate torrent for %s"
+msgstr "**cảnh báo** %s là dòng trùng với %s"
+
+#: BitTorrent/parsedir.py:130
+#, python-format
+msgid "**warning** %s has errors"
+msgstr "**cảnh báo** %s có lỗi"
+
+#: BitTorrent/parsedir.py:138
+msgid "... successful"
+msgstr "... thành công"
+
+#: BitTorrent/parsedir.py:145
+#, python-format
+msgid "removing %s"
+msgstr "đang gỡ bỏ %s"
+
+#: BitTorrent/parsedir.py:149
+msgid "done checking"
+msgstr "kiểm tra xong"
+
+#: BitTorrent/RawServer.py:322
+msgid "lost server socket"
+msgstr "mất cơ chế truyền thông của máy chủ"
+
+#: BitTorrent/RawServer.py:338
+msgid "Error handling accepted connection: "
+msgstr "Công cụ quản lý lỗi đã chấp nhận kết nối:"
+
+#: BitTorrent/RawServer.py:423
+#, python-format
+msgid "Have to exit due to the TCP stack flaking out. Please see the FAQ at %s"
+msgstr ""
+"Phải thoát vì ngăn nhớ TCP bị hỏng. Hãy xem Các Câu Hỏi Thường Gặp tại %s."
+
+#: BitTorrent/RawServer_magic.py:32
+#, python-format
+msgid "Too late to switch RawServer backends, %s has already been used."
+msgstr "Quá muộn để bật đầu cuối của RAWSERVER, %s đã được sử dụng."
 
 #: BitTorrent/HTTPHandler.py:21
 msgid "Mon"
@@ -2111,64 +2227,78 @@ msgstr "Tháng 12"
 msgid "Compressed: %i  Uncompressed: %i\n"
 msgstr "Đã nén: %i Đã giải nén: %i\n"
 
-#: BitTorrent/RawServer.py:322
-msgid "lost server socket"
-msgstr "mất cơ chế truyền thông của máy chủ"
-
-#: BitTorrent/RawServer.py:338
-msgid "Error handling accepted connection: "
-msgstr "Công cụ quản lý lỗi đã chấp nhận kết nối:"
-
-#: BitTorrent/RawServer.py:423
-#, python-format
-msgid "Have to exit due to the TCP stack flaking out. Please see the FAQ at %s"
-msgstr ""
-"Phải thoát vì ngăn nhớ TCP bị hỏng. Hãy xem Các Câu Hỏi Thường Gặp tại %s."
-
-#: BitTorrent/RawServer_magic.py:32
-#, python-format
-msgid "Too late to switch RawServer backends, %s has already been used."
-msgstr "Quá muộn để bật đầu cuối của RAWSERVER, %s đã được sử dụng."
-
-#: BitTorrent/Rerequester.py:92
-#, python-format
-msgid "Tracker announce still not complete %d seconds after starting it"
-msgstr ""
-"Thông báo công cụ theo dõi chưa hoàn thành trong %d giây sau khi khởi động nó"
-
-#: BitTorrent/Rerequester.py:162
-msgid "Problem connecting to tracker, gethostbyname failed - "
-msgstr ""
-"Lỗi trong khi kết nối đến công cụ theo dõi, gethostbyname (gọi máy chủ theo "
-"tên)đã thất bại-"
-
-#: BitTorrent/Rerequester.py:175
-msgid "Problem connecting to tracker - "
-msgstr "Lỗi trong khi kết nối đến công cụ theo dõi - "
-
-#: BitTorrent/Rerequester.py:202
-msgid "bad data from tracker - "
-msgstr "dữ liệu sai từ công cụ theo dõi-"
-
-#: BitTorrent/Rerequester.py:213
-msgid "rejected by tracker - "
-msgstr "công cụ theo dõi đã từ chối-"
-
-#: BitTorrent/Rerequester.py:219
+#: BitTorrent/makemetafile.py:60
 msgid ""
-"Aborting the torrent as it was rejected by the tracker while not connected "
-"to any peers. "
+"You can't specify the name of the .torrent file when generating multiple "
+"torrents at once"
 msgstr ""
-"Đang bỏ dở dòng vì bị công cụ theo dõi từ chối trong khi không kết nối đến "
-"bất kỳ đồng đẳng nào."
+"Bạn không thể chỉ rõ tên của tập tin .dòng khi tạo ra nhiều dòng cùng lúc."
 
-#: BitTorrent/Rerequester.py:221
-msgid " Message from the tracker: "
-msgstr "Thông điệp từ công cụ theo dõi:"
+#: BitTorrent/makemetafile.py:75
+#, python-format
+msgid "Filesystem encoding \"%s\" is not supported in this version"
+msgstr "Phiên bản này không hỗ trợ việc mã hóa hệ thống tập tin %s."
 
-#: BitTorrent/Rerequester.py:227
-msgid "warning from tracker - "
-msgstr "cảnh báo từ công cụ theo dõi-"
+#: BitTorrent/makemetafile.py:185
+#, python-format
+msgid ""
+"Could not convert file/directory name \"%s\" to utf-8 (%s). Either the "
+"assumed filesystem encoding \"%s\" is wrong or the filename contains illegal "
+"bytes."
+msgstr ""
+"Không thể chuyển đổi tên tập tin/thư mục \"%s\" sang UTF-8 (%s). Hoặc việc "
+"mã hóa hệ thống tập tin được giả sử là \"%s\" là sai hoặc tên tập tin chứa "
+"các byte không hợp lệ."
+
+#: BitTorrent/makemetafile.py:190
+#, python-format
+msgid ""
+"File/directory name \"%s\" contains reserved unicode values that do not "
+"correspond to characters."
+msgstr ""
+"Tên tập tin/thư mục \"%s\" chứa các giá trị Unicode được dành riêng không "
+"tương ứng với các ký tự."
+
+#: BitTorrent/StorageWrapper.py:53
+msgid "bad data in responsefile - total too small"
+msgstr "dữ liệu sai trong tập tin trả lời-tổng số quá nhỏ"
+
+#: BitTorrent/StorageWrapper.py:55
+msgid "bad data in responsefile - total too big"
+msgstr "dữ liệu sai trong tập tin trả lời-tổng số quá lớn"
+
+#: BitTorrent/StorageWrapper.py:100
+msgid "checking existing file"
+msgstr "đang kiểm tra tập tin hiện hữu"
+
+#: BitTorrent/StorageWrapper.py:122
+msgid ""
+"--check_hashes 0 or fastresume info doesn't match file state (missing data)"
+msgstr ""
+"--kiểm tra_Băm 0 hoặc thông tin fastresume không khớp với tình trạng tập tin "
+"(mất dữ liệu)"
+
+#: BitTorrent/StorageWrapper.py:131
+msgid "Bad fastresume info (files contain more data)"
+msgstr "Thông tin fastresume sai (tập tin chứa nhiều dữ liệu hơn)"
+
+#: BitTorrent/StorageWrapper.py:136
+msgid "Bad fastresume info (illegal value)"
+msgstr "Thông tin fastresume sai (giá trị không hợp lệ)"
+
+#: BitTorrent/StorageWrapper.py:252
+msgid "data corrupted on disk - maybe you have two copies running?"
+msgstr "dữ liệu bị hỏng trên đĩa-có thể bạn đã chạy hai bản sao?"
+
+#: BitTorrent/StorageWrapper.py:284 BitTorrent/Storage.py:255
+msgid "Couldn't read fastresume data: "
+msgstr "Không đọc được dữ liệu có định dạng fastresume:"
+
+#: BitTorrent/StorageWrapper.py:404
+msgid "told file complete on start-up, but piece failed hash check"
+msgstr ""
+"đã chỉ định tập tin hoàn thành khi khởi động, nhưng một phần đã thất bại khi "
+"kiểm tra Băm"
 
 #: BitTorrent/Storage.py:58
 #, python-format
@@ -2203,58 +2333,224 @@ msgstr "Một chương trình khác có thể đã chỉnh sửa tập tin."
 msgid "Another program appears to have changed the file size."
 msgstr "Một chương trình khác có thể đã thay đổi kích cỡ tập tin. "
 
-#: BitTorrent/Storage.py:255 BitTorrent/StorageWrapper.py:284
-msgid "Couldn't read fastresume data: "
-msgstr "Không đọc được dữ liệu có định dạng fastresume:"
+#: BitTorrent/launchmanycore.py:65
+msgid "Could not set signal handler: "
+msgstr "Không đặt được công cụ quản lý tín hiệu:"
 
-#: BitTorrent/StorageWrapper.py:53
-msgid "bad data in responsefile - total too small"
-msgstr "dữ liệu sai trong tập tin trả lời-tổng số quá nhỏ"
+#: BitTorrent/launchmanycore.py:71 BitTorrent/launchmanycore.py:92
+#, python-format
+msgid "dropped \"%s\""
+msgstr "đã rớt \"%s\""
 
-#: BitTorrent/StorageWrapper.py:55
-msgid "bad data in responsefile - total too big"
-msgstr "dữ liệu sai trong tập tin trả lời-tổng số quá lớn"
+#: BitTorrent/launchmanycore.py:95
+#, python-format
+msgid "added \"%s\""
+msgstr "đã thêm \"%s\""
 
-#: BitTorrent/StorageWrapper.py:100
-msgid "checking existing file"
-msgstr "đang kiểm tra tập tin hiện hữu"
+#: BitTorrent/launchmanycore.py:121
+msgid "waiting for hash check"
+msgstr "đang chờ kiểm tra Băm"
 
-#: BitTorrent/StorageWrapper.py:122
+#: BitTorrent/launchmanycore.py:139 BitTorrent/download.py:395
+msgid "downloading"
+msgstr "đang tải về"
+
+#: BitTorrent/launchmanycore.py:234
+msgid "Rereading config file"
+msgstr "Đang đọc lại tập tin cấu hình"
+
+#: BitTorrent/GetTorrent.py:42 BitTorrent/GetTorrent.py:81
+#, python-format
+msgid "Could not read %s"
+msgstr "Không đọc được %s."
+
+#: BitTorrent/GetTorrent.py:49
+#, python-format
 msgid ""
-"--check_hashes 0 or fastresume info doesn't match file state (missing data)"
+"Could not download or open \n"
+"%s\n"
+"Try using a web browser to download the torrent file."
 msgstr ""
-"--kiểm tra_Băm 0 hoặc thông tin fastresume không khớp với tình trạng tập tin "
-"(mất dữ liệu)"
+"Không thể tải về hay mở\n"
+"%s\n"
+"Hãy thử sử dụng trình duyệt Web để tải về tập tin dòng."
 
-#: BitTorrent/StorageWrapper.py:131
-msgid "Bad fastresume info (files contain more data)"
-msgstr "Thông tin fastresume sai (tập tin chứa nhiều dữ liệu hơn)"
-
-#: BitTorrent/StorageWrapper.py:136
-msgid "Bad fastresume info (illegal value)"
-msgstr "Thông tin fastresume sai (giá trị không hợp lệ)"
-
-#: BitTorrent/StorageWrapper.py:252
-msgid "data corrupted on disk - maybe you have two copies running?"
-msgstr "dữ liệu bị hỏng trên đĩa-có thể bạn đã chạy hai bản sao?"
-
-#: BitTorrent/StorageWrapper.py:404
-msgid "told file complete on start-up, but piece failed hash check"
+#: BitTorrent/ConvertedMetainfo.py:51
+msgid ""
+"This seems to be an old Python version which does not support detecting the "
+"filesystem encoding. Assuming 'ascii'."
 msgstr ""
-"đã chỉ định tập tin hoàn thành khi khởi động, nhưng một phần đã thất bại khi "
-"kiểm tra Băm"
+"Có thể đây là phần mềm Python phiên bản cũ và nó không hỗ trợ dò tìm bộ mã "
+"hóa hệ thống tập tin. Giả sử 'ascii'."
+
+#: BitTorrent/ConvertedMetainfo.py:58
+msgid "Python failed to autodetect filesystem encoding. Using 'ascii' instead."
+msgstr ""
+"Python thất bại khi tự động dò tìm bộ mã hóa hệ thống tập tin. Hãy sử dụng "
+"'ascii' thay thế."
+
+#: BitTorrent/ConvertedMetainfo.py:65
+#, python-format
+msgid "Filesystem encoding '%s' is not supported. Using 'ascii' instead."
+msgstr ""
+"Không hỗ trợ bộ mã hóa hệ thống tập tin '%s'. Hãy sử dụng 'ascii' thay thế."
+
+#: BitTorrent/ConvertedMetainfo.py:123
+msgid "Bad file path component: "
+msgstr "Thành phần đường dẫn tập tin sai:"
+
+#: BitTorrent/ConvertedMetainfo.py:195
+msgid ""
+"This .torrent file has been created with a broken tool and has incorrectly "
+"encoded filenames. Some or all of the filenames may appear different from "
+"what the creator of the .torrent file intended."
+msgstr ""
+"Tập tin .dòng này đã được tạo bởi một công cụ bị hỏng và có tên tập tin được "
+"mã hóa không đúng. Một số hay tất cả các tên tập tin này có thể sẽ hiển thị "
+"khác so với công cụ tạo tập tin của tập tin .dòng chỉ định."
+
+#: BitTorrent/ConvertedMetainfo.py:201
+msgid ""
+"This .torrent file has been created with a broken tool and has bad character "
+"values that do not correspond to any real character. Some or all of the "
+"filenames may appear different from what the creator of the .torrent file "
+"intended."
+msgstr ""
+"Tập tin .dòng này đã được tạo bởi một công cụ bị hỏng và có giá trị ký tự "
+"sai không tương ứng với ký tự thật nào. Một số hay tất cả tên tập tin này có "
+"thể sẽ hiển thị khác so với công cụ tạo tập tin của tập tin .dòng chỉ định."
+
+#: BitTorrent/ConvertedMetainfo.py:208
+msgid ""
+"This .torrent file has been created with a broken tool and has incorrectly "
+"encoded filenames. The names used may still be correct."
+msgstr ""
+"Tập tin .dòng này đã được tạo bởi một công cụ bị hỏng và có tên tập tin được "
+"mã hóa cho đúng. Tên được sử dụng có thể vẫn đúng."
+
+#: BitTorrent/ConvertedMetainfo.py:213
+#, python-format
+msgid ""
+"The character set used on the local filesystem (\"%s\") cannot represent all "
+"characters used in the filename(s) of this torrent. Filenames have been "
+"changed from the original."
+msgstr ""
+"Bộ ký tự được dùng trong hệ thống tập tin cục bộ (\"%s\") không thể thể hiện "
+"tất cả mọi ký tự được sử dụng trong tên tập tin của dòng này. Tên tập tin đã "
+"được thay đổi từ tên đầu tiên."
+
+#: BitTorrent/ConvertedMetainfo.py:219
+msgid ""
+"The Windows filesystem cannot handle some characters used in the filename(s) "
+"of this torrent.Filenames have been changed from the original."
+msgstr ""
+"Hệ thống tập tin Windows không thể xử lý một số ký tự được dùng trong tên "
+"tập tin của dòng này. Tên tập tin đã được thay đổi từ tên đầu tiên."
+
+#: BitTorrent/ConvertedMetainfo.py:224
+msgid ""
+"This .torrent file has been created with a broken tool and has at least 1 "
+"file with an invalid file or directory name. However since all such files "
+"were marked as having length 0 those files are just ignored."
+msgstr ""
+"Tập tin .dòng này đã được tạo bởi một công cụ bị hỏng và có ít nhất một tập "
+"tin có tên tập tin hay tên thư mục không hợp lệ. Tuy nhiên, vì mọi tập tin "
+"như vậy đã được đánh dấu có độ dài là 0 và các tập tin này được bỏ qua."
 
 #: BitTorrent/__init__.py:22
 msgid "Python 2.2.1 or newer required"
 msgstr "Python phiên bản 2.2.1 hay các phiên bản mới hơn được yêu cầu"
 
-#: BitTorrent/bencode.py:73
-msgid "not a valid bencoded string"
-msgstr "không phải là một chuỗi mã hóa b hợp lệ"
+#: BitTorrent/Encoder.py:169
+msgid "Can't start two separate instances of the same torrent"
+msgstr "Không thể khởi động hai trường hợp riêng của cùng một dòng"
 
-#: BitTorrent/bencode.py:75
-msgid "invalid bencoded value (data after valid prefix)"
-msgstr "giá trị mã hóa b không hợp lệ (dữ liệu sau tiền tố hợp lệ)"
+#: BitTorrent/download.py:96
+msgid "maxport less than minport - no ports to check"
+msgstr ""
+"số hiệu cổng tối đa nhỏ hơn số hiệu cổng tối thiểu: không có cổng nào để "
+"kiểm tra"
+
+#: BitTorrent/download.py:114
+#, python-format
+msgid "Could not open a listening port: %s."
+msgstr "Không mở được một cổng tuân theo: %s"
+
+#: BitTorrent/download.py:116
+#, python-format
+msgid "Could not open a listening port: %s. "
+msgstr "Không mở được một cổng tuân theo: %s."
+
+#: BitTorrent/download.py:118
+msgid "Check your port range settings."
+msgstr "Kiểm tra cài đặt phạm vi cổng."
+
+#: BitTorrent/download.py:214
+msgid "Initial startup"
+msgstr "Khởi động lần đầu"
+
+#: BitTorrent/download.py:267
+#, python-format
+msgid "Could not load fastresume data: %s."
+msgstr "Không tải được dữ liệu định dạng fastresume: %s"
+
+#: BitTorrent/download.py:268
+msgid "Will perform full hash check."
+msgstr "Sẽ thực hiện việc kiểm tra Băm đầy đủ."
+
+#: BitTorrent/download.py:275
+#, python-format
+msgid "piece %d failed hash check, re-downloading it"
+msgstr "phần %d đã thất bại việc kiểm tra Băm, đang tải về nó lần nữa"
+
+#: BitTorrent/download.py:356
+msgid ""
+"Attempt to download a trackerless torrent with trackerless client turned off."
+msgstr ""
+"Cố gắng tải về một dòng không có công cụ theo dõi với máy khách không có "
+"công cụ theo dõi được tắt."
+
+#: BitTorrent/download.py:405
+msgid "download failed: "
+msgstr "tải về thất bại:"
+
+#: BitTorrent/download.py:409
+msgid "IO Error: No space left on disk, or cannot create a file that large:"
+msgstr ""
+"Lỗi xuất/nhập: không còn chỗ chứa trên đĩa hoặc không tạo được một tập tin "
+"lớn như thế:"
+
+#: BitTorrent/download.py:412
+msgid "killed by IO error: "
+msgstr "đã kết thúc bởi lỗi xuất/nhập:"
+
+#: BitTorrent/download.py:415
+msgid "killed by OS error: "
+msgstr "đã kết thúc bởi lỗi hệ điều hành:"
+
+#: BitTorrent/download.py:420
+msgid "killed by internal exception: "
+msgstr "đã kết thúc bởi lỗi ngoại lệ bên trong:"
+
+#: BitTorrent/download.py:425
+msgid "Additional error when closing down due to error: "
+msgstr "Có thêm lỗi khi đang đóng vì có sẵn lỗi:"
+
+#: BitTorrent/download.py:438
+msgid "Could not remove fastresume file after failure:"
+msgstr "Không thể gỡ bỏ tập tin fastresume sau khi thất bại:"
+
+#: BitTorrent/download.py:455
+msgid "seeding"
+msgstr "đang khởi tạo"
+
+#: BitTorrent/download.py:478
+msgid "Could not write fastresume data: "
+msgstr "Không ghi được dữ liệu fastresume:"
+
+#: BitTorrent/download.py:488
+msgid "shut down"
+msgstr "tắt máy"
 
 #: BitTorrent/btformats.py:23
 msgid "bad metainfo - not a dictionary"
@@ -2317,7 +2613,9 @@ msgstr ""
 "thông tin về biến đổi sai-tên được sử dụng làm cả tên tập tin và tên thư mục "
 "con"
 
-#: BitTorrent/btformats.py:78
+#: BitTorrent/btformats.py:78 BitTorrent/btformats.py:89
+#: BitTorrent/btformats.py:91 BitTorrent/btformats.py:94
+#: BitTorrent/btformats.py:96
 msgid "bad metainfo - wrong object type"
 msgstr "thông tin về biến đổi sai-kiểu đối tượng không đúng"
 
@@ -2325,353 +2623,57 @@ msgstr "thông tin về biến đổi sai-kiểu đối tượng không đúng"
 msgid "bad metainfo - no announce URL string"
 msgstr "thông tin về biến đổi sai-không có thông báo chuỗi địa chỉ Mạng "
 
-#: BitTorrent/btformats.py:88
+#: BitTorrent/btformats.py:103
 msgid "non-text failure reason"
 msgstr "lý do thất bại không hiển thị bằng chữ"
 
-#: BitTorrent/btformats.py:92
+#: BitTorrent/btformats.py:107
 msgid "non-text warning message"
 msgstr "thông điệp cảnh báo không hiển thị bằng chữ"
 
-#: BitTorrent/btformats.py:97
+#: BitTorrent/btformats.py:112
 msgid "invalid entry in peer list1"
 msgstr "mục nhập không hợp lệ trong danh sách đồng đẳng 1"
 
-#: BitTorrent/btformats.py:99
+#: BitTorrent/btformats.py:114
 msgid "invalid entry in peer list2"
 msgstr "mục nhập không hợp lệ trong danh sách đồng đẳng 2"
 
-#: BitTorrent/btformats.py:102
+#: BitTorrent/btformats.py:117
 msgid "invalid entry in peer list3"
 msgstr "mục nhập không hợp lệ trong danh sách đồng đẳng 3"
 
-#: BitTorrent/btformats.py:106
+#: BitTorrent/btformats.py:121
 msgid "invalid entry in peer list4"
 msgstr "mục nhập không hợp lệ trong danh sách đồng đẳng 4"
 
-#: BitTorrent/btformats.py:108
+#: BitTorrent/btformats.py:123
 msgid "invalid peer list"
 msgstr "danh sách đồng đẳng không hợp lệ"
 
-#: BitTorrent/btformats.py:111
+#: BitTorrent/btformats.py:126
 msgid "invalid announce interval"
 msgstr "khoảng nghỉ giữa hai lần thông báo không hợp lệ"
 
-#: BitTorrent/btformats.py:114
+#: BitTorrent/btformats.py:129
 msgid "invalid min announce interval"
 msgstr "khoảng nghỉ tối thiểu giữa hai lần thông báo không hợp lệ"
 
-#: BitTorrent/btformats.py:116
+#: BitTorrent/btformats.py:131
 msgid "invalid tracker id"
 msgstr "địa chỉ id công cụ theo dõi không hợp lệ"
 
-#: BitTorrent/btformats.py:119
+#: BitTorrent/btformats.py:134
 msgid "invalid peer count"
 msgstr "số đếm đồng đẳng không hợp lệ"
 
-#: BitTorrent/btformats.py:122
+#: BitTorrent/btformats.py:137
 msgid "invalid seed count"
 msgstr "số đếm khởi tạo không hợp lệ"
 
-#: BitTorrent/btformats.py:125
+#: BitTorrent/btformats.py:140
 msgid "invalid \"last\" entry"
 msgstr "mục nhập \"cuối cùng\" không hợp lệ"
-
-#: BitTorrent/configfile.py:70
-msgid "Could not permanently save options: "
-msgstr "Không thể lưu vĩnh viễn các tùy chọn:"
-
-#: BitTorrent/controlsocket.py:135 BitTorrent/controlsocket.py:186
-msgid "Could not create control socket: "
-msgstr "Không thể tạo cơ chế truyền thông điều khiển:"
-
-#: BitTorrent/controlsocket.py:166 BitTorrent/controlsocket.py:218
-msgid "Could not send command: "
-msgstr "Không gửi được lệnh:"
-
-#: BitTorrent/controlsocket.py:176
-msgid "Could not create control socket: already in use"
-msgstr "Không thể tạo cơ chế truyền thông điều khiển: đang được sử dụng"
-
-#: BitTorrent/controlsocket.py:181
-msgid "Could not remove old control socket filename:"
-msgstr "Không thể gỡ bỏ tên tập tin cơ chế truyền thông điều khiển cũ:"
-
-#: BitTorrent/controlsocket.py:241
-msgid "Global mutex already created."
-msgstr "Mutex toàn cầu đã được tạo."
-
-#: BitTorrent/controlsocket.py:255
-msgid "Could not find an open port!"
-msgstr "Không thể tìm được một cổng mở!"
-
-#: BitTorrent/controlsocket.py:264
-msgid "Could not create application data directory!"
-msgstr "Không thể tạo được thư mục dữ liệu ứng dụng!"
-
-#: BitTorrent/controlsocket.py:280
-msgid "Could not acquire global mutex lock for controlsocket file!"
-msgstr ""
-"Không thể yêu cầu khóa mutex toàn cầu cho tập tin của cơ chế truyền thông "
-"điều khiển!"
-
-#: BitTorrent/controlsocket.py:290
-msgid "A previous instance of BT was not cleaned up properly. Continuing."
-msgstr "Một ví dụ trước của BT đã không được làm sạch đúng. Đang tiếp tục."
-
-#: BitTorrent/download.py:96
-msgid "maxport less than minport - no ports to check"
-msgstr ""
-"số hiệu cổng tối đa nhỏ hơn số hiệu cổng tối thiểu: không có cổng nào để "
-"kiểm tra"
-
-#: BitTorrent/download.py:114
-#, python-format
-msgid "Could not open a listening port: %s."
-msgstr "Không mở được một cổng tuân theo: %s"
-
-#: BitTorrent/download.py:116
-#, python-format
-msgid "Could not open a listening port: %s. "
-msgstr "Không mở được một cổng tuân theo: %s."
-
-#: BitTorrent/download.py:118
-msgid "Check your port range settings."
-msgstr "Kiểm tra cài đặt phạm vi cổng."
-
-#: BitTorrent/download.py:214
-msgid "Initial startup"
-msgstr "Khởi động lần đầu"
-
-#: BitTorrent/download.py:267
-#, python-format
-msgid "Could not load fastresume data: %s."
-msgstr "Không tải được dữ liệu định dạng fastresume: %s"
-
-#: BitTorrent/download.py:268
-msgid "Will perform full hash check."
-msgstr "Sẽ thực hiện việc kiểm tra Băm đầy đủ."
-
-#: BitTorrent/download.py:275
-#, python-format
-msgid "piece %d failed hash check, re-downloading it"
-msgstr "phần %d đã thất bại việc kiểm tra Băm, đang tải về nó lần nữa"
-
-#: BitTorrent/download.py:356
-msgid ""
-"Attempt to download a trackerless torrent with trackerless client turned off."
-msgstr ""
-"Cố gắng tải về một dòng không có công cụ theo dõi với máy khách không có "
-"công cụ theo dõi được tắt."
-
-#: BitTorrent/download.py:395 BitTorrent/launchmanycore.py:139
-msgid "downloading"
-msgstr "đang tải về"
-
-#: BitTorrent/download.py:405
-msgid "download failed: "
-msgstr "tải về thất bại:"
-
-#: BitTorrent/download.py:409
-msgid "IO Error: No space left on disk, or cannot create a file that large:"
-msgstr ""
-"Lỗi xuất/nhập: không còn chỗ chứa trên đĩa hoặc không tạo được một tập tin "
-"lớn như thế:"
-
-#: BitTorrent/download.py:412
-msgid "killed by IO error: "
-msgstr "đã kết thúc bởi lỗi xuất/nhập:"
-
-#: BitTorrent/download.py:415
-msgid "killed by OS error: "
-msgstr "đã kết thúc bởi lỗi hệ điều hành:"
-
-#: BitTorrent/download.py:420
-msgid "killed by internal exception: "
-msgstr "đã kết thúc bởi lỗi ngoại lệ bên trong:"
-
-#: BitTorrent/download.py:425
-msgid "Additional error when closing down due to error: "
-msgstr "Có thêm lỗi khi đang đóng vì có sẵn lỗi:"
-
-#: BitTorrent/download.py:438
-msgid "Could not remove fastresume file after failure:"
-msgstr "Không thể gỡ bỏ tập tin fastresume sau khi thất bại:"
-
-#: BitTorrent/download.py:455
-msgid "seeding"
-msgstr "đang khởi tạo"
-
-#: BitTorrent/download.py:478
-msgid "Could not write fastresume data: "
-msgstr "Không ghi được dữ liệu fastresume:"
-
-#: BitTorrent/download.py:488
-msgid "shut down"
-msgstr "tắt máy"
-
-#: BitTorrent/launchmanycore.py:65
-msgid "Could not set signal handler: "
-msgstr "Không đặt được công cụ quản lý tín hiệu:"
-
-#: BitTorrent/launchmanycore.py:71 BitTorrent/launchmanycore.py:92
-#, python-format
-msgid "dropped \"%s\""
-msgstr "đã rớt \"%s\""
-
-#: BitTorrent/launchmanycore.py:95
-#, python-format
-msgid "added \"%s\""
-msgstr "đã thêm \"%s\""
-
-#: BitTorrent/launchmanycore.py:121
-msgid "waiting for hash check"
-msgstr "đang chờ kiểm tra Băm"
-
-#: BitTorrent/launchmanycore.py:234
-msgid "Rereading config file"
-msgstr "Đang đọc lại tập tin cấu hình"
-
-#: BitTorrent/makemetafile.py:60
-msgid ""
-"You can't specify the name of the .torrent file when generating multiple "
-"torrents at once"
-msgstr ""
-"Bạn không thể chỉ rõ tên của tập tin .dòng khi tạo ra nhiều dòng cùng lúc."
-
-#: BitTorrent/makemetafile.py:75
-#, python-format
-msgid "Filesystem encoding \"%s\" is not supported in this version"
-msgstr "Phiên bản này không hỗ trợ việc mã hóa hệ thống tập tin %s."
-
-#: BitTorrent/makemetafile.py:185
-#, python-format
-msgid ""
-"Could not convert file/directory name \"%s\" to utf-8 (%s). Either the "
-"assumed filesystem encoding \"%s\" is wrong or the filename contains illegal "
-"bytes."
-msgstr ""
-"Không thể chuyển đổi tên tập tin/thư mục \"%s\" sang UTF-8 (%s). Hoặc việc "
-"mã hóa hệ thống tập tin được giả sử là \"%s\" là sai hoặc tên tập tin chứa "
-"các byte không hợp lệ."
-
-#: BitTorrent/makemetafile.py:190
-#, python-format
-msgid ""
-"File/directory name \"%s\" contains reserved unicode values that do not "
-"correspond to characters."
-msgstr ""
-"Tên tập tin/thư mục \"%s\" chứa các giá trị Unicode được dành riêng không "
-"tương ứng với các ký tự."
-
-#: BitTorrent/parseargs.py:26
-#, python-format
-msgid "Usage: %s "
-msgstr "Cách sử dụng: %s"
-
-#: BitTorrent/parseargs.py:28
-msgid ""
-"[OPTIONS] [TORRENTDIRECTORY]\n"
-"\n"
-msgstr ""
-"[CÁCTÙYCHỌN][THƯMỤCDÒNG]\n"
-"\n"
-
-#: BitTorrent/parseargs.py:29
-msgid ""
-"If a non-option argument is present it's taken as the value\n"
-"of the torrent_dir option.\n"
-msgstr ""
-"Nếu có một đối số không phải là tùy chọn thì coi nó là giá trị \n"
-"của các tùy chọn của thư mục_dòng.\n"
-
-#: BitTorrent/parseargs.py:32
-msgid "[OPTIONS] [TORRENTFILES]\n"
-msgstr "[CÁCTÙYCHỌN][CÁCTẬPTINDÒNG]\n"
-
-#: BitTorrent/parseargs.py:34
-msgid "[OPTIONS] [TORRENTFILE]\n"
-msgstr "[CÁCTÙYCHỌN] [TẬPTINDÒNG]\n"
-
-#: BitTorrent/parseargs.py:36
-msgid "[OPTION] TRACKER_URL FILE [FILE]\n"
-msgstr "[TÙYCHỌN] ĐỊA_CHỈ_MẠNG_CỦA_TẬP_TIN_THEO_DÕI [TẬPTIN]\n"
-
-#: BitTorrent/parseargs.py:38
-msgid "arguments are -\n"
-msgstr "các đối số là-\n"
-
-#: BitTorrent/parseargs.py:69
-msgid " (defaults to "
-msgstr "(mặc định cho "
-
-#: BitTorrent/parseargs.py:118 BitTorrent/parseargs.py:162
-msgid "unknown key "
-msgstr "khóa không xác định"
-
-#: BitTorrent/parseargs.py:124 BitTorrent/parseargs.py:134
-msgid "parameter passed in at end with no value"
-msgstr "tham số được gởi qua tại điểm đầu không có giá trị"
-
-#: BitTorrent/parseargs.py:138
-msgid "command line parsing failed at "
-msgstr "không phân tách dòng lệnh được tại"
-
-#: BitTorrent/parseargs.py:145
-#, python-format
-msgid "Option %s is required."
-msgstr "Tùy chọn %s được yêu cầu"
-
-#: BitTorrent/parseargs.py:147
-#, python-format
-msgid "Must supply at least %d arguments."
-msgstr "Cần phải cung cấp ít nhất %d đối số."
-
-#: BitTorrent/parseargs.py:149
-#, python-format
-msgid "Too many arguments - %d maximum."
-msgstr "Quá nhiều đối số — %d là tối đa."
-
-#: BitTorrent/parseargs.py:186
-#, python-format
-msgid "wrong format of %s - %s"
-msgstr "định dạng của %s không đúng-%s"
-
-#: BitTorrent/parsedir.py:34
-msgid "Could not read directory "
-msgstr "Không đọc được thư mục"
-
-#: BitTorrent/parsedir.py:43
-msgid "Could not stat "
-msgstr "Không thể tìm các thông tin về tình trạng tập tin"
-
-#: BitTorrent/parsedir.py:74
-#, python-format
-msgid "removing %s (will re-add)"
-msgstr "đang gỡ bỏ %s (sẽ thêm lại)"
-
-#: BitTorrent/parsedir.py:84 BitTorrent/parsedir.py:98
-#, python-format
-msgid "**warning** %s is a duplicate torrent for %s"
-msgstr "**cảnh báo** %s là dòng trùng với %s"
-
-#: BitTorrent/parsedir.py:130
-#, python-format
-msgid "**warning** %s has errors"
-msgstr "**cảnh báo** %s có lỗi"
-
-#: BitTorrent/parsedir.py:138
-msgid "... successful"
-msgstr "... thành công"
-
-#: BitTorrent/parsedir.py:145
-#, python-format
-msgid "removing %s"
-msgstr "đang gỡ bỏ %s"
-
-#: BitTorrent/parsedir.py:149
-msgid "done checking"
-msgstr "kiểm tra xong"
 
 #: BitTorrent/track.py:40
 msgid "Port to listen on."

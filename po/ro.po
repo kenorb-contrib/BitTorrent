@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: BitTorrent 4.2\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2005-11-15 14:20-0800\n"
+"POT-Creation-Date: 2005-11-20 23:00-0800\n"
 "PO-Revision-Date: 2005-11-15 14:10-0800\n"
 "Last-Translator: Matt Chisholm <matt@bittorrent.com>\n"
 "Language-Team: Lupoiu Victor Alexandru ( lupoiu [dot] victor [at] gmail[dot]"
@@ -2422,9 +2422,9 @@ msgstr "Este prea tarziu pentru schimbul RawServer, %s a fost deja folosit."
 msgid "Can't start two separate instances of the same torrent"
 msgstr "Nu pot porni doua instante separate pentru acelasi torent."
 
-#: BitTorrent/__init__.py:22
-msgid "Python 2.2.1 or newer required"
-msgstr "Este necesar Python versiunea 2.2.1 sau mai noua"
+#: BitTorrent/configfile.py:70
+msgid "Could not permanently save options: "
+msgstr "Optiunile nu s-au putut salva permanent: "
 
 #: BitTorrent/parseargs.py:26
 #, python-format
@@ -2785,39 +2785,39 @@ msgstr "Dec"
 msgid "Compressed: %i  Uncompressed: %i\n"
 msgstr "Compresat: %i  Necompresat: %i\n"
 
-#: BitTorrent/controlsocket.py:135 BitTorrent/controlsocket.py:183
+#: BitTorrent/controlsocket.py:135 BitTorrent/controlsocket.py:186
 msgid "Could not create control socket: "
 msgstr "Socket-ul de control nu s-a putut crea: "
 
-#: BitTorrent/controlsocket.py:163 BitTorrent/controlsocket.py:215
+#: BitTorrent/controlsocket.py:166 BitTorrent/controlsocket.py:218
 msgid "Could not send command: "
 msgstr "Comanda nu s-a putut trimite: "
 
-#: BitTorrent/controlsocket.py:173
+#: BitTorrent/controlsocket.py:176
 msgid "Could not create control socket: already in use"
 msgstr "Socket-ul de control nu s-a putut creea: este deja folosit"
 
-#: BitTorrent/controlsocket.py:178
+#: BitTorrent/controlsocket.py:181
 msgid "Could not remove old control socket filename:"
 msgstr "Numele socket-ului de control vechi nu s-a putut sterge:"
 
-#: BitTorrent/controlsocket.py:238
+#: BitTorrent/controlsocket.py:241
 msgid "Global mutex already created."
 msgstr "Mutex global deja creeat."
 
-#: BitTorrent/controlsocket.py:252
+#: BitTorrent/controlsocket.py:255
 msgid "Could not find an open port!"
 msgstr "Nu s-a putut gasi un port deschis!"
 
-#: BitTorrent/controlsocket.py:261
+#: BitTorrent/controlsocket.py:264
 msgid "Could not create application data directory!"
 msgstr "Nu s-a putut creea directorul de date al aplicatiei!"
 
-#: BitTorrent/controlsocket.py:277
+#: BitTorrent/controlsocket.py:280
 msgid "Could not acquire global mutex lock for controlsocket file!"
 msgstr "Nu s-a putut bloca un mutex global pentru fisierul controlsocket!"
 
-#: BitTorrent/controlsocket.py:287
+#: BitTorrent/controlsocket.py:290
 msgid "A previous instance of BT was not cleaned up properly. Continuing."
 msgstr "O instanta de BT nu a fost inchisa corect.Se continua."
 
@@ -2871,9 +2871,9 @@ msgstr ""
 "%s\n"
 "Incearca sa folosesti un browser pentru a descarca un fisier torrent."
 
-#: BitTorrent/configfile.py:70
-msgid "Could not permanently save options: "
-msgstr "Optiunile nu s-au putut salva permanent: "
+#: BitTorrent/__init__.py:22
+msgid "Python 2.2.1 or newer required"
+msgstr "Este necesar Python versiunea 2.2.1 sau mai noua"
 
 #: BitTorrent/RawServer.py:322
 msgid "lost server socket"

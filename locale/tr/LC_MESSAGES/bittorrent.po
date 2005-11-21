@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: BitTorrent 4.2\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2005-11-15 17:53-0800\n"
+"POT-Creation-Date: 2005-11-21 17:00-0800\n"
 "PO-Revision-Date: 2005-11-11 15:10-0800\n"
 "Last-Translator: translate4me <matt-translate4me@bittorrent.com>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1939,6 +1939,442 @@ msgstr "izleyicisiz düğümler:"
 msgid "comment:"
 msgstr "yorum:"
 
+#: BitTorrent/controlsocket.py:135 BitTorrent/controlsocket.py:186
+msgid "Could not create control socket: "
+msgstr "Kontrol yuvası oluşturulamadı:"
+
+#: BitTorrent/controlsocket.py:166 BitTorrent/controlsocket.py:218
+msgid "Could not send command: "
+msgstr "Komut gönderilemedi:"
+
+#: BitTorrent/controlsocket.py:176
+msgid "Could not create control socket: already in use"
+msgstr "Kontrol yuvası oluşturulamadı: halen kullanımda"
+
+#: BitTorrent/controlsocket.py:181
+msgid "Could not remove old control socket filename:"
+msgstr "Eski kontrol yuvasının dosya adı kaldırılamadı:"
+
+#: BitTorrent/controlsocket.py:241
+msgid "Global mutex already created."
+msgstr ""
+
+#: BitTorrent/controlsocket.py:255
+msgid "Could not find an open port!"
+msgstr "Açık bir bağlantı noktası bulunamadı!"
+
+#: BitTorrent/controlsocket.py:264
+msgid "Could not create application data directory!"
+msgstr "Uygulama veri dizini oluşturulamadı!"
+
+#: BitTorrent/controlsocket.py:280
+msgid "Could not acquire global mutex lock for controlsocket file!"
+msgstr ""
+
+#: BitTorrent/controlsocket.py:290
+msgid "A previous instance of BT was not cleaned up properly. Continuing."
+msgstr "BT'nin önceki kopyası düzgün olarak temizlenmedi. Devam ediliyor."
+
+#: BitTorrent/bencode.py:73
+msgid "not a valid bencoded string"
+msgstr ""
+
+#: BitTorrent/bencode.py:75
+msgid "invalid bencoded value (data after valid prefix)"
+msgstr ""
+
+#: BitTorrent/parseargs.py:26
+#, python-format
+msgid "Usage: %s "
+msgstr "Kullanım: %s"
+
+#: BitTorrent/parseargs.py:28
+msgid ""
+"[OPTIONS] [TORRENTDIRECTORY]\n"
+"\n"
+msgstr ""
+"[SEÇENEKLER] [TORRENTDİZİNİ]\n"
+"\n"
+
+#: BitTorrent/parseargs.py:29
+msgid ""
+"If a non-option argument is present it's taken as the value\n"
+"of the torrent_dir option.\n"
+msgstr ""
+"Seçenek olmayan bir argüman var ise bu argüman,\n"
+"torrent_dir seçeneğinin değeri olarak ele alınır.\n"
+
+#: BitTorrent/parseargs.py:32
+msgid "[OPTIONS] [TORRENTFILES]\n"
+msgstr "[SEÇENEKLER] [TORRENTDOSYLARI]\n"
+
+#: BitTorrent/parseargs.py:34
+msgid "[OPTIONS] [TORRENTFILE]\n"
+msgstr "SEÇENEKLER] [TORRENTDOSYASI]\n"
+
+#: BitTorrent/parseargs.py:36
+msgid "[OPTION] TRACKER_URL FILE [FILE]\n"
+msgstr ""
+
+#: BitTorrent/parseargs.py:38
+msgid "arguments are -\n"
+msgstr "argümanlar -\n"
+
+#: BitTorrent/parseargs.py:69
+msgid " (defaults to "
+msgstr ""
+
+#: BitTorrent/parseargs.py:118 BitTorrent/parseargs.py:162
+msgid "unknown key "
+msgstr "bilinmeyen anahtar"
+
+#: BitTorrent/parseargs.py:124 BitTorrent/parseargs.py:134
+msgid "parameter passed in at end with no value"
+msgstr ""
+
+#: BitTorrent/parseargs.py:138
+msgid "command line parsing failed at "
+msgstr "komut satırı ayrıştırması başarısız oldu"
+
+#: BitTorrent/parseargs.py:145
+#, python-format
+msgid "Option %s is required."
+msgstr "%s seçeneği gerekli."
+
+#: BitTorrent/parseargs.py:147
+#, python-format
+msgid "Must supply at least %d arguments."
+msgstr "En azından %d argümanı sağlamalı."
+
+#: BitTorrent/parseargs.py:149
+#, python-format
+msgid "Too many arguments - %d maximum."
+msgstr "Çok fazla argüman - %d maksimum."
+
+#: BitTorrent/parseargs.py:186
+#, python-format
+msgid "wrong format of %s - %s"
+msgstr ""
+
+#: BitTorrent/configfile.py:70
+msgid "Could not permanently save options: "
+msgstr "Seçenekler kalıcı olarak kaydedilemedi:"
+
+#: BitTorrent/Rerequester.py:92
+#, python-format
+msgid "Tracker announce still not complete %d seconds after starting it"
+msgstr "İzleyici anonsu, başlatılmasından %d saniye sonra hala tamamlanamadı"
+
+#: BitTorrent/Rerequester.py:162
+msgid "Problem connecting to tracker, gethostbyname failed - "
+msgstr "İzleyiciye bağlanırken hata, gethostbyname başarısız oldu -"
+
+#: BitTorrent/Rerequester.py:175
+msgid "Problem connecting to tracker - "
+msgstr "İzleyiciye bağlanırken hata -"
+
+#: BitTorrent/Rerequester.py:202
+msgid "bad data from tracker - "
+msgstr "izleyiciden hatalı veri -"
+
+#: BitTorrent/Rerequester.py:213
+msgid "rejected by tracker - "
+msgstr "izleyici tarafından reddedildi -"
+
+#: BitTorrent/Rerequester.py:219
+msgid ""
+"Aborting the torrent as it was rejected by the tracker while not connected "
+"to any peers. "
+msgstr ""
+"Torrent durduruluyor, zira hiçbir eşe bağlanılmadığından ötürü izleyici "
+"tarafından reddedildi."
+
+#: BitTorrent/Rerequester.py:221
+msgid " Message from the tracker: "
+msgstr "İzleyiciden mesaj:"
+
+#: BitTorrent/Rerequester.py:227
+msgid "warning from tracker - "
+msgstr "izleyiciden uyarı -"
+
+#: BitTorrent/parsedir.py:34
+msgid "Could not read directory "
+msgstr "Dizini okuyamıyor"
+
+#: BitTorrent/parsedir.py:43
+msgid "Could not stat "
+msgstr ""
+
+#: BitTorrent/parsedir.py:74
+#, python-format
+msgid "removing %s (will re-add)"
+msgstr "%s kalıdırılıyor (yeniden eklenecek)"
+
+#: BitTorrent/parsedir.py:84 BitTorrent/parsedir.py:98
+#, python-format
+msgid "**warning** %s is a duplicate torrent for %s"
+msgstr ""
+
+#: BitTorrent/parsedir.py:130
+#, python-format
+msgid "**warning** %s has errors"
+msgstr "**uyarı** %s hatalar içeriyor"
+
+#: BitTorrent/parsedir.py:138
+msgid "... successful"
+msgstr "... başarılı"
+
+#: BitTorrent/parsedir.py:145
+#, python-format
+msgid "removing %s"
+msgstr "%s kaldırılıyor"
+
+#: BitTorrent/parsedir.py:149
+msgid "done checking"
+msgstr "kontrol tamamlandı"
+
+#: BitTorrent/RawServer.py:322
+msgid "lost server socket"
+msgstr "sunucu yuvası kaybedildi"
+
+#: BitTorrent/RawServer.py:338
+msgid "Error handling accepted connection: "
+msgstr ""
+
+#: BitTorrent/RawServer.py:423
+#, python-format
+msgid "Have to exit due to the TCP stack flaking out. Please see the FAQ at %s"
+msgstr ""
+
+#: BitTorrent/RawServer_magic.py:32
+#, python-format
+msgid "Too late to switch RawServer backends, %s has already been used."
+msgstr ""
+
+#: BitTorrent/HTTPHandler.py:21
+msgid "Mon"
+msgstr "Pzt"
+
+#: BitTorrent/HTTPHandler.py:21
+msgid "Tue"
+msgstr "Sal"
+
+#: BitTorrent/HTTPHandler.py:21
+msgid "Wed"
+msgstr "Çar"
+
+#: BitTorrent/HTTPHandler.py:21
+msgid "Thu"
+msgstr "Per"
+
+#: BitTorrent/HTTPHandler.py:21
+msgid "Fri"
+msgstr "Cum"
+
+#: BitTorrent/HTTPHandler.py:21
+msgid "Sat"
+msgstr "Cmt"
+
+#: BitTorrent/HTTPHandler.py:21
+msgid "Sun"
+msgstr "Paz"
+
+#: BitTorrent/HTTPHandler.py:23
+msgid "Jan"
+msgstr "Oca"
+
+#: BitTorrent/HTTPHandler.py:23
+msgid "Feb"
+msgstr "Şub"
+
+#: BitTorrent/HTTPHandler.py:23
+msgid "Mar"
+msgstr "Mar"
+
+#: BitTorrent/HTTPHandler.py:23
+msgid "Apr"
+msgstr "Nis"
+
+#: BitTorrent/HTTPHandler.py:23
+msgid "May"
+msgstr "May"
+
+#: BitTorrent/HTTPHandler.py:23
+msgid "Jun"
+msgstr "Haz"
+
+#: BitTorrent/HTTPHandler.py:24
+msgid "Jul"
+msgstr "Tem"
+
+#: BitTorrent/HTTPHandler.py:24
+msgid "Aug"
+msgstr "Ağu"
+
+#: BitTorrent/HTTPHandler.py:24
+msgid "Sep"
+msgstr "Eyl"
+
+#: BitTorrent/HTTPHandler.py:24
+msgid "Oct"
+msgstr "Eki"
+
+#: BitTorrent/HTTPHandler.py:24
+msgid "Nov"
+msgstr "Kas"
+
+#: BitTorrent/HTTPHandler.py:24
+msgid "Dec"
+msgstr "Ara"
+
+#: BitTorrent/HTTPHandler.py:126
+#, python-format
+msgid "Compressed: %i  Uncompressed: %i\n"
+msgstr "Sıkıştırıldı: %i Açıldı: %i\n"
+
+#: BitTorrent/makemetafile.py:60
+msgid ""
+"You can't specify the name of the .torrent file when generating multiple "
+"torrents at once"
+msgstr ""
+"Bir defada birden fazla torrent üretirken .torrent dosyasının adını "
+"belirleyemezsiniz "
+
+#: BitTorrent/makemetafile.py:75
+#, python-format
+msgid "Filesystem encoding \"%s\" is not supported in this version"
+msgstr "\"%s\" dosya sistemi kodlaması bu sürümde desteklenmiyor"
+
+#: BitTorrent/makemetafile.py:185
+#, python-format
+msgid ""
+"Could not convert file/directory name \"%s\" to utf-8 (%s). Either the "
+"assumed filesystem encoding \"%s\" is wrong or the filename contains illegal "
+"bytes."
+msgstr ""
+"Dosya/dizin adı \"%s\", utf-8 (%s) kodlamasına dönüştürülemedi. Ya "
+"varsayılan dosya sistemi kodlaması \"%s\" hatalı ya da dosya adı geçersiz "
+"byte bilgileri içeriyor."
+
+#: BitTorrent/makemetafile.py:190
+#, python-format
+msgid ""
+"File/directory name \"%s\" contains reserved unicode values that do not "
+"correspond to characters."
+msgstr ""
+
+#: BitTorrent/StorageWrapper.py:53
+msgid "bad data in responsefile - total too small"
+msgstr "Cevap dosyasında hatalı veri - toplam çok küçük"
+
+#: BitTorrent/StorageWrapper.py:55
+msgid "bad data in responsefile - total too big"
+msgstr "Cevap dosyasında hatalı veri - toplam çok büyük"
+
+#: BitTorrent/StorageWrapper.py:100
+msgid "checking existing file"
+msgstr "varolan dosya kontrol ediliyor"
+
+#: BitTorrent/StorageWrapper.py:122
+msgid ""
+"--check_hashes 0 or fastresume info doesn't match file state (missing data)"
+msgstr ""
+
+#: BitTorrent/StorageWrapper.py:131
+msgid "Bad fastresume info (files contain more data)"
+msgstr "Hatalı hızlı sürdürme bilgisi (dosyalar daha fazla veri içeriyor)"
+
+#: BitTorrent/StorageWrapper.py:136
+msgid "Bad fastresume info (illegal value)"
+msgstr "Hatalı hızlı sürdürme bilgisi (geçersiz değer)"
+
+#: BitTorrent/StorageWrapper.py:252
+msgid "data corrupted on disk - maybe you have two copies running?"
+msgstr "veri disk üzerinde bozuldu - belki çalışan iki kopyaya sahipsinizdir?"
+
+#: BitTorrent/StorageWrapper.py:284 BitTorrent/Storage.py:255
+msgid "Couldn't read fastresume data: "
+msgstr "Hızlı sürdürme verisini okuyamadı:"
+
+#: BitTorrent/StorageWrapper.py:404
+msgid "told file complete on start-up, but piece failed hash check"
+msgstr ""
+
+#: BitTorrent/Storage.py:58
+#, python-format
+msgid "File %s belongs to another running torrent"
+msgstr "%s dosyası çalışan diğer bir torrente ait"
+
+#: BitTorrent/Storage.py:102
+#, python-format
+msgid "File %s already exists, but is not a regular file"
+msgstr "%s dosyası var, ancak geçerli bir dosya değil"
+
+#: BitTorrent/Storage.py:181
+msgid "Short read - something truncated files?"
+msgstr ""
+
+#: BitTorrent/Storage.py:224
+msgid "Unsupported fastresume file format, maybe from another client version?"
+msgstr ""
+"Desteklenmeyen hızlı sürdürme dosya formatı, diğer bir istemci sürümünden "
+"olabilir mi?"
+
+#: BitTorrent/Storage.py:238
+msgid "Another program appears to have moved, renamed, or deleted the file."
+msgstr ""
+"Başka bir program dosyayı taşımış, yeniden adlandırmış veya silmiş görünüyor."
+
+#: BitTorrent/Storage.py:240
+msgid "Another program appears to have modified the file."
+msgstr "Başka bir program dosyayı değiştirmiş görünüyor."
+
+#: BitTorrent/Storage.py:242
+msgid "Another program appears to have changed the file size."
+msgstr "Başka bir program dosya boyutunu değiştirmiş görünüyor."
+
+#: BitTorrent/launchmanycore.py:65
+msgid "Could not set signal handler: "
+msgstr ""
+
+#: BitTorrent/launchmanycore.py:71 BitTorrent/launchmanycore.py:92
+#, python-format
+msgid "dropped \"%s\""
+msgstr ""
+
+#: BitTorrent/launchmanycore.py:95
+#, python-format
+msgid "added \"%s\""
+msgstr "eklendi \"%s\""
+
+#: BitTorrent/launchmanycore.py:121
+msgid "waiting for hash check"
+msgstr ""
+
+#: BitTorrent/launchmanycore.py:139 BitTorrent/download.py:395
+msgid "downloading"
+msgstr "indiriyor"
+
+#: BitTorrent/launchmanycore.py:234
+msgid "Rereading config file"
+msgstr "Yapılandırma dosyasını yeniden okuyor"
+
+#: BitTorrent/GetTorrent.py:42 BitTorrent/GetTorrent.py:81
+#, python-format
+msgid "Could not read %s"
+msgstr "%s okunamıyor"
+
+#: BitTorrent/GetTorrent.py:49
+#, python-format
+msgid ""
+"Could not download or open \n"
+"%s\n"
+"Try using a web browser to download the torrent file."
+msgstr ""
+"%s\n"
+"indirilemiyor ya da açılamıyor\n"
+"Torrent dosyasını indirmek için bir internet göz atıcısı kullanmayı deneyin."
+
 #: BitTorrent/ConvertedMetainfo.py:51
 msgid ""
 "This seems to be an old Python version which does not support detecting the "
@@ -2022,243 +2458,96 @@ msgstr ""
 "dosya veya dizin adı içeriyor. Bununla birlikte bu tür bütün dosyalar 0 "
 "uzunluğuna sahip olarak işaretlenmekte ve dolayısıyla ihmal edilmektedir."
 
-#: BitTorrent/Encoder.py:169
-msgid "Can't start two separate instances of the same torrent"
-msgstr "Aynı torrentin iki ayrı örneği başlatılamaz"
-
-#: BitTorrent/GetTorrent.py:42 BitTorrent/GetTorrent.py:81
-#, python-format
-msgid "Could not read %s"
-msgstr "%s okunamıyor"
-
-#: BitTorrent/GetTorrent.py:49
-#, python-format
-msgid ""
-"Could not download or open \n"
-"%s\n"
-"Try using a web browser to download the torrent file."
-msgstr ""
-"%s\n"
-"indirilemiyor ya da açılamıyor\n"
-"Torrent dosyasını indirmek için bir internet göz atıcısı kullanmayı deneyin."
-
-#: BitTorrent/HTTPHandler.py:21
-msgid "Mon"
-msgstr "Pzt"
-
-#: BitTorrent/HTTPHandler.py:21
-msgid "Tue"
-msgstr "Sal"
-
-#: BitTorrent/HTTPHandler.py:21
-msgid "Wed"
-msgstr "Çar"
-
-#: BitTorrent/HTTPHandler.py:21
-msgid "Thu"
-msgstr "Per"
-
-#: BitTorrent/HTTPHandler.py:21
-msgid "Fri"
-msgstr "Cum"
-
-#: BitTorrent/HTTPHandler.py:21
-msgid "Sat"
-msgstr "Cmt"
-
-#: BitTorrent/HTTPHandler.py:21
-msgid "Sun"
-msgstr "Paz"
-
-#: BitTorrent/HTTPHandler.py:23
-msgid "Jan"
-msgstr "Oca"
-
-#: BitTorrent/HTTPHandler.py:23
-msgid "Feb"
-msgstr "Şub"
-
-#: BitTorrent/HTTPHandler.py:23
-msgid "Mar"
-msgstr "Mar"
-
-#: BitTorrent/HTTPHandler.py:23
-msgid "Apr"
-msgstr "Nis"
-
-#: BitTorrent/HTTPHandler.py:23
-msgid "May"
-msgstr "May"
-
-#: BitTorrent/HTTPHandler.py:23
-msgid "Jun"
-msgstr "Haz"
-
-#: BitTorrent/HTTPHandler.py:24
-msgid "Jul"
-msgstr "Tem"
-
-#: BitTorrent/HTTPHandler.py:24
-msgid "Aug"
-msgstr "Ağu"
-
-#: BitTorrent/HTTPHandler.py:24
-msgid "Sep"
-msgstr "Eyl"
-
-#: BitTorrent/HTTPHandler.py:24
-msgid "Oct"
-msgstr "Eki"
-
-#: BitTorrent/HTTPHandler.py:24
-msgid "Nov"
-msgstr "Kas"
-
-#: BitTorrent/HTTPHandler.py:24
-msgid "Dec"
-msgstr "Ara"
-
-#: BitTorrent/HTTPHandler.py:126
-#, python-format
-msgid "Compressed: %i  Uncompressed: %i\n"
-msgstr "Sıkıştırıldı: %i Açıldı: %i\n"
-
-#: BitTorrent/RawServer.py:322
-msgid "lost server socket"
-msgstr "sunucu yuvası kaybedildi"
-
-#: BitTorrent/RawServer.py:338
-msgid "Error handling accepted connection: "
-msgstr ""
-
-#: BitTorrent/RawServer.py:423
-#, python-format
-msgid "Have to exit due to the TCP stack flaking out. Please see the FAQ at %s"
-msgstr ""
-
-#: BitTorrent/RawServer_magic.py:32
-#, python-format
-msgid "Too late to switch RawServer backends, %s has already been used."
-msgstr ""
-
-#: BitTorrent/Rerequester.py:92
-#, python-format
-msgid "Tracker announce still not complete %d seconds after starting it"
-msgstr "İzleyici anonsu, başlatılmasından %d saniye sonra hala tamamlanamadı"
-
-#: BitTorrent/Rerequester.py:162
-msgid "Problem connecting to tracker, gethostbyname failed - "
-msgstr "İzleyiciye bağlanırken hata, gethostbyname başarısız oldu -"
-
-#: BitTorrent/Rerequester.py:175
-msgid "Problem connecting to tracker - "
-msgstr "İzleyiciye bağlanırken hata -"
-
-#: BitTorrent/Rerequester.py:202
-msgid "bad data from tracker - "
-msgstr "izleyiciden hatalı veri -"
-
-#: BitTorrent/Rerequester.py:213
-msgid "rejected by tracker - "
-msgstr "izleyici tarafından reddedildi -"
-
-#: BitTorrent/Rerequester.py:219
-msgid ""
-"Aborting the torrent as it was rejected by the tracker while not connected "
-"to any peers. "
-msgstr ""
-"Torrent durduruluyor, zira hiçbir eşe bağlanılmadığından ötürü izleyici "
-"tarafından reddedildi."
-
-#: BitTorrent/Rerequester.py:221
-msgid " Message from the tracker: "
-msgstr "İzleyiciden mesaj:"
-
-#: BitTorrent/Rerequester.py:227
-msgid "warning from tracker - "
-msgstr "izleyiciden uyarı -"
-
-#: BitTorrent/Storage.py:58
-#, python-format
-msgid "File %s belongs to another running torrent"
-msgstr "%s dosyası çalışan diğer bir torrente ait"
-
-#: BitTorrent/Storage.py:102
-#, python-format
-msgid "File %s already exists, but is not a regular file"
-msgstr "%s dosyası var, ancak geçerli bir dosya değil"
-
-#: BitTorrent/Storage.py:181
-msgid "Short read - something truncated files?"
-msgstr ""
-
-#: BitTorrent/Storage.py:224
-msgid "Unsupported fastresume file format, maybe from another client version?"
-msgstr ""
-"Desteklenmeyen hızlı sürdürme dosya formatı, diğer bir istemci sürümünden "
-"olabilir mi?"
-
-#: BitTorrent/Storage.py:238
-msgid "Another program appears to have moved, renamed, or deleted the file."
-msgstr ""
-"Başka bir program dosyayı taşımış, yeniden adlandırmış veya silmiş görünüyor."
-
-#: BitTorrent/Storage.py:240
-msgid "Another program appears to have modified the file."
-msgstr "Başka bir program dosyayı değiştirmiş görünüyor."
-
-#: BitTorrent/Storage.py:242
-msgid "Another program appears to have changed the file size."
-msgstr "Başka bir program dosya boyutunu değiştirmiş görünüyor."
-
-#: BitTorrent/Storage.py:255 BitTorrent/StorageWrapper.py:284
-msgid "Couldn't read fastresume data: "
-msgstr "Hızlı sürdürme verisini okuyamadı:"
-
-#: BitTorrent/StorageWrapper.py:53
-msgid "bad data in responsefile - total too small"
-msgstr "Cevap dosyasında hatalı veri - toplam çok küçük"
-
-#: BitTorrent/StorageWrapper.py:55
-msgid "bad data in responsefile - total too big"
-msgstr "Cevap dosyasında hatalı veri - toplam çok büyük"
-
-#: BitTorrent/StorageWrapper.py:100
-msgid "checking existing file"
-msgstr "varolan dosya kontrol ediliyor"
-
-#: BitTorrent/StorageWrapper.py:122
-msgid ""
-"--check_hashes 0 or fastresume info doesn't match file state (missing data)"
-msgstr ""
-
-#: BitTorrent/StorageWrapper.py:131
-msgid "Bad fastresume info (files contain more data)"
-msgstr "Hatalı hızlı sürdürme bilgisi (dosyalar daha fazla veri içeriyor)"
-
-#: BitTorrent/StorageWrapper.py:136
-msgid "Bad fastresume info (illegal value)"
-msgstr "Hatalı hızlı sürdürme bilgisi (geçersiz değer)"
-
-#: BitTorrent/StorageWrapper.py:252
-msgid "data corrupted on disk - maybe you have two copies running?"
-msgstr "veri disk üzerinde bozuldu - belki çalışan iki kopyaya sahipsinizdir?"
-
-#: BitTorrent/StorageWrapper.py:404
-msgid "told file complete on start-up, but piece failed hash check"
-msgstr ""
-
 #: BitTorrent/__init__.py:22
 msgid "Python 2.2.1 or newer required"
 msgstr "Python 2.2.1 veya daha yenisi gerekli"
 
-#: BitTorrent/bencode.py:73
-msgid "not a valid bencoded string"
+#: BitTorrent/Encoder.py:169
+msgid "Can't start two separate instances of the same torrent"
+msgstr "Aynı torrentin iki ayrı örneği başlatılamaz"
+
+#: BitTorrent/download.py:96
+msgid "maxport less than minport - no ports to check"
+msgstr "maxport, minport'dan daha az - kontrol edilecek bağlantı noktası yok"
+
+#: BitTorrent/download.py:114
+#, python-format
+msgid "Could not open a listening port: %s."
+msgstr "Dinlenecek bağlantı noktası açılamadı: %s"
+
+#: BitTorrent/download.py:116
+#, python-format
+msgid "Could not open a listening port: %s. "
+msgstr "Dinlenecek bağlantı noktası açılamadı: %s"
+
+#: BitTorrent/download.py:118
+msgid "Check your port range settings."
+msgstr "Bağlantı noktası aralıklarınızı kontrol edin."
+
+#: BitTorrent/download.py:214
+msgid "Initial startup"
+msgstr "İlk açılış"
+
+#: BitTorrent/download.py:267
+#, python-format
+msgid "Could not load fastresume data: %s."
+msgstr "Hızlı sürdürme veriis yüklenemedi: %s"
+
+#: BitTorrent/download.py:268
+msgid "Will perform full hash check."
 msgstr ""
 
-#: BitTorrent/bencode.py:75
-msgid "invalid bencoded value (data after valid prefix)"
+#: BitTorrent/download.py:275
+#, python-format
+msgid "piece %d failed hash check, re-downloading it"
 msgstr ""
+
+#: BitTorrent/download.py:356
+msgid ""
+"Attempt to download a trackerless torrent with trackerless client turned off."
+msgstr ""
+"İzleyicisiz istemci ile izleyicisiz torrent indirme girişimi kapatıldı."
+
+#: BitTorrent/download.py:405
+msgid "download failed: "
+msgstr "indirme başarısız oldu:"
+
+#: BitTorrent/download.py:409
+msgid "IO Error: No space left on disk, or cannot create a file that large:"
+msgstr ""
+"IO Hatası: Diskte yer kalmadı, veya o büyüklükte bir dosya oluşturulamıyor:"
+
+#: BitTorrent/download.py:412
+msgid "killed by IO error: "
+msgstr "IO hatası sonucu kapatıldı:"
+
+#: BitTorrent/download.py:415
+msgid "killed by OS error: "
+msgstr "OS hatası sonucu kapatıldı:"
+
+#: BitTorrent/download.py:420
+msgid "killed by internal exception: "
+msgstr "Dahili istisna sonucu kapatıldı:"
+
+#: BitTorrent/download.py:425
+msgid "Additional error when closing down due to error: "
+msgstr "Hata sonucu kapatılırken ek hata:"
+
+#: BitTorrent/download.py:438
+msgid "Could not remove fastresume file after failure:"
+msgstr "Hatadan sonra hızlı sürdürme dosyası kaldırılamadı:"
+
+#: BitTorrent/download.py:455
+msgid "seeding"
+msgstr ""
+
+#: BitTorrent/download.py:478
+msgid "Could not write fastresume data: "
+msgstr "Hızlı sürdürme verisi yazılamadı:"
+
+#: BitTorrent/download.py:488
+msgid "shut down"
+msgstr "kapat"
 
 #: BitTorrent/btformats.py:23
 msgid "bad metainfo - not a dictionary"
@@ -2318,7 +2607,9 @@ msgstr ""
 msgid "bad metainfo - name used as bothfile and subdirectory name"
 msgstr ""
 
-#: BitTorrent/btformats.py:78
+#: BitTorrent/btformats.py:78 BitTorrent/btformats.py:89
+#: BitTorrent/btformats.py:91 BitTorrent/btformats.py:94
+#: BitTorrent/btformats.py:96
 msgid "bad metainfo - wrong object type"
 msgstr ""
 
@@ -2326,346 +2617,57 @@ msgstr ""
 msgid "bad metainfo - no announce URL string"
 msgstr ""
 
-#: BitTorrent/btformats.py:88
+#: BitTorrent/btformats.py:103
 msgid "non-text failure reason"
 msgstr ""
 
-#: BitTorrent/btformats.py:92
+#: BitTorrent/btformats.py:107
 msgid "non-text warning message"
 msgstr ""
 
-#: BitTorrent/btformats.py:97
+#: BitTorrent/btformats.py:112
 msgid "invalid entry in peer list1"
 msgstr "eş listesi1 içine geçersiz giriş"
 
-#: BitTorrent/btformats.py:99
+#: BitTorrent/btformats.py:114
 msgid "invalid entry in peer list2"
 msgstr "eş listesi2 içine geçersiz giriş"
 
-#: BitTorrent/btformats.py:102
+#: BitTorrent/btformats.py:117
 msgid "invalid entry in peer list3"
 msgstr "eş listesi3 içine geçersiz giriş"
 
-#: BitTorrent/btformats.py:106
+#: BitTorrent/btformats.py:121
 msgid "invalid entry in peer list4"
 msgstr "eş listesi4 içine geçersiz giriş"
 
-#: BitTorrent/btformats.py:108
+#: BitTorrent/btformats.py:123
 msgid "invalid peer list"
 msgstr "geçersiz eş listesi"
 
-#: BitTorrent/btformats.py:111
+#: BitTorrent/btformats.py:126
 msgid "invalid announce interval"
 msgstr "geçersiz duyuru aralığı"
 
-#: BitTorrent/btformats.py:114
+#: BitTorrent/btformats.py:129
 msgid "invalid min announce interval"
 msgstr "geçersiz min duyuru aralığı"
 
-#: BitTorrent/btformats.py:116
+#: BitTorrent/btformats.py:131
 msgid "invalid tracker id"
 msgstr "geçersiz izleyici id'si"
 
-#: BitTorrent/btformats.py:119
+#: BitTorrent/btformats.py:134
 msgid "invalid peer count"
 msgstr "geçersiz eş sayısı"
 
-#: BitTorrent/btformats.py:122
+#: BitTorrent/btformats.py:137
 msgid "invalid seed count"
 msgstr ""
 
-#: BitTorrent/btformats.py:125
+#: BitTorrent/btformats.py:140
 msgid "invalid \"last\" entry"
 msgstr "geçersiz \"son\" giriş"
-
-#: BitTorrent/configfile.py:70
-msgid "Could not permanently save options: "
-msgstr "Seçenekler kalıcı olarak kaydedilemedi:"
-
-#: BitTorrent/controlsocket.py:135 BitTorrent/controlsocket.py:186
-msgid "Could not create control socket: "
-msgstr "Kontrol yuvası oluşturulamadı:"
-
-#: BitTorrent/controlsocket.py:166 BitTorrent/controlsocket.py:218
-msgid "Could not send command: "
-msgstr "Komut gönderilemedi:"
-
-#: BitTorrent/controlsocket.py:176
-msgid "Could not create control socket: already in use"
-msgstr "Kontrol yuvası oluşturulamadı: halen kullanımda"
-
-#: BitTorrent/controlsocket.py:181
-msgid "Could not remove old control socket filename:"
-msgstr "Eski kontrol yuvasının dosya adı kaldırılamadı:"
-
-#: BitTorrent/controlsocket.py:241
-msgid "Global mutex already created."
-msgstr ""
-
-#: BitTorrent/controlsocket.py:255
-msgid "Could not find an open port!"
-msgstr "Açık bir bağlantı noktası bulunamadı!"
-
-#: BitTorrent/controlsocket.py:264
-msgid "Could not create application data directory!"
-msgstr "Uygulama veri dizini oluşturulamadı!"
-
-#: BitTorrent/controlsocket.py:280
-msgid "Could not acquire global mutex lock for controlsocket file!"
-msgstr ""
-
-#: BitTorrent/controlsocket.py:290
-msgid "A previous instance of BT was not cleaned up properly. Continuing."
-msgstr "BT'nin önceki kopyası düzgün olarak temizlenmedi. Devam ediliyor."
-
-#: BitTorrent/download.py:96
-msgid "maxport less than minport - no ports to check"
-msgstr "maxport, minport'dan daha az - kontrol edilecek bağlantı noktası yok"
-
-#: BitTorrent/download.py:114
-#, python-format
-msgid "Could not open a listening port: %s."
-msgstr "Dinlenecek bağlantı noktası açılamadı: %s"
-
-#: BitTorrent/download.py:116
-#, python-format
-msgid "Could not open a listening port: %s. "
-msgstr "Dinlenecek bağlantı noktası açılamadı: %s"
-
-#: BitTorrent/download.py:118
-msgid "Check your port range settings."
-msgstr "Bağlantı noktası aralıklarınızı kontrol edin."
-
-#: BitTorrent/download.py:214
-msgid "Initial startup"
-msgstr "İlk açılış"
-
-#: BitTorrent/download.py:267
-#, python-format
-msgid "Could not load fastresume data: %s."
-msgstr "Hızlı sürdürme veriis yüklenemedi: %s"
-
-#: BitTorrent/download.py:268
-msgid "Will perform full hash check."
-msgstr ""
-
-#: BitTorrent/download.py:275
-#, python-format
-msgid "piece %d failed hash check, re-downloading it"
-msgstr ""
-
-#: BitTorrent/download.py:356
-msgid ""
-"Attempt to download a trackerless torrent with trackerless client turned off."
-msgstr ""
-"İzleyicisiz istemci ile izleyicisiz torrent indirme girişimi kapatıldı."
-
-#: BitTorrent/download.py:395 BitTorrent/launchmanycore.py:139
-msgid "downloading"
-msgstr "indiriyor"
-
-#: BitTorrent/download.py:405
-msgid "download failed: "
-msgstr "indirme başarısız oldu:"
-
-#: BitTorrent/download.py:409
-msgid "IO Error: No space left on disk, or cannot create a file that large:"
-msgstr ""
-"IO Hatası: Diskte yer kalmadı, veya o büyüklükte bir dosya oluşturulamıyor:"
-
-#: BitTorrent/download.py:412
-msgid "killed by IO error: "
-msgstr "IO hatası sonucu kapatıldı:"
-
-#: BitTorrent/download.py:415
-msgid "killed by OS error: "
-msgstr "OS hatası sonucu kapatıldı:"
-
-#: BitTorrent/download.py:420
-msgid "killed by internal exception: "
-msgstr "Dahili istisna sonucu kapatıldı:"
-
-#: BitTorrent/download.py:425
-msgid "Additional error when closing down due to error: "
-msgstr "Hata sonucu kapatılırken ek hata:"
-
-#: BitTorrent/download.py:438
-msgid "Could not remove fastresume file after failure:"
-msgstr "Hatadan sonra hızlı sürdürme dosyası kaldırılamadı:"
-
-#: BitTorrent/download.py:455
-msgid "seeding"
-msgstr ""
-
-#: BitTorrent/download.py:478
-msgid "Could not write fastresume data: "
-msgstr "Hızlı sürdürme verisi yazılamadı:"
-
-#: BitTorrent/download.py:488
-msgid "shut down"
-msgstr "kapat"
-
-#: BitTorrent/launchmanycore.py:65
-msgid "Could not set signal handler: "
-msgstr ""
-
-#: BitTorrent/launchmanycore.py:71 BitTorrent/launchmanycore.py:92
-#, python-format
-msgid "dropped \"%s\""
-msgstr ""
-
-#: BitTorrent/launchmanycore.py:95
-#, python-format
-msgid "added \"%s\""
-msgstr "eklendi \"%s\""
-
-#: BitTorrent/launchmanycore.py:121
-msgid "waiting for hash check"
-msgstr ""
-
-#: BitTorrent/launchmanycore.py:234
-msgid "Rereading config file"
-msgstr "Yapılandırma dosyasını yeniden okuyor"
-
-#: BitTorrent/makemetafile.py:60
-msgid ""
-"You can't specify the name of the .torrent file when generating multiple "
-"torrents at once"
-msgstr ""
-"Bir defada birden fazla torrent üretirken .torrent dosyasının adını "
-"belirleyemezsiniz "
-
-#: BitTorrent/makemetafile.py:75
-#, python-format
-msgid "Filesystem encoding \"%s\" is not supported in this version"
-msgstr "\"%s\" dosya sistemi kodlaması bu sürümde desteklenmiyor"
-
-#: BitTorrent/makemetafile.py:185
-#, python-format
-msgid ""
-"Could not convert file/directory name \"%s\" to utf-8 (%s). Either the "
-"assumed filesystem encoding \"%s\" is wrong or the filename contains illegal "
-"bytes."
-msgstr ""
-"Dosya/dizin adı \"%s\", utf-8 (%s) kodlamasına dönüştürülemedi. Ya "
-"varsayılan dosya sistemi kodlaması \"%s\" hatalı ya da dosya adı geçersiz "
-"byte bilgileri içeriyor."
-
-#: BitTorrent/makemetafile.py:190
-#, python-format
-msgid ""
-"File/directory name \"%s\" contains reserved unicode values that do not "
-"correspond to characters."
-msgstr ""
-
-#: BitTorrent/parseargs.py:26
-#, python-format
-msgid "Usage: %s "
-msgstr "Kullanım: %s"
-
-#: BitTorrent/parseargs.py:28
-msgid ""
-"[OPTIONS] [TORRENTDIRECTORY]\n"
-"\n"
-msgstr ""
-"[SEÇENEKLER] [TORRENTDİZİNİ]\n"
-"\n"
-
-#: BitTorrent/parseargs.py:29
-msgid ""
-"If a non-option argument is present it's taken as the value\n"
-"of the torrent_dir option.\n"
-msgstr ""
-"Seçenek olmayan bir argüman var ise bu argüman,\n"
-"torrent_dir seçeneğinin değeri olarak ele alınır.\n"
-
-#: BitTorrent/parseargs.py:32
-msgid "[OPTIONS] [TORRENTFILES]\n"
-msgstr "[SEÇENEKLER] [TORRENTDOSYLARI]\n"
-
-#: BitTorrent/parseargs.py:34
-msgid "[OPTIONS] [TORRENTFILE]\n"
-msgstr "SEÇENEKLER] [TORRENTDOSYASI]\n"
-
-#: BitTorrent/parseargs.py:36
-msgid "[OPTION] TRACKER_URL FILE [FILE]\n"
-msgstr ""
-
-#: BitTorrent/parseargs.py:38
-msgid "arguments are -\n"
-msgstr "argümanlar -\n"
-
-#: BitTorrent/parseargs.py:69
-msgid " (defaults to "
-msgstr ""
-
-#: BitTorrent/parseargs.py:118 BitTorrent/parseargs.py:162
-msgid "unknown key "
-msgstr "bilinmeyen anahtar"
-
-#: BitTorrent/parseargs.py:124 BitTorrent/parseargs.py:134
-msgid "parameter passed in at end with no value"
-msgstr ""
-
-#: BitTorrent/parseargs.py:138
-msgid "command line parsing failed at "
-msgstr "komut satırı ayrıştırması başarısız oldu"
-
-#: BitTorrent/parseargs.py:145
-#, python-format
-msgid "Option %s is required."
-msgstr "%s seçeneği gerekli."
-
-#: BitTorrent/parseargs.py:147
-#, python-format
-msgid "Must supply at least %d arguments."
-msgstr "En azından %d argümanı sağlamalı."
-
-#: BitTorrent/parseargs.py:149
-#, python-format
-msgid "Too many arguments - %d maximum."
-msgstr "Çok fazla argüman - %d maksimum."
-
-#: BitTorrent/parseargs.py:186
-#, python-format
-msgid "wrong format of %s - %s"
-msgstr ""
-
-#: BitTorrent/parsedir.py:34
-msgid "Could not read directory "
-msgstr "Dizini okuyamıyor"
-
-#: BitTorrent/parsedir.py:43
-msgid "Could not stat "
-msgstr ""
-
-#: BitTorrent/parsedir.py:74
-#, python-format
-msgid "removing %s (will re-add)"
-msgstr "%s kalıdırılıyor (yeniden eklenecek)"
-
-#: BitTorrent/parsedir.py:84 BitTorrent/parsedir.py:98
-#, python-format
-msgid "**warning** %s is a duplicate torrent for %s"
-msgstr ""
-
-#: BitTorrent/parsedir.py:130
-#, python-format
-msgid "**warning** %s has errors"
-msgstr "**uyarı** %s hatalar içeriyor"
-
-#: BitTorrent/parsedir.py:138
-msgid "... successful"
-msgstr "... başarılı"
-
-#: BitTorrent/parsedir.py:145
-#, python-format
-msgid "removing %s"
-msgstr "%s kaldırılıyor"
-
-#: BitTorrent/parsedir.py:149
-msgid "done checking"
-msgstr "kontrol tamamlandı"
 
 #: BitTorrent/track.py:40
 msgid "Port to listen on."
