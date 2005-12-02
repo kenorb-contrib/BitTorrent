@@ -32,7 +32,7 @@ def makeHelp(uiname, defaults):
         ret += _("[OPTIONS] [TORRENTFILES]\n")
     elif uiname.startswith('bittorrent'):
         ret += _("[OPTIONS] [TORRENTFILE]\n")
-    elif uiname == 'maketorrent':
+    elif uiname.startswith('maketorrent'):
         ret += _("[OPTION] TRACKER_URL FILE [FILE]\n")
     ret += '\n'
     ret += _("arguments are -\n") + formatDefinitions(defaults, 80)

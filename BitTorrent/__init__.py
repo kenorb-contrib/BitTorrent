@@ -10,7 +10,7 @@
 # License.
 
 app_name = 'BitTorrent'
-version = '4.2.0'
+version = '4.2.1'
 
 URL = 'http://www.bittorrent.com/'
 DONATE_URL = URL + 'donate.html'
@@ -37,7 +37,8 @@ language_names = {
     'en'   :u'English'              ,    'es'   :u'Español'              ,
     'es_MX':u'Español de Mexico '   ,    'fr'   :u'Français'             ,
     'gr'   :u'Ελληνικά'             ,    'hu'   :u'Magyar'               ,
-    'it'   :u'Italiano'             ,    'nl'   :u'Nederlands'           ,
+    'it'   :u'Italiano'             ,    'ja'   :u'日本語'            ,
+    'ko'   :u'한국어'            ,'nl'   :u'Nederlands'           ,
     'nb_NO':u'Norsk bokmål'         ,    'pl'   :u'Polski'               ,
     'pt'   :u'Português'            ,    'pt_BR':u'Português do Brasil'  ,
     'ro'   :u'Română'               ,    'ru'   :u'Русский'              ,
@@ -55,8 +56,7 @@ unfinished_language_names = {
     'ga'   :u'Gaeilge'              ,    'gl'   :u'Galego'               ,
     'he_IL':u'עברית'                ,    'hr'   :u'Hrvatski'             ,
     'hy'   :u'Հայերեն'       ,    'in'   :u'Bahasa indonesia'     ,
-    'ja'   :u'日本語'            ,    'ka'   :u'ქართული ენა',
-    'ko'   :u'한국어'            ,    'lt'   :u'Lietuvių'        ,
+    'ka'   :u'ქართული ენა',    'lt'   :u'Lietuvių'        ,
     'ms'   :u'Bahasa melayu'        ,    'ml'   :u'Malayalam'            ,
     'sq'   :u'Shqipe'                ,    'th'   :u'ภาษาไทย'              ,
     'tlh'  :u'tlhIngan-Hol'         ,    'uk'   :u'Українська'           ,

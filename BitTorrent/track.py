@@ -399,9 +399,9 @@ class Tracker(object):
                     tc = tc + c
                     d = len(l) - c
                     td = td + d
+                    nf = nf + 1
                     if self.allowed is not None and self.show_names:
                         if self.allowed.has_key(infohash):
-                            nf = nf + 1
                             sz = self.allowed[infohash]['length']  # size
                             ts = ts + sz
                             szt = sz * n   # Transferred for this torrent

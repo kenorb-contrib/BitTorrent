@@ -953,6 +953,11 @@ class SettingsWindow(object):
 
         # end Network tab        
 
+        # Language tab
+        self.languagechooser = LanguageChooser()
+        self.notebook.append_page(self.languagechooser, gtk.Label("Language"))
+        # end Language tab
+
         # Misc tab
         if is_frozen_exe:
             # allow the user to set the progress bar text to all black

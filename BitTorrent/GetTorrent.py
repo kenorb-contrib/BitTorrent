@@ -47,8 +47,7 @@ def get_url(url):
     data = None
     errors = []
     err_str = _("Could not download or open \n%s\n"
-                "Try using a web browser to download the torrent file." %
-                url)
+                "Try using a web browser to download the torrent file.") % url
     u = None
     try:
         u = zurllib.urlopen(url)

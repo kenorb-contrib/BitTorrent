@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: BitTorrent 4.2\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2005-11-21 17:00-0800\n"
+"POT-Creation-Date: 2005-12-02 14:33-0800\n"
 "PO-Revision-Date: 2005-11-20 22:53-0800\n"
 "Last-Translator: Matt Chisholm <matt@bittorrent.com>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -80,7 +80,7 @@ msgstr "Dočasně pozastavit všechny spuštěné torrenty"
 msgid "Resume downloading"
 msgstr "Obnovit stahování"
 
-#: bittorrent.py:403 bittorrent.py:1998
+#: bittorrent.py:403 bittorrent.py:2003
 msgid "Paused"
 msgstr "Pozastaveno"
 
@@ -120,11 +120,11 @@ msgstr ""
 "Poslední verzi můžete získat vždy z \n"
 "%s"
 
-#: bittorrent.py:469 bittorrent.py:1795
+#: bittorrent.py:469 bittorrent.py:1800
 msgid "Download _later"
 msgstr "Stáhnout _později"
 
-#: bittorrent.py:472 bittorrent.py:1783
+#: bittorrent.py:472 bittorrent.py:1788
 msgid "Download _now"
 msgstr "Stáhnout _teď"
 
@@ -259,7 +259,7 @@ msgstr ""
 "(Tato volba nemá žádný efekt, je-li\n"
 "tracker na stejné síti jako vy)"
 
-#: bittorrent.py:960
+#: bittorrent.py:965
 msgid ""
 "Progress bar text is always black\n"
 "(requires restart)"
@@ -267,11 +267,11 @@ msgstr ""
 "Indikátor průběhu je vždy černý\n"
 "(vyžaduje se restart aplikace)"
 
-#: bittorrent.py:966
+#: bittorrent.py:971
 msgid "Misc"
 msgstr "Různé"
 
-#: bittorrent.py:973
+#: bittorrent.py:978
 #, python-format
 msgid ""
 "WARNING: Changing these settings can\n"
@@ -280,482 +280,482 @@ msgstr ""
 "UPOZORNĚNÍ: Změna těchto nastavení může způsobit\n"
 ",že %s přestane fungovat správně."
 
-#: bittorrent.py:981
+#: bittorrent.py:986
 msgid "Option"
 msgstr "Volba"
 
-#: bittorrent.py:986
+#: bittorrent.py:991
 msgid "Value"
 msgstr "Hodnota"
 
-#: bittorrent.py:993
+#: bittorrent.py:998
 msgid "Advanced"
 msgstr "Rozšířené"
 
-#: bittorrent.py:1002
+#: bittorrent.py:1007
 msgid "Choose default download directory"
 msgstr "Zvolte standardní adresář pro stahování"
 
-#: bittorrent.py:1063
+#: bittorrent.py:1068
 #, python-format
 msgid "Files in \"%s\""
 msgstr "Soubory v \"%s\""
 
-#: bittorrent.py:1072
+#: bittorrent.py:1077
 msgid "Apply"
 msgstr "Použít"
 
-#: bittorrent.py:1073
+#: bittorrent.py:1078
 msgid "Allocate"
 msgstr "Vyhradit"
 
-#: bittorrent.py:1074
+#: bittorrent.py:1079
 msgid "Never download"
 msgstr "Nikdy nestahovat"
 
-#: bittorrent.py:1075
+#: bittorrent.py:1080
 msgid "Decrease"
 msgstr "Snížit"
 
-#: bittorrent.py:1076
+#: bittorrent.py:1081
 msgid "Increase"
 msgstr "Zvýšit"
 
-#: bittorrent.py:1086 launchmany-curses.py:146
+#: bittorrent.py:1091 launchmany-curses.py:146
 msgid "Filename"
 msgstr "Název souboru"
 
-#: bittorrent.py:1086
+#: bittorrent.py:1091
 msgid "Length"
 msgstr "Délka"
 
-#: bittorrent.py:1086
+#: bittorrent.py:1091
 msgid "%"
 msgstr "%"
 
-#: bittorrent.py:1250
+#: bittorrent.py:1255
 #, python-format
 msgid "Peers for \"%s\""
 msgstr "Stahující pro \"%s\""
 
-#: bittorrent.py:1256
+#: bittorrent.py:1261
 msgid "IP address"
 msgstr "Adresa IP"
 
-#: bittorrent.py:1256
+#: bittorrent.py:1261
 msgid "Client"
 msgstr "Klient"
 
-#: bittorrent.py:1256
+#: bittorrent.py:1261
 msgid "Connection"
 msgstr "Připojení"
 
-#: bittorrent.py:1256
+#: bittorrent.py:1261
 msgid "KB/s down"
 msgstr "kB/s - stahování"
 
-#: bittorrent.py:1256
+#: bittorrent.py:1261
 msgid "KB/s up"
 msgstr "KB/s - odesílání"
 
-#: bittorrent.py:1256
+#: bittorrent.py:1261
 msgid "MB downloaded"
 msgstr "MB staženo"
 
-#: bittorrent.py:1256
+#: bittorrent.py:1261
 msgid "MB uploaded"
 msgstr "MB odesláno"
 
-#: bittorrent.py:1256
+#: bittorrent.py:1261
 #, python-format
 msgid "% complete"
 msgstr "% hotovo"
 
-#: bittorrent.py:1256
+#: bittorrent.py:1261
 msgid "KB/s est. peer download"
 msgstr "kB/s prům. stahování stahujícího"
 
-#: bittorrent.py:1262
+#: bittorrent.py:1267
 msgid "Peer ID"
 msgstr "ID stahujícího"
 
-#: bittorrent.py:1265 bittorrent.py:1268
+#: bittorrent.py:1270 bittorrent.py:1273
 msgid "Interested"
 msgstr "Zaujatý"
 
-#: bittorrent.py:1265 bittorrent.py:1268
+#: bittorrent.py:1270 bittorrent.py:1273
 msgid "Choked"
 msgstr "Zanesený"
 
-#: bittorrent.py:1265
+#: bittorrent.py:1270
 msgid "Snubbed"
 msgstr "Ignorovaný"
 
-#: bittorrent.py:1268
+#: bittorrent.py:1273
 msgid "Optimistic upload"
 msgstr "Optimistické odesílání"
 
-#: bittorrent.py:1353
+#: bittorrent.py:1358
 msgid "remote"
 msgstr "vzdálený"
 
-#: bittorrent.py:1353
+#: bittorrent.py:1358
 msgid "local"
 msgstr "místní"
 
-#: bittorrent.py:1389
+#: bittorrent.py:1394
 msgid "bad peer"
 msgstr "špatný stahující"
 
-#: bittorrent.py:1399
+#: bittorrent.py:1404
 #, python-format
 msgid "%d ok"
 msgstr "%d v pořádku"
 
-#: bittorrent.py:1400
+#: bittorrent.py:1405
 #, python-format
 msgid "%d bad"
 msgstr "%d špatně"
 
-#: bittorrent.py:1402
+#: bittorrent.py:1407
 msgid "banned"
 msgstr "zakázaný"
 
-#: bittorrent.py:1404
+#: bittorrent.py:1409
 msgid "ok"
 msgstr "v pořádku"
 
-#: bittorrent.py:1440
+#: bittorrent.py:1445
 #, python-format
 msgid "Info for \"%s\""
 msgstr "Info o \"%s\""
 
-#: bittorrent.py:1458
+#: bittorrent.py:1463
 msgid "Torrent name:"
 msgstr "Název torrentu:"
 
-#: bittorrent.py:1463
+#: bittorrent.py:1468
 msgid "(trackerless torrent)"
 msgstr "(torrent bez trackeru)"
 
-#: bittorrent.py:1466
+#: bittorrent.py:1471
 msgid "Announce url:"
 msgstr "Oznamující adresa:"
 
-#: bittorrent.py:1470
+#: bittorrent.py:1475
 msgid ", in one file"
 msgstr ", v jednom souboru"
 
-#: bittorrent.py:1472
+#: bittorrent.py:1477
 #, python-format
 msgid ", in %d files"
 msgstr ", v %d souborech"
 
-#: bittorrent.py:1473
+#: bittorrent.py:1478
 msgid "Total size:"
 msgstr "Celková velikost:"
 
-#: bittorrent.py:1480
+#: bittorrent.py:1485
 msgid "Pieces:"
 msgstr "Části:"
 
-#: bittorrent.py:1482
+#: bittorrent.py:1487
 msgid "Info hash:"
 msgstr "Informativní hash:"
 
-#: bittorrent.py:1492
+#: bittorrent.py:1497
 msgid "Save in:"
 msgstr "Uložit v:"
 
-#: bittorrent.py:1496
+#: bittorrent.py:1501
 msgid "File name:"
 msgstr "Název souboru:"
 
-#: bittorrent.py:1522
+#: bittorrent.py:1527
 msgid "Open directory"
 msgstr "Otevřít adresář"
 
-#: bittorrent.py:1527
+#: bittorrent.py:1532
 msgid "Show file list"
 msgstr "Zobrazit seznam souborů"
 
-#: bittorrent.py:1561
+#: bittorrent.py:1566
 msgid "drag to reorder"
 msgstr "přetáhnutím myší uspořádejte jinak"
 
-#: bittorrent.py:1562
+#: bittorrent.py:1567
 msgid "right-click for menu"
 msgstr "stisknutím pravého tlačítka zobrazíte nabídku"
 
-#: bittorrent.py:1627
+#: bittorrent.py:1632
 msgid "Torrent info"
 msgstr "Informace o torrentu"
 
-#: bittorrent.py:1636 bittorrent.py:2101
+#: bittorrent.py:1641 bittorrent.py:2106
 msgid "Remove torrent"
 msgstr "Odebrat torrent"
 
-#: bittorrent.py:1640
+#: bittorrent.py:1645
 msgid "Abort torrent"
 msgstr "Zrušit torrent"
 
-#: bittorrent.py:1707
+#: bittorrent.py:1712
 #, python-format
 msgid ", will seed for %s"
 msgstr ", bude sdílen do %s"
 
-#: bittorrent.py:1709
+#: bittorrent.py:1714
 msgid ", will seed indefinitely."
 msgstr ", bude sdílen natrvalo."
 
-#: bittorrent.py:1712
+#: bittorrent.py:1717
 #, python-format
 msgid "Done, share ratio: %d%%"
 msgstr "Dokončeno, poměr odeslání/stažení je: %d%%"
 
-#: bittorrent.py:1715
+#: bittorrent.py:1720
 #, python-format
 msgid "Done, %s uploaded"
 msgstr "Dokončeno, odesláno %s"
 
-#: bittorrent.py:1718 bittorrent.py:2156
+#: bittorrent.py:1723 bittorrent.py:2161
 msgid "Done"
 msgstr "Dokončeno"
 
-#: bittorrent.py:1737
+#: bittorrent.py:1742
 msgid "Torrent _info"
 msgstr "_Informace o torrentu"
 
-#: bittorrent.py:1741
+#: bittorrent.py:1746
 msgid "_Open directory"
 msgstr "_Otevřít adresář"
 
-#: bittorrent.py:1745
+#: bittorrent.py:1750
 msgid "_File list"
 msgstr "_Seznam souborů"
 
-#: bittorrent.py:1747
+#: bittorrent.py:1752
 msgid "_Peer list"
 msgstr "Seznam _stahujících"
 
-#: bittorrent.py:1757
+#: bittorrent.py:1762
 msgid "_Change location"
 msgstr "_Změnit cílovou složku"
 
-#: bittorrent.py:1760
+#: bittorrent.py:1765
 msgid "_Seed indefinitely"
 msgstr "_Sdílet na neurčito"
 
-#: bittorrent.py:1780
+#: bittorrent.py:1785
 msgid "Re_start"
 msgstr "_Restart"
 
-#: bittorrent.py:1791
+#: bittorrent.py:1796
 msgid "_Finish"
 msgstr "_Dokončit"
 
-#: bittorrent.py:1792
+#: bittorrent.py:1797
 msgid "_Remove"
 msgstr "_Odstranit"
 
-#: bittorrent.py:1799
+#: bittorrent.py:1804
 msgid "_Abort"
 msgstr "_Zrušit"
 
-#: bittorrent.py:1880
+#: bittorrent.py:1885
 #, python-format
 msgid "Are you sure you want to remove \"%s\"?"
 msgstr "Jste si naprosto jisti, že chcete odstranit \"%s\"?"
 
-#: bittorrent.py:1883
+#: bittorrent.py:1888
 #, python-format
 msgid "Your share ratio for this torrent is %d%%. "
 msgstr "Váš poměr sdílení pro tento torrent je %d%%."
 
-#: bittorrent.py:1885
+#: bittorrent.py:1890
 #, python-format
 msgid "You have uploaded %s to this torrent. "
 msgstr "Již jste vyslali %s do tohoto torrentu."
 
-#: bittorrent.py:1888
+#: bittorrent.py:1893
 msgid "Remove this torrent?"
 msgstr "Odstranit tento torrent?"
 
-#: bittorrent.py:1910
+#: bittorrent.py:1915
 msgid "Finished"
 msgstr "Dokončeno"
 
-#: bittorrent.py:1911
+#: bittorrent.py:1916
 msgid "drag into list to seed"
 msgstr "přetáhněte torrent myší do seznamu, chcete-li ho sdílet"
 
-#: bittorrent.py:1914
+#: bittorrent.py:1919
 msgid "Failed"
 msgstr "Chyba"
 
-#: bittorrent.py:1915
+#: bittorrent.py:1920
 msgid "drag into list to resume"
 msgstr "přetáhněte torrent myší do seznamu, chcete-li pokračovat"
 
-#: bittorrent.py:1974
+#: bittorrent.py:1979
 msgid "Waiting"
 msgstr "Čekám"
 
-#: bittorrent.py:2028
+#: bittorrent.py:2033
 msgid "Running"
 msgstr "Spuštěný"
 
-#: bittorrent.py:2053
+#: bittorrent.py:2058
 #, python-format
 msgid "Current up: %s"
 msgstr "Aktuální odesílání: %s"
 
-#: bittorrent.py:2054
+#: bittorrent.py:2059
 #, python-format
 msgid "Current down: %s"
 msgstr "Aktuální stahování: %s"
 
-#: bittorrent.py:2060
+#: bittorrent.py:2065
 #, python-format
 msgid "Previous up: %s"
 msgstr "Předchozí odesílání: %s"
 
-#: bittorrent.py:2061
+#: bittorrent.py:2066
 #, python-format
 msgid "Previous down: %s"
 msgstr "Předchozí stahování: %s"
 
-#: bittorrent.py:2067
+#: bittorrent.py:2072
 #, python-format
 msgid "Share ratio: %0.02f%%"
 msgstr "Poměr odesílání/stahování: %0.02f%%"
 
-#: bittorrent.py:2070
+#: bittorrent.py:2075
 #, python-format
 msgid "%s peers, %s seeds. Totals from tracker: %s"
 msgstr "%s stahujících, %s sdílejících uživatelů. Celkem z trackeru: %s"
 
-#: bittorrent.py:2074
+#: bittorrent.py:2079
 #, python-format
 msgid "Distributed copies: %d; Next: %s"
 msgstr "Distribuovaných kopií: %d; Další: %s"
 
-#: bittorrent.py:2077
+#: bittorrent.py:2082
 #, python-format
 msgid "Pieces: %d total, %d complete, %d partial, %d active (%d empty)"
 msgstr "Částí: %d celkem, %d dokončeno, %d částečně, %d aktivních (%d prázdné)"
 
-#: bittorrent.py:2081
+#: bittorrent.py:2086
 #, python-format
 msgid "%d bad pieces + %s in discarded requests"
 msgstr "%d špatných částí + %s ve zrušených požadavcích"
 
-#: bittorrent.py:2171
+#: bittorrent.py:2176
 #, python-format
 msgid "%.1f%% done, %s remaining"
 msgstr "%.1f%% dokončeno, %s zbývá"
 
-#: bittorrent.py:2179
+#: bittorrent.py:2184
 msgid "Download rate"
 msgstr "Rychlost stahování"
 
-#: bittorrent.py:2181
+#: bittorrent.py:2186
 msgid "Upload rate"
 msgstr "Rychlost odesílání"
 
-#: bittorrent.py:2196
+#: bittorrent.py:2201
 msgid "NA"
 msgstr "Není použito"
 
-#: bittorrent.py:2620
+#: bittorrent.py:2625
 #, python-format
 msgid "%s started"
 msgstr "%s spuštěn"
 
-#: bittorrent.py:2633
+#: bittorrent.py:2638
 msgid "_Open torrent file"
 msgstr "_Otevřít soubor torrent"
 
-#: bittorrent.py:2634
+#: bittorrent.py:2639
 msgid "Open torrent _URL"
 msgstr "Otevřít _URL torrentu"
 
-#: bittorrent.py:2635
+#: bittorrent.py:2640
 msgid "Make _new torrent"
 msgstr "Vytvořit _nový torrent"
 
-#: bittorrent.py:2638
+#: bittorrent.py:2643
 msgid "_Pause/Play"
 msgstr "_Pozastavit/Spustit"
 
-#: bittorrent.py:2640
+#: bittorrent.py:2645
 msgid "_Quit"
 msgstr "_Ukončit aplikaci"
 
-#: bittorrent.py:2642
+#: bittorrent.py:2647
 msgid "Show/Hide _finished torrents"
 msgstr "Zobrazit/Skrýt _dokončené torrenty"
 
-#: bittorrent.py:2644
+#: bittorrent.py:2649
 msgid "_Resize window to fit"
 msgstr "_Změnit velikost okna na vyhovující"
 
-#: bittorrent.py:2646
+#: bittorrent.py:2651
 msgid "_Log"
 msgstr "_Protokol"
 
-#: bittorrent.py:2649
+#: bittorrent.py:2654
 msgid "_Settings"
 msgstr "_Nastavení"
 
-#: bittorrent.py:2652 bittorrent.py:2668
+#: bittorrent.py:2657 bittorrent.py:2673
 msgid "_Help"
 msgstr "_Nápověda"
 
-#: bittorrent.py:2654
+#: bittorrent.py:2659
 msgid "_About"
 msgstr "_O aplikaci"
 
-#: bittorrent.py:2655
+#: bittorrent.py:2660
 msgid "_Donate"
 msgstr "_Přispějte na vývoj"
 
-#: bittorrent.py:2659
+#: bittorrent.py:2664
 msgid "_File"
 msgstr "_Soubor"
 
-#: bittorrent.py:2664
+#: bittorrent.py:2669
 msgid "_View"
 msgstr "_Zobrazit"
 
-#: bittorrent.py:2705
+#: bittorrent.py:2710
 msgid "Search for torrents"
 msgstr "Hledat torrenty"
 
-#: bittorrent.py:2848
+#: bittorrent.py:2853
 msgid "(stopped)"
 msgstr "(zastaveno)"
 
-#: bittorrent.py:2860
+#: bittorrent.py:2865
 msgid "(multiple)"
 msgstr "(vícenásobné)"
 
-#: bittorrent.py:2987
+#: bittorrent.py:2992
 #, python-format
 msgid "Already downloading %s installer"
 msgstr "Už staženo %s instalátoru"
 
-#: bittorrent.py:2991
+#: bittorrent.py:2996
 #, python-format
 msgid "Install new %s now?"
 msgstr "Instalovat nový %s hned?"
 
-#: bittorrent.py:2992
+#: bittorrent.py:2997
 #, python-format
 msgid "Do you want to quit %s and install the new version, %s, now?"
 msgstr "Ukončit %s a instalovat novou verzi, %s, nyní?"
 
-#: bittorrent.py:3008
+#: bittorrent.py:3013
 #, python-format
 msgid ""
 "%s help is at \n"
@@ -766,65 +766,65 @@ msgstr ""
 "%s\n"
 "Chcete navštívit tuto stránku již nyní?"
 
-#: bittorrent.py:3011
+#: bittorrent.py:3016
 msgid "Visit help web page?"
 msgstr "Navštívit webovou stránku nápovědy?"
 
-#: bittorrent.py:3048
+#: bittorrent.py:3053
 msgid "There is one finished torrent in the list. "
 msgstr "V seznamu je jeden dokončený torrent."
 
-#: bittorrent.py:3049
+#: bittorrent.py:3054
 msgid "Do you want to remove it?"
 msgstr "Chcete ho odstranit?"
 
-#: bittorrent.py:3051
+#: bittorrent.py:3056
 #, python-format
 msgid "There are %d finished torrents in the list. "
 msgstr "V seznamu je %d dokončených torrentů."
 
-#: bittorrent.py:3052
+#: bittorrent.py:3057
 msgid "Do you want to remove all of them?"
 msgstr "Chcete je všechny odstranit?"
 
-#: bittorrent.py:3054
+#: bittorrent.py:3059
 msgid "Remove all finished torrents?"
 msgstr "Odstranit všechny dokončené torrenty?"
 
-#: bittorrent.py:3062
+#: bittorrent.py:3067
 msgid "No finished torrents"
 msgstr "Žádné dokončené torrenty"
 
-#: bittorrent.py:3063
+#: bittorrent.py:3068
 msgid "There are no finished torrents to remove."
 msgstr "Nejsou žádné dokončené torrenty pro odstranění."
 
-#: bittorrent.py:3119
+#: bittorrent.py:3124
 msgid "Open torrent:"
 msgstr "Otevřít torrent:"
 
-#: bittorrent.py:3150
+#: bittorrent.py:3155
 msgid "Change save location for "
 msgstr "Změnit adresář pro ukládání na"
 
-#: bittorrent.py:3177
+#: bittorrent.py:3182
 msgid "File exists!"
 msgstr "Soubor již existuje!"
 
-#: bittorrent.py:3178
+#: bittorrent.py:3183
 #, python-format
 msgid "\"%s\" already exists. Do you want to choose a different file name?"
 msgstr "\"%s\" již existuje. Chcete použít jiný název souboru?"
 
-#: bittorrent.py:3197
+#: bittorrent.py:3202
 msgid "Save location for "
 msgstr "Adresář pro uložení"
 
-#: bittorrent.py:3215
+#: bittorrent.py:3220
 msgid "Directory exists!"
 msgstr "Adresář existuje!"
 
-#: bittorrent.py:3216
+#: bittorrent.py:3221
 #, python-format
 msgid ""
 "\"%s\" already exists. Do you intend to create an identical, duplicate "
@@ -833,45 +833,45 @@ msgstr ""
 "\"%s\" již existuje. Chcete vytvořit stejně pojmenovaný adresář uvnitř "
 "tohoto adreáře?"
 
-#: bittorrent.py:3339
+#: bittorrent.py:3344
 #, python-format
 msgid "(global message) : %s"
 msgstr "(globální zpráva): %s"
 
-#: bittorrent.py:3346
+#: bittorrent.py:3351
 #, python-format
 msgid "%s Error"
 msgstr "Chyba %s"
 
-#: bittorrent.py:3352
+#: bittorrent.py:3357
 msgid "Multiple errors have occurred. Click OK to view the error log."
 msgstr "Objevilo se několik chyb. Stisknutím OK zobrazte protokol chyb."
 
-#: bittorrent.py:3508
+#: bittorrent.py:3513
 msgid "Stop running torrent?"
 msgstr "Zastavit spuštěný torrent?"
 
-#: bittorrent.py:3509
+#: bittorrent.py:3514
 #, python-format
 msgid ""
 "You are about to start \"%s\". Do you want to stop the last running torrent "
 "as well?"
 msgstr "Chystáte se spustit \"%s\". Chcete zastavit poslední spuštěný torrent?"
 
-#: bittorrent.py:3520
+#: bittorrent.py:3525
 msgid "Have you donated?"
 msgstr "Přispěli jste již na vývoj?"
 
-#: bittorrent.py:3521
+#: bittorrent.py:3526
 #, python-format
 msgid "Welcome to the new version of %s. Have you donated?"
 msgstr "Vítá Vás nová verze %s. Přispěli jste již na vývoj?"
 
-#: bittorrent.py:3536
+#: bittorrent.py:3541
 msgid "Thanks!"
 msgstr "Děkujeme!"
 
-#: bittorrent.py:3537
+#: bittorrent.py:3542
 msgid ""
 "Thanks for donating! To donate again, select \"Donate\" from the \"Help\" "
 "menu."
@@ -879,32 +879,32 @@ msgstr ""
 "Děkujeme za finanční příspěvek! Pokud budete chtít přispět znovu, zvolte "
 "\"Přispějte na vývoj\" v nabídce \"Nápověda\"."
 
-#: bittorrent.py:3631 BitTorrent/defaultargs.py:198
+#: bittorrent.py:3636 BitTorrent/defaultargs.py:198
 #: BitTorrent/defaultargs.py:200 bittorrent-console.py:295
 #: bittorrent-curses.py:429
 msgid "deprecated, do not use"
 msgstr "toto není schválené, nepoužívat"
 
-#: bittorrent.py:3650
+#: bittorrent.py:3655
 msgid "Failed to create or send command through existing control socket."
 msgstr ""
 "Nepovedl se vytvořit nebo odeslat příkaz přes existující kontrolní socket."
 
-#: bittorrent.py:3652 bittorrent.py:3681
+#: bittorrent.py:3657 bittorrent.py:3686
 #, python-format
 msgid " Closing all %s windows may fix the problem."
 msgstr "Uzavření všech %s oken by mělo vyřešit váš problém."
 
-#: bittorrent.py:3677
+#: bittorrent.py:3682
 #, python-format
 msgid "%s already running"
 msgstr "%s je již spuštěn"
 
-#: bittorrent.py:3679
+#: bittorrent.py:3684
 msgid "Failed to send command through existing control socket."
 msgstr "Nepovedlo se odeslat příkaz přes existující kontrolní socket."
 
-#: bittorrent.py:3703
+#: bittorrent.py:3708
 msgid "Could not start the TorrentQueue, see above for errors."
 msgstr "Nelze spustit TorrentQueue, viz chyby výše."
 
@@ -2338,7 +2338,7 @@ msgstr "stahování"
 msgid "Rereading config file"
 msgstr ""
 
-#: BitTorrent/GetTorrent.py:42 BitTorrent/GetTorrent.py:81
+#: BitTorrent/GetTorrent.py:42 BitTorrent/GetTorrent.py:80
 #, python-format
 msgid "Could not read %s"
 msgstr "Nelze přečíst %s"

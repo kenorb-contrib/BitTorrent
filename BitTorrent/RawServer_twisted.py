@@ -149,7 +149,19 @@ class ConnectionWrapper(object):
                 pass
 
     def sendto(self, packet, flags, addr):
-        return self.transport.write(packet, addr)
+        # all this can go away once we pin down the bug
+        if not hasattr(self.transport, "listening"):
+            self.rawserver.errorfunc(WARNING, "UDP port never setup properly when asked to write")
+        elif not self.transport.listening:
+            self.rawserver.errorfunc(WARNING, "UDP port cleaned up already when asked to write")
+
+        ret = None
+        try:
+            ret = self.transport.write(packet, addr)
+        except Exception, e:
+            self.rawserver.errorfunc(WARNING, "UDP sendto failed: %s" % str(e))
+        
+        return ret
 
     def write(self, b):
         self.buffer.add(b)
@@ -238,7 +250,7 @@ class OutputBuffer(object):
 
     def stopProducing(self):
         pass
-            
+
 class CallbackConnection(object):
 
     def attachTransport(self, transport, connection, *args):

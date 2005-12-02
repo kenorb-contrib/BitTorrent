@@ -234,8 +234,8 @@ class Updater(object):
 
     def start_install(self):
         if not self.asked_for_install:
-            self.asked_for_install = True
             if self.installer_downloaded():
+                self.asked_for_install = True
                 self.installfunc()
             else:
                 self.errorfunc(WARNING,

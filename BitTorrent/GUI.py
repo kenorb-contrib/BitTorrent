@@ -277,12 +277,12 @@ class LanguageChooser(gtk.Frame):
         self.combo.connect('changed', self.changed)
         box = gtk.VBox(spacing=SPACING)
         box.set_border_width(SPACING)
-        box.pack_start(self.combo)
+        box.pack_start(self.combo, expand=False, fill=False)
         l = gtk.Label("You must restart %s for the\nlanguage "
                       "setting to take effect." % app_name)
         l.set_alignment(0,1)
         l.set_line_wrap(True)
-        box.pack_start(l)
+        box.pack_start(l, expand=False, fill=False)
         self.add(box)
 
     def changed(self, *a):
