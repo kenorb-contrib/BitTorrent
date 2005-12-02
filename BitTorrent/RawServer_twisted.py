@@ -52,7 +52,7 @@ from twisted.internet import reactor, task, error
 
 import twisted.copyright
 if int(twisted.copyright.version.split('.')[0]) < 2:
-    raise ImportError("RawServer_twisted requires twisted 2.0.0 or greater")
+    raise ImportError(_("RawServer_twisted requires twisted 2.0.0 or greater"))
 
 from twisted.internet.protocol import DatagramProtocol, Protocol, Factory, ClientFactory
 from twisted.protocols.policies import TimeoutMixin
@@ -125,12 +125,12 @@ class ConnectionWrapper(object):
                 address = self.transport.getHost()
             except:
                 if not self.transport.__dict__.has_key("state"):
-                    self.transport.state = "NO STATE!"
-                sys.stderr.write("UNKNOWN HOST/PEER: " + str(self.transport) + ":" + str(self.transport.state)+ ":" + str(self.handler) + "\n")
+                    self.transport.state = 'NO STATE!'
+                sys.stderr.write('UNKNOWN HOST/PEER: %s:%s:%s\n' % (str(self.transport), str(self.transport.state), str(self.handler)))
                 print_stack()
                 # fallback incase the unknown happens,
                 # there's no use raising an exception
-                address = ("unknown", -1)
+                address = ('unknown', -1)
                 pass
 
         try:            
@@ -293,7 +293,7 @@ class CallbackConnection(object):
     def connectionRefused(self):
         s = self.connection
         dns = (s.ip, s.port)
-        reason = "connection refused"
+        reason = _("connection refused")
         
         if not s.dying:
             # this might not work - reason is not an exception
@@ -453,7 +453,7 @@ class RawServer(RawServerMixin):
         s.factory = Factory()
         
         if s.reuse == False:
-            UnimplementedWarning("You asked for reuse to be off when binding. Sorry, I can't do that.")
+            UnimplementedWarning(_("You asked for reuse to be off when binding. Sorry, I can't do that."))
 
         listening_port = reactor.listenUNIX(s.bind, s.factory)
         listening_port.listening = 1
@@ -467,7 +467,7 @@ class RawServer(RawServerMixin):
         s.factory = Factory()
         
         if s.reuse == False:
-            UnimplementedWarning("You asked for reuse to be off when binding. Sorry, I can't do that.")
+            UnimplementedWarning(_("You asked for reuse to be off when binding. Sorry, I can't do that."))
 
         try:        
             listening_port = reactor.listenTCP(s.port, s.factory, interface=s.bind)
@@ -490,17 +490,37 @@ class RawServer(RawServerMixin):
         s.protocol.connection = c
 
         if s.reuse == False:
-            UnimplementedWarning("You asked for reuse to be off when binding. Sorry, I can't do that.")
+            UnimplementedWarning(_("You asked for reuse to be off when binding. Sorry, I can't do that."))
                          
         try:        
             listening_port = reactor.listenUDP(s.port, s.protocol, interface=s.bind)
+        except error.CannotListenError, e:
+            raise e.socketError
+        listening_port.listening = 1
+        s.listening_port = listening_port
+        
+        return s
+    create_udpsocket = staticmethod(create_udpsocket)
+
+    def create_multicastsocket(port, bind='', reuse=False, tos=0):
+        s = SocketProxy(port, bind, reuse, tos, 'udp')
+        s.protocol = CallbackDatagramProtocol()
+        c = ConnectionWrapper(None, None, None, tos)
+        s.connection = c
+        s.protocol.connection = c
+
+        if s.reuse == False:
+            UnimplementedWarning("You asked for reuse to be off when binding. Sorry, I can't do that.")
+                         
+        try:        
+            listening_port = reactor.listenMulticast(s.port, s.protocol, interface=s.bind)
         except error.CannotListenError, e:
             raise e.socketError       
         listening_port.listening = 1
         s.listening_port = listening_port
         
         return s
-    create_udpsocket = staticmethod(create_udpsocket)
+    create_multicastsocket = staticmethod(create_multicastsocket)
 
     def start_listening(self, serversocket, handler, context=None):
         s = serversocket
@@ -532,6 +552,20 @@ class RawServer(RawServerMixin):
             
         self.udp_sockets[c] = c
 
+    def start_listening_multicast(self, serversocket, handler, context=None):
+        s = serversocket
+        
+        c = s.connection
+        c.post_init(self, handler, context)
+
+        if not s.listening_port.listening:
+            s.listening_port.startListening()
+            s.listening_port.listening = 1
+
+        self.listening_handlers[serversocket] = s.listening_port
+            
+        self.udp_sockets[c] = c
+
     def stop_listening(self, serversocket):
         listening_port = self.listening_handlers[serversocket]
         try:
@@ -547,6 +581,9 @@ class RawServer(RawServerMixin):
         del self.listening_handlers[serversocket]
         del self.udp_sockets[serversocket.connection]
         del self.single_sockets[serversocket.connection]
+
+    def stop_listening_multicast(self, serversocket):
+        self.stop_listening_udp(serversocket)
         
     def start_connection(self, dns, handler, context=None, do_bind=True):
         addr = dns[0]
@@ -578,12 +615,12 @@ class RawServer(RawServerMixin):
         self.start_connection(dns, handler, context, do_bind)
 
     def wrap_socket(self, sock, handler, context=None, ip=None):
-        raise Unimplemented("wrap_socket")
+        raise Unimplemented('wrap_socket')
 
     def listen_forever(self):
         self.ident = thread.get_ident()
         if self.listened:
-            UnimplementedWarning("listen_forever() should only be called once per reactor.")
+            UnimplementedWarning(_("listen_forever() should only be called once per reactor."))
         self.listened = 1
         
         l = task.LoopingCall(self.stop)
@@ -595,7 +632,7 @@ class RawServer(RawServerMixin):
             reactor.run()
             
     def listen_once(self, period=1e9):
-        UnimplementedWarning("listen_once() Might not return until there is activity, and might not process the event you want. Use listen_forever().")
+        UnimplementedWarning(_("listen_once() might not return until there is activity, and might not process the event you want. Use listen_forever()."))
         reactor.iterate(period)
     
     def stop(self):

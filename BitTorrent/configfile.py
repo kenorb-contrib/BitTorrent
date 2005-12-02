@@ -26,7 +26,9 @@ from BitTorrent import parseargs
 from BitTorrent import app_name, version, ERROR, BTFailure
 from BitTorrent.platform import get_config_dir, locale_root, is_frozen_exe
 from BitTorrent.defaultargs import MYTRUE
+from BitTorrent.zurllib import bind_tracker_connection
 
+MAIN_CONFIG_FILE = 'ui_config'
 TORRENT_CONFIG_FILE = 'torrent_config'
 
 alt_uiname = {'bittorrent':'btdownloadgui',
@@ -79,8 +81,8 @@ def bad_config(filename):
         bad_filename = base_bad_filename + str(i)
         i+=1
     os.rename(filename, bad_filename)
-    sys.stderr.write(("Error reading config file. "
-                      "Old config file stored in \"%s\"") % bad_filename)
+    sys.stderr.write(_("Error reading config file. "
+                       "Old config file stored in \"%s\"") % bad_filename)
 
 
 def get_config(defaults, section):
@@ -116,17 +118,19 @@ def get_config(defaults, section):
 
 
 def save_ui_config(defaults, section, save_options, error_callback):
-    filename = os.path.join(defaults['data_dir'], 'ui_config')
+    filename = os.path.join(defaults['data_dir'], MAIN_CONFIG_FILE)
     p = _read_config(filename)
     p.remove_section(section)
+    if p.has_section(alt_uiname[section]):
+        p.remove_section(alt_uiname[section])
     p.add_section(section)
     for name in save_options:
         if defaults.has_key(name):
             p.set(section, name, defaults[name])
         else:
-            err_str = "Configuration option mismatch: '%s'" % name
+            err_str = _("Configuration option mismatch: '%s'") % name
             if is_frozen_exe:
-                err_str = "You must quit %s and reinstall it. (%s)" % (app_name, err_str)
+                err_str = _("You must quit %s and reinstall it. (%s)") % (app_name, err_str)
             error_callback(ERROR, err_str)
     _write_config(error_callback, filename, p)
 
@@ -184,7 +188,7 @@ def parse_configuration_and_args(defaults, uiname, arglist=[], minargs=0,
     if datadir:
         if uiname in ('bittorrent', 'maketorrent'):
             values = {}
-            p = _read_config(os.path.join(datadir, 'ui_config'))
+            p = _read_config(os.path.join(datadir, MAIN_CONFIG_FILE))
             if not p.has_section(uiname) and p.has_section(alt_uiname[uiname]):
                 uiname = alt_uiname[uiname]
             if p.has_section(uiname):
@@ -211,7 +215,8 @@ def parse_configuration_and_args(defaults, uiname, arglist=[], minargs=0,
             lang.install()
         except IOError:
             # don't raise an error, just continue untranslated
-            sys.stderr.write('Could not find translation for language "%s"\n' %
-                             config['language'])                
-    
+            sys.stderr.write(_('Could not find translation for language "%s"\n') %
+                             config['language'])
+    if config.has_key('bind') and ['bind'] != '':
+        bind_tracker_connection(config['bind'])
     return config, args

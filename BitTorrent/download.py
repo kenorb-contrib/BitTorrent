@@ -26,11 +26,6 @@ from time import time
 from cStringIO import StringIO
 from traceback import print_exc
 from math import sqrt
-try:
-    getpid = os.getpid
-except AttributeError:
-    def getpid():
-        return 1
 
 from BitTorrent.btformats import check_message
 from BitTorrent.Choker import Choker
@@ -39,11 +34,13 @@ from BitTorrent.StorageWrapper import StorageWrapper
 from BitTorrent.Uploader import Upload
 from BitTorrent.Downloader import Downloader
 from BitTorrent.Encoder import Encoder, SingleportListener
+from BitTorrent import PeerID 
 
 from BitTorrent.RateLimiter import MultiRateLimiter as RateLimiter
 from BitTorrent.RateLimiter import RateLimitedGroup
 
 from BitTorrent.RawServer_magic import RawServer
+from BitTorrent.NatTraversal import NatTraverser
 from BitTorrent.Rerequester import Rerequester, DHTRerequester
 from BitTorrent.DownloaderFeedback import DownloaderFeedback
 from BitTorrent.RateMeasure import RateMeasure
@@ -82,7 +79,9 @@ class Multitorrent(object):
         self.errorfunc = errorfunc
         self.rawserver = RawServer(doneflag, config, errorfunc=errorfunc,
                                    tos=config['peer_socket_tos'])
-        self.singleport_listener = SingleportListener(self.rawserver)
+        self.nattraverser = NatTraverser(self.rawserver, logfunc=errorfunc)
+        self.singleport_listener = SingleportListener(self.rawserver,
+                                                      self.nattraverser)
         self.ratelimiter = RateLimiter(self.rawserver.add_task)
         self.ratelimiter.set_parameters(config['max_upload_rate'],
                                         config['upload_unit_size'])
@@ -338,7 +337,7 @@ class _SingleTorrent(object):
 
         self.reported_port = self.config['forwarded_port']
         if not self.reported_port:
-            self.reported_port = self._singleport_listener.get_port()
+            self.reported_port = self._singleport_listener.get_port(self.change_port)
             self.reserved_ports.append(self.reported_port)
 
         if self._dht:
@@ -513,7 +512,7 @@ class _SingleTorrent(object):
         if self._listening:
             self._singleport_listener.remove_torrent(self.infohash)
         for port in self.reserved_ports:
-            self._singleport_listener.release_port(port)
+            self._singleport_listener.release_port(port, self.change_port)
         if self._encoder is not None:
             self._encoder.close_connections()
         if self._storage is not None:
@@ -544,7 +543,7 @@ class _SingleTorrent(object):
             # make sure counters get reset so new rate applies immediately
             self.rlgroup.set_rate(value)
 
-    def change_port(self):
+    def change_port(self, new_port = None):
         if not self._listening:
             return
         r = self.config['forwarded_port']
@@ -554,8 +553,12 @@ class _SingleTorrent(object):
             del self.reserved_ports[:]
             if self.reported_port == r:
                 return
+        elif new_port is not None:
+            r = new_port
+            self.reserved_ports.remove(self.reported_port)
+            self.reserved_ports.append(r)
         elif self._singleport_listener.port != self.reported_port:
-            r = self._singleport_listener.get_port()
+            r = self._singleport_listener.get_port(self.change_port)
             self.reserved_ports.append(r)
         else:
             return
@@ -566,14 +569,11 @@ class _SingleTorrent(object):
 
     def _announce_done(self):
         for port in self.reserved_ports[:-1]:
-            self._singleport_listener.release_port(port)
+            self._singleport_listener.release_port(port, self.change_port)
         del self.reserved_ports[:-1]
 
     def _make_id(self):
-        myid = 'M' + version.split()[0].replace('.', '-')
-        myid = myid + ('-' * (8-len(myid)))+sha(repr(time())+ ' ' +
-                                     str(getpid())).digest()[-6:].encode('hex')
-        return myid
+        return PeerID.make_id()
 
     def _error(self, level, text, exception=False):
         self.errors.append((time(), level, text))

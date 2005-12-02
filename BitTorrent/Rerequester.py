@@ -136,7 +136,9 @@ class Rerequester(object):
             s += '&compact=1'
         if event is not None:
             s += '&event=' + ['started', 'completed', 'stopped'][event]
-        Thread(target=self._rerequest, args=[s, self.peerid]).start()
+        t = Thread(target=self._rerequest, args=[s, self.peerid])
+        t.setDaemon(True)
+        t.start()        
 
     # Must destroy all references that could cause reference circles
     def cleanup(self):
@@ -273,7 +275,7 @@ class DHTRerequester(Rerequester):
         try:
             self.dht.getPeersAndAnnounce(self.infohash, self.port, self._got_peers)
         except Exception, e:
-            self._postrequest(errormsg="Trackerless lookup failed: " + str(e), peerid=self.wanted_peerid)
+            self._postrequest(errormsg=_("Trackerless lookup failed: ") + str(e), peerid=self.wanted_peerid)
         
     def _got_peers(self, peers):
         if not self.howmany:

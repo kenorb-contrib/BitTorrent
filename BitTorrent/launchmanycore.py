@@ -93,7 +93,10 @@ class LaunchMany(Feedback):
             self.remove(infohash)
         for infohash, data in added.items():
             self.output.message(_('added "%s"'  ) % data['path'])
-            self.add(infohash, data)
+            if self.config['launch_delay'] > 0:
+                self.rawserver.add_task(self.add, self.config['launch_delay'], (infohash, data))
+            else:
+                self.add(infohash, data)
 
     def stats(self):
         self.rawserver.add_task(self.stats, self.config['display_interval'])

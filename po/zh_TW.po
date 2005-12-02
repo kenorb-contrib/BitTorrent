@@ -12,7 +12,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: BitTorrent 4.2\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2005-11-20 23:00-0800\n"
+"POT-Creation-Date: 2005-11-22 12:50-0800\n"
 "PO-Revision-Date: 2005-11-15 14:12-0800\n"
 "Last-Translator: Matt Chisholm <matt@bittorrent.com>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -21,102 +21,136 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "X-Generator: Pootle 0.6.3.20050806\n"
 
-#: bittorrent.py:22 maketorrent.py:23
-msgid "Install Python 2.3 or greater"
-msgstr "安裝 Python 2.3 或更新的版本"
+#: bittorrent.py:29 maketorrent.py:23
+#, python-format
+msgid "Install Python %s or greater"
+msgstr ""
 
-#: bittorrent.py:36
-msgid "PyGTK 2.4 or newer required"
-msgstr "需要 PyGTK 2.4 或更新的版本"
+#: bittorrent.py:118 BitTorrent/defaultargs.py:215
+#: BitTorrent/defaultargs.py:217 bittorrent-console.py:295
+#: bittorrent-curses.py:429
+msgid "deprecated, do not use"
+msgstr "已過時，請勿使用"
 
-#: bittorrent.py:242
-msgid "Enter torrent URL"
-msgstr "輸入 torrent 的 URL 位置"
+#: bittorrent.py:137
+msgid "Failed to create or send command through existing control socket."
+msgstr "無法透過現有的控制 socket 建立或傳送指令。"
 
-#: bittorrent.py:243
-msgid "Enter the URL of a torrent file to open:"
-msgstr "輸入準備開啟的 torrent 檔案的 URL:"
+#: bittorrent.py:139 bittorrent.py:168
+#, python-format
+msgid " Closing all %s windows may fix the problem."
+msgstr "關閉所有 %s 視窗可能可以解決問題。"
 
-#: bittorrent.py:279
+#: bittorrent.py:164
+#, python-format
+msgid "%s already running"
+msgstr "%s 已在執行"
+
+#: bittorrent.py:166
+msgid "Failed to send command through existing control socket."
+msgstr "無法透過現有的控制 socket 傳送指令。"
+
+#: bittorrent.py:178 BitTorrent/GUI.py:22
+#, python-format
+msgid "PyGTK %s or newer required"
+msgstr ""
+
+#: bittorrent.py:195 bittorrent.py:1721
+msgid "drag to reorder"
+msgstr "拖曳滑鼠以重新排列"
+
+#: bittorrent.py:196 bittorrent.py:1722
+msgid "right-click for menu"
+msgstr "按滑鼠右鍵開啟功能表"
+
+#: bittorrent.py:202 bittorrent.py:387
 msgid "dialup"
 msgstr "撥接"
 
-#: bittorrent.py:280
+#: bittorrent.py:203 bittorrent.py:388
 msgid "DSL/cable 128k up"
 msgstr "數位用戶線路(DSL)/纜線 128k 以上"
 
-#: bittorrent.py:281
+#: bittorrent.py:204 bittorrent.py:389
 msgid "DSL/cable 256k up"
 msgstr "數位用戶線路(DSL)/纜線  256k 以上"
 
-#: bittorrent.py:282
+#: bittorrent.py:205 bittorrent.py:390
 msgid "DSL 768k up"
 msgstr "數位用戶線路(DSL) 768k 以上"
 
-#: bittorrent.py:283
+#: bittorrent.py:206 bittorrent.py:391
 msgid "T1"
 msgstr "T1"
 
-#: bittorrent.py:284
+#: bittorrent.py:207 bittorrent.py:392
 msgid "T1/E1"
 msgstr "T1/E1"
 
-#: bittorrent.py:285
+#: bittorrent.py:208 bittorrent.py:393
 msgid "E1"
 msgstr "E1"
 
-#: bittorrent.py:286
+#: bittorrent.py:209 bittorrent.py:394
 msgid "T3"
 msgstr "T3"
 
-#: bittorrent.py:287
+#: bittorrent.py:210 bittorrent.py:395
 msgid "OC3"
 msgstr "OC3"
 
-#: bittorrent.py:299
+#: bittorrent.py:350
+msgid "Enter torrent URL"
+msgstr "輸入 torrent 的 URL 位置"
+
+#: bittorrent.py:351
+msgid "Enter the URL of a torrent file to open:"
+msgstr "輸入準備開啟的 torrent 檔案的 URL:"
+
+#: bittorrent.py:407
 msgid "Maximum upload rate:"
 msgstr "最高上傳速率:"
 
-#: bittorrent.py:363
+#: bittorrent.py:470
 msgid "Temporarily stop all running torrents"
 msgstr "暫停所有執行中的 torrent"
 
-#: bittorrent.py:364
+#: bittorrent.py:471
 msgid "Resume downloading"
 msgstr "繼續下載"
 
-#: bittorrent.py:403 bittorrent.py:1998
+#: bittorrent.py:510 bittorrent.py:2153
 msgid "Paused"
 msgstr "已暫停"
 
-#: bittorrent.py:405
+#: bittorrent.py:512
 msgid "No torrents"
 msgstr "沒有 torrent"
 
-#: bittorrent.py:407
+#: bittorrent.py:514
 msgid "Running normally"
 msgstr "正常執行中"
 
-#: bittorrent.py:409
-msgid "Firewalled/NATted"
-msgstr "在防火牆/NAT 背後"
+#: bittorrent.py:516
+msgid "Probably firewalled/NATted"
+msgstr ""
 
-#: bittorrent.py:445
+#: bittorrent.py:552
 #, python-format
 msgid "New %s version available"
 msgstr "已推出新版本 %s"
 
-#: bittorrent.py:460
+#: bittorrent.py:567
 #, python-format
 msgid "A newer version of %s is available.\n"
 msgstr "%s 已推出新版本。\n"
 
-#: bittorrent.py:461
+#: bittorrent.py:568
 #, python-format
 msgid "You are using %s, and the new version is %s.\n"
 msgstr "您正在使用 %s 版本，而新的版本是 %s。\n"
 
-#: bittorrent.py:462
+#: bittorrent.py:569
 #, python-format
 msgid ""
 "You can always get the latest version from \n"
@@ -125,143 +159,76 @@ msgstr ""
 "請到以下位置下載最新版本︰\n"
 "%s"
 
-#: bittorrent.py:469 bittorrent.py:1795
+#: bittorrent.py:576 bittorrent.py:1950
 msgid "Download _later"
 msgstr "稍後下載(_L)"
 
-#: bittorrent.py:472 bittorrent.py:1783
+#: bittorrent.py:579 bittorrent.py:1938
 msgid "Download _now"
 msgstr "立即下載(_N)"
 
-#: bittorrent.py:478
+#: bittorrent.py:585
 msgid "_Remind me later"
 msgstr "稍後提醒我(_R)"
 
-#: bittorrent.py:516
+#: bittorrent.py:623
 #, python-format
 msgid "About %s"
 msgstr "關於 %s"
 
-#: bittorrent.py:531
+#: bittorrent.py:638
 msgid "Beta"
 msgstr "測試版本"
 
-#: bittorrent.py:533
+#: bittorrent.py:640
 #, python-format
 msgid "Version %s"
 msgstr "%s 版本"
 
-#: bittorrent.py:549
+#: bittorrent.py:656
 #, python-format
 msgid "Couldn't open %s"
 msgstr "無法開啟 %s"
 
-#: bittorrent.py:568
+#: bittorrent.py:675
 msgid "Donate"
 msgstr "捐款"
 
-#: bittorrent.py:588
+#: bittorrent.py:695
 #, python-format
 msgid "%s Activity Log"
 msgstr "%s 使用紀錄"
 
-#: bittorrent.py:645
+#: bittorrent.py:752
 msgid "Save log in:"
 msgstr "將紀錄儲存於:"
 
-#: bittorrent.py:656
+#: bittorrent.py:763
 msgid "log saved"
 msgstr "已儲存紀錄"
 
-#: bittorrent.py:715
+#: bittorrent.py:822
 msgid "log cleared"
 msgstr "已清除紀錄"
 
-#: bittorrent.py:745
+#: bittorrent.py:852
 #, python-format
 msgid "%s Settings"
 msgstr "%s 設定"
 
-#: bittorrent.py:756
-msgid "Saving"
-msgstr "儲存"
-
-#: bittorrent.py:758
-msgid "Save new downloads in:"
-msgstr "將下載後的檔案儲存於:"
-
-#: bittorrent.py:771
-msgid "Change..."
-msgstr "變更..."
-
-#: bittorrent.py:777
-msgid "Ask where to save each new download"
-msgstr "每次都詢問欲儲存新檔案的位置"
-
-#: bittorrent.py:786
-msgid "Downloading"
-msgstr "下載"
-
-#: bittorrent.py:788
-msgid "Starting additional torrents manually:"
-msgstr "手動啟動額外的 torrent："
-
-#: bittorrent.py:797
-msgid "Always stops the _last running torrent"
-msgstr "永遠停止最後執行的 _torrent"
-
-#: bittorrent.py:803
-msgid "Always starts the torrent in _parallel"
-msgstr "永遠同時啟動 t_orrent"
-
-#: bittorrent.py:809
-msgid "_Asks each time"
-msgstr "每次都詢問(_A)"
-
-#: bittorrent.py:826
-msgid "Seeding"
-msgstr "作種"
-
-#: bittorrent.py:835
-msgid ""
-"Seed completed torrents: until share ratio reaches [_] percent, or for [_] "
-"minutes, whichever comes first."
+#: bittorrent.py:864
+msgid "General"
 msgstr ""
-"作種完成的 torrents：直到共用率達百分之[_]，或持續[_]分鐘，以先達到者為準。"
 
-#: bittorrent.py:879 bittorrent.py:913
-msgid "Seed indefinitely"
-msgstr "種子永遠有效"
-
-#: bittorrent.py:887
-msgid "Seed last completed torrent: until share ratio reaches [_] percent."
-msgstr "將完成的 torrent 作種：直至共享率達到百分之 [_] 。"
-
-#: bittorrent.py:925
-msgid "Network"
-msgstr "網路"
-
-#: bittorrent.py:927
-msgid "Look for available port:"
-msgstr "搜尋可用的通訊埠："
-
-#: bittorrent.py:930
-msgid "starting at port: "
-msgstr "起始通訊埠:"
-
-#: bittorrent.py:943
-msgid "IP to report to the tracker:"
-msgstr "報告給追蹤程式的 IP 位址："
-
-#: bittorrent.py:948
-msgid ""
-"(Has no effect unless you are on the\n"
-"same local network as the tracker)"
+#: bittorrent.py:867 BitTorrent/defaultargs.py:190
+msgid "Launch BitTorrent when Windows starts"
 msgstr ""
-"(除非您和追蹤程式在 \n"
-" 同一本地區域網路上，否則無效)"
 
-#: bittorrent.py:960
+#: bittorrent.py:873 BitTorrent/defaultargs.py:192
+msgid "Minimize to system tray"
+msgstr ""
+
+#: bittorrent.py:879
 msgid ""
 "Progress bar text is always black\n"
 "(requires restart)"
@@ -269,11 +236,86 @@ msgstr ""
 "進度列文字永遠使用黑色\n"
 "(需要重新啟動)"
 
-#: bittorrent.py:966
-msgid "Misc"
-msgstr "雜項"
+#: bittorrent.py:888
+msgid "Saving"
+msgstr "儲存"
 
-#: bittorrent.py:973
+#: bittorrent.py:890
+msgid "Save new downloads in:"
+msgstr "將下載後的檔案儲存於:"
+
+#: bittorrent.py:903
+msgid "Change..."
+msgstr "變更..."
+
+#: bittorrent.py:909
+msgid "Ask where to save each new download"
+msgstr "每次都詢問欲儲存新檔案的位置"
+
+#: bittorrent.py:918
+msgid "Downloading"
+msgstr "下載"
+
+#: bittorrent.py:920
+msgid "Starting additional torrents manually:"
+msgstr "手動啟動額外的 torrent："
+
+#: bittorrent.py:929
+msgid "Always stops the _last running torrent"
+msgstr "永遠停止最後執行的 _torrent"
+
+#: bittorrent.py:935
+msgid "Always starts the torrent in _parallel"
+msgstr "永遠同時啟動 t_orrent"
+
+#: bittorrent.py:941
+msgid "_Asks each time"
+msgstr "每次都詢問(_A)"
+
+#: bittorrent.py:958
+msgid "Seeding"
+msgstr "作種"
+
+#: bittorrent.py:967
+msgid ""
+"Seed completed torrents: until share ratio reaches [_] percent, or for [_] "
+"minutes, whichever comes first."
+msgstr ""
+"作種完成的 torrents：直到共用率達百分之[_]，或持續[_]分鐘，以先達到者為準。"
+
+#: bittorrent.py:1011 bittorrent.py:1045
+msgid "Seed indefinitely"
+msgstr "種子永遠有效"
+
+#: bittorrent.py:1019
+msgid "Seed last completed torrent: until share ratio reaches [_] percent."
+msgstr "將完成的 torrent 作種：直至共享率達到百分之 [_] 。"
+
+#: bittorrent.py:1057
+msgid "Network"
+msgstr "網路"
+
+#: bittorrent.py:1059
+msgid "Look for available port:"
+msgstr "搜尋可用的通訊埠："
+
+#: bittorrent.py:1062
+msgid "starting at port: "
+msgstr "起始通訊埠:"
+
+#: bittorrent.py:1075
+msgid "IP to report to the tracker:"
+msgstr "報告給追蹤程式的 IP 位址："
+
+#: bittorrent.py:1080
+msgid ""
+"(Has no effect unless you are on the\n"
+"same local network as the tracker)"
+msgstr ""
+"(除非您和追蹤程式在 \n"
+" 同一本地區域網路上，否則無效)"
+
+#: bittorrent.py:1092
 #, python-format
 msgid ""
 "WARNING: Changing these settings can\n"
@@ -282,482 +324,486 @@ msgstr ""
 "警告：變更這些設定可能會使\n"
 "%s 無法正常運作。"
 
-#: bittorrent.py:981
+#: bittorrent.py:1100
 msgid "Option"
 msgstr "選項"
 
-#: bittorrent.py:986
+#: bittorrent.py:1105
 msgid "Value"
 msgstr "值"
 
-#: bittorrent.py:993
+#: bittorrent.py:1112
 msgid "Advanced"
 msgstr "進階"
 
-#: bittorrent.py:1002
+#: bittorrent.py:1121
 msgid "Choose default download directory"
 msgstr "選擇預設的下載目錄"
 
-#: bittorrent.py:1063
+#: bittorrent.py:1195
 #, python-format
 msgid "Files in \"%s\""
 msgstr "在“%s”的檔案"
 
-#: bittorrent.py:1072
-msgid "Apply"
-msgstr "套用"
+#: bittorrent.py:1207
+msgid "Never"
+msgstr ""
 
-#: bittorrent.py:1073
-msgid "Allocate"
-msgstr "分配"
-
-#: bittorrent.py:1074
+#: bittorrent.py:1207
 msgid "Never download"
 msgstr "永不下載"
 
-#: bittorrent.py:1075
-msgid "Decrease"
-msgstr "減少"
+#: bittorrent.py:1208
+msgid "Normal"
+msgstr ""
 
-#: bittorrent.py:1076
-msgid "Increase"
-msgstr "增加"
+#: bittorrent.py:1208
+msgid "Download normally"
+msgstr ""
 
-#: bittorrent.py:1086 launchmany-curses.py:146
+#: bittorrent.py:1209
+msgid "First"
+msgstr ""
+
+#: bittorrent.py:1209
+msgid "Download first"
+msgstr ""
+
+#: bittorrent.py:1219 launchmany-curses.py:146
 msgid "Filename"
 msgstr "檔案名稱"
 
-#: bittorrent.py:1086
+#: bittorrent.py:1219
 msgid "Length"
 msgstr "長度"
 
-#: bittorrent.py:1086
+#: bittorrent.py:1219
 msgid "%"
 msgstr "%"
 
-#: bittorrent.py:1250
+#: bittorrent.py:1222 launchmany-curses.py:141
+msgid "Download"
+msgstr "下載"
+
+#: bittorrent.py:1383
+msgid "never"
+msgstr ""
+
+#: bittorrent.py:1385
+msgid "first"
+msgstr ""
+
+#: bittorrent.py:1410
 #, python-format
 msgid "Peers for \"%s\""
 msgstr "“%s” 的對等點"
 
-#: bittorrent.py:1256
+#: bittorrent.py:1416
 msgid "IP address"
 msgstr "IP 位址"
 
-#: bittorrent.py:1256
+#: bittorrent.py:1416
 msgid "Client"
 msgstr "用戶端"
 
-#: bittorrent.py:1256
+#: bittorrent.py:1416
 msgid "Connection"
 msgstr "連線"
 
-#: bittorrent.py:1256
+#: bittorrent.py:1416
 msgid "KB/s down"
 msgstr "KB/s 下載"
 
-#: bittorrent.py:1256
+#: bittorrent.py:1416
 msgid "KB/s up"
 msgstr "KB/s 上傳"
 
-#: bittorrent.py:1256
+#: bittorrent.py:1416
 msgid "MB downloaded"
 msgstr "已下載MB"
 
-#: bittorrent.py:1256
+#: bittorrent.py:1416
 msgid "MB uploaded"
 msgstr "已上傳MB"
 
-#: bittorrent.py:1256
+#: bittorrent.py:1416
 #, python-format
 msgid "% complete"
 msgstr "完成%"
 
-#: bittorrent.py:1256
+#: bittorrent.py:1416
 msgid "KB/s est. peer download"
 msgstr "KB/s 預計下載"
 
-#: bittorrent.py:1262
+#: bittorrent.py:1422
 msgid "Peer ID"
 msgstr "對等點 ID"
 
-#: bittorrent.py:1265 bittorrent.py:1268
+#: bittorrent.py:1425 bittorrent.py:1428
 msgid "Interested"
 msgstr "有用"
 
-#: bittorrent.py:1265 bittorrent.py:1268
+#: bittorrent.py:1425 bittorrent.py:1428
 msgid "Choked"
 msgstr "堵塞"
 
-#: bittorrent.py:1265
+#: bittorrent.py:1425
 msgid "Snubbed"
 msgstr "靜止"
 
-#: bittorrent.py:1268
+#: bittorrent.py:1428
 msgid "Optimistic upload"
 msgstr ""
 
-#: bittorrent.py:1353
+#: bittorrent.py:1513
 msgid "remote"
 msgstr "遠端"
 
-#: bittorrent.py:1353
+#: bittorrent.py:1513
 msgid "local"
 msgstr "本地"
 
-#: bittorrent.py:1389
+#: bittorrent.py:1549
 msgid "bad peer"
 msgstr "壞的對等點"
 
-#: bittorrent.py:1399
+#: bittorrent.py:1559
 #, python-format
 msgid "%d ok"
 msgstr " 完成 %d"
 
-#: bittorrent.py:1400
+#: bittorrent.py:1560
 #, python-format
 msgid "%d bad"
 msgstr "損壞 %d"
 
-#: bittorrent.py:1402
+#: bittorrent.py:1562
 msgid "banned"
 msgstr "禁止"
 
-#: bittorrent.py:1404
+#: bittorrent.py:1564
 msgid "ok"
 msgstr "確定"
 
-#: bittorrent.py:1440
+#: bittorrent.py:1600
 #, python-format
 msgid "Info for \"%s\""
 msgstr "有關“%s”的資訊"
 
-#: bittorrent.py:1458
+#: bittorrent.py:1618
 msgid "Torrent name:"
 msgstr "Torrent 的名稱："
 
-#: bittorrent.py:1463
+#: bittorrent.py:1623
 msgid "(trackerless torrent)"
 msgstr "(沒有追蹤程式的 torrent)"
 
-#: bittorrent.py:1466
+#: bittorrent.py:1626
 msgid "Announce url:"
 msgstr "發佈的 url:"
 
-#: bittorrent.py:1470
+#: bittorrent.py:1630
 msgid ", in one file"
 msgstr "，在一個檔案"
 
-#: bittorrent.py:1472
+#: bittorrent.py:1632
 #, python-format
 msgid ", in %d files"
 msgstr "，在 %d 個檔案"
 
-#: bittorrent.py:1473
+#: bittorrent.py:1633
 msgid "Total size:"
 msgstr "總計大小:"
 
-#: bittorrent.py:1480
+#: bittorrent.py:1640
 msgid "Pieces:"
 msgstr "片段:"
 
-#: bittorrent.py:1482
+#: bittorrent.py:1642
 msgid "Info hash:"
 msgstr "資料雜湊值:"
 
-#: bittorrent.py:1492
+#: bittorrent.py:1652
 msgid "Save in:"
 msgstr "儲存於:"
 
-#: bittorrent.py:1496
+#: bittorrent.py:1656
 msgid "File name:"
 msgstr "檔案名稱:"
 
-#: bittorrent.py:1522
-msgid "Open directory"
-msgstr "開啟目錄"
+#: bittorrent.py:1682 bittorrent.py:1896
+msgid "_Open directory"
+msgstr "開啟目錄(_O)"
 
-#: bittorrent.py:1527
-msgid "Show file list"
-msgstr "顯示檔案清單"
+#: bittorrent.py:1687
+msgid "Show _file list"
+msgstr ""
 
-#: bittorrent.py:1561
-msgid "drag to reorder"
-msgstr "拖曳滑鼠以重新排列"
-
-#: bittorrent.py:1562
-msgid "right-click for menu"
-msgstr "按滑鼠右鍵開啟功能表"
-
-#: bittorrent.py:1627
+#: bittorrent.py:1787
 msgid "Torrent info"
 msgstr "Torrent 資訊"
 
-#: bittorrent.py:1636 bittorrent.py:2101
+#: bittorrent.py:1796 bittorrent.py:2256
 msgid "Remove torrent"
 msgstr "移除 torrent"
 
-#: bittorrent.py:1640
+#: bittorrent.py:1800
 msgid "Abort torrent"
 msgstr "中止 torrent"
 
-#: bittorrent.py:1707
+#: bittorrent.py:1867
 #, python-format
 msgid ", will seed for %s"
 msgstr "，作種時間為 %s"
 
-#: bittorrent.py:1709
+#: bittorrent.py:1869
 msgid ", will seed indefinitely."
 msgstr "，即將永遠作種。"
 
-#: bittorrent.py:1712
+#: bittorrent.py:1872
 #, python-format
 msgid "Done, share ratio: %d%%"
 msgstr "完成，分享率： %d%%"
 
-#: bittorrent.py:1715
+#: bittorrent.py:1875
 #, python-format
 msgid "Done, %s uploaded"
 msgstr "完成，已上傳 %s"
 
-#: bittorrent.py:1718 bittorrent.py:2156
+#: bittorrent.py:1878 bittorrent.py:2311
 msgid "Done"
 msgstr "完成"
 
-#: bittorrent.py:1737
+#: bittorrent.py:1892
 msgid "Torrent _info"
 msgstr "_Torrent 資訊"
 
-#: bittorrent.py:1741
-msgid "_Open directory"
-msgstr "開啟目錄(_O)"
-
-#: bittorrent.py:1745
+#: bittorrent.py:1900
 msgid "_File list"
 msgstr "檔案清單(_F)"
 
-#: bittorrent.py:1747
+#: bittorrent.py:1902
 msgid "_Peer list"
 msgstr "對等點清單(_P)"
 
-#: bittorrent.py:1757
+#: bittorrent.py:1912
 msgid "_Change location"
 msgstr "變更位置(_C)"
 
-#: bittorrent.py:1760
+#: bittorrent.py:1915
 msgid "_Seed indefinitely"
 msgstr "無限期作種(_S)"
 
-#: bittorrent.py:1780
+#: bittorrent.py:1935
 msgid "Re_start"
 msgstr "續傳(_S)"
 
-#: bittorrent.py:1791
+#: bittorrent.py:1946
 msgid "_Finish"
 msgstr "完成(_F)"
 
-#: bittorrent.py:1792
+#: bittorrent.py:1947
 msgid "_Remove"
 msgstr "移除(_R)"
 
-#: bittorrent.py:1799
+#: bittorrent.py:1954
 msgid "_Abort"
 msgstr "中止(_A)"
 
-#: bittorrent.py:1880
+#: bittorrent.py:2035
 #, python-format
 msgid "Are you sure you want to remove \"%s\"?"
 msgstr "確定要移除“%s”？"
 
-#: bittorrent.py:1883
+#: bittorrent.py:2038
 #, python-format
 msgid "Your share ratio for this torrent is %d%%. "
 msgstr "這個 torrent 的分享率是 %d%% 。"
 
-#: bittorrent.py:1885
+#: bittorrent.py:2040
 #, python-format
 msgid "You have uploaded %s to this torrent. "
 msgstr "您已上傳 %s 到這個 torrent 。"
 
-#: bittorrent.py:1888
+#: bittorrent.py:2043
 msgid "Remove this torrent?"
 msgstr "是否移除這個 torrent?"
 
-#: bittorrent.py:1910
+#: bittorrent.py:2065
 msgid "Finished"
 msgstr "已完成"
 
-#: bittorrent.py:1911
+#: bittorrent.py:2066
 msgid "drag into list to seed"
 msgstr "拖曳到作種清單"
 
-#: bittorrent.py:1914
+#: bittorrent.py:2069
 msgid "Failed"
 msgstr "失敗"
 
-#: bittorrent.py:1915
+#: bittorrent.py:2070
 msgid "drag into list to resume"
 msgstr "拖曳到繼續清單"
 
-#: bittorrent.py:1974
+#: bittorrent.py:2129
 msgid "Waiting"
 msgstr "等待中"
 
-#: bittorrent.py:2028
+#: bittorrent.py:2183
 msgid "Running"
 msgstr "執行中"
 
-#: bittorrent.py:2053
+#: bittorrent.py:2208
 #, python-format
 msgid "Current up: %s"
 msgstr "目前上傳: %s"
 
-#: bittorrent.py:2054
+#: bittorrent.py:2209
 #, python-format
 msgid "Current down: %s"
 msgstr "目前下載: %s"
 
-#: bittorrent.py:2060
+#: bittorrent.py:2215
 #, python-format
 msgid "Previous up: %s"
 msgstr "上次上傳: %s"
 
-#: bittorrent.py:2061
+#: bittorrent.py:2216
 #, python-format
 msgid "Previous down: %s"
 msgstr "上次下載: %s"
 
-#: bittorrent.py:2067
+#: bittorrent.py:2222
 #, python-format
 msgid "Share ratio: %0.02f%%"
 msgstr "分享率: %0.02f%%"
 
-#: bittorrent.py:2070
+#: bittorrent.py:2225
 #, python-format
 msgid "%s peers, %s seeds. Totals from tracker: %s"
 msgstr "%s 個對等點，%s 個種子，總共出自追蹤程式：%s"
 
-#: bittorrent.py:2074
+#: bittorrent.py:2229
 #, python-format
 msgid "Distributed copies: %d; Next: %s"
 msgstr "已流通檔案總數 %d 個；下個：%s"
 
-#: bittorrent.py:2077
+#: bittorrent.py:2232
 #, python-format
 msgid "Pieces: %d total, %d complete, %d partial, %d active (%d empty)"
 msgstr "片段：共 %d 段，完成 %d 段，未完成 %d 段，%d 段操作中 (%d 段空白)"
 
-#: bittorrent.py:2081
+#: bittorrent.py:2236
 #, python-format
 msgid "%d bad pieces + %s in discarded requests"
 msgstr "%d 段壞片段 + %s 屬於丟棄要求"
 
-#: bittorrent.py:2171
+#: bittorrent.py:2326
 #, python-format
 msgid "%.1f%% done, %s remaining"
 msgstr "完成 %.1f%%，剩餘 %s"
 
-#: bittorrent.py:2179
+#: bittorrent.py:2334
 msgid "Download rate"
 msgstr "下載速率"
 
-#: bittorrent.py:2181
+#: bittorrent.py:2336
 msgid "Upload rate"
 msgstr "上傳速率"
 
-#: bittorrent.py:2196
+#: bittorrent.py:2351
 msgid "NA"
 msgstr "不適用"
 
-#: bittorrent.py:2620
+#: bittorrent.py:2792
 #, python-format
 msgid "%s started"
 msgstr "%s 已開始"
 
-#: bittorrent.py:2633
+#: bittorrent.py:2805
 msgid "_Open torrent file"
 msgstr "開啟 t_orrent 檔案"
 
-#: bittorrent.py:2634
+#: bittorrent.py:2806
 msgid "Open torrent _URL"
 msgstr "開啟 torrent _URL"
 
-#: bittorrent.py:2635
+#: bittorrent.py:2807
 msgid "Make _new torrent"
 msgstr "製作新的 torre_nt"
 
-#: bittorrent.py:2638
+#: bittorrent.py:2810
 msgid "_Pause/Play"
 msgstr "暫停/開始(_P)"
 
-#: bittorrent.py:2640
+#: bittorrent.py:2812
 msgid "_Quit"
 msgstr "結束(_Q)"
 
-#: bittorrent.py:2642
+#: bittorrent.py:2814
 msgid "Show/Hide _finished torrents"
 msgstr "顯示或隱藏完成的 _torrent"
 
-#: bittorrent.py:2644
+#: bittorrent.py:2816
 msgid "_Resize window to fit"
 msgstr "調整視窗尺寸(_R)"
 
-#: bittorrent.py:2646
+#: bittorrent.py:2818
 msgid "_Log"
 msgstr "紀錄(_L)"
 
-#: bittorrent.py:2649
+#: bittorrent.py:2821
 msgid "_Settings"
 msgstr "設定(_S)"
 
-#: bittorrent.py:2652 bittorrent.py:2668
+#: bittorrent.py:2824 bittorrent.py:2840
 msgid "_Help"
 msgstr "說明(_H)"
 
-#: bittorrent.py:2654
+#: bittorrent.py:2826
 msgid "_About"
 msgstr "關於(_A)"
 
-#: bittorrent.py:2655
+#: bittorrent.py:2827
 msgid "_Donate"
 msgstr "捐款(_D)"
 
-#: bittorrent.py:2659
+#: bittorrent.py:2831
 msgid "_File"
 msgstr "檔案(_F)"
 
-#: bittorrent.py:2664
+#: bittorrent.py:2836
 msgid "_View"
 msgstr "檢視(_V)"
 
-#: bittorrent.py:2705
+#: bittorrent.py:2876
 msgid "Search for torrents"
 msgstr "搜尋 torrent"
 
-#: bittorrent.py:2848
+#: bittorrent.py:3029
 msgid "(stopped)"
 msgstr "(已停止)"
 
-#: bittorrent.py:2860
+#: bittorrent.py:3041
 msgid "(multiple)"
 msgstr "(多個)"
 
-#: bittorrent.py:2987
+#: bittorrent.py:3169
 #, python-format
 msgid "Already downloading %s installer"
 msgstr "已經在下載 %s 的安裝程式"
 
-#: bittorrent.py:2991
+#: bittorrent.py:3173
 #, python-format
 msgid "Install new %s now?"
 msgstr "現在安裝新的 %s？"
 
-#: bittorrent.py:2992
+#: bittorrent.py:3174
 #, python-format
 msgid "Do you want to quit %s and install the new version, %s, now?"
 msgstr "您想現在結束 %s 及安裝新的版本 (%s) 嗎？"
 
-#: bittorrent.py:3008
+#: bittorrent.py:3190
 #, python-format
 msgid ""
 "%s help is at \n"
@@ -767,140 +813,116 @@ msgstr ""
 "%s 的說明是在 %s\n"
 "您是否立即瀏覽該處？"
 
-#: bittorrent.py:3011
+#: bittorrent.py:3193
 msgid "Visit help web page?"
 msgstr "是否瀏覽說明網頁？"
 
-#: bittorrent.py:3048
+#: bittorrent.py:3230
 msgid "There is one finished torrent in the list. "
 msgstr "清單中有一個完成下載的 torrent。"
 
-#: bittorrent.py:3049
+#: bittorrent.py:3231
 msgid "Do you want to remove it?"
 msgstr "是否移除它？"
 
-#: bittorrent.py:3051
+#: bittorrent.py:3233
 #, python-format
 msgid "There are %d finished torrents in the list. "
 msgstr "清單中有 %d 個完成下載的 torrent。"
 
-#: bittorrent.py:3052
+#: bittorrent.py:3234
 msgid "Do you want to remove all of them?"
 msgstr "是否全部移除？"
 
-#: bittorrent.py:3054
+#: bittorrent.py:3236
 msgid "Remove all finished torrents?"
 msgstr "是否移除所有已經完成的 torrent？"
 
-#: bittorrent.py:3062
+#: bittorrent.py:3244
 msgid "No finished torrents"
 msgstr "未有任何完成下載的 torrent"
 
-#: bittorrent.py:3063
+#: bittorrent.py:3245
 msgid "There are no finished torrents to remove."
 msgstr "未有任何完成下載的 torrent 可以移除。"
 
-#: bittorrent.py:3119
+#: bittorrent.py:3302
 msgid "Open torrent:"
 msgstr "開啟 torrent："
 
-#: bittorrent.py:3150
+#: bittorrent.py:3333
 msgid "Change save location for "
 msgstr "變更存檔位置"
 
-#: bittorrent.py:3177
+#: bittorrent.py:3360
 msgid "File exists!"
 msgstr "檔案已存在！"
 
-#: bittorrent.py:3178
+#: bittorrent.py:3361
 #, python-format
 msgid "\"%s\" already exists. Do you want to choose a different file name?"
 msgstr "“%s” 已經存在。是否選擇另一個檔案名稱？"
 
-#: bittorrent.py:3197
+#: bittorrent.py:3380
 msgid "Save location for "
 msgstr "存檔位置"
 
-#: bittorrent.py:3215
+#: bittorrent.py:3398
 msgid "Directory exists!"
 msgstr "目錄已經存在！"
 
-#: bittorrent.py:3216
+#: bittorrent.py:3399
 #, python-format
 msgid ""
 "\"%s\" already exists. Do you intend to create an identical, duplicate "
 "directory inside the existing directory?"
 msgstr "“%s” 已經存在。您是否要在現有目錄中開啟一個一模一樣的目錄？"
 
-#: bittorrent.py:3339
+#: bittorrent.py:3522
 #, python-format
 msgid "(global message) : %s"
 msgstr "(全域訊息)：%s"
 
-#: bittorrent.py:3346
+#: bittorrent.py:3529
 #, python-format
 msgid "%s Error"
 msgstr "%s 錯誤"
 
-#: bittorrent.py:3352
+#: bittorrent.py:3535
 msgid "Multiple errors have occurred. Click OK to view the error log."
 msgstr "出現了多個錯誤。請按「確定」以檢視錯誤紀錄。"
 
-#: bittorrent.py:3508
+#: bittorrent.py:3691
 msgid "Stop running torrent?"
 msgstr "是否停止 torrent 的執行？"
 
-#: bittorrent.py:3509
+#: bittorrent.py:3692
 #, python-format
 msgid ""
 "You are about to start \"%s\". Do you want to stop the last running torrent "
 "as well?"
 msgstr "您即將開始下載“%s”。想停止最後執行的 torrent 嗎？"
 
-#: bittorrent.py:3520
+#: bittorrent.py:3703
 msgid "Have you donated?"
 msgstr "您已經捐款了嗎？"
 
-#: bittorrent.py:3521
+#: bittorrent.py:3704
 #, python-format
 msgid "Welcome to the new version of %s. Have you donated?"
 msgstr "歡迎使用新版本的 %s。您已經捐款了嗎？"
 
-#: bittorrent.py:3536
+#: bittorrent.py:3719
 msgid "Thanks!"
 msgstr "謝謝！"
 
-#: bittorrent.py:3537
+#: bittorrent.py:3720
 msgid ""
 "Thanks for donating! To donate again, select \"Donate\" from the \"Help\" "
 "menu."
 msgstr "感謝您捐款！如果希望再捐款，可以在「說明」選單上點選「捐款」。"
 
-#: bittorrent.py:3631 BitTorrent/defaultargs.py:198
-#: BitTorrent/defaultargs.py:200 bittorrent-console.py:295
-#: bittorrent-curses.py:429
-msgid "deprecated, do not use"
-msgstr "已過時，請勿使用"
-
-#: bittorrent.py:3650
-msgid "Failed to create or send command through existing control socket."
-msgstr "無法透過現有的控制 socket 建立或傳送指令。"
-
-#: bittorrent.py:3652 bittorrent.py:3681
-#, python-format
-msgid " Closing all %s windows may fix the problem."
-msgstr "關閉所有 %s 視窗可能可以解決問題。"
-
-#: bittorrent.py:3677
-#, python-format
-msgid "%s already running"
-msgstr "%s 已在執行"
-
-#: bittorrent.py:3679
-msgid "Failed to send command through existing control socket."
-msgstr "無法透過現有的控制 socket 傳送指令。"
-
-#: bittorrent.py:3703
+#: bittorrent.py:3822
 msgid "Could not start the TorrentQueue, see above for errors."
 msgstr "無法啟動 torrent 序列，請參閱上方的錯誤原因。"
 
@@ -925,215 +947,222 @@ msgstr "(目錄會變成批次 torrents)"
 msgid "Piece size:"
 msgstr "片段大小："
 
-#: maketorrent.py:130
+#: maketorrent.py:117
 msgid "Use _tracker:"
 msgstr "使用追蹤程式(_T):"
 
-#: maketorrent.py:160
+#: maketorrent.py:147
 msgid "Use _DHT:"
 msgstr "使用 _DHT:"
 
-#: maketorrent.py:166
+#: maketorrent.py:153
 msgid "Nodes (optional):"
 msgstr "節點(選擇性項目):"
 
-#: maketorrent.py:199
+#: maketorrent.py:186
 msgid "Comments:"
 msgstr "備註:"
 
-#: maketorrent.py:247
-msgid "Make"
-msgstr "製作"
+#: maketorrent.py:234
+msgid "_Make"
+msgstr ""
 
-#: maketorrent.py:394
+#: maketorrent.py:381
 msgid "_Host"
 msgstr "主機(_H)"
 
-#: maketorrent.py:401
+#: maketorrent.py:388
 msgid "_Port"
 msgstr "埠號(_P)"
 
-#: maketorrent.py:494
+#: maketorrent.py:481
 msgid "Building torrents..."
 msgstr "正在產生 torrent..."
 
-#: maketorrent.py:502
+#: maketorrent.py:489
 msgid "Checking file sizes..."
 msgstr "正在檢查檔案大小..."
 
-#: maketorrent.py:520
+#: maketorrent.py:507
 msgid "Start seeding"
 msgstr "開始作種"
 
-#: maketorrent.py:540
+#: maketorrent.py:527
 msgid "building "
 msgstr "正在製作"
 
-#: maketorrent.py:560
+#: maketorrent.py:547
 msgid "Done."
 msgstr "完成。"
 
-#: maketorrent.py:561
+#: maketorrent.py:548
 msgid "Done building torrents."
 msgstr "完成產生 torrent 檔案。"
 
-#: maketorrent.py:569
+#: maketorrent.py:556
 msgid "Error!"
 msgstr "錯誤！"
 
-#: maketorrent.py:570
+#: maketorrent.py:557
 msgid "Error building torrents: "
 msgstr "產生 torrent 檔時發生錯誤:"
 
-#: BitTorrent/GUI.py:212
+#: BitTorrent/GUI.py:21
+#, python-format
+msgid "GTK %s or newer required"
+msgstr ""
+
+#: BitTorrent/GUI.py:202
 #, python-format
 msgid "%d days"
 msgstr "%d 天"
 
-#: BitTorrent/GUI.py:214
+#: BitTorrent/GUI.py:204
 #, python-format
 msgid "1 day %d hours"
 msgstr "1 天 %d 小時"
 
-#: BitTorrent/GUI.py:216
+#: BitTorrent/GUI.py:206
 #, python-format
 msgid "%d:%02d hours"
 msgstr "%d:%02d 小時"
 
-#: BitTorrent/GUI.py:218
+#: BitTorrent/GUI.py:208
 #, python-format
 msgid "%d:%02d minutes"
 msgstr "%d:%02d 分鐘"
 
-#: BitTorrent/GUI.py:220
+#: BitTorrent/GUI.py:210
 #, python-format
 msgid "%d seconds"
 msgstr "%d 秒"
 
-#: BitTorrent/GUI.py:222
+#: BitTorrent/GUI.py:212
 msgid "0 seconds"
 msgstr "0 秒"
 
-#: BitTorrent/GUI.py:307
+#: BitTorrent/GUI.py:290
 #, python-format
 msgid "%s Help"
 msgstr "%s 說明文件"
 
-#: BitTorrent/GUI.py:314
+#: BitTorrent/GUI.py:297
 msgid "Frequently Asked Questions:"
 msgstr "常見問答集:"
 
-#: BitTorrent/GUI.py:319
+#: BitTorrent/GUI.py:302
 msgid "Go"
 msgstr "前往"
 
-#: BitTorrent/GUI.py:553 BitTorrent/GUI.py:611
+#: BitTorrent/GUI.py:459 BitTorrent/GUI.py:513
 msgid "Choose an existing folder..."
 msgstr "選擇現有的資料夾..."
 
-#: BitTorrent/GUI.py:563
+#: BitTorrent/GUI.py:469
 msgid "All Files"
 msgstr "所有檔案"
 
-#: BitTorrent/GUI.py:568
+#: BitTorrent/GUI.py:474
 msgid "Torrents"
 msgstr "Torrents"
 
-#: BitTorrent/GUI.py:608
+#: BitTorrent/GUI.py:510
 msgid "Create a new folder..."
 msgstr "建立新資料夾..."
 
-#: BitTorrent/GUI.py:677
+#: BitTorrent/GUI.py:579
 msgid "Select a file"
 msgstr "選擇檔案"
 
-#: BitTorrent/GUI.py:678
+#: BitTorrent/GUI.py:580
 msgid "Select a folder"
 msgstr "選擇資料夾"
 
-#: BitTorrent/TorrentQueue.py:111
+#: BitTorrent/TorrentQueue.py:118
 msgid "Could not load saved state: "
 msgstr "無法載入已儲存的狀態: "
 
-#: BitTorrent/TorrentQueue.py:203
+#: BitTorrent/TorrentQueue.py:210
 msgid "Could not save UI state: "
 msgstr "無法儲存圖形介面狀態:"
 
-#: BitTorrent/TorrentQueue.py:213 BitTorrent/TorrentQueue.py:215
-#: BitTorrent/TorrentQueue.py:294 BitTorrent/TorrentQueue.py:297
-#: BitTorrent/TorrentQueue.py:307 BitTorrent/TorrentQueue.py:319
-#: BitTorrent/TorrentQueue.py:336
+#: BitTorrent/TorrentQueue.py:220 BitTorrent/TorrentQueue.py:222
+#: BitTorrent/TorrentQueue.py:305 BitTorrent/TorrentQueue.py:308
+#: BitTorrent/TorrentQueue.py:318 BitTorrent/TorrentQueue.py:330
+#: BitTorrent/TorrentQueue.py:347
 msgid "Invalid state file contents"
 msgstr "狀態檔案內容無效"
 
-#: BitTorrent/TorrentQueue.py:228
-msgid "Error reading file "
-msgstr "讀取檔案時發生錯誤"
+#: BitTorrent/TorrentQueue.py:235
+#, python-format
+msgid "Error reading file \"%s\"."
+msgstr ""
 
-#: BitTorrent/TorrentQueue.py:230
+#: BitTorrent/TorrentQueue.py:237
 msgid "cannot restore state completely"
 msgstr "無法完全回復狀態"
 
-#: BitTorrent/TorrentQueue.py:233
+#: BitTorrent/TorrentQueue.py:240
 msgid "Invalid state file (duplicate entry)"
 msgstr "狀態檔案無效 (出現重複項目)"
 
-#: BitTorrent/TorrentQueue.py:239 BitTorrent/TorrentQueue.py:244
-msgid "Corrupt data in "
-msgstr "損壞的資料在"
+#: BitTorrent/TorrentQueue.py:247 BitTorrent/TorrentQueue.py:253
+#, python-format
+msgid "Corrupt data in \"%s\", cannot restore torrent."
+msgstr ""
 
-#: BitTorrent/TorrentQueue.py:240 BitTorrent/TorrentQueue.py:245
-msgid " , cannot restore torrent ("
-msgstr "，無法回復 torrent("
+#: BitTorrent/TorrentQueue.py:254
+msgid "(infohash mismatch)"
+msgstr ""
 
-#: BitTorrent/TorrentQueue.py:265
+#: BitTorrent/TorrentQueue.py:272
 msgid "Invalid state file (bad entry)"
 msgstr "狀態檔案無效 (項目錯誤)"
 
-#: BitTorrent/TorrentQueue.py:284
+#: BitTorrent/TorrentQueue.py:295
 msgid "Bad UI state file"
 msgstr "圖形介面狀態檔案損毀"
 
-#: BitTorrent/TorrentQueue.py:288
+#: BitTorrent/TorrentQueue.py:299
 msgid "Bad UI state file version"
 msgstr "圖形介面狀態檔案的版本無效"
 
-#: BitTorrent/TorrentQueue.py:290
+#: BitTorrent/TorrentQueue.py:301
 msgid "Unsupported UI state file version (from newer client version?)"
 msgstr "不支援此圖形介面狀態檔案的版本(來自新的程式版本?)"
 
-#: BitTorrent/TorrentQueue.py:477
+#: BitTorrent/TorrentQueue.py:488
 #, python-format
 msgid "Could not delete cached %s file:"
 msgstr "無法刪除快取記憶中的 %s 檔案:"
 
-#: BitTorrent/TorrentQueue.py:503
+#: BitTorrent/TorrentQueue.py:515
 #, python-format
 msgid "This is not a valid torrent file. (%s)"
 msgstr "這個 torrent 檔案無效。(%s)"
 
-#: BitTorrent/TorrentQueue.py:511
+#: BitTorrent/TorrentQueue.py:523
 msgid "This torrent (or one with the same contents) is already running."
 msgstr "這個 (或者另一個同樣內容的) torrent 檔案已經在執行中。"
 
-#: BitTorrent/TorrentQueue.py:515
+#: BitTorrent/TorrentQueue.py:527
 msgid "This torrent (or one with the same contents) is already waiting to run."
 msgstr "這個 (或者另一個同樣內容的) torrent 檔已經準備好可供執行。"
 
-#: BitTorrent/TorrentQueue.py:522
+#: BitTorrent/TorrentQueue.py:534
 #, python-format
 msgid "Torrent in unknown state %d"
 msgstr "Torrent 在未知狀態 %d"
 
-#: BitTorrent/TorrentQueue.py:539
+#: BitTorrent/TorrentQueue.py:551
 msgid "Could not write file "
 msgstr "無法寫入檔案"
 
-#: BitTorrent/TorrentQueue.py:541
+#: BitTorrent/TorrentQueue.py:553
 msgid "torrent will not be restarted correctly on client restart"
 msgstr "用戶端重新啟動後，torrent 也不會正確地重新啟動"
 
-#: BitTorrent/TorrentQueue.py:644
+#: BitTorrent/TorrentQueue.py:656
 #, python-format
 msgid ""
 "Can't run more than %d torrents simultaneously. For more info see the FAQ at "
@@ -1141,7 +1170,7 @@ msgid ""
 msgstr ""
 "不可以同時執行多於 %d 個 torrent。如果需要額外資訊，請閱讀 %s 的常見問答集。"
 
-#: BitTorrent/TorrentQueue.py:765
+#: BitTorrent/TorrentQueue.py:777
 msgid ""
 "Not starting torrent as there are other torrents waiting to run, and this "
 "one already meets the settings for when to stop seeding."
@@ -1149,7 +1178,7 @@ msgstr ""
 "沒有開始 torrent，因為另外的 torrent 正在等待執行，及這個 torrent 已經符合停"
 "止作種的條件。"
 
-#: BitTorrent/TorrentQueue.py:772
+#: BitTorrent/TorrentQueue.py:784
 msgid ""
 "Not starting torrent as it already meets the settings for when to stop "
 "seeding the last completed torrent."
@@ -1165,27 +1194,27 @@ msgstr "不能由 %s 取得最新版本"
 msgid "Could not parse new version string from %s"
 msgstr "未能從 %s 分析最新版本字串"
 
-#: BitTorrent/NewVersion.py:213
+#: BitTorrent/NewVersion.py:227
 #, python-format
 msgid ""
 "Could not find a suitable temporary location to save the %s %s installer."
 msgstr "未能找到一個適合的臨時位置來儲存 %s %s 安裝程式"
 
-#: BitTorrent/NewVersion.py:232
+#: BitTorrent/NewVersion.py:246
 #, python-format
 msgid "No torrent file available for %s %s installer."
 msgstr "沒有 torrent 檔案可用於 %s %s 安裝程式。"
 
-#: BitTorrent/NewVersion.py:242
+#: BitTorrent/NewVersion.py:256
 #, python-format
 msgid "%s %s installer appears to be corrupt or missing."
 msgstr "%s %s 安裝程式似乎損壞或不存在"
 
-#: BitTorrent/NewVersion.py:249
+#: BitTorrent/NewVersion.py:263
 msgid "Cannot launch installer on this OS"
 msgstr "不能在這作業系統下啟動安裝程式"
 
-#: BitTorrent/defaultargs.py:34
+#: BitTorrent/defaultargs.py:41
 msgid ""
 "directory under which variable data such as fastresume information and GUI "
 "state is saved. Defaults to subdirectory 'data' of the bittorrent config "
@@ -1194,7 +1223,7 @@ msgstr ""
 "用來儲存可變資料 (例如快速續傳資料或介面狀態) 的目錄。預設為 bittorrent 設定"
 "檔目錄下的‘data’子目錄。"
 
-#: BitTorrent/defaultargs.py:38
+#: BitTorrent/defaultargs.py:45
 msgid ""
 "character encoding used on the local filesystem. If left empty, "
 "autodetected. Autodetection doesn't work under python versions older than 2.3"
@@ -1202,69 +1231,69 @@ msgstr ""
 "這裡指定本地檔案系統所用的文字編碼，如果不填則會自動偵測。但 python 2.3 之前"
 "的版本不能使用自動偵測功能。"
 
-#: BitTorrent/defaultargs.py:42
+#: BitTorrent/defaultargs.py:49
 msgid "ISO Language code to use"
 msgstr "要使用的 ISO 語言代碼"
 
-#: BitTorrent/defaultargs.py:47
+#: BitTorrent/defaultargs.py:54
 msgid ""
 "ip to report to the tracker (has no effect unless you are on the same local "
 "network as the tracker)"
 msgstr "報告給追蹤程式的 IP 地址 (除非與追蹤程式在同一本地網路，否則無效)"
 
-#: BitTorrent/defaultargs.py:50
+#: BitTorrent/defaultargs.py:57
 msgid ""
 "world-visible port number if it's different from the one the client listens "
 "on locally"
 msgstr "別人所見的埠號 (如果這個埠號和程式實際上所開啟的不同)"
 
-#: BitTorrent/defaultargs.py:53
+#: BitTorrent/defaultargs.py:60
 msgid "minimum port to listen on, counts up if unavailable"
 msgstr "要開啟的埠號數值下限，當不可使用時會遞增"
 
-#: BitTorrent/defaultargs.py:55
+#: BitTorrent/defaultargs.py:62
 msgid "maximum port to listen on"
 msgstr "會開啟的埠號數值上限"
 
-#: BitTorrent/defaultargs.py:57 BitTorrent/track.py:44
+#: BitTorrent/defaultargs.py:64 BitTorrent/track.py:44
 msgid "ip to bind to locally"
 msgstr "與本地端連結的 IP"
 
-#: BitTorrent/defaultargs.py:59
+#: BitTorrent/defaultargs.py:66
 msgid "seconds between updates of displayed information"
 msgstr "顯示更新資訊的間隔秒數"
 
-#: BitTorrent/defaultargs.py:61
+#: BitTorrent/defaultargs.py:68
 msgid "minutes to wait between requesting more peers"
 msgstr "等待請求更多對等點的分鐘數"
 
-#: BitTorrent/defaultargs.py:63
+#: BitTorrent/defaultargs.py:70
 msgid "minimum number of peers to not do rerequesting"
 msgstr "對等點的最少數目，低於此數值的話不會重新請求對等點"
 
-#: BitTorrent/defaultargs.py:65
+#: BitTorrent/defaultargs.py:72
 msgid "number of peers at which to stop initiating new connections"
 msgstr "對等點數目上限，高於此數值則不建立新連線"
 
-#: BitTorrent/defaultargs.py:67
+#: BitTorrent/defaultargs.py:74
 msgid ""
 "maximum number of connections to allow, after this new incoming connections "
 "will be immediately closed"
 msgstr "允許連線的數目上限，超過此限制會立即關閉所有新連線"
 
-#: BitTorrent/defaultargs.py:70
+#: BitTorrent/defaultargs.py:77
 msgid "whether to check hashes on disk"
 msgstr "是否檢查磁碟上的雜湊值"
 
-#: BitTorrent/defaultargs.py:72
+#: BitTorrent/defaultargs.py:79
 msgid "maximum kB/s to upload at, 0 means no limit"
 msgstr "上傳速度上限 (kB/s 為單位, 0 表示不設限)"
 
-#: BitTorrent/defaultargs.py:74
+#: BitTorrent/defaultargs.py:81
 msgid "the number of uploads to fill out to with extra optimistic unchokes"
 msgstr "使用額外最佳壅塞填滿上傳的數目"
 
-#: BitTorrent/defaultargs.py:76
+#: BitTorrent/defaultargs.py:83
 msgid ""
 "the maximum number of files in a multifile torrent to keep open at a time, 0 "
 "means no limit. Used to avoid running out of file descriptors."
@@ -1272,97 +1301,97 @@ msgstr ""
 "在處理一個包含多個檔案的 torrent 的時候，最多同時打開的檔案數目，0 表示沒有限"
 "制。使用本選項可以避免檔案描述字元用盡。"
 
-#: BitTorrent/defaultargs.py:79
+#: BitTorrent/defaultargs.py:86
 msgid ""
 "Initialize a trackerless client.  This must be enabled in order to download "
 "trackerless torrents."
 msgstr "啟動無追蹤程式的用戶端。本選項必須啟用才能下載沒有追蹤程式的 torrent。"
 
-#: BitTorrent/defaultargs.py:85
+#: BitTorrent/defaultargs.py:92
 msgid "number of seconds to pause between sending keepalives"
 msgstr "每隔多少秒送出保持連線的要求"
 
-#: BitTorrent/defaultargs.py:87
+#: BitTorrent/defaultargs.py:94
 msgid "how many bytes to query for per request."
 msgstr "每次要求讀取多少位元組。"
 
-#: BitTorrent/defaultargs.py:89
+#: BitTorrent/defaultargs.py:96
 msgid ""
 "maximum length prefix encoding you'll accept over the wire - larger values "
 "get the connection dropped."
 msgstr "將透過連線接受的字首編碼的最長長度 — 數值太大可能會中斷連線。"
 
-#: BitTorrent/defaultargs.py:92
+#: BitTorrent/defaultargs.py:99
 msgid ""
 "seconds to wait between closing sockets which nothing has been received on"
 msgstr "等多少秒鐘後仍沒有收到任何資料則關閉 socket"
 
-#: BitTorrent/defaultargs.py:95
+#: BitTorrent/defaultargs.py:102
 msgid "seconds to wait between checking if any connections have timed out"
 msgstr "每隔多少秒鐘檢查一次連線是否已經逾時"
 
-#: BitTorrent/defaultargs.py:97
+#: BitTorrent/defaultargs.py:104
 msgid ""
 "maximum length slice to send to peers, close connection if a larger request "
 "is received"
 msgstr "送到對方的檔案片段長度上限，如果收到較大的要求則關閉連線"
 
-#: BitTorrent/defaultargs.py:100
+#: BitTorrent/defaultargs.py:107
 msgid ""
 "maximum time interval over which to estimate the current upload and download "
 "rates"
 msgstr "評估目前上傳與下載速率的最大時間間隔"
 
-#: BitTorrent/defaultargs.py:102
+#: BitTorrent/defaultargs.py:109
 msgid "maximum time interval over which to estimate the current seed rate"
 msgstr "評估目前作種速率的最大時間間隔"
 
-#: BitTorrent/defaultargs.py:104
+#: BitTorrent/defaultargs.py:111
 msgid "maximum time to wait between retrying announces if they keep failing"
 msgstr "當發佈持續失敗時的最大重試時間"
 
-#: BitTorrent/defaultargs.py:106
+#: BitTorrent/defaultargs.py:113
 msgid ""
 "seconds to wait for data to come in over a connection before assuming it's "
 "semi-permanently choked"
 msgstr "等待假設半永久壅塞時，等待資料進入的秒數"
 
-#: BitTorrent/defaultargs.py:109
+#: BitTorrent/defaultargs.py:116
 msgid "number of downloads at which to switch from random to rarest first"
 msgstr "從隨機更換到最稀有者優先所需要的下載數目"
 
-#: BitTorrent/defaultargs.py:111
+#: BitTorrent/defaultargs.py:118
 msgid "how many bytes to write into network buffers at once."
 msgstr "每一次寫多少位元組到網路緩衝區。"
 
-#: BitTorrent/defaultargs.py:113
+#: BitTorrent/defaultargs.py:120
 msgid ""
 "refuse further connections from addresses with broken or intentionally "
 "hostile peers that send incorrect data"
 msgstr "如果對方因為軟體有錯誤或者帶惡意地送出錯誤資料，拒絕來自這類位址的連線"
 
-#: BitTorrent/defaultargs.py:116
+#: BitTorrent/defaultargs.py:123
 msgid "do not connect to several peers that have the same IP address"
 msgstr "不要連接到擁有來自相同 IP 地址的幾個對等點"
 
-#: BitTorrent/defaultargs.py:118
+#: BitTorrent/defaultargs.py:125
 msgid "if nonzero, set the TOS option for peer connections to this value"
 msgstr "如果不是零，則將對等點連接的 TOS 選項設置為這個值"
 
-#: BitTorrent/defaultargs.py:120
+#: BitTorrent/defaultargs.py:127
 msgid ""
 "enable workaround for a bug in BSD libc that makes file reads very slow."
 msgstr "避開 BSD libc 的一個問題，這問題會令讀取檔案時非常緩慢。"
 
-#: BitTorrent/defaultargs.py:122
+#: BitTorrent/defaultargs.py:129
 msgid "address of HTTP proxy to use for tracker connections"
 msgstr "追蹤程式連線所用的 HTTP 代理伺服器位址"
 
-#: BitTorrent/defaultargs.py:124 BitTorrent/track.py:48
+#: BitTorrent/defaultargs.py:131 BitTorrent/track.py:48
 msgid "close connections with RST and avoid the TCP TIME_WAIT state"
 msgstr "使用 RST 方式關閉連線，避免 TCP 連線進入 TIME_WAIT 狀態"
 
-#: BitTorrent/defaultargs.py:126 BitTorrent/track.py:111
+#: BitTorrent/defaultargs.py:133 BitTorrent/track.py:111
 msgid ""
 "Use Twisted network libraries for network connections. 1 means use twisted, "
 "0 means do not use twisted, -1 means autodetect, and prefer twisted"
@@ -1370,7 +1399,7 @@ msgstr ""
 "網路連線使用 Twisted 網路函式庫。1 表示使用，0 表示不使用，-1 表示自動偵測，"
 "並偏好使用該函式庫"
 
-#: BitTorrent/defaultargs.py:143
+#: BitTorrent/defaultargs.py:150
 msgid ""
 "file name (for single-file torrents) or directory name (for batch torrents) "
 "to save the torrent as, overriding the default name in the torrent. See also "
@@ -1379,23 +1408,23 @@ msgstr ""
 "另存 torrent 時使用的檔案名稱 (單檔案 torrent) 或目錄名稱 (批次 torrents)。請"
 "參閱 --save_in 選項，如果沒有指定，則會向用戶詢問儲存位置"
 
-#: BitTorrent/defaultargs.py:148
+#: BitTorrent/defaultargs.py:155
 msgid "display advanced user interface"
 msgstr "顯示進階使用者介面"
 
-#: BitTorrent/defaultargs.py:150
+#: BitTorrent/defaultargs.py:157
 msgid ""
 "the maximum number of minutes to seed a completed torrent before stopping "
 "seeding"
 msgstr "將一個已完成的 torrent 最多作種多少分鐘，然後停止"
 
-#: BitTorrent/defaultargs.py:153
+#: BitTorrent/defaultargs.py:160
 msgid ""
 "the minimum upload/download ratio, in percent, to achieve before stopping "
 "seeding. 0 means no limit."
 msgstr "停止作種之前，要達到指定的上傳/下載比例下限(百分比)。0 表示無限制。"
 
-#: BitTorrent/defaultargs.py:156
+#: BitTorrent/defaultargs.py:163
 msgid ""
 "the minimum upload/download ratio, in percent, to achieve before stopping "
 "seeding the last torrent. 0 means no limit."
@@ -1403,19 +1432,19 @@ msgstr ""
 "最後一個 torrent 停止作種之前，要達到指定的上傳/下載比例下限 (百分比)。0 表示"
 "無限制。"
 
-#: BitTorrent/defaultargs.py:159
+#: BitTorrent/defaultargs.py:166
 msgid "Seed each completed torrent indefinitely (until the user cancels it)"
 msgstr "將每個已完成的 torrent 永遠作種 (直至用戶取消)"
 
-#: BitTorrent/defaultargs.py:162
+#: BitTorrent/defaultargs.py:169
 msgid "Seed the last torrent indefinitely (until the user cancels it)"
 msgstr "將最後完成的 torrent 永遠作種 (直至用戶取消)"
 
-#: BitTorrent/defaultargs.py:165
+#: BitTorrent/defaultargs.py:172
 msgid "start downloader in paused state"
 msgstr "在暫停狀態下開始下載程式"
 
-#: BitTorrent/defaultargs.py:167
+#: BitTorrent/defaultargs.py:174
 msgid ""
 "specifies how the app should behave when the user manually tries to start "
 "another torrent: \"replace\" means always replace the running torrent with "
@@ -1426,7 +1455,11 @@ msgstr ""
 "torrent 更換執行中的 torrent，“add”表示和執行中的 torrent 一起運作，而“ask”則"
 "表示每次皆詢問用戶"
 
-#: BitTorrent/defaultargs.py:181
+#: BitTorrent/defaultargs.py:184
+msgid "Start BitTorrent minimized"
+msgstr ""
+
+#: BitTorrent/defaultargs.py:198
 msgid ""
 "file name (for single-file torrents) or directory name (for batch torrents) "
 "to save the torrent as, overriding the default name in the torrent. See also "
@@ -1435,7 +1468,7 @@ msgstr ""
 "另存 torrent 檔所用的檔案名稱 (單檔案 torrent) 或者目錄名稱 (批次 torrent)。"
 "請參閱 --save_in 選項。"
 
-#: BitTorrent/defaultargs.py:188 BitTorrent/defaultargs.py:208
+#: BitTorrent/defaultargs.py:205 BitTorrent/defaultargs.py:225
 msgid ""
 "the maximum number of uploads to allow at once. -1 means a (hopefully) "
 "reasonable number based on --max_upload_rate. The automatic values are only "
@@ -1444,7 +1477,7 @@ msgstr ""
 "能同時上傳的數目上限。-1 表示依據 --max_upload_rate 估計合理數目。只有當每次"
 "執行一個 torrent 時自動偵測的數值才會有用。"
 
-#: BitTorrent/defaultargs.py:193
+#: BitTorrent/defaultargs.py:210
 msgid ""
 "local directory where the torrent contents will be saved. The file (single-"
 "file torrents) or directory (batch torrents) will be created under this "
@@ -1455,11 +1488,11 @@ msgstr ""
 "儲存在這個目錄之下，並使用 .torrent 檔案中指定的預設檔案或目錄名稱。請參閱 --"
 "save_as 選項。"
 
-#: BitTorrent/defaultargs.py:202
+#: BitTorrent/defaultargs.py:219
 msgid "whether or not to ask for a location to save downloaded files in"
 msgstr "是否詢問下載檔案時的儲存位置"
 
-#: BitTorrent/defaultargs.py:213
+#: BitTorrent/defaultargs.py:230
 msgid ""
 "local directory where the torrents will be saved, using a name determined by "
 "--saveas_style. If this is left empty each torrent will be saved under the "
@@ -1468,11 +1501,17 @@ msgstr ""
 "根據 --saveas_style 的名稱，決定儲存 torrents 檔案時的本地目錄。如果不填，則"
 "每個檔案都儲存在相應的 .torrent 檔的目錄之下"
 
-#: BitTorrent/defaultargs.py:218 BitTorrent/track.py:77
+#: BitTorrent/defaultargs.py:235 BitTorrent/track.py:77
 msgid "how often to rescan the torrent directory, in seconds"
 msgstr "每隔多少秒鐘掃描一次 torrent 目錄"
 
-#: BitTorrent/defaultargs.py:220
+#: BitTorrent/defaultargs.py:237
+msgid ""
+"wait this many seconds after noticing a torrent before starting it, to avoid "
+"race with tracker"
+msgstr ""
+
+#: BitTorrent/defaultargs.py:239
 msgid ""
 "How to name torrent downloads: 1: use name OF torrent file (minus ."
 "torrent);  2: use name encoded IN torrent file;  3: create a directory with "
@@ -1493,28 +1532,28 @@ msgstr ""
 "注意：方案 1 和 2 有可能在不發出警告的情況下覆蓋檔案，因此可能會存在一定的安"
 "全威脅。"
 
-#: BitTorrent/defaultargs.py:235
+#: BitTorrent/defaultargs.py:254
 msgid ""
 "whether to display the full path or the torrent contents for each torrent"
 msgstr "是否顯示每個 torrent 的完整路徑或者 torrent 內容"
 
-#: BitTorrent/defaultargs.py:242
+#: BitTorrent/defaultargs.py:261
 msgid "directory to look for .torrent files (semi-recursive)"
 msgstr "尋找 .torrent 檔案的目錄(半遞歸)"
 
-#: BitTorrent/defaultargs.py:247
+#: BitTorrent/defaultargs.py:266
 msgid "whether to display diagnostic info to stdout"
 msgstr "是否在標準輸出顯示診斷資訊"
 
-#: BitTorrent/defaultargs.py:252
+#: BitTorrent/defaultargs.py:271
 msgid "which power of two to set the piece size to"
 msgstr "將每個片段的大小設定為 2 的多少次方"
 
-#: BitTorrent/defaultargs.py:254
+#: BitTorrent/defaultargs.py:273
 msgid "default tracker name"
 msgstr "預設的追蹤程式名稱"
 
-#: BitTorrent/defaultargs.py:257
+#: BitTorrent/defaultargs.py:276
 msgid ""
 "if false then make a trackerless torrent, instead of announce URL, use "
 "reliable node in form of <ip>:<port> or an empty string to pull some nodes "
@@ -1619,7 +1658,7 @@ msgid "shutting down"
 msgstr "關閉中"
 
 #: bittorrent-console.py:247 bittorrent-curses.py:381
-#: BitTorrent/launchmanycore.py:232
+#: BitTorrent/launchmanycore.py:235
 msgid "Error reading config: "
 msgstr "讀取設定時發生錯誤: "
 
@@ -1764,7 +1803,7 @@ msgstr ""
 msgid "You may still use \"btdownloadheadless.py\" to download."
 msgstr "您仍然可以使用“btdownloadheadless.py”來下載。"
 
-#: launchmany-curses.py:58 BitTorrent/launchmanycore.py:142
+#: launchmany-curses.py:58 BitTorrent/launchmanycore.py:145
 msgid "connecting to peers"
 msgstr "連接到對等點中"
 
@@ -1776,10 +1815,6 @@ msgstr "估計 %d:%02d:%02d 後完成"
 #: launchmany-curses.py:141
 msgid "Size"
 msgstr "大小"
-
-#: launchmany-curses.py:141
-msgid "Download"
-msgstr "下載"
 
 #: launchmany-curses.py:141
 msgid "Upload"
@@ -1943,6 +1978,125 @@ msgstr ""
 "這個 .torrent 檔是用不恰當的工具製作的，最少有一個檔案或目錄名稱無法顯示。可"
 "是因為所有這種檔案大小都是 0，所以全部這類檔案都會略過。"
 
+#: BitTorrent/Encoder.py:169
+msgid "Can't start two separate instances of the same torrent"
+msgstr ""
+
+#: BitTorrent/GetTorrent.py:42 BitTorrent/GetTorrent.py:81
+#, python-format
+msgid "Could not read %s"
+msgstr "無法讀取 %s"
+
+#: BitTorrent/GetTorrent.py:49
+#, python-format
+msgid ""
+"Could not download or open \n"
+"%s\n"
+"Try using a web browser to download the torrent file."
+msgstr ""
+"無法下載或開啟\n"
+"%s\n"
+"請嘗試改用網頁瀏覽器下載 torrent 檔。"
+
+#: BitTorrent/HTTPHandler.py:21
+msgid "Mon"
+msgstr "週一"
+
+#: BitTorrent/HTTPHandler.py:21
+msgid "Tue"
+msgstr "週二"
+
+#: BitTorrent/HTTPHandler.py:21
+msgid "Wed"
+msgstr "週三"
+
+#: BitTorrent/HTTPHandler.py:21
+msgid "Thu"
+msgstr "週四"
+
+#: BitTorrent/HTTPHandler.py:21
+msgid "Fri"
+msgstr "週五"
+
+#: BitTorrent/HTTPHandler.py:21
+msgid "Sat"
+msgstr "週六"
+
+#: BitTorrent/HTTPHandler.py:21
+msgid "Sun"
+msgstr "週日"
+
+#: BitTorrent/HTTPHandler.py:23
+msgid "Jan"
+msgstr "一月"
+
+#: BitTorrent/HTTPHandler.py:23
+msgid "Feb"
+msgstr "二月"
+
+#: BitTorrent/HTTPHandler.py:23
+msgid "Mar"
+msgstr "三月"
+
+#: BitTorrent/HTTPHandler.py:23
+msgid "Apr"
+msgstr "四月"
+
+#: BitTorrent/HTTPHandler.py:23
+msgid "May"
+msgstr "五月"
+
+#: BitTorrent/HTTPHandler.py:23
+msgid "Jun"
+msgstr "六月"
+
+#: BitTorrent/HTTPHandler.py:24
+msgid "Jul"
+msgstr "七月"
+
+#: BitTorrent/HTTPHandler.py:24
+msgid "Aug"
+msgstr "八月"
+
+#: BitTorrent/HTTPHandler.py:24
+msgid "Sep"
+msgstr "九月"
+
+#: BitTorrent/HTTPHandler.py:24
+msgid "Oct"
+msgstr "十月"
+
+#: BitTorrent/HTTPHandler.py:24
+msgid "Nov"
+msgstr "十一月"
+
+#: BitTorrent/HTTPHandler.py:24
+msgid "Dec"
+msgstr "十二月"
+
+#: BitTorrent/HTTPHandler.py:126
+#, python-format
+msgid "Compressed: %i  Uncompressed: %i\n"
+msgstr "壓縮後: %i  未壓縮: %i\n"
+
+#: BitTorrent/RawServer.py:322
+msgid "lost server socket"
+msgstr "失去伺服器 socket"
+
+#: BitTorrent/RawServer.py:338
+msgid "Error handling accepted connection: "
+msgstr "處理已接受的連線發生錯誤："
+
+#: BitTorrent/RawServer.py:423
+#, python-format
+msgid "Have to exit due to the TCP stack flaking out. Please see the FAQ at %s"
+msgstr "因為 TCP 堆叠耗盡，程式必須結束。請參閱 %s 的常見問答集"
+
+#: BitTorrent/RawServer_magic.py:32
+#, python-format
+msgid "Too late to switch RawServer backends, %s has already been used."
+msgstr ""
+
 #: BitTorrent/Rerequester.py:92
 #, python-format
 msgid "Tracker announce still not complete %d seconds after starting it"
@@ -1997,18 +2151,27 @@ msgid "Unsupported fastresume file format, maybe from another client version?"
 msgstr "無法支援這個用作快速續傳的檔案的格式，是否來自另一個程式版本的？"
 
 #: BitTorrent/Storage.py:238
-msgid "Another program appears to have moved, renamed, or deleted the file."
-msgstr "另一個程式可能移動或刪除了檔案，或者更改了檔名。"
+#, python-format
+msgid ""
+"Another program appears to have moved, renamed, or deleted the file, or %s "
+"may have crashed last time it was run."
+msgstr ""
 
-#: BitTorrent/Storage.py:240
-msgid "Another program appears to have modified the file."
-msgstr "另一個程式可能更改了檔案內容。"
+#: BitTorrent/Storage.py:241
+#, python-format
+msgid ""
+"Another program appears to have modified the file, or %s may have crashed "
+"last time it was run."
+msgstr ""
 
-#: BitTorrent/Storage.py:242
-msgid "Another program appears to have changed the file size."
-msgstr "另一個程式可能更改了檔案大小。"
+#: BitTorrent/Storage.py:244
+#, python-format
+msgid ""
+"Another program appears to have changed the file size, or %s may have "
+"crashed last time it was run."
+msgstr ""
 
-#: BitTorrent/Storage.py:255 BitTorrent/StorageWrapper.py:284
+#: BitTorrent/Storage.py:258 BitTorrent/StorageWrapper.py:284
 msgid "Couldn't read fastresume data: "
 msgstr "無法讀取用作快速續傳的資料："
 
@@ -2044,6 +2207,16 @@ msgstr "磁碟含有損壞的資料 - 是否有兩個 torrent 程式同時執行
 #: BitTorrent/StorageWrapper.py:404
 msgid "told file complete on start-up, but piece failed hash check"
 msgstr "該檔案報稱已經完成，但其中有片段的雜湊值有錯誤"
+
+#: BitTorrent/TrayIcon.py:21 BitTorrent/TrayIcon.py:49
+#, python-format
+msgid "Hide %s"
+msgstr ""
+
+#: BitTorrent/TrayIcon.py:23 BitTorrent/TrayIcon.py:51
+#, python-format
+msgid "Show %s"
+msgstr ""
 
 #: BitTorrent/bencode.py:73
 msgid "not a valid bencoded string"
@@ -2111,7 +2284,9 @@ msgstr "元資料有錯誤 - 路徑重複"
 msgid "bad metainfo - name used as bothfile and subdirectory name"
 msgstr "元資料有錯誤 - 名稱同時作為檔案和目錄名稱"
 
-#: BitTorrent/btformats.py:78
+#: BitTorrent/btformats.py:78 BitTorrent/btformats.py:89
+#: BitTorrent/btformats.py:91 BitTorrent/btformats.py:94
+#: BitTorrent/btformats.py:96
 msgid "bad metainfo - wrong object type"
 msgstr "元資料有錯誤 - 物件類型錯誤"
 
@@ -2119,57 +2294,202 @@ msgstr "元資料有錯誤 - 物件類型錯誤"
 msgid "bad metainfo - no announce URL string"
 msgstr ""
 
-#: BitTorrent/btformats.py:88
+#: BitTorrent/btformats.py:103
 msgid "non-text failure reason"
 msgstr "失敗原因不是一般文字"
 
-#: BitTorrent/btformats.py:92
+#: BitTorrent/btformats.py:107
 msgid "non-text warning message"
 msgstr "警告訊息不是一般文字"
 
-#: BitTorrent/btformats.py:97
+#: BitTorrent/btformats.py:112
 msgid "invalid entry in peer list1"
 msgstr "對等點列表 1 有無效的項目"
 
-#: BitTorrent/btformats.py:99
+#: BitTorrent/btformats.py:114
 msgid "invalid entry in peer list2"
 msgstr "對等點列表 2 有無效的項目"
 
-#: BitTorrent/btformats.py:102
+#: BitTorrent/btformats.py:117
 msgid "invalid entry in peer list3"
 msgstr "對等點列表 3 有無效的項目"
 
-#: BitTorrent/btformats.py:106
+#: BitTorrent/btformats.py:121
 msgid "invalid entry in peer list4"
 msgstr "對等點列表 4 有無效的項目"
 
-#: BitTorrent/btformats.py:108
+#: BitTorrent/btformats.py:123
 msgid "invalid peer list"
 msgstr "對等點列表無效"
 
-#: BitTorrent/btformats.py:111
+#: BitTorrent/btformats.py:126
 msgid "invalid announce interval"
 msgstr ""
 
-#: BitTorrent/btformats.py:114
+#: BitTorrent/btformats.py:129
 msgid "invalid min announce interval"
 msgstr ""
 
-#: BitTorrent/btformats.py:116
+#: BitTorrent/btformats.py:131
 msgid "invalid tracker id"
 msgstr "無效的追蹤程式 id"
 
-#: BitTorrent/btformats.py:119
+#: BitTorrent/btformats.py:134
 msgid "invalid peer count"
 msgstr "對等點總數無效"
 
-#: BitTorrent/btformats.py:122
+#: BitTorrent/btformats.py:137
 msgid "invalid seed count"
 msgstr "種子總數無效"
 
-#: BitTorrent/btformats.py:125
+#: BitTorrent/btformats.py:140
 msgid "invalid \"last\" entry"
 msgstr "「最後」項目無效"
+
+#: BitTorrent/configfile.py:71
+msgid "Could not permanently save options: "
+msgstr "不能永久儲存設定："
+
+#: BitTorrent/configfile.py:83
+#, python-format
+msgid "Error reading config file. Old config file stored in \"%s\""
+msgstr ""
+
+#: BitTorrent/configfile.py:128
+#, python-format
+msgid "Configuration option mismatch: '%s'"
+msgstr ""
+
+#: BitTorrent/configfile.py:130
+#, python-format
+msgid "You must quit %s and reinstall it. (%s)"
+msgstr ""
+
+#: BitTorrent/configfile.py:215
+#, python-format
+msgid "Could not find translation for language \"%s\"\n"
+msgstr ""
+
+#: BitTorrent/controlsocket.py:135 BitTorrent/controlsocket.py:186
+msgid "Could not create control socket: "
+msgstr "不能建立控制 socket："
+
+#: BitTorrent/controlsocket.py:166 BitTorrent/controlsocket.py:218
+msgid "Could not send command: "
+msgstr "不能傳送指令："
+
+#: BitTorrent/controlsocket.py:176
+msgid "Could not create control socket: already in use"
+msgstr "不能建立控制 socket：已經使用中"
+
+#: BitTorrent/controlsocket.py:181
+msgid "Could not remove old control socket filename:"
+msgstr "不能重新命名舊的控制 socket 檔名："
+
+#: BitTorrent/controlsocket.py:241
+msgid "Global mutex already created."
+msgstr ""
+
+#: BitTorrent/controlsocket.py:255
+msgid "Could not find an open port!"
+msgstr "找不到任何開啟的連接埠！"
+
+#: BitTorrent/controlsocket.py:264
+msgid "Could not create application data directory!"
+msgstr "無法建立存放程式資料的目錄！"
+
+#: BitTorrent/controlsocket.py:280
+msgid "Could not acquire global mutex lock for controlsocket file!"
+msgstr ""
+
+#: BitTorrent/controlsocket.py:290
+msgid "A previous instance of BT was not cleaned up properly. Continuing."
+msgstr "上一次執行 BT 後未清理殘餘檔案，會繼續。"
+
+#: BitTorrent/download.py:92
+msgid "maxport less than minport - no ports to check"
+msgstr "埠號的最大值小於最小值 - 不會檢查任何連接埠"
+
+#: BitTorrent/download.py:110
+#, python-format
+msgid "Could not open a listening port: %s."
+msgstr "無法開啟連接埠：%s。"
+
+#: BitTorrent/download.py:112
+#, python-format
+msgid "Could not open a listening port: %s. "
+msgstr "無法開啟連接埠：%s。"
+
+#: BitTorrent/download.py:114
+msgid "Check your port range settings."
+msgstr "請檢查有關埠號使用範圍的設定。"
+
+#: BitTorrent/download.py:210
+msgid "Initial startup"
+msgstr "最初起動"
+
+#: BitTorrent/download.py:263
+#, python-format
+msgid "Could not load fastresume data: %s."
+msgstr "無法載入快速續傳的資料：%s。"
+
+#: BitTorrent/download.py:264
+msgid "Will perform full hash check."
+msgstr "將會執行完整的雜湊值檢查。"
+
+#: BitTorrent/download.py:271
+#, python-format
+msgid "piece %d failed hash check, re-downloading it"
+msgstr "第 %d 段的雜湊值檢查失敗，必須重新下載"
+
+#: BitTorrent/download.py:352
+msgid ""
+"Attempt to download a trackerless torrent with trackerless client turned off."
+msgstr "嘗試下載沒有追蹤程式的 torrent，但程式本身未使用沒有追蹤程式的模式。"
+
+#: BitTorrent/download.py:391 BitTorrent/launchmanycore.py:142
+msgid "downloading"
+msgstr "下載中"
+
+#: BitTorrent/download.py:401
+msgid "download failed: "
+msgstr "下載失敗："
+
+#: BitTorrent/download.py:405
+msgid "IO Error: No space left on disk, or cannot create a file that large:"
+msgstr "I/O 錯誤：磁碟沒有空間，或者無法建立太大的檔案："
+
+#: BitTorrent/download.py:408
+msgid "killed by IO error: "
+msgstr "I/O 錯誤以致立即中止："
+
+#: BitTorrent/download.py:411
+msgid "killed by OS error: "
+msgstr "因作業系統錯誤而立即中止："
+
+#: BitTorrent/download.py:416
+msgid "killed by internal exception: "
+msgstr "因內部錯誤而立即中止："
+
+#: BitTorrent/download.py:421
+msgid "Additional error when closing down due to error: "
+msgstr "當關閉時出現額外的錯誤："
+
+#: BitTorrent/download.py:434
+msgid "Could not remove fastresume file after failure:"
+msgstr "發生錯誤後，無法移除快速續傳檔案："
+
+#: BitTorrent/download.py:451
+msgid "seeding"
+msgstr "作種中"
+
+#: BitTorrent/download.py:474
+msgid "Could not write fastresume data: "
+msgstr "無法寫入快速續傳資料："
+
+#: BitTorrent/download.py:484
+msgid "shut down"
+msgstr "關閉"
 
 #: BitTorrent/launchmanycore.py:65
 msgid "Could not set signal handler: "
@@ -2185,147 +2505,42 @@ msgstr "丢棄“%s”"
 msgid "added \"%s\""
 msgstr "加入“%s”"
 
-#: BitTorrent/launchmanycore.py:121
+#: BitTorrent/launchmanycore.py:124
 msgid "waiting for hash check"
 msgstr "等待檢查雜湊值"
 
-#: BitTorrent/launchmanycore.py:139 BitTorrent/download.py:395
-msgid "downloading"
-msgstr "下載中"
-
-#: BitTorrent/launchmanycore.py:234
+#: BitTorrent/launchmanycore.py:237
 msgid "Rereading config file"
 msgstr "重新讀入設定檔"
 
-#: BitTorrent/parsedir.py:34
-msgid "Could not read directory "
-msgstr "無法讀取目錄 "
-
-#: BitTorrent/parsedir.py:43
-msgid "Could not stat "
-msgstr "找不到目錄或檔案"
-
-#: BitTorrent/parsedir.py:74
-#, python-format
-msgid "removing %s (will re-add)"
-msgstr "暫時移除 %s (會重新加入)"
-
-#: BitTorrent/parsedir.py:84 BitTorrent/parsedir.py:98
-#, python-format
-msgid "**warning** %s is a duplicate torrent for %s"
-msgstr "**警告** %s 和 %s 是相同的 torrent"
-
-#: BitTorrent/parsedir.py:130
-#, python-format
-msgid "**warning** %s has errors"
-msgstr "**警告** %s 有錯誤"
-
-#: BitTorrent/parsedir.py:138
-msgid "... successful"
-msgstr "... 成功"
-
-#: BitTorrent/parsedir.py:145
-#, python-format
-msgid "removing %s"
-msgstr "移除 %s"
-
-#: BitTorrent/parsedir.py:149
-msgid "done checking"
-msgstr "完成檢查"
-
-#: BitTorrent/download.py:96
-msgid "maxport less than minport - no ports to check"
-msgstr "埠號的最大值小於最小值 - 不會檢查任何連接埠"
-
-#: BitTorrent/download.py:114
-#, python-format
-msgid "Could not open a listening port: %s."
-msgstr "無法開啟連接埠：%s。"
-
-#: BitTorrent/download.py:116
-#, python-format
-msgid "Could not open a listening port: %s. "
-msgstr "無法開啟連接埠：%s。"
-
-#: BitTorrent/download.py:118
-msgid "Check your port range settings."
-msgstr "請檢查有關埠號使用範圍的設定。"
-
-#: BitTorrent/download.py:214
-msgid "Initial startup"
-msgstr "最初起動"
-
-#: BitTorrent/download.py:267
-#, python-format
-msgid "Could not load fastresume data: %s."
-msgstr "無法載入快速續傳的資料：%s。"
-
-#: BitTorrent/download.py:268
-msgid "Will perform full hash check."
-msgstr "將會執行完整的雜湊值檢查。"
-
-#: BitTorrent/download.py:275
-#, python-format
-msgid "piece %d failed hash check, re-downloading it"
-msgstr "第 %d 段的雜湊值檢查失敗，必須重新下載"
-
-#: BitTorrent/download.py:356
+#: BitTorrent/makemetafile.py:60
 msgid ""
-"Attempt to download a trackerless torrent with trackerless client turned off."
-msgstr "嘗試下載沒有追蹤程式的 torrent，但程式本身未使用沒有追蹤程式的模式。"
+"You can't specify the name of the .torrent file when generating multiple "
+"torrents at once"
+msgstr "同時產生多個 torrent 檔的話不可以指定 .torrent 檔名"
 
-#: BitTorrent/download.py:405
-msgid "download failed: "
-msgstr "下載失敗："
-
-#: BitTorrent/download.py:409
-msgid "IO Error: No space left on disk, or cannot create a file that large:"
-msgstr "I/O 錯誤：磁碟沒有空間，或者無法建立太大的檔案："
-
-#: BitTorrent/download.py:412
-msgid "killed by IO error: "
-msgstr "I/O 錯誤以致立即中止："
-
-#: BitTorrent/download.py:415
-msgid "killed by OS error: "
-msgstr "因作業系統錯誤而立即中止："
-
-#: BitTorrent/download.py:420
-msgid "killed by internal exception: "
-msgstr "因內部錯誤而立即中止："
-
-#: BitTorrent/download.py:425
-msgid "Additional error when closing down due to error: "
-msgstr "當關閉時出現額外的錯誤："
-
-#: BitTorrent/download.py:438
-msgid "Could not remove fastresume file after failure:"
-msgstr "發生錯誤後，無法移除快速續傳檔案："
-
-#: BitTorrent/download.py:455
-msgid "seeding"
-msgstr "作種中"
-
-#: BitTorrent/download.py:478
-msgid "Could not write fastresume data: "
-msgstr "無法寫入快速續傳資料："
-
-#: BitTorrent/download.py:488
-msgid "shut down"
-msgstr "關閉"
-
-#: BitTorrent/RawServer_magic.py:32
+#: BitTorrent/makemetafile.py:75
 #, python-format
-msgid "Too late to switch RawServer backends, %s has already been used."
-msgstr ""
+msgid "Filesystem encoding \"%s\" is not supported in this version"
+msgstr "這個版本不支援檔案系統文字編碼“%s”"
 
-#: BitTorrent/Encoder.py:169
-msgid "Can't start two separate instances of the same torrent"
+#: BitTorrent/makemetafile.py:185
+#, python-format
+msgid ""
+"Could not convert file/directory name \"%s\" to utf-8 (%s). Either the "
+"assumed filesystem encoding \"%s\" is wrong or the filename contains illegal "
+"bytes."
 msgstr ""
+"無法將檔案或目錄名稱“%s”轉換為 UTF-8 (%s)。可能是檔案系統文字編碼被錯誤估計"
+"為“%s”，或者檔案名稱含有不合法的字元。"
 
-#: BitTorrent/configfile.py:70
-msgid "Could not permanently save options: "
-msgstr "不能永久儲存設定："
+#: BitTorrent/makemetafile.py:190
+#, python-format
+msgid ""
+"File/directory name \"%s\" contains reserved unicode values that do not "
+"correspond to characters."
+msgstr ""
+"檔案或目錄名稱“%s”含有 unicode 的保留字碼，這些字碼無法表示為任何字元。"
 
 #: BitTorrent/parseargs.py:26
 #, python-format
@@ -2397,6 +2612,42 @@ msgstr "參數過多 - 最多只接受 %d 個。"
 #, python-format
 msgid "wrong format of %s - %s"
 msgstr "%s 的格式不正確 - %s"
+
+#: BitTorrent/parsedir.py:34
+msgid "Could not read directory "
+msgstr "無法讀取目錄 "
+
+#: BitTorrent/parsedir.py:43
+msgid "Could not stat "
+msgstr "找不到目錄或檔案"
+
+#: BitTorrent/parsedir.py:74
+#, python-format
+msgid "removing %s (will re-add)"
+msgstr "暫時移除 %s (會重新加入)"
+
+#: BitTorrent/parsedir.py:84 BitTorrent/parsedir.py:98
+#, python-format
+msgid "**warning** %s is a duplicate torrent for %s"
+msgstr "**警告** %s 和 %s 是相同的 torrent"
+
+#: BitTorrent/parsedir.py:130
+#, python-format
+msgid "**warning** %s has errors"
+msgstr "**警告** %s 有錯誤"
+
+#: BitTorrent/parsedir.py:138
+msgid "... successful"
+msgstr "... 成功"
+
+#: BitTorrent/parsedir.py:145
+#, python-format
+msgid "removing %s"
+msgstr "移除 %s"
+
+#: BitTorrent/parsedir.py:149
+msgid "done checking"
+msgstr "完成檢查"
 
 #: BitTorrent/track.py:40
 msgid "Port to listen on."
@@ -2570,181 +2821,7 @@ msgstr "請在執行時不加任何選項，以顯示每個選項的解釋"
 msgid "# Shutting down: "
 msgstr "# 關閉中："
 
-#: BitTorrent/HTTPHandler.py:21
-msgid "Mon"
-msgstr "週一"
-
-#: BitTorrent/HTTPHandler.py:21
-msgid "Tue"
-msgstr "週二"
-
-#: BitTorrent/HTTPHandler.py:21
-msgid "Wed"
-msgstr "週三"
-
-#: BitTorrent/HTTPHandler.py:21
-msgid "Thu"
-msgstr "週四"
-
-#: BitTorrent/HTTPHandler.py:21
-msgid "Fri"
-msgstr "週五"
-
-#: BitTorrent/HTTPHandler.py:21
-msgid "Sat"
-msgstr "週六"
-
-#: BitTorrent/HTTPHandler.py:21
-msgid "Sun"
-msgstr "週日"
-
-#: BitTorrent/HTTPHandler.py:23
-msgid "Jan"
-msgstr "一月"
-
-#: BitTorrent/HTTPHandler.py:23
-msgid "Feb"
-msgstr "二月"
-
-#: BitTorrent/HTTPHandler.py:23
-msgid "Mar"
-msgstr "三月"
-
-#: BitTorrent/HTTPHandler.py:23
-msgid "Apr"
-msgstr "四月"
-
-#: BitTorrent/HTTPHandler.py:23
-msgid "May"
-msgstr "五月"
-
-#: BitTorrent/HTTPHandler.py:23
-msgid "Jun"
-msgstr "六月"
-
-#: BitTorrent/HTTPHandler.py:24
-msgid "Jul"
-msgstr "七月"
-
-#: BitTorrent/HTTPHandler.py:24
-msgid "Aug"
-msgstr "八月"
-
-#: BitTorrent/HTTPHandler.py:24
-msgid "Sep"
-msgstr "九月"
-
-#: BitTorrent/HTTPHandler.py:24
-msgid "Oct"
-msgstr "十月"
-
-#: BitTorrent/HTTPHandler.py:24
-msgid "Nov"
-msgstr "十一月"
-
-#: BitTorrent/HTTPHandler.py:24
-msgid "Dec"
-msgstr "十二月"
-
-#: BitTorrent/HTTPHandler.py:126
-#, python-format
-msgid "Compressed: %i  Uncompressed: %i\n"
-msgstr "壓縮後: %i  未壓縮: %i\n"
-
-#: BitTorrent/controlsocket.py:135 BitTorrent/controlsocket.py:186
-msgid "Could not create control socket: "
-msgstr "不能建立控制 socket："
-
-#: BitTorrent/controlsocket.py:166 BitTorrent/controlsocket.py:218
-msgid "Could not send command: "
-msgstr "不能傳送指令："
-
-#: BitTorrent/controlsocket.py:176
-msgid "Could not create control socket: already in use"
-msgstr "不能建立控制 socket：已經使用中"
-
-#: BitTorrent/controlsocket.py:181
-msgid "Could not remove old control socket filename:"
-msgstr "不能重新命名舊的控制 socket 檔名："
-
-#: BitTorrent/controlsocket.py:241
-msgid "Global mutex already created."
-msgstr ""
-
-#: BitTorrent/controlsocket.py:255
-msgid "Could not find an open port!"
-msgstr "找不到任何開啟的連接埠！"
-
-#: BitTorrent/controlsocket.py:264
-msgid "Could not create application data directory!"
-msgstr "無法建立存放程式資料的目錄！"
-
-#: BitTorrent/controlsocket.py:280
-msgid "Could not acquire global mutex lock for controlsocket file!"
-msgstr ""
-
-#: BitTorrent/controlsocket.py:290
-msgid "A previous instance of BT was not cleaned up properly. Continuing."
-msgstr "上一次執行 BT 後未清理殘餘檔案，會繼續。"
-
-#: BitTorrent/makemetafile.py:60
-msgid ""
-"You can't specify the name of the .torrent file when generating multiple "
-"torrents at once"
-msgstr "同時產生多個 torrent 檔的話不可以指定 .torrent 檔名"
-
-#: BitTorrent/makemetafile.py:75
-#, python-format
-msgid "Filesystem encoding \"%s\" is not supported in this version"
-msgstr "這個版本不支援檔案系統文字編碼“%s”"
-
-#: BitTorrent/makemetafile.py:185
-#, python-format
-msgid ""
-"Could not convert file/directory name \"%s\" to utf-8 (%s). Either the "
-"assumed filesystem encoding \"%s\" is wrong or the filename contains illegal "
-"bytes."
-msgstr ""
-"無法將檔案或目錄名稱“%s”轉換為 UTF-8 (%s)。可能是檔案系統文字編碼被錯誤估計"
-"為“%s”，或者檔案名稱含有不合法的字元。"
-
-#: BitTorrent/makemetafile.py:190
-#, python-format
-msgid ""
-"File/directory name \"%s\" contains reserved unicode values that do not "
-"correspond to characters."
-msgstr ""
-"檔案或目錄名稱“%s”含有 unicode 的保留字碼，這些字碼無法表示為任何字元。"
-
-#: BitTorrent/GetTorrent.py:42 BitTorrent/GetTorrent.py:81
-#, python-format
-msgid "Could not read %s"
-msgstr "無法讀取 %s"
-
-#: BitTorrent/GetTorrent.py:49
-#, python-format
-msgid ""
-"Could not download or open \n"
-"%s\n"
-"Try using a web browser to download the torrent file."
-msgstr ""
-"無法下載或開啟\n"
-"%s\n"
-"請嘗試改用網頁瀏覽器下載 torrent 檔。"
-
 #: BitTorrent/__init__.py:22
-msgid "Python 2.2.1 or newer required"
-msgstr "需要 Python 2.2.1 或以上版本"
-
-#: BitTorrent/RawServer.py:322
-msgid "lost server socket"
-msgstr "失去伺服器 socket"
-
-#: BitTorrent/RawServer.py:338
-msgid "Error handling accepted connection: "
-msgstr "處理已接受的連線發生錯誤："
-
-#: BitTorrent/RawServer.py:423
 #, python-format
-msgid "Have to exit due to the TCP stack flaking out. Please see the FAQ at %s"
-msgstr "因為 TCP 堆叠耗盡，程式必須結束。請參閱 %s 的常見問答集"
+msgid "Python %s or newer required"
+msgstr ""

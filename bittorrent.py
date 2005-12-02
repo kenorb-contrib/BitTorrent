@@ -18,51 +18,31 @@ from BitTorrent.platform import install_translation
 install_translation()
 
 import sys
-
-assert sys.version_info >= (2, 3), _("Install Python 2.3 or greater")
-
 import itertools
 import math
 import os
 import threading
 import datetime
 import random
-import gtk
-import pango
-import gobject
-import webbrowser
 import atexit
 
-assert gtk.pygtk_version >= (2, 4), _("PyGTK 2.4 or newer required")
+assert sys.version_info >= (2, 3), _("Install Python %s or greater") % '2.3'
 
-from BitTorrent import HELP_URL, DONATE_URL, SEARCH_URL, version, languages, branch
-from BitTorrent import zurllib
+from BitTorrent import BTFailure, INFO, WARNING, ERROR, CRITICAL, app_name
+
 from BitTorrent import configfile
-from BitTorrent.parseargs import makeHelp
-from BitTorrent.defaultargs import get_defaults
-from BitTorrent import TorrentQueue
-from BitTorrent.TorrentQueue import RUNNING, RUN_QUEUED, QUEUED, KNOWN, ASKING_LOCATION
-from BitTorrent.controlsocket import ControlSocket
-from BitTorrent import BTFailure, INFO, WARNING, ERROR, CRITICAL
-from BitTorrent.prefs import Preferences
-from BitTorrent import LaunchPath
-from BitTorrent import Desktop
-from BitTorrent import ClientIdentifier
 from BitTorrent import GetTorrent
-from BitTorrent import NewVersion
-from BitTorrent.platform import doc_root, spawn, path_wrap, os_version, is_frozen_exe
-from BitTorrent.GUI import *
+
+from BitTorrent.defaultargs import get_defaults
+from BitTorrent.controlsocket import ControlSocket
+from BitTorrent.prefs import Preferences
+from BitTorrent.platform import doc_root, spawn, path_wrap, os_version, is_frozen_exe, get_startup_dir, create_shortcut
 
 defaults = get_defaults('bittorrent')
 defaults.extend((('donated' , '', ''), # the version that the user last donated for
                  ('notified', '', ''), # the version that the user was last notified of
                  ))
 
-NAG_FREQUENCY = 3
-PORT_RANGE = 5
-
-defconfig = dict([(name, value) for (name, value, doc) in defaults])
-del name, value, doc
 
 ui_options = [
     'max_upload_rate'       ,
@@ -79,7 +59,15 @@ ui_options = [
     'ip'                    ,
     'start_torrent_behavior',
     ]
+
+if os.name == 'nt':
+    ui_options.extend( [
+        'launch_on_startup'     ,
+        'minimize_to_tray'      ,
+        ])
+
 advanced_ui_options_index = len(ui_options)
+
 ui_options.extend([
     'min_uploads'     ,
     'max_uploads'     ,
@@ -100,7 +88,127 @@ if is_frozen_exe:
         # turn on progress bar hack by default for Win XP 
         defproghack = 1
     defaults.extend((('progressbar_hack' , defproghack, ''),)) 
-                     
+
+
+NAG_FREQUENCY = 3
+PORT_RANGE = 5
+
+defconfig = dict([(name, value) for (name, value, doc) in defaults])
+del name, value, doc
+
+def btgui_exit(controlsocket):
+    if sys.platform.startswith('win'):
+        controlsocket.close_sic_socket()
+
+if __name__ == '__main__':
+
+    try:
+        config, args = configfile.parse_configuration_and_args(defaults,
+                                        'bittorrent', sys.argv[1:], 0, None)
+    except BTFailure, e:
+        print str(e)
+        sys.exit(1)
+
+    config = Preferences().initWithDict(config)
+    advanced_ui = config['advanced']
+
+    newtorrents = args
+    for opt in ('responsefile', 'url'):
+        if config[opt]:
+            print '"--%s"' % opt, _("deprecated, do not use")
+            newtorrents.append(config[opt])
+    
+    controlsocket = ControlSocket(config)
+
+    got_control_socket = True
+    try:
+        controlsocket.create_socket()
+    except BTFailure:
+        got_control_socket = False
+
+        try:
+            # windows needs to discover which socket to use, since it could be different
+            # for different users. errors should be treated just like no-op failures
+            if os.name == 'nt':
+                controlsocket.discover_sic_socket()
+                
+            controlsocket.send_command('no-op')
+        except BTFailure:
+            sys.stderr.write(_("Failed to create or send command "
+                               "through existing control socket.") + 
+                             _(" Closing all %s windows may fix the problem.")
+                             % app_name)
+            sys.exit(1)
+
+    # make sure we clean up the controlsocket when we close
+    atexit.register(btgui_exit, controlsocket)
+
+    datas = []
+    errors = []
+    if newtorrents:
+        for arg in newtorrents:
+            newdata, newerrors = GetTorrent.get_quietly(arg)
+            if newdata:
+                datas.append(newdata)
+            errors.extend(newerrors)
+        # Not sure if anything really useful could be done if
+        # these send_command calls fail
+        if not got_control_socket:
+            for data in datas:
+                controlsocket.send_command('start_torrent', data, config['save_as'])
+            for error in errors:
+                controlsocket.send_command('show_error', error)
+            sys.exit(0)
+    elif not got_control_socket:
+        try:
+            controlsocket.send_command('show_error', _("%s already running")%app_name)
+        except BTFailure:
+            sys.stderr.write(_("Failed to send command through "
+                               "existing control socket.") +
+                             _(" Closing all %s windows may fix the problem.")
+                             % app_name)
+        sys.exit(1)
+
+
+import gtk
+import pango
+import gobject
+import webbrowser
+
+assert gtk.pygtk_version >= (2, 6), _("PyGTK %s or newer required") % '2.6'
+
+from BitTorrent import HELP_URL, DONATE_URL, SEARCH_URL, version, branch
+
+from BitTorrent import zurllib
+from BitTorrent import TorrentQueue
+from BitTorrent import LaunchPath
+from BitTorrent import Desktop
+from BitTorrent import ClientIdentifier
+from BitTorrent import NewVersion
+
+from BitTorrent.parseargs import makeHelp
+from BitTorrent.TorrentQueue import RUNNING, RUN_QUEUED, QUEUED, KNOWN, ASKING_LOCATION
+from BitTorrent.TrayIcon import TrayIcon
+from BitTorrent.GUI import * 
+
+
+main_torrent_dnd_tip = _("drag to reorder")
+torrent_menu_tip = _("right-click for menu")
+torrent_tip_format = '%s:\n %s\n %s'
+
+rate_label = ': %s'
+
+speed_classes = {
+    (   4,    5):_("dialup"           ),
+    (   6,   14):_("DSL/cable 128k up"),
+    (  15,   29):_("DSL/cable 256k up"),
+    (  30,   91):_("DSL 768k up"      ),
+    (  92,  137):_("T1"               ),
+    ( 138,  182):_("T1/E1"            ),
+    ( 183,  249):_("E1"               ),
+    ( 250, 5446):_("T3"               ),
+    (5447,18871):_("OC3"              ),
+    }
 
 def find_dir(path):
     if os.path.isdir(path):
@@ -297,8 +405,7 @@ class RateSliderBox(gtk.VBox):
                                               homogeneous=True)
         
         self.rate_slider_label = gtk.Label(_("Maximum upload rate:"))
-        if gtk.pygtk_version >= (2, 6):
-            self.rate_slider_label.set_ellipsize(pango.ELLIPSIZE_START)
+        self.rate_slider_label.set_ellipsize(pango.ELLIPSIZE_START)
         self.rate_slider_label.set_alignment(1, 0.5)
         self.rate_slider_label_box.pack_start(self.rate_slider_label,
                                               expand=True, fill=True)
@@ -406,7 +513,7 @@ class StatusLight(gtk.EventBox):
               'running': ('bt-status-running',
                           _("Running normally")),
               'natted' : ('bt-status-natted',
-                          _("Firewalled/NATted"))
+                          _("Probably firewalled/NATted"))
               }
     
     def __init__(self, main):
@@ -417,7 +524,7 @@ class StatusLight(gtk.EventBox):
         self.mystate = None
         for k,(s,t) in self.states.items():
             i = gtk.Image()
-            load_large_toolbar_image(i, s)
+            i.set_from_stock(s, gtk.ICON_SIZE_LARGE_TOOLBAR)
             i.show()
             self.images[k] = i
         
@@ -750,6 +857,31 @@ class SettingsWindow(object):
         self.vbox = gtk.VBox(spacing=SPACING)
         self.vbox.pack_start(self.notebook, expand=False, fill=False)
 
+        # General tab
+        if os.name == 'nt':
+            self.cb_box = gtk.VBox(spacing=SPACING)
+            self.cb_box.set_border_width(SPACING)
+            self.notebook.append_page(self.cb_box, gtk.Label(_("General")))
+
+            self.startup_checkbutton = CheckButton(
+                _("Launch BitTorrent when Windows starts"), self,
+                'launch_on_startup', self.config['launch_on_startup'])
+            self.cb_box.pack_start(self.startup_checkbutton, expand=False, fill=False)
+            self.startup_checkbutton.connect('toggled', self.launch_on_startup)
+
+            self.minimize_checkbutton = CheckButton(
+                _("Minimize to system tray"), self,
+                'minimize_to_tray', self.config['minimize_to_tray'])
+            self.cb_box.pack_start(self.minimize_checkbutton, expand=False, fill=False)
+
+            # allow the user to set the progress bar text to all black
+            self.progressbar_hack = CheckButton(
+                _("Progress bar text is always black\n(requires restart)"),
+                self, 'progressbar_hack', self.config['progressbar_hack'])
+
+            self.cb_box.pack_start(self.progressbar_hack, expand=False, fill=False)
+            # end General tab
+
         # Saving tab
         self.saving_box = gtk.VBox(spacing=SPACING)
         self.saving_box.set_border_width(SPACING)
@@ -785,7 +917,7 @@ class SettingsWindow(object):
         self.downloading_box.set_border_width(SPACING)
         self.notebook.append_page(self.downloading_box, gtk.Label(_("Downloading")))
 
-        self.dnd_frame = gtk.Frame(_("Starting additional torrents manually:"))
+        self.dnd_frame = gtk.Frame(_("When starting a new torrent:"))
         self.dnd_box = gtk.VBox(spacing=SPACING, homogeneous=True)
         self.dnd_box.set_border_width(SPACING)
 
@@ -794,19 +926,19 @@ class SettingsWindow(object):
         
         self.always_replace_radio = gtk.RadioButton(
             group=None,
-            label=_("Always stops the _last running torrent"))
+            label=_("_Stop another running torrent to make room"))
         self.dnd_box.pack_start(self.always_replace_radio)
         self.always_replace_radio.state_name = self.dnd_states[0]
         
         self.always_add_radio = gtk.RadioButton(
             group=self.always_replace_radio,
-            label=_("Always starts the torrent in _parallel"))
+            label=_("_Don't stop other running torrents"))
         self.dnd_box.pack_start(self.always_add_radio)
         self.always_add_radio.state_name = self.dnd_states[1]
 
         self.always_ask_radio = gtk.RadioButton(
             group=self.always_replace_radio,
-            label=_("_Asks each time")
+            label=_("_Ask each time")
             )
         self.dnd_box.pack_start(self.always_ask_radio)
         self.always_ask_radio.state_name = self.dnd_states[2]
@@ -958,19 +1090,6 @@ class SettingsWindow(object):
         self.notebook.append_page(self.languagechooser, gtk.Label("Language"))
         # end Language tab
 
-        # Misc tab
-        if is_frozen_exe:
-            # allow the user to set the progress bar text to all black
-            self.progressbar_hack = CheckButton(
-                _("Progress bar text is always black\n(requires restart)"),
-                self, 'progressbar_hack', self.config['progressbar_hack'])
-
-            self.misc_box = gtk.VBox(spacing=SPACING)
-            self.misc_box.set_border_width(SPACING)
-            self.misc_box.pack_start(self.progressbar_hack, expand=False, fill=False)
-            self.notebook.append_page(self.misc_box, gtk.Label(_("Misc")))
-        # end Misc tab
-
         # Advanced tab
         if advanced_ui:
             self.advanced_box = gtk.VBox(spacing=SPACING)
@@ -1019,6 +1138,18 @@ class SettingsWindow(object):
             self.dl_save_in.set_text(save_in)
             self.setfunc('save_in', self.config['save_in'])
 
+    def launch_on_startup(self, *args):
+        dst = os.path.join(get_startup_dir(), app_name)
+        if self.config['launch_on_startup']:
+            src = os.path.abspath(sys.argv[0])
+            create_shortcut(src, dst, "--start_minimized")
+        else:
+            try:
+                os.unlink(dst)
+            except:
+                pass
+        
+
     def set_start_torrent_behavior(self, state_name):
         if state_name in self.dnd_states:
             for r in self.dnd_group:
@@ -1059,29 +1190,31 @@ class SettingsWindow(object):
 
 class FileListWindow(object):
 
+    SET_PRIORITIES = False
+
     def __init__(self, metainfo, closefunc):
         self.metainfo = metainfo
         self.setfunc = None
         self.allocfunc = None
-        priorities = [0, 0]
         self.win = Window()
         self.win.set_title(_('Files in "%s"') % self.metainfo.name)
         self.win.connect("destroy", closefunc)
+        self.tooltips = gtk.Tooltips()
+
+        self.filepath_to_iter = {}
 
         self.box1 = gtk.VBox()
 
-        size_request = [0,0]
-        
-        if advanced_ui and False:
+        size_request = (0,0)
+        if self.SET_PRIORITIES:
             self.toolbar = gtk.Toolbar()
-            for label, stockicon, method, arg in ((_("Apply")         , gtk.STOCK_APPLY  , self.set_priorities, None ),
-                                                  (_("Allocate")      , gtk.STOCK_SAVE   , self.dosomething, 'alloc',),
-                                                  (_("Never download"), gtk.STOCK_DELETE , self.dosomething, 'never',),
-                                                  (_("Decrease")      , gtk.STOCK_GO_DOWN, self.dosomething, -1     ,),
-                                                  (_("Increase")      , gtk.STOCK_GO_UP  , self.dosomething, +1     ,),):
-                self.make_tool_item(label, stockicon, method, arg)
+            for label, tip, stockicon, method, arg in (
+                (_("Never" ), _("Never download"   ), gtk.STOCK_DELETE, self.dosomething, -1,),
+                (_("Normal"), _("Download normally"), gtk.STOCK_NEW   , self.dosomething,  0,),
+                (_("First" ), _("Download first"   ),'bt-finished'    , self.dosomething, +1,),):
+                self.make_tool_item(label, tip, stockicon, method, arg)
+            size_request = (-1,54)
             self.box1.pack_start(self.toolbar, False)
-            size_request = [450,54]
             
         self.sw = gtk.ScrolledWindow()
         self.sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
@@ -1089,23 +1222,24 @@ class FileListWindow(object):
         self.win.add(self.box1)
 
         columns = [_("Filename"),_("Length"),_('%')]
-        pre_size_list = ['MMMMMMMMMMMMMMMMMMMMMMMM', '6666 MB', '100.0']
-        if advanced_ui:
-            columns += ['A','Order']
-            pre_size_list += ['*','None','black']
+        pre_size_list = ['M'*30, '6666 MB', '100.0', 'Download','black']
+        if self.SET_PRIORITIES:
+            columns.append(_("Download"))
         num_columns = len(pre_size_list)
 
-        self.store = gtk.ListStore(*[gobject.TYPE_STRING] * num_columns)
-        self.store.append(pre_size_list)
+        self.store = gtk.TreeStore(*[gobject.TYPE_STRING] * num_columns)
+        self.store.append(None, pre_size_list)
         self.treeview = gtk.TreeView(self.store)
+        self.treeview.set_enable_search(True)
+        self.treeview.set_search_column(0)
         cs = []
         for i, name in enumerate(columns):
             r = gtk.CellRendererText()
-            r.set_property('xalign', (0, 1, 1, .5, 1)[i])
-            if i != 4:
-                column = gtk.TreeViewColumn(name, r, text = i)
+            r.set_property('xalign', (0, 1, 1, 1)[i])
+            if i == 0:
+                column = gtk.TreeViewColumn(name, r, text = i, foreground = len(pre_size_list)-1)
             else:
-                column = gtk.TreeViewColumn(name, r, text = i, foreground = i + 1)
+                column = gtk.TreeViewColumn(name, r, text = i)
             column.set_resizable(True)
             self.treeview.append_column(column)
             cs.append(column)
@@ -1121,17 +1255,25 @@ class FileListWindow(object):
             column.set_sizing(gtk.TREE_VIEW_COLUMN_FIXED)
         self.treeview.set_headers_visible(True)
         self.store.clear()
-        self.treeview.get_selection().set_mode(gtk.SELECTION_MULTIPLE)
+
+        if self.SET_PRIORITIES:
+            self.treeview.get_selection().set_mode(gtk.SELECTION_MULTIPLE)
+        else:
+            self.treeview.get_selection().set_mode(gtk.SELECTION_NONE)
+
         self.piecelen = self.metainfo.piece_length
         self.lengths = self.metainfo.sizes
-        self.initialize_file_priorities(priorities)
+        self.initialize_file_priorities()#[0,0])
         for name, size, priority in itertools.izip(self.metainfo.orig_files,
                                         self.metainfo.sizes, self.priorities):
-            row = [name, Size(size), '?',]
-            if advanced_ui:
-                row += ['', priority == 255 and 'None' or str(priority), 'black']
-            self.store.append(row)
-
+            parent_name, local_name = os.path.split(name)
+            parent_iter = self.recursive_add(parent_name)
+            
+            row = [local_name, Size(size), '?','', 'black']
+            it = self.store.append(parent_iter, row)
+            self.filepath_to_iter[name] = it
+            
+        self.treeview.expand_all()
         tvsr = self.treeview.size_request()
         vertical_padding = 18 
         size_request = [max(size_request[0],tvsr[0]),
@@ -1144,104 +1286,122 @@ class FileListWindow(object):
                                   
         self.win.show_all()
 
-    def make_tool_item_24(self, label, stockicon, method, arg): # for pygtk 2.4
+    def recursive_add(self, fullpath):
+        if fullpath == '':
+            return None
+        elif self.filepath_to_iter.has_key(fullpath):
+            return self.filepath_to_iter[fullpath]
+        else:
+            parent_path, local_path = os.path.split(fullpath)
+            parent_iter = self.recursive_add(parent_path)
+            it = self.store.append(parent_iter,
+                                   (local_path,) +
+                                   ('',) * (self.store.get_n_columns()-2) +
+                                   ('black',))
+            self.filepath_to_iter[fullpath] = it
+            return it
+
+    def make_tool_item(self, label, tip, stockicon, method, arg): 
         icon = gtk.Image()
         icon.set_from_stock(stockicon, gtk.ICON_SIZE_SMALL_TOOLBAR)
         item = gtk.ToolButton(icon_widget=icon, label=label)
         item.set_homogeneous(True)
+        item.set_tooltip(self.tooltips, tip)
         if arg is not None:
             item.connect('clicked', method, arg)
         else:
             item.connect('clicked', method)
         self.toolbar.insert(item, 0)
 
-    def make_tool_item_22(self, label, stockicon, method, arg): # for pygtk 2.2
-        icon = gtk.Image()
-        icon.set_from_stock(stockicon, gtk.ICON_SIZE_SMALL_TOOLBAR)
-        self.toolbar.prepend_item(label, None, None, icon, method, user_data=arg)
-
-    if gtk.pygtk_version >= (2, 4):
-        make_tool_item = make_tool_item_24
-    else:
-        make_tool_item = make_tool_item_22
-        
-    def set_priorities(self, widget):
-        r = []
-        piece = 0
-        pos = 0
-        curprio = prevprio = 1000
-        for priority, length in itertools.izip(self.priorities, self.lengths):
-            pos += length
-            curprio = min(priority, curprio)
-            while pos >= (piece + 1) * self.piecelen:
-                if curprio != prevprio:
-                    r.extend((piece, curprio))
-                prevprio = curprio
-                if curprio == priority:
-                    piece = pos // self.piecelen
-                else:
-                    piece += 1
-                if pos == piece * self.piecelen:
-                    curprio = 1000
-                else:
-                    curprio = priority
-        if curprio != prevprio:
-            r.extend((piece, curprio))
-        self.setfunc(r)
-        it = self.store.get_iter_first()
-        for i in xrange(len(self.priorities)):
-            self.store.set_value(it, 5, "black")
-            it = self.store.iter_next(it)
-        self.origpriorities = list(self.priorities)
-
-    def initialize_file_priorities(self, piecepriorities):
+    def initialize_file_priorities(self):
         self.priorities = []
-        piecepriorities = piecepriorities + [999999999]
-        it = iter(piecepriorities)
-        assert it.next() == 0
-        pos = piece = curprio = 0
         for length in self.lengths:
-            pos += length
-            priority = curprio
-            while pos >= piece * self.piecelen:
-                curprio = it.next()
-                if pos > piece * self.piecelen:
-                    priority = max(priority, curprio)
-                piece = it.next()
-            self.priorities.append(priority)
-        self.origpriorities = list(self.priorities)
+            self.priorities.append(0)
+
+## Uoti wrote these methods. I have no idea what this code is supposed to do.
+##        --matt
+##    def set_priorities(self, widget):
+##        r = []
+##        piece = 0
+##        pos = 0
+##        curprio = prevprio = 1000
+##        for priority, length in itertools.izip(self.priorities, self.lengths):
+##            pos += length
+##            curprio = min(priority, curprio)
+##            while pos >= (piece + 1) * self.piecelen:
+##                if curprio != prevprio:
+##                    r.extend((piece, curprio))
+##                prevprio = curprio
+##                if curprio == priority:
+##                    piece = pos // self.piecelen
+##                else:
+##                    piece += 1
+##                if pos == piece * self.piecelen:
+##                    curprio = 1000
+##                else:
+##                    curprio = priority
+##        if curprio != prevprio:
+##            r.extend((piece, curprio))
+##        self.setfunc(r)
+##        it = self.store.get_iter_first()
+##        for i in xrange(len(self.priorities)):
+##            self.store.set_value(it, 5, "black")
+##            it = self.store.iter_next(it)
+##        self.origpriorities = list(self.priorities)
+##
+##    def initialize_file_priorities(self, piecepriorities):
+##        self.priorities = []
+##        piecepriorities = piecepriorities + [999999999]
+##        it = iter(piecepriorities)
+##        assert it.next() == 0
+##        pos = piece = curprio = 0
+##        for length in self.lengths:
+##            pos += length
+##            priority = curprio
+##            while pos >= piece * self.piecelen:
+##                curprio = it.next()
+##                if pos > piece * self.piecelen:
+##                    priority = max(priority, curprio)
+##                piece = it.next()
+##            self.priorities.append(priority)
+##        self.origpriorities = list(self.priorities)
 
     def dosomething(self, widget, dowhat):
         self.treeview.get_selection().selected_foreach(self.adjustfile, dowhat)
 
     def adjustfile(self, treemodel, path, it, dowhat):
-        row = path[0]
-        if dowhat == "alloc":
-            self.allocfunc(row)
-            return
-        if self.priorities[row] == 255:
-            return
-        if dowhat == 'never':
-            self.priorities[row] = 255
+        length = treemodel.get(it, 1)[0]
+        if length == '':
+            child = treemodel.iter_children(it)
+            while True:
+                if child is None:
+                    return
+                elif not treemodel.is_ancestor(it, child):
+                    return
+                else:
+                    self.adjustfile(treemodel, path, child, dowhat)
+                child = treemodel.iter_next(child)
+            
         else:
-            if self.priorities[row] == 0 and dowhat < 0:
-                return
-            self.priorities[row] += dowhat
-        treemodel.set_value(it, 4, self.priorities[row] == 255 and 'None' or str(self.priorities[row]))
-        treemodel.set_value(it, 5, self.priorities[row] == self.origpriorities[row] and 'black' or 'red')
+            # BUG: need to set file priorities in backend here
+            if dowhat == -1:
+                text, color = _("never"), 'darkgrey'
+            elif dowhat == 1:
+                text, color = _("first"), 'darkgreen'
+            else:
+                text, color = '', 'black'
+            treemodel.set_value(it, 3, text )
+            treemodel.set_value(it, 4, color)
 
     def update(self, left, allocated):
-        it = self.store.get_iter_first()
-        for left, total, alloc in itertools.izip(left, self.lengths,
-                                                 allocated):
+        for name, left, total, alloc in itertools.izip(
+            self.metainfo.orig_files, left, self.lengths, allocated):
+            it = self.filepath_to_iter[name]
             if total == 0:
                 p = 1
             else:
                 p = (total - left) / total
             self.store.set_value(it, 2, "%.1f" % (int(p * 1000)/10))
-            if advanced_ui:
-                self.store.set_value(it, 3, '*' * alloc)
-            it = self.store.iter_next(it)
 
     def close(self):
         self.win.destroy()
@@ -1524,12 +1684,12 @@ class TorrentInfoWindow(object):
         lbbox.set_spacing(SPACING)
 
         if LaunchPath.can_launch_files:
-            opendirbutton = IconButton(_("Open directory"), stock=gtk.STOCK_OPEN)
+            opendirbutton = IconButton(_("_Open directory"), stock=gtk.STOCK_OPEN)
             opendirbutton.connect('clicked', self.torrent_box.open_dir)
             lbbox.pack_start(opendirbutton, expand=False, fill=False)
             opendirbutton.set_sensitive(self.torrent_box.can_open_dir())
 
-        filelistbutton = IconButton(_("Show file list"), stock='gtk-index')
+        filelistbutton = IconButton(_("Show _file list"), stock='gtk-index')
         if self.torrent_box.is_batch:
             filelistbutton.connect('clicked', self.torrent_box.open_filelist)
         else:
@@ -1727,12 +1887,7 @@ class TorrentBox(gtk.EventBox):
 
     def set_name(self):
         self.label.set_text(self.metainfo.name)
-        if gtk.pygtk_version < (2, 6):
-            max_title_width = 560
-            if self.label.size_request()[0] > max_title_width:
-                self.label.set_size_request(max_title_width, -1)
-        else:
-            self.label.set_ellipsize(pango.ELLIPSIZE_END)
+        self.label.set_ellipsize(pango.ELLIPSIZE_END)
 
     def make_menu(self, extra_menu_items=[]):
         if self.menu_handler:
@@ -1763,7 +1918,11 @@ class TorrentBox(gtk.EventBox):
                                    func=change_save_location_func))
         # seed forever item
         self.seed_forever_item = gtk.CheckMenuItem(_("_Seed indefinitely"))
-        self.reset_seed_forever()
+        sfb = False
+        d = self.main.torrents[self.infohash].config.getDict()
+        if d.has_key('seed_forever'):
+            sfb = d['seed_forever']
+        self.seed_forever_item.set_active(bool(sfb))
         def sft(widget, *args):
             active = widget.get_active()
             infohash = self.infohash
@@ -1807,13 +1966,6 @@ class TorrentBox(gtk.EventBox):
             self.menu.add(i)
 
         self.menu_handler = self.connect_object("event", self.show_menu, self.menu)
-
-    def reset_seed_forever(self):
-        sfb = False
-        d = self.main.torrents[self.infohash].config.getDict()
-        if d.has_key('seed_forever'):
-            sfb = d['seed_forever']
-        self.seed_forever_item.set_active(bool(sfb))        
 
     def change_save_location(self, widget=None):
         self.main.change_save_location(self.infohash)
@@ -1914,11 +2066,11 @@ class KnownTorrentBox(TorrentBox):
 
         status_tip = ''
         if completion >= 1:
-            load_large_toolbar_image(self.icon, 'bt-finished')
+            self.icon.set_from_stock('bt-finished', gtk.ICON_SIZE_LARGE_TOOLBAR)
             status_tip = _("Finished")
             known_torrent_dnd_tip = _("drag into list to seed")
         else:
-            load_large_toolbar_image(self.icon, 'bt-broken')
+            self.icon.set_from_stock('bt-broken', gtk.ICON_SIZE_LARGE_TOOLBAR)
             status_tip = _("Failed")
             known_torrent_dnd_tip = _("drag into list to resume")
 
@@ -1982,10 +2134,10 @@ class QueuedTorrentBox(DroppableTorrentBox):
         self.state_name = _("Waiting")
         self.main.tooltips.set_tip(self.iconevbox,
                                    self.torrent_tip_format % (self.state_name,
-                                                              self.main_torrent_dnd_tip, 
+                                                              self.main_torrent_dnd_tip,
                                                               self.torrent_menu_tip))
 
-        load_large_toolbar_image(self.icon, self.icon_name)            
+        self.icon.set_from_stock(self.icon_name, gtk.ICON_SIZE_LARGE_TOOLBAR)
         self.make_menu()
         self.show_all()
 
@@ -2009,7 +2161,7 @@ class PausedTorrentBox(DroppableTorrentBox):
                                                               self.main_torrent_dnd_tip,
                                                               self.torrent_menu_tip))
 
-        load_large_toolbar_image(self.icon, self.icon_name)
+        self.icon.set_from_stock(self.icon_name, gtk.ICON_SIZE_LARGE_TOOLBAR)
         self.make_menu()
         self.show_all()
 
@@ -2041,7 +2193,7 @@ class RunningTorrentBox(PausedTorrentBox):
         self.peerlistwindow = None
         self.update_peer_list_flag = 0
 
-        load_large_toolbar_image(self.icon, 'bt-running')
+        self.icon.set_from_stock('bt-running', gtk.ICON_SIZE_LARGE_TOOLBAR)
 
         self.rate_label_box = gtk.HBox(homogeneous=True)
 
@@ -2111,7 +2263,7 @@ class RunningTorrentBox(PausedTorrentBox):
         updater_infohash = self.main.updater.infohash
         if updater_infohash == self.infohash:
             self.main.updater.start_install()
-
+        
         self.make_menu()
 
     def close_child_windows(self):
@@ -2172,7 +2324,6 @@ class RunningTorrentBox(PausedTorrentBox):
         if fractionDone == 1:
             self.progressbar.set_fraction(1)
             self.progressbar.set_text(done_label)
-            self.reset_seed_forever()
             if not self.completion >= 1:
                 self.change_to_completed()
         else:
@@ -2596,9 +2747,26 @@ class DownloadInfoFrame(object):
         self.helpwindow     = None
         self.errordialog    = None
 
+        self.mainwindow = Window(gtk.WINDOW_TOPLEVEL)
+
+        #tray icon
+        self.trayicon = TrayIcon(not self.config['start_minimized'],
+                                 toggle_func=self.toggle_shown,
+                                 quit_func=self.quit)
+        self.traythread = threading.Thread(target=self.trayicon.enable,
+                                           args=())
+        self.traythread.setDaemon(True)
+
+        if os.name == "nt":
+            # gtk has no way to check this?
+            self.iconized = False
+            self.mainwindow.connect('window-state-event', self.window_event) 
+
+        if self.config['start_minimized']:
+            self.mainwindow.iconify()
+       
         gtk.threads_enter()
 
-        self.mainwindow = Window(gtk.WINDOW_TOPLEVEL)
         self.mainwindow.set_border_width(0)
 
         self.set_seen_remote_connections(False)
@@ -2692,7 +2860,6 @@ class DownloadInfoFrame(object):
         self.box1.pack_start(self.box2, expand=False, fill=False)
 
         # control box: rate slider, start-stop button, search widget, status light
-
         self.controlbox = gtk.HBox(homogeneous=False)
 
         controlbox_padding = SPACING//2
@@ -2775,7 +2942,9 @@ class DownloadInfoFrame(object):
 
         self.set_title()
         self.set_size()
+        
         self.mainwindow.show()
+        
         self.paned.set_position(0)
         self.search_field.grab_focus()
 
@@ -2789,6 +2958,14 @@ class DownloadInfoFrame(object):
         self.nag()
         
         gtk.threads_leave()
+
+    def window_event(self, widget, event, *args):
+        if event.changed_mask == gtk.gdk.WINDOW_STATE_ICONIFIED:
+            if self.config['minimize_to_tray']:
+                if self.iconized == False:
+                    self.mainwindow.hide()
+            self.trayicon.change_text(self.iconized)
+            self.iconized = not self.iconized
 
     def drag_leave(self, *args):
         self.drag_end()
@@ -2869,6 +3046,7 @@ class DownloadInfoFrame(object):
             title += sep+_("(multiple)")
 
         self.mainwindow.set_title(title)
+        self.trayicon.set_title(title)
 
     def _guess_size(self):
         paned_height = self.scrollbox.size_request()[1]
@@ -3096,7 +3274,8 @@ class DownloadInfoFrame(object):
         gtk.main_quit()
 
     # Currently called if the user started bittorrent from a terminal
-    # and presses ctrl-c there
+    # and presses ctrl-c there, or if the user quits BitTorrent from
+    # the tray icon (on windows)   
     def quit(self):
         self.mainwindow.destroy()
 
@@ -3515,7 +3694,7 @@ class DownloadInfoFrame(object):
         moved_torrent_name = moved_torrent.metainfo.name
         confirm = MessageDialog(self.mainwindow,
                                 _("Stop running torrent?"),
-                                _('You are about to start "%s". Do you want to stop the last running torrent as well?')%(moved_torrent_name),
+                                _('You are about to start "%s". Do you want to stop another running torrent as well?')%(moved_torrent_name),
                                 type=gtk.MESSAGE_QUESTION,
                                 buttons=gtk.BUTTONS_YES_NO,
                                 yesfunc=replace_func,
@@ -3556,6 +3735,7 @@ class DownloadInfoFrame(object):
     def visit_url(self, url, callback=None):
         t = threading.Thread(target=self._visit_url,
                              args=(url,callback))
+        t.setDaemon(True)
         t.start()
 
     def _visit_url(self, url, callback=None):
@@ -3563,6 +3743,18 @@ class DownloadInfoFrame(object):
         if callback:
             gtk_wrap(callback)
 
+    def toggle_shown(self):
+        if self.config['minimize_to_tray']:
+            if self.mainwindow.get_property('visible'):
+                self.mainwindow.hide()
+            else:
+                self.mainwindow.show_all()
+        else:
+            if not self.iconized:
+                self.mainwindow.iconify()
+            else:
+                self.mainwindow.deiconify()
+                
 
     def raiseerror(self, *args):
         raise ValueError('test traceback behavior')
@@ -3581,6 +3773,7 @@ class MainLoop:
         self.mainwindow = mainwindow
 
     def run(self):
+        self.mainwindow.traythread.start()
         gtk.threads_enter()
 
         if self.mainwindow:
@@ -3612,84 +3805,9 @@ def btgui_exit_gtk(mainloop):
         # queue up a command to close the gui
         gobject.idle_add(lock_wrap, mainloop.quit)
         # run the main loop so we process all queued commands, then quit
-        # ignore errors, since we've already logged what caused us to leave early
-        try: 
-            mainloop.run()
-        except:
-            pass
-
-def btgui_exit(controlsocket):
-    if sys.platform.startswith('win'):
-        controlsocket.close_sic_socket()
+        mainloop.run()
 
 if __name__ == '__main__':
-
-    try:
-        config, args = configfile.parse_configuration_and_args(defaults,
-                                        'bittorrent', sys.argv[1:], 0, None)
-    except BTFailure, e:
-        print str(e)
-        sys.exit(1)
-
-    config = Preferences().initWithDict(config)
-    advanced_ui = config['advanced']
-
-    newtorrents = args
-    for opt in ('responsefile', 'url'):
-        if config[opt]:
-            print '"--%s"' % opt, _("deprecated, do not use")
-            newtorrents.append(config[opt])
-    
-    controlsocket = ControlSocket(config)
-
-    got_control_socket = True
-    try:
-        controlsocket.create_socket()
-    except BTFailure:
-        got_control_socket = False
-
-        try:
-            # windows needs to discover which socket to use, since it could be different
-            # for different users. errors should be treated just like no-op failures
-            if os.name == 'nt':
-                controlsocket.discover_sic_socket()
-                
-            controlsocket.send_command('no-op')
-        except BTFailure:
-            sys.stderr.write(_("Failed to create or send command "
-                               "through existing control socket.") + 
-                             _(" Closing all %s windows may fix the problem.")
-                             % app_name)
-            sys.exit(1)
-
-    # make sure we clean up the controlsocket when we close
-    atexit.register(btgui_exit, controlsocket)
-
-    datas = []
-    errors = []
-    if newtorrents:
-        for arg in newtorrents:
-            newdata, newerrors = GetTorrent.get_quietly(arg)
-            if newdata:
-                datas.append(newdata)
-            errors.extend(newerrors)
-        # Not sure if anything really useful could be done if
-        # these send_command calls fail
-        if not got_control_socket:
-            for data in datas:
-                controlsocket.send_command('start_torrent', data, config['save_as'])
-            for error in errors:
-                controlsocket.send_command('show_error', error)
-            sys.exit(0)
-    elif not got_control_socket:
-        try:
-            controlsocket.send_command('show_error', _("%s already running")%app_name)
-        except BTFailure:
-            sys.stderr.write(_("Failed to send command through "
-                               "existing control socket.") +
-                             _(" Closing all %s windows may fix the problem.")
-                             % app_name)
-        sys.exit(1)
 
     mainloop = MainLoop()
 
@@ -3722,3 +3840,5 @@ if __name__ == '__main__':
     except KeyboardInterrupt:
         # the gtk main loop is closed in MainLoop
         sys.exit(1)
+    d.trayicon.disable()
+    

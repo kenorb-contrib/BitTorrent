@@ -72,7 +72,7 @@ class Updater(object):
         self.version_site = version_host
         if os.name == 'nt':
             self.version_site += 'win32/'
-            if os_version != 'XP':
+            if os_version not in ('XP', '2000', '2003'):
                 self.version_site += 'legacy/'
         elif osx:
             self.version_site += 'osx/'
@@ -81,8 +81,8 @@ class Updater(object):
         if DEBUG:
             self.threadwrap(self.errorfunc, WARNING, message)
 
-    def get_available(self):
-        url = self.version_site + currentversion.name()
+
+    def _get_available(self, url):
         self.debug('Updater.get_available() hitting url %s' % url)
         try:
             u = zurllib.urlopen(url)
@@ -94,7 +94,21 @@ class Updater(object):
             assert len(s) == 5
             availableversion = Version.from_str(s)
         except:
-            raise BTFailure(_("Could not parse new version string from %s")%url)
+            raise BTFailure(_("Could not parse new version string from %s")%url)        
+        return availableversion
+
+
+    def get_available(self):
+        url = self.version_site + currentversion.name()
+        availableversion = self._get_available(url)
+        if availableversion.is_beta():
+            if availableversion[1] != currentversion:
+                availableversion = currentversion 
+        if currentversion.is_beta():
+            stable_url = self.version_site + 'stable'
+            available_stable_version = self._get_available(stable_url)
+            if available_stable_version > availableversion:
+                availableversion = available_stable_version
         self.version = availableversion
         self.debug('Updater.get_available() got %s' % str(self.version))
         return self.version
@@ -162,6 +176,7 @@ class Updater(object):
     def check(self):
         t = threading.Thread(target=self._check,
                              args=())
+        t.setDaemon(True)
         t.start()
 
     def _check(self):
@@ -239,8 +254,9 @@ class Updater(object):
                 self.installfunc()
             else:
                 self.errorfunc(WARNING,
-                               _("%s %s installer appears to be corrupt "
-                                 "or missing.")%(app_name, self.version))
+                               _("%s %s installer appears to be incomplete, "
+                                 "missing, or corrupt.")%(app_name,
+                                                          self.version))
 
     def launch_installer(self):
         if os.name == 'nt':

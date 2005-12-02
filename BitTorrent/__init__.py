@@ -10,7 +10,7 @@
 # License.
 
 app_name = 'BitTorrent'
-version = '4.2.2'
+version = '4.3.0'
 
 URL = 'http://www.bittorrent.com/'
 DONATE_URL = URL + 'donate.html'
@@ -19,7 +19,7 @@ HELP_URL = URL + 'documentation.html'
 SEARCH_URL = 'http://search.bittorrent.com/search.jsp?client=%(client)s&query=%(query)s'
 
 import sys
-assert sys.version_info >= (2, 2, 1), _("Python 2.2.1 or newer required")
+assert sys.version_info >= (2, 2, 1), _("Python %s or newer required") % '2.2.1'
 import os
 import time
 
@@ -27,48 +27,8 @@ branch = None
 if os.access('.cdv', os.F_OK):
     branch = os.path.split(os.path.realpath(os.path.split(sys.argv[0])[0]))[1]
 
+from BitTorrent.language import languages, language_names
 from BitTorrent.platform import get_home_dir, is_frozen_exe
-
-# http://people.w3.org/rishida/names/languages.html
-language_names = {
-    'af'   :u'Afrikaans'            ,    'bg'   :u'Български'            ,
-    'da'   :u'Dansk'                ,    'ca'   :u'Català'               ,
-    'cs'   :u'Čeština'              ,    'de'   :u'Deutsch'              ,
-    'en'   :u'English'              ,    'es'   :u'Español'              ,
-    'es_MX':u'Español de Mexico '   ,    'fr'   :u'Français'             ,
-    'gr'   :u'Ελληνικά'             ,    'hu'   :u'Magyar'               ,
-    'it'   :u'Italiano'             ,    'ja'   :u'日本語'            ,
-    'ko'   :u'한국어'            ,'nl'   :u'Nederlands'           ,
-    'nb_NO':u'Norsk bokmål'         ,    'pl'   :u'Polski'               ,
-    'pt'   :u'Português'            ,    'pt_BR':u'Português do Brasil'  ,
-    'ro'   :u'Română'               ,    'ru'   :u'Русский'              ,
-    'sk'   :u'Slovenský'            ,    'sl'   :u'Slovensko'            ,
-    'sv'   :u'Svenska'              ,    'tr'   :u'Türkçe'               ,
-    'vi'   :u'Tiếng Việt'           ,
-    'zh_CN':u'简体中文'               , # Simplified
-    'zh_TW':u'繁體中文'               , # Traditional
-    }
-
-unfinished_language_names = {
-    'ar'   :u'العربية'       ,    'bs'   :u'Bosanski'             ,
-    'eo'   :u'Esperanto'            ,    'eu'   :u'Euskara'              ,
-    'et'   :u'Eesti'                ,    'fi'   :u'Suomi'                ,
-    'ga'   :u'Gaeilge'              ,    'gl'   :u'Galego'               ,
-    'he_IL':u'עברית'                ,    'hr'   :u'Hrvatski'             ,
-    'hy'   :u'Հայերեն'       ,    'in'   :u'Bahasa indonesia'     ,
-    'ka'   :u'ქართული ენა',    'lt'   :u'Lietuvių'        ,
-    'ms'   :u'Bahasa melayu'        ,    'ml'   :u'Malayalam'            ,
-    'sq'   :u'Shqipe'                ,    'th'   :u'ภาษาไทย'              ,
-    'tlh'  :u'tlhIngan-Hol'         ,    'uk'   :u'Українська'           ,
-    'hi'   :u'हिन्दी'                  ,    'cy'   :u'Cymraeg'              ,
-    'is'   :u'Íslenska'             ,    'nn_NO':u'Norsk Nynorsk'        ,
-    'te'   :u'తెలుగు'             ,
-    }
-
-#language_names.update(unfinished_language_names)
-
-languages = language_names.keys()
-languages.sort()
 
 if os.name == 'posix':
     if os.uname()[0] == "Darwin":

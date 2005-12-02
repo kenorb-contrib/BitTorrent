@@ -20,8 +20,10 @@ import time
 import gettext
 import locale
 if os.name == 'nt':
+    import _winreg
     import win32api
     from win32com.shell import shellcon, shell
+    import win32com.client    
 elif os.name == 'posix' and os.uname()[0] == 'Darwin':
     has_pyobjc = False
     try:
@@ -31,6 +33,7 @@ elif os.name == 'posix' and os.uname()[0] == 'Darwin':
         pass
     
 from BitTorrent import app_name, version
+from BitTorrent.language import locale_sucks
 
 if sys.platform.startswith('win'):
     bttime = time.clock
@@ -58,7 +61,6 @@ if os_name == 'nt':
 elif os_name == 'posix':
     os_version = os.uname()[0]
 
-user_agent = "M" + version.replace('.', '-') + "--(%s/%s)" % (os_name, os_version)
 
 def calc_unix_dirs():
     appdir = '%s-%s'%(app_name, version)
@@ -181,6 +183,28 @@ def get_shell_dir(value):
             pass
     return dir
 
+def get_startup_dir():
+    dir = None
+    if os.name == 'nt':
+        dir = get_shell_dir(shellcon.CSIDL_STARTUP)
+    return dir
+
+def create_shortcut(source, dest, *args):
+    if os.name == 'nt':
+        shell = win32com.client.Dispatch("WScript.Shell")
+        shortcut = shell.CreateShortCut(dest + ".lnk")
+        shortcut.Targetpath = source
+        shortcut.Arguments = ' '.join(args)
+        path, file = os.path.split(source)
+        shortcut.WorkingDirectory = path
+        shortcut.save()
+    else:
+        # some other os may not support this, but throwing an error is good since
+        # the function couldn't do what was requested
+        os.symlink(source, dest)
+        # linux also can't do args... maybe we should spit out a shell script?
+        assert not args;
+        
 def path_wrap(path):
     return path
 
@@ -250,31 +274,61 @@ def language_path():
 
 
 def read_language_file():
-    lang_file_name = language_path()
     lang = None
-    if os.access(lang_file_name, os.F_OK|os.R_OK):
-        mode = 'r'
-        if sys.version_info >= (2, 3):
-            mode = 'U'
-        lang_file = open(lang_file_name, mode)
-        lang_line = lang_file.readline()
-        lang_file.close()
-        if lang_line:
-            lang = ''
-            for i in lang_line[:5]:
-                if not i.isalpha() and i != '_':
-                    break
-                lang += i
-            if lang == '':
-                lang = None
+        
+    if os.name == 'nt':
+        # this pulls user-preference language from the installer location
+        try:
+            regko = _winreg.OpenKey(_winreg.HKEY_CURRENT_USER, "Software\\BitTorrent")
+            lang_num = _winreg.QueryValueEx(regko, "Language")[0]
+            lang_num = int(lang_num)
+            lang = locale_sucks[lang_num]
+        except:
+            pass
+    else:
+        lang_file_name = language_path()
+        if os.access(lang_file_name, os.F_OK|os.R_OK):
+            mode = 'r'
+            if sys.version_info >= (2, 3):
+                mode = 'U'
+            lang_file = open(lang_file_name, mode)
+            lang_line = lang_file.readline()
+            lang_file.close()
+            if lang_line:
+                lang = ''
+                for i in lang_line[:5]:
+                    if not i.isalpha() and i != '_':
+                        break
+                    lang += i
+                if lang == '':
+                    lang = None
+        
     return lang
 
 
 def write_language_file(lang):
-    lang_file_name = language_path()
-    lang_file = open(lang_file_name, 'w')
-    lang_file.write(lang)
-    lang_file.close()
+    if os.name == 'nt':
+        regko = _winreg.CreateKey(_winreg.HKEY_CURRENT_USER, "Software\\BitTorrent")
+        if lang == '':
+            _winreg.DeleteValue(regko, "Language")
+        else:
+            lcid = None
+
+            # I want two-way dicts
+            for id, code in locale_sucks.iteritems():
+                if code.lower() == lang.lower():
+                    lcid = id
+                    break
+            if not lcid:
+                raise KeyError(lang)
+            
+            _winreg.SetValueEx(regko, "Language", 0, _winreg.REG_SZ, str(lcid))
+            
+    else:
+        lang_file_name = language_path()
+        lang_file = open(lang_file_name, 'w')
+        lang_file.write(lang)
+        lang_file.close()
 
 
 def install_translation():
@@ -282,7 +336,7 @@ def install_translation():
     try:
         lang = read_language_file()
         if lang is not None:
-            languages = [lang,]
+            languages = [lang, ]
     except:
         #pass
         from traceback import print_exc

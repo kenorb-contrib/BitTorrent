@@ -1,16 +1,16 @@
-Install Python, version 2.3 or later:
+Install Python, version 2.4 or later:
 http://python.org/
 
-Install a GTK 2.4 runtime:
+Install a GTK 2.6 runtime:
 http://gladewin32.sourceforge.net/
 
-Install pygtk 2.4:
+Install pygtk 2.6:
 http://www.pcpm.ucl.ac.be/~gustin/win32_ports/
 
 Install pycrypto 2.0:
 http://www.amk.ca/python/code/crypto
 
-Install python-win32gui
+Install pywin32:
 https://sourceforge.net/projects/pywin32/
 
 Install twisted 2.0.1
@@ -42,24 +42,9 @@ http://www.geocities.com/hardwiredteks/files/setup-processes.zip
 Install the KillProcDLL NSIS plugin:
 http://nsis.sourceforge.net/archive/viewpage.php?pageid=271
 
-The rest of these instructions can be abbreviated by just running
+The rest of these installation can be abbreviated by just running
 
-build.bat
-
-==============================
-
-In a shell, go to the root BitTorrent directory and run these commands:
-
-python.exe winmakei18n.py
-python.exe winsetup.py py2exe
-
-Copy all the necessary GTK files from the GTK root installation
-directory (usually c:\GTK\, see the GTK_BASEPATH environment variable)
-into the dist directory. See build.bat for details.
-
-Run NSIS on bittorrent.nsi:
-
-c:\progra~1\nsis\makensis.exe installer.nsi
+windows_installler\build.bat
 
 This will create an installer called BitTorrent-{VERSION}.exe .  The
 installer is completely self-contained and will work on any Windows

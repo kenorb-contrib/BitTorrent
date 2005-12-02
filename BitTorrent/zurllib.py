@@ -7,22 +7,27 @@
 #
 # by Robert Stone 2/22/2003
 # extended by Matt Chisholm
-#
+# tracker announce --bind support added by Jeremy Evans 11/2005
 
-from BitTorrent.platform import user_agent
+import sys
+
+from BitTorrent import PeerID
+user_agent = PeerID.make_id()
+del PeerID
+
 import urllib2
 OldOpenerDirector = urllib2.OpenerDirector
 
 class MyOpenerDirector(OldOpenerDirector):
     def __init__(self):
         OldOpenerDirector.__init__(self)
-        server_version = user_agent
-        self.addheaders = [('User-agent', server_version)]
+        self.addheaders = [('User-agent', user_agent)]
 
 urllib2.OpenerDirector = MyOpenerDirector
 
 del urllib2
 
+from httplib import HTTPConnection, HTTP
 from urllib import *
 from urllib2 import *
 from gzip import GzipFile
@@ -31,6 +36,41 @@ import pprint
 
 DEBUG=0
 
+http_bindaddr = None
+
+def bind_tracker_connection(bindaddr):
+    http_bindaddr = bindaddr
+
+class BindingHTTPConnection(HTTPConnection):
+    def connect(self):
+        """Connect to the host and port specified in __init__."""
+        msg = "getaddrinfo returns an empty list"
+        for res in socket.getaddrinfo(self.host, self.port, 0,
+                                      socket.SOCK_STREAM):
+            af, socktype, proto, canonname, sa = res
+            try:
+                self.sock = socket.socket(af, socktype, proto)
+                if http_bindaddr:
+                    self.sock.bind((http_bindaddr, 0))
+                if self.debuglevel > 0:
+                    print "connect: (%s, %s)" % (self.host, self.port)
+                self.sock.connect(sa)
+            except socket.error, msg:
+                if self.debuglevel > 0:
+                    print 'connect fail:', (self.host, self.port)
+                if self.sock:
+                    self.sock.close()
+                self.sock = None
+                continue
+            break
+        if not self.sock:
+            raise socket.error, msg
+
+class BindingHTTP(HTTP):
+    _connection_class = BindingHTTPConnection
+
+if sys.version_info >= (2,4):
+    BindingHTTP = BindingHTTPConnection
 
 class HTTPContentEncodingHandler(HTTPHandler):
     """Inherit and add gzip/deflate/etc support to HTTP gets."""
@@ -42,7 +82,7 @@ class HTTPContentEncodingHandler(HTTPHandler):
             print "Sending:"
             print req.headers
             print "\n"
-        fp = HTTPHandler.http_open(self,req)
+        fp = self.http_open(self,req)
         headers = fp.headers
         if DEBUG: 
              pprint.pprint(headers.dict)
@@ -53,6 +93,9 @@ class HTTPContentEncodingHandler(HTTPHandler):
         if hasattr(fp, 'msg'):
             resp.msg = fp.msg
         return resp
+
+    def http_open(self, req):
+        return self.do_open(BindingHTTP, req)
 
 
 class addinfourldecompress(addinfourl):

@@ -31,7 +31,7 @@ def switch_rawserver(choice):
     if magic.too_late:
         raise BTFailure(_("Too late to switch RawServer backends, %s has already been used.") % str(magic.base))
     
-    if choice.lower() == "twisted":
+    if choice.lower() == 'twisted':
         import RawServer_twisted
         magic.base = RawServer_twisted.RawServer
     else:

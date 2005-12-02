@@ -20,6 +20,8 @@ from bencode import bdecode
 from BitTorrent.platform import get_cache_dir
 
 urlpat = re.compile('^\w+://')
+urlpat_torrent = re.compile('^torrent://')
+urlpat_bittorrent = re.compile('^bittorrent://')
 
 def get_quietly(arg):
     (data, errors) = get(arg)
@@ -49,6 +51,16 @@ def get_url(url):
     err_str = _("Could not download or open \n%s\n"
                 "Try using a web browser to download the torrent file.") % url
     u = None
+
+    # pending protocol changes, convert:
+    #   torrent://http://path.to/file
+    # and:
+    #   bittorrent://http://path.to/file
+    # to:
+    #   http://path.to/file
+    url = urlpat_torrent.sub('', url)
+    url = urlpat_bittorrent.sub('', url)
+    
     try:
         u = zurllib.urlopen(url)
         data = u.read()

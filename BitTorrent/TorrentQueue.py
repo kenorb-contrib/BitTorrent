@@ -40,7 +40,6 @@ class TorrentInfo(object):
 
     def __init__(self, config):
         self.metainfo = None
-        self.dlpath = None
         self.dl = None
         self.state = None
         self.completion = None
@@ -50,6 +49,14 @@ class TorrentInfo(object):
         self.downtotal = 0
         self.downtotal_old = 0
         self.config = config
+
+    def _set_dlpath(self, value):
+        self.config['save_as'] = value
+
+    def _get_dlpath(self):
+        return self.config['save_as']
+
+    dlpath = property(_get_dlpath, _set_dlpath)
 
 
 def decode_position(l, pred, succ, default=None):
@@ -225,7 +232,7 @@ class TorrentQueue(Feedback):
                 except:
                     pass
                 self.global_error(ERROR,
-                                  _("Error reading file ") + path +
+                                  (_("Error reading file \"%s\".") % path) +
                                   " (" + str(e)+ "), " +
                                   _("cannot restore state completely"))
                 return None
@@ -236,33 +243,37 @@ class TorrentQueue(Feedback):
             try:
                 t.metainfo = ConvertedMetainfo(bdecode(data))
             except Exception, e:
-                self.global_error(ERROR, _("Corrupt data in ")+path+
-                                  _(" , cannot restore torrent (")+str(e)+")")
+                self.global_error(ERROR,
+                                  (_("Corrupt data in \"%s\", cannot restore torrent.") % path) +
+                                  '('+str(e)+')')
                 return None
             t.metainfo.reported_errors = True # suppress redisplay on restart
             if infohash != t.metainfo.infohash:
-                self.global_error(ERROR, _("Corrupt data in ")+path+
-                                  _(" , cannot restore torrent (")+'infohash mismatch'+")")
-                # BUG cannot localize due to string freeze
+                self.global_error(ERROR,
+                                  (_("Corrupt data in \"%s\", cannot restore torrent.") % path) +
+                                  _("(infohash mismatch)"))
                 return None
             if len(line) == 41:
                 t.dlpath = None
                 return infohash, t
-            config = configfile.read_torrent_config(self.config,
-                                                    self.config['data_dir'],
-                                                    infohash, self.global_error)
-            if config:
-                t.config.update(config)
             try:
                 if version < 2:
                     t.dlpath = line[41:-1].decode('string_escape')
-                else:
+                elif version == 3:
                     up, down, dlpath = line[41:-1].split(' ', 2)
                     t.uptotal = t.uptotal_old = int(up)
                     t.downtotal = t.downtotal_old = int(down)
                     t.dlpath = dlpath.decode('string_escape')
+                elif version >= 4:
+                    up, down = line[41:-1].split(' ', 1)
+                    t.uptotal = t.uptotal_old = int(up)
+                    t.downtotal = t.downtotal_old = int(down)
             except ValueError:  # unpack, int(), decode()
                 raise BTFailure(_("Invalid state file (bad entry)"))
+            config = configfile.read_torrent_config(self.config,
+                                                    self.config['data_dir'],
+                                                    infohash, self.global_error)
+            t.config.update(config)
             return infohash, t
         filename = os.path.join(self.config['data_dir'], 'ui_state')
         if not os.path.exists(filename):
@@ -286,7 +297,7 @@ class TorrentQueue(Feedback):
                 version = int(version[len(txt):-1])
             except:
                 raise BTFailure(_("Bad UI state file version"))
-            if version > 3:
+            if version > 4:
                 raise BTFailure(_("Unsupported UI state file version (from " 
                                   "newer client version?)"))
             if version < 3:
@@ -486,6 +497,7 @@ class TorrentQueue(Feedback):
         if torrent is None or torrent.state == RUNNING:
             return
         torrent.dlpath = dlpath
+        self._dump_config()
         torrent.completion = self.multitorrent.get_completion(self.config,
                                                    torrent.metainfo, dlpath)
         if torrent.state == ASKING_LOCATION:
@@ -750,14 +762,11 @@ class TorrentQueue(Feedback):
             self._dump_state()
 
     def finished(self, torrent):
-        """called when a download reaches 100%"""
         infohash = torrent.infohash
         t = self.torrents[infohash]
         totals = t.dl.get_total_transfer()
         if t.downtotal == 0 and t.downtotal_old == 0 and totals[1] == 0:
             self.set_config('seed_forever', True, infohash)
-            self.set_config('seed_last_forever', True, infohash)
-            self.request_status(infohash, False, False)
             
         if infohash == self.starting_torrent:
             t = self.torrents[infohash]

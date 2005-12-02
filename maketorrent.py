@@ -20,7 +20,7 @@ install_translation()
 import os
 import sys
 
-assert sys.version_info >= (2, 3), _("Install Python 2.3 or greater")
+assert sys.version_info >= (2, 3), _("Install Python %s or greater") % '2.3'
 
 from threading import Event
 
@@ -98,25 +98,12 @@ class MainWindow(Window):
         self.table.attach(ralign(gtk.Label(_("Piece size:"))),0,1,y,y+1,
                           xoptions=gtk.FILL, yoptions=0)
 
-        if gtk.pygtk_version >= (2,4):
-            self.piece_size = gtk.combo_box_new_text()
-            self.piece_size.offset = 15
-            for i in range(7):
-                self.piece_size.append_text(str(Size(2**(i+self.piece_size.offset))))
-            self.piece_size.set_active(self.config['piece_size_pow2'] -
-                                       self.piece_size.offset)
-        else:
-            # For PyGTK 2.2 and earlier
-            self.piece_size = gtk.OptionMenu()
-            self.piece_size.offset = 15
-            menu = gtk.Menu()
-            for i in range(7):
-                item = gtk.MenuItem(str(Size(2**(i+self.piece_size.offset))))
-                menu.append(item)
-            self.piece_size.set_menu(menu)
-            self.piece_size.set_history(self.config['piece_size_pow2'] -
-                                        self.piece_size.offset)
-            self.piece_size.get_active = self.piece_size.get_history
+        self.piece_size = gtk.combo_box_new_text()
+        self.piece_size.offset = 15
+        for i in range(7):
+            self.piece_size.append_text(str(Size(2**(i+self.piece_size.offset))))
+        self.piece_size.set_active(self.config['piece_size_pow2'] -
+                                   self.piece_size.offset)
 
         self.piece_size_box = gtk.HBox(spacing=SPACING)
         self.piece_size_box.pack_start(self.piece_size,
@@ -244,7 +231,7 @@ class MainWindow(Window):
 
         self.buttonbox.pack_start(gtk.Label(''), expand=True, fill=True)
 
-        self.makebutton = IconButton(_("Make"), stock=gtk.STOCK_EXECUTE)
+        self.makebutton = IconButton(_("_Make"), stock=gtk.STOCK_EXECUTE)
         self.makebutton.connect('clicked', self.make)
         self.makebutton.set_sensitive(False)
         self.buttonbox.pack_end(self.makebutton, expand=True, fill=True)

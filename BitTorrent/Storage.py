@@ -16,7 +16,7 @@ from array import array
 
 from BitTorrent.obsoletepythonsupport import *
 
-from BitTorrent import BTFailure
+from BitTorrent import BTFailure, app_name
 
 
 class FilePool(object):
@@ -235,11 +235,14 @@ class Storage(object):
             if os.path.exists(filename):
                 fsize = os.path.getsize(filename)
             else:
-                raise BTFailure(_("Another program appears to have moved, renamed, or deleted the file."))
+                raise BTFailure(_("Another program appears to have moved, renamed, or deleted the file, "
+                                  "or %s may have crashed last time it was run.") % app_name)
             if fsize > 0 and mtime != os.path.getmtime(filename):
-                raise BTFailure(_("Another program appears to have modified the file."))
+                raise BTFailure(_("Another program appears to have modified the file, "
+                                  "or %s may have crashed last time it was run.") % app_name)
             if size != fsize:
-                raise BTFailure(_("Another program appears to have changed the file size."))
+                raise BTFailure(_("Another program appears to have changed the file size, "
+                                  "or %s may have crashed last time it was run.") % app_name)
         if not return_filelist:
             return amount_done
         if resumefile is None:

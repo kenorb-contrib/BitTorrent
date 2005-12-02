@@ -19,7 +19,7 @@ import thread
 from bisect import insort
 from cStringIO import StringIO
 from traceback import print_exc
-from errno import EWOULDBLOCK, ENOBUFS
+from errno import EWOULDBLOCK, ENOBUFS, EINTR
 
 from BitTorrent.platform import bttime
 from BitTorrent import WARNING, CRITICAL, FAQ_URL
@@ -317,8 +317,11 @@ class RawServer(object):
             if sock in self.serversockets:
                 s = self.serversockets[sock]
                 if event & (POLLHUP | POLLERR) != 0:
-                    self.poll.unregister(s)
-                    s.close()
+                    try:
+                        self.poll.unregister(s)
+                        s.close()
+                    except socket.error, e:
+                        self.errorfunc(WARNING, _("failed to unregister or close server socket: %s") % str(e))
                     self.errorfunc(CRITICAL, _("lost server socket"))
                 else:
                     handler, context = self.listening_handlers[sock]
@@ -409,11 +412,13 @@ class RawServer(object):
             # I can't find a coherent explanation for what the behavior
             # should be here, and people report conflicting behavior,
             # so I'll just try all the possibilities
-            code = None
-            if hasattr(e, '__getitem__'):
-                code = e[0]
-            else:
-                code = e
+            try:
+                code, msg, desc = e
+            except:
+                try:
+                    code, msg = e
+                except:
+                    code = e
             if code == ENOBUFS:
                 # log the traceback so we can see where the exception is coming from
                 print_exc(file = sys.stderr)
@@ -421,7 +426,12 @@ class RawServer(object):
                                _("Have to exit due to the TCP stack flaking "
                                  "out. Please see the FAQ at %s") % FAQ_URL)
                 return -1
-            #self.errorfunc(CRITICAL, str(e))
+            elif code in (EINTR,):
+                # add other ignorable error codes here
+                pass
+            else:
+                self.errorfunc(CRITICAL, str(e))
+            return 0
         except KeyboardInterrupt:
             print_exc()
             return -1

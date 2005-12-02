@@ -27,6 +27,13 @@ class MyBool(object):
 MYTRUE = MyBool(True)
 MYFALSE = MyBool(False)
 
+import os
+### add your favorite here
+BAD_LIBC_WORKAROUND_DEFAULT = MYFALSE
+if os.name == 'posix':
+    if os.uname()[0] in ['Darwin']:
+        BAD_LIBC_WORKAROUND_DEFAULT = MYTRUE
+    
 from BitTorrent import languages
 
 basic_options = [
@@ -116,7 +123,7 @@ rare_options = [
      _("do not connect to several peers that have the same IP address")),
     ('peer_socket_tos', 8,
      _("if nonzero, set the TOS option for peer connections to this value")),
-    ('bad_libc_workaround', MYFALSE,
+    ('bad_libc_workaround', BAD_LIBC_WORKAROUND_DEFAULT,
      _("enable workaround for a bug in BSD libc that makes file reads very slow.")),
     ('tracker_proxy', '',
      _("address of HTTP proxy to use for tracker connections")),
@@ -173,6 +180,16 @@ def get_defaults(ui):
              'local directory to look in for .torrent files to open'),
             ('ask_for_save', MYFALSE,
              'whether or not to ask for a location to save downloaded files in'),
+            ('start_minimized', MYFALSE,
+             _("Start BitTorrent minimized")),            
+            ])
+
+        if os.name == 'nt':
+            r.extend([
+                ('launch_on_startup', MYTRUE,
+                 _("Launch BitTorrent when Windows starts")),
+                ('minimize_to_tray', MYTRUE,
+                 _("Minimize to system tray")),            
             ])
 
     if ui in ('bittorrent-console', 'bittorrent-curses'):
@@ -216,6 +233,8 @@ def get_defaults(ui):
                "corresponding .torrent file")),
             ('parse_dir_interval', 60,
               _("how often to rescan the torrent directory, in seconds") ),
+            ('launch_delay', 0,
+             _("wait this many seconds after noticing a torrent before starting it, to avoid race with tracker")),
             ('saveas_style', 4,
               _("How to name torrent downloads: "
                 "1: use name OF torrent file (minus .torrent);  " 

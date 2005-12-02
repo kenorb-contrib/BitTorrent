@@ -44,7 +44,7 @@ def check_info(info, check_paths=True):
             raise BTFailure, _('bad metainfo - "files" is not a list of files')
         for f in files:
             if type(f) != dict:
-                raise BTFailure, _("bad metainfo - bad file value") 
+                raise BTFailure, _("bad metainfo - file entry must be a dict") 
             length = f.get('length')
             if type(length) not in ints or length < 0:
                 raise BTFailure, _("bad metainfo - bad length")
@@ -86,39 +86,39 @@ def check_nodes(nodes):
     ## note, these strings need changing
     for node in nodes:
         if type(node) != list:
-            raise BTFailure, _("bad metainfo - wrong object type") + "0"
+            raise BTFailure, _("bad metainfo - node is not a list")
         if len(node) != 2:
-            raise BTFailure, _("bad metainfo - wrong object type") + "1"
+            raise BTFailure, _("bad metainfo - node list must have only two elements")
         host, port = node
         if type(host) != str:
-            raise BTFailure, _("bad metainfo - wrong object type") + "2"
+            raise BTFailure, _("bad metainfo - node host must be a string")
         if type(port) != int:
-            raise BTFailure, _("bad metainfo - wrong object type") + "3"
+            raise BTFailure, _("bad metainfo - node port must be an integer")
         
 def check_peers(message):
     if type(message) != dict:
         raise BTFailure
     if message.has_key('failure reason'):
         if type(message['failure reason']) != str:
-            raise BTFailure, _("non-text failure reason")
+            raise BTFailure, _("failure reason must be a string")
         return
     if message.has_key('warning message'):
         if type(message['warning message']) != str:
-            raise BTFailure, _("non-text warning message")
+            raise BTFailure, _("warning message must be a string")
     peers = message.get('peers')
     if type(peers) == list:
         for p in peers:
             if type(p) != dict:
-                raise BTFailure, _("invalid entry in peer list1")
+                raise BTFailure, _("invalid entry in peer list - peer info must be a dict")
             if type(p.get('ip')) != str:
-                raise BTFailure, _("invalid entry in peer list2")
+                raise BTFailure, _("invalid entry in peer list - peer ip must be a string")
             port = p.get('port')
             if type(port) not in ints or p <= 0:
-                raise BTFailure, _("invalid entry in peer list3")
+                raise BTFailure, _("invalid entry in peer list - peer port must be an integer")
             if p.has_key('peer id'):
                 peerid = p.get('peer id')
                 if type(peerid) != str or len(peerid) != 20:
-                    raise BTFailure, _("invalid entry in peer list4")
+                    raise BTFailure, _("invalid entry in peer list - invalid peerid")
     elif type(peers) != str or len(peers) % 6 != 0:
         raise BTFailure, _("invalid peer list")
     interval = message.get('interval', 1)

@@ -17,7 +17,12 @@ import const
 from const import K, HASH_LENGTH, NULL_ID, MAX_FAILURES, MIN_PING_INTERVAL
 from node import Node
 
-class KTable:
+
+def ls(a, b):
+    return cmp(a.lastSeen, b.lastSeen)
+
+class KTable(object):
+    __slots__ = ('node', 'buckets')
     """local routing table for a kademlia like distributed hash table"""
     def __init__(self, node):
         # this is the root node, a.k.a. US!
@@ -137,13 +142,6 @@ class KTable:
 
         # full bucket, check to see if any nodes are invalid
         t = time()
-        def ls(a, b):
-            if a.lastSeen > b.lastSeen:
-                return 1
-            elif b.lastSeen > a.lastSeen:
-                return -1
-            return 0
-        
         invalid = [x for x in self.buckets[i].invalid.values() if x.invalid]
         if len(invalid) and not nocheck:
             invalid.sort(ls)
@@ -195,8 +193,8 @@ class KTable:
             forget about node n - use when you know that node is invalid
         """
         n.invalid = True
-        self.bucket = self.bucketForInt(n.num)
-        self.bucket.invalidateNode(n)
+        bucket = self.bucketForInt(n.num)
+        bucket.invalidateNode(n)
     
     def nodeFailed(self, node):
         """ call this when a node fails to respond to a message, to invalidate that node """
@@ -212,8 +210,8 @@ class KTable:
         """ estimated number of connectable nodes in global table """
         return 8 * (2 ** (len(self.buckets) - 1))
     
-class KBucket:
-    __slots__ = ('min', 'max', 'lastAccessed')
+class KBucket(object):
+    __slots__ = ('min', 'max', 'lastAccessed', 'l', 'index', 'invalid')
     def __init__(self, contents, min, max):
         self.l = contents
         self.index = {}

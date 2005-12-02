@@ -14,6 +14,7 @@ from socket import error as socketerror
 
 from BitTorrent import BTFailure
 from BitTorrent.RawServer_magic import Handler
+from BitTorrent.NatTraversal import UPNPError
 from BitTorrent.Connecter import Connection
 from BitTorrent.platform import is_frozen_exe
 from BitTorrent.ClientIdentifier import identify_client
@@ -122,20 +123,26 @@ class Encoder(object):
 
 class SingleportListener(Handler):
 
-    def __init__(self, rawserver):
+    def __init__(self, rawserver, nattraverser):
         self.rawserver = rawserver
+        self.nattraverser = nattraverser
         self.port = 0
         self.ports = {}
+        self.port_change_notification = None
         self.torrents = {}
         self.connections = {}
         self.download_id = None
 
-    def _check_close(self, port):
-        if not port or self.port == port or self.ports[port][1] > 0:
-            return
+    def _close(self, port):        
         serversocket = self.ports[port][0]
+        self.nattraverser.unregister_port(port, "TCP")
         self.rawserver.stop_listening(serversocket)
         serversocket.close()
+
+    def _check_close(self, port):
+        if not port or self.port == port or len(self.ports[port][1]) > 0:
+            return
+        self._close(port)
         del self.ports[port]
 
     def open_port(self, port, config):
@@ -144,25 +151,44 @@ class SingleportListener(Handler):
             return
         serversocket = self.rawserver.create_serversocket(
             port, config['bind'], reuse=True, tos=config['peer_socket_tos'])
+        d = self.nattraverser.register_port(port, port, "TCP", config['bind'])
+        d.addCallback(self._change_port)
         self.rawserver.start_listening(serversocket, self)
         oldport = self.port
         self.port = port
-        self.ports[port] = [serversocket, 0]
+        self.ports[port] = [serversocket, {}]
         self._check_close(oldport)
 
-    def get_port(self):
+    def _change_port(self, port):
+        if self.port == port:
+            return
+        [serversocket, callbacks] = self.ports[self.port]
+        self.ports[port] = [serversocket, callbacks]
+        del self.ports[self.port]
+        self.port = port
+        for callback in callbacks:
+            if callback:
+                callback(port)
+
+    def get_port(self, callback = None):
         if self.port:
-            self.ports[self.port][1] += 1
+            callbacks = self.ports[self.port][1]
+            if not callbacks.has_key(callback):
+                callbacks[callback] = 1
+            else:
+                callbacks[callback] += 1
         return self.port
 
-    def release_port(self, port):
-        self.ports[port][1] -= 1
+    def release_port(self, port, callback = None):
+        callbacks = self.ports[port][1]
+        callbacks[callback] -= 1
+        if callbacks[callback] == 0:
+            del callbacks[callback]
         self._check_close(port)
 
     def close_sockets(self):
-        for serversocket, _ in self.ports.itervalues():
-            self.rawserver.stop_listening(serversocket)
-            serversocket.close()
+        for port in self.ports.iterkeys():
+            self._close(port)
 
     def add_torrent(self, infohash, encoder):
         if infohash in self.torrents:

@@ -18,8 +18,8 @@ import gobject
 import os
 import threading
 
-assert gtk.gtk_version   >= (2, 2), "GTK 2.2 or newer required"
-assert gtk.pygtk_version >= (2, 2), "PyGTK 2.2 or newer required"
+assert gtk.gtk_version   >= (2, 6), _(  "GTK %s or newer required") % '2.6'
+assert gtk.pygtk_version >= (2, 6), _("PyGTK %s or newer required") % '2.6'
 
 from BitTorrent import app_name, FAQ_URL, languages, language_names
 from BitTorrent.platform import image_root, read_language_file, write_language_file
@@ -150,16 +150,6 @@ for n in 'broken finished info pause paused play queued running remove status-ru
 
 factory.add_default()
 
-def load_large_toolbar_image(image, stockname):
-    # This is a hack to work around a bug in GTK 2.4 that causes
-    # gtk.ICON_SIZE_LARGE_TOOLBAR icons to be drawn at 18x18 instead
-    # of 24x24 under GTK 2.4 & win32
-    if os.name == 'nt' and gtk.gtk_version < (2, 6):
-        image.set_from_file(os.path.join(image_root, stockname[3:]+'.png'))
-    else:
-        image.set_from_stock(stockname, gtk.ICON_SIZE_LARGE_TOOLBAR)
-    
-
 def get_logo(size=32):
     fn = os.path.join(image_root, 'logo', 'bittorrent_%d.png'%size)
     logo = gtk.Image()
@@ -233,9 +223,7 @@ class FancyLabel(gtk.Label):
 
 class IconButton(gtk.Button):
     def __init__(self, label, iconpath=None, stock=None):
-        gtk.Button.__init__(self)
-
-        self.hbox = gtk.HBox(spacing=5)
+        gtk.Button.__init__(self, label)
         
         self.icon = gtk.Image()
         if stock is not None:
@@ -244,12 +232,7 @@ class IconButton(gtk.Button):
             self.icon.set_from_file(iconpath)
         else:
             raise TypeError, 'IconButton needs iconpath or stock'
-        self.hbox.pack_start(self.icon)
-
-        self.label = gtk.Label(label)
-        self.hbox.pack_start(self.label)
-
-        self.add(halign(self.hbox, 0.5))
+        self.set_image(self.icon)
 
 
 class LanguageChooser(gtk.Frame):
@@ -456,256 +439,175 @@ class ErrorMessageDialog(MessageDialog):
     flags = gtk.DIALOG_DESTROY_WITH_PARENT
 
 
-if gtk.pygtk_version < (2, 4, 1):
+class FileSelection(gtk.FileChooserDialog):
 
-    class FileSelection(gtk.FileSelection):
-
-        def __init__(self, main, title='', fullname='', got_location_func=None, no_location_func=None, got_multiple_location_func=None, show=True):
-            gtk.FileSelection.__init__(self)
-            from BitTorrent.ConvertedMetainfo import filesystem_encoding
-            self.fsenc = filesystem_encoding
-            try:
-                fullname.decode('utf8')
-            except:
-                fullname = fullname.decode(self.fsenc)
-            self.main = main
-            self.set_modal(True)
-            self.set_destroy_with_parent(True)
-            self.set_title(title)
-            if (got_location_func is None and
-                got_multiple_location_func is not None):
-                self.set_select_multiple(True)
-            self.got_location_func = got_location_func
-            self.no_location_func = no_location_func
-            self.got_multiple_location_func = got_multiple_location_func
-            self.cancel_button.connect("clicked", self.destroy)
-            self.d_handle = self.connect('destroy', self.no_location)
-            self.ok_button.connect("clicked", self.done)
-            self.set_filename(fullname)
-            if show:
-                self.show()
-
-        def no_location(self, widget=None):
-            if self.no_location_func is not None:
-                self.no_location_func()
-
-        def done(self, widget=None):
-            if self.get_select_multiple():
-                self.got_multiple_location()
-            else:
-                self.got_location()
-            self.disconnect(self.d_handle)
-            self.destroy()
-
-        def got_location(self):
-            if self.got_location_func is not None:
-                name = self.get_filename()
-                self.got_location_func(name)
-
-        def got_multiple_location(self):
-            if self.got_multiple_location_func is not None:
-                names = self.get_selections()
-                self.got_multiple_location_func(names)
-
-        def destroy(self, widget=None):
-            gtk.FileSelection.destroy(self)
-
-        def close_child_windows(self):
-            self.no_location()
-
-        def close(self, widget=None):
-            self.destroy()
-
-    class OpenFileSelection(FileSelection):
-        pass
-
-    class SaveFileSelection(FileSelection):
-        pass
-
-    class ChooseFolderSelection(FileSelection):
-        pass
-
-    class CreateFolderSelection(FileSelection):
-        pass
-
-    class FileOrFolderSelection(FileSelection):
-        pass
-
-else:
-
-    class FileSelection(gtk.FileChooserDialog):
-
-        def __init__(self, action, main, title='', fullname='',
-                     got_location_func=None, no_location_func=None,
-                     got_multiple_location_func=None, show=True):
-            gtk.FileChooserDialog.__init__(self, action=action, title=title,
-                         buttons=(gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL,
-                                  gtk.STOCK_OK, gtk.RESPONSE_OK))
-            from BitTorrent.ConvertedMetainfo import filesystem_encoding
-            self.fsenc = filesystem_encoding
-            try:
-                fullname.decode('utf8')
-            except:
-                fullname = fullname.decode(self.fsenc)
-            self.set_default_response(gtk.RESPONSE_OK)
-            if action == gtk.FILE_CHOOSER_ACTION_CREATE_FOLDER:
-                self.convert_button_box = gtk.HBox()
-                self.convert_button = gtk.Button(_("Choose an existing folder..."))
-                self.convert_button.connect('clicked', self.change_action)
-                self.convert_button_box.pack_end(self.convert_button,
-                                                 expand=False,
-                                                 fill=False)
-                self.convert_button_box.show_all()
-                self.set_extra_widget(self.convert_button_box)
-            elif action == gtk.FILE_CHOOSER_ACTION_OPEN:
-                self.all_filter = gtk.FileFilter()
-                self.all_filter.add_pattern('*')
-                self.all_filter.set_name(_("All Files"))
-                self.add_filter(self.all_filter)
-                self.torrent_filter = gtk.FileFilter()
-                self.torrent_filter.add_pattern('*.torrent')
-                self.torrent_filter.add_mime_type('application/x-bittorrent')
-                self.torrent_filter.set_name(_("Torrents"))
-                self.add_filter(self.torrent_filter)
-                self.set_filter(self.torrent_filter)
-
-            self.main = main
-            self.set_modal(True)
-            self.set_destroy_with_parent(True)
-            if fullname:
-                if action == gtk.FILE_CHOOSER_ACTION_SELECT_FOLDER:
-                    if gtk.gtk_version < (2,6):
-                        fullname = fullname.encode(self.fsenc)
-                    self.set_filename(fullname)
-                elif action == gtk.FILE_CHOOSER_ACTION_OPEN:
-                    if fullname[-1] != os.sep:
-                        fullname = fullname + os.sep
-                    path, filename = os.path.split(fullname)
-                    if gtk.gtk_version < (2,6):
-                        path = path.encode(self.fsenc)
-                    self.set_current_folder(path)
-                else:
-                    if fullname[-1] == os.sep:
-                        fullname = fullname[:-1]
-                    path, filename = os.path.split(fullname)
-                    if gtk.gtk_version < (2,8):
-                        path = path.encode(self.fsenc)
-                    self.set_current_folder(path)
-                    self.set_current_name(filename)
-            if got_multiple_location_func is not None:
-                self.got_multiple_location_func = got_multiple_location_func
-                self.set_select_multiple(True)
-            self.got_location_func = got_location_func
-            self.no_location_func = no_location_func
-            self.connect('response', self.got_response)
-            self.d_handle = self.connect('destroy', self.got_response,
-                                         gtk.RESPONSE_CANCEL)
-            if show:
-                self.show()
-
-        def change_action(self, widget):
-            if self.get_action() == gtk.FILE_CHOOSER_ACTION_CREATE_FOLDER:
-                self.convert_button.set_label(_("Create a new folder..."))
-                self.set_action(gtk.FILE_CHOOSER_ACTION_SELECT_FOLDER)
-            elif self.get_action() == gtk.FILE_CHOOSER_ACTION_SELECT_FOLDER:
-                self.convert_button.set_label(_("Choose an existing folder..."))
-                self.set_action(gtk.FILE_CHOOSER_ACTION_CREATE_FOLDER)
-
-        def got_response(self, widget, response):
-            if response == gtk.RESPONSE_OK:
-                if self.get_select_multiple():
-                    if self.got_multiple_location_func is not None:
-                        self.got_multiple_location_func(self.get_filenames())
-                elif self.got_location_func is not None:
-                    fn = self.get_filename()
-                    if fn:
-                        self.got_location_func(fn)
-                    else:
-                        self.no_location_func()
-            else:
-                if self.no_location_func is not None:
-                    self.no_location_func()
-            self.disconnect(self.d_handle)
-            self.destroy()
-
-        def done(self, widget=None):
-            if self.get_select_multiple():
-                self.got_multiple_location()
-            else:
-                self.got_location()
-            self.disconnect(self.d_handle)
-            self.destroy()
-
-        def close_child_windows(self):
-            self.destroy()
-
-        def close(self, widget=None):
-            self.destroy()
-
-
-    class OpenFileSelection(FileSelection):
-
-        def __init__(self, *args, **kwargs):
-            FileSelection.__init__(self, gtk.FILE_CHOOSER_ACTION_OPEN, *args,
-                                   **kwargs)
-
-
-    class SaveFileSelection(FileSelection):
-
-        def __init__(self, *args, **kwargs):
-            FileSelection.__init__(self, gtk.FILE_CHOOSER_ACTION_SAVE, *args,
-                                   **kwargs)
-
-
-    class ChooseFolderSelection(FileSelection):
-
-        def __init__(self, *args, **kwargs):
-            FileSelection.__init__(self, gtk.FILE_CHOOSER_ACTION_SELECT_FOLDER,
-                                   *args, **kwargs)
-
-    class CreateFolderSelection(FileSelection):
-
-        def __init__(self, *args, **kwargs):
-            FileSelection.__init__(self, gtk.FILE_CHOOSER_ACTION_CREATE_FOLDER,
-                                   *args, **kwargs)
-
-            
-    class FileOrFolderSelection(FileSelection):
-        def __init__(self, *args, **kwargs):
-            FileSelection.__init__(self, gtk.FILE_CHOOSER_ACTION_OPEN, *args,
-                                   **kwargs)
-            self.select_file   = _("Select a file"  )
-            self.select_folder = _("Select a folder")
+    def __init__(self, action, main, title='', fullname='',
+                 got_location_func=None, no_location_func=None,
+                 got_multiple_location_func=None, show=True):
+        gtk.FileChooserDialog.__init__(self, action=action, title=title,
+                     buttons=(gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL,
+                              gtk.STOCK_OK, gtk.RESPONSE_OK))
+        from BitTorrent.ConvertedMetainfo import filesystem_encoding
+        self.fsenc = filesystem_encoding
+        try:
+            fullname.decode('utf8')
+        except:
+            fullname = fullname.decode(self.fsenc)
+        self.set_default_response(gtk.RESPONSE_OK)
+        if action == gtk.FILE_CHOOSER_ACTION_CREATE_FOLDER:
             self.convert_button_box = gtk.HBox()
-            self.convert_button = gtk.Button(self.select_folder)
+            self.convert_button = gtk.Button(_("Choose an existing folder..."))
             self.convert_button.connect('clicked', self.change_action)
             self.convert_button_box.pack_end(self.convert_button,
                                              expand=False,
                                              fill=False)
             self.convert_button_box.show_all()
             self.set_extra_widget(self.convert_button_box)
-            self.reset_by_action()
-            self.set_filter(self.all_filter)
+        elif action == gtk.FILE_CHOOSER_ACTION_OPEN:
+            self.all_filter = gtk.FileFilter()
+            self.all_filter.add_pattern('*')
+            self.all_filter.set_name(_("All Files"))
+            self.add_filter(self.all_filter)
+            self.torrent_filter = gtk.FileFilter()
+            self.torrent_filter.add_pattern('*.torrent')
+            self.torrent_filter.add_mime_type('application/x-bittorrent')
+            self.torrent_filter.set_name(_("Torrents"))
+            self.add_filter(self.torrent_filter)
+            self.set_filter(self.torrent_filter)
+
+        self.main = main
+        self.set_modal(True)
+        self.set_destroy_with_parent(True)
+        if fullname:
+            if action == gtk.FILE_CHOOSER_ACTION_SELECT_FOLDER:
+                self.set_filename(fullname)
+            elif action == gtk.FILE_CHOOSER_ACTION_OPEN:
+                if fullname[-1] != os.sep:
+                    fullname = fullname + os.sep
+                path, filename = os.path.split(fullname)
+                self.set_current_folder(path)
+            else:
+                if fullname[-1] == os.sep:
+                    fullname = fullname[:-1]
+                path, filename = os.path.split(fullname)
+                if gtk.gtk_version < (2,8):
+                    path = path.encode(self.fsenc)
+                self.set_current_folder(path)
+                self.set_current_name(filename)
+        if got_multiple_location_func is not None:
+            self.got_multiple_location_func = got_multiple_location_func
+            self.set_select_multiple(True)
+        self.got_location_func = got_location_func
+        self.no_location_func = no_location_func
+        self.connect('response', self.got_response)
+        self.d_handle = self.connect('destroy', self.got_response,
+                                     gtk.RESPONSE_CANCEL)
+        if show:
+            self.show()
+
+    def change_action(self, widget):
+        if self.get_action() == gtk.FILE_CHOOSER_ACTION_CREATE_FOLDER:
+            self.convert_button.set_label(_("Create a new folder..."))
+            self.set_action(gtk.FILE_CHOOSER_ACTION_SELECT_FOLDER)
+        elif self.get_action() == gtk.FILE_CHOOSER_ACTION_SELECT_FOLDER:
+            self.convert_button.set_label(_("Choose an existing folder..."))
+            self.set_action(gtk.FILE_CHOOSER_ACTION_CREATE_FOLDER)
+
+    def got_response(self, widget, response):
+        if response == gtk.RESPONSE_OK:
+            if self.get_select_multiple():
+                if self.got_multiple_location_func is not None:
+                    self.got_multiple_location_func(self.get_filenames())
+            elif self.got_location_func is not None:
+                fn = self.get_filename()
+                if fn:
+                    self.got_location_func(fn)
+                else:
+                    self.no_location_func()
+        else:
+            if self.no_location_func is not None:
+                self.no_location_func()
+        self.disconnect(self.d_handle)
+        self.destroy()
+
+    def done(self, widget=None):
+        if self.get_select_multiple():
+            self.got_multiple_location()
+        else:
+            self.got_location()
+        self.disconnect(self.d_handle)
+        self.destroy()
+
+    def close_child_windows(self):
+        self.destroy()
+
+    def close(self, widget=None):
+        self.destroy()
 
 
-        def change_action(self, widget):
-            if self.get_action() == gtk.FILE_CHOOSER_ACTION_OPEN:
-                self.set_action(gtk.FILE_CHOOSER_ACTION_SELECT_FOLDER)
-            elif self.get_action() == gtk.FILE_CHOOSER_ACTION_SELECT_FOLDER:
-                self.set_action(gtk.FILE_CHOOSER_ACTION_OPEN)
-            self.reset_by_action()
+class OpenFileSelection(FileSelection):
 
-        def reset_by_action(self):
-            if self.get_action() == gtk.FILE_CHOOSER_ACTION_OPEN:
-                self.convert_button.set_label(self.select_folder)
-                self.set_title(self.select_file)
-            elif self.get_action() == gtk.FILE_CHOOSER_ACTION_SELECT_FOLDER:
-                self.convert_button.set_label(self.select_file)
-                self.set_title(self.select_folder)
+    def __init__(self, *args, **kwargs):
+        FileSelection.__init__(self, gtk.FILE_CHOOSER_ACTION_OPEN, *args,
+                               **kwargs)
 
-        def set_title(self, title):
-            mytitle = title + ':'
-            FileSelection.set_title(self, mytitle)
+
+class SaveFileSelection(FileSelection):
+
+    def __init__(self, *args, **kwargs):
+        FileSelection.__init__(self, gtk.FILE_CHOOSER_ACTION_SAVE, *args,
+                               **kwargs)
+
+
+class ChooseFolderSelection(FileSelection):
+
+    def __init__(self, *args, **kwargs):
+        FileSelection.__init__(self, gtk.FILE_CHOOSER_ACTION_SELECT_FOLDER,
+                               *args, **kwargs)
+
+class CreateFolderSelection(FileSelection):
+
+    def __init__(self, *args, **kwargs):
+        FileSelection.__init__(self, gtk.FILE_CHOOSER_ACTION_CREATE_FOLDER,
+                               *args, **kwargs)
+
+
+class FileOrFolderSelection(FileSelection):
+    def __init__(self, *args, **kwargs):
+        FileSelection.__init__(self, gtk.FILE_CHOOSER_ACTION_OPEN, *args,
+                               **kwargs)
+        self.select_file   = _("Select a file"  )
+        self.select_folder = _("Select a folder")
+        self.convert_button_box = gtk.HBox()
+        self.convert_button = gtk.Button(self.select_folder)
+        self.convert_button.connect('clicked', self.change_action)
+        self.convert_button_box.pack_end(self.convert_button,
+                                         expand=False,
+                                         fill=False)
+        self.convert_button_box.show_all()
+        self.set_extra_widget(self.convert_button_box)
+        self.reset_by_action()
+        self.set_filter(self.all_filter)
+
+
+    def change_action(self, widget):
+        if self.get_action() == gtk.FILE_CHOOSER_ACTION_OPEN:
+            self.set_action(gtk.FILE_CHOOSER_ACTION_SELECT_FOLDER)
+        elif self.get_action() == gtk.FILE_CHOOSER_ACTION_SELECT_FOLDER:
+            self.set_action(gtk.FILE_CHOOSER_ACTION_OPEN)
+        self.reset_by_action()
+
+    def reset_by_action(self):
+        if self.get_action() == gtk.FILE_CHOOSER_ACTION_OPEN:
+            self.convert_button.set_label(self.select_folder)
+            self.set_title(self.select_file)
+        elif self.get_action() == gtk.FILE_CHOOSER_ACTION_SELECT_FOLDER:
+            self.convert_button.set_label(self.select_file)
+            self.set_title(self.select_folder)
+
+    def set_title(self, title):
+        mytitle = title + ':'
+        FileSelection.set_title(self, mytitle)
 
 
 class PaddedHSeparator(gtk.VBox):

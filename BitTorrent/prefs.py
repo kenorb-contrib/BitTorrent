@@ -77,6 +77,7 @@ class Preferences(object):
         return l
 
     def __iter__(self): return self.iterkeys()
+    def __str__(self): return 'Preferences({%s})' % str(self.items())
     def iteritems(self): return self.items().__iter__()
     def iterkeys(self): return self.keys().__iter__()
     def itervalues(self): return self.values().__iter__()
