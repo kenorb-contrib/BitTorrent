@@ -2953,7 +2953,9 @@ class DownloadInfoFrame(object):
             self.new_version, 
             self.torrentqueue.start_new_torrent,
             self.confirm_install_new_version   ,
-            self.global_error                  )
+            self.global_error                  ,
+            self.config['new_version']         ,
+            self.config['current_version']     )
 
         self.nag()
         

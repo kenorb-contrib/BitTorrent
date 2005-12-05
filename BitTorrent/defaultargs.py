@@ -181,7 +181,13 @@ def get_defaults(ui):
             ('ask_for_save', MYFALSE,
              'whether or not to ask for a location to save downloaded files in'),
             ('start_minimized', MYFALSE,
-             _("Start BitTorrent minimized")),            
+             _("Start BitTorrent minimized")),
+            ('new_version', '',
+             _("override the version provided by the http version check "
+               "and enable version check debugging mode")),
+            ('current_version', '',
+             _("override the current version in the version check "
+               "and enable version check debugging mode")),
             ])
 
         if os.name == 'nt':

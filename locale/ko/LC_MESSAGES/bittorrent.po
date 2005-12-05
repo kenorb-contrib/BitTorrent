@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: BitTorrent 4.2\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2005-12-02 17:22-0800\n"
+"POT-Creation-Date: 2005-12-05 12:07-0800\n"
 "PO-Revision-Date: 2005-11-10 20:27-0800\n"
 "Last-Translator: translate4me <matt-translate4me@bittorrent.com>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -21,8 +21,8 @@ msgstr ""
 msgid "Install Python %s or greater"
 msgstr ""
 
-#: bittorrent.py:118 BitTorrent/defaultargs.py:215
-#: BitTorrent/defaultargs.py:217 bittorrent-console.py:295
+#: bittorrent.py:118 BitTorrent/defaultargs.py:221
+#: BitTorrent/defaultargs.py:223 bittorrent-console.py:295
 #: bittorrent-curses.py:429
 msgid "deprecated, do not use"
 msgstr "사용하지 마십시오."
@@ -215,11 +215,11 @@ msgstr "%s 설정"
 msgid "General"
 msgstr ""
 
-#: bittorrent.py:867 BitTorrent/defaultargs.py:190
+#: bittorrent.py:867 BitTorrent/defaultargs.py:196
 msgid "Launch BitTorrent when Windows starts"
 msgstr ""
 
-#: bittorrent.py:873 BitTorrent/defaultargs.py:192
+#: bittorrent.py:873 BitTorrent/defaultargs.py:198
 msgid "Minimize to system tray"
 msgstr ""
 
@@ -776,30 +776,30 @@ msgstr "보기"
 msgid "Search for torrents"
 msgstr "Torrent 검색"
 
-#: bittorrent.py:3034
+#: bittorrent.py:3036
 msgid "(stopped)"
 msgstr "(멈춤)"
 
-#: bittorrent.py:3046
+#: bittorrent.py:3048
 msgid "(multiple)"
 msgstr "(배수)"
 
-#: bittorrent.py:3174
+#: bittorrent.py:3176
 #, python-format
 msgid "Already downloading %s installer"
 msgstr "%s 설치가 이미 다운로드 중임"
 
-#: bittorrent.py:3178
+#: bittorrent.py:3180
 #, python-format
 msgid "Install new %s now?"
 msgstr "새 %s을(를) 지금 설치하겠습니까?"
 
-#: bittorrent.py:3179
+#: bittorrent.py:3181
 #, python-format
 msgid "Do you want to quit %s and install the new version, %s, now?"
 msgstr "%s을(를) 종료하고 새버전 %s을(를) 지금 설치하겠습니까?"
 
-#: bittorrent.py:3195
+#: bittorrent.py:3197
 #, python-format
 msgid ""
 "%s help is at \n"
@@ -810,111 +810,111 @@ msgstr ""
 "%s에 있습니다.\n"
 "이동하시겠습니까?"
 
-#: bittorrent.py:3198
+#: bittorrent.py:3200
 msgid "Visit help web page?"
 msgstr "도움말 홈페이지를 방문하시겠습니까?"
 
-#: bittorrent.py:3235
+#: bittorrent.py:3237
 msgid "There is one finished torrent in the list. "
 msgstr "목록에 한 개의 완료된 Torrent가 있습니다."
 
-#: bittorrent.py:3236
+#: bittorrent.py:3238
 msgid "Do you want to remove it?"
 msgstr "지우시겠습니까?"
 
-#: bittorrent.py:3238
+#: bittorrent.py:3240
 #, python-format
 msgid "There are %d finished torrents in the list. "
 msgstr "목록에 %d개의 완료된 Torrent가 있습니다."
 
-#: bittorrent.py:3239
+#: bittorrent.py:3241
 msgid "Do you want to remove all of them?"
 msgstr "모두 지우시겠습니까?"
 
-#: bittorrent.py:3241
+#: bittorrent.py:3243
 msgid "Remove all finished torrents?"
 msgstr "완료된 Torrent를 제거 하시겠습니까?"
 
-#: bittorrent.py:3249
+#: bittorrent.py:3251
 msgid "No finished torrents"
 msgstr "완료된 Torrent 없음"
 
-#: bittorrent.py:3250
+#: bittorrent.py:3252
 msgid "There are no finished torrents to remove."
 msgstr "제거할 Torrent가 없습니다."
 
-#: bittorrent.py:3307
+#: bittorrent.py:3309
 msgid "Open torrent:"
 msgstr "Torrent 열기:"
 
-#: bittorrent.py:3338
+#: bittorrent.py:3340
 msgid "Change save location for "
 msgstr "저장 위치 변경"
 
-#: bittorrent.py:3365
+#: bittorrent.py:3367
 msgid "File exists!"
 msgstr "파일이 존재합니다!"
 
-#: bittorrent.py:3366
+#: bittorrent.py:3368
 #, python-format
 msgid "\"%s\" already exists. Do you want to choose a different file name?"
 msgstr "\"%s\"은(는) 이미 있습니다. 다른 파일을 선택하시겠습니까?"
 
-#: bittorrent.py:3385
+#: bittorrent.py:3387
 msgid "Save location for "
 msgstr "저장 위치"
 
-#: bittorrent.py:3403
+#: bittorrent.py:3405
 msgid "Directory exists!"
 msgstr "디렉터리가 있습니다!"
 
-#: bittorrent.py:3404
+#: bittorrent.py:3406
 #, python-format
 msgid ""
 "\"%s\" already exists. Do you intend to create an identical, duplicate "
 "directory inside the existing directory?"
 msgstr "\"%s\"은(는) 이미 있습니다. 이 디렉터리 안에 중복해서 만들겠습니까?"
 
-#: bittorrent.py:3527
+#: bittorrent.py:3529
 #, python-format
 msgid "(global message) : %s"
 msgstr "(전체 메시지) : %s"
 
-#: bittorrent.py:3534
+#: bittorrent.py:3536
 #, python-format
 msgid "%s Error"
 msgstr "%s 오류"
 
-#: bittorrent.py:3540
+#: bittorrent.py:3542
 msgid "Multiple errors have occurred. Click OK to view the error log."
 msgstr ""
 "여러 오류가 발생했습니다. 확인을 누르시면 오류 로그를 보실 수 있습니다."
 
-#: bittorrent.py:3696
+#: bittorrent.py:3698
 msgid "Stop running torrent?"
 msgstr "진행중인 Torrent를 중지하시겠습니까?"
 
-#: bittorrent.py:3697
+#: bittorrent.py:3699
 #, python-format
 msgid ""
 "You are about to start \"%s\". Do you want to stop another running torrent "
 "as well?"
 msgstr ""
 
-#: bittorrent.py:3708
+#: bittorrent.py:3710
 msgid "Have you donated?"
 msgstr "기부하였습니까?"
 
-#: bittorrent.py:3709
+#: bittorrent.py:3711
 #, python-format
 msgid "Welcome to the new version of %s. Have you donated?"
 msgstr "새버전 %s 입니다. 기부하였습니까?"
 
-#: bittorrent.py:3724
+#: bittorrent.py:3726
 msgid "Thanks!"
 msgstr "감사합니다!"
 
-#: bittorrent.py:3725
+#: bittorrent.py:3727
 msgid ""
 "Thanks for donating! To donate again, select \"Donate\" from the \"Help\" "
 "menu."
@@ -922,7 +922,7 @@ msgstr ""
 "기부에 감사합니다! 다시 \"기부\"하기 위해서, 도움말 메뉴에서 \"기부\"를 선택"
 "해 주십시오."
 
-#: bittorrent.py:3830
+#: bittorrent.py:3832
 msgid "Could not start the TorrentQueue, see above for errors."
 msgstr "TorrentQueue를 시작할 수 없습니다. 오류는 위를 참조하십시오."
 
@@ -1187,33 +1187,33 @@ msgstr ""
 "마지막으로 완료된 Torrent가 시드를 중단하였을 때 이미 설정 조건을 맞추었다면 "
 "Torrent를 시작할 수 없습니다."
 
-#: BitTorrent/NewVersion.py:92
+#: BitTorrent/NewVersion.py:105
 #, python-format
 msgid "Could not get latest version from %s"
 msgstr "%s에서 최신 버전을 가져올 수 없음"
 
-#: BitTorrent/NewVersion.py:97
+#: BitTorrent/NewVersion.py:110
 #, python-format
 msgid "Could not parse new version string from %s"
 msgstr "%s에서 새 버전 스트링을 분석할 수 없음"
 
-#: BitTorrent/NewVersion.py:228
+#: BitTorrent/NewVersion.py:241
 #, python-format
 msgid ""
 "Could not find a suitable temporary location to save the %s %s installer."
 msgstr "%s %s 설치를 저장할 적합한 임시 위치를 찾을 수 없습니다."
 
-#: BitTorrent/NewVersion.py:247
+#: BitTorrent/NewVersion.py:260
 #, python-format
 msgid "No torrent file available for %s %s installer."
 msgstr "%s %s 설치에 이용 가능한 Torrent 파일이 없습니다."
 
-#: BitTorrent/NewVersion.py:257
+#: BitTorrent/NewVersion.py:270
 #, python-format
 msgid "%s %s installer appears to be incomplete, missing, or corrupt."
 msgstr ""
 
-#: BitTorrent/NewVersion.py:265
+#: BitTorrent/NewVersion.py:278
 msgid "Cannot launch installer on this OS"
 msgstr "현재 OS에서 설치를 시작할 수 없음"
 
@@ -1478,7 +1478,19 @@ msgstr ""
 msgid "Start BitTorrent minimized"
 msgstr ""
 
-#: BitTorrent/defaultargs.py:198
+#: BitTorrent/defaultargs.py:186
+msgid ""
+"override the version provided by the http version check and enable version "
+"check debugging mode"
+msgstr ""
+
+#: BitTorrent/defaultargs.py:189
+msgid ""
+"override the current version in the version check and enable version check "
+"debugging mode"
+msgstr ""
+
+#: BitTorrent/defaultargs.py:204
 msgid ""
 "file name (for single-file torrents) or directory name (for batch torrents) "
 "to save the torrent as, overriding the default name in the torrent. See also "
@@ -1487,7 +1499,7 @@ msgstr ""
 "Torrent의 기본명을 무시하고 파일명(단일 파일 Torrent) 또는 디렉터리명(배치 "
 "Torrent)으로 다른 Torrent 이름으로 저장합니다. --저장 위치를 참조합니다."
 
-#: BitTorrent/defaultargs.py:205 BitTorrent/defaultargs.py:225
+#: BitTorrent/defaultargs.py:211 BitTorrent/defaultargs.py:231
 msgid ""
 "the maximum number of uploads to allow at once. -1 means a (hopefully) "
 "reasonable number based on --max_upload_rate. The automatic values are only "
@@ -1497,7 +1509,7 @@ msgstr ""
 "으로 한 적합한 수를 의미합니다. 자동 값은 한 번에 하나의 Torrent가 실행될 때"
 "만 적합합니다.    "
 
-#: BitTorrent/defaultargs.py:210
+#: BitTorrent/defaultargs.py:216
 msgid ""
 "local directory where the torrent contents will be saved. The file (single-"
 "file torrents) or directory (batch torrents) will be created under this "
@@ -1508,11 +1520,11 @@ msgstr ""
 "터리(배치 Torrent)가 지정된 .torrent 파일로 기본명을 사용하여 이 디텍터리에 "
 "생성될 것입니다. --저장하기를 참조합니다."
 
-#: BitTorrent/defaultargs.py:219
+#: BitTorrent/defaultargs.py:225
 msgid "whether or not to ask for a location to save downloaded files in"
 msgstr "다운로드한 파일을 저장할 위치 묻기 여부"
 
-#: BitTorrent/defaultargs.py:230
+#: BitTorrent/defaultargs.py:236
 msgid ""
 "local directory where the torrents will be saved, using a name determined by "
 "--saveas_style. If this is left empty each torrent will be saved under the "
@@ -1522,17 +1534,17 @@ msgstr ""
 "로컬 디렉터리입니다. 각 Torrent가 비워져 있다면 해당되는 .torrent 파일의 디렉"
 "터리 아래에 저장될 것입니다. "
 
-#: BitTorrent/defaultargs.py:235 BitTorrent/track.py:77
+#: BitTorrent/defaultargs.py:241 BitTorrent/track.py:77
 msgid "how often to rescan the torrent directory, in seconds"
 msgstr "Torrent 디렉터리 재스캔 횟수, 단위는 초"
 
-#: BitTorrent/defaultargs.py:237
+#: BitTorrent/defaultargs.py:243
 msgid ""
 "wait this many seconds after noticing a torrent before starting it, to avoid "
 "race with tracker"
 msgstr ""
 
-#: BitTorrent/defaultargs.py:239
+#: BitTorrent/defaultargs.py:245
 msgid ""
 "How to name torrent downloads: 1: use name OF torrent file (minus ."
 "torrent);  2: use name encoded IN torrent file;  3: create a directory with "
@@ -1551,28 +1563,28 @@ msgstr ""
 "를 생성, 주의: 옵션 1과 2는 경고와 현재 보안 문제의 알림 없이 파일을 덮어쓸 "
 "수 있습니다.  "
 
-#: BitTorrent/defaultargs.py:254
+#: BitTorrent/defaultargs.py:260
 msgid ""
 "whether to display the full path or the torrent contents for each torrent"
 msgstr "전체 경로를 표시하거나 각 Torrent의 내용 표시"
 
-#: BitTorrent/defaultargs.py:261
+#: BitTorrent/defaultargs.py:267
 msgid "directory to look for .torrent files (semi-recursive)"
 msgstr ".torrent 파일 검색을 위한 디렉터리(semi-recursive)"
 
-#: BitTorrent/defaultargs.py:266
+#: BitTorrent/defaultargs.py:272
 msgid "whether to display diagnostic info to stdout"
 msgstr "Stdout에 진단 정보 표시 여부"
 
-#: BitTorrent/defaultargs.py:271
+#: BitTorrent/defaultargs.py:277
 msgid "which power of two to set the piece size to"
 msgstr "2개 중 조각 크기를 설정하는 파워"
 
-#: BitTorrent/defaultargs.py:273
+#: BitTorrent/defaultargs.py:279
 msgid "default tracker name"
 msgstr "기본 Tracker 이름"
 
-#: BitTorrent/defaultargs.py:276
+#: BitTorrent/defaultargs.py:282
 msgid ""
 "if false then make a trackerless torrent, instead of announce URL, use "
 "reliable node in form of <ip>:<port> or an empty string to pull some nodes "

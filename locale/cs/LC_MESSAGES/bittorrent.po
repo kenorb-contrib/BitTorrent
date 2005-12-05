@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: BitTorrent 4.2\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2005-12-02 17:22-0800\n"
+"POT-Creation-Date: 2005-12-05 12:07-0800\n"
 "PO-Revision-Date: 2005-11-20 22:53-0800\n"
 "Last-Translator: Matt Chisholm <matt@bittorrent.com>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -21,8 +21,8 @@ msgstr ""
 msgid "Install Python %s or greater"
 msgstr ""
 
-#: bittorrent.py:118 BitTorrent/defaultargs.py:215
-#: BitTorrent/defaultargs.py:217 bittorrent-console.py:295
+#: bittorrent.py:118 BitTorrent/defaultargs.py:221
+#: BitTorrent/defaultargs.py:223 bittorrent-console.py:295
 #: bittorrent-curses.py:429
 msgid "deprecated, do not use"
 msgstr "toto není schválené, nepoužívat"
@@ -216,11 +216,11 @@ msgstr "Nastavení %s "
 msgid "General"
 msgstr ""
 
-#: bittorrent.py:867 BitTorrent/defaultargs.py:190
+#: bittorrent.py:867 BitTorrent/defaultargs.py:196
 msgid "Launch BitTorrent when Windows starts"
 msgstr ""
 
-#: bittorrent.py:873 BitTorrent/defaultargs.py:192
+#: bittorrent.py:873 BitTorrent/defaultargs.py:198
 msgid "Minimize to system tray"
 msgstr ""
 
@@ -779,30 +779,30 @@ msgstr "_Zobrazit"
 msgid "Search for torrents"
 msgstr "Hledat torrenty"
 
-#: bittorrent.py:3034
+#: bittorrent.py:3036
 msgid "(stopped)"
 msgstr "(zastaveno)"
 
-#: bittorrent.py:3046
+#: bittorrent.py:3048
 msgid "(multiple)"
 msgstr "(vícenásobné)"
 
-#: bittorrent.py:3174
+#: bittorrent.py:3176
 #, python-format
 msgid "Already downloading %s installer"
 msgstr "Už staženo %s instalátoru"
 
-#: bittorrent.py:3178
+#: bittorrent.py:3180
 #, python-format
 msgid "Install new %s now?"
 msgstr "Instalovat nový %s hned?"
 
-#: bittorrent.py:3179
+#: bittorrent.py:3181
 #, python-format
 msgid "Do you want to quit %s and install the new version, %s, now?"
 msgstr "Ukončit %s a instalovat novou verzi, %s, nyní?"
 
-#: bittorrent.py:3195
+#: bittorrent.py:3197
 #, python-format
 msgid ""
 "%s help is at \n"
@@ -813,65 +813,65 @@ msgstr ""
 "%s\n"
 "Chcete navštívit tuto stránku již nyní?"
 
-#: bittorrent.py:3198
+#: bittorrent.py:3200
 msgid "Visit help web page?"
 msgstr "Navštívit webovou stránku nápovědy?"
 
-#: bittorrent.py:3235
+#: bittorrent.py:3237
 msgid "There is one finished torrent in the list. "
 msgstr "V seznamu je jeden dokončený torrent."
 
-#: bittorrent.py:3236
+#: bittorrent.py:3238
 msgid "Do you want to remove it?"
 msgstr "Chcete ho odstranit?"
 
-#: bittorrent.py:3238
+#: bittorrent.py:3240
 #, python-format
 msgid "There are %d finished torrents in the list. "
 msgstr "V seznamu je %d dokončených torrentů."
 
-#: bittorrent.py:3239
+#: bittorrent.py:3241
 msgid "Do you want to remove all of them?"
 msgstr "Chcete je všechny odstranit?"
 
-#: bittorrent.py:3241
+#: bittorrent.py:3243
 msgid "Remove all finished torrents?"
 msgstr "Odstranit všechny dokončené torrenty?"
 
-#: bittorrent.py:3249
+#: bittorrent.py:3251
 msgid "No finished torrents"
 msgstr "Žádné dokončené torrenty"
 
-#: bittorrent.py:3250
+#: bittorrent.py:3252
 msgid "There are no finished torrents to remove."
 msgstr "Nejsou žádné dokončené torrenty pro odstranění."
 
-#: bittorrent.py:3307
+#: bittorrent.py:3309
 msgid "Open torrent:"
 msgstr "Otevřít torrent:"
 
-#: bittorrent.py:3338
+#: bittorrent.py:3340
 msgid "Change save location for "
 msgstr "Změnit adresář pro ukládání na"
 
-#: bittorrent.py:3365
+#: bittorrent.py:3367
 msgid "File exists!"
 msgstr "Soubor již existuje!"
 
-#: bittorrent.py:3366
+#: bittorrent.py:3368
 #, python-format
 msgid "\"%s\" already exists. Do you want to choose a different file name?"
 msgstr "\"%s\" již existuje. Chcete použít jiný název souboru?"
 
-#: bittorrent.py:3385
+#: bittorrent.py:3387
 msgid "Save location for "
 msgstr "Adresář pro uložení"
 
-#: bittorrent.py:3403
+#: bittorrent.py:3405
 msgid "Directory exists!"
 msgstr "Adresář existuje!"
 
-#: bittorrent.py:3404
+#: bittorrent.py:3406
 #, python-format
 msgid ""
 "\"%s\" already exists. Do you intend to create an identical, duplicate "
@@ -880,45 +880,45 @@ msgstr ""
 "\"%s\" již existuje. Chcete vytvořit stejně pojmenovaný adresář uvnitř "
 "tohoto adreáře?"
 
-#: bittorrent.py:3527
+#: bittorrent.py:3529
 #, python-format
 msgid "(global message) : %s"
 msgstr "(globální zpráva): %s"
 
-#: bittorrent.py:3534
+#: bittorrent.py:3536
 #, python-format
 msgid "%s Error"
 msgstr "Chyba %s"
 
-#: bittorrent.py:3540
+#: bittorrent.py:3542
 msgid "Multiple errors have occurred. Click OK to view the error log."
 msgstr "Objevilo se několik chyb. Stisknutím OK zobrazte protokol chyb."
 
-#: bittorrent.py:3696
+#: bittorrent.py:3698
 msgid "Stop running torrent?"
 msgstr "Zastavit spuštěný torrent?"
 
-#: bittorrent.py:3697
+#: bittorrent.py:3699
 #, python-format
 msgid ""
 "You are about to start \"%s\". Do you want to stop another running torrent "
 "as well?"
 msgstr ""
 
-#: bittorrent.py:3708
+#: bittorrent.py:3710
 msgid "Have you donated?"
 msgstr "Přispěli jste již na vývoj?"
 
-#: bittorrent.py:3709
+#: bittorrent.py:3711
 #, python-format
 msgid "Welcome to the new version of %s. Have you donated?"
 msgstr "Vítá Vás nová verze %s. Přispěli jste již na vývoj?"
 
-#: bittorrent.py:3724
+#: bittorrent.py:3726
 msgid "Thanks!"
 msgstr "Děkujeme!"
 
-#: bittorrent.py:3725
+#: bittorrent.py:3727
 msgid ""
 "Thanks for donating! To donate again, select \"Donate\" from the \"Help\" "
 "menu."
@@ -926,7 +926,7 @@ msgstr ""
 "Děkujeme za finanční příspěvek! Pokud budete chtít přispět znovu, zvolte "
 "\"Přispějte na vývoj\" v nabídce \"Nápověda\"."
 
-#: bittorrent.py:3830
+#: bittorrent.py:3832
 msgid "Could not start the TorrentQueue, see above for errors."
 msgstr "Nelze spustit TorrentQueue, viz chyby výše."
 
@@ -1193,33 +1193,33 @@ msgstr ""
 "Torrent se nespustí, protože již splnil podmínky určené v nastavení pro "
 "zastavení sdílení."
 
-#: BitTorrent/NewVersion.py:92
+#: BitTorrent/NewVersion.py:105
 #, python-format
 msgid "Could not get latest version from %s"
 msgstr "Nelze získat poslední verzi z %s"
 
-#: BitTorrent/NewVersion.py:97
+#: BitTorrent/NewVersion.py:110
 #, python-format
 msgid "Could not parse new version string from %s"
 msgstr "Nelze analyzovat textový řetězec nové verze v %s"
 
-#: BitTorrent/NewVersion.py:228
+#: BitTorrent/NewVersion.py:241
 #, python-format
 msgid ""
 "Could not find a suitable temporary location to save the %s %s installer."
 msgstr "Nelze najít vhodné dočasné umístění pro uložení %s %s instalátoru"
 
-#: BitTorrent/NewVersion.py:247
+#: BitTorrent/NewVersion.py:260
 #, python-format
 msgid "No torrent file available for %s %s installer."
 msgstr "K dispozici není žádný torrent pro %s %s instalátor."
 
-#: BitTorrent/NewVersion.py:257
+#: BitTorrent/NewVersion.py:270
 #, python-format
 msgid "%s %s installer appears to be incomplete, missing, or corrupt."
 msgstr ""
 
-#: BitTorrent/NewVersion.py:265
+#: BitTorrent/NewVersion.py:278
 msgid "Cannot launch installer on this OS"
 msgstr "Nelze spustit instalátor na tomto operačním systému"
 
@@ -1502,7 +1502,19 @@ msgstr ""
 msgid "Start BitTorrent minimized"
 msgstr ""
 
-#: BitTorrent/defaultargs.py:198
+#: BitTorrent/defaultargs.py:186
+msgid ""
+"override the version provided by the http version check and enable version "
+"check debugging mode"
+msgstr ""
+
+#: BitTorrent/defaultargs.py:189
+msgid ""
+"override the current version in the version check and enable version check "
+"debugging mode"
+msgstr ""
+
+#: BitTorrent/defaultargs.py:204
 msgid ""
 "file name (for single-file torrents) or directory name (for batch torrents) "
 "to save the torrent as, overriding the default name in the torrent. See also "
@@ -1512,7 +1524,7 @@ msgstr ""
 "skupinové torrenty) pro uložení torrentu po jiným názvem, a tím nahradit "
 "původní název. Podívejte se také na --save_in"
 
-#: BitTorrent/defaultargs.py:205 BitTorrent/defaultargs.py:225
+#: BitTorrent/defaultargs.py:211 BitTorrent/defaultargs.py:231
 msgid ""
 "the maximum number of uploads to allow at once. -1 means a (hopefully) "
 "reasonable number based on --max_upload_rate. The automatic values are only "
@@ -1523,7 +1535,7 @@ msgstr ""
 "datová propustnost směrem ven). Automatická nastavení bývají dostatečně "
 "účinná, pouze pokud probíhá jediné stahování torrentu v jednom okamžiku."
 
-#: BitTorrent/defaultargs.py:210
+#: BitTorrent/defaultargs.py:216
 msgid ""
 "local directory where the torrent contents will be saved. The file (single-"
 "file torrents) or directory (batch torrents) will be created under this "
@@ -1535,13 +1547,13 @@ msgstr ""
 "torrenty o více souborech do podadresáře (jeho název bude převzat z názvu "
 "souboru .torrent souboru). Podívejte se také na --save_as."
 
-#: BitTorrent/defaultargs.py:219
+#: BitTorrent/defaultargs.py:225
 msgid "whether or not to ask for a location to save downloaded files in"
 msgstr ""
 "ovlivní, zda se bude program dotazovat uživatele na umístění stahovaných "
 "souborů"
 
-#: BitTorrent/defaultargs.py:230
+#: BitTorrent/defaultargs.py:236
 msgid ""
 "local directory where the torrents will be saved, using a name determined by "
 "--saveas_style. If this is left empty each torrent will be saved under the "
@@ -1552,17 +1564,17 @@ msgstr ""
 "každý torrent uložen do adresáře, jehož název bude převzat z názvu "
 "příslušného souboru .torrent."
 
-#: BitTorrent/defaultargs.py:235 BitTorrent/track.py:77
+#: BitTorrent/defaultargs.py:241 BitTorrent/track.py:77
 msgid "how often to rescan the torrent directory, in seconds"
 msgstr "jak často prohledávat složku torrentů (v sekundách)"
 
-#: BitTorrent/defaultargs.py:237
+#: BitTorrent/defaultargs.py:243
 msgid ""
 "wait this many seconds after noticing a torrent before starting it, to avoid "
 "race with tracker"
 msgstr ""
 
-#: BitTorrent/defaultargs.py:239
+#: BitTorrent/defaultargs.py:245
 msgid ""
 "How to name torrent downloads: 1: use name OF torrent file (minus ."
 "torrent);  2: use name encoded IN torrent file;  3: create a directory with "
@@ -1581,30 +1593,30 @@ msgstr ""
 "VAROVÁNÍ: možnosti 1 a 2 mohou přepsat soubory bez varování a mohou "
 "způsobovat bezpečnostní problémy."
 
-#: BitTorrent/defaultargs.py:254
+#: BitTorrent/defaultargs.py:260
 msgid ""
 "whether to display the full path or the torrent contents for each torrent"
 msgstr "zda zobrazovat celou cestu nebo obsah torrentu pro každý torrent"
 
-#: BitTorrent/defaultargs.py:261
+#: BitTorrent/defaultargs.py:267
 msgid "directory to look for .torrent files (semi-recursive)"
 msgstr "Adresář pro vyhledání souborů .torrent  (částečně opakovatelný)"
 
-#: BitTorrent/defaultargs.py:266
+#: BitTorrent/defaultargs.py:272
 msgid "whether to display diagnostic info to stdout"
 msgstr ""
 "ovlivní, zda budou zobrazovány diagnostická hlášení a informace do "
 "standardního výstupu (stdout)"
 
-#: BitTorrent/defaultargs.py:271
+#: BitTorrent/defaultargs.py:277
 msgid "which power of two to set the piece size to"
 msgstr "na jakou mocninu dvou se má nastavit velikost kusu "
 
-#: BitTorrent/defaultargs.py:273
+#: BitTorrent/defaultargs.py:279
 msgid "default tracker name"
 msgstr "výchozí název trackeru"
 
-#: BitTorrent/defaultargs.py:276
+#: BitTorrent/defaultargs.py:282
 msgid ""
 "if false then make a trackerless torrent, instead of announce URL, use "
 "reliable node in form of <ip>:<port> or an empty string to pull some nodes "

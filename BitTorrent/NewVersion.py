@@ -60,7 +60,8 @@ currentversion = Version.from_str(version)
 availableversion = None
 
 class Updater(object):
-    def __init__(self, threadwrap, newversionfunc, startfunc, installfunc, errorfunc):
+    def __init__(self, threadwrap, newversionfunc, startfunc, installfunc,
+                 errorfunc, test_new_version='', test_current_version=''):
         self.threadwrap     = threadwrap  # for calling back to UI from thread
         self.newversionfunc = newversionfunc # alert to new version UI function
         self.startfunc      = startfunc   # start torrent UI function
@@ -68,6 +69,7 @@ class Updater(object):
         self.errorfunc      = errorfunc   # report error UI function
         self.infohash = None
         self.version = currentversion
+        self.currentversion = currentversion
         self.asked_for_install = False
         self.version_site = version_host
         if os.name == 'nt':
@@ -76,9 +78,20 @@ class Updater(object):
                 self.version_site += 'legacy/'
         elif osx:
             self.version_site += 'osx/'
-            
+        self.debug_mode = DEBUG
+        if test_new_version:
+            test_new_version = Version.from_str(test_new_version)
+            self.debug_mode = True
+            def _hack_get_available(url):
+                return test_new_version
+            self._get_available = _hack_get_available
+        if test_current_version:
+            self.debug_mode = True
+            self.currentversion = Version.from_str(test_current_version)
+
+
     def debug(self, message):
-        if DEBUG:
+        if self.debug_mode:
             self.threadwrap(self.errorfunc, WARNING, message)
 
 
@@ -99,12 +112,12 @@ class Updater(object):
 
 
     def get_available(self):
-        url = self.version_site + currentversion.name()
+        url = self.version_site + self.currentversion.name()
         availableversion = self._get_available(url)
         if availableversion.is_beta():
-            if availableversion[1] != currentversion:
-                availableversion = currentversion 
-        if currentversion.is_beta():
+            if availableversion[1] != self.currentversion:
+                availableversion = self.currentversion 
+        if self.currentversion.is_beta():
             stable_url = self.version_site + 'stable'
             available_stable_version = self._get_available(stable_url)
             if available_stable_version > availableversion:
@@ -121,7 +134,7 @@ class Updater(object):
             self.threadwrap(self.errorfunc, WARNING, e)
             return 
 
-        if self.version <= currentversion:
+        if self.version <= self.currentversion:
             self.debug('Updater.get() not updating old version %s' % str(self.version))
             return
 
@@ -183,11 +196,11 @@ class Updater(object):
         if osx:
             pool = NSAutoreleasePool.alloc().init()
         self.get()
-        if self.version > currentversion:
+        if self.version > self.currentversion:
             self.threadwrap(self.newversionfunc, self.version, download_url)
 
     def can_install(self):
-        if DEBUG:
+        if self.debug_mode:
             return True
         if os.name == 'nt':
             return True
@@ -201,7 +214,7 @@ class Updater(object):
             ext = 'exe'
         elif osx:
             ext = 'dmg'
-        elif os.name == 'posix' and DEBUG: 
+        elif os.name == 'posix' and self.debug_mode: 
             ext = 'tar.gz' 
         else:
             return
