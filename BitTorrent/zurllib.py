@@ -82,7 +82,7 @@ class HTTPContentEncodingHandler(HTTPHandler):
             print "Sending:"
             print req.headers
             print "\n"
-        fp = self.http_open(self,req)
+        fp = self.do_open(BindingHTTP, req)
         headers = fp.headers
         if DEBUG: 
              pprint.pprint(headers.dict)
@@ -93,10 +93,6 @@ class HTTPContentEncodingHandler(HTTPHandler):
         if hasattr(fp, 'msg'):
             resp.msg = fp.msg
         return resp
-
-    def http_open(self, req):
-        return self.do_open(BindingHTTP, req)
-
 
 class addinfourldecompress(addinfourl):
     """Do gzip decompression if necessary. Do addinfourl stuff too."""

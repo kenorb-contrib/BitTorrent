@@ -1,5 +1,5 @@
 APP_NAME="bittorrent"
-LANGUAGES=`python language_codes.py`
+LANGUAGES=`python language_codes.py -a`
 MESSAGES_PO="messages.pot"
 
 rm -f $APP_NAME.lis

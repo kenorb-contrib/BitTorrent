@@ -7,9 +7,9 @@ msgid ""
 msgstr ""
 "Project-Id-Version: BitTorrent 4.2\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2005-11-22 12:50-0800\n"
-"PO-Revision-Date: 2005-11-15 14:10-0800\n"
-"Last-Translator: Matt Chisholm <matt@bittorrent.com>\n"
+"POT-Creation-Date: 2005-12-05 15:15-0800\n"
+"PO-Revision-Date: 2005-12-04 08:26-0800\n"
+"Last-Translator: Lupoiu Victor Alexandru <lupoiu.victor@gmail.com>\n"
 "Language-Team: Lupoiu Victor Alexandru ( lupoiu [dot] victor [at] gmail[dot]"
 "com )\n"
 "MIME-Version: 1.0\n"
@@ -22,10 +22,10 @@ msgstr ""
 #: bittorrent.py:29 maketorrent.py:23
 #, python-format
 msgid "Install Python %s or greater"
-msgstr ""
+msgstr "Instalati Python %s sau mai nou"
 
-#: bittorrent.py:118 BitTorrent/defaultargs.py:215
-#: BitTorrent/defaultargs.py:217 bittorrent-console.py:295
+#: bittorrent.py:118 BitTorrent/defaultargs.py:221
+#: BitTorrent/defaultargs.py:223 bittorrent-console.py:295
 #: bittorrent-curses.py:429
 msgid "deprecated, do not use"
 msgstr "dezaprobat, a nu se folosi"
@@ -33,7 +33,7 @@ msgstr "dezaprobat, a nu se folosi"
 #: bittorrent.py:137
 msgid "Failed to create or send command through existing control socket."
 msgstr ""
-"Eşuare la crearea sau trimiterea unei comenzi printr-un socul de control "
+"Eşuare la crearea sau trimiterea unei comenzi printr-un soclu de control "
 "existent."
 
 #: bittorrent.py:139 bittorrent.py:168
@@ -53,13 +53,13 @@ msgstr "Eşuare la trimiterea unei comenzi printr-un soclu de control existent."
 #: bittorrent.py:178 BitTorrent/GUI.py:22
 #, python-format
 msgid "PyGTK %s or newer required"
-msgstr ""
+msgstr "PyGTK %s sau mai nou este necesar"
 
-#: bittorrent.py:195 bittorrent.py:1721
+#: bittorrent.py:195 bittorrent.py:1726
 msgid "drag to reorder"
 msgstr "glisare pentru reordonare"
 
-#: bittorrent.py:196 bittorrent.py:1722
+#: bittorrent.py:196 bittorrent.py:1727
 msgid "right-click for menu"
 msgstr "clic-dreapta pentru meniu"
 
@@ -119,7 +119,7 @@ msgstr "Oprire temporară a tuturor torentelor care rulează"
 msgid "Resume downloading"
 msgstr "Reluare descărcare"
 
-#: bittorrent.py:510 bittorrent.py:2153
+#: bittorrent.py:510 bittorrent.py:2158
 msgid "Paused"
 msgstr "Pauză"
 
@@ -133,7 +133,7 @@ msgstr "Rulare normală"
 
 #: bittorrent.py:516
 msgid "Probably firewalled/NATted"
-msgstr ""
+msgstr "Probabil in spatele unui firewall/NAT"
 
 #: bittorrent.py:552
 #, python-format
@@ -159,11 +159,11 @@ msgstr ""
 "Puteţi descărca întotdeauna cea mai recentă versiune de la \n"
 "%s"
 
-#: bittorrent.py:576 bittorrent.py:1950
+#: bittorrent.py:576 bittorrent.py:1955
 msgid "Download _later"
 msgstr "Descărcare mai _tarziu"
 
-#: bittorrent.py:579 bittorrent.py:1938
+#: bittorrent.py:579 bittorrent.py:1943
 msgid "Download _now"
 msgstr "Descărcare _acum"
 
@@ -218,15 +218,15 @@ msgstr "Setări %s"
 
 #: bittorrent.py:864
 msgid "General"
-msgstr ""
+msgstr "General"
 
-#: bittorrent.py:867 BitTorrent/defaultargs.py:190
+#: bittorrent.py:867 BitTorrent/defaultargs.py:196
 msgid "Launch BitTorrent when Windows starts"
-msgstr ""
+msgstr "Lanseaza bitTorrent la pornirea Windows"
 
-#: bittorrent.py:873 BitTorrent/defaultargs.py:192
+#: bittorrent.py:873 BitTorrent/defaultargs.py:198
 msgid "Minimize to system tray"
-msgstr ""
+msgstr "Minimalizeaza in bara de sistem"
 
 #: bittorrent.py:879
 msgid ""
@@ -257,20 +257,20 @@ msgid "Downloading"
 msgstr "Se descarcă..."
 
 #: bittorrent.py:920
-msgid "Starting additional torrents manually:"
-msgstr "Pornire manuală torente suplimentare:"
+msgid "When starting a new torrent:"
+msgstr ""
 
 #: bittorrent.py:929
-msgid "Always stops the _last running torrent"
-msgstr "Întotdeauna se opreşte _ultimul torent care rulează"
+msgid "_Stop another running torrent to make room"
+msgstr ""
 
 #: bittorrent.py:935
-msgid "Always starts the torrent in _parallel"
-msgstr "Întotdeauna porneşte torentele în _paralel"
+msgid "_Don't stop other running torrents"
+msgstr ""
 
 #: bittorrent.py:941
-msgid "_Asks each time"
-msgstr "_Întreabă întotdeauna"
+msgid "_Ask each time"
+msgstr ""
 
 #: bittorrent.py:958
 msgid "Seeding"
@@ -318,7 +318,7 @@ msgstr ""
 "(Nu are nici un efect decât dacă sunteţi pe\n"
 "aceeaşi reţea ca şi tracker-ul)"
 
-#: bittorrent.py:1092
+#: bittorrent.py:1097
 #, python-format
 msgid ""
 "WARNING: Changing these settings can\n"
@@ -327,486 +327,486 @@ msgstr ""
 "ATENŢIE: Schimbarea acestor setări poate cauza\n"
 "funcţionarea incorectă a %s."
 
-#: bittorrent.py:1100
+#: bittorrent.py:1105
 msgid "Option"
 msgstr "Opţiune"
 
-#: bittorrent.py:1105
+#: bittorrent.py:1110
 msgid "Value"
 msgstr "Valoare"
 
-#: bittorrent.py:1112
+#: bittorrent.py:1117
 msgid "Advanced"
 msgstr "Avansat"
 
-#: bittorrent.py:1121
+#: bittorrent.py:1126
 msgid "Choose default download directory"
 msgstr "Alegere director implicit pentru salvare"
 
-#: bittorrent.py:1195
+#: bittorrent.py:1200
 #, python-format
 msgid "Files in \"%s\""
 msgstr "Fişiere în \"%s\""
 
-#: bittorrent.py:1207
+#: bittorrent.py:1212
 msgid "Never"
-msgstr ""
+msgstr "Niciodata"
 
-#: bittorrent.py:1207
+#: bittorrent.py:1212
 msgid "Never download"
 msgstr "A nu se descărca"
 
-#: bittorrent.py:1208
+#: bittorrent.py:1213
 msgid "Normal"
-msgstr ""
+msgstr "Normal"
 
-#: bittorrent.py:1208
+#: bittorrent.py:1213
 msgid "Download normally"
-msgstr ""
+msgstr "Descarca normal"
 
-#: bittorrent.py:1209
+#: bittorrent.py:1214
 msgid "First"
-msgstr ""
+msgstr "Primul"
 
-#: bittorrent.py:1209
+#: bittorrent.py:1214
 msgid "Download first"
-msgstr ""
+msgstr "Descarca primul"
 
-#: bittorrent.py:1219 launchmany-curses.py:146
+#: bittorrent.py:1224 launchmany-curses.py:146
 msgid "Filename"
 msgstr "Nume fişier"
 
-#: bittorrent.py:1219
+#: bittorrent.py:1224
 msgid "Length"
 msgstr "Lungime"
 
-#: bittorrent.py:1219
+#: bittorrent.py:1224
 msgid "%"
 msgstr "%"
 
-#: bittorrent.py:1222 launchmany-curses.py:141
+#: bittorrent.py:1227 launchmany-curses.py:141
 msgid "Download"
 msgstr "Tragere"
 
-#: bittorrent.py:1383
+#: bittorrent.py:1388
 msgid "never"
-msgstr ""
+msgstr "niciodata"
 
-#: bittorrent.py:1385
+#: bittorrent.py:1390
 msgid "first"
-msgstr ""
+msgstr "primul"
 
-#: bittorrent.py:1410
+#: bittorrent.py:1415
 #, python-format
 msgid "Peers for \"%s\""
 msgstr "Parteneri pentru \"%s\""
 
-#: bittorrent.py:1416
+#: bittorrent.py:1421
 msgid "IP address"
 msgstr "Adresă IP"
 
-#: bittorrent.py:1416
+#: bittorrent.py:1421
 msgid "Client"
 msgstr "Client"
 
-#: bittorrent.py:1416
+#: bittorrent.py:1421
 msgid "Connection"
 msgstr "Conexiune"
 
-#: bittorrent.py:1416
+#: bittorrent.py:1421
 msgid "KB/s down"
 msgstr "KB/s descărcare"
 
-#: bittorrent.py:1416
+#: bittorrent.py:1421
 msgid "KB/s up"
 msgstr "KB/s încărcare"
 
-#: bittorrent.py:1416
+#: bittorrent.py:1421
 msgid "MB downloaded"
 msgstr "MB descărcaţi"
 
-#: bittorrent.py:1416
+#: bittorrent.py:1421
 msgid "MB uploaded"
 msgstr "MB încărcaţi"
 
-#: bittorrent.py:1416
+#: bittorrent.py:1421
 #, python-format
 msgid "% complete"
 msgstr "% finalizat"
 
-#: bittorrent.py:1416
+#: bittorrent.py:1421
 msgid "KB/s est. peer download"
 msgstr "KB/s estimat de la partener"
 
-#: bittorrent.py:1422
+#: bittorrent.py:1427
 msgid "Peer ID"
 msgstr "ID partener"
 
-#: bittorrent.py:1425 bittorrent.py:1428
+#: bittorrent.py:1430 bittorrent.py:1433
 msgid "Interested"
 msgstr "Interesat"
 
-#: bittorrent.py:1425 bittorrent.py:1428
+#: bittorrent.py:1430 bittorrent.py:1433
 msgid "Choked"
 msgstr "Blocat"
 
-#: bittorrent.py:1425
+#: bittorrent.py:1430
 msgid "Snubbed"
 msgstr "Oprit"
 
-#: bittorrent.py:1428
+#: bittorrent.py:1433
 msgid "Optimistic upload"
 msgstr "Încărcare optimistă"
 
-#: bittorrent.py:1513
+#: bittorrent.py:1518
 msgid "remote"
 msgstr "de la distanţă"
 
-#: bittorrent.py:1513
+#: bittorrent.py:1518
 msgid "local"
 msgstr "local"
 
-#: bittorrent.py:1549
+#: bittorrent.py:1554
 msgid "bad peer"
 msgstr "partener rău"
 
-#: bittorrent.py:1559
+#: bittorrent.py:1564
 #, python-format
 msgid "%d ok"
 msgstr "%d ok"
 
-#: bittorrent.py:1560
+#: bittorrent.py:1565
 #, python-format
 msgid "%d bad"
 msgstr "%d erori"
 
-#: bittorrent.py:1562
+#: bittorrent.py:1567
 msgid "banned"
 msgstr "acces interzis"
 
-#: bittorrent.py:1564
+#: bittorrent.py:1569
 msgid "ok"
 msgstr "ok"
 
-#: bittorrent.py:1600
+#: bittorrent.py:1605
 #, python-format
 msgid "Info for \"%s\""
 msgstr "Informaţii pentru \"%s\""
 
-#: bittorrent.py:1618
+#: bittorrent.py:1623
 msgid "Torrent name:"
 msgstr "Nume torent:"
 
-#: bittorrent.py:1623
+#: bittorrent.py:1628
 msgid "(trackerless torrent)"
 msgstr "(torent fără tracker)"
 
-#: bittorrent.py:1626
+#: bittorrent.py:1631
 msgid "Announce url:"
 msgstr "URL pentru anunţ:"
 
-#: bittorrent.py:1630
+#: bittorrent.py:1635
 msgid ", in one file"
 msgstr ", într-un singur fişier"
 
-#: bittorrent.py:1632
+#: bittorrent.py:1637
 #, python-format
 msgid ", in %d files"
 msgstr ", în %d fişiere"
 
-#: bittorrent.py:1633
+#: bittorrent.py:1638
 msgid "Total size:"
 msgstr "Mărime totală:"
 
-#: bittorrent.py:1640
+#: bittorrent.py:1645
 msgid "Pieces:"
 msgstr "Bucăţi:"
 
-#: bittorrent.py:1642
+#: bittorrent.py:1647
 msgid "Info hash:"
 msgstr "Informaţii hash:"
 
-#: bittorrent.py:1652
+#: bittorrent.py:1657
 msgid "Save in:"
 msgstr "Salvare în:"
 
-#: bittorrent.py:1656
+#: bittorrent.py:1661
 msgid "File name:"
 msgstr "Nume fişier:"
 
-#: bittorrent.py:1682 bittorrent.py:1896
+#: bittorrent.py:1687 bittorrent.py:1901
 msgid "_Open directory"
 msgstr "_Deschidere director"
 
-#: bittorrent.py:1687
+#: bittorrent.py:1692
 msgid "Show _file list"
-msgstr ""
+msgstr "Arata lista de _fisiere"
 
-#: bittorrent.py:1787
+#: bittorrent.py:1792
 msgid "Torrent info"
 msgstr "Informaţii torent"
 
-#: bittorrent.py:1796 bittorrent.py:2256
+#: bittorrent.py:1801 bittorrent.py:2261
 msgid "Remove torrent"
 msgstr "Ştergere torent"
 
-#: bittorrent.py:1800
+#: bittorrent.py:1805
 msgid "Abort torrent"
 msgstr "Anulare torent"
 
-#: bittorrent.py:1867
+#: bittorrent.py:1872
 #, python-format
 msgid ", will seed for %s"
 msgstr ", va fi semănat pentru %s"
 
-#: bittorrent.py:1869
+#: bittorrent.py:1874
 msgid ", will seed indefinitely."
 msgstr ", va fi semănat un timp nedefinit."
 
-#: bittorrent.py:1872
+#: bittorrent.py:1877
 #, python-format
 msgid "Done, share ratio: %d%%"
 msgstr "Terminat, rata de partajare: %d%%"
 
-#: bittorrent.py:1875
+#: bittorrent.py:1880
 #, python-format
 msgid "Done, %s uploaded"
 msgstr "Terminat, %s încărcat"
 
-#: bittorrent.py:1878 bittorrent.py:2311
+#: bittorrent.py:1883 bittorrent.py:2316
 msgid "Done"
 msgstr "Terminat"
 
-#: bittorrent.py:1892
+#: bittorrent.py:1897
 msgid "Torrent _info"
 msgstr "_Informaţii torent"
 
-#: bittorrent.py:1900
+#: bittorrent.py:1905
 msgid "_File list"
 msgstr "Listă _fişiere"
 
-#: bittorrent.py:1902
+#: bittorrent.py:1907
 msgid "_Peer list"
 msgstr "Listă _parteneri"
 
-#: bittorrent.py:1912
+#: bittorrent.py:1917
 msgid "_Change location"
 msgstr "_Schimbare locaţie"
 
-#: bittorrent.py:1915
+#: bittorrent.py:1920
 msgid "_Seed indefinitely"
 msgstr "_Semănare pentru un timp nedefinit"
 
-#: bittorrent.py:1935
+#: bittorrent.py:1940
 msgid "Re_start"
 msgstr "Re_pornire"
 
-#: bittorrent.py:1946
+#: bittorrent.py:1951
 msgid "_Finish"
 msgstr "_Finalizare"
 
-#: bittorrent.py:1947
+#: bittorrent.py:1952
 msgid "_Remove"
 msgstr "_Ştergere"
 
-#: bittorrent.py:1954
+#: bittorrent.py:1959
 msgid "_Abort"
 msgstr "_Anulare"
 
-#: bittorrent.py:2035
+#: bittorrent.py:2040
 #, python-format
 msgid "Are you sure you want to remove \"%s\"?"
 msgstr "Sigur doriţi să ştergeţi \"%s\"?"
 
-#: bittorrent.py:2038
+#: bittorrent.py:2043
 #, python-format
 msgid "Your share ratio for this torrent is %d%%. "
 msgstr "Rata de partajare pentru acest torent este de %d%%."
 
-#: bittorrent.py:2040
+#: bittorrent.py:2045
 #, python-format
 msgid "You have uploaded %s to this torrent. "
 msgstr "Aţi încărcat %s pentru acest torent. "
 
-#: bittorrent.py:2043
+#: bittorrent.py:2048
 msgid "Remove this torrent?"
 msgstr "Se şterge acest torent?"
 
-#: bittorrent.py:2065
+#: bittorrent.py:2070
 msgid "Finished"
 msgstr "Finalizat"
 
-#: bittorrent.py:2066
+#: bittorrent.py:2071
 msgid "drag into list to seed"
 msgstr "glisare în listă pentru semănare"
 
-#: bittorrent.py:2069
+#: bittorrent.py:2074
 msgid "Failed"
 msgstr "Eşuat"
 
-#: bittorrent.py:2070
+#: bittorrent.py:2075
 msgid "drag into list to resume"
 msgstr "glisare în listă pentru reluare"
 
-#: bittorrent.py:2129
+#: bittorrent.py:2134
 msgid "Waiting"
 msgstr "Aşteptare"
 
-#: bittorrent.py:2183
+#: bittorrent.py:2188
 msgid "Running"
 msgstr "Rulare"
 
-#: bittorrent.py:2208
+#: bittorrent.py:2213
 #, python-format
 msgid "Current up: %s"
 msgstr "Încărcare curentă: %s"
 
-#: bittorrent.py:2209
+#: bittorrent.py:2214
 #, python-format
 msgid "Current down: %s"
 msgstr "Descărcare curentă: %s"
 
-#: bittorrent.py:2215
+#: bittorrent.py:2220
 #, python-format
 msgid "Previous up: %s"
 msgstr "Încărcare precedentă: %s"
 
-#: bittorrent.py:2216
+#: bittorrent.py:2221
 #, python-format
 msgid "Previous down: %s"
 msgstr "Descărcare precedentă: %s"
 
-#: bittorrent.py:2222
+#: bittorrent.py:2227
 #, python-format
 msgid "Share ratio: %0.02f%%"
 msgstr "Rată de partajare: %0.02f%%"
 
-#: bittorrent.py:2225
+#: bittorrent.py:2230
 #, python-format
 msgid "%s peers, %s seeds. Totals from tracker: %s"
 msgstr "%s parteneri, %s săditori. Total de la tracker: %s"
 
-#: bittorrent.py:2229
+#: bittorrent.py:2234
 #, python-format
 msgid "Distributed copies: %d; Next: %s"
 msgstr "Copii distribuite: %d; Următorul: %s"
 
-#: bittorrent.py:2232
+#: bittorrent.py:2237
 #, python-format
 msgid "Pieces: %d total, %d complete, %d partial, %d active (%d empty)"
 msgstr "Bucăţi: %d totale, %d terminate, %d parţiale, %d active (%d goale)"
 
-#: bittorrent.py:2236
+#: bittorrent.py:2241
 #, python-format
 msgid "%d bad pieces + %s in discarded requests"
 msgstr "%d bucăţi eronate + %s cereri neconsiderate"
 
-#: bittorrent.py:2326
+#: bittorrent.py:2331
 #, python-format
 msgid "%.1f%% done, %s remaining"
 msgstr "%,1f%% terminate, %s rămase"
 
-#: bittorrent.py:2334
+#: bittorrent.py:2339
 msgid "Download rate"
 msgstr "Rată de descărcare"
 
-#: bittorrent.py:2336
+#: bittorrent.py:2341
 msgid "Upload rate"
 msgstr "Rată de încărcare"
 
-#: bittorrent.py:2351
+#: bittorrent.py:2356
 msgid "NA"
 msgstr "NA"
 
-#: bittorrent.py:2792
+#: bittorrent.py:2797
 #, python-format
 msgid "%s started"
 msgstr "%s pornit"
 
-#: bittorrent.py:2805
+#: bittorrent.py:2810
 msgid "_Open torrent file"
 msgstr "_Deschidere fişier torent"
 
-#: bittorrent.py:2806
+#: bittorrent.py:2811
 msgid "Open torrent _URL"
 msgstr "Deschidere adresă _URL torent"
 
-#: bittorrent.py:2807
+#: bittorrent.py:2812
 msgid "Make _new torrent"
 msgstr "Creare torent _nou"
 
-#: bittorrent.py:2810
+#: bittorrent.py:2815
 msgid "_Pause/Play"
 msgstr "_Pauză/Rulare"
 
-#: bittorrent.py:2812
+#: bittorrent.py:2817
 msgid "_Quit"
 msgstr "Ieşi_re"
 
-#: bittorrent.py:2814
+#: bittorrent.py:2819
 msgid "Show/Hide _finished torrents"
 msgstr "Afişare/ascundere torent _finalizate"
 
-#: bittorrent.py:2816
+#: bittorrent.py:2821
 msgid "_Resize window to fit"
 msgstr "_Redimensionare ferestră pentru potrivire"
 
-#: bittorrent.py:2818
+#: bittorrent.py:2823
 msgid "_Log"
 msgstr "_Jurnal"
 
-#: bittorrent.py:2821
+#: bittorrent.py:2826
 msgid "_Settings"
 msgstr "_Setări"
 
-#: bittorrent.py:2824 bittorrent.py:2840
+#: bittorrent.py:2829 bittorrent.py:2845
 msgid "_Help"
 msgstr "_Ajutor"
 
-#: bittorrent.py:2826
+#: bittorrent.py:2831
 msgid "_About"
 msgstr "D_espre"
 
-#: bittorrent.py:2827
+#: bittorrent.py:2832
 msgid "_Donate"
 msgstr "_Donare"
 
-#: bittorrent.py:2831
+#: bittorrent.py:2836
 msgid "_File"
 msgstr "_Fişier"
 
-#: bittorrent.py:2836
+#: bittorrent.py:2841
 msgid "_View"
 msgstr "_Vizualizare"
 
-#: bittorrent.py:2876
+#: bittorrent.py:2881
 msgid "Search for torrents"
 msgstr "Căutare torente"
 
-#: bittorrent.py:3029
+#: bittorrent.py:3036
 msgid "(stopped)"
 msgstr "(oprit)"
 
-#: bittorrent.py:3041
+#: bittorrent.py:3048
 msgid "(multiple)"
 msgstr "(multiple)"
 
-#: bittorrent.py:3169
+#: bittorrent.py:3176
 #, python-format
 msgid "Already downloading %s installer"
 msgstr "Descărcare %s instaler în curs"
 
-#: bittorrent.py:3173
+#: bittorrent.py:3180
 #, python-format
 msgid "Install new %s now?"
 msgstr "Instalare noul %s acum?"
 
-#: bittorrent.py:3174
+#: bittorrent.py:3181
 #, python-format
 msgid "Do you want to quit %s and install the new version, %s, now?"
 msgstr "Doriţi să ieşiti %s şi să instalaţi noua versiune %s, acum?"
 
-#: bittorrent.py:3190
+#: bittorrent.py:3197
 #, python-format
 msgid ""
 "%s help is at \n"
@@ -817,65 +817,65 @@ msgstr ""
 "%s\n"
 "Doriţi să le accesaţi acum?"
 
-#: bittorrent.py:3193
+#: bittorrent.py:3200
 msgid "Visit help web page?"
 msgstr "Vizitare pagina de asistenţă Web?"
 
-#: bittorrent.py:3230
+#: bittorrent.py:3237
 msgid "There is one finished torrent in the list. "
 msgstr "Există un torent finalizat în listă. "
 
-#: bittorrent.py:3231
+#: bittorrent.py:3238
 msgid "Do you want to remove it?"
 msgstr "Doriţi sa-l ştergeţi?"
 
-#: bittorrent.py:3233
+#: bittorrent.py:3240
 #, python-format
 msgid "There are %d finished torrents in the list. "
 msgstr "Există %d torente finalizate în listă. "
 
-#: bittorrent.py:3234
+#: bittorrent.py:3241
 msgid "Do you want to remove all of them?"
 msgstr "Doriţi să le ştergeţi pe toate?"
 
-#: bittorrent.py:3236
+#: bittorrent.py:3243
 msgid "Remove all finished torrents?"
 msgstr "Ştergere toate torentele finalizate?"
 
-#: bittorrent.py:3244
+#: bittorrent.py:3251
 msgid "No finished torrents"
 msgstr "Nici un torent finalizat"
 
-#: bittorrent.py:3245
+#: bittorrent.py:3252
 msgid "There are no finished torrents to remove."
 msgstr "Nu există nici un torent finalizat care poate fi şters."
 
-#: bittorrent.py:3302
+#: bittorrent.py:3309
 msgid "Open torrent:"
 msgstr "Deschidere torent:"
 
-#: bittorrent.py:3333
+#: bittorrent.py:3340
 msgid "Change save location for "
 msgstr "Schimbare locaţie de salvare pentru"
 
-#: bittorrent.py:3360
+#: bittorrent.py:3367
 msgid "File exists!"
 msgstr "Fişierul există!"
 
-#: bittorrent.py:3361
+#: bittorrent.py:3368
 #, python-format
 msgid "\"%s\" already exists. Do you want to choose a different file name?"
 msgstr "\"%s\" există deja. Doriţi să alegeţi un nume de fişier diferit?"
 
-#: bittorrent.py:3380
+#: bittorrent.py:3387
 msgid "Save location for "
 msgstr "Locaţie de salvare pentru "
 
-#: bittorrent.py:3398
+#: bittorrent.py:3405
 msgid "Directory exists!"
 msgstr "Directorul există deja!"
 
-#: bittorrent.py:3399
+#: bittorrent.py:3406
 #, python-format
 msgid ""
 "\"%s\" already exists. Do you intend to create an identical, duplicate "
@@ -884,47 +884,45 @@ msgstr ""
 "\"%s\" există deja. Intenţionaţi să creaţi un director identic în interiorul "
 "directorului deja existent?"
 
-#: bittorrent.py:3522
+#: bittorrent.py:3529
 #, python-format
 msgid "(global message) : %s"
 msgstr "(mesaj global):%s"
 
-#: bittorrent.py:3529
+#: bittorrent.py:3536
 #, python-format
 msgid "%s Error"
 msgstr "%s Eroare"
 
-#: bittorrent.py:3535
+#: bittorrent.py:3542
 msgid "Multiple errors have occurred. Click OK to view the error log."
 msgstr "Erori multiple. Faceţi clic pe OK pentru a vedea jurnalul de erori."
 
-#: bittorrent.py:3691
+#: bittorrent.py:3698
 msgid "Stop running torrent?"
 msgstr "Se opreşte rularea torentului?"
 
-#: bittorrent.py:3692
+#: bittorrent.py:3699
 #, python-format
 msgid ""
-"You are about to start \"%s\". Do you want to stop the last running torrent "
+"You are about to start \"%s\". Do you want to stop another running torrent "
 "as well?"
 msgstr ""
-"Sunteţi pe cale să porniţi \"%s\". Doriţi să opriţi şi ultimul torent care "
-"rulează?"
 
-#: bittorrent.py:3703
+#: bittorrent.py:3710
 msgid "Have you donated?"
 msgstr "Aţi donat deja?"
 
-#: bittorrent.py:3704
+#: bittorrent.py:3711
 #, python-format
 msgid "Welcome to the new version of %s. Have you donated?"
 msgstr "Bun venit la noua versiune %s. Aţi donat deja?"
 
-#: bittorrent.py:3719
+#: bittorrent.py:3726
 msgid "Thanks!"
 msgstr "Mulţumim!"
 
-#: bittorrent.py:3720
+#: bittorrent.py:3727
 msgid ""
 "Thanks for donating! To donate again, select \"Donate\" from the \"Help\" "
 "menu."
@@ -932,7 +930,7 @@ msgstr ""
 "Mulţumim pentru donaţie! Pentru a dona din nou, selectaţi \"Donare\" din "
 "meniul \"Ajutor\"."
 
-#: bittorrent.py:3822
+#: bittorrent.py:3832
 msgid "Could not start the TorrentQueue, see above for errors."
 msgstr "Imposibil de pornit TorrentQueue, vizualizaţi erorile."
 
@@ -975,7 +973,7 @@ msgstr "Comentarii:"
 
 #: maketorrent.py:234
 msgid "_Make"
-msgstr ""
+msgstr "_Creeaza"
 
 #: maketorrent.py:381
 msgid "_Host"
@@ -1020,7 +1018,7 @@ msgstr "Eroare la construirea torentelor: "
 #: BitTorrent/GUI.py:21
 #, python-format
 msgid "GTK %s or newer required"
-msgstr ""
+msgstr "GTK %s sau mai nou este necesar"
 
 #: BitTorrent/GUI.py:202
 #, python-format
@@ -1106,7 +1104,7 @@ msgstr "Conţinut fişier de stare eronat"
 #: BitTorrent/TorrentQueue.py:235
 #, python-format
 msgid "Error reading file \"%s\"."
-msgstr ""
+msgstr "Eroare la citirea fisierului \"%s\"."
 
 #: BitTorrent/TorrentQueue.py:237
 msgid "cannot restore state completely"
@@ -1119,11 +1117,11 @@ msgstr "Fişier de stare eronat (introducere dublă)"
 #: BitTorrent/TorrentQueue.py:247 BitTorrent/TorrentQueue.py:253
 #, python-format
 msgid "Corrupt data in \"%s\", cannot restore torrent."
-msgstr ""
+msgstr "Date eronate in \"%s\", nu se poate restaura fisierul torrent."
 
 #: BitTorrent/TorrentQueue.py:254
 msgid "(infohash mismatch)"
-msgstr ""
+msgstr "(infohash eronat)"
 
 #: BitTorrent/TorrentQueue.py:272
 msgid "Invalid state file (bad entry)"
@@ -1199,17 +1197,17 @@ msgstr ""
 "Nu se va porni torentul întrucât îndeplineşte deja condiţiile de oprire din "
 "semănare ca ultim torent finalizat."
 
-#: BitTorrent/NewVersion.py:92
+#: BitTorrent/NewVersion.py:105
 #, python-format
 msgid "Could not get latest version from %s"
 msgstr "Imposibil de obţinut cea mai recentă versiune de la %s"
 
-#: BitTorrent/NewVersion.py:97
+#: BitTorrent/NewVersion.py:110
 #, python-format
 msgid "Could not parse new version string from %s"
 msgstr "Nu s-au putut analiza şirul de caractere al noii versiuni de la %s"
 
-#: BitTorrent/NewVersion.py:227
+#: BitTorrent/NewVersion.py:241
 #, python-format
 msgid ""
 "Could not find a suitable temporary location to save the %s %s installer."
@@ -1217,17 +1215,17 @@ msgstr ""
 "Imposibil de găsit o locaţie temporară corespunzătoare pentru a salva "
 "instalerul %s %s."
 
-#: BitTorrent/NewVersion.py:246
+#: BitTorrent/NewVersion.py:260
 #, python-format
 msgid "No torrent file available for %s %s installer."
 msgstr "Nu este disponibil nici un fişier torent pentru instalerul %s %s."
 
-#: BitTorrent/NewVersion.py:256
+#: BitTorrent/NewVersion.py:270
 #, python-format
-msgid "%s %s installer appears to be corrupt or missing."
-msgstr "se pare că instalerul %s %s este corupt sau lipseşte."
+msgid "%s %s installer appears to be incomplete, missing, or corrupt."
+msgstr ""
 
-#: BitTorrent/NewVersion.py:263
+#: BitTorrent/NewVersion.py:278
 msgid "Cannot launch installer on this OS"
 msgstr "Imposibil de lansat instalerul pe acest sistem de operare"
 
@@ -1522,9 +1520,21 @@ msgstr ""
 
 #: BitTorrent/defaultargs.py:184
 msgid "Start BitTorrent minimized"
+msgstr "Pornaste BitTorrent minimalizat"
+
+#: BitTorrent/defaultargs.py:186
+msgid ""
+"override the version provided by the http version check and enable version "
+"check debugging mode"
 msgstr ""
 
-#: BitTorrent/defaultargs.py:198
+#: BitTorrent/defaultargs.py:189
+msgid ""
+"override the current version in the version check and enable version check "
+"debugging mode"
+msgstr ""
+
+#: BitTorrent/defaultargs.py:204
 msgid ""
 "file name (for single-file torrents) or directory name (for batch torrents) "
 "to save the torrent as, overriding the default name in the torrent. See also "
@@ -1534,7 +1544,7 @@ msgstr ""
 "torentele cu mai multe fişiere) în care se va salva torentul, atunci când nu "
 "se ţine seama de numele implicit al torentului. Vezi, de asemenea, --save_in"
 
-#: BitTorrent/defaultargs.py:205 BitTorrent/defaultargs.py:225
+#: BitTorrent/defaultargs.py:211 BitTorrent/defaultargs.py:231
 msgid ""
 "the maximum number of uploads to allow at once. -1 means a (hopefully) "
 "reasonable number based on --max_upload_rate. The automatic values are only "
@@ -1544,7 +1554,7 @@ msgstr ""
 "rezonabil (se speră) bazat pe -max_upload_rate. Valorile automate sunt "
 "valabile numai atunci când se rulează doar câte un torent."
 
-#: BitTorrent/defaultargs.py:210
+#: BitTorrent/defaultargs.py:216
 msgid ""
 "local directory where the torrent contents will be saved. The file (single-"
 "file torrents) or directory (batch torrents) will be created under this "
@@ -1556,11 +1566,11 @@ msgstr ""
 "fişiere) va fi creat în acest director folosind numele implicit specificat "
 "în fişierul .torrent. Vezi, de asemenea, şi --save_as."
 
-#: BitTorrent/defaultargs.py:219
+#: BitTorrent/defaultargs.py:225
 msgid "whether or not to ask for a location to save downloaded files in"
 msgstr "dacă se solicită o locaţie în care se vor salva fişierele"
 
-#: BitTorrent/defaultargs.py:230
+#: BitTorrent/defaultargs.py:236
 msgid ""
 "local directory where the torrents will be saved, using a name determined by "
 "--saveas_style. If this is left empty each torrent will be saved under the "
@@ -1570,17 +1580,19 @@ msgstr ""
 "--saveas_style. Dacă este lăsat gol fiecare torent va fi salvat în "
 "directorul corespunzător fişierului .torent"
 
-#: BitTorrent/defaultargs.py:235 BitTorrent/track.py:77
+#: BitTorrent/defaultargs.py:241 BitTorrent/track.py:77
 msgid "how often to rescan the torrent directory, in seconds"
 msgstr "cât de des se scanează directorul cu torente, în secunde"
 
-#: BitTorrent/defaultargs.py:237
+#: BitTorrent/defaultargs.py:243
 msgid ""
 "wait this many seconds after noticing a torrent before starting it, to avoid "
 "race with tracker"
 msgstr ""
+"asteapta atatea secunde dupa ce sa gasit un torrent inainte de a il porni, "
+"pentru a evita problemele cu tracker-ul"
 
-#: BitTorrent/defaultargs.py:239
+#: BitTorrent/defaultargs.py:245
 msgid ""
 "How to name torrent downloads: 1: use name OF torrent file (minus ."
 "torrent);  2: use name encoded IN torrent file;  3: create a directory with "
@@ -1601,30 +1613,30 @@ msgstr ""
 "suprascrie fişiere fără o anunţare în prealabil şi pot prezenta probleme de "
 "securitate."
 
-#: BitTorrent/defaultargs.py:254
+#: BitTorrent/defaultargs.py:260
 msgid ""
 "whether to display the full path or the torrent contents for each torrent"
 msgstr ""
 "dacă se va afişa întreaga cale sau conţinutul torentului pentru fiecare "
 "torent"
 
-#: BitTorrent/defaultargs.py:261
+#: BitTorrent/defaultargs.py:267
 msgid "directory to look for .torrent files (semi-recursive)"
 msgstr "directorul în care se vor căuta fişiere .torrent (semi-recursiv)"
 
-#: BitTorrent/defaultargs.py:266
+#: BitTorrent/defaultargs.py:272
 msgid "whether to display diagnostic info to stdout"
 msgstr "dacă se vor afişa informaţii de diagnostic la stdout"
 
-#: BitTorrent/defaultargs.py:271
+#: BitTorrent/defaultargs.py:277
 msgid "which power of two to set the piece size to"
 msgstr "la ce putere a lui 2, se va seta mărimea unei bucăţi"
 
-#: BitTorrent/defaultargs.py:273
+#: BitTorrent/defaultargs.py:279
 msgid "default tracker name"
 msgstr "nume implicit tracker"
 
-#: BitTorrent/defaultargs.py:276
+#: BitTorrent/defaultargs.py:282
 msgid ""
 "if false then make a trackerless torrent, instead of announce URL, use "
 "reliable node in form of <ip>:<port> or an empty string to pull some nodes "
@@ -2063,26 +2075,6 @@ msgstr ""
 "un fisier sau director cu nume eronat. Dar din moment ce asemenea fisiere au "
 "fost marcate ca avand marimea 0 acele fisiere sunt ignorate."
 
-#: BitTorrent/Encoder.py:169
-msgid "Can't start two separate instances of the same torrent"
-msgstr "Nu pot porni doua instante separate pentru acelasi torent."
-
-#: BitTorrent/GetTorrent.py:42 BitTorrent/GetTorrent.py:81
-#, python-format
-msgid "Could not read %s"
-msgstr "Nu s-a putut afla starea %s"
-
-#: BitTorrent/GetTorrent.py:49
-#, python-format
-msgid ""
-"Could not download or open \n"
-"%s\n"
-"Try using a web browser to download the torrent file."
-msgstr ""
-"Nu se poate descarca sau deschide \n"
-"%s\n"
-"Incearca sa folosesti un browser pentru a descarca un fisier torrent."
-
 #: BitTorrent/HTTPHandler.py:21
 msgid "Mon"
 msgstr "Lun"
@@ -2164,61 +2156,6 @@ msgstr "Dec"
 msgid "Compressed: %i  Uncompressed: %i\n"
 msgstr "Compresat: %i  Necompresat: %i\n"
 
-#: BitTorrent/RawServer.py:322
-msgid "lost server socket"
-msgstr "am pierdut socket-ul serverului"
-
-#: BitTorrent/RawServer.py:338
-msgid "Error handling accepted connection: "
-msgstr "Eroare in manuirea conexiunii acceptate: "
-
-#: BitTorrent/RawServer.py:423
-#, python-format
-msgid "Have to exit due to the TCP stack flaking out. Please see the FAQ at %s"
-msgstr "Oprire datorita instabilitatii TCP stack. Cititi FAQ la %s"
-
-#: BitTorrent/RawServer_magic.py:32
-#, python-format
-msgid "Too late to switch RawServer backends, %s has already been used."
-msgstr "Este prea tarziu pentru schimbul RawServer, %s a fost deja folosit."
-
-#: BitTorrent/Rerequester.py:92
-#, python-format
-msgid "Tracker announce still not complete %d seconds after starting it"
-msgstr "Anuntul catre tracker inca nu este complet la %d secunde dupa pornire"
-
-#: BitTorrent/Rerequester.py:162
-msgid "Problem connecting to tracker, gethostbyname failed - "
-msgstr "Problema la conectarea la tracker, gethostbyname a esuat -"
-
-#: BitTorrent/Rerequester.py:175
-msgid "Problem connecting to tracker - "
-msgstr "Problem la conectarea la tracker - "
-
-#: BitTorrent/Rerequester.py:202
-msgid "bad data from tracker - "
-msgstr "date eronate de la tracker - "
-
-#: BitTorrent/Rerequester.py:213
-msgid "rejected by tracker - "
-msgstr "respins de tracker - "
-
-#: BitTorrent/Rerequester.py:219
-msgid ""
-"Aborting the torrent as it was rejected by the tracker while not connected "
-"to any peers. "
-msgstr ""
-"Anulare torent caci a fost respins de tracker cand nu era conectat la nici "
-"un partener. "
-
-#: BitTorrent/Rerequester.py:221
-msgid " Message from the tracker: "
-msgstr " Mesaj de la tracker: "
-
-#: BitTorrent/Rerequester.py:227
-msgid "warning from tracker - "
-msgstr "atentionare de la tracker - "
-
 #: BitTorrent/Storage.py:58
 #, python-format
 msgid "File %s belongs to another running torrent"
@@ -2245,6 +2182,8 @@ msgid ""
 "Another program appears to have moved, renamed, or deleted the file, or %s "
 "may have crashed last time it was run."
 msgstr ""
+"Se pare ca un alt program a mutat, redenumit, sau a sters fisierul, sau %s "
+"sa blocat ultima oara cand a fost rulat."
 
 #: BitTorrent/Storage.py:241
 #, python-format
@@ -2252,6 +2191,8 @@ msgid ""
 "Another program appears to have modified the file, or %s may have crashed "
 "last time it was run."
 msgstr ""
+"Se pare ca un alt program a modificat fisierul, sau %s sa blocat ultima oara "
+"cand a fost rulat."
 
 #: BitTorrent/Storage.py:244
 #, python-format
@@ -2259,10 +2200,12 @@ msgid ""
 "Another program appears to have changed the file size, or %s may have "
 "crashed last time it was run."
 msgstr ""
+"Se pare ca un alt program a schimbat marimea fisierului, sau %s sa blocat "
+"ultima oara cand a fost rulat."
 
 #: BitTorrent/Storage.py:258 BitTorrent/StorageWrapper.py:284
 msgid "Couldn't read fastresume data: "
-msgstr "Nu s-au putut citi datele  fastresume: "
+msgstr "Nu s-au putut citi datele fastresume: "
 
 #: BitTorrent/StorageWrapper.py:53
 msgid "bad data in responsefile - total too small"
@@ -2301,16 +2244,6 @@ msgstr ""
 "fisierele au fost considerate complete la pornire, dar bucatile nu s-au "
 "verificat la hash check"
 
-#: BitTorrent/TrayIcon.py:21 BitTorrent/TrayIcon.py:49
-#, python-format
-msgid "Hide %s"
-msgstr ""
-
-#: BitTorrent/TrayIcon.py:23 BitTorrent/TrayIcon.py:51
-#, python-format
-msgid "Show %s"
-msgstr ""
-
 #: BitTorrent/bencode.py:73
 msgid "not a valid bencoded string"
 msgstr "acesta nu este un sir de caractere corect bencoded"
@@ -2318,152 +2251,6 @@ msgstr "acesta nu este un sir de caractere corect bencoded"
 #: BitTorrent/bencode.py:75
 msgid "invalid bencoded value (data after valid prefix)"
 msgstr "valoarea bencoded eronata (exista date dupa un prefix valid)"
-
-#: BitTorrent/btformats.py:23
-msgid "bad metainfo - not a dictionary"
-msgstr "metainfo eronat - nu este un dictionar"
-
-#: BitTorrent/btformats.py:26
-msgid "bad metainfo - bad pieces key"
-msgstr "metainfo eronat - cheia bucatilor este eronata"
-
-#: BitTorrent/btformats.py:29
-msgid "bad metainfo - illegal piece length"
-msgstr "metainfo eronat - marime ilegala a bucatilor"
-
-#: BitTorrent/btformats.py:32
-msgid "bad metainfo - bad name"
-msgstr "metainfo eronat - nume eronat"
-
-#: BitTorrent/btformats.py:34
-#, python-format
-msgid "name %s disallowed for security reasons"
-msgstr "numele %s nu este permis din motive de securitate"
-
-#: BitTorrent/btformats.py:36
-msgid "single/multiple file mix"
-msgstr "amestecare fisier singular/multiple"
-
-#: BitTorrent/btformats.py:40 BitTorrent/btformats.py:50
-msgid "bad metainfo - bad length"
-msgstr "metainfo eronat - marime eronata"
-
-#: BitTorrent/btformats.py:44
-msgid "bad metainfo - \"files\" is not a list of files"
-msgstr "metainfo eronat - \"files\" nu este o lista de fisiere"
-
-#: BitTorrent/btformats.py:47
-msgid "bad metainfo - bad file value"
-msgstr "metainfo eronat - valoare fisier eronata"
-
-#: BitTorrent/btformats.py:53
-msgid "bad metainfo - bad path"
-msgstr "metainfo eronat - cale eronata"
-
-#: BitTorrent/btformats.py:56
-msgid "bad metainfo - bad path dir"
-msgstr "metainfo eronat - calea catre director eset eronata"
-
-#: BitTorrent/btformats.py:58
-#, python-format
-msgid "path %s disallowed for security reasons"
-msgstr "calea %s nu este permisa din motive de securitate"
-
-#: BitTorrent/btformats.py:69
-msgid "bad metainfo - duplicate path"
-msgstr "metainfo eronat - calea este dublata"
-
-#: BitTorrent/btformats.py:71
-msgid "bad metainfo - name used as bothfile and subdirectory name"
-msgstr ""
-"metainfo eronat - numele este folosit si ca nume de fisier si ca nume de "
-"subdirector"
-
-#: BitTorrent/btformats.py:78 BitTorrent/btformats.py:89
-#: BitTorrent/btformats.py:91 BitTorrent/btformats.py:94
-#: BitTorrent/btformats.py:96
-msgid "bad metainfo - wrong object type"
-msgstr "metainfo eronat - tipul obiectului este gresit"
-
-#: BitTorrent/btformats.py:81
-msgid "bad metainfo - no announce URL string"
-msgstr "metainfo eronat - nu exista URL pentru anuntare"
-
-#: BitTorrent/btformats.py:103
-msgid "non-text failure reason"
-msgstr "motiv de esuare non-text"
-
-#: BitTorrent/btformats.py:107
-msgid "non-text warning message"
-msgstr "mesaj de atentionare non-text"
-
-#: BitTorrent/btformats.py:112
-msgid "invalid entry in peer list1"
-msgstr "intrare eronata in lista1 a partenerilor"
-
-#: BitTorrent/btformats.py:114
-msgid "invalid entry in peer list2"
-msgstr "intrare eronata in lista2 a partenerilor"
-
-#: BitTorrent/btformats.py:117
-msgid "invalid entry in peer list3"
-msgstr "intrare eronata in lista3 a partenerilor"
-
-#: BitTorrent/btformats.py:121
-msgid "invalid entry in peer list4"
-msgstr "intrare eronata in lista4 a partenerilor"
-
-#: BitTorrent/btformats.py:123
-msgid "invalid peer list"
-msgstr "lista eronata a partenerilor"
-
-#: BitTorrent/btformats.py:126
-msgid "invalid announce interval"
-msgstr "interval eronat de anuntare"
-
-#: BitTorrent/btformats.py:129
-msgid "invalid min announce interval"
-msgstr "interval minim eronat de anuntare"
-
-#: BitTorrent/btformats.py:131
-msgid "invalid tracker id"
-msgstr "id tracker eronat"
-
-#: BitTorrent/btformats.py:134
-msgid "invalid peer count"
-msgstr "numar eronat de parteneri"
-
-#: BitTorrent/btformats.py:137
-msgid "invalid seed count"
-msgstr "numar eronat de saditori"
-
-#: BitTorrent/btformats.py:140
-msgid "invalid \"last\" entry"
-msgstr "\"last\" intrare eronata"
-
-#: BitTorrent/configfile.py:71
-msgid "Could not permanently save options: "
-msgstr "Optiunile nu s-au putut salva permanent: "
-
-#: BitTorrent/configfile.py:83
-#, python-format
-msgid "Error reading config file. Old config file stored in \"%s\""
-msgstr ""
-
-#: BitTorrent/configfile.py:128
-#, python-format
-msgid "Configuration option mismatch: '%s'"
-msgstr ""
-
-#: BitTorrent/configfile.py:130
-#, python-format
-msgid "You must quit %s and reinstall it. (%s)"
-msgstr ""
-
-#: BitTorrent/configfile.py:215
-#, python-format
-msgid "Could not find translation for language \"%s\"\n"
-msgstr ""
 
 #: BitTorrent/controlsocket.py:135 BitTorrent/controlsocket.py:186
 msgid "Could not create control socket: "
@@ -2501,95 +2288,6 @@ msgstr "Nu s-a putut bloca un mutex global pentru fisierul controlsocket!"
 msgid "A previous instance of BT was not cleaned up properly. Continuing."
 msgstr "O instanta de BT nu a fost inchisa corect.Se continua."
 
-#: BitTorrent/download.py:92
-msgid "maxport less than minport - no ports to check"
-msgstr "maxport este mai mic decat minport - nici un port de verificat"
-
-#: BitTorrent/download.py:110
-#, python-format
-msgid "Could not open a listening port: %s."
-msgstr "Nu s-a putut deschide un port pentru ascultare: %s. "
-
-#: BitTorrent/download.py:112
-#, python-format
-msgid "Could not open a listening port: %s. "
-msgstr "Nu s-a putut deschide un port pentru ascultare: %s. "
-
-#: BitTorrent/download.py:114
-msgid "Check your port range settings."
-msgstr "Verificati setarile pentru zona de oprturi."
-
-#: BitTorrent/download.py:210
-msgid "Initial startup"
-msgstr "Pornire initial"
-
-#: BitTorrent/download.py:263
-#, python-format
-msgid "Could not load fastresume data: %s."
-msgstr "Nu s-au putut incarca datele pentru o continuare rapida: %s."
-
-#: BitTorrent/download.py:264
-msgid "Will perform full hash check."
-msgstr "Se va face o verificare hash completa."
-
-#: BitTorrent/download.py:271
-#, python-format
-msgid "piece %d failed hash check, re-downloading it"
-msgstr "bucata %d a esuat la verificarea hash, va fi descarcata din nou"
-
-#: BitTorrent/download.py:352
-msgid ""
-"Attempt to download a trackerless torrent with trackerless client turned off."
-msgstr ""
-"S-a incercat descarcarea unui torent fara tracker cand aceasta optiune nu "
-"este activata."
-
-#: BitTorrent/download.py:391 BitTorrent/launchmanycore.py:142
-msgid "downloading"
-msgstr "descarcare"
-
-#: BitTorrent/download.py:401
-msgid "download failed: "
-msgstr "descarcare esuata: "
-
-#: BitTorrent/download.py:405
-msgid "IO Error: No space left on disk, or cannot create a file that large:"
-msgstr ""
-"Eroare de I/O: Nu mai este loc pe disc, sau nu se poate creea un fisier asa "
-"mare:"
-
-#: BitTorrent/download.py:408
-msgid "killed by IO error: "
-msgstr "oprit datorita unei erori de I/O: "
-
-#: BitTorrent/download.py:411
-msgid "killed by OS error: "
-msgstr "oprit datorita unei erorii  a SO: "
-
-#: BitTorrent/download.py:416
-msgid "killed by internal exception: "
-msgstr "oprit datorita exceptiei interne: "
-
-#: BitTorrent/download.py:421
-msgid "Additional error when closing down due to error: "
-msgstr "Erori aditionale la inchidere datorita erorii: "
-
-#: BitTorrent/download.py:434
-msgid "Could not remove fastresume file after failure:"
-msgstr "Nu s-a putut sterge fisierul de fastresume dupa esuare:"
-
-#: BitTorrent/download.py:451
-msgid "seeding"
-msgstr "sadire"
-
-#: BitTorrent/download.py:474
-msgid "Could not write fastresume data: "
-msgstr "Nu s-au putut scrie datele de fastresume: "
-
-#: BitTorrent/download.py:484
-msgid "shut down"
-msgstr "oprire"
-
 #: BitTorrent/launchmanycore.py:65
 msgid "Could not set signal handler: "
 msgstr "Nu s-a putut seta activatorul de semnal: "
@@ -2607,6 +2305,10 @@ msgstr "adaugate \"%s\""
 #: BitTorrent/launchmanycore.py:124
 msgid "waiting for hash check"
 msgstr "se astepata verificarea hash"
+
+#: BitTorrent/launchmanycore.py:142 BitTorrent/download.py:394
+msgid "downloading"
+msgstr "descarcare"
 
 #: BitTorrent/launchmanycore.py:237
 msgid "Rereading config file"
@@ -2645,6 +2347,411 @@ msgid ""
 msgstr ""
 "Numele de  fisier/director \"%s\" contine valori unicode rezervate care nu "
 "corespund cu caractere."
+
+#: BitTorrent/parsedir.py:34
+msgid "Could not read directory "
+msgstr "Nu s-a putut citi directorul "
+
+#: BitTorrent/parsedir.py:43
+msgid "Could not stat "
+msgstr "Nu s-a putut afla starea "
+
+#: BitTorrent/parsedir.py:74
+#, python-format
+msgid "removing %s (will re-add)"
+msgstr "sterg %s (o sa fie re-adaugat)"
+
+#: BitTorrent/parsedir.py:84 BitTorrent/parsedir.py:98
+#, python-format
+msgid "**warning** %s is a duplicate torrent for %s"
+msgstr "**atentie** %s este o dublura pentru %s"
+
+#: BitTorrent/parsedir.py:130
+#, python-format
+msgid "**warning** %s has errors"
+msgstr "**atentie** %s are erori"
+
+#: BitTorrent/parsedir.py:138
+msgid "... successful"
+msgstr "... reusit"
+
+#: BitTorrent/parsedir.py:145
+#, python-format
+msgid "removing %s"
+msgstr "stergere %s"
+
+#: BitTorrent/parsedir.py:149
+msgid "done checking"
+msgstr "gata verificare"
+
+#: BitTorrent/Encoder.py:195
+msgid "Can't start two separate instances of the same torrent"
+msgstr "Nu pot porni doua instante separate pentru acelasi torent."
+
+#: BitTorrent/GetTorrent.py:44 BitTorrent/GetTorrent.py:92
+#, python-format
+msgid "Could not read %s"
+msgstr "Nu s-a putut afla starea %s"
+
+#: BitTorrent/GetTorrent.py:51
+#, python-format
+msgid ""
+"Could not download or open \n"
+"%s\n"
+"Try using a web browser to download the torrent file."
+msgstr ""
+"Nu se poate descarca sau deschide \n"
+"%s\n"
+"Incearca sa folosesti un browser pentru a descarca un fisier torrent."
+
+#: BitTorrent/RawServer.py:324
+#, python-format
+msgid "failed to unregister or close server socket: %s"
+msgstr ""
+
+#: BitTorrent/RawServer.py:325
+msgid "lost server socket"
+msgstr "am pierdut socket-ul serverului"
+
+#: BitTorrent/RawServer.py:341
+msgid "Error handling accepted connection: "
+msgstr "Eroare in manuirea conexiunii acceptate: "
+
+#: BitTorrent/RawServer.py:426
+#, python-format
+msgid "Have to exit due to the TCP stack flaking out. Please see the FAQ at %s"
+msgstr "Oprire datorita instabilitatii TCP stack. Cititi FAQ la %s"
+
+#: BitTorrent/RawServer_magic.py:32
+#, python-format
+msgid "Too late to switch RawServer backends, %s has already been used."
+msgstr "Este prea tarziu pentru schimbul RawServer, %s a fost deja folosit."
+
+#: BitTorrent/RawServer_twisted.py:55
+msgid "RawServer_twisted requires twisted 2.0.0 or greater"
+msgstr ""
+
+#: BitTorrent/RawServer_twisted.py:296
+msgid "connection refused"
+msgstr ""
+
+#: BitTorrent/RawServer_twisted.py:456 BitTorrent/RawServer_twisted.py:470
+#: BitTorrent/RawServer_twisted.py:493
+msgid "You asked for reuse to be off when binding. Sorry, I can't do that."
+msgstr ""
+
+#: BitTorrent/RawServer_twisted.py:623
+msgid "listen_forever() should only be called once per reactor."
+msgstr ""
+
+#: BitTorrent/RawServer_twisted.py:635
+msgid ""
+"listen_once() might not return until there is activity, and might not "
+"process the event you want. Use listen_forever()."
+msgstr ""
+
+#: BitTorrent/Rerequester.py:92
+#, python-format
+msgid "Tracker announce still not complete %d seconds after starting it"
+msgstr "Anuntul catre tracker inca nu este complet la %d secunde dupa pornire"
+
+#: BitTorrent/Rerequester.py:164
+msgid "Problem connecting to tracker, gethostbyname failed - "
+msgstr "Problema la conectarea la tracker, gethostbyname a esuat -"
+
+#: BitTorrent/Rerequester.py:177
+msgid "Problem connecting to tracker - "
+msgstr "Problem la conectarea la tracker - "
+
+#: BitTorrent/Rerequester.py:204
+msgid "bad data from tracker - "
+msgstr "date eronate de la tracker - "
+
+#: BitTorrent/Rerequester.py:215
+msgid "rejected by tracker - "
+msgstr "respins de tracker - "
+
+#: BitTorrent/Rerequester.py:221
+msgid ""
+"Aborting the torrent as it was rejected by the tracker while not connected "
+"to any peers. "
+msgstr ""
+"Anulare torent caci a fost respins de tracker cand nu era conectat la nici "
+"un partener. "
+
+#: BitTorrent/Rerequester.py:223
+msgid " Message from the tracker: "
+msgstr " Mesaj de la tracker: "
+
+#: BitTorrent/Rerequester.py:229
+msgid "warning from tracker - "
+msgstr "atentionare de la tracker - "
+
+#: BitTorrent/Rerequester.py:278
+msgid "Trackerless lookup failed: "
+msgstr ""
+
+#: BitTorrent/TrayIcon.py:22 BitTorrent/TrayIcon.py:54
+#, python-format
+msgid "Hide %s"
+msgstr "Ascunde %s"
+
+#: BitTorrent/TrayIcon.py:24 BitTorrent/TrayIcon.py:56
+#, python-format
+msgid "Show %s"
+msgstr "Arata %s"
+
+#: BitTorrent/__init__.py:22
+#, python-format
+msgid "Python %s or newer required"
+msgstr "Python %s sau mai nou este necesar"
+
+#: BitTorrent/btformats.py:23
+msgid "bad metainfo - not a dictionary"
+msgstr "metainfo eronat - nu este un dictionar"
+
+#: BitTorrent/btformats.py:26
+msgid "bad metainfo - bad pieces key"
+msgstr "metainfo eronat - cheia bucatilor este eronata"
+
+#: BitTorrent/btformats.py:29
+msgid "bad metainfo - illegal piece length"
+msgstr "metainfo eronat - marime ilegala a bucatilor"
+
+#: BitTorrent/btformats.py:32
+msgid "bad metainfo - bad name"
+msgstr "metainfo eronat - nume eronat"
+
+#: BitTorrent/btformats.py:34
+#, python-format
+msgid "name %s disallowed for security reasons"
+msgstr "numele %s nu este permis din motive de securitate"
+
+#: BitTorrent/btformats.py:36
+msgid "single/multiple file mix"
+msgstr "amestecare fisier singular/multiple"
+
+#: BitTorrent/btformats.py:40 BitTorrent/btformats.py:50
+msgid "bad metainfo - bad length"
+msgstr "metainfo eronat - marime eronata"
+
+#: BitTorrent/btformats.py:44
+msgid "bad metainfo - \"files\" is not a list of files"
+msgstr "metainfo eronat - \"files\" nu este o lista de fisiere"
+
+#: BitTorrent/btformats.py:47
+msgid "bad metainfo - file entry must be a dict"
+msgstr ""
+
+#: BitTorrent/btformats.py:53
+msgid "bad metainfo - bad path"
+msgstr "metainfo eronat - cale eronata"
+
+#: BitTorrent/btformats.py:56
+msgid "bad metainfo - bad path dir"
+msgstr "metainfo eronat - calea catre director eset eronata"
+
+#: BitTorrent/btformats.py:58
+#, python-format
+msgid "path %s disallowed for security reasons"
+msgstr "calea %s nu este permisa din motive de securitate"
+
+#: BitTorrent/btformats.py:69
+msgid "bad metainfo - duplicate path"
+msgstr "metainfo eronat - calea este dublata"
+
+#: BitTorrent/btformats.py:71
+msgid "bad metainfo - name used as bothfile and subdirectory name"
+msgstr ""
+"metainfo eronat - numele este folosit si ca nume de fisier si ca nume de "
+"subdirector"
+
+#: BitTorrent/btformats.py:78
+msgid "bad metainfo - wrong object type"
+msgstr "metainfo eronat - tipul obiectului este gresit"
+
+#: BitTorrent/btformats.py:81
+msgid "bad metainfo - no announce URL string"
+msgstr "metainfo eronat - nu exista URL pentru anuntare"
+
+#: BitTorrent/btformats.py:89
+msgid "bad metainfo - node is not a list"
+msgstr ""
+
+#: BitTorrent/btformats.py:91
+msgid "bad metainfo - node list must have only two elements"
+msgstr ""
+
+#: BitTorrent/btformats.py:94
+msgid "bad metainfo - node host must be a string"
+msgstr ""
+
+#: BitTorrent/btformats.py:96
+msgid "bad metainfo - node port must be an integer"
+msgstr ""
+
+#: BitTorrent/btformats.py:103
+msgid "failure reason must be a string"
+msgstr ""
+
+#: BitTorrent/btformats.py:107
+msgid "warning message must be a string"
+msgstr ""
+
+#: BitTorrent/btformats.py:112
+msgid "invalid entry in peer list - peer info must be a dict"
+msgstr ""
+
+#: BitTorrent/btformats.py:114
+msgid "invalid entry in peer list - peer ip must be a string"
+msgstr ""
+
+#: BitTorrent/btformats.py:117
+msgid "invalid entry in peer list - peer port must be an integer"
+msgstr ""
+
+#: BitTorrent/btformats.py:121
+msgid "invalid entry in peer list - invalid peerid"
+msgstr ""
+
+#: BitTorrent/btformats.py:123
+msgid "invalid peer list"
+msgstr "lista eronata a partenerilor"
+
+#: BitTorrent/btformats.py:126
+msgid "invalid announce interval"
+msgstr "interval eronat de anuntare"
+
+#: BitTorrent/btformats.py:129
+msgid "invalid min announce interval"
+msgstr "interval minim eronat de anuntare"
+
+#: BitTorrent/btformats.py:131
+msgid "invalid tracker id"
+msgstr "id tracker eronat"
+
+#: BitTorrent/btformats.py:134
+msgid "invalid peer count"
+msgstr "numar eronat de parteneri"
+
+#: BitTorrent/btformats.py:137
+msgid "invalid seed count"
+msgstr "numar eronat de saditori"
+
+#: BitTorrent/btformats.py:140
+msgid "invalid \"last\" entry"
+msgstr "\"last\" intrare eronata"
+
+#: BitTorrent/configfile.py:72
+msgid "Could not permanently save options: "
+msgstr "Optiunile nu s-au putut salva permanent: "
+
+#: BitTorrent/configfile.py:84
+#, python-format
+msgid "Error reading config file. Old config file stored in \"%s\""
+msgstr ""
+"Eroare la citirea fisierului de configurare. Vechiul fisier de configurare "
+"este pastrat in \"%s\""
+
+#: BitTorrent/configfile.py:131
+#, python-format
+msgid "Configuration option mismatch: '%s'"
+msgstr "Optiune de configurare eronata: '%s'"
+
+#: BitTorrent/configfile.py:133
+#, python-format
+msgid "You must quit %s and reinstall it. (%s)"
+msgstr "Trebuia sa opriti %s si sa il reinstalati. (%s)"
+
+#: BitTorrent/configfile.py:218
+#, python-format
+msgid "Could not find translation for language \"%s\"\n"
+msgstr "Nu s-a putut gasi traducerea pentru limba \"%s\"\n"
+
+#: BitTorrent/download.py:95
+msgid "maxport less than minport - no ports to check"
+msgstr "maxport este mai mic decat minport - nici un port de verificat"
+
+#: BitTorrent/download.py:113
+#, python-format
+msgid "Could not open a listening port: %s."
+msgstr "Nu s-a putut deschide un port pentru ascultare: %s. "
+
+#: BitTorrent/download.py:115
+#, python-format
+msgid "Could not open a listening port: %s. "
+msgstr "Nu s-a putut deschide un port pentru ascultare: %s. "
+
+#: BitTorrent/download.py:117
+msgid "Check your port range settings."
+msgstr "Verificati setarile pentru zona de oprturi."
+
+#: BitTorrent/download.py:213
+msgid "Initial startup"
+msgstr "Pornire initial"
+
+#: BitTorrent/download.py:266
+#, python-format
+msgid "Could not load fastresume data: %s."
+msgstr "Nu s-au putut incarca datele pentru o continuare rapida: %s."
+
+#: BitTorrent/download.py:267
+msgid "Will perform full hash check."
+msgstr "Se va face o verificare hash completa."
+
+#: BitTorrent/download.py:274
+#, python-format
+msgid "piece %d failed hash check, re-downloading it"
+msgstr "bucata %d a esuat la verificarea hash, va fi descarcata din nou"
+
+#: BitTorrent/download.py:355
+msgid ""
+"Attempt to download a trackerless torrent with trackerless client turned off."
+msgstr ""
+"S-a incercat descarcarea unui torent fara tracker cand aceasta optiune nu "
+"este activata."
+
+#: BitTorrent/download.py:404
+msgid "download failed: "
+msgstr "descarcare esuata: "
+
+#: BitTorrent/download.py:408
+msgid "IO Error: No space left on disk, or cannot create a file that large:"
+msgstr ""
+"Eroare de I/O: Nu mai este loc pe disc, sau nu se poate creea un fisier asa "
+"mare:"
+
+#: BitTorrent/download.py:411
+msgid "killed by IO error: "
+msgstr "oprit datorita unei erori de I/O: "
+
+#: BitTorrent/download.py:414
+msgid "killed by OS error: "
+msgstr "oprit datorita unei erorii  a SO: "
+
+#: BitTorrent/download.py:419
+msgid "killed by internal exception: "
+msgstr "oprit datorita exceptiei interne: "
+
+#: BitTorrent/download.py:424
+msgid "Additional error when closing down due to error: "
+msgstr "Erori aditionale la inchidere datorita erorii: "
+
+#: BitTorrent/download.py:437
+msgid "Could not remove fastresume file after failure:"
+msgstr "Nu s-a putut sterge fisierul de fastresume dupa esuare:"
+
+#: BitTorrent/download.py:454
+msgid "seeding"
+msgstr "sadire"
+
+#: BitTorrent/download.py:477
+msgid "Could not write fastresume data: "
+msgstr "Nu s-au putut scrie datele de fastresume: "
+
+#: BitTorrent/download.py:487
+msgid "shut down"
+msgstr "oprire"
 
 #: BitTorrent/parseargs.py:26
 #, python-format
@@ -2718,42 +2825,6 @@ msgstr "Prea multe argumente - %d maxim."
 #, python-format
 msgid "wrong format of %s - %s"
 msgstr "format eronat al %s - %s"
-
-#: BitTorrent/parsedir.py:34
-msgid "Could not read directory "
-msgstr "Nu s-a putut citi directorul "
-
-#: BitTorrent/parsedir.py:43
-msgid "Could not stat "
-msgstr "Nu s-a putut afla starea "
-
-#: BitTorrent/parsedir.py:74
-#, python-format
-msgid "removing %s (will re-add)"
-msgstr "sterg %s (o sa fie re-adaugat)"
-
-#: BitTorrent/parsedir.py:84 BitTorrent/parsedir.py:98
-#, python-format
-msgid "**warning** %s is a duplicate torrent for %s"
-msgstr "**atentie** %s este o dublura pentru %s"
-
-#: BitTorrent/parsedir.py:130
-#, python-format
-msgid "**warning** %s has errors"
-msgstr "**atentie** %s are erori"
-
-#: BitTorrent/parsedir.py:138
-msgid "... successful"
-msgstr "... reusit"
-
-#: BitTorrent/parsedir.py:145
-#, python-format
-msgid "removing %s"
-msgstr "stergere %s"
-
-#: BitTorrent/parsedir.py:149
-msgid "done checking"
-msgstr "gata verificare"
 
 #: BitTorrent/track.py:40
 msgid "Port to listen on."
@@ -2960,7 +3031,15 @@ msgstr "rulati fara argumente pentru o explicare a parametrilor"
 msgid "# Shutting down: "
 msgstr "# Oprire: "
 
-#: BitTorrent/__init__.py:22
-#, python-format
-msgid "Python %s or newer required"
-msgstr ""
+
+
+
+
+
+
+
+
+
+
+
+

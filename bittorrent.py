@@ -3510,6 +3510,7 @@ class DownloadInfoFrame(object):
 
     def _error(self, severity, err_str):
         err_str = err_str.decode('utf-8', 'replace').encode('utf-8')
+        err_str = err_str.strip()
         if severity >= ERROR:
             self.error_modal(err_str)
         self.log_text(err_str, severity)

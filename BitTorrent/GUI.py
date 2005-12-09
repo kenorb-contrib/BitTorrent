@@ -274,15 +274,18 @@ class LanguageChooser(gtk.Frame):
         code = model.get(it, 1)[0]
         write_language_file(code)
 
-
-class Window(gtk.Window):
-    def __init__(self, *args):
-        apply(gtk.Window.__init__, (self,)+args)
+class IconMixin(object):
+    def __init__(self):
         iconname = os.path.join(image_root,'bittorrent.ico')
         icon16 = gtk.gdk.pixbuf_new_from_file_at_size(iconname, 16, 16)
         icon32 = gtk.gdk.pixbuf_new_from_file_at_size(iconname, 32, 32)
         self.set_icon_list(icon16, icon32)
-
+        
+class Window(IconMixin, gtk.Window):
+    def __init__(self, *args):
+        apply(gtk.Window.__init__, (self,)+args)
+        IconMixin.__init__(self)
+        
 
 class HelpWindow(Window):
     def __init__(self, main, helptext):
@@ -395,7 +398,7 @@ class AutoScrollingWindow(ScrolledWindow):
             gobject.source_remove(self.vscrolltimeout)
             self.vscrolltimeout = None
 
-class MessageDialog(gtk.MessageDialog):
+class MessageDialog(IconMixin, gtk.MessageDialog):
     flags = gtk.DIALOG_MODAL|gtk.DIALOG_DESTROY_WITH_PARENT
     
     def __init__(self, parent, title, message,
@@ -407,6 +410,7 @@ class MessageDialog(gtk.MessageDialog):
         gtk.MessageDialog.__init__(self, parent,
                                    self.flags,
                                    type, buttons, message)
+        IconMixin.__init__(self)
 
         self.set_size_request(-1, -1)
         self.set_resizable(False)
@@ -439,7 +443,7 @@ class ErrorMessageDialog(MessageDialog):
     flags = gtk.DIALOG_DESTROY_WITH_PARENT
 
 
-class FileSelection(gtk.FileChooserDialog):
+class FileSelection(IconMixin, gtk.FileChooserDialog):
 
     def __init__(self, action, main, title='', fullname='',
                  got_location_func=None, no_location_func=None,
@@ -447,6 +451,7 @@ class FileSelection(gtk.FileChooserDialog):
         gtk.FileChooserDialog.__init__(self, action=action, title=title,
                      buttons=(gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL,
                               gtk.STOCK_OK, gtk.RESPONSE_OK))
+        IconMixin.__init__(self)
         from BitTorrent.ConvertedMetainfo import filesystem_encoding
         self.fsenc = filesystem_encoding
         try:

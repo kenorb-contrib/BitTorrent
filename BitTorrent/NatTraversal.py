@@ -33,11 +33,17 @@ class UPnPException(Exception):
 def get_host_ip():
     # this could be improved by making a connection and checking the host
     return socket.gethostbyname(socket.gethostname())
+
+class InfoFileHandle(object):
+    def __init__(self, logfunc):
+        self.logfunc = logfunc
+    def write(self, s):
+        self.logfunc(INFO, s)
            
 class NATEventLoop(threading.Thread):
     def __init__(self, logfunc):
         threading.Thread.__init__(self)
-        self.logfunc = logfunc
+        self.log = InfoFileHandle(logfunc)
         self.queue = Queue.Queue()
         self.killswitch = 0
         self.setDaemon(True)
@@ -55,8 +61,10 @@ class NATEventLoop(threading.Thread):
                 # sys can be none during interpritter shutdown
                 if sys is None:
                     break
-                print_tb(sys.exc_info()[2])
-                self.logfunc(INFO, str(sys.exc_info()[0]) +  ": " + str(sys.exc_info()[1].__str__()))
+                # this logs the traceback to the application log
+                print_tb(sys.exc_info()[2], file = self.log)
+                # this just prints the exception
+                #self.logfunc(INFO, str(sys.exc_info()[0]) +  ": " + str(sys.exc_info()[1].__str__()))
 
 
 class NatTraverser(object):
@@ -255,11 +263,14 @@ def SOAPResponseToDict(soap_response):
     return result
 
 def SOAPErrorToString(response):
-    data = response.read()
-    bs = BeautifulSupe(data)
-    error = bs.first('errorDescription')
-    if error:
-        return str(error.contents[0])
+    if isinstance(response, HTTPError):
+        response = str(response)
+    else:
+        data = response.read()
+        bs = BeautifulSupe(data)
+        error = bs.first('errorDescription')
+        if error:
+            return str(error.contents[0])
     return str(response)
 
 _urlopener = None
@@ -291,22 +302,37 @@ def urlopen_custom(req):
         # Accept-encoding
 
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        host = req.get_full_url()[len("http://"):]
-        host, port = host.split(':', 1)
-        port, path = port.split('/', 1)
-        port = int(port)
 
+        (scheme, netloc, path, params, query, fragment) = urlparse.urlparse(req.get_full_url())
+
+        if not scheme.startswith("http"):
+            raise ValueError("UPnP URL scheme is not http: " + req.get_full_url())
+
+        if len(path) == 0:
+            path = '/'
+
+        if netloc.count(":") > 0:
+            host, port = netloc.split(':', 1)
+            try:
+                port = int(port)
+            except:
+                raise ValueError("UPnP URL port is not int: " + req.get_full_url())
+        else:
+            host = netloc
+            port = 80
+        
         header_str = ''
         data = ''
         method = ''
+        header_str = " " + path + " HTTP/1.0\r\n"
         if req.has_data():
             method = 'POST'
-            header_str = "POST /" + path + " HTTP/1.0\r\n"
+            header_str = method + header_str
             header_str += "Content-Length: " + str(len(req.data)) + "\r\n"
             data = req.data + "\r\n"
         else:
             method = 'GET'
-            header_str = "GET /" + path + " HTTP/1.0\r\n"
+            header_str = method + header_str
             
         header_str += "Host: " + host + ":" + str(port) + "\r\n"
         

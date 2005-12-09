@@ -412,13 +412,11 @@ class RawServer(object):
             # I can't find a coherent explanation for what the behavior
             # should be here, and people report conflicting behavior,
             # so I'll just try all the possibilities
-            try:
-                code, msg, desc = e
-            except:
-                try:
-                    code, msg = e
-                except:
-                    code = e
+            code = None
+            if hasattr(e, '__getitem__'):
+                code = e[0]
+            else:
+                code = e
             if code == ENOBUFS:
                 # log the traceback so we can see where the exception is coming from
                 print_exc(file = sys.stderr)
