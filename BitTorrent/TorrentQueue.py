@@ -750,11 +750,14 @@ class TorrentQueue(Feedback):
             self._dump_state()
 
     def finished(self, torrent):
+        """called when a download reaches 100%"""
         infohash = torrent.infohash
         t = self.torrents[infohash]
         totals = t.dl.get_total_transfer()
         if t.downtotal == 0 and t.downtotal_old == 0 and totals[1] == 0:
             self.set_config('seed_forever', True, infohash)
+            self.set_config('seed_last_forever', True, infohash)
+            self.request_status(infohash, False, False)
             
         if infohash == self.starting_torrent:
             t = self.torrents[infohash]

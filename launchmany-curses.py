@@ -23,6 +23,7 @@ import sys, os
 from threading import Event
 from time import time, localtime, strftime
 
+from BitTorrent.obsoletepythonsupport import *
 from BitTorrent.launchmanycore import LaunchMany
 from BitTorrent.defaultargs import get_defaults
 from BitTorrent.parseargs import parseargs, printHelp

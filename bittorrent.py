@@ -1763,11 +1763,7 @@ class TorrentBox(gtk.EventBox):
                                    func=change_save_location_func))
         # seed forever item
         self.seed_forever_item = gtk.CheckMenuItem(_("_Seed indefinitely"))
-        sfb = False
-        d = self.main.torrents[self.infohash].config.getDict()
-        if d.has_key('seed_forever'):
-            sfb = d['seed_forever']
-        self.seed_forever_item.set_active(bool(sfb))
+        self.reset_seed_forever()
         def sft(widget, *args):
             active = widget.get_active()
             infohash = self.infohash
@@ -1811,6 +1807,13 @@ class TorrentBox(gtk.EventBox):
             self.menu.add(i)
 
         self.menu_handler = self.connect_object("event", self.show_menu, self.menu)
+
+    def reset_seed_forever(self):
+        sfb = False
+        d = self.main.torrents[self.infohash].config.getDict()
+        if d.has_key('seed_forever'):
+            sfb = d['seed_forever']
+        self.seed_forever_item.set_active(bool(sfb))        
 
     def change_save_location(self, widget=None):
         self.main.change_save_location(self.infohash)
@@ -2108,7 +2111,7 @@ class RunningTorrentBox(PausedTorrentBox):
         updater_infohash = self.main.updater.infohash
         if updater_infohash == self.infohash:
             self.main.updater.start_install()
-        
+
         self.make_menu()
 
     def close_child_windows(self):
@@ -2169,6 +2172,7 @@ class RunningTorrentBox(PausedTorrentBox):
         if fractionDone == 1:
             self.progressbar.set_fraction(1)
             self.progressbar.set_text(done_label)
+            self.reset_seed_forever()
             if not self.completion >= 1:
                 self.change_to_completed()
         else:
