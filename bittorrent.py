@@ -28,15 +28,15 @@ import atexit
 
 assert sys.version_info >= (2, 3), _("Install Python %s or greater") % '2.3'
 
-from BitTorrent import BTFailure, INFO, WARNING, ERROR, CRITICAL, app_name
+from BitTorrent import BTFailure, INFO, WARNING, ERROR, CRITICAL, status_dict, app_name
 
 from BitTorrent import configfile
 from BitTorrent import GetTorrent
 
 from BitTorrent.defaultargs import get_defaults
-from BitTorrent.controlsocket import ControlSocket
+from BitTorrent.IPC import ipc_interface
 from BitTorrent.prefs import Preferences
-from BitTorrent.platform import doc_root, spawn, path_wrap, os_version, is_frozen_exe, get_startup_dir, create_shortcut
+from BitTorrent.platform import doc_root, spawn, path_wrap, os_version, is_frozen_exe, get_startup_dir, create_shortcut, remove_shortcut
 
 defaults = get_defaults('bittorrent')
 defaults.extend((('donated' , '', ''), # the version that the user last donated for
@@ -96,12 +96,22 @@ PORT_RANGE = 5
 defconfig = dict([(name, value) for (name, value, doc) in defaults])
 del name, value, doc
 
-def btgui_exit(controlsocket):
-    if sys.platform.startswith('win'):
-        controlsocket.close_sic_socket()
+def btgui_exit(ipc):
+    ipc.stop()
+
+class global_logger(object):
+    def __init__(self, logger = None):
+        self.logger = logger
+    def __call__(self, severity, msg):
+        if self.logger:
+            self.logger(severity, msg)
+        else:
+            sys.stderr.write("%s: %s\n" % (status_dict[severity], msg))        
+
+# if it's application global, why do we pass a reference to it everywhere?
+global_log_func = global_logger()
 
 if __name__ == '__main__':
-
     try:
         config, args = configfile.parse_configuration_and_args(defaults,
                                         'bittorrent', sys.argv[1:], 0, None)
@@ -117,31 +127,27 @@ if __name__ == '__main__':
         if config[opt]:
             print '"--%s"' % opt, _("deprecated, do not use")
             newtorrents.append(config[opt])
-    
-    controlsocket = ControlSocket(config)
 
-    got_control_socket = True
+    ipc = ipc_interface(config, global_log_func)
+
+    # this could be on the ipc object
+    ipc_master = True
     try:
-        controlsocket.create_socket()
+        ipc.create()
     except BTFailure:
-        got_control_socket = False
+        ipc_master = False
 
         try:
-            # windows needs to discover which socket to use, since it could be different
-            # for different users. errors should be treated just like no-op failures
-            if os.name == 'nt':
-                controlsocket.discover_sic_socket()
-                
-            controlsocket.send_command('no-op')
+            ipc.send_command('no-op')
         except BTFailure:
-            sys.stderr.write(_("Failed to create or send command "
-                               "through existing control socket.") + 
-                             _(" Closing all %s windows may fix the problem.")
-                             % app_name)
+            global_log_func(ERROR, _("Failed to communicate with another %s process "
+                                     "but one seems to be running.") + 
+                                   _(" Closing all %s windows may fix the problem.")
+                                   % (app_name, app_name))
             sys.exit(1)
 
-    # make sure we clean up the controlsocket when we close
-    atexit.register(btgui_exit, controlsocket)
+    # make sure we clean up the ipc when we close
+    atexit.register(btgui_exit, ipc)
 
     datas = []
     errors = []
@@ -153,20 +159,19 @@ if __name__ == '__main__':
             errors.extend(newerrors)
         # Not sure if anything really useful could be done if
         # these send_command calls fail
-        if not got_control_socket:
+        if not ipc_master:
             for data in datas:
-                controlsocket.send_command('start_torrent', data, config['save_as'])
+                ipc.send_command('start_torrent', data, config['save_as'])
             for error in errors:
-                controlsocket.send_command('show_error', error)
+                ipc.send_command('show_error', error)
             sys.exit(0)
-    elif not got_control_socket:
+    elif not ipc_master:
         try:
-            controlsocket.send_command('show_error', _("%s already running")%app_name)
+            ipc.send_command('show_error', _("%s already running")%app_name)
         except BTFailure:
-            sys.stderr.write(_("Failed to send command through "
-                               "existing control socket.") +
-                             _(" Closing all %s windows may fix the problem.")
-                             % app_name)
+            global_log_func(ERROR, _("Failed to communicate with another %s process.") +
+                                   _(" Closing all %s windows may fix the problem.")
+                                   % app_name)
         sys.exit(1)
 
 
@@ -189,6 +194,7 @@ from BitTorrent import NewVersion
 from BitTorrent.parseargs import makeHelp
 from BitTorrent.TorrentQueue import RUNNING, RUN_QUEUED, QUEUED, KNOWN, ASKING_LOCATION
 from BitTorrent.TrayIcon import TrayIcon
+from BitTorrent.platform import bttime 
 from BitTorrent.GUI import * 
 
 
@@ -506,14 +512,20 @@ class StopStartButton(gtk.Button):
 
 class StatusLight(gtk.EventBox):
 
-    states = {'stopped': ('bt-status-stopped',
-                          _("Paused")),
-              'empty'  : ('bt-status-stopped',
-                          _("No torrents")),
-              'running': ('bt-status-running',
-                          _("Running normally")),
-              'natted' : ('bt-status-natted',
-                          _("Probably firewalled/NATted"))
+    time_to_nat = 60 * 5
+
+    states = {'stopped'   : ('bt-status-stopped',
+                             _("Paused")),
+              'empty'     : ('bt-status-stopped',
+                             _("No torrents")),
+              'starting'  : ('bt-status-running',
+                             _("Starting download")),
+              'pre-natted': ('bt-status-running',
+                             _("Starting download")),
+              'running'   : ('bt-status-running',
+                             _("Running normally")),
+              'natted'    : ('bt-status-natted',
+                             _("Probably firewalled/NATted"))
               }
     
     def __init__(self, main):
@@ -530,9 +542,19 @@ class StatusLight(gtk.EventBox):
         
         self.set_size_request(24,24)
         self.main.tooltips.set_tip(self, 'tooltip')
-        self.change_state('natted')
+        self.change_state('stopped')
+        self.start_time = None
 
     def change_state(self, state):
+        if state == 'pre-natted':
+            if (self.mystate == 'pre-natted' and
+                bttime() - self.start_time > self.time_to_nat):
+                # go to natted state after a while
+                state = 'natted'
+            elif self.mystate == 'natted':
+                state = 'natted'
+            elif self.mystate != 'pre-natted':
+                self.start_time = bttime()
         if self.mystate == state:
             return
         self.mystate = state
@@ -772,10 +794,6 @@ class LogWindow(object):
 
 
 class LogBuffer(gtk.TextBuffer):
-    h = { CRITICAL:'critical',
-          ERROR   :'error'   ,
-          WARNING :'warning' ,
-          INFO    :'info'    , } 
 
     def __init__(self):
         gtk.TextBuffer.__init__(self)
@@ -810,7 +828,7 @@ class LogBuffer(gtk.TextBuffer):
         self.insert_with_tags_by_name(self.get_end_iter(), now_str, 'small')
         if severity is not None:
             self.insert_with_tags_by_name(self.get_end_iter(), '%s\n'%text,
-                                          'small', self.h[severity])
+                                          'small', status_dict[severity])
         else:
             self.insert_with_tags_by_name(self.get_end_iter(),
                                           ' -- %s -- \n'%text, 'small')
@@ -1145,10 +1163,9 @@ class SettingsWindow(object):
             create_shortcut(src, dst, "--start_minimized")
         else:
             try:
-                os.unlink(dst)
+                remove_shortcut(dst)
             except:
                 pass
-        
 
     def set_start_torrent_behavior(self, state_name):
         if state_name in self.dnd_states:
@@ -1918,11 +1935,7 @@ class TorrentBox(gtk.EventBox):
                                    func=change_save_location_func))
         # seed forever item
         self.seed_forever_item = gtk.CheckMenuItem(_("_Seed indefinitely"))
-        sfb = False
-        d = self.main.torrents[self.infohash].config.getDict()
-        if d.has_key('seed_forever'):
-            sfb = d['seed_forever']
-        self.seed_forever_item.set_active(bool(sfb))
+        self.reset_seed_forever()
         def sft(widget, *args):
             active = widget.get_active()
             infohash = self.infohash
@@ -1966,6 +1979,13 @@ class TorrentBox(gtk.EventBox):
             self.menu.add(i)
 
         self.menu_handler = self.connect_object("event", self.show_menu, self.menu)
+
+    def reset_seed_forever(self):
+        sfb = False
+        d = self.main.torrents[self.infohash].config.getDict()
+        if d.has_key('seed_forever'):
+            sfb = d['seed_forever']
+        self.seed_forever_item.set_active(bool(sfb))        
 
     def change_save_location(self, widget=None):
         self.main.change_save_location(self.infohash)
@@ -2263,7 +2283,7 @@ class RunningTorrentBox(PausedTorrentBox):
         updater_infohash = self.main.updater.infohash
         if updater_infohash == self.infohash:
             self.main.updater.start_install()
-        
+
         self.make_menu()
 
     def close_child_windows(self):
@@ -2324,6 +2344,7 @@ class RunningTorrentBox(PausedTorrentBox):
         if fractionDone == 1:
             self.progressbar.set_fraction(1)
             self.progressbar.set_text(done_label)
+            self.reset_seed_forever()
             if not self.completion >= 1:
                 self.change_to_completed()
         else:
@@ -2770,6 +2791,7 @@ class DownloadInfoFrame(object):
         self.mainwindow.set_border_width(0)
 
         self.set_seen_remote_connections(False)
+        self.set_seen_connections(False)
 
         self.mainwindow.drag_dest_set(gtk.DEST_DEFAULT_ALL,
                                       TARGET_EXTERNAL,
@@ -2966,14 +2988,13 @@ class DownloadInfoFrame(object):
             if self.config['minimize_to_tray']:
                 if self.iconized == False:
                     self.mainwindow.hide()
-            self.trayicon.change_text(self.iconized)
+            self.trayicon.set_toggle_state(self.iconized)
             self.iconized = not self.iconized
 
     def drag_leave(self, *args):
         self.drag_end()
 
     def make_new_torrent(self, widget=None):
-        #raise self.torrentqueue.wrapped.controlsocket
         spawn(self.torrentqueue, 'maketorrent')
 
     def accept_dropped_file(self, widget, context, x, y, selection,
@@ -3047,8 +3068,10 @@ class DownloadInfoFrame(object):
         elif len(self.running_torrents) > 1:
             title += sep+_("(multiple)")
 
-        self.mainwindow.set_title(title)
-        self.trayicon.set_title(title)
+        if self.mainwindow.get_title() != title:
+            self.mainwindow.set_title(title)
+        if self.trayicon.get_tooltip() != title:
+            self.trayicon.set_tooltip(title)
 
     def _guess_size(self):
         paned_height = self.scrollbox.size_request()[1]
@@ -3570,6 +3593,7 @@ class DownloadInfoFrame(object):
         self.set_title()
         self.status_light.change_state('stopped')
         self.set_seen_remote_connections(False)
+        self.set_seen_connections(False)
         q = list(self.runbox.get_queue())
         for infohash in q:
             t = self.torrents[infohash]
@@ -3587,7 +3611,7 @@ class DownloadInfoFrame(object):
 
     def start_status_light(self):
         if len(self.running_torrents):
-            self.status_light.change_state('natted')
+            self.status_light.change_state('starting')
         else:
             self.status_light.change_state('empty')
 
@@ -3598,10 +3622,14 @@ class DownloadInfoFrame(object):
 
         if self.seen_remote_connections:
             self.status_light.change_state('running')
+        elif self.seen_connections:
+            self.status_light.change_state('pre-natted')
         else:
             self.start_status_light()
         
         self.running_torrents[torrent].widget.update_status(statistics)
+        if statistics.get('numPeers'):
+            self.set_seen_connections(seen=True)
         if (not self.seen_remote_connections and
             statistics.get('ever_got_incoming')):
             self.set_seen_remote_connections(seen=True)
@@ -3618,6 +3646,11 @@ class DownloadInfoFrame(object):
         if seen:
             self.status_light.change_state('running')
         self.seen_remote_connections = seen
+
+    def set_seen_connections(self, seen=False):
+        if seen:
+            self.status_light.change_state('pre-natted')
+        self.seen_connections = seen
 
     def new_displayed_torrent(self, infohash, metainfo, dlpath, state, config,
                               completion=None, uptotal=0, downtotal=0):
@@ -3817,10 +3850,11 @@ if __name__ == '__main__':
     # make sure we start the gtk loop once before we close
     atexit.register(btgui_exit_gtk, mainloop)
 
-    torrentqueue = TorrentQueue.TorrentQueue(config, ui_options, controlsocket)
+    torrentqueue = TorrentQueue.TorrentQueue(config, ui_options, ipc)
     d = DownloadInfoFrame(config,TorrentQueue.ThreadWrappedQueue(torrentqueue))
 
     mainloop.set_mainwindow(d)
+    global_log_func.logger = d.global_error
     
     startflag = threading.Event()
     dlthread = threading.Thread(target = torrentqueue.run,

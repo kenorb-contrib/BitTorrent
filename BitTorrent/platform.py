@@ -204,6 +204,11 @@ def create_shortcut(source, dest, *args):
         os.symlink(source, dest)
         # linux also can't do args... maybe we should spit out a shell script?
         assert not args;
+
+def remove_shortcut(dest):
+    if os.name == 'nt':
+        dest += ".lnk"
+    os.unlink(dest)
         
 def path_wrap(path):
     return path

@@ -283,9 +283,8 @@ class IconMixin(object):
         
 class Window(IconMixin, gtk.Window):
     def __init__(self, *args):
-        apply(gtk.Window.__init__, (self,)+args)
+        gtk.Window.__init__(self, *args)
         IconMixin.__init__(self)
-        
 
 class HelpWindow(Window):
     def __init__(self, main, helptext):

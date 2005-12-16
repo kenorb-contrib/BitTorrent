@@ -14,17 +14,14 @@ if os.name == 'nt':
             systray.Control.__init__(self, app_name, iconpath)
 
             self.toggle_func = toggle_func
-            self.quit_func   = quit_func
+            self.quit_func = quit_func
+            self.tooltip_text = None
 
             self.toggle_state = initial_state
-            title = None
-            if self.toggle_state:
-                title = _("Hide %s") % app_name
-            else:
-                title = _("Show %s") % app_name
-                
+            menu_text = self._get_text_for_state(self.toggle_state)
+
             self.toggle_item = systray.MenuItem(name='toggle',
-                                                title=title)
+                                                title=menu_text)
             
             self.toggle_item.onclick = self.toggle
             self.on_double_click = self.toggle
@@ -32,33 +29,48 @@ if os.name == 'nt':
             self.add_menuitem(self.toggle_item)
             self.default_menu_index = 1
 
-        def set_title(self, title):
-            if hasattr(self, 'systray'):
-                # FIXME: pysystray bug means this might fail, but who cares?
-                try:
-                    self.systray.text = title
-                except:
-                    pass
+        def get_tooltip(self):
+            return self.tooltip_text
+
+        def set_tooltip(self, tooltip_text):
+            # ow.
+            if not hasattr(self, 'systray'):
+                return
+                
+            # FIXME: pysystray bug means this might fail
+            try:
+                if self.tooltip_text != tooltip_text:
+                    self.systray.text = tooltip_text
+                    # we set our own cache after sending the value to pysystray,
+                    # since it could fail
+                    self.tooltip_text = tooltip_text
+            except:
+                pass
 
         def on_quit(self, *args):
             if self.quit_func is not None:
                 self._callout(self.quit_func)
 
-        def change_text(self, b):
+        def set_toggle_state(self, b):
             # ow.
             if not hasattr(self, "systray"):
                 return
+            
             s = self.systray
             self.toggle_state = b
-            if self.toggle_state:
-                s.menu.items['toggle'].title = _("Hide %s") % app_name
+            s.menu.items['toggle'].title = self._get_text_for_state(self.toggle_state)
+
+        def _get_text_for_state(self, state):
+            if state:
+                text = _("Hide %s") % app_name
             else:
-                s.menu.items['toggle'].title = _("Show %s") % app_name
+                text = _("Show %s") % app_name
+            return text
                     
         def toggle(self, s):
             if self.toggle_func is not None:
                 self._callout(self.toggle_func)
-            self.change_text(not self.toggle_state)
+            self.set_toggle_state(not self.toggle_state)
 
         def _callout(self, func):
             if callable(func):
@@ -69,7 +81,7 @@ else:
     class TrayIcon:
         def func(*a, **kw):
             pass
-        __init__ = enable = disable = set_title = func
+        __init__ = enable = disable = get_tooltip = set_tooltip = set_toggle_state = func
 
 
 if __name__ == '__main__':

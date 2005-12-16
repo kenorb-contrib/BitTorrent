@@ -9,7 +9,7 @@ if os.name == 'nt':
     import win32com.client
 
 from BitTorrent import app_name, defer
-from BitTorrent import INFO, WARNING, ERROR, CRITICAL
+from BitTorrent import INFO, WARNING, ERROR
 from BitTorrent.platform import os_version
 from BitTorrent.RawServer_magic import RawServer, Handler
 from BitTorrent.BeautifulSupe import BeautifulSupe, Tag
@@ -22,10 +22,10 @@ import random
 from traceback import print_stack, print_tb
 
 def UnsupportedWarning(logfunc, s):
-    logfunc(WARNING, "UPNP is not supported on your system " + ("(%s: %s)."  % (os_version, s)))
+    logfunc(WARNING, "NAT Traversal warning " + ("(%s: %s)."  % (os_version, s)))
 
 def UPNPError(logfunc, s):
-    logfunc(ERROR, "UPNP ERROR: " + ("(%s: %s)."  % (os_version, s)))
+    logfunc(ERROR, "UPnP ERROR: " + ("(%s: %s)."  % (os_version, s)))
 
 class UPnPException(Exception):
     pass
@@ -104,7 +104,7 @@ class NatTraverser(object):
             except Exception, e:
                 self.logfunc(WARNING, str(e))
         else:
-            UnsupportedWarning(self.logfunc, "No functional service found")
+            UnsupportedWarning(self.logfunc, "Unable to map a port using any service.")
 
     def resume_init_services(self):
         self.add_task(self.init_services)

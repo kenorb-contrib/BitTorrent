@@ -10,7 +10,7 @@
 # License.
 
 app_name = 'BitTorrent'
-version = '4.3.2'
+version = '4.3.3'
 
 URL = 'http://www.bittorrent.com/'
 DONATE_URL = URL + 'donate.html'
@@ -74,6 +74,11 @@ INFO = 0
 WARNING = 1
 ERROR = 2
 CRITICAL = 3
+
+status_dict = {INFO: 'info',
+               WARNING: 'warning',
+               ERROR: 'error',
+               CRITICAL: 'critical'}
 
 class BTFailure(Exception):
     pass

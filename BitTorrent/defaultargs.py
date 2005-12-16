@@ -188,6 +188,9 @@ def get_defaults(ui):
             ('current_version', '',
              _("override the current version in the version check "
                "and enable version check debugging mode")),
+            ('geometry', '',
+             _("specify window size and position, in the format: "
+               "WIDTHxHEIGHT+XOFFSET+YOFFSET")),
             ])
 
         if os.name == 'nt':

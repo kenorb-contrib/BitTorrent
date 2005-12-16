@@ -19,7 +19,6 @@ import traceback
 
 from BitTorrent.platform import bttime
 from BitTorrent.download import Feedback, Multitorrent
-from BitTorrent.controlsocket import ControlSocket
 from BitTorrent.bencode import bdecode
 from BitTorrent.ConvertedMetainfo import ConvertedMetainfo
 from BitTorrent.prefs import Preferences
@@ -83,9 +82,9 @@ def decode_position(l, pred, succ, default=None):
 
 class TorrentQueue(Feedback):
 
-    def __init__(self, config, ui_options, controlsocket):
+    def __init__(self, config, ui_options, ipc):
         self.ui_options = ui_options
-        self.controlsocket = controlsocket
+        self.ipc = ipc
         self.config = config
         self.config['def_running_torrents'] = 1 # !@# XXX
         self.config['max_running_torrents'] = 100 # !@# XXX
@@ -106,8 +105,8 @@ class TorrentQueue(Feedback):
             self.multitorrent = Multitorrent(self.config, self.doneflag,
                                             self.global_error, listen_fail_ok=True)
             self.rawserver = self.multitorrent.rawserver
-            self.controlsocket.set_rawserver(self.rawserver)
-            self.controlsocket.start_listening(self.external_command)
+            self.ipc.set_rawserver(self.rawserver)
+            self.ipc.start(self.external_command)
             try:
                 self._restore_state()
             except BTFailure, e:
@@ -146,7 +145,7 @@ class TorrentQueue(Feedback):
         if self.doneflag.isSet():
             self.run_ui_task(self.ui.quit)
         self.multitorrent.close_listening_socket()
-        self.controlsocket.close_socket()
+        self.ipc.stop()
         for infohash in list(self.running_torrents):
             t = self.torrents[infohash]
             if t.state == RUN_QUEUED:
@@ -762,11 +761,14 @@ class TorrentQueue(Feedback):
             self._dump_state()
 
     def finished(self, torrent):
+        """called when a download reaches 100%"""
         infohash = torrent.infohash
         t = self.torrents[infohash]
         totals = t.dl.get_total_transfer()
         if t.downtotal == 0 and t.downtotal_old == 0 and totals[1] == 0:
             self.set_config('seed_forever', True, infohash)
+            self.set_config('seed_last_forever', True, infohash)
+            self.request_status(infohash, False, False)
             
         if infohash == self.starting_torrent:
             t = self.torrents[infohash]
