@@ -31,7 +31,6 @@ assert sys.version_info >= (2, 3), _("Install Python %s or greater") % '2.3'
 from BitTorrent import BTFailure, INFO, WARNING, ERROR, CRITICAL, status_dict, app_name
 
 from BitTorrent import configfile
-from BitTorrent import GetTorrent
 
 from BitTorrent.defaultargs import get_defaults
 from BitTorrent.IPC import ipc_interface
@@ -149,23 +148,18 @@ if __name__ == '__main__':
     # make sure we clean up the ipc when we close
     atexit.register(btgui_exit, ipc)
 
-    datas = []
-    errors = []
-    if newtorrents:
-        for arg in newtorrents:
-            newdata, newerrors = GetTorrent.get_quietly(arg)
-            if newdata:
-                datas.append(newdata)
-            errors.extend(newerrors)
-        # Not sure if anything really useful could be done if
-        # these send_command calls fail
-        if not ipc_master:
-            for data in datas:
-                ipc.send_command('start_torrent', data, config['save_as'])
-            for error in errors:
-                ipc.send_command('show_error', error)
+    # it's not obvious, but 'newtorrents' is carried on to the gui
+    # __main__ if we're the IPC master
+    
+    if not ipc_master:
+        
+        if newtorrents:
+            # Not sure if anything really useful could be done if
+            # these send_command calls fail
+            for name in newtorrents:
+                ipc.send_command('start_torrent', name, config['save_as'])
             sys.exit(0)
-    elif not ipc_master:
+            
         try:
             ipc.send_command('show_error', _("%s already running")%app_name)
         except BTFailure:
@@ -194,7 +188,7 @@ from BitTorrent import NewVersion
 from BitTorrent.parseargs import makeHelp
 from BitTorrent.TorrentQueue import RUNNING, RUN_QUEUED, QUEUED, KNOWN, ASKING_LOCATION
 from BitTorrent.TrayIcon import TrayIcon
-from BitTorrent.platform import bttime 
+from BitTorrent.StatusLight import GtkStatusLight as StatusLight
 from BitTorrent.GUI import * 
 
 
@@ -509,64 +503,6 @@ class StopStartButton(gtk.Button):
             self.main.tooltips.set_tip(self, self.stop_tip )
             self.main.restart_queue()
 
-
-class StatusLight(gtk.EventBox):
-
-    time_to_nat = 60 * 5
-
-    states = {'stopped'   : ('bt-status-stopped',
-                             _("Paused")),
-              'empty'     : ('bt-status-stopped',
-                             _("No torrents")),
-              'starting'  : ('bt-status-running',
-                             _("Starting download")),
-              'pre-natted': ('bt-status-running',
-                             _("Starting download")),
-              'running'   : ('bt-status-running',
-                             _("Running normally")),
-              'natted'    : ('bt-status-natted',
-                             _("Probably firewalled/NATted"))
-              }
-    
-    def __init__(self, main):
-        gtk.EventBox.__init__(self)
-        self.main = main
-        self.image = None
-        self.images = {}
-        self.mystate = None
-        for k,(s,t) in self.states.items():
-            i = gtk.Image()
-            i.set_from_stock(s, gtk.ICON_SIZE_LARGE_TOOLBAR)
-            i.show()
-            self.images[k] = i
-        
-        self.set_size_request(24,24)
-        self.main.tooltips.set_tip(self, 'tooltip')
-        self.change_state('stopped')
-        self.start_time = None
-
-    def change_state(self, state):
-        if state == 'pre-natted':
-            if (self.mystate == 'pre-natted' and
-                bttime() - self.start_time > self.time_to_nat):
-                # go to natted state after a while
-                state = 'natted'
-            elif self.mystate == 'natted':
-                state = 'natted'
-            elif self.mystate != 'pre-natted':
-                self.start_time = bttime()
-        if self.mystate == state:
-            return
-        self.mystate = state
-        assert self.states.has_key(state)
-        if self.image is not None:
-            self.remove(self.image)
-        self.image = self.images[state]
-        self.add(self.image)
-        
-        stock, tooltip = self.states[state]
-        self.main.tooltips.set_tip(self, tooltip)
-       
 
 class VersionWindow(Window):
     def __init__(self, main, newversion, download_url):
@@ -1164,8 +1100,8 @@ class SettingsWindow(object):
         else:
             try:
                 remove_shortcut(dst)
-            except:
-                pass
+            except Exception, e:
+                self.main.global_error(WARNING, _("Failed to remove shortcut: %s") % str(e))
 
     def set_start_torrent_behavior(self, state_name):
         if state_name in self.dnd_states:
@@ -2828,7 +2764,12 @@ class DownloadInfoFrame(object):
 
         self.ssbutton = StopStartButton(self)
 
-        # keystrokes used: A D F H L N O P Q S U (E)
+        # keystrokes used: A D F H L N O P Q S U X (E)
+
+        quit_menu_label = _("_Quit")
+        if os.name == 'nt':
+            quit_menu_label = _("E_xit")
+        
         file_menu_items = ((_("_Open torrent file"), self.select_torrent_to_open),
                            (_("Open torrent _URL"), self.enter_url_to_open),
                            (_("Make _new torrent" ), self.make_new_torrent),
@@ -2836,7 +2777,7 @@ class DownloadInfoFrame(object):
                            ('----'          , None),
                            (_("_Pause/Play"), self.ssbutton.toggle),
                            ('----'          , None),
-                           (_("_Quit")      , lambda w: self.mainwindow.destroy()),
+                           (quit_menu_label , lambda w: self.mainwindow.destroy()),
                            )
         view_menu_items = ((_("Show/Hide _finished torrents"), self.toggle_known),
                            # BUG: if you reorder this menu, see def set_custom_size() first
@@ -3316,12 +3257,7 @@ class DownloadInfoFrame(object):
         self.open_window('enterurl')
 
     def open_url(self, url):
-        data, errors = GetTorrent.get_url(url)
-        if data:
-            self.torrentqueue.start_new_torrent(data)
-        if errors:
-            for e in errors:
-                self.global_error(ERROR, e)
+        self.torrentqueue.start_new_torrent_by_name(url)
 
     def select_torrent_to_open(self, widget):
         open_location = self.config['open_from']
@@ -3342,14 +3278,7 @@ class DownloadInfoFrame(object):
             open_location += os.sep
         self.set_config('open_from',  open_location)
 
-        data, errors = GetTorrent.get_file(name)
-        if data:
-            self.torrentqueue.start_new_torrent(data)
-
-        if errors:
-            for e in errors:
-                self.global_error(ERROR, e)
-
+        self.torrentqueue.start_new_torrent_by_name(name)
 
     def change_save_location(self, infohash):
         def no_location():
@@ -3591,7 +3520,7 @@ class DownloadInfoFrame(object):
     def stop_queue(self):
         self.set_config('pause', True)
         self.set_title()
-        self.status_light.change_state('stopped')
+        self.status_light.send_message('stop')
         self.set_seen_remote_connections(False)
         self.set_seen_connections(False)
         q = list(self.runbox.get_queue())
@@ -3611,19 +3540,19 @@ class DownloadInfoFrame(object):
 
     def start_status_light(self):
         if len(self.running_torrents):
-            self.status_light.change_state('starting')
+            self.status_light.send_message('start')
         else:
-            self.status_light.change_state('empty')
+            self.status_light.send_message('empty')
 
     def update_status(self, torrent, statistics):
         if self.config['pause']:
-            self.status_light.change_state('stopped')
+            self.status_light.send_message('start')
             return
 
         if self.seen_remote_connections:
-            self.status_light.change_state('running')
+            self.status_light.send_message('seen_remote_peers')
         elif self.seen_connections:
-            self.status_light.change_state('pre-natted')
+            self.status_light.send_message('seen_peers')
         else:
             self.start_status_light()
         
@@ -3644,12 +3573,12 @@ class DownloadInfoFrame(object):
 
     def set_seen_remote_connections(self, seen=False):
         if seen:
-            self.status_light.change_state('running')
+            self.status_light.send_message('seen_remote_peers')
         self.seen_remote_connections = seen
 
     def set_seen_connections(self, seen=False):
         if seen:
-            self.status_light.change_state('pre-natted')
+            self.status_light.send_message('seen_peers')
         self.seen_connections = seen
 
     def new_displayed_torrent(self, infohash, metainfo, dlpath, state, config,
@@ -3867,10 +3796,8 @@ if __name__ == '__main__':
         raise BTFailure(_("Could not start the TorrentQueue, see above for errors."))
     
     torrentqueue.rawserver.install_sigint_handler()
-    for data in datas:
-        d.torrentqueue.start_new_torrent(data)
-    for error in errors:
-        d.global_error(ERROR, error)
+    for name in newtorrents:
+        d.torrentqueue.start_new_torrent_by_name(name)
 
     try:
         mainloop.run()

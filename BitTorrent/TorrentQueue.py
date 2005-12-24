@@ -17,6 +17,8 @@ import sys
 import threading
 import traceback
 
+
+from BitTorrent import GetTorrent
 from BitTorrent.platform import bttime
 from BitTorrent.download import Feedback, Multitorrent
 from BitTorrent.bencode import bdecode
@@ -456,7 +458,7 @@ class TorrentQueue(Feedback):
     def external_command(self, action, *datas):
         if action == 'start_torrent':
             assert len(datas) == 2
-            self.start_new_torrent(datas[0], save_as=datas[1])
+            self.start_new_torrent_by_name(datas[0], save_as=datas[1])
         elif action == 'show_error':
             assert len(datas) == 1
             self.global_error(ERROR, datas[0])
@@ -505,6 +507,20 @@ class TorrentQueue(Feedback):
         else:
             self._send_state(infohash)
             self._dump_state()
+
+    def _get_torrent_then_callback(self, name, save_as=None):
+        data, errors = GetTorrent.get_quietly(name)
+
+        if data:
+            self.start_new_torrent(data, save_as)
+        for error in errors:
+            self.run_ui_task(self.ui.global_error, ERROR, error)
+           
+    def start_new_torrent_by_name(self, name, save_as=None):
+        t = threading.Thread(target=self._get_torrent_then_callback,
+                             args=(name, save_as,))
+        t.setDaemon(True)
+        t.start()
 
     def start_new_torrent(self, data, save_as=None):
         t = TorrentInfo(Preferences(self.config))
@@ -812,6 +828,7 @@ class ThreadWrappedQueue(object):
             pass
         self.wrapped.rawserver.external_add_task(dummy, 0)
 
+# OW
 def _makemethod(methodname):
     def wrapper(self, *args, **kws):
         def f():
@@ -819,6 +836,9 @@ def _makemethod(methodname):
         self.wrapped.rawserver.external_add_task(f, 0)
     return wrapper
 
-for methodname in "request_status set_config start_new_torrent remove_torrent set_save_location change_torrent_state check_completion".split():
+# also OW
+for methodname in ("request_status set_config start_new_torrent "
+                   "start_new_torrent_by_name remove_torrent set_save_location "
+                   "change_torrent_state check_completion").split():
     setattr(ThreadWrappedQueue, methodname, _makemethod(methodname))
 del _makemethod, methodname

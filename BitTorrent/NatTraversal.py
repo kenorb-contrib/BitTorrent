@@ -13,7 +13,12 @@ from BitTorrent import INFO, WARNING, ERROR
 from BitTorrent.platform import os_version
 from BitTorrent.RawServer_magic import RawServer, Handler
 from BitTorrent.BeautifulSupe import BeautifulSupe, Tag
-from urllib2 import URLError, HTTPError, Request 
+from urllib2 import URLError, HTTPError, Request
+
+#bleh
+from urllib import urlopen, FancyURLopener, addinfourl
+from httplib import HTTPResponse
+
 import threading
 import Queue
 import urlparse
@@ -263,9 +268,7 @@ def SOAPResponseToDict(soap_response):
     return result
 
 def SOAPErrorToString(response):
-    if isinstance(response, HTTPError):
-        response = str(response)
-    else:
+    if not isinstance(response, Exception):
         data = response.read()
         bs = BeautifulSupe(data)
         error = bs.first('errorDescription')
@@ -275,9 +278,6 @@ def SOAPErrorToString(response):
 
 _urlopener = None
 def urlopen_custom(req):
-    from urllib import urlopen, FancyURLopener, addinfourl
-    from httplib import HTTPResponse
-
     global _urlopener
 
     if not _urlopener:
@@ -488,8 +488,7 @@ class ManualUPnP(NATBase, Handler):
             response = VerifySOAPResponse(request, response)
             mapping.d.callback(mapping.external_port)
             self.logfunc(INFO, "registered: " + str(mapping))
-
-        except URLError, e:
+        except Exception, e: #HTTPError, URLError, BadStatusLine, you name it.
             error = SOAPErrorToString(e)
             mapping.d.errback(error)
 
@@ -501,8 +500,9 @@ class ManualUPnP(NATBase, Handler):
             response = urlopen_custom(request)
             response = VerifySOAPResponse(request, response)
             self.logfunc(INFO, ("unregisterd: %s, %s" % (external_port, protocol)))
-        except URLError, e:
+        except Exception, e: #HTTPError, URLError, BadStatusLine, you name it.
             error = SOAPErrorToString(e)
+            self.logfunc(ERROR, error)
     
     def data_came_in(self, addr, datagram):
         if self.transport is None:

@@ -365,6 +365,8 @@ if os.name == 'nt':
             HandlerObject.__init__(self, handler, target)
 
         def Request(self, x):
+            # null byte hack
+            x = x.replace("\\**0", "\0")
             items = x.split("|")
             self.handler(items[0], *items[1:])
             return ("OK")
@@ -416,6 +418,10 @@ class IPCWin32DDE(IPC):
 
     def send_command(self, command, *args):
         s = '|'.join([command, ] + list(args))
+        # null byte hack
+        if s.count("\0") > 0:
+            self.log(WARNING, "IPC: String with null byte(s):" + s)
+            s = s.replace("\0", "\\**0")
         result = self.conversation.Request(s)
 
     def stop(self):

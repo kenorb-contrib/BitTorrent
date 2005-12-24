@@ -272,6 +272,7 @@ class CallbackConnection(object):
     #twisted api inconsistancy workaround
     #sometimes connectionLost is called (not fired) from inside write()
     def post_connectionLost(self, reason):
+        #print "Connection Lost", str(reason).split(":")[-1]
         #hack to try and dig up the connection if one was ever made
         if not self.__dict__.has_key("connection"):
             self.connection = self.factory.connection
@@ -294,6 +295,8 @@ class CallbackConnection(object):
         s = self.connection
         dns = (s.ip, s.port)
         reason = _("connection refused")
+        
+        #print "Connection Refused"
         
         if not s.dying:
             # this might not work - reason is not an exception
@@ -330,6 +333,7 @@ class CallbackDatagramProtocol(CallbackConnection, DatagramProtocol):
 class OutgoingConnectionFactory(ClientFactory):
         
     def clientConnectionFailed(self, connector, reason):
+        #print "Client connection failed", str(reason).split(":")[-1]
         peer = connector.getDestination()
         dns = (peer.host, peer.port)
         # opt-out        
@@ -413,6 +417,12 @@ class RawServerMixin(object):
         # in case the program is in an infinite loop
         signal.signal(signal.SIGINT, signal.default_int_handler)
 
+def _sl(x):
+    if hasattr(x, "__len__"):
+        return str(len(x))
+    else:
+        return str(x)
+
 class RawServer(RawServerMixin):
 
     def __init__(self, doneflag, config, noisy=True,
@@ -424,7 +434,44 @@ class RawServer(RawServerMixin):
         self.udp_sockets = {}
         self.live_contexts = {None : 1}
         self.listened = 0
-        
+
+        #l2 = task.LoopingCall(self._print_connection_count)
+        #l2.start(5)
+
+    def _log(self, msg):
+        f = open("connections.txt", "a")
+        print str(msg)
+        f.write(str(msg) + "\n")
+        f.close()
+
+    def _print_connection_count(self):
+        c = len(self.single_sockets)
+        u = len(self.udp_sockets)
+        c -= u
+        #s = "Connections(" + str(id(self)) + "): tcp(" + str(c) + ") upd(" + str(u) + ")"
+        #self._log(s)
+
+        d = dict()
+        for s in self.single_sockets:
+            state = "None"
+            if s.transport:
+                try:
+                    state = s.transport.state
+                except:
+                    state = "has transport"
+            else:
+                state = "No transport"
+            if not d.has_key(state):
+                d[state] = 0
+            d[state] += 1
+        self._log(d)
+
+        sizes = "lh(" + _sl(self.listening_handlers)
+        sizes += ") ss(" + _sl(self.single_sockets)
+        sizes += ") us(" + _sl(self.udp_sockets)
+        sizes += ") lc(" + _sl(self.live_contexts) + ")"
+        self._log(sizes)
+                
     def add_context(self, context):
         self.live_contexts[context] = 1
 
