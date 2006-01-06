@@ -217,7 +217,7 @@ class ConvertedMetainfo(object):
         elif self.bad_windows:
             errorfunc(WARNING,
                       _("The Windows filesystem cannot handle some "
-                        "characters used in the filename(s) of this torrent."
+                        "characters used in the filename(s) of this torrent. "
                         "Filenames have been changed from the original."))
         elif self.bad_path:
             errorfunc(WARNING,

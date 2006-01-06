@@ -95,6 +95,7 @@ class CursesDisplayer(object):
         signal(SIGWINCH, self.winch_handler)
         self.changeflag = Event()
         self._remake_window()
+        curses.use_default_colors()
 
     def winch_handler(self, signum, stackframe):
         self.changeflag.set()

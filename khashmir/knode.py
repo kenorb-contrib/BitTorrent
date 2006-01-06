@@ -41,7 +41,7 @@ class KNodeBase(Node):
 
     def errBack(self, err):
         self.table.table.nodeFailed(self)
-        return err
+        return err[0]
         
     def ping(self, id):
         df = self.conn().sendRequest('ping', {"id":id})

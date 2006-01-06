@@ -154,7 +154,10 @@ class IPCSocketBase(IPC):
     def stop(self):
         # safe double-stop, since TorrentQueue seems to be prone to do so
         if self.controlsocket:
-            self.rawserver.stop_listening(self.controlsocket)
+            # it's possible we're told to stop after controlsocket creation but
+            # before rawserver registration
+            if self.rawserver:
+                self.rawserver.stop_listening(self.controlsocket)
             self.controlsocket.close()
             self.controlsocket = None
         

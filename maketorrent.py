@@ -34,7 +34,7 @@ from BitTorrent import configfile
 from BitTorrent.defaultargs import get_defaults
 from BitTorrent.makemetafile import make_meta_files
 from BitTorrent.parseargs import makeHelp
-from BitTorrent.platform import spawn
+from BitTorrent.platform import btspawn
 from BitTorrent.ConvertedMetainfo import set_filesystem_encoding
 
 defaults = get_defaults('maketorrent')
@@ -512,7 +512,7 @@ class ProgressDialog(gtk.Dialog):
 
     def seed(self, widget=None):
         for f in self.file_list:
-            spawn(None, 'bittorrent', f+EXTENSION, '--save_as', f)
+            btspawn(None, 'bittorrent', f+EXTENSION, '--save_as', f)
         self.cancel()
 
     def cancel(self, widget=None):

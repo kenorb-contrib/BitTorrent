@@ -25,9 +25,21 @@ class InitialConnectionHandler(Handler):
     def __init__(self, parent, id):
         self.parent = parent
         self.id = id
+        
     def connection_started(self, s):
         con = Connection(self.parent, s, self.id, True)
         self.parent.connections[s] = con
+        del self.parent.pending_connections[(s.ip, s.port)]
+            
+        # it might not be obvious why this is here.
+        # if the pending queue filled and put the remaining connections
+        # into the spare list, this will push more connections in to pending
+        self.parent.replace_connection()
+        
+    def connection_failed(self, addr, exception):
+        del self.parent.pending_connections[addr]
+        self.parent.replace_connection()
+
 
 class Encoder(object):
 
@@ -47,9 +59,16 @@ class Encoder(object):
         self.addcontact = addcontactfunc
         self.reported_port = reported_port
         self.everinc = False
+
+        # submitted
+        self.pending_connections = {}
+        # transport connected
         self.connections = {}
+        # protocol active
         self.complete_connections = {}
-        self.spares = []
+        
+        self.spares = {}
+
         self.banned = {}
         schedulefunc(self.send_keepalives, config['keepalive_interval'])
 
@@ -59,23 +78,52 @@ class Encoder(object):
         for c in self.complete_connections:
             c.send_keepalive()
 
+    # returns False if the connection has been pushed on to self.spares
+    # other filters and a successful connection return True
     def start_connection(self, dns, id):
         if dns[0] in self.banned:
-            return
+            return True
         if id == self.my_id:
-            return
+            return True
         for v in self.connections.values():
             if id and v.id == id:
-                return
+                return True
             if self.config['one_connection_per_ip'] and v.ip == dns[0]:
-                return
-        if len(self.connections) >= self.config['max_initiate']:
-            if len(self.spares) < self.config['max_initiate'] and \
-                   dns not in self.spares:
-                self.spares.append(dns)
-            return
-        self.raw_server.async_start_connection(dns, InitialConnectionHandler(self, id), self.context)
+                return True
 
+        #print "start", len(self.pending_connections), len(self.spares), len(self.connections)
+
+        total_outstanding = len(self.connections)
+        # it's possible the pending connections could eventually complete,
+        # so we have to account for those when enforcing max_initiate
+        total_outstanding += len(self.pending_connections)
+        
+        if total_outstanding >= self.config['max_initiate']:
+            self.spares[dns] = 1
+            return False
+
+        # if these fail, I'm getting a very weird dns object        
+        assert isinstance(dns, tuple)
+        assert isinstance(dns[0], str)
+        assert isinstance(dns[1], int)
+
+        # looks like we connect to the same peer several times in a row.
+        # we should probably stop doing that, but this prevents it from crashing
+        if dns in self.pending_connections:
+            # uncomment this if you want to debug the multi-connect problem
+            #print "Double Add on", dns
+            #traceback.print_stack()
+            return True
+
+        self.pending_connections[dns] = 1
+        started = self.raw_server.async_start_connection(dns, InitialConnectionHandler(self, id), self.context)
+
+        if not started:
+            del self.pending_connections[dns]
+            self.spares[dns] = 1
+            return False
+
+        return True
 
     def connection_completed(self, c):
         self.complete_connections[c] = 1
@@ -96,9 +144,12 @@ class Encoder(object):
         return len(self.complete_connections)
 
     def replace_connection(self):
-        while len(self.connections) < self.config['max_initiate'] and \
-                  self.spares:
-            self.start_connection(self.spares.pop(), None)
+        while self.spares:
+            started = self.start_connection(self.spares.popitem()[0], None)
+            if not started:
+                # start_connection decided to push this connection back on to
+                # self.spares because a limit was hit. break now or loop forever
+                break
 
     def close_connections(self):
         for c in self.connections.itervalues():
@@ -151,8 +202,14 @@ class SingleportListener(Handler):
             return
         serversocket = self.rawserver.create_serversocket(
             port, config['bind'], reuse=True, tos=config['peer_socket_tos'])
-        d = self.nattraverser.register_port(port, port, "TCP", config['bind'])
-        d.addCallback(self._change_port)
+        try:
+            d = self.nattraverser.register_port(port, port, "TCP", config['bind'])
+            d.addCallback(self._change_port)
+        except Exception, e:
+            # blanket, just incase - we don't want to interrupt things
+            # maybe we should log it, maybe not
+            #print "UPnP registration error", e
+            pass
         self.rawserver.start_listening(serversocket, self)
         oldport = self.port
         self.port = port

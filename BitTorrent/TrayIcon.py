@@ -9,8 +9,8 @@ if os.name == 'nt':
 
     class TrayIcon(systray.Control):
         def __init__(self, initial_state, toggle_func=None, quit_func=None):
-            # BUG: image_root is useless, path must be relative
-            iconpath = os.path.join('images/', 'bittorrent.ico')
+            iconpath = os.path.join(image_root, 'bittorrent.ico')
+
             systray.Control.__init__(self, app_name, iconpath)
 
             self.toggle_func = toggle_func

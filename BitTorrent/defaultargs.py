@@ -33,6 +33,13 @@ BAD_LIBC_WORKAROUND_DEFAULT = MYFALSE
 if os.name == 'posix':
     if os.uname()[0] in ['Darwin']:
         BAD_LIBC_WORKAROUND_DEFAULT = MYTRUE
+
+MIN_INCOMPLETE = 100
+if os.name == 'nt':
+    from BitTorrent.platform import win_version_num
+    # starting in XP SP2 the incomplete outgoing connection limit was set to 10
+    if win_version_num >= (2, 5, 1, 2600, 2):
+        MIN_INCOMPLETE = 10
     
 from BitTorrent import languages
 
@@ -68,8 +75,10 @@ common_options = [
      _("minutes to wait between requesting more peers")),
     ('min_peers', 20,
      _("minimum number of peers to not do rerequesting")),
-    ('max_initiate', 40,
+    ('max_initiate', 60,
      _("number of peers at which to stop initiating new connections")),
+    ('max_incomplete', MIN_INCOMPLETE,
+     _("max number of outgoing incomplete connections")),
     ('max_allow_in', 80,
      _("maximum number of connections to allow, after this new incoming "
        "connections will be immediately closed")),
@@ -186,7 +195,7 @@ def get_defaults(ui):
              _("override the version provided by the http version check "
                "and enable version check debugging mode")),
             ('current_version', '',
-             _("override the current version in the version check "
+             _("override the current version used in the version check "
                "and enable version check debugging mode")),
             ('geometry', '',
              _("specify window size and position, in the format: "

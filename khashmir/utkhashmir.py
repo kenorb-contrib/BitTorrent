@@ -115,7 +115,7 @@ class UTKhashmir(khashmir.KhashmirBase):
 
     def _get_host(self, host, port, callback):
         ip = gethostbyname(host)
-        self.rawserver.external_add_task(self._got_host, 0, (host, port, callback))
+        self.rawserver.external_add_task(self._got_host, 0, (ip, port, callback))
 
     def _got_host(self, host, port, callback):
         khashmir.KhashmirBase.addContact(self, host, port, callback)

@@ -34,6 +34,7 @@ unfinished_language_names = {
     'ar'   :u'العربية'       ,    'bs'   :u'Bosanski'             ,
     'eo'   :u'Esperanto'            ,    'eu'   :u'Euskara'              ,
     'et'   :u'Eesti'                ,    'fi'   :u'Suomi'                ,
+    'fa'   :u'فارسی'                ,
     'ga'   :u'Gaeilge'              ,    'gl'   :u'Galego'               ,
     'he_IL':u'עברית'                ,    'hr'   :u'Hrvatski'             ,
     'hy'   :u'Հայերեն'       ,    'in'   :u'Bahasa indonesia'     ,

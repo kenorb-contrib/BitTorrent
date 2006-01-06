@@ -35,7 +35,8 @@ from BitTorrent import configfile
 from BitTorrent.defaultargs import get_defaults
 from BitTorrent.IPC import ipc_interface
 from BitTorrent.prefs import Preferences
-from BitTorrent.platform import doc_root, spawn, path_wrap, os_version, is_frozen_exe, get_startup_dir, create_shortcut, remove_shortcut
+from BitTorrent.platform import doc_root, btspawn, path_wrap, os_version, is_frozen_exe, get_startup_dir, create_shortcut, remove_shortcut
+from BitTorrent import zurllib
 
 defaults = get_defaults('bittorrent')
 defaults.extend((('donated' , '', ''), # the version that the user last donated for
@@ -71,6 +72,7 @@ ui_options.extend([
     'min_uploads'     ,
     'max_uploads'     ,
     'max_initiate'    ,
+    'max_incomplete'  ,
     'max_allow_in'    ,
     'max_files_open'  ,
     'forwarded_port'  ,
@@ -111,6 +113,8 @@ class global_logger(object):
 global_log_func = global_logger()
 
 if __name__ == '__main__':
+    zurllib.add_unsafe_thread()
+    
     try:
         config, args = configfile.parse_configuration_and_args(defaults,
                                         'bittorrent', sys.argv[1:], 0, None)
@@ -178,7 +182,6 @@ assert gtk.pygtk_version >= (2, 6), _("PyGTK %s or newer required") % '2.6'
 
 from BitTorrent import HELP_URL, DONATE_URL, SEARCH_URL, version, branch
 
-from BitTorrent import zurllib
 from BitTorrent import TorrentQueue
 from BitTorrent import LaunchPath
 from BitTorrent import Desktop
@@ -320,7 +323,7 @@ class IPValidator(Validator):
 
 class PortValidator(Validator):
     width = 64
-    minimum = 0
+    minimum = 1024
     maximum = 65535
 
     def add_end(self, end_name):
@@ -1019,7 +1022,7 @@ class SettingsWindow(object):
         self.minport_field.add_end('maxport')
         self.port_range.pack_start(self.minport_field, expand=False, fill=False)
         self.minport_field.settingswindow = self
-        self.port_range.pack_start(gtk.Label(' (0-65535)'),
+        self.port_range.pack_start(gtk.Label(' (1024-65535)'),
                                    expand=False, fill=False)
 
         self.port_range_frame.add(self.port_range)
@@ -1600,13 +1603,16 @@ class TorrentInfoWindow(object):
             add_item(_("Info hash:"), self.torrent_box.infohash.encode('hex'), y)
             y+=1
 
-        path = self.torrent_box.dlpath 
+        path = self.torrent_box.dlpath
         filename = ''
-        if not self.torrent_box.is_batch:
-            path,filename = os.path.split(self.torrent_box.dlpath)
-        if path[-1] != os.sep:
-            path += os.sep
-        path = path_wrap(path)
+        if path is None:
+            path = ''
+        else:
+            if not self.torrent_box.is_batch:
+                path,filename = os.path.split(self.torrent_box.dlpath)
+            if path[-1] != os.sep:
+                path += os.sep
+            path = path_wrap(path)
         add_item(_("Save in:"), path, y)
         y+=1
 
@@ -2936,7 +2942,7 @@ class DownloadInfoFrame(object):
         self.drag_end()
 
     def make_new_torrent(self, widget=None):
-        spawn(self.torrentqueue, 'maketorrent')
+        btspawn(self.torrentqueue, 'maketorrent')
 
     def accept_dropped_file(self, widget, context, x, y, selection,
                             targetType, time):
@@ -3152,7 +3158,7 @@ class DownloadInfoFrame(object):
                       )
 
     def install_new_version(self):
-        self.updater.launch_installer()
+        self.updater.launch_installer(self.torrentqueue)
         self.cancel()
         
 
@@ -3591,6 +3597,7 @@ class DownloadInfoFrame(object):
         t.completion = completion
         t.uptotal = uptotal
         t.downtotal = downtotal
+        t.widget = None
         self.torrents[infohash] = t
         self.create_torrent_widget(infohash)
 
@@ -3739,7 +3746,7 @@ class MainLoop:
 
     def run(self):
         self.mainwindow.traythread.start()
-        gtk.threads_enter()
+        gtk.threads_enter()        
 
         if self.mainwindow:
             self.mainwindow.ssbutton.set_paused(self.mainwindow.config['pause'])

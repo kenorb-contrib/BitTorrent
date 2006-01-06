@@ -10,15 +10,16 @@ class StatusLight(object):
                        _("Paused")),
         'empty'     : ('bt-status-stopped',
                        _("No torrents")),
-        'starting'  : ('bt-status-running',
+        'starting'  : ('bt-status-starting',
                        _("Starting download")),
-        'pre-natted': ('bt-status-running',
+        'pre-natted': ('bt-status-pre-natted',
                        _("Starting download")),
         'running'   : ('bt-status-running',
                        _("Running normally")),
         'natted'    : ('bt-status-natted',
-                       _("Probably firewalled/NATted"))
-        #TODO: add broken state
+                       _("Downloads may be slow:\nProbably firewalled/NATted")),
+        'broken'    : ('bt-status-broken',
+                       _("Check network connection")),
         }
 
     messages = {
@@ -28,7 +29,7 @@ class StatusLight(object):
         'start'             : 'starting'  ,
         'seen_peers'        : 'pre-natted',
         'seen_remote_peers' : 'running'   ,
-        #TODO: add broken message
+        'broken'            : 'broken'    ,
         }
     
     transitions = {
@@ -39,10 +40,11 @@ class StatusLight(object):
                          'seen_peers'       : 'running'   ,},
         'natted'     : { 'start'            : 'natted'    ,
                          'seen_peers'       : 'natted'    ,},
+        'broken'     : { 'start'            : 'broken'    ,},
         #TODO: add broken transitions
         }
 
-    time_to_nat = 60 * 5
+    time_to_nat = 60 * 5 # 5 minutes
 
     def __init__(self):
         self.mystate = self.initial_state

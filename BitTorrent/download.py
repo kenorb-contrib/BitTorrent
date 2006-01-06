@@ -34,6 +34,7 @@ from BitTorrent.StorageWrapper import StorageWrapper
 from BitTorrent.Uploader import Upload
 from BitTorrent.Downloader import Downloader
 from BitTorrent.Encoder import Encoder, SingleportListener
+from BitTorrent.zurllib import set_zurllib_rawserver, add_unsafe_thread
 from BitTorrent import PeerID 
 
 from BitTorrent.RateLimiter import MultiRateLimiter as RateLimiter
@@ -79,6 +80,8 @@ class Multitorrent(object):
         self.errorfunc = errorfunc
         self.rawserver = RawServer(doneflag, config, errorfunc=errorfunc,
                                    tos=config['peer_socket_tos'])
+        set_zurllib_rawserver(self.rawserver)
+        add_unsafe_thread()
         self.nattraverser = NatTraverser(self.rawserver, logfunc=errorfunc)
         self.singleport_listener = SingleportListener(self.rawserver,
                                                       self.nattraverser)
@@ -93,8 +96,8 @@ class Multitorrent(object):
 
     def _find_port(self, listen_fail_ok=True):
         e = _("maxport less than minport - no ports to check")
-        if self.config['minport'] <= 0:
-            self.config['minport'] = 1
+        if self.config['minport'] < 1024:
+            self.config['minport'] = 1024
         for port in xrange(self.config['minport'], self.config['maxport'] + 1):
             try:
                 self.singleport_listener.open_port(port, self.config)
@@ -263,7 +266,7 @@ class _SingleTorrent(object):
                         resumefile = None
                 except Exception, e:
                     self._error(WARNING,
-                                _("Could not load fastresume data: %s.") % str(e)
+                                _("Could not load fastresume data: %s") % str(e)
                                 + ' ' + _("Will perform full hash check."))
                     if resumefile is not None:
                         resumefile.close()

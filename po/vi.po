@@ -1,13 +1,13 @@
-# BitTorrent
+# BitTorrent 
 # Copyright (C) 2005, BitTorrent, Inc.
 # This file is distributed under the same license as the BitTorrent package.
-# Matt Chisholm, matt (dash) translations (at) bittorrent (dot) com, 2005.
+# Matt Chisholm, matt (translations) translations (at) bittorrent (dot) com, 2005.
 # 
 msgid ""
 msgstr ""
 "Project-Id-Version: BitTorrent 4.2\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2005-12-05 15:15-0800\n"
+"POT-Creation-Date: 2005-12-27 12:06-0800\n"
 "PO-Revision-Date: 2005-11-14 02:02-0800\n"
 "Last-Translator: translate4me <matt-translate4me@bittorrent.com>\n"
 "Language-Team: Vietnamese <gnomevi-list@lists.sourceforge.net>\n"
@@ -22,131 +22,118 @@ msgstr ""
 msgid "Install Python %s or greater"
 msgstr ""
 
-#: bittorrent.py:118 BitTorrent/defaultargs.py:221
-#: BitTorrent/defaultargs.py:223 bittorrent-console.py:295
-#: bittorrent-curses.py:429
+#: bittorrent.py:128 BitTorrent/defaultargs.py:233
+#: BitTorrent/defaultargs.py:235 bittorrent-console.py:295
+#: bittorrent-curses.py:430
 msgid "deprecated, do not use"
 msgstr "bị phản đối, không nên sử dụng"
 
-#: bittorrent.py:137
-msgid "Failed to create or send command through existing control socket."
-msgstr "Không thể tạo hay gởi lệnh qua cơ chế truyền thông điều khiển hiện có."
+#: bittorrent.py:143
+#, python-format
+msgid ""
+"Failed to communicate with another %s process but one seems to be running."
+msgstr ""
 
-#: bittorrent.py:139 bittorrent.py:168
+#: bittorrent.py:145 bittorrent.py:168
 #, python-format
 msgid " Closing all %s windows may fix the problem."
 msgstr "Đóng tất cả %s cửa sổ có thể sửa lỗi."
 
-#: bittorrent.py:164
+#: bittorrent.py:165
 #, python-format
 msgid "%s already running"
 msgstr "%s đang chạy"
 
-#: bittorrent.py:166
-msgid "Failed to send command through existing control socket."
-msgstr "Không gởi được lệnh qua cơ chế truyền thông điều khiển hiện có."
+#: bittorrent.py:167
+#, python-format
+msgid "Failed to communicate with another %s process."
+msgstr ""
 
 #: bittorrent.py:178 BitTorrent/GUI.py:22
 #, python-format
 msgid "PyGTK %s or newer required"
 msgstr ""
 
-#: bittorrent.py:195 bittorrent.py:1726
+#: bittorrent.py:196 bittorrent.py:1683
 msgid "drag to reorder"
 msgstr "kéo để xếp lại thứ tự"
 
-#: bittorrent.py:196 bittorrent.py:1727
+#: bittorrent.py:197 bittorrent.py:1684
 msgid "right-click for menu"
 msgstr "nhấp chuột phải để hiển thị trình đơn"
 
-#: bittorrent.py:202 bittorrent.py:387
+#: bittorrent.py:203 bittorrent.py:388
 msgid "dialup"
 msgstr "quay số"
 
-#: bittorrent.py:203 bittorrent.py:388
+#: bittorrent.py:204 bittorrent.py:389
 msgid "DSL/cable 128k up"
 msgstr "DSL/cáp 128k trở lên"
 
-#: bittorrent.py:204 bittorrent.py:389
+#: bittorrent.py:205 bittorrent.py:390
 msgid "DSL/cable 256k up"
 msgstr "DSL/cáp 256k trở lên"
 
-#: bittorrent.py:205 bittorrent.py:390
+#: bittorrent.py:206 bittorrent.py:391
 msgid "DSL 768k up"
 msgstr "DSL 768k trở lên"
 
-#: bittorrent.py:206 bittorrent.py:391
+#: bittorrent.py:207 bittorrent.py:392
 msgid "T1"
 msgstr "T1"
 
-#: bittorrent.py:207 bittorrent.py:392
+#: bittorrent.py:208 bittorrent.py:393
 msgid "T1/E1"
 msgstr "T1/E1"
 
-#: bittorrent.py:208 bittorrent.py:393
+#: bittorrent.py:209 bittorrent.py:394
 msgid "E1"
 msgstr "E1"
 
-#: bittorrent.py:209 bittorrent.py:394
+#: bittorrent.py:210 bittorrent.py:395
 msgid "T3"
 msgstr "T3"
 
-#: bittorrent.py:210 bittorrent.py:395
+#: bittorrent.py:211 bittorrent.py:396
 msgid "OC3"
 msgstr "OC3"
 
-#: bittorrent.py:350
+#: bittorrent.py:351
 msgid "Enter torrent URL"
 msgstr "Nhập địa chỉ Mạng "
 
-#: bittorrent.py:351
+#: bittorrent.py:352
 msgid "Enter the URL of a torrent file to open:"
 msgstr "Nhập địa chỉ Mạng của một tập tin dòng cần mở:"
 
-#: bittorrent.py:407
+#: bittorrent.py:408
 msgid "Maximum upload rate:"
 msgstr "Tốc độ tải lên tối đa:"
 
-#: bittorrent.py:470
+#: bittorrent.py:471
 msgid "Temporarily stop all running torrents"
 msgstr "Ngừng tạm thời các dòng đang chạy"
 
-#: bittorrent.py:471
+#: bittorrent.py:472
 msgid "Resume downloading"
 msgstr "Tiếp tục tải về"
 
-#: bittorrent.py:510 bittorrent.py:2158
-msgid "Paused"
-msgstr "Đã tạm dừng"
-
-#: bittorrent.py:512
-msgid "No torrents"
-msgstr "Không có dòng."
-
-#: bittorrent.py:514
-msgid "Running normally"
-msgstr "Đang chạy bình thường"
-
-#: bittorrent.py:516
-msgid "Probably firewalled/NATted"
-msgstr ""
-
-#: bittorrent.py:552
+#: bittorrent.py:511
 #, python-format
 msgid "New %s version available"
 msgstr "Có sẵn phiên bản %s mới"
 
-#: bittorrent.py:567
+#: bittorrent.py:526
 #, python-format
 msgid "A newer version of %s is available.\n"
 msgstr "Có sẵn một phiên bản %s mới hơn.\n"
 
-#: bittorrent.py:568
+#: bittorrent.py:527
 #, python-format
 msgid "You are using %s, and the new version is %s.\n"
 msgstr "Bạn đang sử dụng phiên bản %s và phiên bản mới là %s.\n"
 
-#: bittorrent.py:569
+#: bittorrent.py:528
 #, python-format
 msgid ""
 "You can always get the latest version from \n"
@@ -155,76 +142,76 @@ msgstr ""
 "Bạn luôn có thể lấy phiên bản mới nhất từ\n"
 "%s"
 
-#: bittorrent.py:576 bittorrent.py:1955
+#: bittorrent.py:535 bittorrent.py:1908
 msgid "Download _later"
 msgstr "Tải về _sau "
 
-#: bittorrent.py:579 bittorrent.py:1943
+#: bittorrent.py:538 bittorrent.py:1896
 msgid "Download _now"
 msgstr "Tải về_ngay bây giờ"
 
-#: bittorrent.py:585
+#: bittorrent.py:544
 msgid "_Remind me later"
 msgstr "_Nhắc nhở tôi sau"
 
-#: bittorrent.py:623
+#: bittorrent.py:582
 #, python-format
 msgid "About %s"
 msgstr "Giới thiệu về %s"
 
-#: bittorrent.py:638
+#: bittorrent.py:597
 msgid "Beta"
 msgstr "Phiên bản sơ bộ dùng để chạy thử nghiệm"
 
-#: bittorrent.py:640
+#: bittorrent.py:599
 #, python-format
 msgid "Version %s"
 msgstr "Phiên bản %s"
 
-#: bittorrent.py:656
+#: bittorrent.py:615
 #, python-format
 msgid "Couldn't open %s"
 msgstr "Không thể mở %s"
 
-#: bittorrent.py:675
+#: bittorrent.py:634
 msgid "Donate"
 msgstr "Tặng"
 
-#: bittorrent.py:695
+#: bittorrent.py:654
 #, python-format
 msgid "%s Activity Log"
 msgstr "Bản lưu Hoạt động %s"
 
-#: bittorrent.py:752
+#: bittorrent.py:711
 msgid "Save log in:"
 msgstr "Lưu Bản lưu vào:"
 
-#: bittorrent.py:763
+#: bittorrent.py:722
 msgid "log saved"
 msgstr "đã lưu bản lưu "
 
-#: bittorrent.py:822
+#: bittorrent.py:777
 msgid "log cleared"
 msgstr "đã xóa nội dung bản lưu"
 
-#: bittorrent.py:852
+#: bittorrent.py:807
 #, python-format
 msgid "%s Settings"
 msgstr "Các cài đặt %s "
 
-#: bittorrent.py:864
+#: bittorrent.py:819
 msgid "General"
 msgstr ""
 
-#: bittorrent.py:867 BitTorrent/defaultargs.py:196
+#: bittorrent.py:822 BitTorrent/defaultargs.py:208
 msgid "Launch BitTorrent when Windows starts"
 msgstr ""
 
-#: bittorrent.py:873 BitTorrent/defaultargs.py:198
+#: bittorrent.py:828 BitTorrent/defaultargs.py:210
 msgid "Minimize to system tray"
 msgstr ""
 
-#: bittorrent.py:879
+#: bittorrent.py:834
 msgid ""
 "Progress bar text is always black\n"
 "(requires restart)"
@@ -232,47 +219,47 @@ msgstr ""
 "Văn bản trên thanh tiến trình luôn có màu đen\n"
 "(yêu cầu khởi động lại)"
 
-#: bittorrent.py:888
+#: bittorrent.py:843
 msgid "Saving"
 msgstr "Đang lưu"
 
-#: bittorrent.py:890
+#: bittorrent.py:845
 msgid "Save new downloads in:"
 msgstr "Lưu các tập tin mới tải về vào:"
 
-#: bittorrent.py:903
+#: bittorrent.py:858
 msgid "Change..."
 msgstr "Thay đổi..."
 
-#: bittorrent.py:909
+#: bittorrent.py:864
 msgid "Ask where to save each new download"
 msgstr "Hỏi vị trí lưu mỗi tập tin mới tải về "
 
-#: bittorrent.py:918
+#: bittorrent.py:873
 msgid "Downloading"
 msgstr "Đang tải về"
 
-#: bittorrent.py:920
+#: bittorrent.py:875
 msgid "When starting a new torrent:"
 msgstr ""
 
-#: bittorrent.py:929
+#: bittorrent.py:884
 msgid "_Stop another running torrent to make room"
 msgstr ""
 
-#: bittorrent.py:935
+#: bittorrent.py:890
 msgid "_Don't stop other running torrents"
 msgstr ""
 
-#: bittorrent.py:941
+#: bittorrent.py:896
 msgid "_Ask each time"
 msgstr ""
 
-#: bittorrent.py:958
+#: bittorrent.py:913
 msgid "Seeding"
 msgstr "Đang khởi tạo"
 
-#: bittorrent.py:967
+#: bittorrent.py:922
 msgid ""
 "Seed completed torrents: until share ratio reaches [_] percent, or for [_] "
 "minutes, whichever comes first."
@@ -280,31 +267,31 @@ msgstr ""
 "Khởi tạo các dòng hoàn tất: đến khi tỷ lệ lên tới [_] phần trăm, hoặc trong "
 "vòng [_] phút, bất kỳ điều kiện nào đến trước."
 
-#: bittorrent.py:1011 bittorrent.py:1045
+#: bittorrent.py:966 bittorrent.py:1000
 msgid "Seed indefinitely"
 msgstr "Khởi tạo không xác định"
 
-#: bittorrent.py:1019
+#: bittorrent.py:974
 msgid "Seed last completed torrent: until share ratio reaches [_] percent."
 msgstr "Khởi tạo hoàn tất dòng cuối cùng: đến khi tỷ lệ lên tới [_] phần trăm."
 
-#: bittorrent.py:1057
+#: bittorrent.py:1012
 msgid "Network"
 msgstr "Mạng"
 
-#: bittorrent.py:1059
+#: bittorrent.py:1014
 msgid "Look for available port:"
 msgstr "Tìm kiếm cổng có sẵn:"
 
-#: bittorrent.py:1062
+#: bittorrent.py:1017
 msgid "starting at port: "
 msgstr "bắt đầu từ cổng: "
 
-#: bittorrent.py:1075
+#: bittorrent.py:1030
 msgid "IP to report to the tracker:"
 msgstr "Địa chỉ IP cần thông báo cho công cụ theo dõi:"
 
-#: bittorrent.py:1080
+#: bittorrent.py:1035
 msgid ""
 "(Has no effect unless you are on the\n"
 "same local network as the tracker)"
@@ -312,7 +299,7 @@ msgstr ""
 "(Không có tác dụng nếu bạn không có trên\n"
 "cùng một mạng cục bộ với công cụ theo dõi)"
 
-#: bittorrent.py:1097
+#: bittorrent.py:1052
 #, python-format
 msgid ""
 "WARNING: Changing these settings can\n"
@@ -321,491 +308,504 @@ msgstr ""
 "CẢNH BÁO: Thay đổi cài đặt này\n"
 "có thể ngăn cản không cho %s thực hiện chức năng một cách chính xác."
 
-#: bittorrent.py:1105
+#: bittorrent.py:1060
 msgid "Option"
 msgstr "Tùy chọn"
 
-#: bittorrent.py:1110
+#: bittorrent.py:1065
 msgid "Value"
 msgstr "Giá trị"
 
-#: bittorrent.py:1117
+#: bittorrent.py:1072
 msgid "Advanced"
 msgstr "Cao cấp"
 
-#: bittorrent.py:1126
+#: bittorrent.py:1081
 msgid "Choose default download directory"
 msgstr "Chọn danh mục tải về mặc định"
 
-#: bittorrent.py:1200
+#: bittorrent.py:1105
+#, python-format
+msgid "Failed to remove shortcut: %s"
+msgstr ""
+
+#: bittorrent.py:1154
 #, python-format
 msgid "Files in \"%s\""
 msgstr "Các tập tin trong \"%s\""
 
-#: bittorrent.py:1212
+#: bittorrent.py:1166
 msgid "Never"
 msgstr ""
 
-#: bittorrent.py:1212
+#: bittorrent.py:1166
 msgid "Never download"
 msgstr "Không bao giờ tải về"
 
-#: bittorrent.py:1213
+#: bittorrent.py:1167
 msgid "Normal"
 msgstr ""
 
-#: bittorrent.py:1213
+#: bittorrent.py:1167
 msgid "Download normally"
 msgstr ""
 
-#: bittorrent.py:1214
+#: bittorrent.py:1168
 msgid "First"
 msgstr ""
 
-#: bittorrent.py:1214
+#: bittorrent.py:1168
 msgid "Download first"
 msgstr ""
 
-#: bittorrent.py:1224 launchmany-curses.py:146
+#: bittorrent.py:1178 launchmany-curses.py:148
 msgid "Filename"
 msgstr "Tên tập tin"
 
-#: bittorrent.py:1224
+#: bittorrent.py:1178
 msgid "Length"
 msgstr "Độ dài"
 
-#: bittorrent.py:1224
+#: bittorrent.py:1178
 msgid "%"
 msgstr "%"
 
-#: bittorrent.py:1227 launchmany-curses.py:141
+#: bittorrent.py:1181 launchmany-curses.py:143
 msgid "Download"
 msgstr "Tải về"
 
-#: bittorrent.py:1388
+#: bittorrent.py:1342
 msgid "never"
 msgstr ""
 
-#: bittorrent.py:1390
+#: bittorrent.py:1344
 msgid "first"
 msgstr ""
 
-#: bittorrent.py:1415
+#: bittorrent.py:1369
 #, python-format
 msgid "Peers for \"%s\""
 msgstr "Đồng đẳng cho \"%s\""
 
-#: bittorrent.py:1421
+#: bittorrent.py:1375
 msgid "IP address"
 msgstr "Địa chỉ IP"
 
-#: bittorrent.py:1421
+#: bittorrent.py:1375
 msgid "Client"
 msgstr "Máy khách"
 
-#: bittorrent.py:1421
+#: bittorrent.py:1375
 msgid "Connection"
 msgstr "Sự kết nối"
 
-#: bittorrent.py:1421
+#: bittorrent.py:1375
 msgid "KB/s down"
 msgstr "KB/giây tải xuống"
 
-#: bittorrent.py:1421
+#: bittorrent.py:1375
 msgid "KB/s up"
 msgstr "KB/giây tải lên"
 
-#: bittorrent.py:1421
+#: bittorrent.py:1375
 msgid "MB downloaded"
 msgstr "MB đã tải về"
 
-#: bittorrent.py:1421
+#: bittorrent.py:1375
 msgid "MB uploaded"
 msgstr "MB đã tải lên"
 
-#: bittorrent.py:1421
+#: bittorrent.py:1375
 #, python-format
 msgid "% complete"
 msgstr "% hoàn tất"
 
-#: bittorrent.py:1421
+#: bittorrent.py:1375
 msgid "KB/s est. peer download"
 msgstr "Tốc độ ước lượng KB/giây tải xuống đồng đẳng"
 
-#: bittorrent.py:1427
+#: bittorrent.py:1381
 msgid "Peer ID"
 msgstr "ID đồng đẳng"
 
-#: bittorrent.py:1430 bittorrent.py:1433
+#: bittorrent.py:1384 bittorrent.py:1387
 msgid "Interested"
 msgstr "Quan tâm"
 
-#: bittorrent.py:1430 bittorrent.py:1433
+#: bittorrent.py:1384 bittorrent.py:1387
 msgid "Choked"
 msgstr "Bị nghẽn"
 
-#: bittorrent.py:1430
+#: bittorrent.py:1384
 msgid "Snubbed"
 msgstr "Bị ngắt"
 
-#: bittorrent.py:1433
+#: bittorrent.py:1387
 msgid "Optimistic upload"
 msgstr "Tải lên thuận lợi"
 
-#: bittorrent.py:1518
+#: bittorrent.py:1472
 msgid "remote"
 msgstr "từ xa"
 
-#: bittorrent.py:1518
+#: bittorrent.py:1472
 msgid "local"
 msgstr "cục bộ"
 
-#: bittorrent.py:1554
+#: bittorrent.py:1508
 msgid "bad peer"
 msgstr "Đồng đẳng bị lỗi"
 
-#: bittorrent.py:1564
+#: bittorrent.py:1518
 #, python-format
 msgid "%d ok"
 msgstr "%d được"
 
-#: bittorrent.py:1565
+#: bittorrent.py:1519
 #, python-format
 msgid "%d bad"
 msgstr "%d lỗi"
 
-#: bittorrent.py:1567
+#: bittorrent.py:1521
 msgid "banned"
 msgstr "bị cấm"
 
-#: bittorrent.py:1569
+#: bittorrent.py:1523
 msgid "ok"
 msgstr "được"
 
-#: bittorrent.py:1605
+#: bittorrent.py:1559
 #, python-format
 msgid "Info for \"%s\""
 msgstr "Thông tin cho \"%s\""
 
-#: bittorrent.py:1623
+#: bittorrent.py:1577
 msgid "Torrent name:"
 msgstr "Tên dòng:"
 
-#: bittorrent.py:1628
+#: bittorrent.py:1582
 msgid "(trackerless torrent)"
 msgstr "(dòng không có công cụ theo dõi)"
 
-#: bittorrent.py:1631
+#: bittorrent.py:1585
 msgid "Announce url:"
 msgstr "Thông báo địa chỉ mạng:"
 
-#: bittorrent.py:1635
+#: bittorrent.py:1589
 msgid ", in one file"
 msgstr ", trong một tập tin"
 
-#: bittorrent.py:1637
+#: bittorrent.py:1591
 #, python-format
 msgid ", in %d files"
 msgstr ", trong %d tập tin"
 
-#: bittorrent.py:1638
+#: bittorrent.py:1592
 msgid "Total size:"
 msgstr "Kích thước toàn bộ:"
 
-#: bittorrent.py:1645
+#: bittorrent.py:1599
 msgid "Pieces:"
 msgstr "Các phần:"
 
-#: bittorrent.py:1647
+#: bittorrent.py:1601
 msgid "Info hash:"
 msgstr "Thông tin Băm:"
 
-#: bittorrent.py:1657
+#: bittorrent.py:1614
 msgid "Save in:"
 msgstr "Lưu vào:"
 
-#: bittorrent.py:1661
+#: bittorrent.py:1618
 msgid "File name:"
 msgstr "Tên tập tin:"
 
-#: bittorrent.py:1687 bittorrent.py:1901
+#: bittorrent.py:1644 bittorrent.py:1858
 msgid "_Open directory"
 msgstr "_Mở thư mục"
 
-#: bittorrent.py:1692
+#: bittorrent.py:1649
 msgid "Show _file list"
 msgstr ""
 
-#: bittorrent.py:1792
+#: bittorrent.py:1749
 msgid "Torrent info"
 msgstr "Thông tin dòng"
 
-#: bittorrent.py:1801 bittorrent.py:2261
+#: bittorrent.py:1758 bittorrent.py:2221
 msgid "Remove torrent"
 msgstr "Gỡ bỏ dòng"
 
-#: bittorrent.py:1805
+#: bittorrent.py:1762
 msgid "Abort torrent"
 msgstr "Bỏ dòng"
 
-#: bittorrent.py:1872
+#: bittorrent.py:1829
 #, python-format
 msgid ", will seed for %s"
 msgstr ", sẽ khởi tạo trong vòng %s"
 
-#: bittorrent.py:1874
+#: bittorrent.py:1831
 msgid ", will seed indefinitely."
 msgstr ", sẽ khởi tạo một cách không xác định."
 
-#: bittorrent.py:1877
+#: bittorrent.py:1834
 #, python-format
 msgid "Done, share ratio: %d%%"
 msgstr "Xong, tỷ lệ chia sẻ: %d%%"
 
-#: bittorrent.py:1880
+#: bittorrent.py:1837
 #, python-format
 msgid "Done, %s uploaded"
 msgstr "Xong, %s đã tải lên"
 
-#: bittorrent.py:1883 bittorrent.py:2316
+#: bittorrent.py:1840 bittorrent.py:2276
 msgid "Done"
 msgstr "Xong"
 
-#: bittorrent.py:1897
+#: bittorrent.py:1854
 msgid "Torrent _info"
 msgstr "Thông tin_dòng"
 
-#: bittorrent.py:1905
+#: bittorrent.py:1862
 msgid "_File list"
 msgstr "_Danh sách tập tin"
 
-#: bittorrent.py:1907
+#: bittorrent.py:1864
 msgid "_Peer list"
 msgstr "_Danh sách đồng đẳng"
 
-#: bittorrent.py:1917
+#: bittorrent.py:1874
 msgid "_Change location"
 msgstr "_Thay đổi vị trí"
 
-#: bittorrent.py:1920
+#: bittorrent.py:1877
 msgid "_Seed indefinitely"
 msgstr "_Khởi tạo không xác định"
 
-#: bittorrent.py:1940
+#: bittorrent.py:1893
 msgid "Re_start"
 msgstr "Khởi động_lại"
 
-#: bittorrent.py:1951
+#: bittorrent.py:1904
 msgid "_Finish"
 msgstr "_Kết thúc"
 
-#: bittorrent.py:1952
+#: bittorrent.py:1905
 msgid "_Remove"
 msgstr "_Gỡ bỏ"
 
-#: bittorrent.py:1959
+#: bittorrent.py:1912
 msgid "_Abort"
 msgstr "_Bỏ"
 
-#: bittorrent.py:2040
+#: bittorrent.py:2000
 #, python-format
 msgid "Are you sure you want to remove \"%s\"?"
 msgstr "Bạn có chắc là muốn gỡ bỏ \"%s\"?"
 
-#: bittorrent.py:2043
+#: bittorrent.py:2003
 #, python-format
 msgid "Your share ratio for this torrent is %d%%. "
 msgstr "Tỷ lệ chia sẻ của bạn cho dòng này là %d%%. "
 
-#: bittorrent.py:2045
+#: bittorrent.py:2005
 #, python-format
 msgid "You have uploaded %s to this torrent. "
 msgstr "Bạn đã tải %s lên dòng này. "
 
-#: bittorrent.py:2048
+#: bittorrent.py:2008
 msgid "Remove this torrent?"
 msgstr "Gỡ bỏ dòng này?"
 
-#: bittorrent.py:2070
+#: bittorrent.py:2030
 msgid "Finished"
 msgstr "Đã kết thúc"
 
-#: bittorrent.py:2071
+#: bittorrent.py:2031
 msgid "drag into list to seed"
 msgstr "kéo vào danh sách để khởi tạo"
 
-#: bittorrent.py:2074
+#: bittorrent.py:2034
 msgid "Failed"
 msgstr "Thất bại"
 
-#: bittorrent.py:2075
+#: bittorrent.py:2035
 msgid "drag into list to resume"
 msgstr "kéo vào danh sách để tiếp tục lại"
 
-#: bittorrent.py:2134
+#: bittorrent.py:2094
 msgid "Waiting"
 msgstr "Đang chờ"
 
-#: bittorrent.py:2188
+#: bittorrent.py:2118 BitTorrent/StatusLight.py:10
+msgid "Paused"
+msgstr "Đã tạm dừng"
+
+#: bittorrent.py:2148
 msgid "Running"
 msgstr "Đang chạy"
 
-#: bittorrent.py:2213
+#: bittorrent.py:2173
 #, python-format
 msgid "Current up: %s"
 msgstr "Phần tải lên hiện tại: %s"
 
-#: bittorrent.py:2214
+#: bittorrent.py:2174
 #, python-format
 msgid "Current down: %s"
 msgstr "Phần tải xuống hiện tại: %s"
 
-#: bittorrent.py:2220
+#: bittorrent.py:2180
 #, python-format
 msgid "Previous up: %s"
 msgstr "Phần tải lên trước: %s"
 
-#: bittorrent.py:2221
+#: bittorrent.py:2181
 #, python-format
 msgid "Previous down: %s"
 msgstr "Phần tải xuống trước: %s"
 
-#: bittorrent.py:2227
+#: bittorrent.py:2187
 #, python-format
 msgid "Share ratio: %0.02f%%"
 msgstr "Tỷ lệ chia sẻ: %0.02f%%"
 
-#: bittorrent.py:2230
+#: bittorrent.py:2190
 #, python-format
 msgid "%s peers, %s seeds. Totals from tracker: %s"
 msgstr ""
 "%s đồng đẳng, %s khởi tạo.\n"
 "Tổng số từ công cụ theo dõi: %s"
 
-#: bittorrent.py:2234
+#: bittorrent.py:2194
 #, python-format
 msgid "Distributed copies: %d; Next: %s"
 msgstr "Các bản sao đã phân phối: %d; Kế tiếp: %s"
 
-#: bittorrent.py:2237
+#: bittorrent.py:2197
 #, python-format
 msgid "Pieces: %d total, %d complete, %d partial, %d active (%d empty)"
 msgstr ""
 "Các phần: tổng %d, hoàn thành %d, hoàn thành một phần %d, hoạt động %d "
 "(trống %d)"
 
-#: bittorrent.py:2241
+#: bittorrent.py:2201
 #, python-format
 msgid "%d bad pieces + %s in discarded requests"
 msgstr "các phần sai %d + các phần yêu cầu bị hủy %s"
 
-#: bittorrent.py:2331
+#: bittorrent.py:2292
 #, python-format
 msgid "%.1f%% done, %s remaining"
 msgstr "Xong %.1f%%, còn lại %s"
 
-#: bittorrent.py:2339
+#: bittorrent.py:2300
 msgid "Download rate"
 msgstr "Tốc độ tải về"
 
-#: bittorrent.py:2341
+#: bittorrent.py:2302
 msgid "Upload rate"
 msgstr "Tốc độ tải lên"
 
-#: bittorrent.py:2356
+#: bittorrent.py:2317
 msgid "NA"
 msgstr "NA"
 
-#: bittorrent.py:2797
+#: bittorrent.py:2759
 #, python-format
 msgid "%s started"
 msgstr "Đã bắt đầu %s"
 
-#: bittorrent.py:2810
-msgid "_Open torrent file"
-msgstr "_Mở tập tin dòng"
-
-#: bittorrent.py:2811
-msgid "Open torrent _URL"
-msgstr "Mở dòng_địa chỉ mạng"
-
-#: bittorrent.py:2812
-msgid "Make _new torrent"
-msgstr "Tạo_dòng mới"
-
-#: bittorrent.py:2815
-msgid "_Pause/Play"
-msgstr "_Tạm dừng/Phát"
-
-#: bittorrent.py:2817
+#: bittorrent.py:2773
 msgid "_Quit"
 msgstr "_Thoát"
 
-#: bittorrent.py:2819
+#: bittorrent.py:2775
+msgid "E_xit"
+msgstr ""
+
+#: bittorrent.py:2777
+msgid "_Open torrent file"
+msgstr "_Mở tập tin dòng"
+
+#: bittorrent.py:2778
+msgid "Open torrent _URL"
+msgstr "Mở dòng_địa chỉ mạng"
+
+#: bittorrent.py:2779
+msgid "Make _new torrent"
+msgstr "Tạo_dòng mới"
+
+#: bittorrent.py:2782
+msgid "_Pause/Play"
+msgstr "_Tạm dừng/Phát"
+
+#: bittorrent.py:2786
 msgid "Show/Hide _finished torrents"
 msgstr "Hiện/Ẩn_các dòng đã kết thúc"
 
-#: bittorrent.py:2821
+#: bittorrent.py:2788
 msgid "_Resize window to fit"
 msgstr "_Định cỡ lại cửa sổ cho phù hợp"
 
-#: bittorrent.py:2823
+#: bittorrent.py:2790
 msgid "_Log"
 msgstr "_Bản lưu"
 
-#: bittorrent.py:2826
+#: bittorrent.py:2793
 msgid "_Settings"
 msgstr "_Các cài đặt"
 
-#: bittorrent.py:2829 bittorrent.py:2845
+#: bittorrent.py:2796 bittorrent.py:2812
 msgid "_Help"
 msgstr "_Trợ giúp"
 
-#: bittorrent.py:2831
+#: bittorrent.py:2798
 msgid "_About"
 msgstr "_Giới thiệu"
 
-#: bittorrent.py:2832
+#: bittorrent.py:2799
 msgid "_Donate"
 msgstr "_Tặng"
 
-#: bittorrent.py:2836
+#: bittorrent.py:2803
 msgid "_File"
 msgstr "_Tập tin"
 
-#: bittorrent.py:2841
+#: bittorrent.py:2808
 msgid "_View"
 msgstr "_Xem"
 
-#: bittorrent.py:2881
+#: bittorrent.py:2848
 msgid "Search for torrents"
 msgstr "Tìm kiếm các dòng"
 
-#: bittorrent.py:3036
+#: bittorrent.py:3002
 msgid "(stopped)"
 msgstr "(bị dừng)"
 
-#: bittorrent.py:3048
+#: bittorrent.py:3014
 msgid "(multiple)"
 msgstr "(nhiều)"
 
-#: bittorrent.py:3176
+#: bittorrent.py:3144
 #, python-format
 msgid "Already downloading %s installer"
 msgstr "Đã tải về %s trình cài đặt "
 
-#: bittorrent.py:3180
+#: bittorrent.py:3148
 #, python-format
 msgid "Install new %s now?"
 msgstr "Cài đặt %s mới ngay bây giờ?"
 
-#: bittorrent.py:3181
+#: bittorrent.py:3149
 #, python-format
 msgid "Do you want to quit %s and install the new version, %s, now?"
 msgstr ""
 "Bạn có muốn thoát khỏi %s và cài đặt phiên bản mới %s ngay bây giờ không?"
 
-#: bittorrent.py:3197
+#: bittorrent.py:3165
 #, python-format
 msgid ""
 "%s help is at \n"
@@ -816,65 +816,65 @@ msgstr ""
 "%s\n"
 "Bạn có muốn đến đó ngay bây giờ?"
 
-#: bittorrent.py:3200
+#: bittorrent.py:3168
 msgid "Visit help web page?"
 msgstr "Xem trang web trợ giúp?"
 
-#: bittorrent.py:3237
+#: bittorrent.py:3205
 msgid "There is one finished torrent in the list. "
 msgstr "Có một dòng đã kết thúc trong danh sách. "
 
-#: bittorrent.py:3238
+#: bittorrent.py:3206
 msgid "Do you want to remove it?"
 msgstr "Bạn có muốn gỡ bỏ nó không?"
 
-#: bittorrent.py:3240
+#: bittorrent.py:3208
 #, python-format
 msgid "There are %d finished torrents in the list. "
 msgstr "Có %d dòng đã kết thúc trong danh sách. "
 
-#: bittorrent.py:3241
+#: bittorrent.py:3209
 msgid "Do you want to remove all of them?"
 msgstr "Bạn có muốn gỡ bỏ tất cả?"
 
-#: bittorrent.py:3243
+#: bittorrent.py:3211
 msgid "Remove all finished torrents?"
 msgstr "Gỡ bỏ tất cả các dòng đã kết thúc?"
 
-#: bittorrent.py:3251
+#: bittorrent.py:3219
 msgid "No finished torrents"
 msgstr "Không có dòng đã kết thúc nào. "
 
-#: bittorrent.py:3252
+#: bittorrent.py:3220
 msgid "There are no finished torrents to remove."
 msgstr "Không có dòng đã kết thúc nào để gỡ bỏ."
 
-#: bittorrent.py:3309
+#: bittorrent.py:3272
 msgid "Open torrent:"
 msgstr "Mở dòng:"
 
-#: bittorrent.py:3340
+#: bittorrent.py:3296
 msgid "Change save location for "
 msgstr "Thay đổi vị trí lưu cho "
 
-#: bittorrent.py:3367
+#: bittorrent.py:3323
 msgid "File exists!"
 msgstr "Tập tin đã có!"
 
-#: bittorrent.py:3368
+#: bittorrent.py:3324
 #, python-format
 msgid "\"%s\" already exists. Do you want to choose a different file name?"
 msgstr "Đã có tập tin \"%s\". Bạn có muốn chọn một tên tập tin khác không?"
 
-#: bittorrent.py:3387
+#: bittorrent.py:3343
 msgid "Save location for "
 msgstr "Lưu vị trí cho "
 
-#: bittorrent.py:3405
+#: bittorrent.py:3361
 msgid "Directory exists!"
 msgstr "Thư mục đã có!"
 
-#: bittorrent.py:3406
+#: bittorrent.py:3362
 #, python-format
 msgid ""
 "\"%s\" already exists. Do you intend to create an identical, duplicate "
@@ -883,45 +883,45 @@ msgstr ""
 "Đã có \"%s\". Bạn có muốn tạo một thư mục tương tự và nằm trong thư mục hiện "
 "hành?"
 
-#: bittorrent.py:3529
+#: bittorrent.py:3486
 #, python-format
 msgid "(global message) : %s"
 msgstr "(thông điệp toàn cầu): %s"
 
-#: bittorrent.py:3536
+#: bittorrent.py:3493
 #, python-format
 msgid "%s Error"
 msgstr "Lỗi %s"
 
-#: bittorrent.py:3542
+#: bittorrent.py:3499
 msgid "Multiple errors have occurred. Click OK to view the error log."
 msgstr "Gặp nhiều lỗi. Hãy nhấp vào nút \"OK\" để xem bản lưu lỗi."
 
-#: bittorrent.py:3698
+#: bittorrent.py:3665
 msgid "Stop running torrent?"
 msgstr "Ngừng dòng đang chạy?"
 
-#: bittorrent.py:3699
+#: bittorrent.py:3666
 #, python-format
 msgid ""
 "You are about to start \"%s\". Do you want to stop another running torrent "
 "as well?"
 msgstr ""
 
-#: bittorrent.py:3710
+#: bittorrent.py:3677
 msgid "Have you donated?"
 msgstr "Bạn đã tặng chưa?"
 
-#: bittorrent.py:3711
+#: bittorrent.py:3678
 #, python-format
 msgid "Welcome to the new version of %s. Have you donated?"
 msgstr "Chúc mừng bạn dùng phiên bản mới %s. Bạn đã tặng chưa?"
 
-#: bittorrent.py:3726
+#: bittorrent.py:3693
 msgid "Thanks!"
 msgstr "Cám ơn!"
 
-#: bittorrent.py:3727
+#: bittorrent.py:3694
 msgid ""
 "Thanks for donating! To donate again, select \"Donate\" from the \"Help\" "
 "menu."
@@ -929,7 +929,7 @@ msgstr ""
 "Cám ơn bạn đã tặng. Để tặng lại, vui lòng chọn \"Donate\" trong trình đơn "
 "\"Help\"."
 
-#: bittorrent.py:3832
+#: bittorrent.py:3800
 msgid "Could not start the TorrentQueue, see above for errors."
 msgstr "Không khởi động được Chuỗi Dòng, quan sát phía trên để biết lỗi."
 
@@ -1048,131 +1048,131 @@ msgstr "%d giây"
 msgid "0 seconds"
 msgstr "0 giây"
 
-#: BitTorrent/GUI.py:290
+#: BitTorrent/GUI.py:292
 #, python-format
 msgid "%s Help"
 msgstr "Trợ giúp %s"
 
-#: BitTorrent/GUI.py:297
+#: BitTorrent/GUI.py:299
 msgid "Frequently Asked Questions:"
 msgstr "Các câu hỏi thường gặp:"
 
-#: BitTorrent/GUI.py:302
+#: BitTorrent/GUI.py:304
 msgid "Go"
 msgstr "Đến"
 
-#: BitTorrent/GUI.py:459 BitTorrent/GUI.py:513
+#: BitTorrent/GUI.py:463 BitTorrent/GUI.py:517
 msgid "Choose an existing folder..."
 msgstr "Hãy chọn một danh mục hiện có..."
 
-#: BitTorrent/GUI.py:469
+#: BitTorrent/GUI.py:473
 msgid "All Files"
 msgstr "Tất cả các tập tin"
 
-#: BitTorrent/GUI.py:474
+#: BitTorrent/GUI.py:478
 msgid "Torrents"
 msgstr "Các dòng"
 
-#: BitTorrent/GUI.py:510
+#: BitTorrent/GUI.py:514
 msgid "Create a new folder..."
 msgstr "Tạo một thư mục mới..."
 
-#: BitTorrent/GUI.py:579
+#: BitTorrent/GUI.py:583
 msgid "Select a file"
 msgstr "Chọn một tập tin"
 
-#: BitTorrent/GUI.py:580
+#: BitTorrent/GUI.py:584
 msgid "Select a folder"
 msgstr "Chọn một thư mục"
 
-#: BitTorrent/TorrentQueue.py:118
+#: BitTorrent/TorrentQueue.py:119
 msgid "Could not load saved state: "
 msgstr "Không tải được tình trạng đã lưu: "
 
-#: BitTorrent/TorrentQueue.py:210
+#: BitTorrent/TorrentQueue.py:211
 msgid "Could not save UI state: "
 msgstr "Không lưu được tình trạng giao diện người dùng: "
 
-#: BitTorrent/TorrentQueue.py:220 BitTorrent/TorrentQueue.py:222
-#: BitTorrent/TorrentQueue.py:305 BitTorrent/TorrentQueue.py:308
-#: BitTorrent/TorrentQueue.py:318 BitTorrent/TorrentQueue.py:330
-#: BitTorrent/TorrentQueue.py:347
+#: BitTorrent/TorrentQueue.py:221 BitTorrent/TorrentQueue.py:223
+#: BitTorrent/TorrentQueue.py:306 BitTorrent/TorrentQueue.py:309
+#: BitTorrent/TorrentQueue.py:319 BitTorrent/TorrentQueue.py:331
+#: BitTorrent/TorrentQueue.py:348
 msgid "Invalid state file contents"
 msgstr "Nội dung của tập tin tình trạng không hợp lệ"
 
-#: BitTorrent/TorrentQueue.py:235
+#: BitTorrent/TorrentQueue.py:236
 #, python-format
 msgid "Error reading file \"%s\"."
 msgstr ""
 
-#: BitTorrent/TorrentQueue.py:237
+#: BitTorrent/TorrentQueue.py:238
 msgid "cannot restore state completely"
 msgstr "không thể phục hồi hoàn toàn tình trạng"
 
-#: BitTorrent/TorrentQueue.py:240
+#: BitTorrent/TorrentQueue.py:241
 msgid "Invalid state file (duplicate entry)"
 msgstr "Tập tin tình trạng không hợp lệ (trùng mục nhập)"
 
-#: BitTorrent/TorrentQueue.py:247 BitTorrent/TorrentQueue.py:253
+#: BitTorrent/TorrentQueue.py:248 BitTorrent/TorrentQueue.py:254
 #, python-format
 msgid "Corrupt data in \"%s\", cannot restore torrent."
 msgstr ""
 
-#: BitTorrent/TorrentQueue.py:254
+#: BitTorrent/TorrentQueue.py:255
 msgid "(infohash mismatch)"
 msgstr ""
 
-#: BitTorrent/TorrentQueue.py:272
+#: BitTorrent/TorrentQueue.py:273
 msgid "Invalid state file (bad entry)"
 msgstr "Tập tin tình trạng không hợp lệ (sai mục nhập)"
 
-#: BitTorrent/TorrentQueue.py:295
+#: BitTorrent/TorrentQueue.py:296
 msgid "Bad UI state file"
 msgstr "Tập tin tình trạng giao diện người dùng sai"
 
-#: BitTorrent/TorrentQueue.py:299
+#: BitTorrent/TorrentQueue.py:300
 msgid "Bad UI state file version"
 msgstr "Phiên bản tập tin tình trạng giao diện người dùng sai"
 
-#: BitTorrent/TorrentQueue.py:301
+#: BitTorrent/TorrentQueue.py:302
 msgid "Unsupported UI state file version (from newer client version?)"
 msgstr ""
 "Phiên bản tập tin tình trạng giao diện người dùng không được hỗ trợ (từ "
 "phiên bản khách mới hơn?)"
 
-#: BitTorrent/TorrentQueue.py:488
+#: BitTorrent/TorrentQueue.py:489
 #, python-format
 msgid "Could not delete cached %s file:"
 msgstr "Không thể xóa bỏ tập tin đã lưu tạm %s:"
 
-#: BitTorrent/TorrentQueue.py:515
+#: BitTorrent/TorrentQueue.py:530
 #, python-format
 msgid "This is not a valid torrent file. (%s)"
 msgstr "Đây không phải là một tập tin dòng hợp lệ.(%s)"
 
-#: BitTorrent/TorrentQueue.py:523
+#: BitTorrent/TorrentQueue.py:538
 msgid "This torrent (or one with the same contents) is already running."
 msgstr "Dòng này (hoặc một dòng khác có cùng nội dung)đã chạy."
 
-#: BitTorrent/TorrentQueue.py:527
+#: BitTorrent/TorrentQueue.py:542
 msgid "This torrent (or one with the same contents) is already waiting to run."
 msgstr "Dòng này (hoặc một dòng khác có cùng nội dung)đang chờ chạy."
 
-#: BitTorrent/TorrentQueue.py:534
+#: BitTorrent/TorrentQueue.py:549
 #, python-format
 msgid "Torrent in unknown state %d"
 msgstr "Dòng có tình trạng không xác định %d."
 
-#: BitTorrent/TorrentQueue.py:551
+#: BitTorrent/TorrentQueue.py:566
 msgid "Could not write file "
 msgstr "Không ghi được tập tin"
 
-#: BitTorrent/TorrentQueue.py:553
+#: BitTorrent/TorrentQueue.py:568
 msgid "torrent will not be restarted correctly on client restart"
 msgstr ""
 "dòng sẽ không được khởi động lại đúng khi được khởi động lại bằng máy khách"
 
-#: BitTorrent/TorrentQueue.py:656
+#: BitTorrent/TorrentQueue.py:671
 #, python-format
 msgid ""
 "Can't run more than %d torrents simultaneously. For more info see the FAQ at "
@@ -1181,7 +1181,7 @@ msgstr ""
 "Không chạy được hơn %d dòng trong cùng một lúc. Để có thêm thông tin, hãy "
 "xem mục các câu hỏi thường gặp tại %s."
 
-#: BitTorrent/TorrentQueue.py:777
+#: BitTorrent/TorrentQueue.py:795
 msgid ""
 "Not starting torrent as there are other torrents waiting to run, and this "
 "one already meets the settings for when to stop seeding."
@@ -1189,7 +1189,7 @@ msgstr ""
 "Không khởi động được dòng vì có các dòng khác đang chờ chạy và dòng này đã "
 "thỏa mãn các cài đặt cho thời điểm ngừng khởi tạo."
 
-#: BitTorrent/TorrentQueue.py:784
+#: BitTorrent/TorrentQueue.py:802
 msgid ""
 "Not starting torrent as it already meets the settings for when to stop "
 "seeding the last completed torrent."
@@ -1228,7 +1228,29 @@ msgstr ""
 msgid "Cannot launch installer on this OS"
 msgstr "Không thể khởi chạy trình cài đặt trên hệ điều hành này."
 
-#: BitTorrent/defaultargs.py:41
+#: BitTorrent/StatusLight.py:12
+msgid "No torrents"
+msgstr "Không có dòng."
+
+#: BitTorrent/StatusLight.py:14 BitTorrent/StatusLight.py:16
+msgid "Starting download"
+msgstr ""
+
+#: BitTorrent/StatusLight.py:18
+msgid "Running normally"
+msgstr "Đang chạy bình thường"
+
+#: BitTorrent/StatusLight.py:20
+msgid ""
+"Downloads may be slow:\n"
+"Probably firewalled/NATted"
+msgstr ""
+
+#: BitTorrent/StatusLight.py:22
+msgid "Check network connection"
+msgstr ""
+
+#: BitTorrent/defaultargs.py:48
 msgid ""
 "directory under which variable data such as fastresume information and GUI "
 "state is saved. Defaults to subdirectory 'data' of the bittorrent config "
@@ -1238,7 +1260,7 @@ msgstr ""
 "trạng giao diện người dùng đồ họa (GUI. Mặc định là thư mục con 'dữ liệu' "
 "của thư mục cấu hình bittorrent."
 
-#: BitTorrent/defaultargs.py:45
+#: BitTorrent/defaultargs.py:52
 msgid ""
 "character encoding used on the local filesystem. If left empty, "
 "autodetected. Autodetection doesn't work under python versions older than 2.3"
@@ -1247,11 +1269,11 @@ msgstr ""
 "nó sẽ tự động dò tìm. Tuy nhiên, việc tự động dò tìm không hoạt động với các "
 "phiên bản python cũ hơn 2.3"
 
-#: BitTorrent/defaultargs.py:49
+#: BitTorrent/defaultargs.py:56
 msgid "ISO Language code to use"
 msgstr "Mã ngôn ngữ ISO để sử dụng"
 
-#: BitTorrent/defaultargs.py:54
+#: BitTorrent/defaultargs.py:61
 msgid ""
 "ip to report to the tracker (has no effect unless you are on the same local "
 "network as the tracker)"
@@ -1259,7 +1281,7 @@ msgstr ""
 "địa chỉ IP sẽ được thông báo cho công cụ theo dõi (không có tác dụng trừ khi "
 "bạn trên cùng mạng cục bộ với công cụ theo dõi)"
 
-#: BitTorrent/defaultargs.py:57
+#: BitTorrent/defaultargs.py:64
 msgid ""
 "world-visible port number if it's different from the one the client listens "
 "on locally"
@@ -1267,35 +1289,39 @@ msgstr ""
 "số hiệu cổng cho phép mọi người thấy nếu nó khác với cổng mà máy kháchtuân "
 "theo một cách cục bộ"
 
-#: BitTorrent/defaultargs.py:60
+#: BitTorrent/defaultargs.py:67
 msgid "minimum port to listen on, counts up if unavailable"
 msgstr "cổng tối thiểu cần tuân theo, hãy đếm nếu không có sẵn"
 
-#: BitTorrent/defaultargs.py:62
+#: BitTorrent/defaultargs.py:69
 msgid "maximum port to listen on"
 msgstr "cổng tối đa cần tuân theo"
 
-#: BitTorrent/defaultargs.py:64 BitTorrent/track.py:44
+#: BitTorrent/defaultargs.py:71 BitTorrent/track.py:44
 msgid "ip to bind to locally"
 msgstr "địa chỉ IP để kết nối cục bộ"
 
-#: BitTorrent/defaultargs.py:66
+#: BitTorrent/defaultargs.py:73
 msgid "seconds between updates of displayed information"
 msgstr "số giây giữa các lần cập nhật thông tin đã hiển thị"
 
-#: BitTorrent/defaultargs.py:68
+#: BitTorrent/defaultargs.py:75
 msgid "minutes to wait between requesting more peers"
 msgstr "số phút cần chờ giữa các lần yêu cầu thêm các đồng đẳng"
 
-#: BitTorrent/defaultargs.py:70
+#: BitTorrent/defaultargs.py:77
 msgid "minimum number of peers to not do rerequesting"
 msgstr "số đồng đẳng tối thiểu để ngừng yêu cầu lại"
 
-#: BitTorrent/defaultargs.py:72
+#: BitTorrent/defaultargs.py:79
 msgid "number of peers at which to stop initiating new connections"
 msgstr "số đồng đẳng mà ở đó ngừng việc khởi tạo các kết nối mới"
 
-#: BitTorrent/defaultargs.py:74
+#: BitTorrent/defaultargs.py:81
+msgid "max number of outgoing incomplete connections"
+msgstr ""
+
+#: BitTorrent/defaultargs.py:83
 msgid ""
 "maximum number of connections to allow, after this new incoming connections "
 "will be immediately closed"
@@ -1303,19 +1329,19 @@ msgstr ""
 "số kết nối tối đa cần cho phép, sau số này mọi kết nối đến mới sẽ bị đóng "
 "ngay lập tức"
 
-#: BitTorrent/defaultargs.py:77
+#: BitTorrent/defaultargs.py:86
 msgid "whether to check hashes on disk"
 msgstr "có nên kiểm tra các Băm trên đĩa hay không"
 
-#: BitTorrent/defaultargs.py:79
+#: BitTorrent/defaultargs.py:88
 msgid "maximum kB/s to upload at, 0 means no limit"
 msgstr "tốc độ tải lên tối đa kB/giây, 0 là không có giới hạn"
 
-#: BitTorrent/defaultargs.py:81
+#: BitTorrent/defaultargs.py:90
 msgid "the number of uploads to fill out to with extra optimistic unchokes"
 msgstr "số lần tải lên để điền đầy cùng với số lần mở thông thêm không có lỗi"
 
-#: BitTorrent/defaultargs.py:83
+#: BitTorrent/defaultargs.py:92
 msgid ""
 "the maximum number of files in a multifile torrent to keep open at a time, 0 "
 "means no limit. Used to avoid running out of file descriptors."
@@ -1323,7 +1349,7 @@ msgstr ""
 "số tập tin tối đa trong một dòng đa tập tin để mở cùng lúc, 0 là không có "
 "giới hạn. Sử dụng số này để tránh bị hết công cụ mô tả tập tin."
 
-#: BitTorrent/defaultargs.py:86
+#: BitTorrent/defaultargs.py:95
 msgid ""
 "Initialize a trackerless client.  This must be enabled in order to download "
 "trackerless torrents."
@@ -1331,15 +1357,15 @@ msgstr ""
 "Khởi tạo một máy khách không có công cụ theo dõi. Việc này phải được tiến "
 "hành để tải về các dòng không có công cụ theo dõi. "
 
-#: BitTorrent/defaultargs.py:92
+#: BitTorrent/defaultargs.py:101
 msgid "number of seconds to pause between sending keepalives"
 msgstr "số giây tạm dừng giữa các lần gửi chờ"
 
-#: BitTorrent/defaultargs.py:94
+#: BitTorrent/defaultargs.py:103
 msgid "how many bytes to query for per request."
 msgstr "bao nhiêu byte cần truy vấn trong mỗi lần yêu cầu"
 
-#: BitTorrent/defaultargs.py:96
+#: BitTorrent/defaultargs.py:105
 msgid ""
 "maximum length prefix encoding you'll accept over the wire - larger values "
 "get the connection dropped."
@@ -1347,18 +1373,18 @@ msgstr ""
 "độ dài tối đa của mã hóa tiền tố mà bạn chấp nhận qua đường dẫn - các giá "
 "trị lớn hơn sẽ làm rớt kết nối."
 
-#: BitTorrent/defaultargs.py:99
+#: BitTorrent/defaultargs.py:108
 msgid ""
 "seconds to wait between closing sockets which nothing has been received on"
 msgstr ""
 "số giây cần chờ giữa các lần đóng các cơ chế truyền thông mà qua các cơ chế "
 "này không nhận được thông tin."
 
-#: BitTorrent/defaultargs.py:102
+#: BitTorrent/defaultargs.py:111
 msgid "seconds to wait between checking if any connections have timed out"
 msgstr "số giây chờ giữa các lần kiểm tra nếu có các kết nối quá thời hạn"
 
-#: BitTorrent/defaultargs.py:104
+#: BitTorrent/defaultargs.py:113
 msgid ""
 "maximum length slice to send to peers, close connection if a larger request "
 "is received"
@@ -1366,23 +1392,23 @@ msgstr ""
 "độ dài tối đa phần gửi cho các đồng đẳng, đóng kết nối nếu nhận được một yêu "
 "cầu lớn hơn"
 
-#: BitTorrent/defaultargs.py:107
+#: BitTorrent/defaultargs.py:116
 msgid ""
 "maximum time interval over which to estimate the current upload and download "
 "rates"
 msgstr "thời gian ngưng tối đa để ước lượng tốc độ tải về/tải xuống hiện hành"
 
-#: BitTorrent/defaultargs.py:109
+#: BitTorrent/defaultargs.py:118
 msgid "maximum time interval over which to estimate the current seed rate"
 msgstr "thời gian ngưng tối đa để ước lượng tốc độ khởi tạo hiện hành"
 
-#: BitTorrent/defaultargs.py:111
+#: BitTorrent/defaultargs.py:120
 msgid "maximum time to wait between retrying announces if they keep failing"
 msgstr ""
 "thời gian tối đa chờ giữa các lần thử lại thông báo nếu chúng tiếp tục thất "
 "bại"
 
-#: BitTorrent/defaultargs.py:113
+#: BitTorrent/defaultargs.py:122
 msgid ""
 "seconds to wait for data to come in over a connection before assuming it's "
 "semi-permanently choked"
@@ -1390,17 +1416,17 @@ msgstr ""
 "số giây chờ dữ liệu đến qua một kết nối trước khi cho rằng nó bị nghẽn bán "
 "thường xuyên. "
 
-#: BitTorrent/defaultargs.py:116
+#: BitTorrent/defaultargs.py:125
 msgid "number of downloads at which to switch from random to rarest first"
 msgstr ""
 "số lần tải về mà căn cứ vào đó để chuyển đổi từ ngẫu nhiên đến hiếm nhất đầu "
 "tiên"
 
-#: BitTorrent/defaultargs.py:118
+#: BitTorrent/defaultargs.py:127
 msgid "how many bytes to write into network buffers at once."
 msgstr "bao nhiêu byte cần ghi vào bộ đệm mạng cùng một lúc."
 
-#: BitTorrent/defaultargs.py:120
+#: BitTorrent/defaultargs.py:129
 msgid ""
 "refuse further connections from addresses with broken or intentionally "
 "hostile peers that send incorrect data"
@@ -1408,32 +1434,32 @@ msgstr ""
 "từ chối kết nối thêm từ các địa chỉ của các đồng đẳng bị hỏng hoặc các đồng "
 "đẳng đối nghịch có chủ định gởi dữ liệu lỗi "
 
-#: BitTorrent/defaultargs.py:123
+#: BitTorrent/defaultargs.py:132
 msgid "do not connect to several peers that have the same IP address"
 msgstr "không kết nối đến nhiều đồng đẳng có cùng một địa chỉ IP"
 
-#: BitTorrent/defaultargs.py:125
+#: BitTorrent/defaultargs.py:134
 msgid "if nonzero, set the TOS option for peer connections to this value"
 msgstr ""
 "nếu khác không thì cài đặt tùy chọn Điều Kiện Dịch Vụ (TOS) cho kết nối đồng "
 "đẳng theo giá trị này"
 
-#: BitTorrent/defaultargs.py:127
+#: BitTorrent/defaultargs.py:136
 msgid ""
 "enable workaround for a bug in BSD libc that makes file reads very slow."
 msgstr "kích hoạt việc gỡ rối trong libc BSD làm chậm lại việc đọc tập tin."
 
-#: BitTorrent/defaultargs.py:129
+#: BitTorrent/defaultargs.py:138
 msgid "address of HTTP proxy to use for tracker connections"
 msgstr ""
 "địa chỉ của proxy giao thức truyền siêu văn bản dùng để kết nối với công cụ "
 "theo dõi"
 
-#: BitTorrent/defaultargs.py:131 BitTorrent/track.py:48
+#: BitTorrent/defaultargs.py:140 BitTorrent/track.py:48
 msgid "close connections with RST and avoid the TCP TIME_WAIT state"
 msgstr "đóng kết nối với RST và tránh tình trạng TCP TIME_WAIT "
 
-#: BitTorrent/defaultargs.py:133 BitTorrent/track.py:111
+#: BitTorrent/defaultargs.py:142 BitTorrent/track.py:111
 msgid ""
 "Use Twisted network libraries for network connections. 1 means use twisted, "
 "0 means do not use twisted, -1 means autodetect, and prefer twisted"
@@ -1442,7 +1468,7 @@ msgstr ""
 "dụng xoắn, 0 có nghĩa là không sử dụng xoắn, -1 có nghĩa là tự động dò tìm "
 "và ưu tiên xoắn"
 
-#: BitTorrent/defaultargs.py:150
+#: BitTorrent/defaultargs.py:159
 msgid ""
 "file name (for single-file torrents) or directory name (for batch torrents) "
 "to save the torrent as, overriding the default name in the torrent. See also "
@@ -1452,18 +1478,18 @@ msgstr ""
 "lưu dòng, ghi đè lên tên mặc định trong dòng. Xem thêm --lưu_vào, nếu chưa "
 "chỉ rõ một trong hai lựa chọn thì người dùng sẽ được hỏi về vị trí lưu"
 
-#: BitTorrent/defaultargs.py:155
+#: BitTorrent/defaultargs.py:164
 msgid "display advanced user interface"
 msgstr "hiển thị giao diện người dùng cao cấp"
 
-#: BitTorrent/defaultargs.py:157
+#: BitTorrent/defaultargs.py:166
 msgid ""
 "the maximum number of minutes to seed a completed torrent before stopping "
 "seeding"
 msgstr ""
 "số phút tối đa để khởi tạo một dòng hoàn thành trước khi ngừng khởi tạo"
 
-#: BitTorrent/defaultargs.py:160
+#: BitTorrent/defaultargs.py:169
 msgid ""
 "the minimum upload/download ratio, in percent, to achieve before stopping "
 "seeding. 0 means no limit."
@@ -1471,7 +1497,7 @@ msgstr ""
 "tỷ lệ tải lên/tải về tối thiểu, theo phần trăm, cần đạt được trước khi "
 "ngừng. 0 có nghĩa là không có giới hạn."
 
-#: BitTorrent/defaultargs.py:163
+#: BitTorrent/defaultargs.py:172
 msgid ""
 "the minimum upload/download ratio, in percent, to achieve before stopping "
 "seeding the last torrent. 0 means no limit."
@@ -1479,22 +1505,22 @@ msgstr ""
 "tỷ lệ tải lên/tải về tối thiểu, theo phần trăm, cần đạt được trước khi ngừng "
 "khởi tạo dòng cuối cùng. 0 có nghĩa là không có giới hạn. "
 
-#: BitTorrent/defaultargs.py:166
+#: BitTorrent/defaultargs.py:175
 msgid "Seed each completed torrent indefinitely (until the user cancels it)"
 msgstr ""
 "Khởi tạo mỗi dòng hoàn tất một cách không xác định (đến khi người dùng hủy "
 "nó)"
 
-#: BitTorrent/defaultargs.py:169
+#: BitTorrent/defaultargs.py:178
 msgid "Seed the last torrent indefinitely (until the user cancels it)"
 msgstr ""
 "Khởi tạo dòng cuối cùng một cách không xác định (đến khi người dùng hủy nó)"
 
-#: BitTorrent/defaultargs.py:172
+#: BitTorrent/defaultargs.py:181
 msgid "start downloader in paused state"
 msgstr "khởi động Phần Mềm Tải Về trong tình trạng tạm ngưng"
 
-#: BitTorrent/defaultargs.py:174
+#: BitTorrent/defaultargs.py:183
 msgid ""
 "specifies how the app should behave when the user manually tries to start "
 "another torrent: \"replace\" means always replace the running torrent with "
@@ -1506,23 +1532,28 @@ msgstr ""
 "\"thêm\" có nghĩa là luôn thêm dòng đang chạy song song và \"hỏi\" có nghĩa "
 "là hỏi người dùng mỗi lần."
 
-#: BitTorrent/defaultargs.py:184
+#: BitTorrent/defaultargs.py:193
 msgid "Start BitTorrent minimized"
 msgstr ""
 
-#: BitTorrent/defaultargs.py:186
+#: BitTorrent/defaultargs.py:195
 msgid ""
 "override the version provided by the http version check and enable version "
 "check debugging mode"
 msgstr ""
 
-#: BitTorrent/defaultargs.py:189
+#: BitTorrent/defaultargs.py:198
 msgid ""
-"override the current version in the version check and enable version check "
-"debugging mode"
+"override the current version used in the version check and enable version "
+"check debugging mode"
 msgstr ""
 
-#: BitTorrent/defaultargs.py:204
+#: BitTorrent/defaultargs.py:201
+msgid ""
+"specify window size and position, in the format: WIDTHxHEIGHT+XOFFSET+YOFFSET"
+msgstr ""
+
+#: BitTorrent/defaultargs.py:216
 msgid ""
 "file name (for single-file torrents) or directory name (for batch torrents) "
 "to save the torrent as, overriding the default name in the torrent. See also "
@@ -1531,7 +1562,7 @@ msgstr ""
 "tên tập tin (cho các dòng tập tin đơn) hoặc tên thư mục (cho các dòng bó) để "
 "lưu dòng, ghi đè lên tên mặc định trong dòng. Xem thêm --lưu_vào"
 
-#: BitTorrent/defaultargs.py:211 BitTorrent/defaultargs.py:231
+#: BitTorrent/defaultargs.py:223 BitTorrent/defaultargs.py:243
 msgid ""
 "the maximum number of uploads to allow at once. -1 means a (hopefully) "
 "reasonable number based on --max_upload_rate. The automatic values are only "
@@ -1541,7 +1572,7 @@ msgstr ""
 "số hợp lý dựa trên --tốc độ_tải lên_tối đa. Giá trị tự động chỉ có nghĩa khi "
 "chỉ chạy một dòng tại một thời điểm. "
 
-#: BitTorrent/defaultargs.py:216
+#: BitTorrent/defaultargs.py:228
 msgid ""
 "local directory where the torrent contents will be saved. The file (single-"
 "file torrents) or directory (batch torrents) will be created under this "
@@ -1552,11 +1583,11 @@ msgstr ""
 "mục (các dòng bó) sẽ được tạo dưới thư mục này, dùng tên mặc định được chỉ "
 "rõ trong tập tin .dòng. Xem thêm --lưu_như."
 
-#: BitTorrent/defaultargs.py:225
+#: BitTorrent/defaultargs.py:237
 msgid "whether or not to ask for a location to save downloaded files in"
 msgstr "có nên hỏi về vị trí để lưu các tập tin đã tải về hay không"
 
-#: BitTorrent/defaultargs.py:236
+#: BitTorrent/defaultargs.py:248
 msgid ""
 "local directory where the torrents will be saved, using a name determined by "
 "--saveas_style. If this is left empty each torrent will be saved under the "
@@ -1566,17 +1597,17 @@ msgstr ""
 "lưu như_kiểu. Nếu nó được bỏ trống thì từng dòng sẽ được lưu dưới thư mục "
 "của tập tin .dòng tương ứng"
 
-#: BitTorrent/defaultargs.py:241 BitTorrent/track.py:77
+#: BitTorrent/defaultargs.py:253 BitTorrent/track.py:77
 msgid "how often to rescan the torrent directory, in seconds"
 msgstr "mức độ thường xuyên quét lại thư mục dòng, tính theo giây"
 
-#: BitTorrent/defaultargs.py:243
+#: BitTorrent/defaultargs.py:255
 msgid ""
 "wait this many seconds after noticing a torrent before starting it, to avoid "
 "race with tracker"
 msgstr ""
 
-#: BitTorrent/defaultargs.py:245
+#: BitTorrent/defaultargs.py:257
 msgid ""
 "How to name torrent downloads: 1: use name OF torrent file (minus ."
 "torrent);  2: use name encoded IN torrent file;  3: create a directory with "
@@ -1596,28 +1627,28 @@ msgstr ""
 "khả năng ghi đè lên tập tin mà không có cảnh báo và có thể xảy ra vấn đề về "
 "bảo mật."
 
-#: BitTorrent/defaultargs.py:260
+#: BitTorrent/defaultargs.py:272
 msgid ""
 "whether to display the full path or the torrent contents for each torrent"
 msgstr "có nên hiển thị đường dẫn đầy đủ hay nội dung dòng cho từng dòng"
 
-#: BitTorrent/defaultargs.py:267
+#: BitTorrent/defaultargs.py:279
 msgid "directory to look for .torrent files (semi-recursive)"
 msgstr "thư mục nơi cần tìm tập tin .dòng (bán đệ qui)"
 
-#: BitTorrent/defaultargs.py:272
+#: BitTorrent/defaultargs.py:284
 msgid "whether to display diagnostic info to stdout"
 msgstr "có nên hiển thị thông tin chẩn đoán vào thiết bị xuất chuẩn hay không"
 
-#: BitTorrent/defaultargs.py:277
+#: BitTorrent/defaultargs.py:289
 msgid "which power of two to set the piece size to"
 msgstr "hai lũy thừa mấy để đặt cho cỡ phần"
 
-#: BitTorrent/defaultargs.py:279
+#: BitTorrent/defaultargs.py:291
 msgid "default tracker name"
 msgstr "tên công cụ theo dõi mặc định"
 
-#: BitTorrent/defaultargs.py:282
+#: BitTorrent/defaultargs.py:294
 msgid ""
 "if false then make a trackerless torrent, instead of announce URL, use "
 "reliable node in form of <ip>:<port> or an empty string to pull some nodes "
@@ -1640,16 +1671,16 @@ msgstr "<không xác định>"
 msgid "finishing in %d:%02d:%02d"
 msgstr "kết thúc trong %d:%02d:%02d"
 
-#: bittorrent-console.py:96 bittorrent-curses.py:172
+#: bittorrent-console.py:96 bittorrent-curses.py:173
 msgid "download succeeded"
 msgstr "tải về thành công"
 
-#: bittorrent-console.py:130 bittorrent-curses.py:229
+#: bittorrent-console.py:130 bittorrent-curses.py:230
 #, python-format
 msgid "oo  (%.1f MB up / %.1f MB down)"
 msgstr "oo (%.1f MB lên / %.1f MB xuống)"
 
-#: bittorrent-console.py:133 bittorrent-curses.py:232
+#: bittorrent-console.py:133 bittorrent-curses.py:233
 #, python-format
 msgid "%.3f  (%.1f MB up / %.1f MB down)"
 msgstr "%.3f (%.1f MB lên / %.1f MB xuống)"
@@ -1659,12 +1690,12 @@ msgstr "%.3f (%.1f MB lên / %.1f MB xuống)"
 msgid "%d seen now, plus %d distributed copies (%s)"
 msgstr "%d được xem hiện tại, cộng %d bản sao đã phân phối (%s)"
 
-#: bittorrent-console.py:144 bittorrent-curses.py:243
+#: bittorrent-console.py:144 bittorrent-curses.py:244
 #, python-format
 msgid "%d distributed copies (next: %s)"
 msgstr "%d bản sao đã phân phối (kế tiếp: %s)"
 
-#: bittorrent-console.py:146 bittorrent-curses.py:245
+#: bittorrent-console.py:146 bittorrent-curses.py:246
 #, python-format
 msgid "%d seen now"
 msgstr "%d được xem hiện tại"
@@ -1713,35 +1744,35 @@ msgstr "trạng thái khởi tạo:"
 msgid "peer status:   "
 msgstr "trạng thái đồng đẳng:"
 
-#: bittorrent-console.py:222 bittorrent-curses.py:356
+#: bittorrent-console.py:222 bittorrent-curses.py:357
 msgid "You cannot specify both --save_as and --save_in"
 msgstr "Bạn không thể chỉ định cả hai --lưu_như và --lưu_vào."
 
-#: bittorrent-console.py:240 bittorrent-curses.py:374
+#: bittorrent-console.py:240 bittorrent-curses.py:375
 #: BitTorrent/launchmanycore.py:69
 msgid "shutting down"
 msgstr "đang tắt máy"
 
-#: bittorrent-console.py:247 bittorrent-curses.py:381
+#: bittorrent-console.py:247 bittorrent-curses.py:382
 #: BitTorrent/launchmanycore.py:235
 msgid "Error reading config: "
 msgstr "Lỗi trong khi đọc cấu hình:"
 
-#: bittorrent-console.py:300 bittorrent-curses.py:434
+#: bittorrent-console.py:300 bittorrent-curses.py:435
 msgid "Error reading .torrent file: "
 msgstr "Lỗi trong khi đọc tập tin .dòng:"
 
-#: bittorrent-console.py:302 bittorrent-curses.py:436
+#: bittorrent-console.py:302 bittorrent-curses.py:437
 msgid "you must specify a .torrent file"
 msgstr "bạn phải chỉ rõ một tập tin .dòng"
 
-#: bittorrent-curses.py:47 launchmany-curses.py:39
+#: bittorrent-curses.py:47 launchmany-curses.py:40
 msgid "Textmode GUI initialization failed, cannot proceed."
 msgstr ""
 "Thất bại khi khởi tạo Giao Diện Người Dùng Đồ Hoạ chế độ văn bản, không thể "
 "tiếp tục."
 
-#: bittorrent-curses.py:49 launchmany-curses.py:41
+#: bittorrent-curses.py:49 launchmany-curses.py:42
 msgid ""
 "This download interface requires the standard Python module \"curses\", "
 "which is unfortunately not available for the native Windows port of Python. "
@@ -1756,70 +1787,70 @@ msgstr ""
 msgid "You may still use \"bittorrent-console\" to download."
 msgstr "Bạn có thể vẫn dùng \"bittorrent-console\" để tải về."
 
-#: bittorrent-curses.py:154
+#: bittorrent-curses.py:155
 msgid "file:"
 msgstr "tập tin:"
 
-#: bittorrent-curses.py:155
+#: bittorrent-curses.py:156
 msgid "size:"
 msgstr "kích cỡ:"
 
-#: bittorrent-curses.py:156
+#: bittorrent-curses.py:157
 msgid "dest:"
 msgstr "đích:"
 
-#: bittorrent-curses.py:157
+#: bittorrent-curses.py:158
 msgid "progress:"
 msgstr "tiến trình:"
 
-#: bittorrent-curses.py:158
+#: bittorrent-curses.py:159
 msgid "status:"
 msgstr "trạng thái:"
 
-#: bittorrent-curses.py:159
+#: bittorrent-curses.py:160
 msgid "dl speed:"
 msgstr "tốc độ tải về:"
 
-#: bittorrent-curses.py:160
+#: bittorrent-curses.py:161
 msgid "ul speed:"
 msgstr "tốc độ tải lên:"
 
-#: bittorrent-curses.py:161
+#: bittorrent-curses.py:162
 msgid "sharing:"
 msgstr "chia sẻ:"
 
-#: bittorrent-curses.py:162
+#: bittorrent-curses.py:163
 msgid "seeds:"
 msgstr "các khởi tạo:"
 
-#: bittorrent-curses.py:163
+#: bittorrent-curses.py:164
 msgid "peers:"
 msgstr "các đồng đẳng:"
 
-#: bittorrent-curses.py:238
+#: bittorrent-curses.py:239
 #, python-format
 msgid "%d seen now, plus %d distributed copies(%s)"
 msgstr "%d được xem hiện tại, cộng %d bản sao đã phân phối (%s)"
 
-#: bittorrent-curses.py:265
+#: bittorrent-curses.py:266
 msgid "error(s):"
 msgstr "lỗi:"
 
-#: bittorrent-curses.py:274
+#: bittorrent-curses.py:275
 msgid "error:"
 msgstr "lỗi:"
 
-#: bittorrent-curses.py:277
+#: bittorrent-curses.py:278
 msgid ""
 "  #     IP                 Upload           Download     Completed  Speed"
 msgstr "# Địa chỉ IP Tải lên Tải xuống Tốc độ hoàn thành"
 
-#: bittorrent-curses.py:322
+#: bittorrent-curses.py:323
 #, python-format
 msgid "downloading %d pieces, have %d fragments, %d of %d pieces completed"
 msgstr "đang tải về %d phần, có %d đoạn, %d trên %d các phần đã hoàn thành"
 
-#: bittorrent-curses.py:446
+#: bittorrent-curses.py:447
 msgid "These errors occurred during execution:"
 msgstr "Những lỗi này xảy ra trong khi thực hiện:"
 
@@ -1835,19 +1866,19 @@ msgstr ""
 msgid "old announce for %s: %s"
 msgstr "thông báo cũ cho %s: %s"
 
-#: launchmany-console.py:35 launchmany-curses.py:234
+#: launchmany-console.py:35 launchmany-curses.py:236
 msgid "no torrents"
 msgstr "không có dòng"
 
-#: launchmany-console.py:49 launchmany-curses.py:272
+#: launchmany-console.py:49 launchmany-curses.py:274
 msgid "SYSTEM ERROR - EXCEPTION GENERATED"
 msgstr "LỖI HỆ THỐNG-GẶP NGOẠI LỆ"
 
-#: launchmany-console.py:64 launchmany-curses.py:292
+#: launchmany-console.py:64 launchmany-curses.py:294
 msgid "Warning: "
 msgstr "Cảnh báo:"
 
-#: launchmany-console.py:64 launchmany-curses.py:292
+#: launchmany-console.py:64 launchmany-curses.py:294
 msgid " is not a directory"
 msgstr "không phải là một thư mục"
 
@@ -1860,7 +1891,7 @@ msgstr ""
 "lỗi: %s\n"
 "chạy không có đối số để giải thích tham số"
 
-#: launchmany-console.py:71 launchmany-curses.py:299
+#: launchmany-console.py:71 launchmany-curses.py:301
 msgid ""
 "\n"
 "EXCEPTION:"
@@ -1868,43 +1899,43 @@ msgstr ""
 "\n"
 "NGOẠI LỆ:"
 
-#: launchmany-curses.py:46
+#: launchmany-curses.py:47
 msgid "You may still use \"btdownloadheadless.py\" to download."
 msgstr "Bạn vẫn còn có thể sử dụng \"btdownloadheadless.py\" để tải về."
 
-#: launchmany-curses.py:58 BitTorrent/launchmanycore.py:145
+#: launchmany-curses.py:59 BitTorrent/launchmanycore.py:145
 msgid "connecting to peers"
 msgstr "đang kết nối đến các đồng đẳng"
 
-#: launchmany-curses.py:59
+#: launchmany-curses.py:60
 #, python-format
 msgid "ETA in %d:%02d:%02d"
 msgstr "Thời gian dự kiến trong %d:%02d:%02d"
 
-#: launchmany-curses.py:141
+#: launchmany-curses.py:143
 msgid "Size"
 msgstr "Kích cỡ"
 
-#: launchmany-curses.py:141
+#: launchmany-curses.py:143
 msgid "Upload"
 msgstr "Tải lên"
 
-#: launchmany-curses.py:153 launchmany-curses.py:246
+#: launchmany-curses.py:155 launchmany-curses.py:248
 msgid "Totals:"
 msgstr "Tổng số:"
 
-#: launchmany-curses.py:212
+#: launchmany-curses.py:214
 #, python-format
 msgid "    (%s) %s - %s peers %s seeds %s dist copies - %s dn %s up"
 msgstr ""
 "(%s) %s - %s các đồng đẳng %s các khởi tạo %s các bản sao đã phân phối - %s "
 "dn %s lên"
 
-#: launchmany-curses.py:294 BitTorrent/track.py:852
+#: launchmany-curses.py:296 BitTorrent/track.py:852
 msgid "error: "
 msgstr "lỗi: "
 
-#: launchmany-curses.py:294
+#: launchmany-curses.py:296
 msgid ""
 "\n"
 "run with no args for parameter explanations"
@@ -1974,88 +2005,6 @@ msgstr "các nút không có công cụ theo dõi:"
 #: torrentinfo-console.py:43
 msgid "comment:"
 msgstr "chú thích:"
-
-#: BitTorrent/ConvertedMetainfo.py:51
-msgid ""
-"This seems to be an old Python version which does not support detecting the "
-"filesystem encoding. Assuming 'ascii'."
-msgstr ""
-"Có thể đây là phần mềm Python phiên bản cũ và nó không hỗ trợ dò tìm bộ mã "
-"hóa hệ thống tập tin. Giả sử 'ascii'."
-
-#: BitTorrent/ConvertedMetainfo.py:58
-msgid "Python failed to autodetect filesystem encoding. Using 'ascii' instead."
-msgstr ""
-"Python thất bại khi tự động dò tìm bộ mã hóa hệ thống tập tin. Hãy sử dụng "
-"'ascii' thay thế."
-
-#: BitTorrent/ConvertedMetainfo.py:65
-#, python-format
-msgid "Filesystem encoding '%s' is not supported. Using 'ascii' instead."
-msgstr ""
-"Không hỗ trợ bộ mã hóa hệ thống tập tin '%s'. Hãy sử dụng 'ascii' thay thế."
-
-#: BitTorrent/ConvertedMetainfo.py:123
-msgid "Bad file path component: "
-msgstr "Thành phần đường dẫn tập tin sai:"
-
-#: BitTorrent/ConvertedMetainfo.py:195
-msgid ""
-"This .torrent file has been created with a broken tool and has incorrectly "
-"encoded filenames. Some or all of the filenames may appear different from "
-"what the creator of the .torrent file intended."
-msgstr ""
-"Tập tin .dòng này đã được tạo bởi một công cụ bị hỏng và có tên tập tin được "
-"mã hóa không đúng. Một số hay tất cả các tên tập tin này có thể sẽ hiển thị "
-"khác so với công cụ tạo tập tin của tập tin .dòng chỉ định."
-
-#: BitTorrent/ConvertedMetainfo.py:201
-msgid ""
-"This .torrent file has been created with a broken tool and has bad character "
-"values that do not correspond to any real character. Some or all of the "
-"filenames may appear different from what the creator of the .torrent file "
-"intended."
-msgstr ""
-"Tập tin .dòng này đã được tạo bởi một công cụ bị hỏng và có giá trị ký tự "
-"sai không tương ứng với ký tự thật nào. Một số hay tất cả tên tập tin này có "
-"thể sẽ hiển thị khác so với công cụ tạo tập tin của tập tin .dòng chỉ định."
-
-#: BitTorrent/ConvertedMetainfo.py:208
-msgid ""
-"This .torrent file has been created with a broken tool and has incorrectly "
-"encoded filenames. The names used may still be correct."
-msgstr ""
-"Tập tin .dòng này đã được tạo bởi một công cụ bị hỏng và có tên tập tin được "
-"mã hóa cho đúng. Tên được sử dụng có thể vẫn đúng."
-
-#: BitTorrent/ConvertedMetainfo.py:213
-#, python-format
-msgid ""
-"The character set used on the local filesystem (\"%s\") cannot represent all "
-"characters used in the filename(s) of this torrent. Filenames have been "
-"changed from the original."
-msgstr ""
-"Bộ ký tự được dùng trong hệ thống tập tin cục bộ (\"%s\") không thể thể hiện "
-"tất cả mọi ký tự được sử dụng trong tên tập tin của dòng này. Tên tập tin đã "
-"được thay đổi từ tên đầu tiên."
-
-#: BitTorrent/ConvertedMetainfo.py:219
-msgid ""
-"The Windows filesystem cannot handle some characters used in the filename(s) "
-"of this torrent.Filenames have been changed from the original."
-msgstr ""
-"Hệ thống tập tin Windows không thể xử lý một số ký tự được dùng trong tên "
-"tập tin của dòng này. Tên tập tin đã được thay đổi từ tên đầu tiên."
-
-#: BitTorrent/ConvertedMetainfo.py:224
-msgid ""
-"This .torrent file has been created with a broken tool and has at least 1 "
-"file with an invalid file or directory name. However since all such files "
-"were marked as having length 0 those files are just ignored."
-msgstr ""
-"Tập tin .dòng này đã được tạo bởi một công cụ bị hỏng và có ít nhất một tập "
-"tin có tên tập tin hay tên thư mục không hợp lệ. Tuy nhiên, vì mọi tập tin "
-"như vậy đã được đánh dấu có độ dài là 0 và các tập tin này được bỏ qua."
 
 #: BitTorrent/HTTPHandler.py:21
 msgid "Mon"
@@ -2137,6 +2086,30 @@ msgstr "Tháng 12"
 #, python-format
 msgid "Compressed: %i  Uncompressed: %i\n"
 msgstr "Đã nén: %i Đã giải nén: %i\n"
+
+#: BitTorrent/configfile.py:72
+msgid "Could not permanently save options: "
+msgstr "Không thể lưu vĩnh viễn các tùy chọn:"
+
+#: BitTorrent/configfile.py:84
+#, python-format
+msgid "Error reading config file. Old config file stored in \"%s\""
+msgstr ""
+
+#: BitTorrent/configfile.py:131
+#, python-format
+msgid "Configuration option mismatch: '%s'"
+msgstr ""
+
+#: BitTorrent/configfile.py:133
+#, python-format
+msgid "You must quit %s and reinstall it. (%s)"
+msgstr ""
+
+#: BitTorrent/configfile.py:218
+#, python-format
+msgid "Could not find translation for language \"%s\"\n"
+msgstr ""
 
 #: BitTorrent/Storage.py:58
 #, python-format
@@ -2228,44 +2201,6 @@ msgstr "không phải là một chuỗi mã hóa b hợp lệ"
 msgid "invalid bencoded value (data after valid prefix)"
 msgstr "giá trị mã hóa b không hợp lệ (dữ liệu sau tiền tố hợp lệ)"
 
-#: BitTorrent/controlsocket.py:135 BitTorrent/controlsocket.py:186
-msgid "Could not create control socket: "
-msgstr "Không thể tạo cơ chế truyền thông điều khiển:"
-
-#: BitTorrent/controlsocket.py:166 BitTorrent/controlsocket.py:218
-msgid "Could not send command: "
-msgstr "Không gửi được lệnh:"
-
-#: BitTorrent/controlsocket.py:176
-msgid "Could not create control socket: already in use"
-msgstr "Không thể tạo cơ chế truyền thông điều khiển: đang được sử dụng"
-
-#: BitTorrent/controlsocket.py:181
-msgid "Could not remove old control socket filename:"
-msgstr "Không thể gỡ bỏ tên tập tin cơ chế truyền thông điều khiển cũ:"
-
-#: BitTorrent/controlsocket.py:241
-msgid "Global mutex already created."
-msgstr "Mutex toàn cầu đã được tạo."
-
-#: BitTorrent/controlsocket.py:255
-msgid "Could not find an open port!"
-msgstr "Không thể tìm được một cổng mở!"
-
-#: BitTorrent/controlsocket.py:264
-msgid "Could not create application data directory!"
-msgstr "Không thể tạo được thư mục dữ liệu ứng dụng!"
-
-#: BitTorrent/controlsocket.py:280
-msgid "Could not acquire global mutex lock for controlsocket file!"
-msgstr ""
-"Không thể yêu cầu khóa mutex toàn cầu cho tập tin của cơ chế truyền thông "
-"điều khiển!"
-
-#: BitTorrent/controlsocket.py:290
-msgid "A previous instance of BT was not cleaned up properly. Continuing."
-msgstr "Một ví dụ trước của BT đã không được làm sạch đúng. Đang tiếp tục."
-
 #: BitTorrent/launchmanycore.py:65
 msgid "Could not set signal handler: "
 msgstr "Không đặt được công cụ quản lý tín hiệu:"
@@ -2284,7 +2219,7 @@ msgstr "đã thêm \"%s\""
 msgid "waiting for hash check"
 msgstr "đang chờ kiểm tra Băm"
 
-#: BitTorrent/launchmanycore.py:142 BitTorrent/download.py:394
+#: BitTorrent/launchmanycore.py:142 BitTorrent/download.py:396
 msgid "downloading"
 msgstr "đang tải về"
 
@@ -2360,10 +2295,6 @@ msgstr "đang gỡ bỏ %s"
 msgid "done checking"
 msgstr "kiểm tra xong"
 
-#: BitTorrent/Encoder.py:195
-msgid "Can't start two separate instances of the same torrent"
-msgstr "Không thể khởi động hai trường hợp riêng của cùng một dòng"
-
 #: BitTorrent/GetTorrent.py:44 BitTorrent/GetTorrent.py:92
 #, python-format
 msgid "Could not read %s"
@@ -2380,52 +2311,10 @@ msgstr ""
 "%s\n"
 "Hãy thử sử dụng trình duyệt Web để tải về tập tin dòng."
 
-#: BitTorrent/RawServer.py:324
-#, python-format
-msgid "failed to unregister or close server socket: %s"
-msgstr ""
-
-#: BitTorrent/RawServer.py:325
-msgid "lost server socket"
-msgstr "mất cơ chế truyền thông của máy chủ"
-
-#: BitTorrent/RawServer.py:341
-msgid "Error handling accepted connection: "
-msgstr "Công cụ quản lý lỗi đã chấp nhận kết nối:"
-
-#: BitTorrent/RawServer.py:426
-#, python-format
-msgid "Have to exit due to the TCP stack flaking out. Please see the FAQ at %s"
-msgstr ""
-"Phải thoát vì ngăn nhớ TCP bị hỏng. Hãy xem Các Câu Hỏi Thường Gặp tại %s."
-
 #: BitTorrent/RawServer_magic.py:32
 #, python-format
 msgid "Too late to switch RawServer backends, %s has already been used."
 msgstr "Quá muộn để bật đầu cuối của RAWSERVER, %s đã được sử dụng."
-
-#: BitTorrent/RawServer_twisted.py:55
-msgid "RawServer_twisted requires twisted 2.0.0 or greater"
-msgstr ""
-
-#: BitTorrent/RawServer_twisted.py:296
-msgid "connection refused"
-msgstr ""
-
-#: BitTorrent/RawServer_twisted.py:456 BitTorrent/RawServer_twisted.py:470
-#: BitTorrent/RawServer_twisted.py:493
-msgid "You asked for reuse to be off when binding. Sorry, I can't do that."
-msgstr ""
-
-#: BitTorrent/RawServer_twisted.py:623
-msgid "listen_forever() should only be called once per reactor."
-msgstr ""
-
-#: BitTorrent/RawServer_twisted.py:635
-msgid ""
-"listen_once() might not return until there is activity, and might not "
-"process the event you want. Use listen_forever()."
-msgstr ""
 
 #: BitTorrent/Rerequester.py:92
 #, python-format
@@ -2469,21 +2358,6 @@ msgstr "cảnh báo từ công cụ theo dõi-"
 
 #: BitTorrent/Rerequester.py:278
 msgid "Trackerless lookup failed: "
-msgstr ""
-
-#: BitTorrent/TrayIcon.py:22 BitTorrent/TrayIcon.py:54
-#, python-format
-msgid "Hide %s"
-msgstr ""
-
-#: BitTorrent/TrayIcon.py:24 BitTorrent/TrayIcon.py:56
-#, python-format
-msgid "Show %s"
-msgstr ""
-
-#: BitTorrent/__init__.py:22
-#, python-format
-msgid "Python %s or newer required"
 msgstr ""
 
 #: BitTorrent/btformats.py:23
@@ -2622,117 +2496,6 @@ msgstr "số đếm khởi tạo không hợp lệ"
 #: BitTorrent/btformats.py:140
 msgid "invalid \"last\" entry"
 msgstr "mục nhập \"cuối cùng\" không hợp lệ"
-
-#: BitTorrent/configfile.py:72
-msgid "Could not permanently save options: "
-msgstr "Không thể lưu vĩnh viễn các tùy chọn:"
-
-#: BitTorrent/configfile.py:84
-#, python-format
-msgid "Error reading config file. Old config file stored in \"%s\""
-msgstr ""
-
-#: BitTorrent/configfile.py:131
-#, python-format
-msgid "Configuration option mismatch: '%s'"
-msgstr ""
-
-#: BitTorrent/configfile.py:133
-#, python-format
-msgid "You must quit %s and reinstall it. (%s)"
-msgstr ""
-
-#: BitTorrent/configfile.py:218
-#, python-format
-msgid "Could not find translation for language \"%s\"\n"
-msgstr ""
-
-#: BitTorrent/download.py:95
-msgid "maxport less than minport - no ports to check"
-msgstr ""
-"số hiệu cổng tối đa nhỏ hơn số hiệu cổng tối thiểu: không có cổng nào để "
-"kiểm tra"
-
-#: BitTorrent/download.py:113
-#, python-format
-msgid "Could not open a listening port: %s."
-msgstr "Không mở được một cổng tuân theo: %s"
-
-#: BitTorrent/download.py:115
-#, python-format
-msgid "Could not open a listening port: %s. "
-msgstr "Không mở được một cổng tuân theo: %s."
-
-#: BitTorrent/download.py:117
-msgid "Check your port range settings."
-msgstr "Kiểm tra cài đặt phạm vi cổng."
-
-#: BitTorrent/download.py:213
-msgid "Initial startup"
-msgstr "Khởi động lần đầu"
-
-#: BitTorrent/download.py:266
-#, python-format
-msgid "Could not load fastresume data: %s."
-msgstr "Không tải được dữ liệu định dạng fastresume: %s"
-
-#: BitTorrent/download.py:267
-msgid "Will perform full hash check."
-msgstr "Sẽ thực hiện việc kiểm tra Băm đầy đủ."
-
-#: BitTorrent/download.py:274
-#, python-format
-msgid "piece %d failed hash check, re-downloading it"
-msgstr "phần %d đã thất bại việc kiểm tra Băm, đang tải về nó lần nữa"
-
-#: BitTorrent/download.py:355
-msgid ""
-"Attempt to download a trackerless torrent with trackerless client turned off."
-msgstr ""
-"Cố gắng tải về một dòng không có công cụ theo dõi với máy khách không có "
-"công cụ theo dõi được tắt."
-
-#: BitTorrent/download.py:404
-msgid "download failed: "
-msgstr "tải về thất bại:"
-
-#: BitTorrent/download.py:408
-msgid "IO Error: No space left on disk, or cannot create a file that large:"
-msgstr ""
-"Lỗi xuất/nhập: không còn chỗ chứa trên đĩa hoặc không tạo được một tập tin "
-"lớn như thế:"
-
-#: BitTorrent/download.py:411
-msgid "killed by IO error: "
-msgstr "đã kết thúc bởi lỗi xuất/nhập:"
-
-#: BitTorrent/download.py:414
-msgid "killed by OS error: "
-msgstr "đã kết thúc bởi lỗi hệ điều hành:"
-
-#: BitTorrent/download.py:419
-msgid "killed by internal exception: "
-msgstr "đã kết thúc bởi lỗi ngoại lệ bên trong:"
-
-#: BitTorrent/download.py:424
-msgid "Additional error when closing down due to error: "
-msgstr "Có thêm lỗi khi đang đóng vì có sẵn lỗi:"
-
-#: BitTorrent/download.py:437
-msgid "Could not remove fastresume file after failure:"
-msgstr "Không thể gỡ bỏ tập tin fastresume sau khi thất bại:"
-
-#: BitTorrent/download.py:454
-msgid "seeding"
-msgstr "đang khởi tạo"
-
-#: BitTorrent/download.py:477
-msgid "Could not write fastresume data: "
-msgstr "Không ghi được dữ liệu fastresume:"
-
-#: BitTorrent/download.py:487
-msgid "shut down"
-msgstr "tắt máy"
 
 #: BitTorrent/parseargs.py:26
 #, python-format
@@ -3012,15 +2775,312 @@ msgstr "chạy không có đối số nào để giải thích các tham số"
 msgid "# Shutting down: "
 msgstr "# Đang tắt máy:"
 
+#: BitTorrent/Encoder.py:246
+msgid "Can't start two separate instances of the same torrent"
+msgstr "Không thể khởi động hai trường hợp riêng của cùng một dòng"
 
+#: BitTorrent/RawServer.py:337
+#, python-format
+msgid "failed to unregister or close server socket: %s"
+msgstr ""
 
+#: BitTorrent/RawServer.py:338
+msgid "lost server socket"
+msgstr "mất cơ chế truyền thông của máy chủ"
 
+#: BitTorrent/RawServer.py:354
+msgid "Error handling accepted connection: "
+msgstr "Công cụ quản lý lỗi đã chấp nhận kết nối:"
 
+#: BitTorrent/RawServer.py:437
+#, python-format
+msgid "Have to exit due to the TCP stack flaking out. Please see the FAQ at %s"
+msgstr ""
+"Phải thoát vì ngăn nhớ TCP bị hỏng. Hãy xem Các Câu Hỏi Thường Gặp tại %s."
 
+#: BitTorrent/TrayIcon.py:65
+#, python-format
+msgid "Hide %s"
+msgstr ""
 
+#: BitTorrent/TrayIcon.py:67
+#, python-format
+msgid "Show %s"
+msgstr ""
 
+#: BitTorrent/__init__.py:22
+#, python-format
+msgid "Python %s or newer required"
+msgstr ""
 
+#: BitTorrent/ConvertedMetainfo.py:51
+msgid ""
+"This seems to be an old Python version which does not support detecting the "
+"filesystem encoding. Assuming 'ascii'."
+msgstr ""
+"Có thể đây là phần mềm Python phiên bản cũ và nó không hỗ trợ dò tìm bộ mã "
+"hóa hệ thống tập tin. Giả sử 'ascii'."
 
+#: BitTorrent/ConvertedMetainfo.py:58
+msgid "Python failed to autodetect filesystem encoding. Using 'ascii' instead."
+msgstr ""
+"Python thất bại khi tự động dò tìm bộ mã hóa hệ thống tập tin. Hãy sử dụng "
+"'ascii' thay thế."
 
+#: BitTorrent/ConvertedMetainfo.py:65
+#, python-format
+msgid "Filesystem encoding '%s' is not supported. Using 'ascii' instead."
+msgstr ""
+"Không hỗ trợ bộ mã hóa hệ thống tập tin '%s'. Hãy sử dụng 'ascii' thay thế."
 
+#: BitTorrent/ConvertedMetainfo.py:123
+msgid "Bad file path component: "
+msgstr "Thành phần đường dẫn tập tin sai:"
 
+#: BitTorrent/ConvertedMetainfo.py:195
+msgid ""
+"This .torrent file has been created with a broken tool and has incorrectly "
+"encoded filenames. Some or all of the filenames may appear different from "
+"what the creator of the .torrent file intended."
+msgstr ""
+"Tập tin .dòng này đã được tạo bởi một công cụ bị hỏng và có tên tập tin được "
+"mã hóa không đúng. Một số hay tất cả các tên tập tin này có thể sẽ hiển thị "
+"khác so với công cụ tạo tập tin của tập tin .dòng chỉ định."
+
+#: BitTorrent/ConvertedMetainfo.py:201
+msgid ""
+"This .torrent file has been created with a broken tool and has bad character "
+"values that do not correspond to any real character. Some or all of the "
+"filenames may appear different from what the creator of the .torrent file "
+"intended."
+msgstr ""
+"Tập tin .dòng này đã được tạo bởi một công cụ bị hỏng và có giá trị ký tự "
+"sai không tương ứng với ký tự thật nào. Một số hay tất cả tên tập tin này có "
+"thể sẽ hiển thị khác so với công cụ tạo tập tin của tập tin .dòng chỉ định."
+
+#: BitTorrent/ConvertedMetainfo.py:208
+msgid ""
+"This .torrent file has been created with a broken tool and has incorrectly "
+"encoded filenames. The names used may still be correct."
+msgstr ""
+"Tập tin .dòng này đã được tạo bởi một công cụ bị hỏng và có tên tập tin được "
+"mã hóa cho đúng. Tên được sử dụng có thể vẫn đúng."
+
+#: BitTorrent/ConvertedMetainfo.py:213
+#, python-format
+msgid ""
+"The character set used on the local filesystem (\"%s\") cannot represent all "
+"characters used in the filename(s) of this torrent. Filenames have been "
+"changed from the original."
+msgstr ""
+"Bộ ký tự được dùng trong hệ thống tập tin cục bộ (\"%s\") không thể thể hiện "
+"tất cả mọi ký tự được sử dụng trong tên tập tin của dòng này. Tên tập tin đã "
+"được thay đổi từ tên đầu tiên."
+
+#: BitTorrent/ConvertedMetainfo.py:219
+msgid ""
+"The Windows filesystem cannot handle some characters used in the filename(s) "
+"of this torrent. Filenames have been changed from the original."
+msgstr ""
+
+#: BitTorrent/ConvertedMetainfo.py:224
+msgid ""
+"This .torrent file has been created with a broken tool and has at least 1 "
+"file with an invalid file or directory name. However since all such files "
+"were marked as having length 0 those files are just ignored."
+msgstr ""
+"Tập tin .dòng này đã được tạo bởi một công cụ bị hỏng và có ít nhất một tập "
+"tin có tên tập tin hay tên thư mục không hợp lệ. Tuy nhiên, vì mọi tập tin "
+"như vậy đã được đánh dấu có độ dài là 0 và các tập tin này được bỏ qua."
+
+#: BitTorrent/IPC.py:133
+#, python-format
+msgid "Unhandled command: %s %s"
+msgstr ""
+
+#: BitTorrent/IPC.py:178
+msgid "Could not create control socket: already in use"
+msgstr "Không thể tạo cơ chế truyền thông điều khiển: đang được sử dụng"
+
+#: BitTorrent/IPC.py:183
+msgid "Could not remove old control socket filename:"
+msgstr "Không thể gỡ bỏ tên tập tin cơ chế truyền thông điều khiển cũ:"
+
+#: BitTorrent/IPC.py:188
+msgid "Could not create control socket: "
+msgstr "Không thể tạo cơ chế truyền thông điều khiển:"
+
+#: BitTorrent/IPC.py:206 BitTorrent/IPC.py:341
+msgid "Could not send command: "
+msgstr "Không gửi được lệnh:"
+
+#: BitTorrent/IPC.py:244
+msgid "Global mutex already created."
+msgstr "Mutex toàn cầu đã được tạo."
+
+#: BitTorrent/IPC.py:260
+msgid "Could not find an open port!"
+msgstr "Không thể tìm được một cổng mở!"
+
+#: BitTorrent/IPC.py:269
+msgid "Could not create application data directory!"
+msgstr "Không thể tạo được thư mục dữ liệu ứng dụng!"
+
+#: BitTorrent/IPC.py:288
+msgid "Could not acquire global mutex lock for controlsocket file!"
+msgstr ""
+"Không thể yêu cầu khóa mutex toàn cầu cho tập tin của cơ chế truyền thông "
+"điều khiển!"
+
+#: BitTorrent/IPC.py:297
+msgid "A previous instance of BT was not cleaned up properly. Continuing."
+msgstr "Một ví dụ trước của BT đã không được làm sạch đúng. Đang tiếp tục."
+
+#: BitTorrent/IPC.py:301
+#, python-format
+msgid "Another instance of BT is running, but \"%s\" does not exist.\n"
+msgstr ""
+
+#: BitTorrent/IPC.py:302
+msgid "I'll guess at the port."
+msgstr ""
+
+#: BitTorrent/IPC.py:306
+#, python-format
+msgid "Port found: %d"
+msgstr ""
+
+#: BitTorrent/IPC.py:317
+msgid "Could not find port."
+msgstr ""
+
+#: BitTorrent/IPC.py:391
+#, python-format
+msgid "IPC Status: %s"
+msgstr ""
+
+#: BitTorrent/IPC.py:407
+msgid "DDE Conversation connected."
+msgstr ""
+
+#: BitTorrent/RawServer_twisted.py:56
+msgid "RawServer_twisted requires twisted 2.0.0 or greater"
+msgstr ""
+
+#: BitTorrent/RawServer_twisted.py:298
+msgid "connection refused"
+msgstr ""
+
+#: BitTorrent/RawServer_twisted.py:513 BitTorrent/RawServer_twisted.py:527
+#: BitTorrent/RawServer_twisted.py:550
+msgid "You asked for reuse to be off when binding. Sorry, I can't do that."
+msgstr ""
+
+#: BitTorrent/RawServer_twisted.py:716
+msgid "listen_forever() should only be called once per reactor."
+msgstr ""
+
+#: BitTorrent/RawServer_twisted.py:728
+msgid ""
+"listen_once() might not return until there is activity, and might not "
+"process the event you want. Use listen_forever()."
+msgstr ""
+
+#: BitTorrent/download.py:97
+msgid "maxport less than minport - no ports to check"
+msgstr ""
+"số hiệu cổng tối đa nhỏ hơn số hiệu cổng tối thiểu: không có cổng nào để "
+"kiểm tra"
+
+#: BitTorrent/download.py:115
+#, python-format
+msgid "Could not open a listening port: %s."
+msgstr "Không mở được một cổng tuân theo: %s"
+
+#: BitTorrent/download.py:117
+#, python-format
+msgid "Could not open a listening port: %s. "
+msgstr "Không mở được một cổng tuân theo: %s."
+
+#: BitTorrent/download.py:119
+msgid "Check your port range settings."
+msgstr "Kiểm tra cài đặt phạm vi cổng."
+
+#: BitTorrent/download.py:215
+msgid "Initial startup"
+msgstr "Khởi động lần đầu"
+
+#: BitTorrent/download.py:268
+#, python-format
+msgid "Could not load fastresume data: %s"
+msgstr "Không tải được dữ liệu định dạng fastresume: %s"
+
+#: BitTorrent/download.py:269
+msgid "Will perform full hash check."
+msgstr "Sẽ thực hiện việc kiểm tra Băm đầy đủ."
+
+#: BitTorrent/download.py:276
+#, python-format
+msgid "piece %d failed hash check, re-downloading it"
+msgstr "phần %d đã thất bại việc kiểm tra Băm, đang tải về nó lần nữa"
+
+#: BitTorrent/download.py:357
+msgid ""
+"Attempt to download a trackerless torrent with trackerless client turned off."
+msgstr ""
+"Cố gắng tải về một dòng không có công cụ theo dõi với máy khách không có "
+"công cụ theo dõi được tắt."
+
+#: BitTorrent/download.py:406
+msgid "download failed: "
+msgstr "tải về thất bại:"
+
+#: BitTorrent/download.py:410
+msgid "IO Error: No space left on disk, or cannot create a file that large:"
+msgstr ""
+"Lỗi xuất/nhập: không còn chỗ chứa trên đĩa hoặc không tạo được một tập tin "
+"lớn như thế:"
+
+#: BitTorrent/download.py:413
+msgid "killed by IO error: "
+msgstr "đã kết thúc bởi lỗi xuất/nhập:"
+
+#: BitTorrent/download.py:416
+msgid "killed by OS error: "
+msgstr "đã kết thúc bởi lỗi hệ điều hành:"
+
+#: BitTorrent/download.py:421
+msgid "killed by internal exception: "
+msgstr "đã kết thúc bởi lỗi ngoại lệ bên trong:"
+
+#: BitTorrent/download.py:426
+msgid "Additional error when closing down due to error: "
+msgstr "Có thêm lỗi khi đang đóng vì có sẵn lỗi:"
+
+#: BitTorrent/download.py:439
+msgid "Could not remove fastresume file after failure:"
+msgstr "Không thể gỡ bỏ tập tin fastresume sau khi thất bại:"
+
+#: BitTorrent/download.py:456
+msgid "seeding"
+msgstr "đang khởi tạo"
+
+#: BitTorrent/download.py:479
+msgid "Could not write fastresume data: "
+msgstr "Không ghi được dữ liệu fastresume:"
+
+#: BitTorrent/download.py:489
+msgid "shut down"
+msgstr "tắt máy"
+
+#: khashmir/krpc.py:214
+msgid "received unknown message type"
+msgstr ""
+
+#: khashmir/krpc.py:233
+msgid "timeout"
+msgstr ""
+
+#: khashmir/krpc.py:239
+msgid "socket error"
+msgstr ""

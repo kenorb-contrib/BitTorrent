@@ -53,7 +53,7 @@ KE_DELAY = 60 * 5 # 5 minutes
 KE_AGE = 60 * 30 # 30 minutes
 
 
-## krpc
+## krpc errback codes
 KRPC_TIMEOUT = 20
 
 KRPC_ERROR = 1
@@ -63,3 +63,12 @@ KRPC_ERROR_TIMEOUT = 4
 KRPC_SOCKET_ERROR = 5
 
 KRPC_CONNECTION_CACHE_TIME = KRPC_TIMEOUT * 2
+
+
+## krpc erorr response codes
+KERR_ERROR = (201, "Generic Error")
+KERR_SERVER_ERROR = (202, "Server Error")
+KERR_PROTOCOL_ERROR = (203, "Protocol Error")
+KERR_METHOD_UNKNOWN = (204, "Method Unknown")
+KERR_INVALID_ARGS = (205, "Invalid Argements")
+KERR_INVALID_TOKEN = (206, "Invalid Token")

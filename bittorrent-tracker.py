@@ -16,8 +16,10 @@ if __name__ == '__main__':
     from BitTorrent.platform import install_translation
     install_translation()
 
+import os
 from sys import argv
 from BitTorrent.track import track
 
 if __name__ == '__main__':
+    file('/var/run/bittorrent-tracker.pid', 'w').write(str(os.getpid()))
     track(argv[1:])

@@ -114,7 +114,7 @@ class KhashmirBase:
             f = open(os.path.join(self.ddir, "routing_table"), 'wb')
             f.write(bencode(d))
             f.close()
-        except:
+        except Exception, e:
             #XXX real error here
             print ">>> unable to dump routing table!", str(e)
             pass

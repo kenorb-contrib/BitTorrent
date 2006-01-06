@@ -115,7 +115,7 @@ class Updater(object):
         url = self.version_site + self.currentversion.name()
         availableversion = self._get_available(url)
         if availableversion.is_beta():
-            if availableversion[1] != self.currentversion:
+            if availableversion[1] != self.currentversion[1]:
                 availableversion = self.currentversion 
         if self.currentversion.is_beta():
             stable_url = self.version_site + 'stable'
@@ -271,8 +271,8 @@ class Updater(object):
                                  "missing, or corrupt.")%(app_name,
                                                           self.version))
 
-    def launch_installer(self):
+    def launch_installer(self, torrentqueue):
         if os.name == 'nt':
-            os.startfile(self.installer_path())
+            spawn(torrentqueue, self.installer_path(), "/S")
         else:
             self.errorfunc(WARNING, _("Cannot launch installer on this OS"))

@@ -211,13 +211,13 @@ class Storage(object):
     def write_fastresume(self, resumefile, amount_done):
         resumefile.write('BitTorrent resume state file, version 1\n')
         resumefile.write(str(amount_done) + '\n')
-        for _, _, filename in self.ranges:
+        for x, x, filename in self.ranges:
             resumefile.write(str(os.path.getsize(filename)) + ' ' +
                              str(os.path.getmtime(filename)) + '\n')
 
     def check_fastresume(self, resumefile, return_filelist=False,
                          piece_size=None, numpieces=None, allfiles=None):
-        filenames = [name for _, _, name in self.ranges]
+        filenames = [name for x, x, name in self.ranges]
         if resumefile is not None:
             version = resumefile.readline()
             if version != 'BitTorrent resume state file, version 1\n':

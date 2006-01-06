@@ -16,6 +16,7 @@ import socket
 import signal
 import struct
 import thread
+import threading
 from cStringIO import StringIO
 from traceback import print_exc, print_stack
 
@@ -314,6 +315,8 @@ class CallbackConnection(object):
 class CallbackProtocol(CallbackConnection, TimeoutMixin, Protocol):
 
     def makeConnection(self, transport):
+        if isinstance(self.factory, OutgoingConnectionFactory):
+            self.factory.rawserver._remove_pending_connection(self.factory.addr)
         self.can_timeout = 1
         self.setTimeout(self.factory.rawserver.config['socket_timeout'])
         self.attachTransport(transport, self.factory.connection, *self.factory.connection_args)
@@ -343,7 +346,8 @@ class OutgoingConnectionFactory(ClientFactory):
 
             #so we don't get failed then closed
             self.connection.dying = 1
-            
+
+        self.rawserver._remove_pending_connection(peer.host)
         self.rawserver._remove_socket(self.connection)
 
 def UnimplementedWarning(msg):
@@ -435,8 +439,13 @@ class RawServer(RawServerMixin):
         self.live_contexts = {None : 1}
         self.listened = 0
 
+        # for connection rate limiting
+        self.pending_sockets = {}
+        # this can go away when urllib does
+        self.pending_sockets_lock = threading.Lock()
+
         #l2 = task.LoopingCall(self._print_connection_count)
-        #l2.start(5)
+        #l2.start(1)
 
     def _log(self, msg):
         f = open("connections.txt", "a")
@@ -466,12 +475,13 @@ class RawServer(RawServerMixin):
             d[state] += 1
         self._log(d)
 
-        sizes = "lh(" + _sl(self.listening_handlers)
+        sizes = "ps(" + _sl(self.pending_sockets)
+        sizes += ") lh(" + _sl(self.listening_handlers)
         sizes += ") ss(" + _sl(self.single_sockets)
         sizes += ") us(" + _sl(self.udp_sockets)
         sizes += ") lc(" + _sl(self.live_contexts) + ")"
         self._log(sizes)
-                
+        
     def add_context(self, context):
         self.live_contexts[context] = 1
 
@@ -636,6 +646,8 @@ class RawServer(RawServerMixin):
         addr = dns[0]
         port = int(dns[1])
 
+        self._add_pending_connection(addr)
+
         bindaddr = None
         if do_bind:
             bindaddr = self.config['bind']
@@ -645,6 +657,8 @@ class RawServer(RawServerMixin):
                 bindaddr = None
 
         factory = OutgoingConnectionFactory()
+        # maybe this can be had from elsewhere
+        factory.addr = addr
         factory.protocol = CallbackProtocol
         factory.rawserver = self
 
@@ -658,9 +672,41 @@ class RawServer(RawServerMixin):
         self.single_sockets[c] = c
         return c
 
-    def async_start_connection(self, dns, handler, context=None, do_bind=True):
-        self.start_connection(dns, handler, context, do_bind)
+    def _add_pending_connection(self, addr):
+        # the XP connection rate limiting is unique at the IP level
+        assert isinstance(addr, str)
+        self.pending_sockets_lock.acquire()
+        self.__add_pending_connection(addr)
+        self.pending_sockets_lock.release()
 
+    def __add_pending_connection(self, addr):        
+        if addr not in self.pending_sockets:
+            self.pending_sockets[addr] = 1
+        else:
+            self.pending_sockets[addr] += 1
+
+    def _remove_pending_connection(self, addr):
+        self.pending_sockets_lock.acquire()
+        self.__remove_pending_connection(addr)
+        self.pending_sockets_lock.release()
+
+    def __remove_pending_connection(self, addr):
+        self.pending_sockets[addr] -= 1
+        if self.pending_sockets[addr] <= 0:
+            del self.pending_sockets[addr]
+
+    def async_start_connection(self, dns, handler, context=None, do_bind=True):
+
+        # the XP connection rate limiting is unique at the IP level
+        addr = dns[0]
+        if (len(self.pending_sockets) >= self.config['max_incomplete'] and
+            addr not in self.pending_sockets):
+            return False
+
+        self.start_connection(dns, handler, context, do_bind)
+        return True            
+            
+            
     def wrap_socket(self, sock, handler, context=None, ip=None):
         raise Unimplemented('wrap_socket')
 

@@ -113,6 +113,7 @@ class CursesDisplayer(object):
         self.spew_scroll_pos = 0
 
         self._remake_window()
+        curses.use_default_colors()
 
     def set_torrent_values(self, name, path, size, numpieces):
         self.file = name

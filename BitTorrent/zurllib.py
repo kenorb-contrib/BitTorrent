@@ -11,6 +11,8 @@
 
 import sys
 
+import threading
+import thread
 from BitTorrent import PeerID
 user_agent = PeerID.make_id()
 del PeerID
@@ -38,16 +40,77 @@ DEBUG=0
 
 http_bindaddr = None
 
+# ow ow ow.
+# this is here so we can track open http connections in our pending
+# connection count. we have to buffer because maybe urllib connections
+# start before rawserver does - hopefully not more than 10 of them!
+#
+# this can all go away when we use a reasonable http client library
+# and the connections are managed inside rawserver
+class PreRawServerBuffer(object):
+    def __init__(self):
+        self.pending_connections = {}
+        self.pending_connections_lock = threading.Lock()
+
+    def _add_pending_connection(self, addr):
+        # the XP connection rate limiting is unique at the IP level
+        assert isinstance(addr, str)
+        self.pending_sockets_lock.acquire()
+        self.__add_pending_connection(addr)
+        self.pending_sockets_lock.release()
+
+    def __add_pending_connection(self, addr):        
+        if addr not in self.pending_sockets:
+            self.pending_sockets[addr] = 1
+        else:
+            self.pending_sockets[addr] += 1
+
+    def _remove_pending_connection(self, addr):
+        self.pending_sockets_lock.acquire()
+        self.__remove_pending_connection(addr)
+        self.pending_sockets_lock.release()
+
+    def __remove_pending_connection(self, addr):
+        self.pending_sockets[addr] -= 1
+        if self.pending_sockets[addr] <= 0:
+            del self.pending_sockets[addr]
+rawserver = PreRawServerBuffer()
+
 def bind_tracker_connection(bindaddr):
+    global http_bindaddr
     http_bindaddr = bindaddr
+
+def set_zurllib_rawserver(new_rawserver):
+    global rawserver
+    for addr in rawserver.pending_connections:
+        new_rawserver._add_pending_connections(addr)
+        rawserver._remove_pending_connection(addr)
+    assert len(rawserver.pending_connections) == 0
+    rawserver = new_rawserver
+
+unsafe_threads = []
+def add_unsafe_thread():
+    global unsafe_threads
+    unsafe_threads.append(thread.get_ident())
 
 class BindingHTTPConnection(HTTPConnection):
     def connect(self):
+
+        ident = thread.get_ident()
+        # never, ever, ever call urlopen from any of these threads        
+        assert ident not in unsafe_threads
+
         """Connect to the host and port specified in __init__."""
         msg = "getaddrinfo returns an empty list"
         for res in socket.getaddrinfo(self.host, self.port, 0,
                                       socket.SOCK_STREAM):
             af, socktype, proto, canonname, sa = res
+
+            addr = sa[0]
+            # the obvious multithreading problem is avoided by using locks.
+            # the lock is only acquired during the function call, so there's
+            # no danger of urllib blocking rawserver.
+            rawserver._add_pending_connection(addr)
             try:
                 self.sock = socket.socket(af, socktype, proto)
                 if http_bindaddr:
@@ -61,8 +124,11 @@ class BindingHTTPConnection(HTTPConnection):
                 if self.sock:
                     self.sock.close()
                 self.sock = None
-                continue
-            break
+            rawserver._remove_pending_connection(addr)
+
+            if self.sock:
+                break
+                   
         if not self.sock:
             raise socket.error, msg
 

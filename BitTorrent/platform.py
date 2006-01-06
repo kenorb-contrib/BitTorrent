@@ -45,6 +45,8 @@ is_frozen_exe = (os.name == 'nt') and hasattr(sys, 'frozen') and (sys.frozen == 
 os_name = os.name
 os_version = None
 if os_name == 'nt':
+    # win_version_num is: platform, major, minor, build, service_pack
+    win_version_num = (0, 0, 0, 0, 0)
     wh = {(1, 4,  0): "95",
           (1, 4, 10): "98",
           (1, 4, 90): "ME",
@@ -54,6 +56,21 @@ if os_name == 'nt':
           (2, 5,  2): "2003",
           }
     wv = sys.getwindowsversion()
+
+    sp = 0
+    if wv[4].startswith("Service Pack"):
+        # extract 2 from "Service Pack 2"
+        sp = int(wv[4].split()[-1])
+    else:
+        try:
+            # extract 2 from " C " 
+            l = wv[4].strip()
+            sp = ord(l) - ord('A')
+        except:
+            pass
+        
+    win_version_num = (wv[3], wv[0], wv[1], wv[2], sp)
+    
     wk = (wv[3], wv[0], wv[1])
     if wh.has_key(wk):
         os_version = wh[wk]
@@ -69,7 +86,10 @@ def calc_unix_dirs():
     lp = os.path.join('share', 'locale')
     return ip, dp, lp
 
-app_root = os.path.split(os.path.abspath(sys.argv[0]))[0]
+if is_frozen_exe:
+    app_root = os.path.split(os.path.abspath(win32api.GetModuleFileName(0)))[0]
+else:
+    app_root = os.path.split(os.path.abspath(sys.argv[0]))[0]
 doc_root = app_root
 osx = False
 if os.name == 'posix':
@@ -217,35 +237,44 @@ if os.name == 'nt':
     def path_wrap(path):
         return path.decode('mbcs').encode('utf-8')
 
-def spawn(torrentqueue, cmd, *args):
+def btspawn(torrentqueue, cmd, *args):
     ext = ''
     if is_frozen_exe:
         ext = '.exe'
-    path = os.path.join(app_root,cmd+ext)
+    path = os.path.join(app_root, cmd+ext)
     if not os.access(path, os.F_OK):
         if os.access(path+'.py', os.F_OK):
             path = path+'.py'
     args = [path] + list(args) # $0
+    spawn(torrentqueue, *args)
+
+def spawn(torrentqueue, *args):
     if os.name == 'nt':
         # do proper argument quoting since exec/spawn on Windows doesn't
-        args = ['"%s"'%a.replace('"', '\"') for a in args]
+        bargs = args
+        args = []
+        for a in bargs:
+            if not a.startswith("/"):
+                a.replace('"', '\"')
+                a = '"%s"' % a 
+            args.append(a)
+        
         argstr = ' '.join(args[1:])
         # use ShellExecute instead of spawn*() because we don't want
-        # handles (like the controlsocket) to be duplicated        
+        # handles (like the controlsocket) to be duplicated
         win32api.ShellExecute(0, "open", args[0], argstr, None, 1) # 1 == SW_SHOW
     else:
-        if os.access(path, os.X_OK):
+        if os.access(args[0], os.X_OK):
             forkback = os.fork()
             if forkback == 0:
                 if torrentqueue is not None:
                     #BUG: should we do this?
                     #torrentqueue.set_done()
-                    torrentqueue.wrapped.controlsocket.close_socket()
-                os.execl(path, *args)
+                    torrentqueue.wrapped.ipc.stop()
+                os.execl(args[0], *args)
         else:
             #BUG: what should we do here?
             pass
-        
 
 def _gettext_install(domain, localedir=None, languages=None, unicode=False):
     # gettext on win32 does not use locale.getdefaultlocale() by default

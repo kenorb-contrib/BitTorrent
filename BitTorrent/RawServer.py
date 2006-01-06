@@ -59,7 +59,7 @@ class Handler(object):
     
 class SingleSocket(object):
 
-    def __init__(self, raw_server, sock, handler, context, ip=None):
+    def __init__(self, raw_server, sock, handler, context, addr=None):
         self.raw_server = raw_server
         self.socket = sock
         self.handler = handler
@@ -68,21 +68,37 @@ class SingleSocket(object):
         self.fileno = sock.fileno()
         self.connected = False
         self.context = context
+        self.ip = None
         self.port = None
 
-        if ip is not None:
-            self.ip = ip
+
+        if isinstance(addr, basestring):
+            # UNIX socket, not really ip
+            self.ip = addr
         else:
+            peername = (None, None)
             try:
                 peername = self.socket.getpeername()
-            except socket.error:
-                self.ip = 'unknown'
-            else:
-                try:
-                    self.ip, self.port = peername
-                except:
-                    assert isinstance(peername, basestring)
-                    self.ip = peername # UNIX socket, not really ip
+            except socket.error, e:
+                # UDP raises (107, 'Transport endpoint is not connected')
+                # but so can a TCP socket we just got from start_connection,
+                # in which case addr is set and we use it later.
+                if (e[0] == 107) and (addr == None):
+                    # lies.
+                    # the peer endpoint should be gathered from the
+                    # tuple passed to data_came_in
+                    try:
+                        peername = self.socket.getsockname()
+                    except socket.error, e:
+                        pass
+
+            # this is awesome!
+            # max prefers a value over None, so this is a common case:
+            # max(('ip', None), ('ip', 1234)) => ('ip', 1234)
+            # or the default case:
+            # max(('ip', None), None) => ('ip', None)
+            self.ip, self.port = max(peername, addr)
+            
                     
     def close(self):
         sock = self.socket
@@ -278,13 +294,20 @@ class RawServer(object):
             sock.close()
             raise socket.error(str(e))
         self.poll.register(sock, POLLIN)
-        s = SingleSocket(self, sock, handler, context, dns[0])
+        s = SingleSocket(self, sock, handler, context, dns)
         self.single_sockets[sock.fileno()] = s
         return s
-    
+
+    def _add_pending_connection(self, addr):
+        pass
+
+    def _remove_pending_connection(self, addr):
+        pass
+
     def async_start_connection(self, dns, handler=None, context=None, do_bind=True):
         self.to_start.insert(0, (dns, handler, context, do_bind))
         self._start_connection()
+        return True
     
     def _start_connection(self):
         dns, handler, context, do_bind = self.to_start.pop()
@@ -295,10 +318,10 @@ class RawServer(object):
         else:
             handler.connection_started(s)
         
-    def wrap_socket(self, sock, handler, context=None, ip=None):
+    def wrap_socket(self, sock, handler, context=None, ip=None, port=None):
         sock.setblocking(0)
         self.poll.register(sock, POLLIN)
-        s = SingleSocket(self, sock, handler, context, ip)
+        s = SingleSocket(self, sock, handler, context, (ip, port))
         self.single_sockets[sock.fileno()] = s
         return s
 
@@ -331,7 +354,7 @@ class RawServer(object):
                         continue
                     try:
                         newsock.setblocking(0)
-                        nss = SingleSocket(self, newsock, handler, context)
+                        nss = SingleSocket(self, newsock, handler, context, addr)
                         self.single_sockets[newsock.fileno()] = nss
                         self.poll.register(newsock, POLLIN)
                         self._make_wrapped_call(handler. \

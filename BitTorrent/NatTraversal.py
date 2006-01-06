@@ -24,7 +24,7 @@ import Queue
 import urlparse
 import random
 
-from traceback import print_stack, print_tb
+from traceback import print_stack, print_tb, print_exc
 
 def UnsupportedWarning(logfunc, s):
     logfunc(WARNING, "NAT Traversal warning " + ("(%s: %s)."  % (os_version, s)))
@@ -37,7 +37,19 @@ class UPnPException(Exception):
 
 def get_host_ip():
     # this could be improved by making a connection and checking the host
-    return socket.gethostbyname(socket.gethostname())
+    ip = None
+    
+    try:
+        ip = socket.gethostbyname(socket.gethostname())
+    except socket.error, e:
+        # mac sometimes throws an error, so they can just wait.
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.connect(("bittorrent.com", 80))
+        endpoint = s.getsockname()
+        ip = endpoint[0]
+
+    return ip
+        
 
 class InfoFileHandle(object):
     def __init__(self, logfunc):
@@ -66,8 +78,10 @@ class NATEventLoop(threading.Thread):
                 # sys can be none during interpritter shutdown
                 if sys is None:
                     break
-                # this logs the traceback to the application log
-                print_tb(sys.exc_info()[2], file = self.log)
+                # this prints the whole thing.
+                print_exc(file = self.log)                
+                # this prints just the traceback to the application log
+                #print_tb(sys.exc_info()[2], file = self.log)
                 # this just prints the exception
                 #self.logfunc(INFO, str(sys.exc_info()[0]) +  ": " + str(sys.exc_info()[1].__str__()))
 
@@ -149,7 +163,7 @@ class NatTraverser(object):
 
         self.add_task(self._flush_queue)
 
-        return mapping.d        
+        return mapping.d
     
     def unregister_port(self, external_port, protocol):
         self.unregister_requests.append((external_port, protocol))
@@ -173,8 +187,14 @@ class NatTraverser(object):
 class NATBase(object):
     def __init__(self, logfunc):
         self.logfunc = logfunc
+        self.log = InfoFileHandle(logfunc)
     
     def safe_register_port(self, new_mapping):
+
+        # check for the host now, while we're in the thread and before
+        # we need to read it.
+        new_mapping.populate_host()
+        
         self.logfunc(INFO, "You asked for: " + str(new_mapping))
         new_mapping.original_external_port = new_mapping.external_port
         mappings = self._list_ports()
@@ -226,10 +246,7 @@ class UPnPPortMapping(object):
         self.internal_port = int(internal_port)
         self.protocol = protocol
 
-        if host:
-            self.host = host
-        else:
-            self.host = get_host_ip()
+        self.host = host
 
         if service_name:
             self.service_name = service_name
@@ -238,6 +255,10 @@ class UPnPPortMapping(object):
 
         self.d = defer.Deferred()
 
+    def populate_host(self):
+        if self.host == None:
+            self.host = get_host_ip()
+        
     def __str__(self):
         return "%s %s external:%d %s:%d" % (self.service_name, self.protocol,
                                             self.external_port,
@@ -277,7 +298,7 @@ def SOAPErrorToString(response):
     return str(response)
 
 _urlopener = None
-def urlopen_custom(req):
+def urlopen_custom(req, rawserver):
     global _urlopener
 
     if not _urlopener:
@@ -341,8 +362,13 @@ def urlopen_custom(req):
 
         header_str += "\r\n"
         data = header_str + data
+
+        try:
+            rawserver._add_pending_connection(host)
+            s.connect((host, port))
+        finally:
+            rawserver._remove_pending_connection(host)
             
-        s.connect((host, port))
         s.send(data)
         r = HTTPResponse(s, method=method)
         r.begin()
@@ -484,7 +510,7 @@ class ManualUPnP(NATBase, Handler):
         request = self._build_add_mapping_request(mapping)
 
         try:
-            response = urlopen_custom(request)
+            response = urlopen_custom(request, self.rawserver)
             response = VerifySOAPResponse(request, response)
             mapping.d.callback(mapping.external_port)
             self.logfunc(INFO, "registered: " + str(mapping))
@@ -497,7 +523,7 @@ class ManualUPnP(NATBase, Handler):
         request = self._build_delete_mapping_request(external_port, protocol)
 
         try:
-            response = urlopen_custom(request)
+            response = urlopen_custom(request, self.rawserver)
             response = VerifySOAPResponse(request, response)
             self.logfunc(INFO, ("unregisterd: %s, %s" % (external_port, protocol)))
         except Exception, e: #HTTPError, URLError, BadStatusLine, you name it.
@@ -530,7 +556,7 @@ class ManualUPnP(NATBase, Handler):
 
         URLBase = location
 
-        data = urlopen_custom(location).read()
+        data = urlopen_custom(location, self.rawserver).read()
         bs = BeautifulSupe(data)
 
         URLBase_tag = bs.first('URLBase')
@@ -566,7 +592,7 @@ class ManualUPnP(NATBase, Handler):
             request = self._build_get_mapping_request(index)
 
             try:
-                response = urlopen_custom(request)
+                response = urlopen_custom(request, self.rawserver)
                 soap_response = VerifySOAPResponse(request, response)
                 results = SOAPResponseToDict(soap_response)
                 mapping = UPnPPortMapping(results['NewExternalPort'], results['NewInternalPort'],
@@ -584,7 +610,7 @@ class WindowsUPnPException(UPnPException):
     def __init__(self, msg, *args):
         msg += " (%s)" % os_version
         a = [msg] + list(args)
-        Exception.__init__(self, *a)
+        UPnPException.__init__(self, *a)
 
 class WindowsUPnP(NATBase):
     def __init__(self, traverser):
@@ -666,10 +692,18 @@ class WindowsUPnP(NATBase):
     def _list_ports(self):
         mappings = []
 
-        for mp in self.port_collection:
-            mapping = UPnPPortMapping(mp.ExternalPort, mp.InternalPort, mp.Protocol,
-                                      mp.InternalClient, mp.Description)
-            mappings.append(mapping)
+        try:
+            for mp in self.port_collection:
+                mapping = UPnPPortMapping(mp.ExternalPort, mp.InternalPort, mp.Protocol,
+                                          mp.InternalClient, mp.Description)
+                mappings.append(mapping)
+        except pywintypes.com_error, e:
+            # it's the "for mp in self.port_collection" iter that can throw
+            # an exception.
+            # com_error: (-2147220976, 'The owner of the PerUser subscription is
+            #                           not logged on to the system specified',
+            #             None, None)
+            pass
 
         return mappings
             

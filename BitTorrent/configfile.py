@@ -26,7 +26,7 @@ from BitTorrent import parseargs
 from BitTorrent import app_name, version, ERROR, BTFailure
 from BitTorrent.platform import get_config_dir, locale_root, is_frozen_exe
 from BitTorrent.defaultargs import MYTRUE
-from BitTorrent.zurllib import bind_tracker_connection
+from BitTorrent.zurllib import bind_tracker_connection, set_zurllib_rawserver
 
 MAIN_CONFIG_FILE = 'ui_config'
 TORRENT_CONFIG_FILE = 'torrent_config'

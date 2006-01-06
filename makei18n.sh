@@ -12,6 +12,7 @@ ls bittorrent.py maketorrent.py >> $APP_NAME.lis
 ls BitTorrent/GUI.py           >> $APP_NAME.lis
 ls BitTorrent/TorrentQueue.py  >> $APP_NAME.lis
 ls BitTorrent/NewVersion.py    >> $APP_NAME.lis
+ls BitTorrent/StatusLight.py   >> $APP_NAME.lis
 ls BitTorrent/defaultargs.py   >> $APP_NAME.lis
 ls *py                         >> $APP_NAME.lis
 # find everything else

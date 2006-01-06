@@ -99,9 +99,9 @@ class KRPC:
         self.mtid = 0
         self.pinging = False
         
-    def sendErr(self, addr, tid, msg):
+    def sendErr(self, addr, tid, code, msg):
         ## send error
-        out = bencode({TID:tid, TYP:ERR, ERR :msg})
+        out = bencode({TID:tid, TYP:ERR, ERR :(code, msg)})
         olen = len(out)
         self.rltransport.sendto(out, 0, addr)
         return olen                 
@@ -129,12 +129,12 @@ class KRPC:
                     except KRPCFailSilently:
                         pass
                     except KRPCServerError, e:
-                        olen = self.sendErr(addr, msg[TID], "Server Error: %s" % e.args[0])
+                        olen = self.sendErr(addr, msg[TID], 202, "Server Error: %s" % e.args[0])
                     except KRPCProtocolError, e:
-                        olen = self.sendErr(addr, msg[TID], "Protocol Error: %s" % e.args[0])                        
+                        olen = self.sendErr(addr, msg[TID], 204, "Protocol Error: %s" % e.args[0])                        
                     except Exception, e:
                         print_exc(20)
-                        olen = self.sendErr(addr, msg[TID], "Server Error")
+                        olen = self.sendErr(addr, msg[TID], 202, "Server Error")
                     else:
                         if ret:
                             #	make response
@@ -150,9 +150,7 @@ class KRPC:
                         #print "don't know about method %s" % msg[REQ]
                         pass
                     # unknown method
-                    out = bencode({TID:msg[TID], TYP:ERR, ERR : KRPC_ERROR_METHOD_UNKNOWN})
-                    olen = len(out)
-                    self.rltransport.sendto(out, 0, addr)
+                    olen = self.sendErr(addr, msg[TID], *KERR_METHOD_UNKNONW)
                 if self.noisy:
                     try:
                         ndist = 10 * log10(2**160 * 1.0 / distance(self.factory.node.id, msg[ARG]['id']))
@@ -210,11 +208,10 @@ class KRPC:
                     # day late and dollar short
                     pass
             else:
-                print "unknown message type " + `msg`
                 # unknown message type
                 df = self.tids[msg[TID]]
                 # 	callback
-                df.errback(KRPC_ERROR_RECEIVED_UNKNOWN)
+                df.errback((KRPC_ERROR_RECEIVED_UNKNOWN, _("received unknown message type")))
                 del(self.tids[msg[TID]])
                 
     def sendRequest(self, method, args):
@@ -233,11 +230,11 @@ class KRPC:
         if self.tids.has_key(id):
             df = self.tids[id]
             del(self.tids[id])
-            df.errback(KRPC_ERROR_TIMEOUT)
+            df.errback((KRPC_ERROR_TIMEOUT, _("timeout")))
 
     def _send(self, s, d):
         try:
             self.transport.sendto(s, 0, self.addr)
         except socket.error:
-            d.errback(KRPC_SOCKET_ERROR)
+            d.errback((KRPC_SOCKET_ERROR, _("socket error")))
             
