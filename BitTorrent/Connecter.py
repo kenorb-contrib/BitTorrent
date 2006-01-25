@@ -20,11 +20,10 @@ from BitTorrent.bitfield import Bitfield
 from BitTorrent.obsoletepythonsupport import *
 
 def toint(s):
-    return int(b2a_hex(s), 16)
+    return unpack("!i", s)[0]
 
 def tobinary(i):
-    return (chr(i >> 24) + chr((i >> 16) & 0xFF) +
-        chr((i >> 8) & 0xFF) + chr(i & 0xFF))
+    return pack("!i", i)
 
 CHOKE = chr(0)
 UNCHOKE = chr(1)
@@ -106,18 +105,16 @@ class Connection(object):
         self._send_message(PORT+pack('!H', port))
         
     def send_request(self, index, begin, length):
-        self._send_message(REQUEST + tobinary(index) +
-            tobinary(begin) + tobinary(length))
+        self._send_message(pack("!ciii", REQUEST, index, begin, length))
 
     def send_cancel(self, index, begin, length):
-        self._send_message(CANCEL + tobinary(index) +
-            tobinary(begin) + tobinary(length))
+        self._send_message(pack("!ciii", CANCEL,index, begin, length))
 
     def send_bitfield(self, bitfield):
         self._send_message(BITFIELD + bitfield)
 
     def send_have(self, index):
-        self._send_message(HAVE + tobinary(index))
+        self._send_message(pack("!ci", HAVE, index))
 
     def send_keepalive(self):
         self._send_message('')
@@ -130,8 +127,8 @@ class Connection(object):
             if s is None:
                 return 0
             index, begin, piece = s
-            self._partial_message = ''.join((tobinary(len(piece) + 9), PIECE,
-                                    tobinary(index), tobinary(begin), piece))
+            self._partial_message = pack("!icii%ss" % len(piece), len(piece) + 9, PIECE,
+                                    index, begin, piece)
         if bytes < len(self._partial_message):
             self.upload.update_rate(bytes)
             self.connection.write(buffer(self._partial_message, 0, bytes))
@@ -142,10 +139,10 @@ class Connection(object):
         self._partial_message = None
         if self.choke_sent != self.upload.choked:
             if self.upload.choked:
-                self._outqueue.append(tobinary(1) + CHOKE)
+                self._outqueue.append(pack("!ic", 1, CHOKE))
                 self.upload.sent_choke()
             else:
-                self._outqueue.append(tobinary(1) + UNCHOKE)
+                self._outqueue.append(pack("!ic", 1, UNCHOKE))
             self.choke_sent = self.upload.choked
         queue.extend(self._outqueue)
         self._outqueue = []
@@ -234,7 +231,7 @@ class Connection(object):
             if len(message) != 5:
                 self.close()
                 return
-            i = toint(message[1:])
+            i = unpack("!xi", message)[0]
             if i >= self.encoder.numpieces:
                 self.close()
                 return
@@ -250,31 +247,30 @@ class Connection(object):
             if len(message) != 13:
                 self.close()
                 return
-            i = toint(message[1:5])
+            i, a, b = unpack("!xiii", message)
             if i >= self.encoder.numpieces:
                 self.close()
                 return
-            self.upload.got_request(i, toint(message[5:9]),
-                toint(message[9:]))
+            self.upload.got_request(i, a, b)
         elif t == CANCEL:
             if len(message) != 13:
                 self.close()
                 return
-            i = toint(message[1:5])
+            i, a, b = unpack("!xiii", message)
             if i >= self.encoder.numpieces:
                 self.close()
                 return
-            self.upload.got_cancel(i, toint(message[5:9]),
-                toint(message[9:]))
+            self.upload.got_cancel(i, a, b)
         elif t == PIECE:
             if len(message) <= 9:
                 self.close()
                 return
-            i = toint(message[1:5])
+            n = len(message) - 9
+            i, a, b = unpack("!xii%ss" % n, message)
             if i >= self.encoder.numpieces:
                 self.close()
                 return
-            if self.download.got_piece(i, toint(message[5:9]), message[9:]):
+            if self.download.got_piece(i, a, b):
                 for co in self.encoder.complete_connections:
                     co.send_have(i)
         elif t == PORT:

@@ -139,15 +139,14 @@ factory = gtk.IconFactory()
 # ICON_SIZE_BUTTON        = 20x20
 # ICON_SIZE_LARGE_TOOLBAR = 24x24
 
-for n in 'broken finished info pause paused play queued running remove status-running status-starting status-pre-natted status-natted status-stopped status-broken'.split():
-    fn = os.path.join(image_root, ("%s.png"%n))
-
-    pixbuf = gtk.gdk.pixbuf_new_from_file(fn)
+for n in 'abort broken finished info pause paused play queued running remove status-running status-starting status-pre-natted status-natted status-stopped status-broken'.split():
+    fn = os.path.join(image_root, 'icons', 'default', ('%s.png'%n))
+    if os.access(fn, os.F_OK):
+        pixbuf = gtk.gdk.pixbuf_new_from_file(fn)
+        set = gtk.IconSet(pixbuf)
+        factory.add('bt-%s'%n, set)
+    # maybe we should load a default icon if none exists 
     
-    set = gtk.IconSet(pixbuf)
-
-    factory.add('bt-%s'%n, set)
-
 factory.add_default()
 
 def get_logo(size=32):

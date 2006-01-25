@@ -32,6 +32,7 @@ from BitTorrent.zurllib import urlopen
 from BitTorrent.bencode import bdecode
 from BitTorrent.ConvertedMetainfo import ConvertedMetainfo
 from BitTorrent.prefs import Preferences
+from BitTorrent.obsoletepythonsupport import import_curses
 from BitTorrent import configfile
 from BitTorrent import BTFailure
 from BitTorrent import version
@@ -39,7 +40,7 @@ from BitTorrent import GetTorrent
 
 
 try:
-    import curses
+    curses = import_curses()
     import curses.panel
     from curses.wrapper import wrapper as curses_wrapper
     from signal import signal, SIGWINCH

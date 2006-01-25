@@ -483,13 +483,20 @@ class _SingleTorrent(object):
 
     def shutdown(self):
         if self.closed:
-            return
+            return True
         try:
             self._close()
             self._save_fastresume()
             self._activity = (_("shut down"), 0)
+            return True
         except Exception, e:
             self.got_exception(e)
+            return False
+        except:
+            data = StringIO()
+            print_exc(file=data)
+            self._error(WARNING, 'Unable to shutdown:\n'+data.getvalue())
+        return False
 
     def internal_shutdown(self, level, text):
         # This is only called when announce fails with no peers,

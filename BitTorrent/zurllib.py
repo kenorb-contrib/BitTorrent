@@ -49,8 +49,8 @@ http_bindaddr = None
 # and the connections are managed inside rawserver
 class PreRawServerBuffer(object):
     def __init__(self):
-        self.pending_connections = {}
-        self.pending_connections_lock = threading.Lock()
+        self.pending_sockets = {}
+        self.pending_sockets_lock = threading.Lock()
 
     def _add_pending_connection(self, addr):
         # the XP connection rate limiting is unique at the IP level
@@ -82,10 +82,10 @@ def bind_tracker_connection(bindaddr):
 
 def set_zurllib_rawserver(new_rawserver):
     global rawserver
-    for addr in rawserver.pending_connections:
+    for addr in rawserver.pending_sockets:
         new_rawserver._add_pending_connections(addr)
         rawserver._remove_pending_connection(addr)
-    assert len(rawserver.pending_connections) == 0
+    assert len(rawserver.pending_sockets) == 0
     rawserver = new_rawserver
 
 unsafe_threads = []

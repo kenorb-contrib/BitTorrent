@@ -25,7 +25,9 @@ nsis_language_names = {
     'fr'    :'French',
     'el'    :'Greek',
     'hu'    :'Hungarian',
+    'he_IL' :'Hebrew',
     'it'    :'Italian',
+    'is'    :'Icelandic',
     'ja'    :'Japanese',
     'ko'    :'Korean',
     'nb_NO' :'Norwegian',
@@ -57,7 +59,7 @@ lang_macros = ""
 for l in languages:
     lang = nsis_language_names[l]
     nlf = os.path.join(NSIS_DIR, "Contrib\\Language files\\%s.nlf" % lang)
-    nsh = os.path.join(NSIS_DIR, "Contrib\Modern UI\Language files\\%s.nsh" % lang)
+    nsh = os.path.join(NSIS_DIR, "Contrib\\Modern UI\\Language files\\%s.nsh" % lang)
     if os.path.exists(nlf) and os.path.exists(nsh):
         lang_macros += ('  !insertmacro MUI_LANGUAGE "%s"\r\n' % lang)
         found_langs[l] = lang

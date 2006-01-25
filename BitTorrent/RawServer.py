@@ -59,8 +59,8 @@ class Handler(object):
     
 class SingleSocket(object):
 
-    def __init__(self, raw_server, sock, handler, context, addr=None):
-        self.raw_server = raw_server
+    def __init__(self, rawserver, sock, handler, context, addr=None):
+        self.rawserver = rawserver
         self.socket = sock
         self.handler = handler
         self.buffer = []
@@ -104,10 +104,10 @@ class SingleSocket(object):
         sock = self.socket
         self.socket = None
         self.buffer = []
-        del self.raw_server.single_sockets[self.fileno]
-        self.raw_server.poll.unregister(sock)
+        del self.rawserver.single_sockets[self.fileno]
+        self.rawserver.poll.unregister(sock)
         self.handler = None
-        if self.raw_server.config['close_with_rst']:
+        if self.rawserver.config['close_with_rst']:
             sock.setsockopt(socket.SOL_SOCKET, socket.SO_LINGER, NOLINGER)
         sock.close()
 
@@ -136,12 +136,12 @@ class SingleSocket(object):
             except socket.error, e:
                 code, msg = e
                 if code != EWOULDBLOCK:
-                    self.raw_server.dead_from_write.append(self)
+                    self.rawserver.dead_from_write.append(self)
                     return
         if self.buffer == []:
-            self.raw_server.poll.register(self.socket, POLLIN)
+            self.rawserver.poll.register(self.socket, POLLIN)
         else:
-            self.raw_server.poll.register(self.socket, POLLIN | POLLOUT)
+            self.rawserver.poll.register(self.socket, POLLIN | POLLOUT)
 
 
 def default_error_handler(level, message):

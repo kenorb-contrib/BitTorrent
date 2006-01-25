@@ -58,6 +58,7 @@ ui_options = [
     'open_from'             ,
     'ip'                    ,
     'start_torrent_behavior',
+    'upnp'                  ,
     ]
 
 if os.name == 'nt':
@@ -1014,8 +1015,10 @@ class SettingsWindow(object):
         self.notebook.append_page(self.network_box, gtk.Label(_("Network")))
 
         self.port_range_frame = gtk.Frame(_("Look for available port:"))        
+        self.port_range_box = gtk.VBox(spacing=SPACING)
+        self.port_range_box.set_border_width(SPACING)
+        
         self.port_range = gtk.HBox()
-        self.port_range.set_border_width(SPACING)
         self.port_range.pack_start(gtk.Label(_("starting at port: ")),
                                    expand=False, fill=False)
         self.minport_field = PortValidator('minport', self.config, self.setfunc)
@@ -1024,10 +1027,16 @@ class SettingsWindow(object):
         self.minport_field.settingswindow = self
         self.port_range.pack_start(gtk.Label(' (1024-65535)'),
                                    expand=False, fill=False)
+        self.port_range_box.pack_start(self.port_range,
+                                       expand=False, fill=False)
 
-        self.port_range_frame.add(self.port_range)
+        self.upnp = CheckButton(_("Enable automatic port mapping")+' (_UPnP)',
+                                self, 'upnp', self.config['upnp'], None)
+        self.port_range_box.pack_start(self.upnp,
+                                   expand=False, fill=False)
+
+        self.port_range_frame.add(self.port_range_box)
         self.network_box.pack_start(self.port_range_frame, expand=False, fill=False)
-
 
         self.ip_frame = gtk.Frame(_("IP to report to the tracker:"))
         self.ip_box = gtk.VBox()
@@ -1759,7 +1768,7 @@ class TorrentBox(gtk.EventBox):
             self.main.tooltips.set_tip(self.cancelbutton,
                                        _("Remove torrent"))
         else:
-            self.cancelimage.set_from_stock(gtk.STOCK_CANCEL, gtk.ICON_SIZE_BUTTON)
+            self.cancelimage.set_from_stock('bt-abort', gtk.ICON_SIZE_BUTTON)
             self.main.tooltips.set_tip(self.cancelbutton,
                                        _("Abort torrent"))
             
@@ -3257,6 +3266,8 @@ class DownloadInfoFrame(object):
         for infohash, t in self.running_torrents.iteritems():
             self.torrentqueue.request_status(infohash, t.widget.peerlistwindow
                              is not None, t.widget.filelistwindow is not None)
+        if not len(self.running_torrents):
+            self.status_light.send_message('stop')
         return True
 
     def enter_url_to_open(self, widget): 
@@ -3522,6 +3533,9 @@ class DownloadInfoFrame(object):
 
     def errors_closed(self):
         self.errordialog = None
+
+    def open_log(self):
+        self.open_window('log')
 
     def stop_queue(self):
         self.set_config('pause', True)

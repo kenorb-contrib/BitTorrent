@@ -21,6 +21,10 @@ from cStringIO import StringIO
 from traceback import print_exc, print_stack
 
 from BitTorrent import BTFailure, WARNING, CRITICAL, FAQ_URL
+
+from twisted.python import threadable
+# needed for twisted 1.3, otherwise the thread safe functions are not thread safe
+threadable.init(1)
     
 noSignals = True
 
@@ -48,12 +52,13 @@ else:
         except:
             pass
 
-#the default reactor is select-based, and will be install()ed if another has not    
+#the default reactor is select-based, and will be install()ed if another has not
 from twisted.internet import reactor, task, error
 
-import twisted.copyright
-if int(twisted.copyright.version.split('.')[0]) < 2:
-    raise ImportError(_("RawServer_twisted requires twisted 2.0.0 or greater"))
+# as far as I know, we work with twisted 1.3 and >= 2.0
+#import twisted.copyright
+#if twisted.copyright.version.split('.') < 2:
+#    raise ImportError(_("RawServer_twisted requires twisted 2.0.0 or greater"))
 
 from twisted.internet.protocol import DatagramProtocol, Protocol, Factory, ClientFactory
 from twisted.protocols.policies import TimeoutMixin
@@ -569,7 +574,7 @@ class RawServer(RawServerMixin):
         if s.reuse == False:
             UnimplementedWarning("You asked for reuse to be off when binding. Sorry, I can't do that.")
                          
-        try:        
+        try:     
             listening_port = reactor.listenMulticast(s.port, s.protocol, interface=s.bind)
         except error.CannotListenError, e:
             raise e.socketError       
@@ -707,9 +712,6 @@ class RawServer(RawServerMixin):
         return True            
             
             
-    def wrap_socket(self, sock, handler, context=None, ip=None):
-        raise Unimplemented('wrap_socket')
-
     def listen_forever(self):
         self.ident = thread.get_ident()
         if self.listened:
@@ -717,7 +719,7 @@ class RawServer(RawServerMixin):
         self.listened = 1
         
         l = task.LoopingCall(self.stop)
-        l.start(1, now = False)
+        l.start(1)#, now = False)
         
         if noSignals:
             reactor.run(installSignalHandlers=False)

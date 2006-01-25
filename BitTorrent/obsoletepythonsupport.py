@@ -31,3 +31,12 @@ if sys.version_info < (2, 3):
         return r
 
 del sys
+
+def import_curses():
+    import curses
+    if not hasattr(curses, 'use_default_colors'):
+        def use_default_colors():
+            return
+        curses.use_default_colors = use_default_colors
+    return curses
+

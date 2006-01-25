@@ -88,19 +88,24 @@ class MultiRateLimiter(object):
 
     def increase_offset(self, bytes):
         self.offset_amount += bytes
-    
+
     def try_send(self, check_time = False):
         t = bttime()
         cur = self.last.next_upload
 
-        self.offset_amount -= (t - self.lasttime) * self.upload_rate
-        self.offset_amount = max(self.offset_amount, -1 * self.upload_rate)
+        if self.upload_rate > 0:
+            self.offset_amount -= (t - self.lasttime) * self.upload_rate
+            self.offset_amount = max(self.offset_amount, -1 * self.upload_rate)
+        else:
+            self.offset_amount = 0
+
         self.lasttime = t
 
         for ctx in self.ctxs:
             if ctx.rate == 0:
                 ctx.offset_amount = 0
-            if ctx.lasttime != t:
+                ctx.lasttime = t                
+            elif ctx.lasttime != t:
                 ctx.offset_amount -=(t - ctx.lasttime) * ctx.rate
                 ctx.lasttime = t
                 if ctx.check_time:
@@ -108,7 +113,7 @@ class MultiRateLimiter(object):
 
         min_offset = reduce(minctx, self.ctxs)
         ctx = cur.encoder.context.rlgroup
-        while (self.offset_amount <= 0 and min_offset.offset_amount <= 0) or self.upload_rate == 0:
+        while self.offset_amount <= 0 and min_offset.offset_amount <= 0:
             if ctx.offset_amount <= 0:
                 try:
                     bytes = cur.send_partial(self.unitsize)
@@ -123,8 +128,9 @@ class MultiRateLimiter(object):
                     self.offset_amount += bytes
                 if ctx.rate > 0:
                     ctx.offset_amount += bytes
-                ctx.count += bytes
 
+                ctx.count += bytes
+                
                 if bytes == 0 or not cur.connection.is_flushed():
                     if self.last is cur:
                         self.last = None
@@ -156,9 +162,9 @@ class MultiRateLimiter(object):
         else:
             myDelay = minCtxDelay = 0
             if self.upload_rate > 0:
-                myDelay = self.offset_amount / self.upload_rate
+                myDelay = 1.0 * self.offset_amount / self.upload_rate
             if min_offset.rate > 0:
-                minCtxDelay = min_offset.offset_amount / min_offset.rate
+                minCtxDelay = 1.0 * min_offset.offset_amount / min_offset.rate
             delay = max(myDelay, minCtxDelay)
             self.sched(self.try_send, delay)
 

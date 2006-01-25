@@ -91,6 +91,12 @@ def encode_bencached(x,r):
 def encode_int(x, r):
     r.extend(('i', str(x), 'e'))
 
+def encode_bool(x, r):
+    if x:
+        encode_int(1, r)
+    else:
+        encode_int(0, r)
+        
 def encode_string(x, r):
     r.extend((str(len(x)), ':', x))
 
@@ -120,7 +126,7 @@ encode_func[DictType] = encode_dict
 
 try:
     from types import BooleanType
-    encode_func[BooleanType] = encode_int
+    encode_func[BooleanType] = encode_bool
 except ImportError:
     pass
 

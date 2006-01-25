@@ -25,11 +25,18 @@ class InitialConnectionHandler(Handler):
     def __init__(self, parent, id):
         self.parent = parent
         self.id = id
+        self.accept = True
         
     def connection_started(self, s):
+
+        del self.parent.pending_connections[(s.ip, s.port)]
+
+        # prevents conenctions we no longer care about from being accepted
+        if not self.accept:
+            return
+
         con = Connection(self.parent, s, self.id, True)
         self.parent.connections[s] = con
-        del self.parent.pending_connections[(s.ip, s.port)]
             
         # it might not be obvious why this is here.
         # if the pending queue filled and put the remaining connections
@@ -38,19 +45,25 @@ class InitialConnectionHandler(Handler):
         
     def connection_failed(self, addr, exception):
         del self.parent.pending_connections[addr]
+
+        if not self.accept:
+            # we don't need to rotate the spares with replace_connection()
+            # if the Encoder object has stopped all connections
+            return
+
         self.parent.replace_connection()
 
 
 class Encoder(object):
 
     def __init__(self, make_upload, downloader, choker, numpieces, ratelimiter,
-               raw_server, config, my_id, schedulefunc, download_id, context, addcontactfunc, reported_port):
+                 rawserver, config, my_id, schedulefunc, download_id, context, addcontactfunc, reported_port):
         self.make_upload = make_upload
         self.downloader = downloader
         self.choker = choker
         self.numpieces = numpieces
         self.ratelimiter = ratelimiter
-        self.raw_server = raw_server
+        self.rawserver = rawserver
         self.my_id = my_id
         self.config = config
         self.schedulefunc = schedulefunc
@@ -115,8 +128,9 @@ class Encoder(object):
             #traceback.print_stack()
             return True
 
-        self.pending_connections[dns] = 1
-        started = self.raw_server.async_start_connection(dns, InitialConnectionHandler(self, id), self.context)
+        handler = InitialConnectionHandler(self, id)
+        self.pending_connections[dns] = handler
+        started = self.rawserver.async_start_connection(dns, handler, self.context)
 
         if not started:
             del self.pending_connections[dns]
@@ -152,6 +166,10 @@ class Encoder(object):
                 break
 
     def close_connections(self):
+        # drop connections which could be made after we're not interested
+        for c in self.pending_connections.itervalues():
+            c.accept = False
+            
         for c in self.connections.itervalues():
             if not c.closed:
                 c.connection.close()

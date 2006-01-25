@@ -32,7 +32,7 @@ from BitTorrent import version
 from BitTorrent import BTFailure
 
 try:
-    import curses
+    curses = import_curses()
     import curses.panel
     from curses.wrapper import wrapper as curses_wrapper
     from signal import signal, SIGWINCH

@@ -23,7 +23,8 @@ if os.name == 'nt':
     import _winreg
     import win32api
     from win32com.shell import shellcon, shell
-    import win32com.client    
+    import win32com.client
+    import ctypes
 elif os.name == 'posix' and os.uname()[0] == 'Darwin':
     has_pyobjc = False
     try:
@@ -45,8 +46,26 @@ is_frozen_exe = (os.name == 'nt') and hasattr(sys, 'frozen') and (sys.frozen == 
 os_name = os.name
 os_version = None
 if os_name == 'nt':
-    # win_version_num is: platform, major, minor, build, service_pack
-    win_version_num = (0, 0, 0, 0, 0)
+
+    class OSVERSIONINFOEX(ctypes.Structure):
+        _fields_ = [("dwOSVersionInfoSize", ctypes.c_ulong),
+                    ("dwMajorVersion", ctypes.c_ulong),
+                    ("dwMinorVersion", ctypes.c_ulong),
+                    ("dwBuildNumber", ctypes.c_ulong),
+                    ("dwPlatformId", ctypes.c_ulong),
+                    ("szCSDVersion", ctypes.c_char * 128),
+                    ("wServicePackMajor", ctypes.c_ushort),
+                    ("wServicePackMinor", ctypes.c_ushort),
+                    ("wSuiteMask", ctypes.c_ushort),
+                    ("wProductType", ctypes.c_byte),
+                    ("wReserved", ctypes.c_byte),
+                    ]
+
+    o = OSVERSIONINFOEX()
+    o.dwOSVersionInfoSize = 156 # sizeof(OSVERSIONINFOEX)
+
+    ctypes.windll.kernel32.GetVersionExA(ctypes.byref(o))
+    
     wh = {(1, 4,  0): "95",
           (1, 4, 10): "98",
           (1, 4, 90): "ME",
@@ -55,26 +74,19 @@ if os_name == 'nt':
           (2, 5,  1): "XP"  ,
           (2, 5,  2): "2003",
           }
-    wv = sys.getwindowsversion()
 
-    sp = 0
-    if wv[4].startswith("Service Pack"):
-        # extract 2 from "Service Pack 2"
-        sp = int(wv[4].split()[-1])
-    else:
-        try:
-            # extract 2 from " C " 
-            l = wv[4].strip()
-            sp = ord(l) - ord('A')
-        except:
-            pass
-        
-    win_version_num = (wv[3], wv[0], wv[1], wv[2], sp)
-    
-    wk = (wv[3], wv[0], wv[1])
+    win_version_num = (o.dwPlatformId, o.dwMajorVersion, o.dwMinorVersion,
+                       o.wServicePackMajor, o.wServicePackMinor, o.dwBuildNumber)
+
+    wk = (o.dwPlatformId, o.dwMajorVersion, o.dwMinorVersion)
     if wh.has_key(wk):
         os_version = wh[wk]
-    del wh, wv, wk
+    else:
+        os_version = wh[max(wh.keys())]
+        sys.stderr.write("Couldn't identify windows version: %s, "
+                         "assuming '%s'\n" % (str(wk), os_version))
+    del wh, wk
+
 elif os_name == 'posix':
     os_version = os.uname()[0]
 

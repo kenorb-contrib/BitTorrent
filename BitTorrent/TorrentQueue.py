@@ -435,7 +435,11 @@ class TorrentQueue(Feedback):
             t.state = KNOWN
             return True
         assert t.state == RUNNING
-        t.dl.shutdown()
+        shutdown_succeded = t.dl.shutdown()
+        if not shutdown_succeded:
+            self.run_ui_task(self.ui.open_log)
+            self.error(t.metainfo, ERROR, "Unable to stop torrent.  Please send this application log to bugs@bittorrent.com .")
+            return False
         if infohash == self.starting_torrent:
             self.starting_torrent = None
         try:

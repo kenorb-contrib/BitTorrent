@@ -373,7 +373,10 @@ Function ${UN}MagicUninstall
   ;; disassociate our missing Application manually, windows takes care of the rest
   DeleteRegKey HKCR "Applications\${EXENAME}.exe"
   DeleteRegKey HKLM "Software\Classes\Applications\${EXENAME}.exe"
-  
+  ; just in case
+  DeleteRegKey HKCR "Applications\btdownloadgui.exe"
+  DeleteRegKey HKLM "Software\Classes\Applications\btdownloadgui.exe"
+
   ;; be nice and put back what we removed
   ReadRegStr $R1 HKCR "bittorrent\shell\open\command" "backup"
   StrCmp $R1 "" delete restore
@@ -548,6 +551,14 @@ Section "Install" SecInstall
   ; after upgrading.
   DeleteRegKey HKCR "torrent_auto_file"
   DeleteRegValue HKCU "Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.torrent\" "ProgId"
+
+  ; this guards against a reinstallation to a different directory  (like d:\...) causing Invalid Menu Handle
+  DeleteRegKey HKCR "Applications\btdownloadgui.exe"
+  DeleteRegKey HKCR "Applications\bittorrent.exe"
+  DeleteRegKey HKCR "Applications\${EXENAME}"
+  DeleteRegKey HKLM "Software\Classes\Applications\btdownloadgui.exe"
+  DeleteRegKey HKLM "Software\Classes\Applications\bittorrent.exe"
+  DeleteRegKey HKLM "Software\Classes\Applications\${EXENAME}"
   
   ;; make us the default handler for BT files
   WriteRegStr HKCR .torrent "" bittorrent
@@ -559,7 +570,9 @@ Section "Install" SecInstall
   ; this prevents user-preference from generating "Invalid Menu Handle" by looking for an app
   ; that no longer exists, and instead points it at us.
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.torrent\" Application "${EXENAME}"
-
+  WriteRegStr HKCR "Applications\${EXENAME}\shell" "" open
+  WriteRegStr HKCR "Applications\${EXENAME}\shell\open\command" "" `"$INSTDIR\${EXENAME}" --responsefile "%1"`
+  
   ;; Add a mime type
   WriteRegStr HKCR "MIME\Database\Content Type\application/x-bittorrent" Extension .torrent
 

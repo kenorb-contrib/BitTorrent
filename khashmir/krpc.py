@@ -150,7 +150,7 @@ class KRPC:
                         #print "don't know about method %s" % msg[REQ]
                         pass
                     # unknown method
-                    olen = self.sendErr(addr, msg[TID], *KERR_METHOD_UNKNONW)
+                    olen = self.sendErr(addr, msg[TID], *KERR_METHOD_UNKNOWN)
                 if self.noisy:
                     try:
                         ndist = 10 * log10(2**160 * 1.0 / distance(self.factory.node.id, msg[ARG]['id']))

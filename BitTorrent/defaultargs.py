@@ -38,7 +38,7 @@ MIN_INCOMPLETE = 100
 if os.name == 'nt':
     from BitTorrent.platform import win_version_num
     # starting in XP SP2 the incomplete outgoing connection limit was set to 10
-    if win_version_num >= (2, 5, 1, 2600, 2):
+    if win_version_num >= (2, 5, 1, 2, 0):
         MIN_INCOMPLETE = 10
     
 from BitTorrent import languages
@@ -92,7 +92,9 @@ common_options = [
      _("the maximum number of files in a multifile torrent to keep open at a "
        "time, 0 means no limit. Used to avoid running out of file descriptors.")),
     ('start_trackerless_client', MYTRUE,
-     _("Initialize a trackerless client.  This must be enabled in order to download trackerless torrents."))
+     _("Initialize a trackerless client.  This must be enabled in order to download trackerless torrents.")),
+    ('upnp', MYTRUE,
+     _("Enable automatic port mapping")+' (UPnP)'),
     ]
 
 
