@@ -95,7 +95,8 @@ class MultiRateLimiter(object):
 
         if self.upload_rate > 0:
             self.offset_amount -= (t - self.lasttime) * self.upload_rate
-            self.offset_amount = max(self.offset_amount, -1 * self.upload_rate)
+            if check_time:
+                self.offset_amount = max(self.offset_amount, -1 * self.unitsize)
         else:
             self.offset_amount = 0
 
@@ -109,7 +110,7 @@ class MultiRateLimiter(object):
                 ctx.offset_amount -=(t - ctx.lasttime) * ctx.rate
                 ctx.lasttime = t
                 if ctx.check_time:
-                    ctx.offset_amount = max(ctx.offset_amount, 0)
+                    ctx.offset_amount = max(ctx.offset_amount, -1 * self.unitsize)
 
         min_offset = reduce(minctx, self.ctxs)
         ctx = cur.encoder.context.rlgroup

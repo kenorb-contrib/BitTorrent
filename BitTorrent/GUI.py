@@ -157,20 +157,19 @@ def get_logo(size=32):
 
 class Size(long):
     """displays size in human-readable format"""
+    __slots__ = []
     size_labels = ['','K','M','G','T','P','E','Z','Y']    
     radix = 2**10
-
-    def __new__(cls, value, precision=None):
+    def __new__(cls, value):
         self = long.__new__(cls, value)
         return self
 
-    def __init__(self, value, precision=0):
+    def __init__(self, value):
         long.__init__(self, value)
-        self.precision = precision
 
     def __str__(self, precision=None):
         if precision is None:
-            precision = self.precision
+            precision = 0
         value = self
         for unitname in self.size_labels:
             if value < self.radix and precision < self.radix:
@@ -185,15 +184,17 @@ class Size(long):
 
 class Rate(Size):
     """displays rate in human-readable format"""
-    def __init__(self, value, precision=2**10):
-        Size.__init__(self, value, precision)
+    __slots__ = []
+    def __init__(self, value):
+        Size.__init__(self, value)
 
-    def __str__(self, precision=None):
-        return '%s/s'% Size.__str__(self, precision=None)
+    def __str__(self, precision=2**10):
+        return '%s/s'% Size.__str__(self, precision=precision)
 
 
 class Duration(float):
     """displays duration in human-readable format"""
+    __slots__ = []
     def __str__(self):
         if self > 365 * 24 * 60 * 60:
             return '?'

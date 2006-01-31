@@ -19,6 +19,7 @@ matches = (
            ('-AZ(?P<version>\d+)-+.+$'       , "Azureus"              ),
            ('M(?P<version>\d-\d-\d)--.+$'    , "BitTorrent"           ),
            ('T(?P<version>%s)0?-+.+$'%v64p   , "BitTornado"           ),
+           ('-UT(?P<version>[\dA-F]+)-+.+$'  , u"\xb5Torrent"         ),
            ('-TS(?P<version>\d+)-+.+$'       , "TorrentStorm"         ),
            ('exbc(?P<bcver>.+)LORD.+$'       , "BitLord"              ),
            ('exbc(?P<bcver>[^-][^-]+)(?!---).+$', "BitComet"          ),
@@ -40,7 +41,6 @@ matches = (
            ('(?P<rsver>.+)RSAnonymous.+$'    , "Rufus Anonymous"      ),
            ('(?P<rsver>.+)RS.+$'             , "Rufus"                ),
            ('-ML(?P<version>(\d\.)+\d)(?:\.(?P<strver>CVS))?-+.+$',"MLDonkey"),
-           ('-UT(?P<version>[\dA-F]+)-+.+$'  , u"\xb5Torrent"         ),
            ('346------.+$'                   , "TorrentTopia 1.70"    ),
            ('OP(?P<strver>\d{4}).+$'         , "Opera"                ),
            ('-KT(?P<version>\d+)(?P<rc>R\d+)-+.+$', "KTorrent"        ),
@@ -142,12 +142,10 @@ def identify_client(peerid, log=None):
     if client == 'unknown':
         # identify Shareaza 2.0 - 2.1
         if len(peerid) == 20 and chr(0) not in peerid[:15]:
-            shareaza = True
             for i in range(16,20):
                  if ord(peerid[i]) != (ord(peerid[i - 16]) ^ ord(peerid[31 - i])):
-                     shareaza = False
                      break
-            if shareaza:
+            else:
                 client = "Shareaza"
         
         

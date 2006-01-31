@@ -109,6 +109,8 @@ defaults = [
      _("maximum number of peers to give with any one request")),
     ('twisted', -1,
      _("Use Twisted network libraries for network connections. 1 means use twisted, 0 means do not use twisted, -1 means autodetect, and prefer twisted")),
+    ('pid', '/var/run/bittorrent-tracker.pid',
+     "Path to PID file")
     ] 
 
 def statefiletemplate(x):
@@ -852,6 +854,7 @@ def track(args):
         print _("error: ") + str(e)
         print _("run with no arguments for parameter explanations")
         return
+    file(config['pid'], 'w').write(str(os.getpid()))
     r = RawServer(Event(), config)
     t = Tracker(config, r)
     s = r.create_serversocket(config['port'], config['bind'], True)

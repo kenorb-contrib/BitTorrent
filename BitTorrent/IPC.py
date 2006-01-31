@@ -387,8 +387,9 @@ if os.name == 'nt':
             return Topic(self.handler, dde.CreateServerSystemTopic())
 
         def Status(self, s):
-            if self.log:
-                self.log(INFO, _("IPC Status: %s") % s)
+            #if self.log:
+            #    self.log(INFO, _("IPC Status: %s") % s)
+            pass
 
         def stop(self):
             self.Shutdown()

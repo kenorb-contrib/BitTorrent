@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: BitTorrent 4.2\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2006-01-23 10:39-0800\n"
+"POT-Creation-Date: 2006-01-30 13:29-0800\n"
 "PO-Revision-Date: 2005-11-02 19:01-0800\n"
 "Last-Translator: djryback <djryback@yahoo.com>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -563,7 +563,7 @@ msgstr "Završeno, udio dijeljenja: %d%%"
 msgid "Done, %s uploaded"
 msgstr "Završeno, %s učitano"
 
-#: bittorrent.py:1851 bittorrent.py:2287
+#: bittorrent.py:1851 bittorrent.py:2268
 msgid "Done"
 msgstr "Završeno"
 
@@ -697,116 +697,116 @@ msgstr ""
 msgid "%d bad pieces + %s in discarded requests"
 msgstr "%d loših dijelova + %s u izbačenim zahtjevima"
 
-#: bittorrent.py:2303
+#: bittorrent.py:2269
 #, python-format
 msgid "%.1f%% done, %s remaining"
 msgstr "%.1f%% završeno, %s preostalo"
 
-#: bittorrent.py:2311
+#: bittorrent.py:2270
 msgid "Download rate"
 msgstr "Brzina preuzimanja"
 
-#: bittorrent.py:2313
+#: bittorrent.py:2271
 msgid "Upload rate"
 msgstr "Brzina učitavanja"
 
-#: bittorrent.py:2328
+#: bittorrent.py:2333
 msgid "NA"
 msgstr "Nepoznato"
 
-#: bittorrent.py:2770
+#: bittorrent.py:2775
 #, python-format
 msgid "%s started"
 msgstr "%s započeto"
 
-#: bittorrent.py:2784
+#: bittorrent.py:2789
 msgid "_Quit"
 msgstr "_Izlaz"
 
-#: bittorrent.py:2786
+#: bittorrent.py:2791
 msgid "E_xit"
 msgstr ""
 
-#: bittorrent.py:2788
+#: bittorrent.py:2793
 msgid "_Open torrent file"
 msgstr "_Otvori torrent datoteku"
 
-#: bittorrent.py:2789
+#: bittorrent.py:2794
 msgid "Open torrent _URL"
 msgstr "Ot_vori torrent URL"
 
-#: bittorrent.py:2790
+#: bittorrent.py:2795
 msgid "Make _new torrent"
 msgstr "_Napravi novi torrent"
 
-#: bittorrent.py:2793
+#: bittorrent.py:2798
 msgid "_Pause/Play"
 msgstr "Pauza/Pla_y"
 
-#: bittorrent.py:2797
+#: bittorrent.py:2802
 msgid "Show/Hide _finished torrents"
 msgstr "Pri_kaži/Sakrij završene torrent-e"
 
-#: bittorrent.py:2799
+#: bittorrent.py:2804
 msgid "_Resize window to fit"
 msgstr "Prila_godi veličini prozora"
 
-#: bittorrent.py:2801
+#: bittorrent.py:2806
 msgid "_Log"
 msgstr "_Log"
 
-#: bittorrent.py:2804
+#: bittorrent.py:2809
 msgid "_Settings"
 msgstr "_Postavke"
 
-#: bittorrent.py:2807 bittorrent.py:2823
+#: bittorrent.py:2812 bittorrent.py:2828
 msgid "_Help"
 msgstr "Po_moć"
 
-#: bittorrent.py:2809
+#: bittorrent.py:2814
 msgid "_About"
 msgstr "_O programu"
 
-#: bittorrent.py:2810
+#: bittorrent.py:2815
 msgid "_Donate"
 msgstr "_Doniraj"
 
-#: bittorrent.py:2814
+#: bittorrent.py:2819
 msgid "_File"
 msgstr "_Dokument"
 
-#: bittorrent.py:2819
+#: bittorrent.py:2824
 msgid "_View"
 msgstr "_Pogledaj"
 
-#: bittorrent.py:2859
+#: bittorrent.py:2864
 msgid "Search for torrents"
 msgstr "Trazi torrente"
 
-#: bittorrent.py:3013
+#: bittorrent.py:3018
 msgid "(stopped)"
 msgstr "(zaustavljeno)"
 
-#: bittorrent.py:3025
+#: bittorrent.py:3030
 msgid "(multiple)"
 msgstr "(povećaj)"
 
-#: bittorrent.py:3155
+#: bittorrent.py:3160
 #, python-format
 msgid "Already downloading %s installer"
 msgstr "Preuzimanje %s installer-a je već u tijeku"
 
-#: bittorrent.py:3159
+#: bittorrent.py:3164
 #, python-format
 msgid "Install new %s now?"
 msgstr "Instaliraj novi %s sada?"
 
-#: bittorrent.py:3160
+#: bittorrent.py:3165
 #, python-format
 msgid "Do you want to quit %s and install the new version, %s, now?"
 msgstr "Da li želite izaći iz %s i instalirati novu verziju, %s, sada?"
 
-#: bittorrent.py:3176
+#: bittorrent.py:3181
 #, python-format
 msgid ""
 "%s help is at \n"
@@ -817,65 +817,65 @@ msgstr ""
 "%s\n"
 "Da li želite ići tamo sada?"
 
-#: bittorrent.py:3179
+#: bittorrent.py:3184
 msgid "Visit help web page?"
 msgstr "Posjeti help web stranicu?"
 
-#: bittorrent.py:3216
+#: bittorrent.py:3221
 msgid "There is one finished torrent in the list. "
 msgstr "Ima jedan završeni torrent u listi."
 
-#: bittorrent.py:3217
+#: bittorrent.py:3222
 msgid "Do you want to remove it?"
 msgstr "Da li želite izbrisati?"
 
-#: bittorrent.py:3219
+#: bittorrent.py:3224
 #, python-format
 msgid "There are %d finished torrents in the list. "
 msgstr "Ima %d završenih torrent-a u listi."
 
-#: bittorrent.py:3220
+#: bittorrent.py:3225
 msgid "Do you want to remove all of them?"
 msgstr "Da li želite izbrisati sve torrent-e?"
 
-#: bittorrent.py:3222
+#: bittorrent.py:3227
 msgid "Remove all finished torrents?"
 msgstr "Izbriši sve završene torrent-e?"
 
-#: bittorrent.py:3230
+#: bittorrent.py:3235
 msgid "No finished torrents"
 msgstr "Nema završeni torrent-a"
 
-#: bittorrent.py:3231
+#: bittorrent.py:3236
 msgid "There are no finished torrents to remove."
 msgstr "Nema završenih torrent-a koji bi se mogli izbrisati."
 
-#: bittorrent.py:3285
+#: bittorrent.py:3290
 msgid "Open torrent:"
 msgstr "Otvori torrent:"
 
-#: bittorrent.py:3309
+#: bittorrent.py:3314
 msgid "Change save location for "
 msgstr "Promijeni lokaciju spremanja za"
 
-#: bittorrent.py:3336
+#: bittorrent.py:3341
 msgid "File exists!"
 msgstr "Datoteka već postoji!"
 
-#: bittorrent.py:3337
+#: bittorrent.py:3342
 #, python-format
 msgid "\"%s\" already exists. Do you want to choose a different file name?"
 msgstr "\"%s\" već postoji. Da li želite izabrati drugo ime datoteke?"
 
-#: bittorrent.py:3356
+#: bittorrent.py:3361
 msgid "Save location for "
 msgstr "Lokacija spremanja za"
 
-#: bittorrent.py:3374
+#: bittorrent.py:3379
 msgid "Directory exists!"
 msgstr "Direktorij vec postoji!"
 
-#: bittorrent.py:3375
+#: bittorrent.py:3380
 #, python-format
 msgid ""
 "\"%s\" already exists. Do you intend to create an identical, duplicate "
@@ -884,47 +884,47 @@ msgstr ""
 "\"%s\" vec postoji. Da li ste mozda htjeli napraviti identican, duplikat "
 "direktorija unutar postojeceg?"
 
-#: bittorrent.py:3499
+#: bittorrent.py:3504
 #, python-format
 msgid "(global message) : %s"
 msgstr "(globalna poruka) : %s"
 
-#: bittorrent.py:3506
+#: bittorrent.py:3511
 #, python-format
 msgid "%s Error"
 msgstr "%s Greška"
 
-#: bittorrent.py:3512
+#: bittorrent.py:3517
 msgid "Multiple errors have occurred. Click OK to view the error log."
 msgstr ""
 "Višestruke pogreške su se dogodile. Kliknite U redu da pogledate bilješke o "
 "pogreškama."
 
-#: bittorrent.py:3679
+#: bittorrent.py:3687
 msgid "Stop running torrent?"
 msgstr "Prekini torrent?"
 
-#: bittorrent.py:3680
+#: bittorrent.py:3688
 #, python-format
 msgid ""
 "You are about to start \"%s\". Do you want to stop another running torrent "
 "as well?"
 msgstr ""
 
-#: bittorrent.py:3691
+#: bittorrent.py:3699
 msgid "Have you donated?"
 msgstr "Jeste li donirali?"
 
-#: bittorrent.py:3692
+#: bittorrent.py:3700
 #, python-format
 msgid "Welcome to the new version of %s. Have you donated?"
 msgstr "Dobro došli u novu verziju %s. Jeste li donirali?"
 
-#: bittorrent.py:3707
+#: bittorrent.py:3715
 msgid "Thanks!"
 msgstr "Hvala!"
 
-#: bittorrent.py:3708
+#: bittorrent.py:3716
 msgid ""
 "Thanks for donating! To donate again, select \"Donate\" from the \"Help\" "
 "menu."
@@ -932,7 +932,7 @@ msgstr ""
 "Hvala na donaciji! Da donirate ponovno, odaberite \"Doniraj\" iz meni-a "
 "\"Pomoć\"."
 
-#: bittorrent.py:3814
+#: bittorrent.py:3822
 msgid "Could not start the TorrentQueue, see above for errors."
 msgstr "Nisam mogao pokrenuti TorrentQueue, pogledaj gore za pogreske."
 
@@ -1141,53 +1141,53 @@ msgstr "Krivi UI status verzije datoteke"
 msgid "Unsupported UI state file version (from newer client version?)"
 msgstr "Nepodrzani UI status verzije datoteke (od novije verzije klijenta?)"
 
-#: BitTorrent/TorrentQueue.py:489
+#: BitTorrent/TorrentQueue.py:493
 #, python-format
 msgid "Could not delete cached %s file:"
 msgstr "Ne mogu obrisati cache-anu %s datoteku"
 
-#: BitTorrent/TorrentQueue.py:530
+#: BitTorrent/TorrentQueue.py:534
 #, python-format
 msgid "This is not a valid torrent file. (%s)"
 msgstr "To nije ispravno ime za torrent. (%s)"
 
-#: BitTorrent/TorrentQueue.py:538
+#: BitTorrent/TorrentQueue.py:542
 msgid "This torrent (or one with the same contents) is already running."
 msgstr "Ovaj torrent ( ili ondaj sa istim sadrzajem ) je vec u koristenju."
 
-#: BitTorrent/TorrentQueue.py:542
+#: BitTorrent/TorrentQueue.py:546
 msgid "This torrent (or one with the same contents) is already waiting to run."
 msgstr ""
 "Ovaj torrent ( ili onaj sa istim sadrzajem ) je vec stavljen na cekanje."
 
-#: BitTorrent/TorrentQueue.py:549
+#: BitTorrent/TorrentQueue.py:553
 #, python-format
 msgid "Torrent in unknown state %d"
 msgstr "Torrent u nepoznatom stanju %d"
 
-#: BitTorrent/TorrentQueue.py:566
+#: BitTorrent/TorrentQueue.py:570
 msgid "Could not write file "
 msgstr "Ne mogu zapisati datoteku"
 
-#: BitTorrent/TorrentQueue.py:568
+#: BitTorrent/TorrentQueue.py:572
 msgid "torrent will not be restarted correctly on client restart"
 msgstr ""
 "torrent nece biti pravilno ponovno pokrenut kada klijent restartira program"
 
-#: BitTorrent/TorrentQueue.py:671
+#: BitTorrent/TorrentQueue.py:675
 #, python-format
 msgid ""
 "Can't run more than %d torrents simultaneously. For more info see the FAQ at "
 "%s."
 msgstr ""
 
-#: BitTorrent/TorrentQueue.py:795
+#: BitTorrent/TorrentQueue.py:799
 msgid ""
 "Not starting torrent as there are other torrents waiting to run, and this "
 "one already meets the settings for when to stop seeding."
 msgstr ""
 
-#: BitTorrent/TorrentQueue.py:802
+#: BitTorrent/TorrentQueue.py:806
 msgid ""
 "Not starting torrent as it already meets the settings for when to stop "
 "seeding the last completed torrent."
@@ -1912,25 +1912,6 @@ msgstr ""
 msgid "comment:"
 msgstr ""
 
-#: BitTorrent/RawServer_twisted.py:303
-msgid "connection refused"
-msgstr ""
-
-#: BitTorrent/RawServer_twisted.py:518 BitTorrent/RawServer_twisted.py:532
-#: BitTorrent/RawServer_twisted.py:555
-msgid "You asked for reuse to be off when binding. Sorry, I can't do that."
-msgstr ""
-
-#: BitTorrent/RawServer_twisted.py:721
-msgid "listen_forever() should only be called once per reactor."
-msgstr ""
-
-#: BitTorrent/RawServer_twisted.py:733
-msgid ""
-"listen_once() might not return until there is activity, and might not "
-"process the event you want. Use listen_forever()."
-msgstr ""
-
 #: BitTorrent/HTTPHandler.py:21
 msgid "Mon"
 msgstr ""
@@ -2079,6 +2060,25 @@ msgstr ""
 msgid "Couldn't read fastresume data: "
 msgstr ""
 
+#: BitTorrent/RawServer_twisted.py:320
+msgid "connection refused"
+msgstr ""
+
+#: BitTorrent/RawServer_twisted.py:535 BitTorrent/RawServer_twisted.py:549
+#: BitTorrent/RawServer_twisted.py:572
+msgid "You asked for reuse to be off when binding. Sorry, I can't do that."
+msgstr ""
+
+#: BitTorrent/RawServer_twisted.py:735
+msgid "listen_forever() should only be called once per reactor."
+msgstr ""
+
+#: BitTorrent/RawServer_twisted.py:747
+msgid ""
+"listen_once() might not return until there is activity, and might not "
+"process the event you want. Use listen_forever()."
+msgstr ""
+
 #: BitTorrent/StorageWrapper.py:53
 msgid "bad data in responsefile - total too small"
 msgstr ""
@@ -2110,14 +2110,6 @@ msgstr ""
 
 #: BitTorrent/StorageWrapper.py:404
 msgid "told file complete on start-up, but piece failed hash check"
-msgstr ""
-
-#: BitTorrent/bencode.py:73
-msgid "not a valid bencoded string"
-msgstr ""
-
-#: BitTorrent/bencode.py:75
-msgid "invalid bencoded value (data after valid prefix)"
 msgstr ""
 
 #: BitTorrent/launchmanycore.py:65
@@ -2645,8 +2637,26 @@ msgstr ""
 msgid "# Shutting down: "
 msgstr ""
 
-#: BitTorrent/Encoder.py:267
+#: BitTorrent/Encoder.py:270
 msgid "Can't start two separate instances of the same torrent"
+msgstr ""
+
+#: BitTorrent/TrayIcon.py:65
+#, python-format
+msgid "Hide %s"
+msgstr ""
+
+#: BitTorrent/TrayIcon.py:67
+#, python-format
+msgid "Show %s"
+msgstr ""
+
+#: BitTorrent/bencode.py:73
+msgid "not a valid bencoded string"
+msgstr ""
+
+#: BitTorrent/bencode.py:75
+msgid "invalid bencoded value (data after valid prefix)"
 msgstr ""
 
 #: BitTorrent/download.py:98
@@ -2728,16 +2738,6 @@ msgstr ""
 
 #: BitTorrent/download.py:490
 msgid "shut down"
-msgstr ""
-
-#: BitTorrent/TrayIcon.py:65
-#, python-format
-msgid "Hide %s"
-msgstr ""
-
-#: BitTorrent/TrayIcon.py:67
-#, python-format
-msgid "Show %s"
 msgstr ""
 
 #: BitTorrent/ConvertedMetainfo.py:51

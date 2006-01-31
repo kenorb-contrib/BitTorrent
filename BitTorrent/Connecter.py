@@ -16,6 +16,7 @@ from __future__ import generators
 from binascii import b2a_hex
 from struct import pack, unpack
 
+from BitTorrent.RawServer_magic import Handler
 from BitTorrent.bitfield import Bitfield
 from BitTorrent.obsoletepythonsupport import *
 
@@ -49,7 +50,7 @@ FLAGS = '\0' * 7 + '\1'
 protocol_name = 'BitTorrent protocol'
 
 
-class Connection(object):
+class Connection(Handler):
 
     def __init__(self, encoder, connection, id, is_local):
         self.encoder = encoder
@@ -286,6 +287,7 @@ class Connection(object):
         self.closed = True
         self._reader = None
         del self.encoder.connections[self.connection]
+        self.connection = None
         self.encoder.replace_connection()
         if self.complete:
             del self.encoder.complete_connections[self]
@@ -324,8 +326,11 @@ class Connection(object):
                 return
 
     def connection_lost(self, conn):
-        assert conn is self.connection
-        self._sever()
+        if self.connection is None:
+            assert self.closed
+        else:
+            assert conn is self.connection
+            self._sever()
 
     def connection_flushed(self, connection):
         if self.complete and self.next_upload is None and (self._partial_message is not None

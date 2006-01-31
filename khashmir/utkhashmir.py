@@ -114,7 +114,13 @@ class UTKhashmir(khashmir.KhashmirBase):
         Thread(target=self._get_host, args=[host, port, callback]).start()
 
     def _get_host(self, host, port, callback):
-        ip = gethostbyname(host)
+
+        # this exception catch can go away once we actually fix the bug
+        try:
+            ip = gethostbyname(host)
+        except TypeError, e:
+            raise TypeError(str(e) + (": host(%s) port(%s)" % (repr(host), repr(port))))
+        
         self.rawserver.external_add_task(self._got_host, 0, (ip, port, callback))
 
     def _got_host(self, host, port, callback):

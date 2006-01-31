@@ -86,6 +86,10 @@ else:
 
 if __name__ == '__main__':
     import threading
-    ti = TrayIcon()
-    th = threading.Thread(target=ti.start, args=())
+    from BitTorrent.platform import install_translation
+    install_translation()
+    ti = TrayIcon(True)
+    th = threading.Thread(target=ti.enable, args=())
     th.start()
+    from time import sleep
+    sleep(10)

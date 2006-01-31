@@ -25,7 +25,7 @@ nsis_language_names = {
     'fr'    :'French',
     'el'    :'Greek',
     'hu'    :'Hungarian',
-    'he_IL' :'Hebrew',
+    'he'    :'Hebrew',
     'it'    :'Italian',
     'is'    :'Icelandic',
     'ja'    :'Japanese',

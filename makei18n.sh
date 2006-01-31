@@ -21,10 +21,10 @@ find . -name \*.py -type f | egrep -v '/(build)|(dist)|(test)/' >> $APP_NAME.lis
 xgettext -f $APP_NAME.lis -L Python -o -                        |\
     sed -e 's/CHARSET/UTF-8/'                                   |\
     sed -e 's/SOME DESCRIPTIVE TITLE./BitTorrent/'              |\
-    sed -e 's/YEAR/2005/'                                       |\
+    sed -e 's/YEAR/2006/'                                       |\
     sed -e "s/THE PACKAGE'S COPYRIGHT HOLDER/BitTorrent, Inc./" |\
     sed -e 's/PACKAGE/BitTorrent/'                              |\
-    sed -e 's/VERSION/4.2/'                                     |\
+    sed -e 's/VERSION/4.4/'                                     |\
     sed -e 's/FIRST AUTHOR/Matt Chisholm/'                      |\
     sed -e 's/EMAIL@ADDRESS/matt (dash) translations (at) bittorrent (dot) com/' |\
     sed -e 's/FULL NAME/Matt Chisholm/' > $MESSAGES_PO.nonunique

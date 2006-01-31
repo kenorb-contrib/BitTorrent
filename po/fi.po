@@ -2,14 +2,13 @@
 # Copyright (C) 2005, BitTorrent, Inc.
 # This file is distributed under the same license as the BitTorrent package.
 # Matt Chisholm, matt (dash) translations (at) bittorrent (dot) com, 2005.
-#
 msgid ""
 msgstr ""
 "Project-Id-Version: BitTorrent 4.2\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2006-01-23 10:39-0800\n"
-"PO-Revision-Date: 2006-01-06 08:51-0800\n"
-"Last-Translator: Ville Virta <ville.virta@netikka.fi>\n"
+"POT-Creation-Date: 2006-01-17 15:21-0800\n"
+"PO-Revision-Date: 2006-01-27 12:10-0800\n"
+"Last-Translator: translate4me <olessia@translate4me.com>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -21,9 +20,7 @@ msgstr ""
 msgid "Install Python %s or greater"
 msgstr "Asenna Pythonin versio %s tai uudempi"
 
-#: bittorrent.py:132 BitTorrent/defaultargs.py:235
-#: BitTorrent/defaultargs.py:237 bittorrent-console.py:295
-#: bittorrent-curses.py:431
+#: bittorrent.py:132 BitTorrent/defaultargs.py:235 BitTorrent/defaultargs.py:237 bittorrent-console.py:295 bittorrent-curses.py:431
 msgid "deprecated, do not use"
 msgstr "vanhentunut, älä käytä"
 
@@ -32,6 +29,7 @@ msgstr "vanhentunut, älä käytä"
 msgid ""
 "Failed to communicate with another %s process but one seems to be running."
 msgstr ""
+"Kommunikaatio epäonnistui toisen %s:n prosessin kanssa, mutta yksi on käynnissä."
 
 #: bittorrent.py:149 bittorrent.py:172
 #, python-format
@@ -134,12 +132,8 @@ msgstr "Käytät versiota %s, uusi versio on %s.\n"
 
 #: bittorrent.py:531
 #, python-format
-msgid ""
-"You can always get the latest version from \n"
-"%s"
-msgstr ""
-"Saat uusimman version aina täältä:\n"
-"%s"
+msgid "You can always get the latest version from \n%s"
+msgstr "Saat uusimman version aina täältä:\n%s"
 
 #: bittorrent.py:538 bittorrent.py:1919
 msgid "Download _later"
@@ -200,7 +194,7 @@ msgstr "%s asetukset"
 
 #: bittorrent.py:822
 msgid "General"
-msgstr "Yleiset"
+msgstr "Yleinen"
 
 #: bittorrent.py:825 BitTorrent/defaultargs.py:210
 msgid "Launch BitTorrent when Windows starts"
@@ -211,12 +205,8 @@ msgid "Minimize to system tray"
 msgstr "Pienennä ikkuna ilmaisinalueelle"
 
 #: bittorrent.py:837
-msgid ""
-"Progress bar text is always black\n"
-"(requires restart)"
-msgstr ""
-"Edistyspalkin teksti on aina musta\n"
-"(vaatii uudelleenkäynnistämisen)"
+msgid "Progress bar text is always black\n(requires restart)"
+msgstr "Edistyspalkin teksti on aina musta\n(vaatii uudelleenkäynnistämisen)"
 
 #: bittorrent.py:846
 msgid "Saving"
@@ -260,11 +250,9 @@ msgstr "Lähettäminen"
 
 #: bittorrent.py:925
 msgid ""
-"Seed completed torrents: until share ratio reaches [_] percent, or for [_] "
-"minutes, whichever comes first."
+"Seed completed torrents: until share ratio reaches [_] percent, or for [_] minutes, whichever comes first."
 msgstr ""
-"Lähetä valmiit lataukset: kunnes lataussuhde on [_] prosenttia tai [_] "
-"minuutin ajan, kumpi ehto täytyy ensin."
+"Lähetä valmiit lataukset: kunnes lataussuhde on [_] prosenttia tai [_] minuutin ajan, kumpi ehto täytyy ensin."
 
 #: bittorrent.py:969 bittorrent.py:1003
 msgid "Seed indefinitely"
@@ -288,7 +276,7 @@ msgstr "alkaen portista: "
 
 #: bittorrent.py:1033 BitTorrent/defaultargs.py:97
 msgid "Enable automatic port mapping"
-msgstr ""
+msgstr "Käynnistä automaattinen portin kartoitus"
 
 #: bittorrent.py:1041
 msgid "IP to report to the tracker:"
@@ -296,20 +284,16 @@ msgstr "IP raportoi trakkerille:"
 
 #: bittorrent.py:1046
 msgid ""
-"(Has no effect unless you are on the\n"
-"same local network as the tracker)"
+"(Has no effect unless you are on the\nsame local network as the tracker)"
 msgstr ""
-"(Ei vaikutusta paitsi, jos olet samalla\n"
-" lähiverkkoalueella kuin trakkeri)"
+"(Ei vaikutusta paitsi, jos olet samalla\n lähiverkkoalueella kuin trakkeri)"
 
 #: bittorrent.py:1063
 #, python-format
 msgid ""
-"WARNING: Changing these settings can\n"
-"prevent %s from functioning correctly."
+"WARNING: Changing these settings can\nprevent %s from functioning correctly."
 msgstr ""
-"VAROITUS: Näiden asetusten muuttaminen voi\n"
-" estää %s asianmukaisen toimimisen."
+"VAROITUS: Näiden asetusten muuttaminen voi\n estää %s asianmukaisen toimimisen."
 
 #: bittorrent.py:1071
 msgid "Option"
@@ -562,7 +546,7 @@ msgstr "Valmis, jakosuhde %d%%"
 msgid "Done, %s uploaded"
 msgstr "Valmis, %s lähetetty"
 
-#: bittorrent.py:1851 bittorrent.py:2287
+#: bittorrent.py:1851 bittorrent.py:2268
 msgid "Done"
 msgstr "Valmis"
 
@@ -695,242 +679,230 @@ msgstr ""
 msgid "%d bad pieces + %s in discarded requests"
 msgstr "%d huonoa palaa + %s hylätyissä pyynnöissä"
 
-#: bittorrent.py:2303
+#: bittorrent.py:2269
 #, python-format
 msgid "%.1f%% done, %s remaining"
 msgstr "%.1f%% valmiina, %s jäljellä"
 
-#: bittorrent.py:2311
+#: bittorrent.py:2270
 msgid "Download rate"
 msgstr "Latausnopeus"
 
-#: bittorrent.py:2313
+#: bittorrent.py:2271
 msgid "Upload rate"
 msgstr "Lähetysnopeus"
 
-#: bittorrent.py:2328
+#: bittorrent.py:2333
 msgid "NA"
 msgstr "NA, ei tietoa"
 
-#: bittorrent.py:2770
+#: bittorrent.py:2775
 #, python-format
 msgid "%s started"
 msgstr "%s aloitettu"
 
-#: bittorrent.py:2784
+#: bittorrent.py:2789
 msgid "_Quit"
 msgstr "_Lopeta"
 
 #: bittorrent.py:2786
 msgid "E_xit"
-msgstr ""
+msgstr "P_oistu"
 
-#: bittorrent.py:2788
+#: bittorrent.py:2793
 msgid "_Open torrent file"
 msgstr "_Avaa torrent-tiedosto"
 
-#: bittorrent.py:2789
+#: bittorrent.py:2794
 msgid "Open torrent _URL"
 msgstr "Avaa torrentin _URL-osoite"
 
-#: bittorrent.py:2790
+#: bittorrent.py:2795
 msgid "Make _new torrent"
 msgstr "_Tee uusi torrent-tiedosto"
 
-#: bittorrent.py:2793
+#: bittorrent.py:2798
 msgid "_Pause/Play"
 msgstr "_Pysäytä/Jatka"
 
-#: bittorrent.py:2797
+#: bittorrent.py:2802
 msgid "Show/Hide _finished torrents"
 msgstr "Näytä/Piilota _valmiit torrentit"
 
-#: bittorrent.py:2799
+#: bittorrent.py:2804
 msgid "_Resize window to fit"
 msgstr "_Muuta ikkunan kokoa"
 
-#: bittorrent.py:2801
+#: bittorrent.py:2806
 msgid "_Log"
 msgstr "L_oki"
 
-#: bittorrent.py:2804
+#: bittorrent.py:2809
 msgid "_Settings"
 msgstr "_Asetukset"
 
-#: bittorrent.py:2807 bittorrent.py:2823
+#: bittorrent.py:2812 bittorrent.py:2828
 msgid "_Help"
 msgstr "_Ohje"
 
-#: bittorrent.py:2809
+#: bittorrent.py:2814
 msgid "_About"
 msgstr "_Tietoja"
 
-#: bittorrent.py:2810
+#: bittorrent.py:2815
 msgid "_Donate"
 msgstr "Lah_joita"
 
-#: bittorrent.py:2814
+#: bittorrent.py:2819
 msgid "_File"
 msgstr "_Tiedosto"
 
-#: bittorrent.py:2819
+#: bittorrent.py:2824
 msgid "_View"
 msgstr "_Näytä"
 
-#: bittorrent.py:2859
+#: bittorrent.py:2864
 msgid "Search for torrents"
 msgstr "Etsi torrenteja"
 
-#: bittorrent.py:3013
+#: bittorrent.py:3018
 msgid "(stopped)"
 msgstr "(pysäytetty)"
 
-#: bittorrent.py:3025
+#: bittorrent.py:3030
 msgid "(multiple)"
 msgstr "(useita)"
 
-#: bittorrent.py:3155
+#: bittorrent.py:3160
 #, python-format
 msgid "Already downloading %s installer"
 msgstr "Lataa jo %s asentajaa"
 
-#: bittorrent.py:3159
+#: bittorrent.py:3164
 #, python-format
 msgid "Install new %s now?"
 msgstr "Asennetaanko uusi %s nyt?"
 
-#: bittorrent.py:3160
+#: bittorrent.py:3165
 #, python-format
 msgid "Do you want to quit %s and install the new version, %s, now?"
 msgstr "Haluatko sulkea %s ja asentaa uuden version %s nyt?"
 
-#: bittorrent.py:3176
+#: bittorrent.py:3181
 #, python-format
-msgid ""
-"%s help is at \n"
-"%s\n"
-"Would you like to go there now?"
-msgstr ""
-"%s ohje on osoitteessa\n"
-"%s\n"
-"Haluatko siirtyä sinne nyt?"
+msgid "%s help is at \n%s\nWould you like to go there now?"
+msgstr "%s ohje on osoitteessa\n%s\nHaluatko siirtyä sinne nyt?"
 
-#: bittorrent.py:3179
+#: bittorrent.py:3184
 msgid "Visit help web page?"
 msgstr "Siirry ohjesivustolle?"
 
-#: bittorrent.py:3216
+#: bittorrent.py:3221
 msgid "There is one finished torrent in the list. "
 msgstr "Yksi torrent valmis listalla. "
 
-#: bittorrent.py:3217
+#: bittorrent.py:3222
 msgid "Do you want to remove it?"
 msgstr "Haluatko poistaa sen?"
 
-#: bittorrent.py:3219
+#: bittorrent.py:3224
 #, python-format
 msgid "There are %d finished torrents in the list. "
 msgstr "Listalla %d valmista torrenttia. "
 
-#: bittorrent.py:3220
+#: bittorrent.py:3225
 msgid "Do you want to remove all of them?"
 msgstr "Haluatko poistaa ne kaikki?"
 
-#: bittorrent.py:3222
+#: bittorrent.py:3227
 msgid "Remove all finished torrents?"
 msgstr "Poista kaikki valmiit torrentit?"
 
-#: bittorrent.py:3230
+#: bittorrent.py:3235
 msgid "No finished torrents"
 msgstr "Ei valmiita torrentteja"
 
-#: bittorrent.py:3231
+#: bittorrent.py:3236
 msgid "There are no finished torrents to remove."
 msgstr "Ei valmiita torrentteja poistettavaksi."
 
-#: bittorrent.py:3285
+#: bittorrent.py:3290
 msgid "Open torrent:"
 msgstr "Avaa torrent:"
 
-#: bittorrent.py:3309
+#: bittorrent.py:3314
 msgid "Change save location for "
 msgstr "Muuta tallennuskansioksi "
 
-#: bittorrent.py:3336
+#: bittorrent.py:3341
 msgid "File exists!"
 msgstr "Tiedosto on olemassa!"
 
-#: bittorrent.py:3337
+#: bittorrent.py:3342
 #, python-format
 msgid "\"%s\" already exists. Do you want to choose a different file name?"
 msgstr "\"%s\" on jo olemassa. Haluatko valita toisen tiedostonimen?"
 
-#: bittorrent.py:3356
+#: bittorrent.py:3361
 msgid "Save location for "
 msgstr "Tallennuskohde "
 
-#: bittorrent.py:3374
+#: bittorrent.py:3379
 msgid "Directory exists!"
 msgstr "Kansio on olemassa!"
 
-#: bittorrent.py:3375
+#: bittorrent.py:3380
 #, python-format
 msgid ""
-"\"%s\" already exists. Do you intend to create an identical, duplicate "
-"directory inside the existing directory?"
+"\"%s\" already exists. Do you intend to create an identical, duplicate directory inside the existing directory?"
 msgstr ""
-"\"%s\" on jo olemassa. Aiotko luoda identtisen kaksoiskappaleen kansiosta "
-"olemassaolevan kansion sisälle?"
+"\"%s\" on jo olemassa. Aiotko luoda identtisen kaksoiskappaleen kansiosta olemassaolevan kansion sisälle?"
 
-#: bittorrent.py:3499
+#: bittorrent.py:3504
 #, python-format
 msgid "(global message) : %s"
 msgstr "(yleinen viesti): %s"
 
-#: bittorrent.py:3506
+#: bittorrent.py:3511
 #, python-format
 msgid "%s Error"
 msgstr "%s Virhe"
 
-#: bittorrent.py:3512
+#: bittorrent.py:3517
 msgid "Multiple errors have occurred. Click OK to view the error log."
 msgstr "Useita virheitä tapahtunut. Valitse OK nähdäksesi virhelokin."
 
-#: bittorrent.py:3679
+#: bittorrent.py:3687
 msgid "Stop running torrent?"
 msgstr "Pysäytä aktiivinen torrent?"
 
 #: bittorrent.py:3680
 #, python-format
 msgid ""
-"You are about to start \"%s\". Do you want to stop another running torrent "
-"as well?"
+"You are about to start \"%s\". Do you want to stop another running torrent as well?"
 msgstr ""
-"Olet aloittamassa torrenttia \"%s\". Haluatko pysäyttää toisen päällä olevan "
-"torrentin?"
+"Olet aloittamassa torrentia \"%s\". Haluatko pysäyttää toisen päällä olevan torrentin?"
 
-#: bittorrent.py:3691
+#: bittorrent.py:3699
 msgid "Have you donated?"
 msgstr "Oletko jo lahjoittanut?"
 
-#: bittorrent.py:3692
+#: bittorrent.py:3700
 #, python-format
 msgid "Welcome to the new version of %s. Have you donated?"
 msgstr "Tervetuloa uuteen %s versioon. Oletko jo lahjoittanut?"
 
-#: bittorrent.py:3707
+#: bittorrent.py:3715
 msgid "Thanks!"
 msgstr "Kiitos!"
 
-#: bittorrent.py:3708
+#: bittorrent.py:3716
 msgid ""
-"Thanks for donating! To donate again, select \"Donate\" from the \"Help\" "
-"menu."
+"Thanks for donating! To donate again, select \"Donate\" from the \"Help\" menu."
 msgstr ""
-"Kiitos lahjoituksesta! Lahjoittaaksesi uudelleen valitse \"Ohje\"-valikosta "
-"\"Lahjoita\"."
+"Kiitos lahjoituksesta! Lahjoittaaksesi uudelleen valitse \"Ohje\"-valikosta \"Lahjoita\"."
 
-#: bittorrent.py:3814
+#: bittorrent.py:3822
 msgid "Could not start the TorrentQueue, see above for errors."
 msgstr "Ei pystynyt käynnistämään TorrentQueueta, katso virheet yltä."
 
@@ -1094,10 +1066,7 @@ msgstr "Ei voitu ladata tallennettua tilaa: "
 msgid "Could not save UI state: "
 msgstr "Ei voitu tallentaa käyttöliittymän tilaa: "
 
-#: BitTorrent/TorrentQueue.py:221 BitTorrent/TorrentQueue.py:223
-#: BitTorrent/TorrentQueue.py:306 BitTorrent/TorrentQueue.py:309
-#: BitTorrent/TorrentQueue.py:319 BitTorrent/TorrentQueue.py:331
-#: BitTorrent/TorrentQueue.py:348
+#: BitTorrent/TorrentQueue.py:221 BitTorrent/TorrentQueue.py:223 BitTorrent/TorrentQueue.py:306 BitTorrent/TorrentQueue.py:309 BitTorrent/TorrentQueue.py:319 BitTorrent/TorrentQueue.py:331 BitTorrent/TorrentQueue.py:348
 msgid "Invalid state file contents"
 msgstr "Epäkelpo tilatiedoston sisältö"
 
@@ -1139,64 +1108,57 @@ msgstr "Huono käyttöliittymän tilatiedon versio"
 #: BitTorrent/TorrentQueue.py:302
 msgid "Unsupported UI state file version (from newer client version?)"
 msgstr ""
-"Käyttöliittymän tilatiedon versiota ei ole tueta (uudemmasta "
-"ohjelmaversiosta?)"
+"Käyttöliittymän tilatiedon versiota ei ole tueta (uudemmasta ohjelmaversiosta?)"
 
-#: BitTorrent/TorrentQueue.py:489
+#: BitTorrent/TorrentQueue.py:493
 #, python-format
 msgid "Could not delete cached %s file:"
 msgstr "Ei voitu poistaa välimuistista %s tiedostoa:"
 
-#: BitTorrent/TorrentQueue.py:530
+#: BitTorrent/TorrentQueue.py:534
 #, python-format
 msgid "This is not a valid torrent file. (%s)"
 msgstr "Tämä ei ole kelpo torrent-tiedosto. (%s)"
 
-#: BitTorrent/TorrentQueue.py:538
+#: BitTorrent/TorrentQueue.py:542
 msgid "This torrent (or one with the same contents) is already running."
 msgstr "Tämä torrent (tai toinen samansisältöinen) on jo käynnissä."
 
-#: BitTorrent/TorrentQueue.py:542
+#: BitTorrent/TorrentQueue.py:546
 msgid "This torrent (or one with the same contents) is already waiting to run."
 msgstr "Tämä torrent (tai toinen samansisältöinen) on jo jonossa."
 
-#: BitTorrent/TorrentQueue.py:549
+#: BitTorrent/TorrentQueue.py:553
 #, python-format
 msgid "Torrent in unknown state %d"
 msgstr "Torrent tuntemattomassa tilassa %d"
 
-#: BitTorrent/TorrentQueue.py:566
+#: BitTorrent/TorrentQueue.py:570
 msgid "Could not write file "
 msgstr "Ei voi kirjoittaa tiedostoa "
 
-#: BitTorrent/TorrentQueue.py:568
+#: BitTorrent/TorrentQueue.py:572
 msgid "torrent will not be restarted correctly on client restart"
 msgstr "torrentia ei käynnistetä uudelleen oikein ohjelman käynnistyksessä"
 
-#: BitTorrent/TorrentQueue.py:671
+#: BitTorrent/TorrentQueue.py:675
 #, python-format
 msgid ""
-"Can't run more than %d torrents simultaneously. For more info see the FAQ at "
-"%s."
+"Can't run more than %d torrents simultaneously. For more info see the FAQ at %s."
 msgstr ""
-"Ei voi ajaa kerralla useampaa kuin %d torrentia. Lisätietoa usein kysytyistä "
-"kysymyksistä: %s"
+"Ei voi ajaa kerralla useampaa kuin %d torrentia. Lisätietoa usein kysytyistä kysymyksistä: %s"
 
-#: BitTorrent/TorrentQueue.py:795
+#: BitTorrent/TorrentQueue.py:799
 msgid ""
-"Not starting torrent as there are other torrents waiting to run, and this "
-"one already meets the settings for when to stop seeding."
+"Not starting torrent as there are other torrents waiting to run, and this one already meets the settings for when to stop seeding."
 msgstr ""
-"Torrentia ei käynnistetä, sillä muita torrenteja on jonossa ja tämä torrent "
-"on jo saavuttanut asetuksissa määrätyt rajat jakamisen lopettamiseksi."
+"Torrentia ei käynnistetä, sillä muita torrenteja on jonossa ja tämä torrent on jo saavuttanut asetuksissa määrätyt rajat jakamisen lopettamiseksi."
 
-#: BitTorrent/TorrentQueue.py:802
+#: BitTorrent/TorrentQueue.py:806
 msgid ""
-"Not starting torrent as it already meets the settings for when to stop "
-"seeding the last completed torrent."
+"Not starting torrent as it already meets the settings for when to stop seeding the last completed torrent."
 msgstr ""
-"Torrentia ei käynnistetä, sillä se on jo saavuttanut asetuksissa määrätyt "
-"rajat viimeisen valmiin torrentin jakamisen lopettamiseksi."
+"Torrentia ei käynnistetä, sillä se on jo saavuttanut asetuksissa määrätyt rajat viimeisen valmiin torrentin jakamisen lopettamiseksi."
 
 #: BitTorrent/NewVersion.py:105
 #, python-format
@@ -1213,8 +1175,7 @@ msgstr "Ei pystynyt jäsentämään %s uuden version jonoa"
 msgid ""
 "Could not find a suitable temporary location to save the %s %s installer."
 msgstr ""
-"Ei pystynyt löytämään sopivaa väliaikaista paikkaa %s %s asentajan "
-"tallentamiseksi."
+"Ei pystynyt löytämään sopivaa väliaikaista paikkaa %s %s asentajan tallentamiseksi."
 
 #: BitTorrent/NewVersion.py:260
 #, python-format
@@ -1244,10 +1205,9 @@ msgid "Running normally"
 msgstr "Toimii normaalisti"
 
 #: BitTorrent/StatusLight.py:20
-msgid ""
-"Downloads may be slow:\n"
-"Probably firewalled/NATted"
+msgid "Downloads may be slow:\nProbably firewalled/NATted"
 msgstr ""
+"Lataukset voivat olla hitaita:\nLuultavasti palomuurilla/NAT:illa suojattu"
 
 #: BitTorrent/StatusLight.py:22
 msgid "Check network connection"
@@ -1255,20 +1215,15 @@ msgstr "Tarkista internet-yhteys"
 
 #: BitTorrent/defaultargs.py:48
 msgid ""
-"directory under which variable data such as fastresume information and GUI "
-"state is saved. Defaults to subdirectory 'data' of the bittorrent config "
-"directory."
+"directory under which variable data such as fastresume information and GUI state is saved. Defaults to subdirectory 'data' of the bittorrent config directory."
 msgstr ""
-"hakemisto johon tallennetaan muuttujat kuten nopean jatkamisen tiedot ja "
-"käyttöliittymän tilatiedot. Oletuksena 'data' bittorrentin config -kansiossa."
+"hakemisto johon tallennetaan muuttujat kuten nopean jatkamisen tiedot ja käyttöliittymän tilatiedot. Oletuksena 'data' bittorrentin config -kansiossa."
 
 #: BitTorrent/defaultargs.py:52
 msgid ""
-"character encoding used on the local filesystem. If left empty, "
-"autodetected. Autodetection doesn't work under python versions older than 2.3"
+"character encoding used on the local filesystem. If left empty, autodetected. Autodetection doesn't work under python versions older than 2.3"
 msgstr ""
-"paikallisessa tiedostojärjestelmässä käytettävä merkkikoodaus. Havaitaan "
-"automaattisesti mikäli tyhjä ja mikäli käytössä Python 2.3 tai uudempi."
+"paikallisessa tiedostojärjestelmässä käytettävä merkkikoodaus. Havaitaan automaattisesti mikäli tyhjä ja mikäli käytössä Python 2.3 tai uudempi."
 
 #: BitTorrent/defaultargs.py:56
 msgid "ISO Language code to use"
@@ -1276,19 +1231,15 @@ msgstr "Käytettävä ISO-kielikoodi"
 
 #: BitTorrent/defaultargs.py:61
 msgid ""
-"ip to report to the tracker (has no effect unless you are on the same local "
-"network as the tracker)"
+"ip to report to the tracker (has no effect unless you are on the same local network as the tracker)"
 msgstr ""
-"trakkerille ilmoitettava ip (ei vaikutusta ellei olla samassa "
-"paikallisverkossa trakkerin kanssa)"
+"trakkerille ilmoitettava ip (ei vaikutusta ellei olla samassa paikallisverkossa trakkerin kanssa)"
 
 #: BitTorrent/defaultargs.py:64
 msgid ""
-"world-visible port number if it's different from the one the client listens "
-"on locally"
+"world-visible port number if it's different from the one the client listens on locally"
 msgstr ""
-"maailmalle näkyvän portin numero, mikäli se on eri kuin mitä ohjelma "
-"kuuntelee paikallisesti"
+"maailmalle näkyvän portin numero, mikäli se on eri kuin mitä ohjelma kuuntelee paikallisesti"
 
 #: BitTorrent/defaultargs.py:67
 msgid "minimum port to listen on, counts up if unavailable"
@@ -1317,20 +1268,17 @@ msgstr "pienin määrä toisia lataajia, jotta uusia ei enää pyydetä"
 #: BitTorrent/defaultargs.py:79
 msgid "number of peers at which to stop initiating new connections"
 msgstr ""
-"toisien lataajien määrä, jonka jälkeen uusien yhteyksien muodostaminen "
-"lopetetaan"
+"toisien lataajien määrä, jonka jälkeen uusien yhteyksien muodostaminen lopetetaan"
 
 #: BitTorrent/defaultargs.py:81
 msgid "max number of outgoing incomplete connections"
-msgstr ""
+msgstr "enimmäismäärä lähteviä keskeneräisiä yhteyksiä"
 
 #: BitTorrent/defaultargs.py:83
 msgid ""
-"maximum number of connections to allow, after this new incoming connections "
-"will be immediately closed"
+"maximum number of connections to allow, after this new incoming connections will be immediately closed"
 msgstr ""
-"suurin sallittu yhteyksien määrä, jonka jälkeen kaikki uudet tulevat "
-"yhteydet suljetaan"
+"suurin sallittu yhteyksien määrä, jonka jälkeen kaikki uudet tulevat yhteydet suljetaan"
 
 #: BitTorrent/defaultargs.py:86
 msgid "whether to check hashes on disk"
@@ -1343,25 +1291,19 @@ msgstr "suurin sallittu lähetysnopeus kB/s, 0 = ei rajaa"
 #: BitTorrent/defaultargs.py:90
 msgid "the number of uploads to fill out to with extra optimistic unchokes"
 msgstr ""
-"määrä lähetyksiä, joilla täyttää ylimääräisillä optimistisilla "
-"epätukehduksilla"
+"määrä lähetyksiä, joilla täyttää ylimääräisillä optimistisilla epätukehduksilla"
 
 #: BitTorrent/defaultargs.py:92
 msgid ""
-"the maximum number of files in a multifile torrent to keep open at a time, 0 "
-"means no limit. Used to avoid running out of file descriptors."
+"the maximum number of files in a multifile torrent to keep open at a time, 0 means no limit. Used to avoid running out of file descriptors."
 msgstr ""
-"suurin määrä samanaikaisesti avoinna olevia tiedostoja monen tiedoston "
-"torrentissa, 0 = ei rajaa. Käytetään välttämään tiedoston deskriptaajien "
-"loppumista."
+"suurin määrä samanaikaisesti avoinna olevia tiedostoja monen tiedoston torrentissa, 0 = ei rajaa. Käytetään välttämään tiedoston deskriptaajien loppumista."
 
 #: BitTorrent/defaultargs.py:95
 msgid ""
-"Initialize a trackerless client.  This must be enabled in order to download "
-"trackerless torrents."
+"Initialize a trackerless client.  This must be enabled in order to download trackerless torrents."
 msgstr ""
-"Alusta trakkeriton asiakas. Tämä valinta tulee tehdä, jotta voidaan ladata "
-"trakkerittomia torrenteja."
+"Alusta trakkeriton asiakas. Tämä valinta tulee tehdä, jotta voidaan ladata trakkerittomia torrenteja."
 
 #: BitTorrent/defaultargs.py:103
 msgid "number of seconds to pause between sending keepalives"
@@ -1373,11 +1315,9 @@ msgstr "kuinka monta tavua luetellaan pyyntöä kohden."
 
 #: BitTorrent/defaultargs.py:107
 msgid ""
-"maximum length prefix encoding you'll accept over the wire - larger values "
-"get the connection dropped."
+"maximum length prefix encoding you'll accept over the wire - larger values get the connection dropped."
 msgstr ""
-"suurin sallittu etuliitekoodaus, jonka sallit verkosta - isommat arvot "
-"saavat yhteyden kaatumaan."
+"suurin sallittu etuliitekoodaus, jonka sallit verkosta - isommat arvot saavat yhteyden kaatumaan."
 
 #: BitTorrent/defaultargs.py:110
 msgid ""
@@ -1391,16 +1331,13 @@ msgstr ""
 
 #: BitTorrent/defaultargs.py:115
 msgid ""
-"maximum length slice to send to peers, close connection if a larger request "
-"is received"
+"maximum length slice to send to peers, close connection if a larger request is received"
 msgstr ""
-"suurin sallittu toisille lataajille lähetettävän siivun pituus, sulje yhteys "
-"jos pyydetään isompaa"
+"suurin sallittu toisille lataajille lähetettävän siivun pituus, sulje yhteys jos pyydetään isompaa"
 
 #: BitTorrent/defaultargs.py:118
 msgid ""
-"maximum time interval over which to estimate the current upload and download "
-"rates"
+"maximum time interval over which to estimate the current upload and download rates"
 msgstr ""
 "suurin aikaväli, jonka aikana arvioidaan nykyisiä lähetys- ja latausnopeuksia"
 
@@ -1415,17 +1352,14 @@ msgstr ""
 
 #: BitTorrent/defaultargs.py:124
 msgid ""
-"seconds to wait for data to come in over a connection before assuming it's "
-"semi-permanently choked"
+"seconds to wait for data to come in over a connection before assuming it's semi-permanently choked"
 msgstr ""
-"odotusaika sekunneissa tulevalle datalle ennenkuin oletetaan yhteyden olevan "
-"melkein pysyvästi tukehtunut"
+"odotusaika sekunneissa tulevalle datalle ennenkuin oletetaan yhteyden olevan melkein pysyvästi tukehtunut"
 
 #: BitTorrent/defaultargs.py:127
 msgid "number of downloads at which to switch from random to rarest first"
 msgstr ""
-"latausten lukumäärä, jolla siirrytään summittaisesta latauksesta harvinaisin "
-"ensin -lataukseen"
+"latausten lukumäärä, jolla siirrytään summittaisesta latauksesta harvinaisin ensin -lataukseen"
 
 #: BitTorrent/defaultargs.py:129
 msgid "how many bytes to write into network buffers at once."
@@ -1433,11 +1367,9 @@ msgstr "verkkopuskureihin kerralla kirjoitettavien tavujen määrä."
 
 #: BitTorrent/defaultargs.py:131
 msgid ""
-"refuse further connections from addresses with broken or intentionally "
-"hostile peers that send incorrect data"
+"refuse further connections from addresses with broken or intentionally hostile peers that send incorrect data"
 msgstr ""
-"kiellä tulevat yhteydet osoitteista, jotka lähettävät väärää dataa tai "
-"joissa on tarkoituksellisesti vihamielisiä toisia lataajia"
+"kiellä tulevat yhteydet osoitteista, jotka lähettävät väärää dataa tai joissa on tarkoituksellisesti vihamielisiä toisia lataajia"
 
 #: BitTorrent/defaultargs.py:134
 msgid "do not connect to several peers that have the same IP address"
@@ -1446,8 +1378,7 @@ msgstr "älä yhdistä useisiin toisiin lataajiin, joilla on sama IP-osoite"
 #: BitTorrent/defaultargs.py:136
 msgid "if nonzero, set the TOS option for peer connections to this value"
 msgstr ""
-"jos erisuuri kuin nolla, aseta TOS-valinta toisten lataajien yhteyksille "
-"tähän arvoon"
+"jos erisuuri kuin nolla, aseta TOS-valinta toisten lataajien yhteyksille tähän arvoon"
 
 #: BitTorrent/defaultargs.py:138
 msgid ""
@@ -1465,22 +1396,15 @@ msgstr "sulje yhteydet, joissa RST, ja vältä TCP TIME_WAIT -tila"
 
 #: BitTorrent/defaultargs.py:144 BitTorrent/track.py:111
 msgid ""
-"Use Twisted network libraries for network connections. 1 means use twisted, "
-"0 means do not use twisted, -1 means autodetect, and prefer twisted"
+"Use Twisted network libraries for network connections. 1 means use twisted, 0 means do not use twisted, -1 means autodetect, and prefer twisted"
 msgstr ""
-"Käytä kierteisiä verkkokirjastoja verkkoyhteyksiä varten. 1 = käytä "
-"kierteistä, 0 = älä käytä kierteistä, -1 = automaattinen tunnistus ja "
-"mieluummin kierteinen"
+"Käytä kierteisiä verkkokirjastoja verkkoyhteyksiä varten. 1 = käytä kierteistä, 0 = älä käytä kierteistä, -1 = automaattinen tunnistus ja mieluummin kierteinen"
 
 #: BitTorrent/defaultargs.py:161
 msgid ""
-"file name (for single-file torrents) or directory name (for batch torrents) "
-"to save the torrent as, overriding the default name in the torrent. See also "
-"--save_in, if neither is specified the user will be asked for save location"
+"file name (for single-file torrents) or directory name (for batch torrents) to save the torrent as, overriding the default name in the torrent. See also --save_in, if neither is specified the user will be asked for save location"
 msgstr ""
-"tiedostonimi (yhden tiedoston torrent) tai kansionimi (erä-torrent), jolla "
-"tallennetaan ohittaen torrentin oletusnimi. Katso myös --save_in, jos "
-"kumpaakaan ei ole määritelty, käyttäjältä pyydetään tallennuspaikka"
+"tiedostonimi (yhden tiedoston torrent) tai kansionimi (erä-torrent), jolla tallennetaan ohittaen torrentin oletusnimi. Katso myös --save_in, jos kumpaakaan ei ole määritelty, käyttäjältä pyydetään tallennuspaikka"
 
 #: BitTorrent/defaultargs.py:166
 msgid "display advanced user interface"
@@ -1488,33 +1412,26 @@ msgstr "näytä edistynyt käyttöliittymä"
 
 #: BitTorrent/defaultargs.py:168
 msgid ""
-"the maximum number of minutes to seed a completed torrent before stopping "
-"seeding"
+"the maximum number of minutes to seed a completed torrent before stopping seeding"
 msgstr ""
-"suurin sallittu aika minuuteissa jakaa valmista torrenttia ennenkuin jako "
-"lopetetaan"
+"suurin sallittu aika minuuteissa jakaa valmista torrenttia ennenkuin jako lopetetaan"
 
 #: BitTorrent/defaultargs.py:171
 msgid ""
-"the minimum upload/download ratio, in percent, to achieve before stopping "
-"seeding. 0 means no limit."
+"the minimum upload/download ratio, in percent, to achieve before stopping seeding. 0 means no limit."
 msgstr ""
-"pienin saavutettava lähetys/lataus -suhde prosenteissa ennen jakamisen "
-"lopettamista. 0 = ei rajaa."
+"pienin saavutettava lähetys/lataus -suhde prosenteissa ennen jakamisen lopettamista. 0 = ei rajaa."
 
 #: BitTorrent/defaultargs.py:174
 msgid ""
-"the minimum upload/download ratio, in percent, to achieve before stopping "
-"seeding the last torrent. 0 means no limit."
+"the minimum upload/download ratio, in percent, to achieve before stopping seeding the last torrent. 0 means no limit."
 msgstr ""
-"pienin saavutettava lähetys/lataus -suhde prosenteissa ennen viimeisen "
-"torrentin jakamisen lopettamista. 0 = ei rajaa."
+"pienin saavutettava lähetys/lataus -suhde prosenteissa ennen viimeisen torrentin jakamisen lopettamista. 0 = ei rajaa."
 
 #: BitTorrent/defaultargs.py:177
 msgid "Seed each completed torrent indefinitely (until the user cancels it)"
 msgstr ""
-"Jaa jokaista valmistunutta torrenttia loputtomiin (kunnes käyttäjä lopettaa "
-"sen)"
+"Jaa jokaista valmistunutta torrenttia loputtomiin (kunnes käyttäjä lopettaa sen)"
 
 #: BitTorrent/defaultargs.py:180
 msgid "Seed the last torrent indefinitely (until the user cancels it)"
@@ -1526,15 +1443,9 @@ msgstr "avaa lataaja pysäytetyssä tilassa"
 
 #: BitTorrent/defaultargs.py:185
 msgid ""
-"specifies how the app should behave when the user manually tries to start "
-"another torrent: \"replace\" means always replace the running torrent with "
-"the new one, \"add\" means always add the running torrent in parallel, and "
-"\"ask\" means ask the user each time."
+"specifies how the app should behave when the user manually tries to start another torrent: \"replace\" means always replace the running torrent with the new one, \"add\" means always add the running torrent in parallel, and \"ask\" means ask the user each time."
 msgstr ""
-"määrittää, kuinka ohjelman tulee käyttäytyä, kun toinen torrent aloitetaan "
-"manuaalisesti: \"korvaa\" tarkoittaa korvaa aina aktiivinen torrent uudella, "
-"\"lisää\" tarkoittaa lisää aina aktiivinen torrent rinnalle, ja \"kysy\" "
-"tarkoittaa kysy käyttäjältä joka kerta."
+"määrittää, kuinka ohjelman tulee käyttäytyä, kun toinen torrent aloitetaan manuaalisesti: \"korvaa\" tarkoittaa korvaa aina aktiivinen torrent uudella, \"lisää\" tarkoittaa lisää aina aktiivinen torrent rinnalle, ja \"kysy\" tarkoittaa kysy käyttäjältä joka kerta."
 
 #: BitTorrent/defaultargs.py:195
 msgid "Start BitTorrent minimized"
@@ -1542,51 +1453,38 @@ msgstr "Käynnistä BitTorrent pienennettynä"
 
 #: BitTorrent/defaultargs.py:197
 msgid ""
-"override the version provided by the http version check and enable version "
-"check debugging mode"
+"override the version provided by the http version check and enable version check debugging mode"
 msgstr ""
+"syrjäytä http-versiotarkastuksen antama versio ja ota käyttöön versiotarkistus virheenpoistotilassa"
 
 #: BitTorrent/defaultargs.py:200
 msgid ""
-"override the current version used in the version check and enable version "
-"check debugging mode"
+"override the current version used in the version check and enable version check debugging mode"
 msgstr ""
+"syrjäytä versiotarkistuksessa käytettävä nykyinen versio ja ota käyttöön versiotarkistus virheenpoistotilassa"
 
 #: BitTorrent/defaultargs.py:203
 msgid ""
 "specify window size and position, in the format: WIDTHxHEIGHT+XOFFSET+YOFFSET"
-msgstr ""
+msgstr "määritä ikkunan koko ja paikka muodossa:LEVEYSxKORKEUS+XOFFSET+YOFFSET"
 
 #: BitTorrent/defaultargs.py:218
 msgid ""
-"file name (for single-file torrents) or directory name (for batch torrents) "
-"to save the torrent as, overriding the default name in the torrent. See also "
-"--save_in"
+"file name (for single-file torrents) or directory name (for batch torrents) to save the torrent as, overriding the default name in the torrent. See also --save_in"
 msgstr ""
-"tiedostonimi (yhden tiedoston torrent) tai kansionimi (erä-torrent), jolla "
-"tallennetaan ohittaen torrentin oletusnimen. Katso myös --save_in"
+"tiedostonimi (yhden tiedoston torrent) tai kansionimi (erä-torrent), jolla tallennetaan ohittaen torrentin oletusnimen. Katso myös --save_in"
 
 #: BitTorrent/defaultargs.py:225 BitTorrent/defaultargs.py:245
 msgid ""
-"the maximum number of uploads to allow at once. -1 means a (hopefully) "
-"reasonable number based on --max_upload_rate. The automatic values are only "
-"sensible when running one torrent at a time."
+"the maximum number of uploads to allow at once. -1 means a (hopefully) reasonable number based on --max_upload_rate. The automatic values are only sensible when running one torrent at a time."
 msgstr ""
-"Yhdellä kertaa sallittava lähetysten enimmäsimäärä. -1 tarkoittaa "
-"(toivottavasti) kohtuullista määrää, joka perustuu --enimmäislähetysmäärään. "
-"Automaattiset arvot ovat järkeviä vain silloin, kun käytetään yhtä torrentia "
-"kerrallaan."
+"Yhdellä kertaa sallittava lähetysten enimmäsimäärä. -1 tarkoittaa (toivottavasti) kohtuullista määrää, joka perustuu --enimmäislähetysmäärään. Automaattiset arvot ovat järkeviä vain silloin, kun käytetään yhtä torrentia kerrallaan."
 
 #: BitTorrent/defaultargs.py:230
 msgid ""
-"local directory where the torrent contents will be saved. The file (single-"
-"file torrents) or directory (batch torrents) will be created under this "
-"directory using the default name specified in the .torrent file. See also --"
-"save_as."
+"local directory where the torrent contents will be saved. The file (single-file torrents) or directory (batch torrents) will be created under this directory using the default name specified in the .torrent file. See also --save_as."
 msgstr ""
-"paikallinen kansio, johon torrentin sisältö tallennetaan. Tiedosto (yhden "
-"tiedoston torrent) tai kansio (erä-torrent) luodaan tähän kansioon käyttäen "
-"torrent-tiedostossa määriteltyä oletusnimeä. Katso myös --save_as."
+"paikallinen kansio, johon torrentin sisältö tallennetaan. Tiedosto (yhden tiedoston torrent) tai kansio (erä-torrent) luodaan tähän kansioon käyttäen torrent-tiedostossa määriteltyä oletusnimeä. Katso myös --save_as."
 
 #: BitTorrent/defaultargs.py:239
 msgid "whether or not to ask for a location to save downloaded files in"
@@ -1594,13 +1492,9 @@ msgstr "kysytäänkö ladatuille tiedostoille tallennuspaikkaa"
 
 #: BitTorrent/defaultargs.py:250
 msgid ""
-"local directory where the torrents will be saved, using a name determined by "
-"--saveas_style. If this is left empty each torrent will be saved under the "
-"directory of the corresponding .torrent file"
+"local directory where the torrents will be saved, using a name determined by --saveas_style. If this is left empty each torrent will be saved under the directory of the corresponding .torrent file"
 msgstr ""
-"paikallinen kansio, johon torrentit tallennetaan käyttäen --saveas_tyylillä "
-"määriteltyä nimeä. Jos tämä jätetään tyhjäksi, jokainen torrent tallennetaan "
-"samaan kansioon vastaavan .torrent -tiedoston kanssa"
+"paikallinen kansio, johon torrentit tallennetaan käyttäen --saveas_tyylillä määriteltyä nimeä. Jos tämä jätetään tyhjäksi, jokainen torrent tallennetaan samaan kansioon vastaavan .torrent -tiedoston kanssa"
 
 #: BitTorrent/defaultargs.py:255 BitTorrent/track.py:77
 msgid "how often to rescan the torrent directory, in seconds"
@@ -1608,28 +1502,15 @@ msgstr "kuinka usein torrent -kansio tutkitaan, sekunneissa"
 
 #: BitTorrent/defaultargs.py:257
 msgid ""
-"wait this many seconds after noticing a torrent before starting it, to avoid "
-"race with tracker"
+"wait this many seconds after noticing a torrent before starting it, to avoid race with tracker"
 msgstr ""
+"odota näin monta sekuntia torrentin huomaamisen jälkeen ennen kuin aloitat sen välttääksesi kilpailun trakkerin kanssa"
 
 #: BitTorrent/defaultargs.py:259
 msgid ""
-"How to name torrent downloads: 1: use name OF torrent file (minus ."
-"torrent);  2: use name encoded IN torrent file;  3: create a directory with "
-"name OF torrent file (minus .torrent) and save in that directory using name "
-"encoded IN torrent file;  4: if name OF torrent file (minus .torrent) and "
-"name encoded IN torrent file are identical, use that name (style 1/2), "
-"otherwise create an intermediate directory as in style 3;  CAUTION: options "
-"1 and 2 have the ability to overwrite files without warning and may present "
-"security issues."
+"How to name torrent downloads: 1: use name OF torrent file (minus .torrent);  2: use name encoded IN torrent file;  3: create a directory with name OF torrent file (minus .torrent) and save in that directory using name encoded IN torrent file;  4: if name OF torrent file (minus .torrent) and name encoded IN torrent file are identical, use that name (style 1/2), otherwise create an intermediate directory as in style 3;  CAUTION: options 1 and 2 have the ability to overwrite files without warning and may present security issues."
 msgstr ""
-"Kuinka torrent-lataukset nimetään: 1: käytä torrent-tiedoston nimeä (ilman ."
-"torrent); 2: käytä torrentiin koodattua nimeä; 3: luo kansio torrentin "
-"nimellä (ilman .torrent) ja tallenna torrentiin koodatulla nimellä; 4: jos "
-"torrentin nimi (ilman .torrent) ja torrentiin koodattu nimi ovat samat, "
-"käytä sitä (tyyli 1/2), muutoin luo kansio kuten tyylissä 3; VAROITUS: "
-"vaihtoehdoilla 1 ja 2 on kyky kirjoittaa olemassa olevien tiedostojen päälle "
-"ilman varoitusta ja voivat täten aiheuttaa turvallisuusriskin."
+"Kuinka torrent-lataukset nimetään: 1: käytä torrent-tiedoston nimeä (ilman .torrent); 2: käytä torrentiin koodattua nimeä; 3: luo kansio torrentin nimellä (ilman .torrent) ja tallenna torrentiin koodatulla nimellä; 4: jos torrentin nimi (ilman .torrent) ja torrentiin koodattu nimi ovat samat, käytä sitä (tyyli 1/2), muutoin luo kansio kuten tyylissä 3; VAROITUS: vaihtoehdoilla 1 ja 2 on kyky kirjoittaa olemassa olevien tiedostojen päälle ilman varoitusta ja voivat täten aiheuttaa turvallisuusriskin."
 
 #: BitTorrent/defaultargs.py:274
 msgid ""
@@ -1655,13 +1536,9 @@ msgstr "trakkerin oletusnimi"
 
 #: BitTorrent/defaultargs.py:296
 msgid ""
-"if false then make a trackerless torrent, instead of announce URL, use "
-"reliable node in form of <ip>:<port> or an empty string to pull some nodes "
-"from your routing table"
+"if false then make a trackerless torrent, instead of announce URL, use reliable node in form of <ip>:<port> or an empty string to pull some nodes from your routing table"
 msgstr ""
-"jos epätosi, luo trakkeriton torrent ilmoitus-URL:in sijaan, käytä "
-"luotettavaa noodia muodossa <ip>:<port> tai tyhjää riviä saadaksesi noodeja "
-"reitittimeltä"
+"jos epätosi, luo trakkeriton torrent ilmoitus-URL:in sijaan, käytä luotettavaa noodia muodossa <ip>:<port> tai tyhjää riviä saadaksesi noodeja reitittimeltä"
 
 #: bittorrent-console.py:41 bittorrent-curses.py:60
 msgid "download complete!"
@@ -1753,13 +1630,11 @@ msgstr "peeri -tilanne:"
 msgid "You cannot specify both --save_as and --save_in"
 msgstr "Et voi määrittää sekä --save_as että --save_in"
 
-#: bittorrent-console.py:240 bittorrent-curses.py:376
-#: BitTorrent/launchmanycore.py:69
+#: bittorrent-console.py:240 bittorrent-curses.py:376 BitTorrent/launchmanycore.py:69
 msgid "shutting down"
 msgstr "sulkeutuu"
 
-#: bittorrent-console.py:247 bittorrent-curses.py:383
-#: BitTorrent/launchmanycore.py:235
+#: bittorrent-console.py:247 bittorrent-curses.py:383 BitTorrent/launchmanycore.py:235
 msgid "Error reading config: "
 msgstr "Virhe luettaessa määrityksiä: "
 
@@ -1778,19 +1653,13 @@ msgstr ""
 
 #: bittorrent-curses.py:50 launchmany-curses.py:42
 msgid ""
-"This download interface requires the standard Python module \"curses\", "
-"which is unfortunately not available for the native Windows port of Python. "
-"It is however available for the Cygwin port of Python, running on all Win32 "
-"systems (www.cygwin.com)."
+"This download interface requires the standard Python module \"curses\", which is unfortunately not available for the native Windows port of Python. It is however available for the Cygwin port of Python, running on all Win32 systems (www.cygwin.com)."
 msgstr ""
-"Tämä latausliityntä vaatii Pythonmoduulin \"curses\", joka ei valitettavasti "
-"ole saatavilla alkuperäiselle Windowsin Python -portille. Se on kuitenkin "
-"saatavissa Cygwinin Python -portille, käy kaikkiin Win32 -järjestelmiin (www."
-"cygwin.com)."
+"Tämä latausliityntä vaatii Pythonmoduulin \"curses\", joka ei valitettavasti ole saatavilla alkuperäiselle Windowsin Python -portille. Se on kuitenkin saatavissa Cygwinin Python -portille, käy kaikkiin Win32 -järjestelmiin (www.cygwin.com)."
 
 #: bittorrent-curses.py:55
 msgid "You may still use \"bittorrent-console\" to download."
-msgstr ""
+msgstr "Voit yhä käyttää \"bittorrent-konsolia\" hakemiseen."
 
 #: bittorrent-curses.py:156
 msgid "file:"
@@ -1887,20 +1756,12 @@ msgstr " ei ole kansio"
 
 #: launchmany-console.py:66
 #, python-format
-msgid ""
-"error: %s\n"
-"run with no args for parameter explanations"
-msgstr ""
-"virhe: %s\n"
-" aja ilman argumentteja parametriselityksille"
+msgid "error: %s\nrun with no args for parameter explanations"
+msgstr "virhe: %s\n aja ilman argumentteja parametriselityksille"
 
 #: launchmany-console.py:71 launchmany-curses.py:301
-msgid ""
-"\n"
-"EXCEPTION:"
-msgstr ""
-"\n"
-" POIKKEUS:"
+msgid "\nEXCEPTION:"
+msgstr "\n POIKKEUS:"
 
 #: launchmany-curses.py:47
 msgid "You may still use \"btdownloadheadless.py\" to download."
@@ -1937,12 +1798,8 @@ msgid "error: "
 msgstr "virhe: "
 
 #: launchmany-curses.py:296
-msgid ""
-"\n"
-"run with no args for parameter explanations"
-msgstr ""
-"\n"
-" aja ilman argumentteja parametriselityksille"
+msgid "\nrun with no args for parameter explanations"
+msgstr "\n aja ilman argumentteja parametriselityksille"
 
 #: maketorrent-console.py:29
 msgid "optional human-readable comment to put in .torrent"
@@ -2007,25 +1864,6 @@ msgstr "trakkerittomat noodit:"
 #: torrentinfo-console.py:43
 msgid "comment:"
 msgstr "kommentti:"
-
-#: BitTorrent/RawServer_twisted.py:303
-msgid "connection refused"
-msgstr ""
-
-#: BitTorrent/RawServer_twisted.py:518 BitTorrent/RawServer_twisted.py:532
-#: BitTorrent/RawServer_twisted.py:555
-msgid "You asked for reuse to be off when binding. Sorry, I can't do that."
-msgstr ""
-
-#: BitTorrent/RawServer_twisted.py:721
-msgid "listen_forever() should only be called once per reactor."
-msgstr ""
-
-#: BitTorrent/RawServer_twisted.py:733
-msgid ""
-"listen_once() might not return until there is activity, and might not "
-"process the event you want. Use listen_forever()."
-msgstr ""
 
 #: BitTorrent/HTTPHandler.py:21
 msgid "Mon"
@@ -2116,8 +1954,7 @@ msgstr "Ei pystytty pysyvästi tallentamaan asetuksia:"
 #, python-format
 msgid "Error reading config file. Old config file stored in \"%s\""
 msgstr ""
-"Virhe luettaessa konfiguraatiotiedostoa. Vanha konfiguraatotiedosto on "
-"tallennettu paikkaan \"%s\""
+"Virhe luettaessa konfiguraatiotiedostoa. Vanha konfiguraatotiedosto on tallennettu paikkaan \"%s\""
 
 #: BitTorrent/configfile.py:131
 #, python-format
@@ -2127,12 +1964,12 @@ msgstr ""
 #: BitTorrent/configfile.py:133
 #, python-format
 msgid "You must quit %s and reinstall it. (%s)"
-msgstr ""
+msgstr "Lopeta %s ja uudelleen asenna se. (%s)"
 
 #: BitTorrent/configfile.py:218
 #, python-format
 msgid "Could not find translation for language \"%s\"\n"
-msgstr ""
+msgstr "Ei löytynyt käännöstä kielelle \"%s\"\n"
 
 #: BitTorrent/Storage.py:58
 #, python-format
@@ -2142,7 +1979,7 @@ msgstr "Tiedosto %s kuuluu toiseen käynnissä olevaan torrenttiin"
 #: BitTorrent/Storage.py:102
 #, python-format
 msgid "File %s already exists, but is not a regular file"
-msgstr ""
+msgstr "Tiedosto %s on jo olemassa, mutta se ei ole tavallinen tiedosto"
 
 #: BitTorrent/Storage.py:181
 msgid "Short read - something truncated files?"
@@ -2155,26 +1992,43 @@ msgstr ""
 #: BitTorrent/Storage.py:238
 #, python-format
 msgid ""
-"Another program appears to have moved, renamed, or deleted the file, or %s "
-"may have crashed last time it was run."
+"Another program appears to have moved, renamed, or deleted the file, or %s may have crashed last time it was run."
 msgstr ""
+"Toinen ohjelma näyttää siirtäneen, uudelleen nimennyt tai poistanut tiedoston, tai %s on kaatunut viime ajon aikana."
 
 #: BitTorrent/Storage.py:241
 #, python-format
 msgid ""
-"Another program appears to have modified the file, or %s may have crashed "
-"last time it was run."
+"Another program appears to have modified the file, or %s may have crashed last time it was run."
 msgstr ""
+"Toinen ohjelma näyttää muuttaneen tiedostoa tai %s on kaatunut viime ajon aikana."
 
 #: BitTorrent/Storage.py:244
 #, python-format
 msgid ""
-"Another program appears to have changed the file size, or %s may have "
-"crashed last time it was run."
+"Another program appears to have changed the file size, or %s may have crashed last time it was run."
 msgstr ""
+"Toinen ohjelma näyttää muuttaneen tiedoston kokoa tai %s on kaatunut ajon aikana."
 
 #: BitTorrent/Storage.py:258 BitTorrent/StorageWrapper.py:284
 msgid "Couldn't read fastresume data: "
+msgstr ""
+
+#: BitTorrent/RawServer_twisted.py:320
+msgid "connection refused"
+msgstr "yhteys hylätty"
+
+#: BitTorrent/RawServer_twisted.py:535 BitTorrent/RawServer_twisted.py:549 BitTorrent/RawServer_twisted.py:572
+msgid "You asked for reuse to be off when binding. Sorry, I can't do that."
+msgstr ""
+
+#: BitTorrent/RawServer_twisted.py:735
+msgid "listen_forever() should only be called once per reactor."
+msgstr ""
+
+#: BitTorrent/RawServer_twisted.py:747
+msgid ""
+"listen_once() might not return until there is activity, and might not process the event you want. Use listen_forever()."
 msgstr ""
 
 #: BitTorrent/StorageWrapper.py:53
@@ -2210,14 +2064,6 @@ msgstr ""
 msgid "told file complete on start-up, but piece failed hash check"
 msgstr ""
 
-#: BitTorrent/bencode.py:73
-msgid "not a valid bencoded string"
-msgstr ""
-
-#: BitTorrent/bencode.py:75
-msgid "invalid bencoded value (data after valid prefix)"
-msgstr ""
-
 #: BitTorrent/launchmanycore.py:65
 msgid "Could not set signal handler: "
 msgstr ""
@@ -2246,11 +2092,9 @@ msgstr ""
 
 #: BitTorrent/makemetafile.py:60
 msgid ""
-"You can't specify the name of the .torrent file when generating multiple "
-"torrents at once"
+"You can't specify the name of the .torrent file when generating multiple torrents at once"
 msgstr ""
-".Torrent tiedoston nimeä ei voi yksilöidä kun luodaan monia torrentteja "
-"yhdellä kertaa"
+".Torrent tiedoston nimeä ei voi yksilöidä kun luodaan monia torrentteja yhdellä kertaa"
 
 #: BitTorrent/makemetafile.py:75
 #, python-format
@@ -2260,19 +2104,15 @@ msgstr ""
 #: BitTorrent/makemetafile.py:185
 #, python-format
 msgid ""
-"Could not convert file/directory name \"%s\" to utf-8 (%s). Either the "
-"assumed filesystem encoding \"%s\" is wrong or the filename contains illegal "
-"bytes."
+"Could not convert file/directory name \"%s\" to utf-8 (%s). Either the assumed filesystem encoding \"%s\" is wrong or the filename contains illegal bytes."
 msgstr ""
 
 #: BitTorrent/makemetafile.py:190
 #, python-format
 msgid ""
-"File/directory name \"%s\" contains reserved unicode values that do not "
-"correspond to characters."
+"File/directory name \"%s\" contains reserved unicode values that do not correspond to characters."
 msgstr ""
-"Tiedosto-/kansionimi \"%s\" sisältää varattuja unicode arvoja, jotka eivät "
-"vastaa merkkejä."
+"Tiedosto-/kansionimi \"%s\" sisältää varattuja unicode arvoja, jotka eivät vastaa merkkejä."
 
 #: BitTorrent/parsedir.py:34
 msgid "Could not read directory "
@@ -2318,13 +2158,9 @@ msgstr "Ei voi lukea %s"
 #: BitTorrent/GetTorrent.py:51
 #, python-format
 msgid ""
-"Could not download or open \n"
-"%s\n"
-"Try using a web browser to download the torrent file."
+"Could not download or open \n%s\nTry using a web browser to download the torrent file."
 msgstr ""
-"Ei voi ladata tai avata \n"
-" %s\n"
-" Koita ladata torrent -tiedosto selaimella."
+"Ei voi ladata tai avata \n %s\n Koita ladata torrent -tiedosto selaimella."
 
 #: BitTorrent/__init__.py:22
 #, python-format
@@ -2359,8 +2195,7 @@ msgstr ""
 
 #: BitTorrent/Rerequester.py:221
 msgid ""
-"Aborting the torrent as it was rejected by the tracker while not connected "
-"to any peers. "
+"Aborting the torrent as it was rejected by the tracker while not connected to any peers. "
 msgstr ""
 
 #: BitTorrent/Rerequester.py:223
@@ -2515,17 +2350,12 @@ msgid "Usage: %s "
 msgstr "Käyttö: %s"
 
 #: BitTorrent/parseargs.py:28
-msgid ""
-"[OPTIONS] [TORRENTDIRECTORY]\n"
-"\n"
-msgstr ""
-"[ASETUKSET] [TORRENTKANSIO]\n"
-"\n"
+msgid "[OPTIONS] [TORRENTDIRECTORY]\n\n"
+msgstr "[ASETUKSET] [TORRENTKANSIO]\n\n"
 
 #: BitTorrent/parseargs.py:29
 msgid ""
-"If a non-option argument is present it's taken as the value\n"
-"of the torrent_dir option.\n"
+"If a non-option argument is present it's taken as the value\nof the torrent_dir option.\n"
 msgstr ""
 
 #: BitTorrent/parseargs.py:32
@@ -2606,15 +2436,13 @@ msgstr ""
 
 #: BitTorrent/track.py:56
 msgid ""
-"default number of peers to send an info message to if the client does not "
-"specify a number"
+"default number of peers to send an info message to if the client does not specify a number"
 msgstr ""
 
 #: BitTorrent/track.py:59
 msgid "time to wait between checking if any connections have timed out"
 msgstr ""
-"aika, joka odotetaan yhteyksien aikakatkaisun varalta tehtävän tarkastuksen "
-"välillä"
+"aika, joka odotetaan yhteyksien aikakatkaisun varalta tehtävän tarkastuksen välillä"
 
 #: BitTorrent/track.py:61
 msgid ""
@@ -2636,10 +2464,7 @@ msgstr ""
 
 #: BitTorrent/track.py:72
 msgid ""
-"only allow downloads for .torrents in this dir (and recursively in "
-"subdirectories of directories that have no .torrent files themselves). If "
-"set, torrents in this directory show up on infopage/scrape whether they have "
-"peers or not"
+"only allow downloads for .torrents in this dir (and recursively in subdirectories of directories that have no .torrent files themselves). If set, torrents in this directory show up on infopage/scrape whether they have peers or not"
 msgstr ""
 
 #: BitTorrent/track.py:79
@@ -2669,9 +2494,7 @@ msgstr ""
 
 #: BitTorrent/track.py:94
 msgid ""
-"ignore the ip GET parameter from machines which aren't on local network IPs "
-"(0 = never, 1 = always, 2 = ignore if NAT checking is not enabled). HTTP "
-"proxy headers giving address of original client are treated the same as --ip."
+"ignore the ip GET parameter from machines which aren't on local network IPs (0 = never, 1 = always, 2 = ignore if NAT checking is not enabled). HTTP proxy headers giving address of original client are treated the same as --ip."
 msgstr ""
 
 #: BitTorrent/track.py:99
@@ -2680,14 +2503,12 @@ msgstr ""
 
 #: BitTorrent/track.py:101
 msgid ""
-"use with allowed_dir; adds a /file?hash={hash} url that allows users to "
-"download the torrent file"
+"use with allowed_dir; adds a /file?hash={hash} url that allows users to download the torrent file"
 msgstr ""
 
 #: BitTorrent/track.py:104
 msgid ""
-"keep dead torrents after they expire (so they still show up on your /scrape "
-"and web page). Only matters if allowed_dir is not set"
+"keep dead torrents after they expire (so they still show up on your /scrape and web page). Only matters if allowed_dir is not set"
 msgstr ""
 
 #: BitTorrent/track.py:107
@@ -2699,9 +2520,7 @@ msgid "maximum number of peers to give with any one request"
 msgstr ""
 
 #: BitTorrent/track.py:163
-msgid ""
-"your file may exist elsewhere in the universe\n"
-"but alas, not here\n"
+msgid "your file may exist elsewhere in the universe\nbut alas, not here\n"
 msgstr ""
 
 #: BitTorrent/track.py:248
@@ -2754,9 +2573,27 @@ msgstr ""
 msgid "# Shutting down: "
 msgstr ""
 
-#: BitTorrent/Encoder.py:267
+#: BitTorrent/Encoder.py:270
 msgid "Can't start two separate instances of the same torrent"
 msgstr "Kahta erillistä tapausta ei voi aloittaa samasta torrentista"
+
+#: BitTorrent/TrayIcon.py:65
+#, python-format
+msgid "Hide %s"
+msgstr ""
+
+#: BitTorrent/TrayIcon.py:67
+#, python-format
+msgid "Show %s"
+msgstr ""
+
+#: BitTorrent/bencode.py:73
+msgid "not a valid bencoded string"
+msgstr ""
+
+#: BitTorrent/bencode.py:75
+msgid "invalid bencoded value (data after valid prefix)"
+msgstr ""
 
 #: BitTorrent/download.py:98
 msgid "maxport less than minport - no ports to check"
@@ -2806,8 +2643,7 @@ msgstr "lataus epäonnistui"
 #: BitTorrent/download.py:411
 msgid "IO Error: No space left on disk, or cannot create a file that large:"
 msgstr ""
-"IO Virhe : Ei tilaa levykkeellä, tai vaihtoehtoisesti ei voi luoda niin "
-"suurta tiedostoa"
+"IO Virhe : Ei tilaa levykkeellä, tai vaihtoehtoisesti ei voi luoda niin suurta tiedostoa"
 
 #: BitTorrent/download.py:414
 msgid "killed by IO error: "
@@ -2841,36 +2677,22 @@ msgstr ""
 msgid "shut down"
 msgstr "Sammuta"
 
-#: BitTorrent/TrayIcon.py:65
-#, python-format
-msgid "Hide %s"
-msgstr ""
-
-#: BitTorrent/TrayIcon.py:67
-#, python-format
-msgid "Show %s"
-msgstr ""
-
 #: BitTorrent/ConvertedMetainfo.py:51
 msgid ""
-"This seems to be an old Python version which does not support detecting the "
-"filesystem encoding. Assuming 'ascii'."
+"This seems to be an old Python version which does not support detecting the filesystem encoding. Assuming 'ascii'."
 msgstr ""
-"Tämä näyttäisi olevan Pythonin vanha versio, joka ei tue "
-"tiedostojärjestelmän koodauksen tunnistamista. Oletetaan 'ascii'."
+"Tämä näyttäisi olevan Pythonin vanha versio, joka ei tue tiedostojärjestelmän koodauksen tunnistamista. Oletetaan 'ascii'."
 
 #: BitTorrent/ConvertedMetainfo.py:58
 msgid "Python failed to autodetect filesystem encoding. Using 'ascii' instead."
 msgstr ""
-"Python ei onnistunut tunnistamaan automaattisesti tiedostojärjestelmän "
-"koodausta. Käytetään 'ascii' sen sijaan."
+"Python ei onnistunut tunnistamaan automaattisesti tiedostojärjestelmän koodausta. Käytetään 'ascii' sen sijaan."
 
 #: BitTorrent/ConvertedMetainfo.py:65
 #, python-format
 msgid "Filesystem encoding '%s' is not supported. Using 'ascii' instead."
 msgstr ""
-"Tiedostojärjestelmän koodaus '%s' ei ole tuettu. Käytetään 'ascii' sen "
-"sijaan."
+"Tiedostojärjestelmän koodaus '%s' ei ole tuettu. Käytetään 'ascii' sen sijaan."
 
 #: BitTorrent/ConvertedMetainfo.py:123
 msgid "Bad file path component: "
@@ -2878,62 +2700,39 @@ msgstr "Epäkelpo tiedostopolun osa: "
 
 #: BitTorrent/ConvertedMetainfo.py:195
 msgid ""
-"This .torrent file has been created with a broken tool and has incorrectly "
-"encoded filenames. Some or all of the filenames may appear different from "
-"what the creator of the .torrent file intended."
+"This .torrent file has been created with a broken tool and has incorrectly encoded filenames. Some or all of the filenames may appear different from what the creator of the .torrent file intended."
 msgstr ""
-"Tämä .torrent -tiedosto on luotu käyttäen rikkinäistä työkalua ja siinä on "
-"virheellisesti koodattuja tiedostonimiä. Jotkin tai kaikki tiedostonimet "
-"voivat näyttää erilaiselta kuin mitä .torrent -tiedoston tekijä on "
-"tarkoittanut."
+"Tämä .torrent -tiedosto on luotu käyttäen rikkinäistä työkalua ja siinä on virheellisesti koodattuja tiedostonimiä. Jotkin tai kaikki tiedostonimet voivat näyttää erilaiselta kuin mitä .torrent -tiedoston tekijä on tarkoittanut."
 
 #: BitTorrent/ConvertedMetainfo.py:201
 msgid ""
-"This .torrent file has been created with a broken tool and has bad character "
-"values that do not correspond to any real character. Some or all of the "
-"filenames may appear different from what the creator of the .torrent file "
-"intended."
+"This .torrent file has been created with a broken tool and has bad character values that do not correspond to any real character. Some or all of the filenames may appear different from what the creator of the .torrent file intended."
 msgstr ""
-"Tämä .torrent -tiedosto on luotu käyttäen rikkinäistä työkalua ja siinä on "
-"huonoja merkkiarvoja jotka eivät vastaa mitään olemassaolevaa merkkiä. "
-"Jotkin tai kaikki tiedostonimet voivat näyttää erilaiselta kuin mitä ."
-"torrent -tiedoston tekijä on tarkoittanut."
+"Tämä .torrent -tiedosto on luotu käyttäen rikkinäistä työkalua ja siinä on huonoja merkkiarvoja jotka eivät vastaa mitään olemassaolevaa merkkiä. Jotkin tai kaikki tiedostonimet voivat näyttää erilaiselta kuin mitä .torrent -tiedoston tekijä on tarkoittanut."
 
 #: BitTorrent/ConvertedMetainfo.py:208
 msgid ""
-"This .torrent file has been created with a broken tool and has incorrectly "
-"encoded filenames. The names used may still be correct."
+"This .torrent file has been created with a broken tool and has incorrectly encoded filenames. The names used may still be correct."
 msgstr ""
-"Tämä .torrent -tiedosto on luotu käyttäen rikkinäistä työkalua ja siinä on "
-"väärin koodattuja tiedostonimiä. Käytetyn nimet voivat silti olla oikein."
+"Tämä .torrent -tiedosto on luotu käyttäen rikkinäistä työkalua ja siinä on väärin koodattuja tiedostonimiä. Käytetyn nimet voivat silti olla oikein."
 
 #: BitTorrent/ConvertedMetainfo.py:213
 #, python-format
 msgid ""
-"The character set used on the local filesystem (\"%s\") cannot represent all "
-"characters used in the filename(s) of this torrent. Filenames have been "
-"changed from the original."
+"The character set used on the local filesystem (\"%s\") cannot represent all characters used in the filename(s) of this torrent. Filenames have been changed from the original."
 msgstr ""
-"Paikallisessa tiedostojärjestelmässä (\"%s\") käytetty merkkisarja ei voi "
-"näyttää kaikkia torrentissa käytettyjä tiedostonimiä. Tiedostonimet on "
-"muutettu alkuperäisestä."
+"Paikallisessa tiedostojärjestelmässä (\"%s\") käytetty merkkisarja ei voi näyttää kaikkia torrentissa käytettyjä tiedostonimiä. Tiedostonimet on muutettu alkuperäisestä."
 
 #: BitTorrent/ConvertedMetainfo.py:219
 msgid ""
-"The Windows filesystem cannot handle some characters used in the filename(s) "
-"of this torrent. Filenames have been changed from the original."
+"The Windows filesystem cannot handle some characters used in the filename(s) of this torrent. Filenames have been changed from the original."
 msgstr ""
 
 #: BitTorrent/ConvertedMetainfo.py:224
 msgid ""
-"This .torrent file has been created with a broken tool and has at least 1 "
-"file with an invalid file or directory name. However since all such files "
-"were marked as having length 0 those files are just ignored."
+"This .torrent file has been created with a broken tool and has at least 1 file with an invalid file or directory name. However since all such files were marked as having length 0 those files are just ignored."
 msgstr ""
-"Tämä .torrent -tiedosto on luotu käyttäen rikkinäistä työkalua, ja siinä on "
-"ainakin 1 tiedosto jolla on epäkelpo tiedosto- tai kansionimi. Koska "
-"kaikkien sellaisten tiedostojen pituudeksi on merkitty 0, ne jätetään "
-"huomioimatta."
+"Tämä .torrent -tiedosto on luotu käyttäen rikkinäistä työkalua, ja siinä on ainakin 1 tiedosto jolla on epäkelpo tiedosto- tai kansionimi. Koska kaikkien sellaisten tiedostojen pituudeksi on merkitty 0, ne jätetään huomioimatta."
 
 #: BitTorrent/IPC.py:133
 #, python-format
@@ -3029,6 +2828,3 @@ msgstr ""
 msgid "timeout"
 msgstr ""
 
-#: khashmir/krpc.py:239
-msgid "socket error"
-msgstr ""

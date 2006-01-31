@@ -17,7 +17,7 @@ language_names = {
     'cs'   :u'Čeština'              ,    'de'   :u'Deutsch'              ,
     'en'   :u'English'              ,    'es'   :u'Español'              ,
     'es_MX':u'Español de Mexico '   ,    'fr'   :u'Français'             ,
-    'el'   :u'Ελληνικά'             ,    'he_IL':u'עברית'                ,
+    'el'   :u'Ελληνικά'             ,    'he'   :u'עברית'                ,
     'hu'   :u'Magyar'               ,    'it'   :u'Italiano'             ,
     'is'   :u'Íslenska'             ,    'ja'   :u'日本語'            ,
     'ko'   :u'한국어'            ,'nl'   :u'Nederlands'           ,

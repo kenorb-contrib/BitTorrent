@@ -21,5 +21,4 @@ from sys import argv
 from BitTorrent.track import track
 
 if __name__ == '__main__':
-    file('/var/run/bittorrent-tracker.pid', 'w').write(str(os.getpid()))
     track(argv[1:])

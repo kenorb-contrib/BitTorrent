@@ -2264,7 +2264,12 @@ class RunningTorrentBox(PausedTorrentBox):
             self.peerlistwindow.close()
 
     rate_label = ': %s'
-
+    eta_label = '?'
+    done_label = _("Done")
+    progress_bar_label = _("%.1f%% done, %s remaining")
+    down_rate_label = _("Download rate")
+    up_rate_label = _("Upload rate"  )
+    
     def update_status(self, statistics):
         fractionDone = statistics.get('fractionDone')
         activity = statistics.get('activity')
@@ -2282,9 +2287,9 @@ class RunningTorrentBox(PausedTorrentBox):
 
         if dt > 0:
             self.up_down_ratio = ut / self.metainfo.total_bytes
-        
-        eta_label = '?'
-        done_label = _("Done")
+
+        done_label = self.done_label
+        eta_label = self.eta_label
         if 'numPeers' in statistics:
             eta = statistics.get('timeEst')
             if eta is not None:
@@ -2300,7 +2305,7 @@ class RunningTorrentBox(PausedTorrentBox):
                 self.change_to_completed()
         else:
             self.progressbar.set_fraction(fractionDone)
-            progress_bar_label = _("%.1f%% done, %s remaining") % \
+            progress_bar_label = self.progress_bar_label % \
                                  (int(fractionDone*1000)/10, eta_label) 
             self.progressbar.set_text(progress_bar_label)
             
@@ -2308,9 +2313,9 @@ class RunningTorrentBox(PausedTorrentBox):
         if 'numPeers' not in statistics:
             return
 
-        self.down_rate.set_text(_("Download rate")+self.rate_label %
+        self.down_rate.set_text(self.down_rate_label+self.rate_label %
                                 Rate(statistics['downRate']))
-        self.up_rate.set_text  (_("Upload rate"  )+self.rate_label %
+        self.up_rate.set_text  (self.up_rate_label+self.rate_label %
                                 Rate(statistics['upRate']))
 
         if advanced_ui:
@@ -3267,7 +3272,7 @@ class DownloadInfoFrame(object):
             self.torrentqueue.request_status(infohash, t.widget.peerlistwindow
                              is not None, t.widget.filelistwindow is not None)
         if not len(self.running_torrents):
-            self.status_light.send_message('stop')
+            self.status_light.send_message('empty')
         return True
 
     def enter_url_to_open(self, widget): 

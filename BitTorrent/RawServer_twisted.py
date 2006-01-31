@@ -88,11 +88,12 @@ class Handler(object):
 
 class ConnectionWrapper(object):
     def __init__(self, rawserver, handler, context, tos=0):
-        self.dying = 0
+        self.dying = False
         self.ip = None
         self.port = None
         self.transport = None
         self.reset_timeout = None
+        self.callback_connection = None
 
         self.post_init(rawserver, handler, context)
 
@@ -119,8 +120,9 @@ class ConnectionWrapper(object):
                 pass
         return s            
 
-    def attach_transport(self, transport, reset_timeout):
+    def attach_transport(self, callback_connection, transport, reset_timeout):
         self.transport = transport
+        self.callback_connection = callback_connection
         self.reset_timeout = reset_timeout
 
         try:        
@@ -193,9 +195,6 @@ class ConnectionWrapper(object):
             
     def close(self):
         self.buffer.stopWriting()
-        
-        # opt for no "connection_lost" callback since we know that
-        self.dying = 1
 
         if self.rawserver.config['close_with_rst']:
             try:
@@ -210,22 +209,38 @@ class ConnectionWrapper(object):
         else:
             self.transport.loseConnection()
 
+    def _cleanup(self):
+
+        self.buffer.connection = None
+        del self.buffer
+        
+        self.handler = None
+
+        del self.transport
+        
+        if self.callback_connection:
+            if self.callback_connection.can_timeout:
+                self.callback_connection.setTimeout(None)
+            self.callback_connection.connection = None
+            del self.callback_connection
+
+
 
 class OutputBuffer(object):
 
     def __init__(self, connection):
         self.connection = connection
         self.consumer = None
-        self.buffer = StringIO()
+        self._buffer = StringIO()
 
     def is_flushed(self):
-        return (self.buffer.tell() == 0)
+        return (self._buffer.tell() == 0)
 
     def add(self, b):
         # sometimes we get strings, sometimes we get buffers. ugg.
         if (isinstance(b, buffer)):
             b = str(b)
-        self.buffer.write(b)
+        self._buffer.write(b)
 
         if self.consumer is None:
             self.beginWriting()
@@ -241,14 +256,16 @@ class OutputBuffer(object):
         self.consumer = None
 
     def resumeProducing(self):
-        if self.consumer is not None:
-            if self.buffer.tell() > 0:
-                self.consumer.write(self.buffer.getvalue())
-                self.buffer.seek(0)
-                self.buffer.truncate(0)
-                self.connection._flushed()
-            else:
-                self.stopWriting()
+        if self.consumer is None:
+            return
+        
+        if self._buffer.tell() > 0:
+            self.consumer.write(self._buffer.getvalue())
+            self._buffer.seek(0)
+            self._buffer.truncate(0)
+            self.connection._flushed()
+        else:
+            self.stopWriting()
 
 
     def pauseProducing(self):
@@ -264,7 +281,7 @@ class CallbackConnection(object):
         if s is None:
             s = ConnectionWrapper(*args)
 
-        s.attach_transport(transport, self.optionalResetTimeout)
+        s.attach_transport(self, transport=transport, reset_timeout=self.optionalResetTimeout)
         self.connection = s
 
     def connectionMade(self):
@@ -308,8 +325,7 @@ class CallbackConnection(object):
             # this might not work - reason is not an exception
             s.handler.connection_failed(dns, reason)
 
-            #so we don't get failed then closed
-            s.dying = 1
+            s.dying = True
         
         s.rawserver._remove_socket(s)
 
@@ -344,13 +360,14 @@ class OutgoingConnectionFactory(ClientFactory):
         #print "Client connection failed", str(reason).split(":")[-1]
         peer = connector.getDestination()
         dns = (peer.host, peer.port)
-        # opt-out        
-        if not self.connection.dying:
-            # this might not work - reason is not an exception
-            self.connection.handler.connection_failed(dns, reason)
 
-            #so we don't get failed then closed
-            self.connection.dying = 1
+        s = self.connection        
+        # opt-out        
+        if not s.dying:
+            # this might not work - reason is not an exception
+            s.handler.connection_failed(dns, reason)
+
+            s.dying = True
 
         self.rawserver._remove_pending_connection(peer.host)
         self.rawserver._remove_socket(self.connection)
@@ -450,7 +467,7 @@ class RawServer(RawServerMixin):
         self.pending_sockets_lock = threading.Lock()
 
         #l2 = task.LoopingCall(self._print_connection_count)
-        #l2.start(1)
+        #l2.start(10)
 
     def _log(self, msg):
         f = open("connections.txt", "a")
@@ -468,7 +485,7 @@ class RawServer(RawServerMixin):
         d = dict()
         for s in self.single_sockets:
             state = "None"
-            if s.transport:
+            if not s.dying and s.transport:
                 try:
                     state = s.transport.state
                 except:
@@ -747,7 +764,8 @@ class RawServer(RawServerMixin):
         # opt-out        
         if not s.dying:
             self._make_wrapped_call(s.handler.connection_lost, (s,), s)
-            s.handler = None
+
+        s._cleanup()
 
         del self.single_sockets[s]
         

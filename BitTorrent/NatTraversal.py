@@ -1,6 +1,8 @@
 # someday: http://files.dns-sd.org/draft-nat-port-mapping.txt
 # today: http://www.upnp.org/
 
+debug = False
+
 import sys
 import socket
 import os
@@ -51,9 +53,15 @@ def UPNPError(logfunc, s):
 class UPnPException(Exception):
     pass
 
+__host_ip = None
+
+import thread
+
 def get_host_ip():
-    # this could be improved by making a connection and checking the host
-    ip = None
+    global __host_ip
+
+    if __host_ip is not None:
+        return __host_ip
     
     #try:
     #    ip = socket.gethostbyname(socket.gethostname())
@@ -61,12 +69,15 @@ def get_host_ip():
     # mac sometimes throws an error, so they can just wait.
     # plus, complicated /etc/hosts will return invalid IPs
 
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.connect(("bittorrent.com", 80))
-    endpoint = s.getsockname()
-    ip = endpoint[0]
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.connect(("bittorrent.com", 80))
+        endpoint = s.getsockname()
+        __host_ip = endpoint[0]
+    except socket.error, e:
+        __host_ip = socket.gethostbyname(socket.gethostname())
 
-    return ip
+    return __host_ip
         
 
 class InfoFileHandle(object):
@@ -109,7 +120,8 @@ class NatTraverser(object):
         self.rawserver = rawserver
 
         def log_severity_filter(level, s, optional=True):
-            if level >= ERROR or not optional:
+            global debug
+            if level >= ERROR or debug or not optional:
                 logfunc(level, s)
         self.logfunc = log_severity_filter
 
@@ -281,7 +293,8 @@ class UPnPPortMapping(object):
         self.d = defer.Deferred()
 
     def populate_host(self):
-        if self.host == None:
+        # throw out '' or None or ints, also look for semi-valid IPs
+        if (not isinstance(self.host, str)) or (self.host.count('.') < 3): 
             self.host = get_host_ip()
         
     def __str__(self):
@@ -509,7 +522,7 @@ class ManualUPnP(NATBase, Handler):
         self.rawserver.external_add_task(self.begin_discovery, 0, ())
 
     def begin_discovery(self):
-        
+
         # bind to an available port, and join the multicast group
         for p in xrange(self.upnp_addr[1], self.upnp_addr[1]+5000):
             try:
