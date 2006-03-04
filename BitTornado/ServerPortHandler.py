@@ -120,6 +120,9 @@ class NewSocketHandler:     # hand a new socket off where it belongs
                 return True
         return None
 
+    def read_dead(self, s):
+        return None
+
     def data_came_in(self, garbage, s):
         while True:
             if self.closed:

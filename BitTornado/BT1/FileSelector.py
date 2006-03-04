@@ -53,9 +53,13 @@ class FileSelector:
 #           print_exc()            
             return False
         try:
+            files_updated = False
             for f in xrange(self.numfiles):
                 if new_priority[f] < 0:
                     self.storage.disable_file(f)
+                    files_updated = True
+            if files_updated:
+                self.storage.reset_file_status()
             self.new_priority = new_priority
         except (IOError, OSError), e:
             self.failfunc("can't open partial file for "
@@ -82,10 +86,11 @@ class FileSelector:
         self.new_partials = self.storagewrapper.unpickle(d, pieces)
 
 
-    def tie_in(self, picker, cancelfunc, requestmorefunc):
+    def tie_in(self, picker, cancelfunc, requestmorefunc, rerequestfunc):
         self.picker = picker
         self.cancelfunc = cancelfunc
         self.requestmorefunc = requestmorefunc
+        self.rerequestfunc = rerequestfunc
 
         if self.new_priority:
             self.priority = self.new_priority
@@ -159,6 +164,7 @@ class FileSelector:
         
 
     def _set_piece_priority(self, new_priority):
+        was_complete = self.storagewrapper.am_I_complete()
         new_piece_priority = self._get_piece_priority_list(new_priority)
         pieces = range(self.numpieces)
         shuffle(pieces)
@@ -177,6 +183,8 @@ class FileSelector:
         self.storagewrapper.reblock([i == -1 for i in new_piece_priority])
         if new_unblocked:
             self.requestmorefunc(new_unblocked)
+        if was_complete and not self.storagewrapper.am_I_complete():
+            self.rerequestfunc()
 
         return new_piece_priority        
 
@@ -195,9 +203,7 @@ class FileSelector:
 
     def set_priorities(self, new_priority):
         self.new_priority = new_priority
-        def s(self=self):
-            self.set_priorities_now()
-        self.sched(s)
+        self.sched(self.set_priorities_now)
         
     def set_priority(self, f, p):
         new_priority = self.get_priorities()

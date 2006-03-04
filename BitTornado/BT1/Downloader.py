@@ -271,7 +271,7 @@ class SingleDownload:
             self.downloader.picker.got_have(index)
             if self.have.complete():
                 self.downloader.picker.became_seed()
-                if self.downloader.picker.am_I_complete():
+                if self.downloader.storage.am_I_complete():
                     self.downloader.add_disconnected_seed(self.connection.get_readable_id())
                     self.connection.close()
             elif self.downloader.endgamemode:
@@ -296,7 +296,7 @@ class SingleDownload:
                 return
 
     def got_have_bitfield(self, have):
-        if self.downloader.picker.am_I_complete() and have.complete():
+        if self.downloader.storage.am_I_complete() and have.complete():
             if self.downloader.super_seeding:
                 self.connection.send_bitfield(have.tostring()) # be nice, show you're a seed too
             self.connection.close()
@@ -497,7 +497,7 @@ class Downloader:
             self.endgamemode = False
         if self.endgame_queued_pieces and not self.endgamemode:
             self.requeue_piece_download()
-        if self.picker.am_I_complete():
+        if self.storage.am_I_complete():
             assert not self.all_requests
             assert not self.endgamemode
             for d in [i for i in self.downloads if i.have.complete()]:

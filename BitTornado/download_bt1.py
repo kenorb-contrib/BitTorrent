@@ -631,7 +631,8 @@ class BT1Download:
                 self.httpdownloader.make_download(u)
 
         if self.selector_enabled:
-            self.fileselector.tie_in(self.picker, self._cancelfunc, self._reqmorefunc)
+            self.fileselector.tie_in(self.picker, self._cancelfunc,
+                    self._reqmorefunc, self.rerequest_ondownloadmore)
             if self.priority:
                 self.fileselector.set_priorities_now(self.priority)
             self.appdataobj.deleteTorrentData(self.infohash)
@@ -652,6 +653,10 @@ class BT1Download:
         if self.rerequest:
             return self.rerequest.last_failed
         return False
+
+    def rerequest_ondownloadmore(self):
+        if self.rerequest:
+            self.rerequest.hit()
 
     def startRerequester(self, seededfunc = None, force_rapid_update = False):
         if self.response.has_key('announce-list'):

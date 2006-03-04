@@ -447,6 +447,9 @@ class StorageWrapper:
     def is_endgame(self):
         return not self.amount_inactive
 
+    def am_I_complete(self):
+        return self.amount_obtained == self.amount_desired
+
     def reset_endgame(self, requestlist):
         for index, begin, length in requestlist:
             self.request_lost(index, begin, length)

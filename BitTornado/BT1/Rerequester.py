@@ -137,6 +137,11 @@ class Rerequester:
             self.sched(self.d, self.announce_interval)
 
 
+    def hit(self, event = 3):
+        if not self.unpauseflag.isSet() and (
+            self.howmany() < self.minpeers or self.force_rapid_update ):
+            self.announce(event)
+
     def announce(self, event = 3, callback = lambda: None, specialurl = None):
 
         if specialurl is not None:

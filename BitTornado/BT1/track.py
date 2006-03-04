@@ -162,7 +162,7 @@ def _get_forwarded_ip(headers):
             x,y = header.split(',')
         except:
             return header
-        if not local_IPs.includes(x):
+        if is_valid_ip(x) and not local_IPs.includes(x):
             return x
         return y
     header = headers.get('client-ip')
@@ -651,8 +651,14 @@ class Tracker:
                     for bc in self.becache[infohash]:
                         bc[1][myid] = bc[0][myid]
                         del bc[0][myid]
-            if peer['left']:
-                peer['left'] = left
+            elif left and not peer['left']:
+                self.completed[infohash] -= 1
+                self.seedcount[infohash] -= 1
+                if not peer.get('nat', -1):
+                    for bc in self.becache[infohash]:
+                        bc[0][myid] = bc[1][myid]
+                        del bc[1][myid]
+            peer['left'] = left
 
             if port:
                 recheck = False
@@ -673,8 +679,8 @@ class Tracker:
                         y = not peer['left']
                         for x in l:
                             del x[y][myid]
-                        if not self.natcheck or islocal:
-                            del peer['nat'] # restart NAT testing
+                    if natted >= 0:
+                        del peer['nat'] # restart NAT testing
                 if natted and natted < self.natcheck:
                     recheck = True
 
@@ -830,10 +836,10 @@ class Tracker:
 
             # automated access from here on
 
-            if path == 'scrape':
+            if path in ('scrape', 'scrape.php', 'tracker.php/scrape'):
                 return self.get_scrape(paramslist)
             
-            if path != 'announce':
+            if not path in ('announce', 'announce.php', 'tracker.php/announce'):
                 return (404, 'Not Found', {'Content-Type': 'text/plain', 'Pragma': 'no-cache'}, alas)
 
             # main tracker function

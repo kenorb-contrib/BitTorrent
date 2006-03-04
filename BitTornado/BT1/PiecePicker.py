@@ -29,6 +29,7 @@ class PiecePicker:
         self.numgot = 0
         self.done = False
         self.seed_connections = {}
+        self.past_ips = {}
         self.seed_time = None
         self.superseed = False
         self.seeds_connected = 0
@@ -276,12 +277,18 @@ class PiecePicker:
             return None                 # to give time to grab have lists
         if not connection.upload.super_seeding:
             return None
-        if connection in self.seed_connections:
+        olddl = self.seed_connections.get(connection)
+        if olddl is not None:
+            ip = connection.get_ip()
+            olddl = self.past_ips.get(ip)
+            if olddl is not None:                               # peer reconnected
+                self.seed_connections[connection] = olddl
+        if olddl is not None:
             if looser_upload:
                 num = 1     # send a new have even if it hasn't spread that piece elsewhere
             else:
                 num = 2
-            if self.seed_got_haves[self.seed_connections[connection]] < num:
+            if self.seed_got_haves[olddl] < num:
                 return None
             if not connection.upload.was_ever_interested:   # it never downloaded it?
                 connection.upload.skipped_count += 1
@@ -303,7 +310,10 @@ class PiecePicker:
         return -1       # something screwy; terminate connection
 
     def lost_peer(self, connection):
-        try:
-            del self.seed_connections[connection]
-        except:
-            pass
+        olddl = self.seed_connections.get(connection)
+        if olddl is None:
+            return
+        del self.seed_connections[connection]
+        self.past_ips[connection.get_ip()] = olddl
+        if self.seed_got_haves[olddl] == 1:
+            self.seed_got_haves[olddl] = 0

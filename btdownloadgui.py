@@ -203,7 +203,7 @@ class DownloadInfoFrame:
             panel = wxPanel(frame, -1)
             self.bgcolor = panel.GetBackgroundColour()
 
-            def StaticText(text, font = self.FONT, underline = False, color = None, panel = panel):
+            def StaticText(text, font = self.FONT-1, underline = False, color = None, panel = panel):
                 x = wxStaticText(panel, -1, text, style = wxALIGN_LEFT)
                 x.SetFont(wxFont(font, wxDEFAULT, wxNORMAL, wxNORMAL, underline))
                 if color is not None:
@@ -757,7 +757,7 @@ class DownloadInfoFrame:
 
             si = ( 'exact Version String: ' + version + '\n' +
                    'Python version: ' + sys.version + '\n' +
-                   'wxWindows version: ' + wxVERSION_STRING + '\n' )
+                   'wxPython version: ' + wxVERSION_STRING + '\n' )
             try:
                 si += 'Psyco version: ' + hex(psyco.__version__)[2:] + '\n'
             except:
@@ -858,7 +858,7 @@ class DownloadInfoFrame:
 
             panel = wxPanel(self.detailBox, -1, size = wxSize (400,220))
 
-            def StaticText(text, font = self.FONT, underline = False, color = None, panel = panel):
+            def StaticText(text, font = self.FONT-1, underline = False, color = None, panel = panel):
                 x = wxStaticText(panel, -1, text, style = wxALIGN_CENTER_VERTICAL)
                 x.SetFont(wxFont(font, wxDEFAULT, wxNORMAL, wxNORMAL, underline))
                 if color is not None:
@@ -1335,7 +1335,7 @@ class DownloadInfoFrame:
 
             panel = wxPanel(self.advBox, -1, size = wxSize (200,200))
 
-            def StaticText(text, font = self.FONT, underline = False, color = None, panel = panel):
+            def StaticText(text, font = self.FONT-1, underline = False, color = None, panel = panel):
                 x = wxStaticText(panel, -1, text, style = wxALIGN_LEFT)
                 x.SetFont(wxFont(font, wxDEFAULT, wxNORMAL, wxNORMAL, underline))
                 if color is not None:
@@ -1630,11 +1630,10 @@ class DownloadInfoFrame:
                     self.rateSpinner.SetValue(newValue)
 
         if self.fin:
-            if statistics is not None:
-                if statistics.numOldSeeds > 0 or statistics.numCopies > 1:
-                    self.gauge.SetValue(1000)
-                else:
-                    self.gauge.SetValue(int(1000*statistics.numCopies))
+            if statistics is None or statistics.numOldSeeds > 0 or statistics.numCopies > 1:
+                self.gauge.SetValue(1000)
+            else:
+                self.gauge.SetValue(int(1000*statistics.numCopies))
         elif self.gui_fractiondone is not None:
             gaugelevel = int(self.gui_fractiondone * 1000)
             self.gauge.SetValue(gaugelevel)
@@ -1669,7 +1668,7 @@ class DownloadInfoFrame:
                 icontext=icontext+' d:%.0f kB/s' % (float(downRate) / 1000)
             icontext+=' %s' % self.filename
             try:
-                if self.fin:
+                if self.gui_fractiondone == None or self.gui_fractiondone == 1.0:
                     self.frame.tbicon.SetIcon(self.finicon,icontext)
                 else:
                     self.frame.tbicon.SetIcon(self.icon,icontext)
@@ -2121,15 +2120,19 @@ class DownloadInfoFrame:
             self.frame.RemoveIcon()
         except:
             pass
+
         self.frame.Destroy()
-        try:
-            self.icon.Destroy()
-        except:
-            pass
-        try:
-            self.finicon.Destroy()
-        except:
-            pass
+
+        wxver = wxVERSION_STRING.split(' ')[0].split('.')
+        if int(wxver[0]) >= 2 and int(wxver[1]) >= 6:
+            try:
+                self.icon.Destroy()
+            except:
+                pass
+            try:
+                self.finicon.Destroy()
+            except:
+                pass
 
     def exception(self):
         data = StringIO()
