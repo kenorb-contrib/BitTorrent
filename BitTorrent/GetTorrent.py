@@ -16,40 +16,115 @@
 import os
 import re
 import zurllib
-from bencode import bdecode
+from BitTorrent.translation import _
+
+from bencode import bdecode, bencode
 from BitTorrent.platform import get_cache_dir
+from BitTorrent.ConvertedMetainfo import ConvertedMetainfo
+
 
 urlpat = re.compile('^\w+://')
 urlpat_torrent = re.compile('^torrent://')
 urlpat_bittorrent = re.compile('^bittorrent://')
 
+class GetTorrentException(Exception):
+    pass
+
+class UnknownArgument(GetTorrentException):
+    pass
+
+class URLException(GetTorrentException):
+    pass
+
+class FileException(GetTorrentException):
+    pass
+
+class MetainfoException(GetTorrentException):
+    pass
+
+
 def get_quietly(arg):
-    (data, errors) = get(arg)
-    # If there's an error opening a file from the IE cache,
-    # act like we simply didn't get a file (because we didn't)
-    if errors:
-        cache = get_cache_dir()
-        if (cache is not None) and (cache in arg):
-            errors = []
-    return data, errors
+    """Wrapper for GetTorrent.get() which works around an IE bug.  If
+    there's an error opening a file from the IE cache, act like we
+    simply didn't get a file (because we didn't).  This happens when
+    IE passes us a path to a file in its cache that has already been
+    deleted because it came from a website which set Pragma:No-Cache
+    on it.
+    """
+    try:
+        data = get(arg)
+    except FileException, e:
+        cache = get_cache_dir() 
+        if (cache is not None) and (cache in str(e)):
+            data = None
+        else:
+            raise
+
+    return data
+
+
+def _get(arg):
+    """Obtains the contents of the .torrent metainfo file either from
+       the local filesystem or from a remote server. 'arg' is either
+       a filename or an URL.
+
+       Returns data, the raw contents of the .torrent file. Any
+       exception raised while obtaining the .torrent file or parsing
+       its contents is caught and wrapped in one of the following
+       errors: GetTorrent.URLException, GetTorrent.FileException,
+       GetTorrent.MetainfoException, or GetTorrent.UnknownArgument.
+       (All have the base class GetTorrent.GetTorrentException)
+       """
+    data = None
+    arg_stripped = arg.strip()
+    if os.access(arg, os.F_OK):
+        data = get_file(arg)
+    elif urlpat.match(arg_stripped):
+        data = get_url(arg_stripped)
+    else:
+        raise UnknownArgument(_('Could not read "%s", it is neither a file nor a URL.') % arg)
+
+    return data
+
 
 def get(arg):
-    data = None
-    errors = []
-    if os.access(arg, os.F_OK):
-        data, errors = get_file(arg)
-    elif urlpat.match(arg):
-        data, errors = get_url(arg)
-    else:
-        errors.append(_("Could not read %s") % arg)
-    return data, errors
+    """Obtains the contents of the .torrent metainfo file either from
+       the local filesystem or from a remote server. 'arg' is either
+       a filename or an URL.
+
+       Returns a ConvertedMetainfo object which is the parsed metainfo
+       from the contents of the .torrent file.  Any exception raised
+       while obtaining the .torrent file or parsing its contents is
+       caught and wrapped in one of the following errors:
+       GetTorrent.URLException, GetTorrent.FileException, 
+       GetTorrent.MetainfoException, or GetTorrent.UnknownArgument.
+       (All have the base class GetTorrent.GetTorrentException)
+       """
+    data = _get(arg)
+    
+    metainfo = None
+    try:
+        b = bdecode(data)
+        metainfo = ConvertedMetainfo(b)
+    except Exception, e:
+        raise MetainfoException(
+            (_('"%s" is not a valid torrent file.') % arg)
+            #+ ("\n(%s)" % str(e))
+            )
+
+    return metainfo
 
 
 def get_url(url):
+    """Downloads the .torrent metainfo file specified by the passed
+       URL and returns data, the raw contents of the metainfo file.
+       Any exception raised while trying to obtain the metainfo file
+       is caught and GetTorrent.URLException is raised instead.
+       """
+
     data = None
-    errors = []
-    err_str = _("Could not download or open \n%s\n"
-                "Try using a web browser to download the torrent file.") % url
+    err_str = ((_('Could not download or open "%s"')% url) + '\n' +
+               _("Try using a web browser to download the torrent file."))
     u = None
 
     # pending protocol changes, convert:
@@ -65,22 +140,24 @@ def get_url(url):
         u = zurllib.urlopen(url)
         data = u.read()
         u.close()
-        b = bdecode(data)
     except Exception, e:
         if u is not None:
             u.close()
-        errors.append(err_str + "\n(%s)" % e)
-        data = None
+        raise URLException(err_str + "\n(%s)" % e)
     else:
         if u is not None:
             u.close()
 
-    return data, errors
+    return data
     
 
 def get_file(filename):
+    """Reads the .torrent metainfo file specified by the passed
+       filename and returns data, the raw contents of the metainfo file.
+       Any exception raised while trying to obtain the metainfo file is
+       caught and GetTorrent.FileException is raised instead.
+       """
     data = None
-    errors = []
     f = None
     try:
         f = file(filename, 'rb')
@@ -89,6 +166,6 @@ def get_file(filename):
     except Exception, e:
         if f is not None:
             f.close()
-        errors.append((_("Could not read %s") % filename) + (': %s' % str(e)))
+        raise FileException((_("Could not read %s") % filename) + (': %s' % str(e)))
 
-    return data, errors
+    return data

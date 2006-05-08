@@ -1,24 +1,45 @@
+# The contents of this file are subject to the BitTorrent Open Source License
+# Version 1.1 (the License).  You may not copy or use this file, in either
+# source code or executable form, except in compliance with the License.  You
+# may obtain a copy of the License at http://www.bittorrent.com/license/.
+#
+# Software distributed under the License is distributed on an AS IS basis,
+# WITHOUT WARRANTY OF ANY KIND, either express or implied.  See the License
+# for the specific language governing rights and limitations under the
+# License.
+
+# Written by Matt Chisholm
+
 from BitTorrent.platform import bttime
+from BitTorrent.translation import _
+
 
 class StatusLight(object):
 
     initial_state = 'stopped'
 
     states = {
-        # state     : (stock icon name, tool tip),
-        'stopped'   : ('bt-status-stopped',
+        # state     : (stock icon name, label, tool tip),
+        'stopped'   : ('stopped',
+                       _("Paused"),
                        _("Paused")),
-        'empty'     : ('bt-status-stopped',
+        'empty'     : ('stopped',
+                       _("No torrents"),
                        _("No torrents")),
-        'starting'  : ('bt-status-starting',
+        'starting'  : ('starting',
+                       _("Starting up..."),
                        _("Starting download")),
-        'pre-natted': ('bt-status-pre-natted',
-                       _("Starting download")),
-        'running'   : ('bt-status-running',
-                       _("Running normally")),
-        'natted'    : ('bt-status-natted',
-                       _("Downloads may be slow:\nProbably firewalled/NATted")),
-        'broken'    : ('bt-status-broken',
+        'pre-natted': ('pre-natted',
+                       _("Checking connection..."),
+                       _("Online, checking connection")),
+        'running'   : ('running',
+                       _("Online"),
+                       _("Online, running normally")),
+        'natted'    : ('natted',
+                       _("Online, maybe firewalled"),
+                       _("Online, but downloads may be slow due to firewall/NAT")),
+        'broken'    : ('broken',
+                       _("No network connection"),
                        _("Check network connection")),
         }
 
@@ -31,7 +52,7 @@ class StatusLight(object):
         'seen_remote_peers' : 'running'   ,
         'broken'            : 'broken'    ,
         }
-    
+
     transitions = {
         # state      : { message            : custom new state, },
         'pre-natted' : { 'start'            : 'pre-natted',
@@ -74,35 +95,14 @@ class StatusLight(object):
             self.mystate = new_state
             self.change_state()
 
+
     def change_state(self):
         pass
 
 
-import gtk
+    def get_tip(self):
+        return self.states[self.mystate][2]
 
-class GtkStatusLight(gtk.EventBox, StatusLight):
+    def get_label(self):
+        return self.states[self.mystate][1]
 
-    def __init__(self, main):
-        gtk.EventBox.__init__(self)
-        StatusLight.__init__(self)
-        self.main = main
-        self.image = None
-        self.images = {}
-        for k,(s,t) in self.states.items():
-            i = gtk.Image()
-            i.set_from_stock(s, gtk.ICON_SIZE_LARGE_TOOLBAR)
-            i.show()
-            self.images[k] = i        
-        self.set_size_request(24,24)
-        self.main.tooltips.set_tip(self, 'tooltip')
-        self.send_message('stop')
-
-    def change_state(self):
-        state = self.mystate
-        assert self.states.has_key(state)
-        if self.image is not None:
-            self.remove(self.image)
-        self.image = self.images[state]
-        self.add(self.image)
-        stock, tooltip = self.states[state]
-        self.main.tooltips.set_tip(self, tooltip)

@@ -23,6 +23,7 @@ class RateMeasure(object):
         self.left = left
         self.broke = False
         self.got_anything = False
+        self.when_next_expected = bttime() + 5
 
     def data_came_in(self, amount):
         if not self.got_anything:
@@ -49,6 +50,8 @@ class RateMeasure(object):
 
     def update(self, t, amount):
         self.left -= amount
+        if t < self.when_next_expected and amount == 0:
+            return
         try:
             self.rate = ((self.rate * (self.last - self.start)) + amount) / (t - self.start)
             self.last = t
@@ -61,3 +64,4 @@ class RateMeasure(object):
             self.start = self.last - 20
         if self.last - self.start > 20:
             self.broke = True
+        self.when_next_expected = t + min((amount / max(self.rate, 0.0001)), 5)

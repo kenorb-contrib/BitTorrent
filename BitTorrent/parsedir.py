@@ -13,8 +13,11 @@
 import os
 from sha import sha
 
+_ = _ # put _ into the module namespace so the console doesn't override it
+
 from BitTorrent.bencode import bencode, bdecode
 from BitTorrent.btformats import check_message
+
 
 NOISY = False
 

@@ -42,7 +42,7 @@ class RateLimitedGroup(object):
         self.counts = []
         
     def set_rate(self, new_rate):
-        self.rate = new_rate * 1024
+        self.rate = new_rate
         self.check_time = 0
         self.offset_amount = 0
         
@@ -63,7 +63,7 @@ class MultiRateLimiter(object):
             # to peers that use request sizes larger than standard 16 KiB.
             # 17000 instead of 16384 to allow room for metadata messages.
             unitsize = 17000
-        self.upload_rate = rate * 1024
+        self.upload_rate = rate
         self.unitsize = unitsize
         self.lasttime = bttime()
         self.offset_amount = 0
@@ -113,7 +113,7 @@ class MultiRateLimiter(object):
                     ctx.offset_amount = max(ctx.offset_amount, -1 * self.unitsize)
 
         min_offset = reduce(minctx, self.ctxs)
-        ctx = cur.encoder.context.rlgroup
+        ctx = cur.connection_manager.context.rlgroup
         while self.offset_amount <= 0 and min_offset.offset_amount <= 0:
             if ctx.offset_amount <= 0:
                 try:
@@ -121,7 +121,7 @@ class MultiRateLimiter(object):
                 except KeyboardInterrupt:
                     raise
                 except Exception, e:
-                    cur.encoder.context.rlgroup.got_exception(e)
+                    cur.connection_manager.context.rlgroup.got_exception(e)
                     cur = self.last.next_upload
                     bytes = 0
 
@@ -144,7 +144,7 @@ class MultiRateLimiter(object):
                         cur.next_upload = None
                         old = ctx
                         cur = self.last.next_upload
-                        ctx = cur.encoder.context.rlgroup
+                        ctx = cur.connection_manager.context.rlgroup
                         self.ctx_counts[old] -= 1
                         if self.ctx_counts[old] == 0:
                             del(self.ctx_counts[old])
@@ -152,14 +152,15 @@ class MultiRateLimiter(object):
                         if min_offset == old:
                             min_offset = reduce(minctx, self.ctxs)
                 else:
+                    if ctx == min_offset:
+                        min_offset = reduce(minctx, self.ctxs)
                     self.last = cur
                     cur = cur.next_upload
-                    ctx = cur.encoder.context.rlgroup
-                    min_offset = reduce(minctx, self.ctxs)
+                    ctx = cur.connection_manager.context.rlgroup
             else:
                 self.last = cur
                 cur = self.last.next_upload
-                ctx = cur.encoder.context.rlgroup
+                ctx = cur.connection_manager.context.rlgroup
         else:
             myDelay = minCtxDelay = 0
             if self.upload_rate > 0:
@@ -176,7 +177,7 @@ class MultiRateLimiter(object):
         orig = self.last
         if self.last.closed:
             self.last = Dummy(self.last.next_upload)
-            self.last.encoder = orig.encoder
+            self.last.connection_manager = orig.connection_manager
         c = self.last
         while True:
             if c.next_upload is orig:
@@ -185,6 +186,6 @@ class MultiRateLimiter(object):
             if c.next_upload.closed:
                 o = c.next_upload
                 c.next_upload = Dummy(c.next_upload.next_upload)
-                c.next_upload.encoder = o.encoder
+                c.next_upload.connection_manager = o.connection_manager
             c = c.next_upload
 

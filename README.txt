@@ -100,7 +100,7 @@ The file you uploaded in step 4 is linked to using an ordinary url.
 You have to run a downloader which already has the complete file, 
 so new downloaders have a place to get it from. Here's an example -
 
-./bittorrent-console.py --url http://my.server/myfile.torrent --saveas myfile.ext
+./bittorrent-console.py --url http://my.server/myfile.torrent --save_as myfile.ext
 
 Make sure the saveas argument points to the already complete file.
 

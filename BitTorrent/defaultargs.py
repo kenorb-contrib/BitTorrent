@@ -9,39 +9,37 @@
 # License.
 
 
-# False and True are not distinct from 0 and 1 under Python 2.2,
-# and we want to handle boolean options differently.
-class MyBool(object):
-
-    def __init__(self, value):
-        self.value = value
-
-    def __repr__(self):
-        if self.value:
-            return 'True'
-        return 'False'
-
-    def __nonzero__(self):
-        return self.value
-
-MYTRUE = MyBool(True)
-MYFALSE = MyBool(False)
+# Needs redesign.  Too many modifications to add a ui.  Adding a UI
+# can easily break existing UIs unintentionally. --Dave
 
 import os
+from BitTorrent.translation import _
+
 ### add your favorite here
-BAD_LIBC_WORKAROUND_DEFAULT = MYFALSE
+BAD_LIBC_WORKAROUND_DEFAULT = False
 if os.name == 'posix':
     if os.uname()[0] in ['Darwin']:
-        BAD_LIBC_WORKAROUND_DEFAULT = MYTRUE
+        BAD_LIBC_WORKAROUND_DEFAULT = True
 
-MIN_INCOMPLETE = 100
+MAX_INCOMPLETE = 100
+MAX_FILES_OPEN = 50
 if os.name == 'nt':
+    import ctypes
     from BitTorrent.platform import win_version_num
     # starting in XP SP2 the incomplete outgoing connection limit was set to 10
     if win_version_num >= (2, 5, 1, 2, 0):
-        MIN_INCOMPLETE = 10
-    
-from BitTorrent import languages
+        MAX_INCOMPLETE = 10
+
+    # try to set it as high as possible
+    # technically 2048 is max, but I see 512 sometimes, and I think win98
+    # defaults to 50. If we're not the last person to call it, I think we get
+    # errors, so screw it for now.
+    #ctypes.cdll.msvcrt._setmaxstdio(512)
+    # -3 for stdin, stdout, and stderr
+    # -15 for a buffer
+    MAX_FILES_OPEN = ctypes.cdll.msvcrt._getmaxstdio() - 3 - 15
+
+from BitTorrent import languages, app_name
 
 basic_options = [
     ('data_dir', '',
@@ -69,7 +67,7 @@ common_options = [
      _("maximum port to listen on")),
     ('bind', '',
      _("ip to bind to locally")),
-    ('display_interval', .5,
+    ('display_interval', 1.0,
      _("seconds between updates of displayed information")),
     ('rerequest_interval', 5 * 60,
      _("minutes to wait between requesting more peers")),
@@ -77,24 +75,32 @@ common_options = [
      _("minimum number of peers to not do rerequesting")),
     ('max_initiate', 60,
      _("number of peers at which to stop initiating new connections")),
-    ('max_incomplete', MIN_INCOMPLETE,
+    ('max_incomplete', MAX_INCOMPLETE,
      _("max number of outgoing incomplete connections")),
     ('max_allow_in', 80,
      _("maximum number of connections to allow, after this new incoming "
        "connections will be immediately closed")),
-    ('check_hashes', MYTRUE,
+    ('check_hashes', True,
      _("whether to check hashes on disk")),
-    ('max_upload_rate', 20,
-     _("maximum kB/s to upload at, 0 means no limit")),
+    ('max_upload_rate', 125000000, # 1 GBit local net = 125MB/s
+     _("maximum B/s to upload at")),
+    ('max_download_rate', 125000000, # 1 GBit local net = 125MB/s
+     _("average maximum B/s to download at")),
+    ('bandwidth_management', os.name == 'nt',
+     _("automatic bandwidth management (Windows only)")),
     ('min_uploads', 2,
      _("the number of uploads to fill out to with extra optimistic unchokes")),
-    ('max_files_open', 50,
+    ('max_files_open', MAX_FILES_OPEN,
      _("the maximum number of files in a multifile torrent to keep open at a "
        "time, 0 means no limit. Used to avoid running out of file descriptors.")),
-    ('start_trackerless_client', MYTRUE,
+    ('start_trackerless_client', True,
      _("Initialize a trackerless client.  This must be enabled in order to download trackerless torrents.")),
-    ('upnp', MYTRUE,
+    ('upnp', True,
      _("Enable automatic port mapping")+' (UPnP)'),
+    ('xmlrpc_port', -1,
+    _("Start the XMLRPC interface on the specified port. This "
+      "XML-RPC-based RPC allows a remote program to control the client "
+      "to enable automated hosting, conformance testing, and benchmarking.")),
     ]
 
 
@@ -111,13 +117,11 @@ rare_options = [
        "received on")),
     ('timeout_check_interval', 60.0,
      _("seconds to wait between checking if any connections have timed out")),
-    ('max_slice_length', 16384,
+    ('max_slice_length', 32768,
      _("maximum length slice to send to peers, close connection if a larger "
        "request is received")),
     ('max_rate_period', 20.0,
      _("maximum time interval over which to estimate the current upload and download rates")),
-    ('max_rate_period_seedtime', 100.0,
-     _("maximum time interval over which to estimate the current seed rate")),
     ('max_announce_retry_interval', 1800,
      _("maximum time to wait between retrying announces if they keep failing")),
     ('snub_time', 30.0,
@@ -127,10 +131,10 @@ rare_options = [
      _("number of downloads at which to switch from random to rarest first")),
     ('upload_unit_size', 1380,
      _("how many bytes to write into network buffers at once.")),
-    ('retaliate_to_garbled_data', MYTRUE,
+    ('retaliate_to_garbled_data', True,
      _("refuse further connections from addresses with broken or intentionally "
        "hostile peers that send incorrect data")),
-    ('one_connection_per_ip', MYTRUE,
+    ('one_connection_per_ip', True,
      _("do not connect to several peers that have the same IP address")),
     ('peer_socket_tos', 8,
      _("if nonzero, set the TOS option for peer connections to this value")),
@@ -140,86 +144,201 @@ rare_options = [
      _("address of HTTP proxy to use for tracker connections")),
     ('close_with_rst', 0,
      _("close connections with RST and avoid the TCP TIME_WAIT state")),
+    ('num_disk_threads', 10,
+     _("number of read threads to use in the storage object")),
+    ('num_piece_checks', 2,
+     _("number of simultaneous piece checks to run per torrent, set to a low number like 2 or 3")),
     ('twisted', -1,
      _("Use Twisted network libraries for network connections. 1 means use twisted, 0 means do not use twisted, -1 means autodetect, and prefer twisted")),
+    ('num_fast', 10,
+     _("Number of pieces allowed fast.")),
+    # Future.
+    #('stream_priority', 2,
+    # _("Priority for pieces that are needed soon.")),
+    ]
+
+
+tracker_options = [
+    ('port', 80,
+     _("Port to listen on.")),
+    ('dfile', "",
+     _("file to store recent downloader info in")),
+    ('bind', '',
+     _("ip to bind to locally")),
+    ('socket_timeout', 15,
+     _("timeout for closing connections")),
+    ('close_with_rst', 0,
+     _("close connections with RST and avoid the TCP TIME_WAIT state")),
+    ('save_dfile_interval', 5 * 60,
+     _("seconds between saving dfile")),
+    ('timeout_downloaders_interval', 45 * 60,
+     _("seconds between expiring downloaders")),
+    ('reannounce_interval', 30 * 60,
+     _("seconds downloaders should wait between reannouncements")),
+    ('response_size', 50,
+     _("default number of peers to send an info message to if the "
+       "client does not specify a number")),
+    ('timeout_check_interval', 5,
+     _("time to wait between checking if any connections have timed out")),
+    ('nat_check', 3,
+     _("how many times to check if a downloader is behind a NAT "
+       "(0 = don't check)")),
+    ('log_nat_checks', 0,
+     _("whether to add entries to the log for nat-check results")),
+    ('min_time_between_log_flushes', 3.0,
+     _("minimum time it must have been since the last flush to do "
+       "another one")),
+    ('min_time_between_cache_refreshes', 600.0,
+     _("minimum time in seconds before a cache is considered stale "
+       "and is flushed")),
+    ('allowed_dir', '',
+     _("only allow downloads for .torrents in this dir (and recursively in "
+       "subdirectories of directories that have no .torrent files "
+       "themselves). If set, torrents in this directory show up on "
+       "infopage/scrape whether they have peers or not")),
+    ('parse_dir_interval', 60,
+     _("how often to rescan the torrent directory, in seconds")),
+    ('allowed_controls', 0,
+     _("allow special keys in torrents in the allowed_dir to affect "
+       "tracker access")),
+    ('hupmonitor', 0,
+     _("whether to reopen the log file upon receipt of HUP signal")),
+    ('show_infopage', 1,
+     _("whether to display an info page when the tracker's root dir "
+       "is loaded")),
+    ('infopage_redirect', '',
+     _("a URL to redirect the info page to")),
+    ('show_names', 1,
+     _("whether to display names from allowed dir")),
+    ('favicon', '',
+     _("file containing x-icon data to return when browser requests "
+       "favicon.ico")),
+    ('only_local_override_ip', 2,
+     _("ignore the ip GET parameter from machines which aren't on "
+       "local network IPs (0 = never, 1 = always, 2 = ignore if NAT "
+       "checking is not enabled). HTTP proxy headers giving address "
+       "of original client are treated the same as --ip.")),
+    ('logfile', '',
+     _("file to write the tracker logs, use - for stdout (default)")),
+    ('allow_get', 0,
+     _("use with allowed_dir; adds a /file?hash={hash} url that "
+       "allows users to download the torrent file")),
+    ('keep_dead', 0,
+     _("keep dead torrents after they expire (so they still show up on your "
+       "/scrape and web page). Only matters if allowed_dir is not set")),
+    ('scrape_allowed', 'full',
+     _("scrape access allowed (can be none, specific or full)")),
+    ('max_give', 200,
+     _("maximum number of peers to give with any one request")),
+    ('twisted', -1,
+     _("Use Twisted network libraries for network connections. 1 means use twisted, 0 means do not use twisted, -1 means autodetect, and prefer twisted")),
+    ('pid', 'bittorrent-tracker.pid',
+     "Path to PID file"),
+    ('max_incomplete', MAX_INCOMPLETE,
+     _("max number of outgoing incomplete connections")),
     ]
 
 
 def get_defaults(ui):
-    assert ui in ("bittorrent" , "bittorrent-curses", "bittorrent-console" , 
+    assert ui in ("bittorrent" , "bittorrent-curses", "bittorrent-console" ,
                   "maketorrent",                      "maketorrent-console",
                                  "launchmany-curses", "launchmany-console" ,
+                                                      "bittorrent-tracker" ,
+                  "test-client"
                   )
     r = []
 
-    if ui.startswith('bittorrent') or ui.startswith('launchmany'):
+    if ui == 'test-client':
+        ui = 'bittorrent-test-client'
+
+    if ui == "bittorrent-tracker":
+        r.extend(tracker_options)
+    elif ui.startswith('bittorrent') or ui.startswith('launchmany'):
         r.extend(common_options)
 
     if ui == 'bittorrent':
         r.extend([
-            ('save_as', '',
-             _("file name (for single-file torrents) or directory name (for "
-               "batch torrents) to save the torrent as, overriding the default "
-               "name in the torrent. See also --save_in, if neither is "
-               "specified the user will be asked for save location")),
-            ('advanced', MYFALSE,
-             _("display advanced user interface")),
-            ('next_torrent_time', 300,
-             _("the maximum number of minutes to seed a completed torrent "
-               "before stopping seeding")),
-            ('next_torrent_ratio', 80,
-             _("the minimum upload/download ratio, in percent, to achieve "
-               "before stopping seeding. 0 means no limit.")),
-            ('last_torrent_ratio', 0,
-             _("the minimum upload/download ratio, in percent, to achieve "
-               "before stopping seeding the last torrent. 0 means no limit.")),
-            ('seed_forever', MYFALSE,
-             _("Seed each completed torrent indefinitely "
-               "(until the user cancels it)")),
-            ('seed_last_forever', MYTRUE,
-             _("Seed the last torrent indefinitely "
-               "(until the user cancels it)")),
-            ('pause', MYFALSE,
+            ('publish', '',
+             _("path to the file that you are publishing (seeding).")),
+            ('verbose', False,
+             _("display verbose information in user interface")),
+            ('debug', False,
+             _("provide debugging tools in user interface")),
+            ('pause', False,
              _("start downloader in paused state")),
-            ('start_torrent_behavior', 'replace',
-             _('specifies how the app should behave when the user manually '
-               'tries to start another torrent: "replace" means always replace '
-               'the running torrent with the new one, "add" means always add '
-               'the running torrent in parallel, and "ask" means ask the user '
-               'each time.')),
             ('open_from', '',
              'local directory to look in for .torrent files to open'),
-            ('ask_for_save', MYFALSE,
-             'whether or not to ask for a location to save downloaded files in'),
-            ('start_minimized', MYFALSE,
-             _("Start BitTorrent minimized")),
+            ('start_minimized', False,
+             _("Start %s minimized")%app_name),
+            ('confirm_quit', True,
+             _("Confirm before quitting %s")%app_name),
             ('new_version', '',
              _("override the version provided by the http version check "
                "and enable version check debugging mode")),
             ('current_version', '',
              _("override the current version used in the version check "
                "and enable version check debugging mode")),
+
+            # remember GUI state
+            ('progressbar_style', 3,
+             _("The style of progressbar to show.  0 means no progress "
+               "bar.  1 is an ordinary progress bar.  2 is a progress "
+               "bar that shows transferring, available and missing "
+               "percentages as well.  3 is a piece bar which "
+               "color-codes each piece in the torrent based on its "
+               "availability.")),
             ('geometry', '',
              _("specify window size and position, in the format: "
                "WIDTHxHEIGHT+XOFFSET+YOFFSET")),
+            ('start_maximized', False,
+             _("Start %s maximized")%app_name),
+            ('column_widths', {},
+             _("Widths of columns in torrent list in main window")),
+            ('column_order', ['name', 'progress', 'eta', 'drate',
+                              'urate', 'peers', 'priority', 'state'],
+             _("Order of columns in torrent list in main window")),
+            ('enabled_columns', ['name', 'progress', 'eta', 'drate',
+                                 'priority'],
+             _("Enabled columns in torrent list in main window")),
+            ('sort_column', 'name',
+             _("Default sort column in torrent list in main window")),
+            ('sort_ascending', True,
+             _("Default sort order in torrent list in main window")),
+            ('toolbar_text', True,
+             _("Whether to show text on the toolbar or not")),
+            ('toolbar_size', 16,
+             _("Size in pixels of toolbar icons")),
+            ('show_details', False,
+             _("Show details panel on startup")),
+            ('details_tab', 0,
+             _("Which tab in the details panel to show by default")),
+            ('ask_for_save', True,
+             _("whether or not to ask for a location to save downloaded "
+               "files in")),
+            ('max_upload_rate', 40960, # 40KB/s up
+             _("maximum B/s to upload at")),
             ])
 
         if os.name == 'nt':
             r.extend([
-                ('launch_on_startup', MYTRUE,
-                 _("Launch BitTorrent when Windows starts")),
-                ('minimize_to_tray', MYTRUE,
-                 _("Minimize to system tray")),            
+                ('launch_on_startup', True,
+                 _("Launch %s when Windows starts") % app_name),
+                ('minimize_to_tray', True,
+                 _("Minimize to the system tray")),
+                ('close_to_tray', False,
+                 _("Close to the system tray")),
+                ('enforce_association', True,
+                 _("Enforce .torrent file associations on startup")),
             ])
 
-    if ui in ('bittorrent-console', 'bittorrent-curses'):
-        r.append(
-            ('save_as', '',
-             _("file name (for single-file torrents) or directory name (for "
-               "batch torrents) to save the torrent as, overriding the "
-               "default name in the torrent. See also --save_in")))
 
-    if ui.startswith('bittorrent'):
+    if ui in ('bittorrent', 'maketorrent'):
+        r.append(
+            ('theme', 'default',
+             _("Icon theme to use"))
+            )
+
+    if ui.startswith('bittorrent') and ui != "bittorrent-tracker":
         r.extend([
             ('max_uploads', -1,
              _("the maximum number of uploads to allow at once. -1 means a "
@@ -231,12 +350,10 @@ def get_defaults(ui):
                "file (single-file torrents) or directory (batch torrents) will "
                "be created under this directory using the default name "
                "specified in the .torrent file. See also --save_as.")),
-            ('responsefile', '',
-             _("deprecated, do not use")),
-            ('url', '',
-             _("deprecated, do not use")),
-            ('ask_for_save', 0,
-             _("whether or not to ask for a location to save downloaded files in")),
+            ('save_incomplete_in', '',
+             _("local directory where the incomplete torrent downloads will be "
+               "stored until completion.  Upon completion, downloads will be "
+               "moved to the directory specified by --save_as.")),
             ])
 
     if ui.startswith('launchmany'):
@@ -257,7 +374,7 @@ def get_defaults(ui):
              _("wait this many seconds after noticing a torrent before starting it, to avoid race with tracker")),
             ('saveas_style', 4,
               _("How to name torrent downloads: "
-                "1: use name OF torrent file (minus .torrent);  " 
+                "1: use name OF torrent file (minus .torrent);  "
                 "2: use name encoded IN torrent file;  "
                 "3: create a directory with name OF torrent file "
                 "(minus .torrent) and save in that directory using name "
@@ -265,12 +382,12 @@ def get_defaults(ui):
                 "4: if name OF torrent file (minus .torrent) and name "
                 "encoded IN torrent file are identical, use that "
                 "name (style 1/2), otherwise create an intermediate "
-                "directory as in style 3;  " 
+                "directory as in style 3;  "
                 "CAUTION: options 1 and 2 have the ability to "
                 "overwrite files without warning and may present "
                 "security issues."
                 ) ),
-            ('display_path', ui == 'launchmany-console' and MYTRUE or MYFALSE,
+            ('display_path', ui == 'launchmany-console' and True or False,
               _("whether to display the full path or the torrent contents for "
                 "each torrent") ),
             ])
@@ -281,26 +398,46 @@ def get_defaults(ui):
              _("directory to look for .torrent files (semi-recursive)")),)
 
     if ui in ('bittorrent-curses', 'bittorrent-console'):
-        r.append(
-            ('spew', MYFALSE,
-             _("whether to display diagnostic info to stdout")))
+        r.extend([
+            ('save_as', '',
+             _("file name (for single-file torrents) or directory name (for "
+               "batch torrents) to save the torrent as, overriding the "
+               "default name in the torrent. See also --save_in")),
+            ('spew', False,
+             _("whether to display diagnostic info to stdout")),])
+
+    if ui == 'bittorrent-console':
+        r.extend([
+            ('display_interval', 5,
+            _("seconds between updates of displayed information")),
+            ] )
 
     if ui.startswith('maketorrent'):
         r.extend([
-            ('piece_size_pow2', 18,
-             _("which power of two to set the piece size to")),
-            ('tracker_name', 'http://my.tracker:6969/announce',
+            ('title', '',
+             _("optional human-readable title for entire .torrent")),
+            ('comment', '',
+             _("optional human-readable comment to put in .torrent")),
+            ('piece_size_pow2', 0,
+             _("which power of two to set the piece size to, "
+               "0 means pick a good piece size")),
+            ('tracker_name', '',
              _("default tracker name")),
             ('tracker_list', '', ''),
-            ('use_tracker', MYTRUE,
+            ('use_tracker', True,
              _("if false then make a trackerless torrent, instead of "
                "announce URL, use reliable node in form of <ip>:<port> or an "
                "empty string to pull some nodes from your routing table")),
+            ('verbose', False,
+             _("display verbose information in user interface")),
+            ('debug', False,
+             _("provide debugging tools in user interface")),
             ])
 
     r.extend(basic_options)
-    
-    if ui.startswith('bittorrent') or ui.startswith('launchmany'):
+
+    if (ui.startswith('bittorrent') or ui.startswith('launchmany')) \
+           and ui != "bittorrent-tracker":
         r.extend(rare_options)
-    
+
     return r

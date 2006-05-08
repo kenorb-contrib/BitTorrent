@@ -16,7 +16,7 @@ from BitTorrent.platform import bttime as time
 from sha import sha
 import re
 from BitTorrent.defaultargs import common_options, rare_options
-from BitTorrent.RawServer_magic import RawServer
+from BitTorrent.RawServer_twisted import RawServer
 
 from ktable import KTable, K
 from knode import *
@@ -37,7 +37,7 @@ from BitTorrent.defer import Deferred
 from random import randrange
 from kstore import sample
 
-from threading import Event, Thread
+from BitTorrent.stackthreading import Event, Thread
 
 ip_pat = re.compile('[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}')
 
@@ -76,8 +76,8 @@ class KhashmirBase:
         KeyExpirer(self.store, self.rawserver.add_task)
         self.refreshTable(force=1)
         if checkpoint:
-            self.rawserver.add_task(self.findCloseNodes, 30, (lambda a: a, True))
-            self.rawserver.add_task(self.checkpoint, 60, (1,))
+            self.rawserver.add_task(30, self.findCloseNodes, lambda a: a, True)
+            self.rawserver.add_task(60, self.checkpoint, 1)
 
     def Node(self):
         n = self._Node(self.udp.connectionForAddr)
@@ -121,10 +121,9 @@ class KhashmirBase:
         
         
         if auto:
-            self.rawserver.add_task(self.checkpoint,
-                                    randrange(int(const.CHECKPOINT_INTERVAL * .9),
+            self.rawserver.add_task(randrange(int(const.CHECKPOINT_INTERVAL * .9),
                                               int(const.CHECKPOINT_INTERVAL * 1.1)),
-                                    (1,))
+                                    self.checkpoint, 1)
         
     def _loadRoutingTable(self, nodes):
         """
@@ -169,7 +168,7 @@ class KhashmirBase:
         else:
             def go(ip=ip, port=port):
                 ip = gethostbyname(ip)
-                self.rawserver.external_add_task(self._addContact, 0, (ip, port))
+                self.rawserver.external_add_task(0, self._addContact, ip, port)
             t = Thread(target=go)
             t.start()
 
@@ -193,7 +192,7 @@ class KhashmirBase:
         else:
             # create our search state
             state = FindNode(self, id, d.callback, self.rawserver.add_task)
-            self.rawserver.external_add_task(state.goWithNodes, 0, (nodes,))
+            self.rawserver.external_add_task(0, state.goWithNodes, nodes)
     
     def insertNode(self, n, contacted=1):
         """
@@ -316,8 +315,9 @@ class KhashmirBase:
         if auto:
             if not self.config['pause']:
                 self.refreshTable()
-            self.rawserver.external_add_task(self.findCloseNodes, randrange(int(const.FIND_CLOSE_INTERVAL *0.9),
-                                                                   int(const.FIND_CLOSE_INTERVAL *1.1)), (lambda a: True, True))
+            self.rawserver.external_add_task(randrange(int(const.FIND_CLOSE_INTERVAL *0.9),
+                                                       int(const.FIND_CLOSE_INTERVAL *1.1)),
+                                             self.findCloseNodes, lambda a: True, True)
 
     def refreshTable(self, force=0):
         """
@@ -382,13 +382,13 @@ class KhashmirRead(KhashmirBase):
         if searchlocal:
             l = self.retrieveValues(key)
             if len(l) > 0:
-                self.rawserver.external_add_task(callback, 0, (l,))
+                self.rawserver.external_add_task(0, callback, l)
         else:
             l = []
         
         # create our search state
         state = GetValue(self, key, callback, self.rawserver.add_task)
-        self.rawserver.external_add_task(state.goWithNodes, 0, (nodes, l))
+        self.rawserver.external_add_task(0, state.goWithNodes, nodes, l)
 
     def krpc_find_value(self, key, id, _krpc_sender):
         sender = {'id' : id}
@@ -422,7 +422,7 @@ class KhashmirWrite(KhashmirRead):
                     pass
                 response=_storedValueHandler
             action = StoreValue(self, key, value, response, self.rawserver.add_task)
-            self.rawserver.external_add_task(action.goWithNodes, 0, (nodes,))
+            self.rawserver.external_add_task(0, action.goWithNodes, nodes)
             
         # this call is asynch
         self.findNode(key, _storeValueForKey)

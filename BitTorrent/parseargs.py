@@ -10,16 +10,41 @@
 
 # Written by Bill Bumgarner and Bram Cohen
 
+# Dave's comments:
+# makeHelp has no less than 4 elif's based on uiname.  If we are
+# going to add an elif for each ui then why not put the code
+# in the UI file.  If we put it all here then the modification
+# of code that should affect one UI can cause unintended 
+# side effects causing other UI's to break.  Furthermore to
+# add ui requires searching through defaultargs and parseargs
+# to modify if-statements.  Default behavior could be provided
+# with a UI class.  GUI-specific deviations could be written
+# in a subclass.
+#
+# printHelp reaches into GUI to create a HelpWindow based on 
+# uiname as an antecedent.  
+#  
+# If you don't like the idea of creating a class then we could at
+# least pass in arg descriptions like [OPTIONS] [TORRENTDIRECTORY] 
+# rather than defining them directly in makeHelp.
+#
+# I like the function parseargs.  It makes no UI-specific assumptions.
+
+
 from types import *
 from cStringIO import StringIO
 
+from BitTorrent.translation import _
+
 from BitTorrent.obsoletepythonsupport import *
 
-from BitTorrent.defaultargs import MyBool, MYTRUE
 from BitTorrent import BTFailure
 from BitTorrent.bencode import bdecode
 from BitTorrent.platform import is_frozen_exe
-from BitTorrent.RawServer_magic import switch_rawserver
+
+
+class UsageException(BTFailure):
+    pass
 
 def makeHelp(uiname, defaults):
     ret = ''
@@ -28,6 +53,8 @@ def makeHelp(uiname, defaults):
         ret += _("[OPTIONS] [TORRENTDIRECTORY]\n\n")
         ret += _("If a non-option argument is present it's taken as the value\n"
                  "of the torrent_dir option.\n")
+    elif uiname == 'bittorrent-tracker' or 'test-client':
+        ret += _("OPTIONS")
     elif uiname == 'bittorrent':
         ret += _("[OPTIONS] [TORRENTFILES]\n")
     elif uiname.startswith('bittorrent'):
@@ -59,7 +86,7 @@ def formatDefinitions(options, COLS):
         if doc == '':
             continue
         s.write('--' + longname)
-        is_boolean = type(default) is MyBool
+        is_boolean = type(default) is bool
         if is_boolean:
             s.write(', --no_' + longname)
         else:
@@ -82,7 +109,7 @@ def formatDefinitions(options, COLS):
     return s.getvalue()
 
 def usage(str):
-    raise BTFailure(str)
+    raise UsageException(str)
 
 def format_key(key):
     if len(key) == 1:
@@ -90,9 +117,38 @@ def format_key(key):
     else:
         return '--%s'%key
 
-def parseargs(argv, options, minargs=None, maxargs=None, presets=None):
+def parseargs(argv, defaults, minargs=None, maxargs=None, presets=None):
+    """This function parses command-line arguments and uses them to override
+       the presets which in turn override the defaults (see defaultargs.py).
+       As currently used, the presets come from a config file (see 
+       configfile.py).
+
+       Options have the form:
+          --option value
+       where the word option is replaced with the option name, etc.
+
+       If a string or number appears on the line without being preceeded
+       by a --option, then the string or number is an argument.
+
+       @param argv: command-line arguments. Command-line options override 
+          defaults and presets.
+       @param defaults: list of (optionname,value,documentation) 3-tuples.
+       @param minargs: minimum number of arguments in argv.
+       @param maxargs: maximum number of arguments in argv.
+       @param presets: a dict containing option-value pairs.  Presets 
+          typically come from a config file.  Presets override defaults.
+       @returns the pair (config,args) where config is a dict containing
+          option-value pairs, and args is a list of the arguments in the
+          order they appeared in argv.
+       """
+    assert type(argv)==list
+    assert type(defaults)==list
+    assert minargs is None or type(minargs) in (int,long) and minargs>=0
+    assert maxargs is None or type(maxargs) in (int,long) and maxargs>=minargs
+    assert type(presets)==dict
+
     config = {}
-    for option in options:
+    for option in defaults:
         longname, default, doc = option
         config[longname] = default
     args = []
@@ -115,8 +171,8 @@ def parseargs(argv, options, minargs=None, maxargs=None, presets=None):
                     key = argv[pos][2:]
                     boolval = True
                 if key not in config:
-                    raise BTFailure(_("unknown key ") + format_key(key))
-                if type(config[key]) is MyBool: # boolean cmd line switch, no value
+                    raise UsageException(_("unknown option ") + format_key(key))
+                if type(config[key]) is bool: # boolean cmd line switch, no value
                     value = boolval
                     pos += 1
                 else: # --argument value
@@ -135,11 +191,16 @@ def parseargs(argv, options, minargs=None, maxargs=None, presets=None):
                     value = argv[pos+1]
                     pos += 2
             else:
-                raise BTFailure(_("command line parsing failed at ")+argv[pos])
+                raise UsageException(_("command line parsing failed at ")+argv[pos])
 
             presets[key] = value
     parse_options(config, presets)
     config.update(presets)
+
+    # if a key appears in the config with a None value then this is because
+    # the key appears in the defaults with a None value and the value was
+    # not provided by the user.  keys appearing in defaults with a none 
+    # value are REQUIRED arguments.
     for key, value in config.items():
         if value is None:
             usage(_("Option %s is required.") % format_key(key))
@@ -148,22 +209,24 @@ def parseargs(argv, options, minargs=None, maxargs=None, presets=None):
     if maxargs is not None and len(args) > maxargs:
         usage(_("Too many arguments - %d maximum.") % maxargs)
 
-    if config.has_key('twisted'):
-        if config['twisted'] == 0:
-            switch_rawserver('untwisted')
-        elif config['twisted'] == 1:
-            switch_rawserver('twisted')
-    
     return (config, args)
 
 def parse_options(defaults, newvalues):
+    """Given the type provided by the default value, this tries to cast/convert
+       the corresponding newvalue to the type of the default value.
+
+       @param defaults: dict of key-value pairs where value is the default.
+       @param newvalues: dict of key-value pairs which override the default.
+       """
+    assert type(defaults) == dict
+    assert type(newvalues) == dict
     for key, value in newvalues.iteritems():
         if not defaults.has_key(key):
-            raise BTFailure(_("unknown key ") + format_key(key))
+            raise UsageException(_("unknown option ") + format_key(key))
         try:
             t = type(defaults[key])
-            if t is MyBool:
-                if value in ('True', '1', MYTRUE, True):
+            if t is bool:
+                if value in ('True', '1', True):
                     value = True
                 else:
                     value = False
@@ -179,9 +242,17 @@ def parse_options(defaults, newvalues):
                     newvalues[key] = int(value)
             elif t is FloatType:
                 newvalues[key] = float(value)
+            elif t in (ListType, TupleType, DictType):
+                if type(value) == StringType:
+                    try:
+                        n = eval(value)
+                        assert type(n) == t
+                        newvalues[key] = n
+                    except:
+                        newvalues[key] = t()
             else:
                 raise TypeError, str(t)
 
         except ValueError, e:
-            raise BTFailure(_("wrong format of %s - %s") % (format_key(key), str(e)))
+            raise UsageException(_("wrong format of %s - %s") % (format_key(key), str(e)))
 

@@ -16,6 +16,7 @@
 import os
 from cStringIO import StringIO
 from traceback import print_exc
+from BitTorrent.translation import _
 
 from BitTorrent import configfile
 from BitTorrent.parsedir import parsedir
@@ -48,17 +49,17 @@ class LaunchMany(Feedback):
             self.hashcheck_store = {}
             self.hashcheck_current = None
 
-            self.multitorrent = Multitorrent(config, self.doneflag,
+            self.multitorrent = MultiTorrent(config, self.doneflag,
                                              self.global_error)
             self.rawserver = self.multitorrent.rawserver
 
-            self.rawserver.add_task(self.scan, 0)
-            self.rawserver.add_task(self.stats, 0)
+            self.rawserver.add_task(0, self.scan)
+            self.rawserver.add_task(0, self.stats)
 
             try:
                 import signal
                 def handler(signum, frame):
-                    self.rawserver.external_add_task(self.read_config, 0)
+                    self.rawserver.external_add_task(0, self.read_config)
                 signal.signal(signal.SIGHUP, handler)
                 self.rawserver.install_sigint_handler()
             except Exception, e:
@@ -79,7 +80,7 @@ class LaunchMany(Feedback):
             output.exception(data.getvalue())
 
     def scan(self):
-        self.rawserver.add_task(self.scan, self.config['parse_dir_interval'])
+        self.rawserver.add_task(self.config['parse_dir_interval'], self.scan)
 
         r = parsedir(self.torrent_dir, self.torrent_cache,
                      self.file_cache, self.blocked_files,
@@ -94,12 +95,12 @@ class LaunchMany(Feedback):
         for infohash, data in added.items():
             self.output.message(_('added "%s"'  ) % data['path'])
             if self.config['launch_delay'] > 0:
-                self.rawserver.add_task(self.add, self.config['launch_delay'], (infohash, data))
+                self.rawserver.add_task(self.config['launch_delay'], self.add, infohash, data)
             else:
                 self.add(infohash, data)
 
     def stats(self):
-        self.rawserver.add_task(self.stats, self.config['display_interval'])
+        self.rawserver.add_task(self.config['display_interval'], self.stats)
         data = []
         for infohash in self.torrent_list:
             cache = self.torrent_cache[infohash]
@@ -196,7 +197,7 @@ class LaunchMany(Feedback):
                 style = 1
             else:
                 style = 3
-        
+
         if style == 1 or style == 3:
             if savein:
                 saveas = os.path.join(savein,x['file'][:-8]) # strip '.torrent'
@@ -253,7 +254,7 @@ class LaunchMany(Feedback):
         self.hashcheck_current = None
         self.check_hashcheck_queue()
 
-    def failed(self, torrent, is_external):
+    def failed(self, torrent):
         infohash = torrent.infohash
         self.was_stopped(infohash)
         if self.torrent_cache.has_key(infohash):

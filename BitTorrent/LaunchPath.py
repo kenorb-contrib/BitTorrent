@@ -15,15 +15,33 @@
 
 import os
 
+can_launch_dirs  = False
 can_launch_files = False
-posix_browsers = ('gnome-open','konqueror',) #gmc, gentoo only work on dirs
+posix_browsers = ('gnome-open','konqueror',)
+posix_dir_browsers = ('gmc', 'gentoo',) # these only work on dirs
 default_posix_browser = ''
 
 def launchpath_nt(path):
     os.startfile(path)
 
+def launchfile_nt(path):
+    if can_launch_files and not os.path.isdir(path):
+        f, ext = os.path.splitext(path)
+        ext = ext.upper()
+        path_ext = os.environ.get('PATH_EXT')
+        blacklist = []
+        if path_ext:
+            blacklist = path_ext.split(';')
+        if ext not in blacklist:
+            launchpath_nt(path)
+        else:
+            p, f = os.path.split(path)
+            launchdir(p)
+    else:
+        p, f = os.path.split(path)
+        launchdir(p)
+
 def launchpath_mac(path):
-    # BUG: this is untested
     os.spawnlp(os.P_NOWAIT, 'open', 'open', path)
 
 def launchpath_posix(path):
@@ -35,19 +53,36 @@ def launchpath(path):
     pass
 
 def launchdir(path):
-    if os.path.isdir(path):
+    if can_launch_dirs and os.path.isdir(path):
         launchpath(path)
 
+def launchfile(path):
+    if can_launch_files and not os.path.isdir(path):
+        launchpath(path)
+    else:
+        p, f = os.path.split(path)
+        launchdir(p)
+
 if os.name == 'nt':
+    can_launch_dirs  = True
     can_launch_files = True
     launchpath = launchpath_nt
+    launchfile = launchfile_nt
 elif os.name == 'mac':
+    can_launch_dirs  = True
     can_launch_files = True
     launchpath = launchpath_mac
 elif os.name == 'posix':
     for b in posix_browsers:
         if os.system("which '%s' >/dev/null 2>&1" % b.replace("'","\\'")) == 0:
+            can_launch_dirs  = True
             can_launch_files = True
+            default_posix_browser = b
+            launchpath = launchpath_posix
+            break
+    else:
+        for b in posix_dir_browsers:
+            can_launch_dirs = True
             default_posix_browser = b
             launchpath = launchpath_posix
             break

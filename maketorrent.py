@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 # The contents of this file are subject to the BitTorrent Open Source License
-# Version 1.1 (the License).  You may not copy or use this file, in either
+# Version 1.0 (the License).  You may not copy or use this file, in either
 # source code or executable form, except in compliance with the License.  You
 # may obtain a copy of the License at http://www.bittorrent.com/license/.
 #
@@ -10,7 +10,7 @@
 # for the specific language governing rights and limitations under the
 # License.
 
-# Written by Matt Chisholm
+# Written by Matt Chisholm and Greg Hazel
 
 from __future__ import division
 
@@ -24,320 +24,333 @@ assert sys.version_info >= (2, 3), _("Install Python %s or greater") % '2.3'
 
 from threading import Event
 
-import gtk
-import gobject
+import wx
+import wx.grid
 
-from BitTorrent.GUI import *
-from BitTorrent import Desktop
-from BitTorrent import version
+from BitTorrent import version, filesystem_encoding, app_name
 from BitTorrent import configfile
+from BitTorrent.GUI_wx import SPACING, BTApp, BTFrameWithSizer, BTDialog, BTPanel, Grid, VSizer, HSizer, ChooseFileOrDirectorySizer
+from BitTorrent.UI import Size
 from BitTorrent.defaultargs import get_defaults
 from BitTorrent.makemetafile import make_meta_files
 from BitTorrent.parseargs import makeHelp
 from BitTorrent.platform import btspawn
-from BitTorrent.ConvertedMetainfo import set_filesystem_encoding
 
 defaults = get_defaults('maketorrent')
 defconfig = dict([(name, value) for (name, value, doc) in defaults])
 del name, value, doc
 ui_options = ('torrent_dir','piece_size_pow2','tracker_list','use_tracker')
 
-def sfe_ef(e,s):
-    print s
-set_filesystem_encoding(defconfig['filesystem_encoding'], sfe_ef)
-
 EXTENSION = '.torrent'
 
 MAXIMUM_NODES = 8
 
-class MainWindow(Window):
+
+class MakeTorrentPanel(BTPanel):
+    sizer_class = VSizer
+    sizer_args = ()
+
+
+
+class MainWindow(BTFrameWithSizer):
+    panel_class = MakeTorrentPanel
 
     def __init__(self, config):
-        Window.__init__(self)
-        self.mainwindow = self # temp hack to make modal win32 file choosers work
-        self.tooltips = gtk.Tooltips()
-        self.connect('destroy', self.quit)
-        self.set_title(_("%s torrent file creator %s")%(app_name, version))
-        self.set_border_width(SPACING)
+        BTFrameWithSizer.__init__(self, None,
+                         style=wx.MINIMIZE_BOX|wx.MAXIMIZE_BOX|wx.SYSTEM_MENU|wx.CAPTION|wx.CLOSE_BOX|wx.CLIP_CHILDREN |wx.RESIZE_BORDER)  # HERE HACK.  I added RESIZE_BORDER because the window doesn't resize properly when Advanced button is pressed. --Dave
+        self.SetTitle(_("%s Publisher")%(app_name))
 
         self.config = config
         self.tracker_list = []
         if self.config['tracker_list']:
             self.tracker_list = self.config['tracker_list'].split(',')
 
-        right_column_width=276
-        self.box = gtk.VBox(spacing=SPACING)
+        ## widgets
 
-        self.box.pack_start(lalign(gtk.Label(
-            _("Make torrent file for this file/directory:"))),
-                            expand=False, fill=False)
+        # file widgets
+        self.top_text = wx.StaticText(self.panel,
+                                      label=_("Publish this file/directory:"))
 
-        self.filebox = gtk.Entry()
-        self.filebox.set_editable(False)
-        self.change_button = gtk.Button(_("Choose..."))
-        self.change_button.connect('clicked', self.choose_files)
+        self.dir_text = wx.StaticText(self.panel,
+                                      label= _("(Directories will become batch torrents)"))
 
-        hb = gtk.HBox(spacing=SPACING)
-        hb.pack_start(self.filebox, expand=True, fill=True)
-        hb.pack_end(self.change_button, expand=False, fill=False)
+        # title widgets
+        self.title_label = wx.StaticText(self.panel, label=_("Title"))
+        self.title = wx.TextCtrl(self.panel)
+        self.title.SetValue(self.config['title'])
 
-        self.box.pack_start(hb, expand=False, fill=False, padding=0)
+        # Comment widgets
+        self.comment_label = wx.StaticText(self.panel, label=_("Comments:"))
+        self.comment_text = wx.TextCtrl(self.panel, style=wx.TE_MULTILINE, size=(-1,50))
+        self.comment_text.SetValue(self.config['comment'])
 
-        self.box.pack_start(lalign(gtk.Label(
-            _("(Directories will become batch torrents)"))),
-                            expand=False, fill=False, padding=0)
+        # horizontal line
+        self.simple_advanced_line = wx.StaticLine(self.panel, style=wx.LI_HORIZONTAL)
 
-        self.box.pack_start(gtk.HSeparator(), expand=False, fill=False, padding=0)
-
-        self.table = gtk.Table(rows=3,columns=2,homogeneous=False)
-        self.table.set_col_spacings(SPACING)
-        self.table.set_row_spacings(SPACING)
-        y = 0
-
-        # Piece size
-        self.table.attach(ralign(gtk.Label(_("Piece size:"))),0,1,y,y+1,
-                          xoptions=gtk.FILL, yoptions=0)
-
-        self.piece_size = gtk.combo_box_new_text()
+        # piece size widgets
+        self.piece_size_label = wx.StaticText(self.panel, label=_("Piece size:"))
+        self.piece_size = wx.Choice(self.panel)
+        self.piece_size.Append(_("Auto"))
         self.piece_size.offset = 15
         for i in range(7):
-            self.piece_size.append_text(str(Size(2**(i+self.piece_size.offset))))
-        self.piece_size.set_active(self.config['piece_size_pow2'] -
-                                   self.piece_size.offset)
+            self.piece_size.Append(str(Size(2**(i+self.piece_size.offset))))
+        self.piece_size.SetSelection(0)
 
-        self.piece_size_box = gtk.HBox(spacing=SPACING)
-        self.piece_size_box.pack_start(self.piece_size,
-                                       expand=False, fill=False)
-        self.table.attach(self.piece_size_box,1,2,y,y+1,
-                          xoptions=gtk.FILL|gtk.EXPAND, yoptions=0)
-        y+=1
-
-
-        # Announce URL / Tracker
-        self.tracker_radio = gtk.RadioButton(group=None, label=_("Use _tracker:"))
+        # Announce URL / Tracker widgets
+        self.tracker_radio = wx.RadioButton(self.panel, label=_("Use &tracker:"), style=wx.RB_GROUP)
+        self.tracker_radio.group = [self.tracker_radio, ]
         self.tracker_radio.value = True
-        
-        self.table.attach(self.tracker_radio,0,1,y,y+1,
-                          xoptions=gtk.FILL, yoptions=0)
-        self.announce_entry = gtk.Entry()
-        self.announce_completion = gtk.EntryCompletion()
-        self.announce_entry.set_completion(self.announce_completion)
-        self.announce_completion.set_text_column(0)
-        self.build_completion()
+
+        self.announce_entry = wx.ComboBox(self.panel, style=wx.CB_DROPDOWN,
+                                          choices=self.tracker_list)
 
         self.tracker_radio.entry = self.announce_entry
-        if self.config['use_tracker'] == self.tracker_radio.value:
-            self.announce_entry.set_sensitive(True)
+        if self.tracker_radio.GetValue():
+            self.announce_entry.Enable(True)
         else:
-            self.announce_entry.set_sensitive(False)
+            self.announce_entry.Enable(False)
 
         if self.config['tracker_name']:
-            self.announce_entry.set_text(self.config['tracker_name'])
+            self.announce_entry.SetValue(self.config['tracker_name'])
         elif len(self.tracker_list):
-            self.announce_entry.set_text(self.tracker_list[0])
+            self.announce_entry.SetValue(self.tracker_list[0])
         else:
-            self.announce_entry.set_text('http://my.tracker:6969/announce')
-            
-        self.announce_entry.set_size_request(right_column_width,-1)
-        self.table.attach(self.announce_entry,1,2,y,y+1, xoptions=gtk.FILL|gtk.EXPAND, yoptions=0)
-        y+=1
+            self.announce_entry.SetValue('http://my.tracker:6969/announce')
 
-        # DHT / Trackerless
-        self.dht_radio = gtk.RadioButton(group=self.tracker_radio,
-                                         label=_("Use _DHT:"))
+        # DHT / Trackerless widgets
+        self.dht_radio = wx.RadioButton(self.panel, label=_("Use &DHT:"))
+        self.tracker_radio.group.append(self.dht_radio)
         self.dht_radio.value = False
-        
-        self.table.attach(align(self.dht_radio,0,0), 0,1,y,y+1,
-                          xoptions=gtk.FILL|gtk.EXPAND, yoptions=0)
 
-        self.dht_nodes_expander = gtk.Expander(_("Nodes (optional):"))
-        self.dht_nodes_expander.connect('size-allocate', self.resize_to_fit)
-        
-        self.dht_nodes = NodeList(self, 'router.bittorrent.com:6881')
-        self.dht_frame = gtk.Frame()
-        self.dht_frame.add(self.dht_nodes)
-        self.dht_frame.set_shadow_type(gtk.SHADOW_IN)
-        self.dht_nodes_expander.add(self.dht_frame)
+        self.dht_nodes_box = wx.StaticBox(self.panel, label=_("Nodes (optional):"))
+        self.dht_nodes = NodeList(self.panel, 'router.bittorrent.com:6881')
 
-        self.table.attach(self.dht_nodes_expander,1,2,y,y+1, xoptions=gtk.FILL|gtk.EXPAND, yoptions=0)
         self.dht_radio.entry = self.dht_nodes
 
-        if self.config['use_tracker'] == self.dht_radio.value:
-            self.dht_nodes.set_sensitive(True)
-        else:
-            self.dht_nodes.set_sensitive(False)
+        for w in self.tracker_radio.group:
+            w.Bind(wx.EVT_RADIOBUTTON, self.toggle_tracker_dht)
 
-        y+=1
-
-        for w in self.tracker_radio.get_group():
-            w.connect('toggled', self.toggle_tracker_dht)
-
-        for w in self.tracker_radio.get_group():
+        for w in self.tracker_radio.group:
             if w.value == bool(self.config['use_tracker']):
-                w.set_active(True)
+                w.SetValue(True)
             else:
-                w.set_active(False)
+                w.SetValue(False)
 
-        # Hsep
-        self.table.attach(gtk.HSeparator(),0,2,y,y+1,yoptions=0)
-        y+=1
+        if self.config['use_tracker']:
+            self.dht_nodes.Disable()
+        else:
+            self.announce_entry.Disable()
 
-        # Comment
-        self.comment_expander = gtk.Expander(_("Comments:"))
-        self.comment_expander.connect('size-allocate', self.resize_to_fit)
-        
-        self.comment_buffer = gtk.TextBuffer()
-        self.comment_text = gtk.TextView()
-        self.comment_text.set_buffer(self.comment_buffer)
-        self.comment_text.set_wrap_mode(gtk.WRAP_WORD)
-        self.comment_scroll = gtk.ScrolledWindow()
-        self.comment_scroll.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_ALWAYS)
-        self.comment_scroll.set_shadow_type(gtk.SHADOW_IN)
-        self.comment_scroll.add(self.comment_text)
+        # Button widgets
+        self.quitbutton = wx.Button(self.panel, label=_("&Close"))
+        self.quitbutton.Bind(wx.EVT_BUTTON, self.quit)
+        self.makebutton = wx.Button(self.panel, label=_("&Publish"))
+        self.makebutton.Bind(wx.EVT_BUTTON, self.make)
+        self.makebutton.Enable(False)
 
-        self.comment_expander.add(self.comment_scroll)
-        self.table.attach(self.comment_expander,0,2,y,y+1,
-                          xoptions=gtk.FILL, yoptions=0)
-        y+=1
+        self.advancedbutton = wx.Button(self.panel, label=_("&Advanced"))
+        self.advancedbutton.Bind(wx.EVT_BUTTON, self.toggle_advanced)
+        self.simplebutton = wx.Button(self.panel, label=_("&Simple"))
+        self.simplebutton.Bind(wx.EVT_BUTTON, self.toggle_advanced)
+
+        ## sizers
+        # file sizers
+        def setfunc(path):
+            self.config['torrent_dir'] = path
+        path = ''
+        if self.config.has_key('torrent_dir') and self.config['torrent_dir']:
+            path = self.config['torrent_dir']
+        elif self.config.has_key('open_from') and self.config['open_from']:
+            path = self.config['open_from']
+        elif self.config.has_key('save_in') and self.config['save_in']:
+            path = self.config['save_in']
+        self.choose_file_sizer = ChooseFileOrDirectorySizer(self.panel, path,
+                                                            setfunc=setfunc)
+
+        self.box = self.panel.sizer
+        self.box.AddFirst(self.top_text, flag=wx.ALIGN_LEFT)
+        self.box.Add(self.choose_file_sizer, flag=wx.GROW)
+        self.box.Add(self.dir_text, flag=wx.ALIGN_LEFT)
+        self.box.Add(wx.StaticLine(self.panel, style=wx.LI_HORIZONTAL), flag=wx.GROW)
+
+        # Ye Olde Flexe Gryde Syzer
+        self.table = wx.FlexGridSizer(5,2,SPACING,SPACING)
+
+        # Title
+        self.table.Add(self.title_label, flag=wx.ALIGN_CENTER_VERTICAL)
+        self.table.Add(self.title, flag=wx.GROW)
+
+        # Comments
+        self.table.Add(self.comment_label, flag=wx.ALIGN_CENTER_VERTICAL)
+        self.table.Add(self.comment_text, flag=wx.GROW)
+
+        # separator
+        self.table.Add((0,0),0)
+        self.table.Add(self.simple_advanced_line, flag=wx.GROW)
+
+        # Piece size sizers
+        self.table.Add(self.piece_size_label, flag=wx.ALIGN_CENTER_VERTICAL)
+        self.table.Add(self.piece_size, flag=wx.GROW)
+
+        # Announce URL / Tracker sizers
+        self.table.Add(self.tracker_radio, flag=wx.ALIGN_CENTER_VERTICAL)
+        self.table.Add(self.announce_entry,flag=wx.GROW)
+
+        # DHT / Trackerless sizers
+        self.table.Add(self.dht_radio, flag=wx.ALIGN_CENTER_VERTICAL)
+
+        self.dht_nodes_sizer = wx.StaticBoxSizer(self.dht_nodes_box, wx.VERTICAL)
+        self.dht_nodes_sizer.Add(self.dht_nodes, flag=wx.ALL, border=SPACING)
+
+        self.table.Add(self.dht_nodes_sizer, flag=wx.GROW)
 
         # add table
-        self.box.pack_start(self.table, expand=True, fill=True, padding=0)
+        self.table.AddGrowableCol(1)
+        self.box.Add(self.table, flag=wx.GROW)
 
-        # buttons
+        self.box.Add(wx.StaticLine(self.panel, style=wx.LI_HORIZONTAL), flag=wx.GROW)
 
-        self.buttonbox = gtk.HBox(homogeneous=True, spacing=SPACING)
+        # Button sizers
+        self.buttonbox = HSizer()
 
-        self.quitbutton = gtk.Button(stock=gtk.STOCK_CLOSE)
-##=======
-##        # Piece size
-##        self.table.attach(ralign(gtk.Label('Piece size:')),0,1,y,y+1,
-##                          xoptions=gtk.FILL, yoptions=0)
+        self.buttonbox.AddFirst(self.advancedbutton)
+        self.buttonbox.Add(self.simplebutton)
+        self.buttonbox.Add(self.quitbutton)
+        self.buttonbox.Add(self.makebutton)
+
+        self.box.Add(self.buttonbox, flag=wx.ALIGN_RIGHT, border=0)
+
+        # bind a bunch of things to check_buttons
+        self.announce_entry.Bind(wx.EVT_TEXT, self.check_buttons)
+        self.choose_file_sizer.pathbox.Bind(wx.EVT_TEXT, self.check_buttons)
+        # radio buttons are checked in toggle_tracker_dht
+
+        minwidth = self.GetBestSize()[0]
+        self.SetMinSize(wx.Size(minwidth, -1))
+
+        # Flip advanced once because toggle_advanced flips it back
+        self.advanced = True
+        self.toggle_advanced(None)
+        if self.config['verbose']:
+            self.toggle_advanced(None)
+
+        self.Show()
+
+        self.Bind(wx.EVT_CLOSE, self.quit)
 
 
-##        self.piece_size_box = gtk.HBox(spacing=SPACING)
-##        self.piece_size_box.pack_start(self.piece_size, expand=False, fill=False)
-##        self.table.attach(self.piece_size_box,1,2,y,y+1, xoptions=gtk.FILL|gtk.EXPAND, yoptions=0)
-##        y+=1
+    def Fit(self):
+        self.panel.Fit()
+        self.SetClientSize(self.panel.GetSize())
 
 
-##        self.box.pack_start(self.table, expand=True, fill=True)
+    def quit(self, event=None):
+        self.save_config()
+        self.Destroy()
 
-##        self.buttonbox = gtk.HBox(homogeneous=True, spacing=SPACING)
 
-##        self.quitbutton = gtk.Button(stock=gtk.STOCK_QUIT)
-##>>>>>>> remote
-        self.quitbutton.connect('clicked', self.quit)
-        self.buttonbox.pack_start(self.quitbutton, expand=True, fill=True)
+    def toggle_advanced(self, event):
+        show = not self.advanced
+        if show:
+            # reinstate the StaticBoxSizer before Show()
+            self.table.Add(self.dht_nodes_sizer, flag=wx.GROW)
+        else:
+            # detach the StaticBoxSizer before Show(False)
+            self.table.Detach(self.dht_nodes_sizer)
 
-        self.buttonbox.pack_start(gtk.Label(''), expand=True, fill=True)
+        for w in (
+            self.simple_advanced_line,
+            self.piece_size, self.piece_size_label,
+            self.tracker_radio, self.announce_entry,
+            self.dht_radio,  self.dht_nodes, self.dht_nodes_box,
+            self.simplebutton,
+            ):
+            w.Show(show)
+        self.advancedbutton.Show(self.advanced)
 
-        self.makebutton = IconButton(_("_Make"), stock=gtk.STOCK_EXECUTE)
-        self.makebutton.connect('clicked', self.make)
-        self.makebutton.set_sensitive(False)
-        self.buttonbox.pack_end(self.makebutton, expand=True, fill=True)
+        if show:
+            self.dht_nodes_sizer.Layout()
+            self.dht_nodes_sizer.Fit(self)
+        self.table.Layout()
+        self.table.Fit(self)
+        self.sizer.RecalcSizes()
+        self.sizer.Fit(self)
+        self.advanced = show
 
-        self.box.pack_end(self.buttonbox, expand=False, fill=False)
 
-        self.announce_entry.connect('changed', self.check_buttons)
-        self.filebox.connect('changed', self.check_buttons)
-        for w in self.tracker_radio.get_group():
-            w.connect('clicked', self.check_buttons)
 
-        self.box.pack_end(gtk.HSeparator(), expand=False, fill=False)
-
-        self.add(self.box)
-
-#        HelpWindow(None, makeHelp('maketorrent', defaults))
-        
-        self.box.show_all()
-##        extraheight = self.dht_frame.size_request()[1] + \
-##                      self.comment_scroll.size_request()[1]
-##        sr = self.box.size_request()
-##        self.resize(sr[0] + SPACING*2, sr[1]+extraheight + SPACING*2)
-        self.resize_to_fit()
-        self.show_all()
-
-    def toggle_tracker_dht(self, widget):
-        if widget.get_active():
-            self.config['use_tracker'] = widget.value
+    def toggle_tracker_dht(self, event):
+        widget = event.GetEventObject()
+        self.config['use_tracker'] = widget.value
 
         for e in [self.announce_entry, self.dht_nodes]:
             if widget.entry is e:
-                e.set_sensitive(True)
+                e.Enable(True)
             else:
-                e.set_sensitive(False)
+                e.Enable(False)
+        self.check_buttons()
 
-    def choose_files(self,widget):
-        fn = None
-        if self.config['torrent_dir']:
-            fn = self.config['torrent_dir']
-        else:
-            fn = Desktop.desktop 
-
-        FileOrFolderSelection(self, fullname=fn, 
-                              got_multiple_location_func=self.add_files)
-    
-    def add_files(self, names):
-        for name in names:
-            self.filebox.set_text(name)
-        torrent_dir = os.path.split(name)[0]
-        if torrent_dir[-1] != os.sep:
-            torrent_dir += os.sep
-        self.config['torrent_dir'] = torrent_dir
 
     def get_piece_size_exponent(self):
-        i = self.piece_size.get_active()
-        exp = i+self.piece_size.offset
+        i = self.piece_size.GetSelection()
+        if i == 0:
+            # Auto
+            exp = 0
+        else:
+            exp = i-1 + self.piece_size.offset
         self.config['piece_size_pow2'] = exp
         return exp
 
+
     def get_file(self):
-        return self.filebox.get_text()
+        return self.choose_file_sizer.get_choice()
+
 
     def get_announce(self):
         if self.config['use_tracker']:
-            announce = self.announce_entry.get_text()
+            announce = self.announce_entry.GetValue()
             self.config['tracker_name'] = announce
         else:
-            announce = self.dht_nodes.get_text()
+            announce = self.dht_nodes.GetValue()
         return announce
+
 
     def make(self, widget):
         file_name = self.get_file()
         piece_size_exponent = self.get_piece_size_exponent()
         announce = self.get_announce()
-        comment = self.comment_buffer.get_text(
-            *self.comment_buffer.get_bounds())
-                
+        title = self.title.GetValue()
+        comment = self.comment_text.GetValue()
+
         if self.config['use_tracker']:
-            self.add_tracker(announce) 
+            self.add_tracker(announce)
         errored = False
         if not errored:
             d = ProgressDialog(self, [file_name,], announce,
-                               piece_size_exponent, comment)
+                               piece_size_exponent, title, comment,
+                               self.config)
             d.main()
+
 
     def check_buttons(self, *widgets):
         file_name = self.get_file()
-        tracker = self.announce_entry.get_text()
+        tracker = self.announce_entry.GetValue()
         if file_name not in (None, ''):
             if self.config['use_tracker']:
                 if len(tracker) >= len('http://x.cc'):
-                    self.makebutton.set_sensitive(True)
+                    self.makebutton.Enable(True)
                 else:
-                    self.makebutton.set_sensitive(False)
+                    self.makebutton.Enable(False)
             else:
-                self.makebutton.set_sensitive(True)
+                self.makebutton.Enable(True)
         else:
-            self.makebutton.set_sensitive(False)
+            self.makebutton.Enable(False)
+
 
     def save_config(self):
         def error_callback(error, string): print string
-        configfile.save_ui_config(self.config, 'maketorrent', ui_options, error_callback)
-                
-    def quit(self, widget):
-        self.save_config()
-        self.destroy()        
+        configfile.save_global_config(self.config, 'maketorrent', error_callback, ui_options)
+
 
     def add_tracker(self, tracker_name):
         try:
@@ -345,68 +358,65 @@ class MainWindow(Window):
         except ValueError:
             pass
         self.tracker_list[0:0] = [tracker_name,]
-        
+
         self.config['tracker_list'] = ','.join(self.tracker_list)
-        self.build_completion()
 
-    def build_completion(self):
-        liststore = gtk.ListStore(gobject.TYPE_STRING)
+        if not self.announce_entry.IsEmpty():
+            self.announce_entry.Clear()
         for t in self.tracker_list:
-            liststore.append([t])
-        self.announce_completion.set_model(liststore)
-
-    def resize_to_fit(self, *args):
-        garbage, y = self.size_request()
-        x, garbage = self.get_size()
-        gobject.idle_add(self.resize, x, y)
+            self.announce_entry.Append(t)
 
 
-class AppWindow(MainWindow):
-    def quit(self, widget):
-        MainWindow.quit(self, widget)
-        gtk.main_quit()
 
-
-class NodeList(gtk.TreeView):
+class NodeList(Grid):
     def __init__(self, parent, nodelist):
-        self.store = gtk.ListStore(gobject.TYPE_STRING, gobject.TYPE_STRING)
-        pre_size_list = ['router.bittorrent.com', '65536']
-        self.store.append(pre_size_list)
+        Grid.__init__(self, parent, style=wx.WANTS_CHARS)
 
-        gtk.TreeView.__init__(self, self.store)
-        self.set_enable_search(False)
+        self.CreateGrid( 0, 2, wx.grid.Grid.SelectRows)
+        self.SetColLabelValue(0, _("Host"))
+        self.SetColLabelValue(1, _("Port"))
 
-        self.host_render = gtk.CellRendererText()
-        self.host_render.set_property('editable', True)
-        self.host_column = gtk.TreeViewColumn(_("_Host"), self.host_render,
-                                              text=0)
-        self.append_column(self.host_column)
-        self.host_render.connect('edited', self.store_host_value)
+        self.SetColRenderer(1, wx.grid.GridCellNumberRenderer())
+        self.SetColEditor(1, wx.grid.GridCellNumberEditor(0, 65535))
 
-        self.port_render = gtk.CellRendererText()
-        self.port_render.set_property('editable', True)
-        self.port_column = gtk.TreeViewColumn(_("_Port"), self.port_render,
-                                              text=1)
-        self.append_column(self.port_column)
-        self.port_render.connect('edited', self.store_port_value)
+        self.SetColLabelSize(self.GetTextExtent("l")[1]+4)
+        self.SetRowLabelSize(1)
+        self.SetSize((1000,1000))
 
-        #self.columns_autosize()
-        #self.host_column.set_fixed_width(self.host_column.get_width())
-        #self.host_column.set_sizing(gtk.TREE_VIEW_COLUMN_FIXED)
-        #self.realize()
-        #self.port_column.set_fixed_width(self.port_column.get_width())
-        #self.port_column.set_sizing(gtk.TREE_VIEW_COLUMN_FIXED)
+        self.storing = False
+        self.Bind(wx.grid.EVT_GRID_CMD_CELL_CHANGE, self.store_value)
 
-        self.store.clear()
-        
+        self.append_node(('router.bittorrent.com', '65536'))
+
         for i, e in enumerate(nodelist.split(',')):
             host, port = e.split(':')
-            self.store.append((host, port))
+            self.append_node((host,port))
 
-        if i < MAXIMUM_NODES - 1:
-            self.store.append(('',''))
+        self.append_node(('',''))
 
-    def store_host_value(self, cell, row, value):
+    def append_node(self, (host, port)):
+        self.InsertRows(self.GetNumberRows(), 1)
+        self.SetCellValue(self.GetNumberRows()-1, 0, host)
+        self.SetCellValue(self.GetNumberRows()-1, 1, port)
+        self.AutoSizeColumn(0)
+        self.SetColSize(1, self.GetTextExtent('65536')[0] * 2)
+        ###self.AutoSize()
+
+    def store_value(self, event):
+        if self.storing:
+            return
+        self.storing = True
+        table = self.GetTable()
+        row = event.GetRow()
+        col = event.GetCol()
+        value = table.GetValue(row, col)
+        if col == 0:
+            self.store_host_value(row, value)
+        elif col == 1:
+            self.store_port_value(row, value)
+        self.storing = False
+
+    def store_host_value(self, row, value):
         parts = value.split('.')
         if value != '':
             for p in parts:
@@ -416,11 +426,9 @@ class NodeList(gtk.TreeView):
                     value = value.encode('idna')
                 except UnicodeError:
                     return
-        it = self.store.get_iter_from_string(row)
-        self.store.set(it, 0, str(value))
         self.check_row(row)
 
-    def store_port_value(self, cell, row, value):
+    def store_port_value(self, row, value):
         if value != '':
             try:
                 v = int(value)
@@ -428,150 +436,191 @@ class NodeList(gtk.TreeView):
                     value = 65535
                 if v < 0:
                     value = 0
-            except:
+            except ValueError:
                 return # return on non-integer values
-        it = self.store.get_iter_from_string(row)
-        self.store.set(it, 1, str(value))
-        #curs = self.get_cursor()
-        #print curs
-        #print type(curs[0][0])
-
         self.check_row(row)
-        #newpath = ((int(row)+1,), self.port_column)
-        #print newpath
-        #self.set_cursor(newpath)
 
     def check_row(self, row):
         # called after editing to see whether we should add a new
         # blank row, or remove the now blank currently edited row.
-        it = self.store.get_iter_from_string(row)
-        host_value = self.store.get_value(it, 0)
-        port_value = self.store.get_value(it, 1)
-        if host_value and port_value         and \
-               int(row) == len(self.store)-1 and \
-               int(row) < MAXIMUM_NODES   -1 :
-            self.store.append(('',''))
-        elif host_value == '' and \
-             port_value == '' and \
-             int(row) != len(self.store)-1:
-            self.store.remove(it)            
+        table = self.GetTable()
+        host_value = table.GetValue(row, 0)
+        port_value = table.GetValue(row, 1)
+        if (host_value and
+            port_value and
+            int(row) == self.GetNumberRows()-1):
+            self.append_node(('',''))
+        elif (host_value == '' and
+              (not port_value or int(port_value) == 0) and
+              int(row) != self.GetNumberRows()-1):
+            self.DeleteRows(row, 1)
 
     def get_nodes(self):
         retlist = []
-        it = self.store.get_iter_first()
-        while it:
-            host = self.store.get_value(it, 0)
-            port = self.store.get_value(it, 1)
-            if host != '' and port != '':
+        id = -1
+        table = self.GetTable()
+        for row in xrange(self.GetNumberRows()):
+            host = table.GetValue(row, 0)
+            port = table.GetValue(row, 1)
+            if host != '' and port != '' and port != 0:
                 retlist.append((host,port))
-            it = self.store.iter_next(it)
         return retlist
-        
-    def get_text(self):
+
+    def GetValue(self):
         nodelist = self.get_nodes()
         return ','.join(['%s:%s'%node for node in nodelist])
 
 
-class ProgressDialog(gtk.Dialog):
 
-    def __init__(self, parent, file_list, announce, piece_length, comment):
-        gtk.Dialog.__init__(self, parent=parent, flags=gtk.DIALOG_MODAL|gtk.DIALOG_DESTROY_WITH_PARENT)
-        self.set_size_request(400,-1)
-        self.set_border_width(SPACING)
-        self.set_title(_("Building torrents..."))
+def deunicode(s):
+    try:
+        s = s.decode('utf8', 'replace').encode('utf8')
+    except:
+        pass
+    return s
+
+
+
+class ProgressDialog(BTDialog):
+
+    def __init__(self, parent, file_list, announce, piece_length, title,
+                 comment, config):
+        BTDialog.__init__(self, parent=parent, size=(400,-1))
+        self.SetTitle(_("Building torrents..."))
         self.file_list = file_list
-        self.announce = announce
+        self.announce = deunicode(announce)
         self.piece_length = piece_length
-        self.comment = comment
+        self.title = deunicode(title)
+        self.comment = deunicode(comment)
+        self.config = config
 
         self.flag = Event() # ???
 
-        self.label = gtk.Label(_("Checking file sizes..."))
-        self.label.set_line_wrap(True)
+        self.vbox = VSizer()
+        self.label = wx.StaticText(self, label=_("Checking file sizes..."))
+        #self.label.set_line_wrap(True)
 
-        self.vbox.set_spacing(SPACING)
-        self.vbox.pack_start(lalign(self.label), expand=False, fill=False)
+        self.vbox.AddFirst(self.label, flag=wx.ALIGN_LEFT)
 
-        self.progressbar = gtk.ProgressBar()
-        self.vbox.pack_start(self.progressbar, expand=False, fill=False)
+        self.progressbar = wx.Gauge(self, range = 1000, size=(400, 25), style = wx.GA_SMOOTH)
+        self.vbox.Add(self.progressbar, flag=wx.GROW)
 
-        self.cancelbutton = gtk.Button(stock=gtk.STOCK_CANCEL)
-        self.cancelbutton.connect('clicked', self.cancel)
-        self.action_area.pack_end(self.cancelbutton)
+        self.vbox.Add(wx.StaticLine(self, style=wx.LI_HORIZONTAL), flag=wx.GROW)
 
-        self.show_all()
+        self.action_area = wx.BoxSizer(wx.HORIZONTAL)
 
-        self.done_button = gtk.Button(stock=gtk.STOCK_OK)
-        self.done_button.connect('clicked', self.cancel)
+        self.cancelbutton = wx.Button(self, label=_("&Abort"))
+        self.cancelbutton.Bind(wx.EVT_BUTTON, self.cancel)
+        self.action_area.Add(self.cancelbutton,
+                             flag=wx.LEFT|wx.RIGHT|wx.BOTTOM, border=SPACING)
 
-        self.seed_button = gtk.Button(_("Start seeding"))
-        self.seed_button.connect('clicked', self.seed)
+        self.done_button = wx.Button(self, label=_("&Ok"))
+        self.done_button.Bind(wx.EVT_BUTTON, self.cancel)
+        self.action_area.Add(self.done_button,
+                             flag=wx.LEFT|wx.RIGHT|wx.BOTTOM, border=SPACING)
+
+        self.action_area.Show(self.done_button, False)
+
+        self.seed_button = wx.Button(self, label=_("&Start seeding"))
+        self.seed_button.Bind(wx.EVT_BUTTON, self.seed)
+        self.action_area.Add(self.seed_button,
+                             flag=wx.RIGHT|wx.BOTTOM, border=SPACING)
+
+        self.action_area.Show(self.seed_button, False)
+
+        self.Bind(wx.EVT_CLOSE, self.cancel)
+
+        self.vbox.Add(self.action_area, flag=wx.ALIGN_RIGHT,
+                      border=0)
+
+        self.SetSizerAndFit(self.vbox)
+        self.Show()
+
 
     def main(self):
         self.complete()
 
+
     def seed(self, widget=None):
         for f in self.file_list:
-            btspawn(None, 'bittorrent', f+EXTENSION, '--save_as', f)
+            btspawn('bittorrent', f+EXTENSION, '--publish', f)
         self.cancel()
+
 
     def cancel(self, widget=None):
         self.flag.set()
-        self.destroy()
+        self.Destroy()
+
 
     def set_progress_value(self, value):
-        self.progressbar.set_fraction(value)
+        self.progressbar.SetValue(value * 1000)
         self._update_gui()
+
 
     def set_file(self, filename):
-        self.label.set_text(_("building ") + filename + EXTENSION)
+        self.label.SetLabel(_("building: ") + filename + EXTENSION)
+        self.vbox.Layout()
+        self.Fit()
         self._update_gui()
 
+
     def _update_gui(self):
-        while gtk.events_pending():
-            gtk.main_iteration(block=False)
+        wx.GetApp().Yield(True)
+
 
     def complete(self):
         try:
-            make_meta_files(self.announce, 
+            make_meta_files(self.announce.encode('utf8'),
                             self.file_list,
                             flag=self.flag,
                             progressfunc=self.set_progress_value,
                             filefunc=self.set_file,
                             piece_len_pow2=self.piece_length,
-                            comment=self.comment, 
-                            use_tracker=config['use_tracker'],
-                            data_dir=config['data_dir'],
+                            title=self.title,
+                            comment=self.comment,
+                            use_tracker=self.config['use_tracker'],
+                            data_dir=self.config['data_dir'],
                             )
             if not self.flag.isSet():
-                self.set_title(_("Done."))
-                self.label.set_text(_("Done building torrents."))
+                self.SetTitle(_("Done."))
+                self.label.SetLabel(_("Done building torrents."))
                 self.set_progress_value(1)
-                self.action_area.remove(self.cancelbutton)
-                self.action_area.pack_start(self.seed_button)
-                self.action_area.pack_start(self.done_button)
-                self.seed_button.show()
-                self.done_button.show()
+                self.action_area.Show(self.cancelbutton, False)
+                self.action_area.Show(self.seed_button, True)
+                self.action_area.Show(self.done_button, True)
+                self.vbox.Layout()
         except (OSError, IOError), e:
-            self.set_title(_("Error!"))
-            self.label.set_text(_("Error building torrents: ") + str(e))
+            self.SetTitle(_("Error!"))
+            self.label.SetLabel(_("Error building torrents: ") + str(e))
 
 
-    
 
-def run():
+
+def run(argv=[]):
     config, args = configfile.parse_configuration_and_args(defaults,
-                                    'maketorrent', [], 0, None)
-    MainWindow(config)
+                                    'maketorrent', argv, 0, None)
+    # BUG: hack to make verbose mode be the default
+    config['verbose'] = not config['verbose']
+    MainLoop(config)
+
+
+
+class MainLoop(BTApp):
+
+    def __init__(self, config):
+        self.config = config
+        self.main_window = None
+        BTApp.__init__(self, 0)
+        self.MainLoop()
+
+
+    def OnInit(self):
+        BTApp.OnInit(self)
+        self.main_window = MainWindow(self.config)
+        return True
+
+
 
 
 if __name__ == '__main__':
-    config, args = configfile.parse_configuration_and_args(defaults,
-                                    'maketorrent', sys.argv[1:], 0, None)
-    AppWindow(config)
-    try:
-        gtk.main()
-    except KeyboardInterrupt:
-        # gtk.mainloop not running
-        # exit and don't save config options
-        sys.exit(1)
+    run(argv=sys.argv[1:])

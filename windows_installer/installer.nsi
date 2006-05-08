@@ -45,7 +45,7 @@ VAR KILLEXENAME
 VAR UPGRADE
 
 !define MUI_ICON "images\bittorrent.ico"
-;!define MUI_UNICON "images\bittorrent.ico"
+!define MUI_UNICON "images\bittorrent.ico"
 
 !define MUI_LANGDLL_ALWAYSSHOW
 !define MUI_LANGDLL_REGISTRY_ROOT HKCU
@@ -74,11 +74,12 @@ VAR UPGRADE
 !define MUI_FINISHPAGE_TITLE  "${APPNAME} Setup Complete"
 !define MUI_FINISHPAGE_RUN "$INSTDIR\bittorrent.exe"
 ; this is an opt-in url, we want to make it opt-out
-;!define MUI_FINISHPAGE_LINK "http://search.bittorrent.com"
-;!define MUI_FINISHPAGE_LINK_LOCATION http://search.bittorrent.com
+!define MUI_FINISHPAGE_LINK "&Visit BitTorrent.com to search for torrents!"
+!define MUI_FINISHPAGE_LINK_LOCATION http://www.bittorrent.com
 ; so we hi-jack the readme option
-!define MUI_FINISHPAGE_SHOWREADME_TEXT "&Visit http://search.bittorrent.com to search for torrents!"
-!define MUI_FINISHPAGE_SHOWREADME http://search.bittorrent.com
+!define MUI_FINISHPAGE_SHOWREADME
+!define MUI_FINISHPAGE_SHOWREADME_TEXT "Create a &shortcut to BitTorrent on the Desktop"
+!define MUI_FINISHPAGE_SHOWREADME_FUNCTION "desktop_shortcut"
 
 !define MUI_FINISHPAGE_NOREBOOTSUPPORT
   !insertmacro MUI_PAGE_FINISH  
@@ -106,6 +107,13 @@ VAR UPGRADE
 
 Var HWND
 Var DLGITEM
+
+
+Function desktop_shortcut
+    ; Create desktop link
+    SetShellVarContext all
+    CreateShortCut "$DESKTOP\${APPNAME}.lnk"                    "$INSTDIR\${EXENAME}"
+FunctionEnd
 
 Function uninstall
 
@@ -315,6 +323,111 @@ Function ${UN}GetOldPath
 FunctionEnd
 !macroend
 
+
+!macro EnhancedFindWindow UN
+Function ${UN}EnhancedFindWindow
+  ; input, save variables
+  Exch  $0   # part of the wt to search for
+  Exch
+  Exch  $1   # the wcn
+  Push  $2   # length of $0
+  Push  $3   # return code
+  Push  $4   # window handle
+  Push  $5   # returned window name
+  Push  $6   # max length of 5
+
+  ; set up the variables
+  SetPluginUnload  alwaysoff     # recommended, if u're using the \
+                                   system plugin
+  StrCpy  $4  0                  # FindWindow wouldn't work without
+;  StrCpy  $2  ${NSIS_MAX_STRLEN} # the max length of string variables
+  StrLen  $2  $0
+  StrLen  $5  $4                 # it's length
+
+ ; loop to search for open windows
+ search_loop:
+  FindWindow  $4  ""  ""  0  $4
+   IntCmp  $4  0  search_failed
+    IsWindow  $4  0  search_failed
+
+     System::Call  \
+      'user32.dll::GetClassName(i, t, *i) i(r4r4, .r5, r6r6) .r3'
+       IntCmp  $3  0  search_loop
+       StrCmp $5 $1 0 search_loop
+
+         System::Call  \
+           'user32.dll::GetWindowText(i, t, *i) i(r4r4, .r5, r6r6) .r3'
+         IntCmp  $3  0  search_loop
+           StrCpy  $3  $5
+           StrCpy  $5  $5  $2  0
+           StrCmp  $0  $5 search_end search_loop
+
+ ; no matching class-name found, return "failed"
+ search_failed:
+  StrCpy  $0  "failed"
+  StrCpy  $1  "failed"
+
+ ; search ended, output and restore variables
+ search_end:
+  SetPluginUnload  manual  # the system-plugin can now unload itself
+  System::Free  0          # free the memory
+
+  StrCpy $0 $4
+  StrCpy $1 $5
+
+  Pop  $6
+  Pop  $5
+  Pop  $4
+  Pop  $3
+  Pop  $2
+  Exch  $1
+  Exch
+  Exch  $0
+FunctionEnd
+!macroend
+
+
+; CloseBitTorrent: this will in a loop send the BitTorrent window the WM_CLOSE
+; message until it does not find a valid BitTorrent window
+;
+!macro CloseBitTorrent UN
+Function ${UN}CloseBitTorrent
+  Push $0
+
+  IntFmt $R1 "%u" 0
+
+  goto skip
+  loop:     
+    IntOp $R1 $R1 + 1
+    IntCmp $R1 5 done
+  skip:
+    DetailPrint "Looking for running copies of BitTorrent"
+
+    Push "wxWindowClassNR"   # the wcn
+    Push "BitTorrent"   # the known part of the wt
+    Call ${UN}EnhancedFindWindow
+    Pop  $0   # will contain the window's handle
+    Pop  $1   # will containg the full wcn
+              # both will containg "failed", if no matching wcn was found
+
+    StrCmp $0 "failed" done
+    StrCmp $0 "0" done
+    DetailPrint "Stopping BitTorrent"
+    SendMessage $0 16 0 0 # WM_CLOSE == 16
+    Sleep 1000
+    Goto loop
+  done:
+
+  IntFmt $R1 "%u" 0
+  Processes::FindProcess "bittorrent.exe"
+  StrCmp $R0 "1" loop reallydone
+
+  reallydone:
+  Pop $0
+FunctionEnd
+!macroend
+
+
 !macro CheckForIt UN
 Function ${UN}CheckForIt
 
@@ -350,6 +463,11 @@ FunctionEnd
 
 !macro QuitIt UN
 Function ${UN}QuitIt
+
+    # try nicely first
+    Call ${UN}CloseBitTorrent
+
+    # kill all the old ones    
     StrCpy $KILLEXENAME "btdownloadgui.exe"
     Call ${UN}CheckForIt
     StrCpy $KILLEXENAME "bittorrent.exe"
@@ -403,13 +521,12 @@ Function ${UN}MagicUninstall
   ;RMDir /r "$R0"
 
   Delete "$R0\*.exe"
+  Delete "$R0\*.manifest"
   Delete "$R0\*.pyd"
   Delete "$R0\*.dll"
   Delete "$R0\library.zip"
   RMDir /r "$R0\images"
   RMDir /r "$R0\lib"
-  RMDir /r "$R0\etc"
-  RMDir /r "$R0\share"
   RMDir /r "$R0\locale"
   Delete "$R0\redirdonate.html"
   Delete "$R0\credits.txt"
@@ -437,6 +554,12 @@ FunctionEnd
 !macroend
 
 ;awesome voodoo
+!insertmacro EnhancedFindWindow ""
+!insertmacro EnhancedFindWindow "un."
+
+!insertmacro CloseBitTorrent ""
+!insertmacro CloseBitTorrent "un."
+
 !insertmacro CheckForIt ""
 !insertmacro CheckForIt "un."
 
@@ -454,8 +577,8 @@ FunctionEnd
 
 Function .onInit
     BringToFront
-
-	;Language selection dialog
+    
+    ;Language selection dialog
     !insertmacro MUI_LANGDLL_DISPLAY
 
     Call QuitIt
@@ -507,6 +630,8 @@ Section "Install" SecInstall
 
   File dist\*.exe
   IfErrors files
+  File dist\*.manifest
+  IfErrors files
   File dist\*.pyd
   IfErrors files
   File dist\*.dll
@@ -514,14 +639,6 @@ Section "Install" SecInstall
   File dist\library.zip
   IfErrors files
   File /r dist\images
-  IfErrors files
-  File /r dist\lib
-  IfErrors files
-  File /r dist\etc
-  IfErrors files
-  File /r dist\share
-  IfErrors files
-  File /r dist\locale
   IfErrors files
   File redirdonate.html
   IfErrors files
@@ -571,7 +688,7 @@ Section "Install" SecInstall
   ; that no longer exists, and instead points it at us.
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.torrent\" Application "${EXENAME}"
   WriteRegStr HKCR "Applications\${EXENAME}\shell" "" open
-  WriteRegStr HKCR "Applications\${EXENAME}\shell\open\command" "" `"$INSTDIR\${EXENAME}" --responsefile "%1"`
+  WriteRegStr HKCR "Applications\${EXENAME}\shell\open\command" "" `"$INSTDIR\${EXENAME}" "%1"`
   
   ;; Add a mime type
   WriteRegStr HKCR "MIME\Database\Content Type\application/x-bittorrent" Extension .torrent
@@ -591,7 +708,7 @@ Section "Install" SecInstall
   WriteRegStr HKCR "bittorrent\shell\open\command" "backup" $R1
 
 continue:
-  WriteRegStr HKCR "bittorrent\shell\open\command" "" `"$INSTDIR\${EXENAME}" --responsefile "%1"`
+  WriteRegStr HKCR "bittorrent\shell\open\command" "" `"$INSTDIR\${EXENAME}" "%1"`
 
   ;; Add a shell command to handle torrent:// stuff
   WriteRegStr HKCR torrent "" "TORRENT File"
@@ -605,7 +722,7 @@ continue:
   ReadRegStr $R1 HKCR "torrent\shell\open\command" ""
   WriteRegStr HKCR "torrent\shell\open\command" "backup" $R1
   
-  WriteRegStr HKCR "torrent\shell\open\command" "" `"$INSTDIR\${EXENAME}" --responsefile "%1"`
+  WriteRegStr HKCR "torrent\shell\open\command" "" `"$INSTDIR\${EXENAME}" "%1"`
 
   ;; Automagically register with the Windows Firewall
   WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\SharedAccess\Parameters\FirewallPolicy\StandardProfile\AuthorizedApplications\List" "$INSTDIR\${EXENAME}" `$INSTDIR\${EXENAME}:*:Enabled:${APPNAME}`
@@ -614,16 +731,16 @@ continue:
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APPNAME}" "DisplayName" "${APPNAME} ${VERSION}"
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APPNAME}" "UninstallString" '"$INSTDIR\uninstall.exe"'
 
+  ; SHCNE_ASSOCCHANGED == 0x8000000
+  ; prevents a reboot where it would be needed in rare cases otherwise
+  System::Call 'Shell32::SHChangeNotify(i 0x8000000, i 0, i 0, i 0)'
+
   ; Add items to start menu
   SetShellVarContext current
   CreateShortCut "$SMSTARTUP\${APPNAME}.lnk"                  "$INSTDIR\${EXENAME}"
 
-  ; Create desktop link
-  SetShellVarContext all
-  CreateShortCut "$DESKTOP\${APPNAME}.lnk"                    "$INSTDIR\${EXENAME}"
-
   CreateDirectory "$SMPROGRAMS\${APPNAME}"
-  CreateShortCut "$SMPROGRAMS\${APPNAME}\Downloader.lnk"      "$INSTDIR\${EXENAME}"
+  CreateShortCut "$SMPROGRAMS\${APPNAME}\BitTorrent.lnk"      "$INSTDIR\${EXENAME}"
   CreateShortCut "$SMPROGRAMS\${APPNAME}\Make Torrent.lnk"    "$INSTDIR\maketorrent.exe"
   CreateShortCut "$SMPROGRAMS\${APPNAME}\Donate.lnk"          "$INSTDIR\redirdonate.html"
   CreateShortCut "$SMPROGRAMS\${APPNAME}\Choose Language.lnk" "$INSTDIR\choose_language.exe"

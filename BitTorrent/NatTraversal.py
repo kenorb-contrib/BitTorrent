@@ -1,130 +1,79 @@
 # someday: http://files.dns-sd.org/draft-nat-port-mapping.txt
 # today: http://www.upnp.org/
 
-debug = False
-
-import sys
-import socket
 import os
+import sys
+import Queue
+import socket
+import random
+import logging
+import urlparse
 if os.name == 'nt':
     import pywintypes
     import win32com.client
 
-has_set = False
-try:
-    # python 2.4
-    s = set()
-    del s
-    has_set = True
-except NameError:
-    try:
-        # python 2.3
-        from sets import Set
-        set = Set
-        has_set = True
-    except ImportError:
-        # python 2.2
-        pass
-
 from BitTorrent import app_name, defer
-from BitTorrent import INFO, WARNING, ERROR
 from BitTorrent.platform import os_version
-from BitTorrent.RawServer_magic import RawServer, Handler
+from BitTorrent.sparse_set import SparseSet
+from BitTorrent.RawServer_twisted import RawServer, Handler
 from BitTorrent.BeautifulSupe import BeautifulSupe, Tag
+from BitTorrent.yielddefer import launch_coroutine, _wrap_task
+from BitTorrent.HostIP import get_host_ip
+from BitTorrent.obsoletepythonsupport import has_set, set
+from twisted import internet
+
 from urllib2 import URLError, HTTPError, Request
+from httplib import BadStatusLine
 
 #bleh
 from urllib import urlopen, FancyURLopener, addinfourl
 from httplib import HTTPResponse
 
-import threading
-import Queue
-import urlparse
-import random
+import BitTorrent.stackthreading as threading
 
-from traceback import print_stack, print_tb, print_exc
+nat_logger = logging.getLogger('NatTraversal')
+nat_logger.setLevel(logging.DEBUG)
 
-def UnsupportedWarning(logfunc, s):
-    logfunc(WARNING, "NAT Traversal warning " + ("(%s: %s)."  % (os_version, s)))
+def UnsupportedWarning(s):
+    nat_logger.warning("NAT Traversal warning " + ("(%s: %s)."  % (os_version, s)))
 
-def UPNPError(logfunc, s):
-    logfunc(ERROR, "UPnP ERROR: " + ("(%s: %s)."  % (os_version, s)))
+def UPNPError(s):
+    nat_logger.error("UPnP ERROR: " + ("(%s: %s)."  % (os_version, s)))
 
 class UPnPException(Exception):
     pass
 
-__host_ip = None
-
-import thread
-
-def get_host_ip():
-    global __host_ip
-
-    if __host_ip is not None:
-        return __host_ip
-    
-    #try:
-    #    ip = socket.gethostbyname(socket.gethostname())
-    #except socket.error, e:
-    # mac sometimes throws an error, so they can just wait.
-    # plus, complicated /etc/hosts will return invalid IPs
-
-    try:
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.connect(("bittorrent.com", 80))
-        endpoint = s.getsockname()
-        __host_ip = endpoint[0]
-    except socket.error, e:
-        __host_ip = socket.gethostbyname(socket.gethostname())
-
-    return __host_ip
-        
-
-class InfoFileHandle(object):
-    def __init__(self, logfunc):
-        self.logfunc = logfunc
-    def write(self, s):
-        self.logfunc(INFO, s)
-           
 class NATEventLoop(threading.Thread):
-    def __init__(self, logfunc):
+    def __init__(self):
         threading.Thread.__init__(self)
-        self.log = InfoFileHandle(logfunc)
         self.queue = Queue.Queue()
-        self.killswitch = 0
+        self.killswitch = threading.Event()
         self.setDaemon(True)
 
     def run(self):
 
-        while (self.killswitch == 0):
+        while not self.killswitch.isSet():
 
-            event = self.queue.get()
+            try:
+                event = self.queue.get(timeout=1)
+            except Queue.Empty:
+                continue
             
             try:
                 (f, a, kw) = event
+                nat_logger.debug("NATEventLoop Event: %s" % f.__name__)
                 f(*a, **kw)
+                nat_logger.debug("NATEventLoop Event: %s finished." % f.__name__)
             except:
                 # sys can be none during interpritter shutdown
                 if sys is None:
                     break
-                # this prints the whole thing.
-                print_exc(file = self.log)                
-                # this prints just the traceback to the application log
-                #print_tb(sys.exc_info()[2], file = self.log)
-                # this just prints the exception
-                #self.logfunc(INFO, str(sys.exc_info()[0]) +  ": " + str(sys.exc_info()[1].__str__()))
-
+                nat_logger.exception("Error in NATEventLoop for %s" % str(event))
 
 class NatTraverser(object):
-    def __init__(self, rawserver, logfunc):
+    def __init__(self, rawserver):
         self.rawserver = rawserver
-
-        def log_severity_filter(level, s, optional=True):
-            global debug
-            if level >= ERROR or debug or not optional:
-                logfunc(level, s)
-        self.logfunc = log_severity_filter
-
+        
         self.register_requests = []
         self.unregister_requests = []
         self.list_requests = []
@@ -138,9 +87,9 @@ class NatTraverser(object):
                 self.services.append(WindowsUPnP)
             self.services.append(ManualUPnP)
 
-        self.event_loop = NATEventLoop(self.logfunc)
+        self.event_loop = NATEventLoop()
         self.event_loop.start()
-
+        
         self.resume_init_services()
 
     def add_task(self, f, *a, **kw):
@@ -154,27 +103,29 @@ class NatTraverser(object):
             service = self.services[self.current_service]
             self.current_service += 1
             try:
-                self.logfunc(INFO, ("Trying: %s" % service.__name__))
+                nat_logger.info("Trying: %s" % service.__name__)
                 service(self)
                 break
             except Exception, e:
-                self.logfunc(WARNING, str(e))
+                nat_logger.warning(str(e))
         else:
-            UnsupportedWarning(self.logfunc, "Unable to map a port using any service.")
+            e = "Unable to detect any UPnP services"
+            UnsupportedWarning(e)
+            self._cancel_queue(e)
 
     def resume_init_services(self):
         self.add_task(self.init_services)
 
     def attach_service(self, service):
-        self.logfunc(INFO, ("Using: %s" % type(service).__name__))
+        nat_logger.info("Using: %s" % type(service).__name__)
         self.service = service
         self.add_task(self._flush_queue)
 
     def detach_service(self, service):
         if service != self.service:
-            self.logfunc(ERROR, ("Service: %s is not in use!" % type(service).__name__))
+            nat_logger.error("Service: %s is not in use!" % type(service).__name__)
             return
-        self.logfunc(INFO, ("Detached: %s" % type(service).__name__))
+        nat_logger.info("Detached: %s" % type(service).__name__)
         self.service = None
         
     def _flush_queue(self):
@@ -192,10 +143,23 @@ class NatTraverser(object):
                 self.add_task(self._list_ports, request)
             self.list_requests = []
 
+    def _cancel_queue(self, e):
+        for mapping in self.register_requests:
+            mapping.d.errback(e)
+        self.register_requests = []
+
+        # can't run or cancel blocking removes    
+        self.unregister_requests = []
+
+        for request in self.list_requests:
+            request.errback(e)
+        self.list_requests = []
+    
+
     def register_port(self, external_port, internal_port, protocol,
-                      host = None, service_name = None):
+                      host = None, service_name = None, remote_host=''):
         mapping = UPnPPortMapping(external_port, internal_port, protocol,
-                                  host, service_name)
+                                  host, service_name, remote_host)
         self.register_requests.append(mapping)
 
         self.add_task(self._flush_queue)
@@ -222,51 +186,40 @@ class NatTraverser(object):
         
 
 class NATBase(object):
-    def __init__(self, logfunc):
-        self.logfunc = logfunc
-        self.log = InfoFileHandle(logfunc)
-    
+
     def safe_register_port(self, new_mapping):
 
         # check for the host now, while we're in the thread and before
         # we need to read it.
         new_mapping.populate_host()
         
-        self.logfunc(INFO, "You asked for: " + str(new_mapping))
+        nat_logger.info("You asked for: " + str(new_mapping))
         new_mapping.original_external_port = new_mapping.external_port
         mappings = self._list_ports()
 
         used_ports = []
         for mapping in mappings:
-            #only consider ports which match the same protocol
+            # only consider ports which match the same protocol
             if mapping.protocol == new_mapping.protocol:
                 # look for exact matches
                 if (mapping.host == new_mapping.host and
                     mapping.internal_port == new_mapping.internal_port):
                     # the service name could not match, that's ok.
                     new_mapping.d.callback(mapping.external_port)
-                    self.logfunc(INFO, "Already effectively mapped: " + str(new_mapping), optional=False)
+                    nat_logger.info("Already effectively mapped: " + str(new_mapping))
                     return 
                 # otherwise, add it to the list of used external ports
                 used_ports.append(mapping.external_port)
 
-        if has_set:
-            used_ports = set(used_ports)        
+        used_ports.sort()
+        used_ports = SparseSet(used_ports)
 
-        if (not has_set) or (len(used_ports) < 1000):
-            # for small sets we can just guess around a little
-            while new_mapping.external_port in used_ports:
-                new_mapping.external_port += random.randint(1, 10)
-                # maybe this happens, I really doubt it
-                if new_mapping.external_port > 65535:
-                    new_mapping.external_port = 1025
-        else:
-            # for larger sets we don't want to guess forever
-            all_ports = set(range(1024, 65535))
-            free_ports = all_ports - used_ports
-            new_mapping.external_port = random.choice(free_ports)
+        all_ports = SparseSet()
+        all_ports.add(1024, 65535)
+        free_ports = all_ports - used_ports
+        new_mapping.external_port = random.choice(free_ports)
 
-        self.logfunc(INFO, "I'll give you: " + str(new_mapping))
+        nat_logger.info("I'll give you: " + str(new_mapping))
         self.register_port(new_mapping)
         
     def register_port(self, port):
@@ -278,12 +231,13 @@ class NATBase(object):
 
 class UPnPPortMapping(object):
     def __init__(self, external_port, internal_port, protocol,
-                 host = None, service_name = None):
+                 host = None, service_name = None, remote_host=''):
         self.external_port = int(external_port)
         self.internal_port = int(internal_port)
         self.protocol = protocol
 
         self.host = host
+        self.remote_host = ''
 
         if service_name:
             self.service_name = service_name
@@ -298,9 +252,14 @@ class UPnPPortMapping(object):
             self.host = get_host_ip()
         
     def __str__(self):
-        return "%s %s external:%d %s:%d" % (self.service_name, self.protocol,
-                                            self.external_port,
-                                            self.host, self.internal_port)
+        if not self.remote_host:
+            remote = 'external'
+        else:
+            remote = self.remote_host
+        return "%s %s %s:%d %s:%d" % (self.service_name, self.protocol,
+                                      self.remote_host,
+                                      self.external_port,
+                                      self.host, self.internal_port)
 
 def VerifySOAPResponse(request, response):
     if response.code != 200:
@@ -310,15 +269,14 @@ def VerifySOAPResponse(request, response):
 
     data = response.read()
     bs = BeautifulSupe(data)
+    # On Matt's Linksys WRT54G rev 4 v.1.0 I saw u: instead of m:
+    # and ignoring that caused the router to crash
     soap_response = bs.scour("m:", "Response")
     if not soap_response:
-        # maybe I should read the SOAP spec.
-        soap_response = bs.scour("u:", "Response")
-        if not soap_response:
-            raise HTTPError(request.get_full_url(),
-                            response.code, str(response.msg) +
-                            " (incorrect SOAP response method)",
-                            response.info(), response)
+        raise HTTPError(request.get_full_url(),
+                        response.code, str(response.msg) +
+                        " (incorrect SOAP response method)",
+                        response.info(), response)
     return soap_response[0]
     
 def SOAPResponseToDict(soap_response):
@@ -456,7 +414,7 @@ class ManualUPnP(NATBase, Handler):
                             '<s:Body>' +
                             '<u:AddPortMapping xmlns:u="urn:schemas-upnp-org:service:WANIPConnection:1">' +
                             '<NewEnabled>1</NewEnabled>' +
-                            '<NewRemoteHost></NewRemoteHost>' +
+                            '<NewRemoteHost>%s</NewRemoteHost>' +
                             '<NewLeaseDuration>0</NewLeaseDuration>' +
                             '<NewInternalPort>%d</NewInternalPort>' +
                             '<NewExternalPort>%d</NewExternalPort>' +
@@ -482,6 +440,8 @@ class ManualUPnP(NATBase, Handler):
     def _pretify(self, body):
         # I actually found a router that needed one tag per line
         body = body.replace('><', '>\r\n<')
+        # don't add newlines in the middle of empty tags (like NewRemoteHost)
+        body = body.replace('>\r\n</', '></')
         body = body.encode('utf-8')
         return body
     
@@ -493,8 +453,12 @@ class ManualUPnP(NATBase, Handler):
         return Request(self.controlURL, body, headers)
 
     def _build_add_mapping_request(self, mapping):
-        body = (self.add_mapping_template % (mapping.internal_port, mapping.external_port, mapping.protocol, 
-                                             mapping.host, mapping.service_name))
+        body = (self.add_mapping_template % (mapping.remote_host,
+                                             mapping.internal_port,
+                                             mapping.external_port,
+                                             mapping.protocol, 
+                                             mapping.host,
+                                             mapping.service_name))
         body = self._pretify(body)
         headers = {'SOAPAction': '"urn:schemas-upnp-org:service:WANIPConnection:1#' +
                                  'AddPortMapping"'}
@@ -508,7 +472,7 @@ class ManualUPnP(NATBase, Handler):
         return Request(self.controlURL, body, headers)
         
     def __init__(self, traverser):
-        NATBase.__init__(self, traverser.logfunc)
+        NATBase.__init__(self)
 
         self.controlURL = None
         self.transport = None
@@ -517,21 +481,40 @@ class ManualUPnP(NATBase, Handler):
 
         # this service can only be provided if rawserver supports multicast
         if not hasattr(self.rawserver, "create_multicastsocket"):
-            raise AttributeError, "rawserver.create_multicastsocket"
-        
-        self.rawserver.external_add_task(self.begin_discovery, 0, ())
+            raise AttributeError, "RawServer does not support create_multicastsocket!"
+
+                
+        self.rawserver.external_add_task(0, launch_coroutine,
+                                         _wrap_task(self.rawserver.add_task),
+                                         self.begin_discovery)
 
     def begin_discovery(self):
 
         # bind to an available port, and join the multicast group
-        for p in xrange(self.upnp_addr[1], self.upnp_addr[1]+5000):
+        # HEREDAVE! Trying 5000 is excessive especially if there is a
+        # reason for the failure.  For example, what if the network interface
+        # is down?  The appropriate behavior should be to report the
+        # failure to the user rather than sucking up resources.  --Dave
+        #for p in xrange(self.upnp_addr[1], self.upnp_addr[1]+5000):
+        for p in xrange(self.upnp_addr[1], self.upnp_addr[1]+50):
             try:
                 # Original RawServer cannot do this!
                 s = self.rawserver.create_multicastsocket(p, get_host_ip())
                 self.transport = s
                 self.rawserver.start_listening_multicast(s, self)
-                s.listening_port.joinGroup(self.upnp_addr[0], socket.INADDR_ANY)
-                break
+                df = s.listening_port.joinGroup(self.upnp_addr[0],
+                                                socket.INADDR_ANY)
+                yield df
+                # hm, failures.
+                result = df.result
+                if result == 1:
+                    break
+                else:
+                    # I suppose keep trying on different ports, but why would
+                    # joinGroup fail?
+                    x = s.listening_port.stopListening()
+                    if isinstance(x, internet.defer.Deferred):
+                        yield df
             except socket.error, e:
                 pass
 
@@ -541,11 +524,11 @@ class ManualUPnP(NATBase, Handler):
         else:
             self.transport.sendto(self.search_string, 0, self.upnp_addr)
             self.transport.sendto(self.search_string, 0, self.upnp_addr)
-            self.rawserver.add_task(self._discovery_timedout, 6, ())
+            self.rawserver.add_task(6, self._discovery_timedout)
 
     def _discovery_timedout(self):
         if self.transport:
-            self.logfunc(WARNING, "Discovery timed out")
+            nat_logger.warning("Discovery timed out")
             self.rawserver.stop_listening_multicast(self.transport)
             self.transport = None
             # resume init services, because we know we've failed
@@ -558,7 +541,7 @@ class ManualUPnP(NATBase, Handler):
             response = urlopen_custom(request, self.rawserver)
             response = VerifySOAPResponse(request, response)
             mapping.d.callback(mapping.external_port)
-            self.logfunc(INFO, "registered: " + str(mapping), optional=False)
+            nat_logger("registered: " + str(mapping))
         except Exception, e: #HTTPError, URLError, BadStatusLine, you name it.
             error = SOAPErrorToString(e)
             mapping.d.errback(error)
@@ -570,15 +553,22 @@ class ManualUPnP(NATBase, Handler):
         try:
             response = urlopen_custom(request, self.rawserver)
             response = VerifySOAPResponse(request, response)
-            self.logfunc(INFO, ("unregisterd: %s, %s" % (external_port, protocol)), optional=False)
+            nat_logger.info("unregisterd: %s, %s" % (external_port, protocol))
         except Exception, e: #HTTPError, URLError, BadStatusLine, you name it.
             error = SOAPErrorToString(e)
-            self.logfunc(ERROR, error)
+            nat_logger.error(error)
     
     def data_came_in(self, addr, datagram):
         if self.transport is None:
             return
-        statusline, response = datagram.split('\r\n', 1)
+        try:
+            statusline, response = datagram.split('\r\n', 1)
+        except ValueError, e:
+            nat_logger.error(str(e) + ": " + str(datagram))
+            # resume init services, because the data is unknown
+            self.traverser.resume_init_services()
+            return
+            
         httpversion, statuscode, reasonline = statusline.split(None, 2)
         if (not httpversion.startswith('HTTP')) or (statuscode != '200'):
             return
@@ -601,17 +591,30 @@ class ManualUPnP(NATBase, Handler):
 
         URLBase = location
 
-        data = urlopen_custom(location, self.rawserver).read()
+        for i in xrange(5): # retry
+            try:
+                data = urlopen_custom(location, self.rawserver).read()
+            except IOError:
+                nat_logger.warning("urlopen_custom timeout")
+            except:
+                nat_logger.warning("urlopen_custom error", exc_info=sys.exc_info())
+            else:
+                break
+        else:
+            nat_logger.warning("urlopen_custom error. giving up.")
+            return
         bs = BeautifulSupe(data)
 
         URLBase_tag = bs.first('URLBase')
         if URLBase_tag and URLBase_tag.contents:
             URLBase = str(URLBase_tag.contents[0])
 
-        wanservices = bs.fetch('service', dict(serviceType=
-                                               'urn:schemas-upnp-org:service:WANIPConnection:'))
-        wanservices += bs.fetch('service', dict(serviceType=
-                                                'urn:schemas-upnp-org:service:WANPPPConnection:'))
+        wanservices = bs.fetch('service',
+                               dict(serviceType=
+                                    'urn:schemas-upnp-org:service:WANIPConnection:'))
+        wanservices += bs.fetch('service',
+                                dict(serviceType=
+                                     'urn:schemas-upnp-org:service:WANPPPConnection:'))
         for service in wanservices:
             controlURL = service.get('controlURL')
             if controlURL:
@@ -628,13 +631,13 @@ class ManualUPnP(NATBase, Handler):
         
     def _list_ports(self):
         mappings = []
-        index = 0
+        _mappings_dict = {}
 
         if self.controlURL is None:
             raise UPnPException("ManualUPnP is not prepared")
 
         while True:            
-            request = self._build_get_mapping_request(index)
+            request = self._build_get_mapping_request(len(mappings))
 
             try:
                 response = urlopen_custom(request, self.rawserver)
@@ -643,15 +646,18 @@ class ManualUPnP(NATBase, Handler):
                 mapping = UPnPPortMapping(results['NewExternalPort'], results['NewInternalPort'],
                                           results['NewProtocol'], results['NewInternalClient'],
                                           results['NewPortMappingDescription'])
+                ports = (results['NewExternalPort'], results['NewInternalPort'])
+                if ports in _mappings_dict:
+                    # duplicate response, stop searching (because the router is clearly insane)
+                    break
                 mappings.append(mapping)
-                index += 1
+                _mappings_dict[ports] = 1
             except URLError, e:
                 # SpecifiedArrayIndexInvalid, for example
                 break
-            except (HTTPError, BadStatusLine), e:
-                self.logfunc(ERROR, ("list_ports failed with: %s" % (e)))
-                
-
+            except (HTTPError, BadStatusLine, socket.error):
+                nat_logger.error("list_ports failed with:", exc_info=sys.exc_info())
+                break 
         return mappings
 
 class WindowsUPnPException(UPnPException):
@@ -662,7 +668,7 @@ class WindowsUPnPException(UPnPException):
 
 class WindowsUPnP(NATBase):
     def __init__(self, traverser):
-        NATBase.__init__(self, traverser.logfunc)
+        NATBase.__init__(self)
 
         self.upnpnat = None
         self.port_collection = None
@@ -685,8 +691,8 @@ class WindowsUPnP(NATBase):
         except pywintypes.com_error, e:
             #if e[1].lower() == "exception occurred.":
             if (e[2][5] == -2147221164):
-                #I think this is Class Not Registered
-                #it happens on Windows 98 after the XP ICS wizard has been run
+                # I think this is Class Not Registered
+                # it happens on Windows 98 after the XP ICS wizard has been run
                 raise WindowsUPnPException("exception occurred, class not registered")
             else:
                 raise
@@ -700,7 +706,7 @@ class WindowsUPnP(NATBase):
             self.port_collection.Add(mapping.external_port, mapping.protocol,
                                      mapping.internal_port, mapping.host,
                                      True, mapping.service_name)
-            self.logfunc(INFO, "registered: " + str(mapping), optional=False)
+            nat_logger.info("registered: " + str(mapping))
             mapping.d.callback(mapping.external_port)
         except pywintypes.com_error, e:
             # host == 'fake' or address already bound
@@ -726,14 +732,14 @@ class WindowsUPnP(NATBase):
     def unregister_port(self, external_port, protocol):
         try:
             self.port_collection.Remove(external_port, protocol)
-            self.logfunc(INFO, ("unregisterd: %s, %s" % (external_port, protocol)), optional=False)
+            nat_logger.info("unregisterd: %s, %s" % (external_port, protocol))
         except pywintypes.com_error, e:
             if (e[2][5] == -2147352567):
-                UPNPError(self.logfunc, ("Port %d:%s not bound" % (external_port, protocol)))
+                UPNPError("Port %d:%s not bound" % (external_port, protocol))
             elif (e[2][5] == -2147221008):
-                UPNPError(self.logfunc, ("Port %d:%s is bound and is not ours to remove" % (external_port, protocol)))
+                UPNPError("Port %d:%s is bound and is not ours to remove" % (external_port, protocol))
             elif (e[2][5] == -2147024894):
-                UPNPError(self.logfunc, ("Port %d:%s not bound (2)" % (external_port, protocol)))
+                UPNPError("Port %d:%s not bound (2)" % (external_port, protocol))
             else:
                 raise
 

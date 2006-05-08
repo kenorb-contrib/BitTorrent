@@ -17,12 +17,12 @@ class Hammerlock:
         self.call_later = call_later
         self.curr = 0
         self.buckets = [{} for x in range(PERIODS)]
-        self.call_later(self._cycle, INTERVAL)
+        self.call_later(INTERVAL, self._cycle)
         
     def _cycle(self):
         self.curr = (self.curr + 1) % PERIODS
         self.buckets[self.curr] = {}
-        self.call_later(self._cycle, INTERVAL)
+        self.call_later(INTERVAL, self._cycle)
 
     def check(self, addr):
         x = self.buckets[self.curr].get(addr, 0) + 1

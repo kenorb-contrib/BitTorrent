@@ -1,3 +1,5 @@
+#!/bin/bash
+# written by Matt Chisholm
 APP_NAME="bittorrent"
 LANGUAGES=`python language_codes.py -a`
 MESSAGES_PO="messages.pot"
@@ -8,13 +10,11 @@ rm -f *~
 # create .pot file with most important strings first so that people
 # who start but don't finish translations end up translating the most
 # important parts
+ls BitTorrent/GUI_wx/*py        >> $APP_NAME.lis
 ls bittorrent.py maketorrent.py >> $APP_NAME.lis
-ls BitTorrent/GUI.py           >> $APP_NAME.lis
-ls BitTorrent/TorrentQueue.py  >> $APP_NAME.lis
-ls BitTorrent/NewVersion.py    >> $APP_NAME.lis
-ls BitTorrent/StatusLight.py   >> $APP_NAME.lis
-ls BitTorrent/defaultargs.py   >> $APP_NAME.lis
-ls *py                         >> $APP_NAME.lis
+ls BitTorrent/StatusLight.py    >> $APP_NAME.lis
+ls BitTorrent/defaultargs.py    >> $APP_NAME.lis
+ls *py                          >> $APP_NAME.lis
 # find everything else
 find . -name \*.py -type f | egrep -v '/(build)|(dist)|(test)/' >> $APP_NAME.lis
 
@@ -24,10 +24,10 @@ xgettext -f $APP_NAME.lis -L Python -o -                        |\
     sed -e 's/YEAR/2006/'                                       |\
     sed -e "s/THE PACKAGE'S COPYRIGHT HOLDER/BitTorrent, Inc./" |\
     sed -e 's/PACKAGE/BitTorrent/'                              |\
-    sed -e 's/VERSION/4.4/'                                     |\
-    sed -e 's/FIRST AUTHOR/Matt Chisholm/'                      |\
-    sed -e 's/EMAIL@ADDRESS/matt (dash) translations (at) bittorrent (dot) com/' |\
-    sed -e 's/FULL NAME/Matt Chisholm/' > $MESSAGES_PO.nonunique
+    sed -e 's/VERSION/5.0/'                                     |\
+    sed -e 's/FIRST AUTHOR/BitTorrent Development Team/'        |\
+    sed -e 's/EMAIL@ADDRESS/translations (at) bittorrent (dot) com/' |\
+    sed -e 's/FULL NAME/BitTorrent Development Team/' > $MESSAGES_PO.nonunique
 
 
 msguniq $MESSAGES_PO.nonunique > $MESSAGES_PO
@@ -46,5 +46,6 @@ done
 ## Don't do this always:
 #for lang in $LANGUAGES ; do
 #    cp locale/${lang}/LC_MESSAGES/bittorrent.po po/$lang.po
+#    echo 'cp', $lang
 #done
 

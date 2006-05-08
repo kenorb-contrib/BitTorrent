@@ -10,13 +10,16 @@
 
 # Written by Bram Cohen
 
-from RawServer_magic import Handler
+from RawServer_twisted import Handler
 from cStringIO import StringIO
 from sys import stdout
 import time
 from gzip import GzipFile
+from BitTorrent.translation import _
 
-DEBUG = False
+
+
+DEBUG = True
 
 weekdays = [_("Mon"), _("Tue"), _("Wed"), _("Thu"), _("Fri"), _("Sat"), _("Sun")]
 
@@ -169,6 +172,7 @@ class HTTPHandler(Handler):
         self.lastflush = time.time()
 
     def connection_made(self, connection):
+        print "HTTPHandler.connection_made"
         self.connections[connection] = HTTPConnection(self, connection)
 
     def connection_flushed(self, connection):
@@ -183,6 +187,7 @@ class HTTPHandler(Handler):
         del self.connections[connection]
 
     def data_came_in(self, connection, data):
+        print "HTTPHandler.data_came_in: '%s'" % data
         c = self.connections[connection]
         if not c.data_came_in(data) and not c.closed:
             c.connection.shutdown(1)

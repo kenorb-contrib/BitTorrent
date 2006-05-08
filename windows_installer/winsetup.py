@@ -8,7 +8,7 @@
 # for the specific language governing rights and limitations under the
 # License.
 
-# Written by Bram Cohen and Matt Chisholm
+# Written by Bram Cohen, Matt Chisholm and Greg Hazel
 
 import os
 import sys
@@ -23,24 +23,33 @@ if os.name != 'nt':
 
 from BitTorrent.platform import get_shell_dir, shellcon
 
+excludes = ["curses",
+            "email",
+            "statvfs",
+            "macpath",
+            "macurl2path",
+            "twisted.internet.kqreactor",
+            "twisted.internet.unix",
+            "twisted.internet.fdesc",
+            "twisted.internet.pollreactor",
+            ]
+
+old_excludes = list(excludes)
+excludes = []
+for e in old_excludes:
+    excludes.append(e)
+    excludes.append(e + ".*")
+
 opts = {
     "py2exe": {
-    "includes":"pango,atk,gobject"
-               ",encodings,encodings.*"
-#               ",cjkcodecs,cjkcodecs.*"
-#               ",dns,dns.rdtypes.ANY.*,dns.rdtypes.IN.*"
+        # this compression makes the installed size smaller, but the installer size larger
+        #"compressed": 1,
+        "optimize": 2,
+        "excludes": excludes,
+        "includes": ["encodings", "encodings.*"]
+#                    ",cjkcodecs,cjkcodecs.*"
+#                    ",dns,dns.rdtypes.ANY.*,dns.rdtypes.IN.*"
     ,
-
-# Uncomment the following lines if you want a dist\ directory build by
-# py2exe that works under Win32 with a GTK runtime installed
-# separately:
-##    "dll_excludes":["iconv.dll", "intl.dll", "libatk-1-1.0-0.dll",
-##                    "libgdk_pixbuf-2.0-0.dll", "libgdk-win32-2.0-0.dll",
-##                    "libglib-2.0-0.dll", "libgmodule-2.0-0.dll",
-##                    "libgobject-2.0-0.dll", "libgthread-2.0-0.dll",
-##                    "libgtk-win32-2.0-0.dll", "libpango-1.0-0.dll",
-##                    "libpangowin32-1.0-0.dll",
-##                    ],
     }
 }
 
@@ -61,36 +70,14 @@ if 1:
         pass
 
 mfc = os.path.join(get_shell_dir(shellcon.CSIDL_SYSTEM), "mfc71.dll")
-ms = [mfc, ]
+unicows = os.path.join(get_shell_dir(shellcon.CSIDL_SYSTEM), "unicows.dll")
+ms = [mfc, unicows, ]
 
-translations = []
-for l in languages:
-    path = os.path.join('locale', l, 'LC_MESSAGES', 'bittorrent.mo')
-    if os.access(path, os.F_OK):
-        translations.append(("locale\\%s\\LC_MESSAGES"                 % l,
-                             ["locale\\%s\\LC_MESSAGES\\bittorrent.mo" % l,
-                              #"locale\\%s\\LC_MESSAGES\\bittorrent.po" % l,
-                              ]))
-        gtk_mo = []
-        
-        gtk_path = ""
-
-        import gtk
-
-        if (gtk.gtk_version[1] == 4):
-            gtk_path = os.path.join(os.environ["GTK_BASEPATH"], "lib\\locale\\%s\\LC_MESSAGES" % l)
-        elif ((gtk.gtk_version[1] == 6) or (gtk.gtk_version[1] == 8)):
-            gtk_path = os.path.join(os.environ["GTK_BASEPATH"], "share\\locale\\%s\\LC_MESSAGES" % l)
-        else:
-            gtk_path = os.path.join(os.environ["GTK_BASEPATH"], "share\\locale\\%s\\LC_MESSAGES" % l)
-            if not os.path.exists(gtk_path):            
-                raise Exception("Unknown gtk version, please locate gtk20.mo etc, and modify this script")
-        
-        for fn in ("glib20.mo", "gtk20.mo", "gtk20-properties.mo"):
-            moname = os.path.join(gtk_path, fn)
-            if os.access(moname, os.F_OK):
-                gtk_mo.append(moname) 
-        translations.append(("share\\locale\\%s\\LC_MESSAGES" % l, gtk_mo))
+try:
+    import psyco
+    psyco.full()
+except ImportError:
+    pass
 
 setup(windows=[{'script': 'bittorrent.py' ,
                 "icon_resources": [(1, "images\\bittorrent.ico")]},
@@ -105,7 +92,12 @@ setup(windows=[{'script': 'bittorrent.py' ,
                        "TRACKERLESS.txt","public.key",
                        ]),
                   ("images", ["images\\bittorrent.ico"]),
-                  ("images\\icons\\default", glob.glob("images\\icons\\default\\*png")),
+                  ("images\\themes\\default", glob.glob("images\\themes\\default\\*png")),
+                  ("images\\themes\\default\\torrentstate", glob.glob("images\\themes\\default\\torrentstate\\*png")),
+                  ("images\\themes\\default\\statuslight", glob.glob("images\\themes\\default\\statuslight\\*png")),
+                  ("images\\themes\\default\\torrentops", glob.glob("images\\themes\\default\\torrentops\\*png")),
+                  ("images\\themes\\default\\fileops", glob.glob("images\\themes\\default\\fileops\\*png")),
+                  ("images\\flags", glob.glob("images\\flags\\*png")),
                   ("images\\logo", glob.glob("images\\logo\\*png")),
-                  ] + ms + translations,
+                  ] + ms,
                 )

@@ -12,18 +12,21 @@
 
 import os
 import sys
-import zurllib
 import pickle
-import threading
+import zurllib
+import BitTorrent.stackthreading as threading
+import logging
 from sha import sha
+from BitTorrent.translation import _
 
 DEBUG = False
 
-from BitTorrent import ERROR, WARNING, BTFailure, version, app_name
+from BitTorrent import BTFailure, version, app_name
 from BitTorrent import GetTorrent
 from BitTorrent.bencode import bdecode, bencode
 from BitTorrent.platform import os_version, spawn, get_temp_dir, doc_root, is_frozen_exe, osx
 from BitTorrent.ConvertedMetainfo import ConvertedMetainfo
+
 
 if osx:
     from Foundation import NSAutoreleasePool
@@ -92,7 +95,7 @@ class Updater(object):
 
     def debug(self, message):
         if self.debug_mode:
-            self.threadwrap(self.errorfunc, WARNING, message)
+            self.threadwrap(self.errorfunc, logging.WARNING, message)
 
 
     def _get_available(self, url):
@@ -131,7 +134,7 @@ class Updater(object):
         try:
             self.get_available()
         except BTFailure, e:
-            self.threadwrap(self.errorfunc, WARNING, e)
+            self.threadwrap(self.errorfunc, logging.WARNING, e)
             return 
 
         if self.version <= self.currentversion:
@@ -147,7 +150,11 @@ class Updater(object):
         self.installer_dir  = self.calc_installer_dir()
 
         self.torrentfile = None
-        torrentfile, terrors = GetTorrent.get_url(self.installer_url)
+        try:
+            self.torrentfile = GetTorrent.get_url(self.installer_url)
+        except GetTorrent.GetTorrentException, e:
+            terrors = [str(e)]
+
         signature = None
         try:
             signfile = zurllib.urlopen(self.installer_url + '.sign')
@@ -160,7 +167,7 @@ class Updater(object):
                 self.debug('Updater.get() failed to load signfile %s' % signfile)
         
         if terrors:
-            self.threadwrap(self.errorfunc, WARNING, '\n'.join(terrors))
+            self.threadwrap(self.errorfunc, logging.WARNING, '\n'.join(terrors))
 
         if torrentfile and signature:
             public_key_file = open(os.path.join(doc_root, 'public.key'), 'rb')
@@ -237,7 +244,7 @@ class Updater(object):
         if temp_dir is not None:
             return temp_dir
         else:
-            self.errorfunc(WARNING,
+            self.errorfunc(logging.WARNING,
                            _("Could not find a suitable temporary location to "
                              "save the %s %s installer.") % (app_name, self.version))
 
@@ -257,7 +264,7 @@ class Updater(object):
         if self.torrentfile is not None:
             self.startfunc(self.torrentfile, self.installer_path())
         else:
-            self.errorfunc(WARNING, _("No torrent file available for %s %s "
+            self.errorfunc(logging.WARNING, _("No torrent file available for %s %s "
                                       "installer.")%(app_name, self.version))
 
     def start_install(self):
@@ -266,7 +273,7 @@ class Updater(object):
                 self.asked_for_install = True
                 self.installfunc()
             else:
-                self.errorfunc(WARNING,
+                self.errorfunc(logging.WARNING,
                                _("%s %s installer appears to be incomplete, "
                                  "missing, or corrupt.")%(app_name,
                                                           self.version))
@@ -275,4 +282,4 @@ class Updater(object):
         if os.name == 'nt':
             spawn(torrentqueue, self.installer_path(), "/S")
         else:
-            self.errorfunc(WARNING, _("Cannot launch installer on this OS"))
+            self.errorfunc(logging.WARNING, _("Cannot launch installer on this OS"))

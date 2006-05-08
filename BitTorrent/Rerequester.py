@@ -10,25 +10,110 @@
 
 # Written by Bram Cohen, Uoti Urpala
 
-from threading import Thread
-from socket import error, gethostbyname
-from random import random, randrange
+import random
+import socket
+import logging
 from binascii import b2a_hex
+from BitTorrent.translation import _
 
+import BitTorrent.stackthreading as threading
 from BitTorrent import version
 from BitTorrent.platform import bttime
 from BitTorrent.zurllib import urlopen, quote, Request
 from BitTorrent.btformats import check_peers
 from BitTorrent.bencode import bencode, bdecode
-from BitTorrent import BTFailure, INFO, WARNING, ERROR, CRITICAL
+from BitTorrent.defer import ThreadedDeferred
+from BitTorrent.yielddefer import _wrap_task
+from BitTorrent import BTFailure
+from BitTorrent.prefs import Preferences
 
+
+def announce_list_gen(announce_list):
+    for orig_tier in announce_list:
+        tier = list(orig_tier)
+        random.shuffle(tier)
+        for url in tier:
+            yield url
+
+# TEMP
+import thread
 
 class Rerequester(object):
 
-    def __init__(self, url, config, sched, howmany, connect, externalsched,
-            amount_left, up, down, port, myid, infohash, errorfunc, doneflag,
-            upratefunc, downratefunc, ever_got_incoming, diefunc, sfunc):
+    STATES = ['started', 'completed', 'stopped']    
+
+    def __init__(self, url, announce_list, config, sched, externalsched, rawserver,
+                 howmany, connect, 
+                 amount_left, up, down, port, myid, infohash, errorfunc, doneflag,
+                 upratefunc, downratefunc, ever_got_incoming, diefunc, sfunc):
+        """
+         @param url:       tracker's announce URL.
+         @param announce_list: ?
+         @param config:    preferences obj storing BitTorrent-wide
+                           configuration.
+         @param sched:     used to schedule events from inside rawserver's
+                           thread.  (Oh boy.  externalsched and sched.
+                           We expect Rerequester to
+                           recognize the difference between rawserver's
+                           thread and yet we go through the trouble of
+                           abstracting away rawserver using a callback...
+                           So what was the point?  --Dave)
+         @param externalsched: see sched.  This one is called from outside
+                           rawserver's thread.
+         @param howmany:   callback to get the number of complete connections.
+         @param connect:   callback to establish a connection to a peer
+                           obtained from the tracker.
+         @param amount_left: callback to obtain the number of bytes left to
+                           download for this torrent.
+         @param up:        callback to obtain the total number of bytes sent
+                           for this torrent.
+         @param down:      callback to obtain the total number of bytes
+                           received for this torrent.
+         @param port:      port to report to the tracker.  If the local peer
+                           is behind a NAT then this is the local peer's port
+                           on the NAT facing the outside world.
+         @param myid:      local peer's unique (self-generated) id.
+         @param infohash:  hash of the info section of the metainfo file.
+         @param errorfunc: callback to report errors.
+         @param doneflag:  when set all threads cleanup and then terminate.
+         @param upratefunc: callback to obtain moving average rate on the
+                           uplink for this torrent.
+         @param downratefunc: callback to obtain moving average rate on the
+                           downlink for this torrent.
+         @param ever_got_incoming: callback to determine if this torrent
+                           has ever received any mesages from other peers.
+         @param diefunc:   callback that is called when announce fails to find
+                           any peers.
+         @param sfunc:     success function?  With regard to what?  --Dave
+
+        """
+        assert isinstance(url, str)
+        assert isinstance(config, Preferences)
+        assert type(port) in (int,long) and port > 0 and port < 65536, "Port: %s" % repr(port)
+        assert callable(connect)
+        assert callable(externalsched)
+        assert callable(amount_left)
+        assert callable(errorfunc)
+        assert isinstance(doneflag, threading._Event)
+        assert callable(upratefunc)
+        assert callable(downratefunc)
+        assert callable(ever_got_incoming)
+        assert callable(diefunc)
+        assert callable(sfunc)
+
+        self.rawserver = rawserver
+        self.dead = False
         self.baseurl = url
+        self.announce_list = announce_list
+        if self.announce_list:
+            self.announce_list_gen = announce_list_gen(self.announce_list)
+            # start at the stop of the generator
+            # instead of using the default annouce
+            try:
+                self.baseurl = self.announce_list_gen.next()
+            except StopIteration:
+                # hm, empty but present announce-list
+                self.announce_list = None
         self.infohash = infohash
         self.peerid = None
         self.wanted_peerid = myid
@@ -53,9 +138,10 @@ class Rerequester(object):
         self.diefunc = diefunc
         self.successfunc = sfunc
         self.finish = False
+        self.running_df = None
         self.current_started = None
         self.fail_wait = None
-        self.last_time = None
+        self.last_time = bttime()
         self.previous_down = 0
         self.previous_up = 0
         self.tracker_num_peers = None
@@ -64,9 +150,11 @@ class Rerequester(object):
     def _makeurl(self, peerid, port):
         return ('%s?info_hash=%s&peer_id=%s&port=%s&key=%s' %
                 (self.baseurl, quote(self.infohash), quote(peerid), str(port),
-                 b2a_hex(''.join([chr(randrange(256)) for i in xrange(4)]))))
-
+                 b2a_hex(''.join([chr(random.randrange(256)) for i in xrange(4)]))))
+   
     def change_port(self, peerid, port):
+        assert thread.get_ident() == self.rawserver.ident
+
         self.wanted_peerid = peerid
         self.port = port
         self.last = None
@@ -75,20 +163,26 @@ class Rerequester(object):
 
     def begin(self):
         if self.sched:
-            self.sched(self.begin, 60)
+            self.sched(10, self.begin)
             self._check()
 
     def announce_finish(self):
+        if self.dead:
+            return
         self.finish = True
         self._check()
 
     def announce_stop(self):
-        self._announce(2)
+        if self.dead:
+            return
+        self._announce('stopped')
 
     def _check(self):
+        assert thread.get_ident() == self.rawserver.ident
+        assert not self.dead
         if self.current_started is not None:
             if self.current_started <= bttime() - 58:
-                self.errorfunc(WARNING,
+                self.errorfunc(logging.WARNING,
                                _("Tracker announce still not complete "
                                  "%d seconds after starting it") %
                                int(bttime() - self.current_started))
@@ -96,17 +190,20 @@ class Rerequester(object):
         if self.peerid is None:
             self.peerid = self.wanted_peerid
             self.url = self._makeurl(self.peerid, self.port)
-            self._announce(0)
+            self._announce('started')
             return
         if self.peerid != self.wanted_peerid:
-            self._announce(2)
+            # _announce will clean up these
+            up = self.up
+            down = self.down
+            self._announce('stopped')
             self.peerid = None
-            self.previous_up = self.up()
-            self.previous_down = self.down()
+            self.previous_up = up()
+            self.previous_down = down()
             return
         if self.finish:
             self.finish = False
-            self._announce(1)
+            self._announce('completed')
             return
         if self.fail_wait is not None:
             if self.last_time + self.fail_wait <= bttime():
@@ -121,11 +218,17 @@ class Rerequester(object):
         if getmore or bttime() - self.last_time > self.announce_interval:
             self._announce()
 
+    def get_next_announce_time_est(self):
+        # I'm sure this is wrong, but _check is confusing
+        return bttime() - (self.last_time + self.announce_interval)
+
     def _announce(self, event=None):
+        assert not self.dead
+        assert thread.get_ident() == self.rawserver.ident
         self.current_started = bttime()
         s = ('%s&uploaded=%s&downloaded=%s&left=%s' %
-            (self.url, str(self.up() - self.previous_up),
-             str(self.down() - self.previous_down), str(self.amount_left())))
+             (self.url, str(self.up()*self.config.get('lie',1) - self.previous_up),
+              str(self.down() - self.previous_down), str(self.amount_left())))
         if self.last is not None:
             s += '&last=' + quote(str(self.last))
         if self.trackerid is not None:
@@ -135,13 +238,30 @@ class Rerequester(object):
         else:
             s += '&compact=1'
         if event is not None:
-            s += '&event=' + ['started', 'completed', 'stopped'][event]
-        t = Thread(target=self._rerequest, args=[s, self.peerid])
-        t.setDaemon(True)
-        t.start()        
+            s += '&event=' + event
+            
+        def _start_announce(*a):
+            self.running_df = ThreadedDeferred(_wrap_task(self.externalsched),
+                                               self._rerequest, s, self.peerid,
+                                               daemon=True)
+            def _rerequest_finish(x):
+                self.running_df = None
+            self.running_df.addCallback(_rerequest_finish)
+            if event == 'stopped':
+                # if self._rerequest needs any state, pass it through args
+                self.cleanup()
 
+        if not event:
+            assert self.running_df == None, "Previous rerequest event is still running!"
+        if self.running_df:
+            self.running_df.addCallback(_start_announce)
+        else:
+            _start_announce()
+            
     # Must destroy all references that could cause reference circles
     def cleanup(self):
+        assert thread.get_ident() == self.rawserver.ident
+        self.dead = True
         self.sched = None
         self.howmany = None
         self.connect = None
@@ -149,7 +269,8 @@ class Rerequester(object):
         self.amount_left = None
         self.up = None
         self.down = None
-        self.errorfunc = None
+        # don't zero this one, we need it on shutdown w/ error
+        #self.errorfunc = None
         self.upratefunc = None
         self.downratefunc = None
         self.ever_got_incoming = None
@@ -159,9 +280,10 @@ class Rerequester(object):
     def _rerequest(self, url, peerid):
         if self.config['ip']:
             try:
-                url += '&ip=' + gethostbyname(self.config['ip'])
+                url += '&ip=' + socket.gethostbyname(self.config['ip'])
             except Exception, e:
-                self.errorfunc(WARNING, _("Problem connecting to tracker, gethostbyname failed - ") + str(e)) 
+                self.errorfunc(logging.WARNING,
+                               _("Problem resolving config ip (%s), gethostbyname failed - %s") % (self.config['ip'], str(e)))
         request = Request(url)
         request.add_header('User-Agent', 'BitTorrent/' + version)
         if self.config['tracker_proxy']:
@@ -174,34 +296,60 @@ class Rerequester(object):
         # exception class especially when proxies are used, at least
         # ValueError and stuff from httplib
         except Exception, e:
-            def f(r=_("Problem connecting to tracker - ") + str(e)):
-                self._postrequest(errormsg=r, peerid=peerid)
+            r = _("Problem connecting to tracker - ") + str(e)
+            def f():
+                self._postrequest(errormsg=r, exc=e, peerid=peerid)
         else:
             def f():
-                self._postrequest(data, peerid=peerid)
-        self.externalsched(f, 0)
+                self._postrequest(data=data, peerid=peerid)
+        self.externalsched(0, f)
 
-    def _fail(self):
+    def _fail(self, exc=None):
+        assert thread.get_ident() == self.rawserver.ident
+
+        if self.announce_list:
+            try:
+                self.baseurl = self.announce_list_gen.next()
+            except StopIteration:
+                self.fail_wait = None
+                # restart the generator
+                self.announce_list_gen = announce_list_gen(self.announce_list)
+                # start from the top next _check
+                self.baseurl = self.announce_list_gen.next()
+            else:
+                self.peerid = None
+                # If it was a socket error, try the new url right away. it's
+                # probably not abusive since there was no one there to abuse.
+                # In the timeout case, our socket timeout is high enough that
+                # we simulate fail_wait anyway.
+                if isinstance(exc, socket.error):
+                    self._check()
+                    return
+        
         if self.fail_wait is None:
             self.fail_wait = 50
         else:
-            self.fail_wait *= 1.4 + random() * .2
+            self.fail_wait *= 1.4 + random.random() * .2
         self.fail_wait = min(self.fail_wait,
-                                self.config['max_announce_retry_interval'])
+                             self.config['max_announce_retry_interval'])
+        
 
-    def _postrequest(self, data=None, errormsg=None, peerid=None):
+    def _postrequest(self, data=None, errormsg=None, exc=None, peerid=None):
+        assert thread.get_ident() == self.rawserver.ident
         self.current_started = None
         self.last_time = bttime()
         if errormsg is not None:
-            self.errorfunc(WARNING, errormsg)
-            self._fail()
+            self.errorfunc(logging.WARNING, errormsg)
+            self._fail(exc)
+            return
+        if self.dead:
             return
         try:
             r = bdecode(data)
             check_peers(r)
         except BTFailure, e:
             if data != '':
-                self.errorfunc(ERROR, _("bad data from tracker - ") + str(e))
+                self.errorfunc(logging.ERROR, _("bad data from tracker (%s) - %s") % (repr(data), str(e)))
             self._fail()
             return
         if type(r.get('complete')) in (int, long) and \
@@ -212,21 +360,21 @@ class Rerequester(object):
             self.tracker_num_seeds = self.tracker_num_peers = None
         if r.has_key('failure reason'):
             if self.howmany() > 0:
-                self.errorfunc(ERROR, _("rejected by tracker - ") +
+                self.errorfunc(logging.ERROR, _("rejected by tracker - ") +
                                r['failure reason'])
             else:
                 # sched shouldn't be strictly necessary
                 def die():
-                    self.diefunc(CRITICAL,
+                    self.diefunc(logging.CRITICAL,
                                  _("Aborting the torrent as it was rejected by "
                                    "the tracker while not connected to any peers. ") + 
                                  _(" Message from the tracker: ") + r['failure reason'])
-                self.sched(die, 0)
+                self.sched(0, die)
             self._fail()
         else:
             self.fail_wait = None
             if r.has_key('warning message'):
-                self.errorfunc(ERROR, _("warning from tracker - ") +
+                self.errorfunc(logging.ERROR, _("warning from tracker - ") +
                                r['warning message'])
             self.announce_interval = r.get('interval', self.announce_interval)
             self.config['rerequest_interval'] = r.get('min interval',
@@ -234,15 +382,15 @@ class Rerequester(object):
             self.trackerid = r.get('tracker id', self.trackerid)
             self.last = r.get('last')
             p = r['peers']
-            peers = []
+            peers = {}
             if type(p) == str:
                 for x in xrange(0, len(p), 6):
                     ip = '.'.join([str(ord(i)) for i in p[x:x+4]])
                     port = (ord(p[x+4]) << 8) | ord(p[x+5])
-                    peers.append((ip, port, None))
+                    peers[(ip, port)] = None
             else:
                 for x in p:
-                    peers.append((x['ip'], x['port'], x.get('peer id')))
+                    peers[(x['ip'], x['port'])] = x.get('peer id')
             ps = len(peers) + self.howmany()
             if ps < self.config['max_initiate']:
                 if self.doneflag.isSet():
@@ -251,8 +399,8 @@ class Rerequester(object):
                 else:
                     if r.get('num peers', 1000) > ps * 1.2:
                         self.last = None
-            for x in peers:
-                self.connect((x[0], x[1]), x[2])
+            for addr, id in peers.iteritems():
+                self.connect(addr, id)
             if peerid == self.wanted_peerid:
                 self.successfunc()
             self._check()

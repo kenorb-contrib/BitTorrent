@@ -37,7 +37,7 @@ try:
     from curses.wrapper import wrapper as curses_wrapper
     from signal import signal, SIGWINCH
 except:
-    print _("Textmode GUI initialization failed, cannot proceed.")
+    print _("Textmode UI initialization failed, cannot proceed.")
     print
     print _("This download interface requires the standard Python module "
             "\"curses\", which is unfortunately not available for the native "

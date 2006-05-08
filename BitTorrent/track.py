@@ -14,6 +14,7 @@ import sys
 import os
 import signal
 import re
+import logging
 from threading import Event
 from urlparse import urlparse
 from traceback import print_exc
@@ -23,95 +24,32 @@ from types import StringType, IntType, LongType, ListType, DictType
 from binascii import b2a_hex
 from cStringIO import StringIO
 
+from BitTorrent.translation import _
+
 from BitTorrent.obsoletepythonsupport import *
 
-from BitTorrent.parseargs import parseargs, formatDefinitions
-from BitTorrent.RawServer_magic import RawServer
+from BitTorrent import platform, BTFailure
+from BitTorrent.configfile import parse_configuration_and_args
+#from BitTorrent.parseargs import parseargs, printHelp
+from BitTorrent.RawServer_twisted import RawServer
 from BitTorrent.HTTPHandler import HTTPHandler, months, weekdays
 from BitTorrent.parsedir import parsedir
 from BitTorrent.NatCheck import NatCheck
 from BitTorrent.bencode import bencode, bdecode, Bencached
 from BitTorrent.zurllib import quote, unquote
 from BitTorrent import version
+from BitTorrent.prefs import Preferences
+from BitTorrent.defaultargs import get_defaults
+import socket
 
 
-defaults = [
-    ('port', 80,
-     _("Port to listen on.")),
-    ('dfile', None,
-     _("file to store recent downloader info in")),
-    ('bind', '',
-     _("ip to bind to locally")),
-    ('socket_timeout', 15,
-     _("timeout for closing connections")),
-    ('close_with_rst', 0,
-     _("close connections with RST and avoid the TCP TIME_WAIT state")),
-    ('save_dfile_interval', 5 * 60,
-     _("seconds between saving dfile")),
-    ('timeout_downloaders_interval', 45 * 60,
-     _("seconds between expiring downloaders")),
-    ('reannounce_interval', 30 * 60,
-     _("seconds downloaders should wait between reannouncements")),
-    ('response_size', 50,
-     _("default number of peers to send an info message to if the "
-       "client does not specify a number")),
-    ('timeout_check_interval', 5,
-     _("time to wait between checking if any connections have timed out")),
-    ('nat_check', 3, 
-     _("how many times to check if a downloader is behind a NAT "
-       "(0 = don't check)")),
-    ('log_nat_checks', 0,
-     _("whether to add entries to the log for nat-check results")),
-    ('min_time_between_log_flushes', 3.0,
-     _("minimum time it must have been since the last flush to do "
-       "another one")),
-    ('min_time_between_cache_refreshes', 600.0,
-     _("minimum time in seconds before a cache is considered stale "
-       "and is flushed")),
-    ('allowed_dir', '',
-     _("only allow downloads for .torrents in this dir (and recursively in "
-       "subdirectories of directories that have no .torrent files "
-       "themselves). If set, torrents in this directory show up on "
-       "infopage/scrape whether they have peers or not")),
-    ('parse_dir_interval', 60,
-     _("how often to rescan the torrent directory, in seconds")),
-    ('allowed_controls', 0,
-     _("allow special keys in torrents in the allowed_dir to affect "
-       "tracker access")),
-    ('hupmonitor', 0,
-     _("whether to reopen the log file upon receipt of HUP signal")),
-    ('show_infopage', 1,
-     _("whether to display an info page when the tracker's root dir "
-       "is loaded")),
-    ('infopage_redirect', '',
-     _("a URL to redirect the info page to")),
-    ('show_names', 1,
-     _("whether to display names from allowed dir")),
-    ('favicon', '',
-     _("file containing x-icon data to return when browser requests "
-       "favicon.ico")),
-    ('only_local_override_ip', 2,
-     _("ignore the ip GET parameter from machines which aren't on "
-       "local network IPs (0 = never, 1 = always, 2 = ignore if NAT "
-       "checking is not enabled). HTTP proxy headers giving address "
-       "of original client are treated the same as --ip.")),
-    ('logfile', '',
-     _("file to write the tracker logs, use - for stdout (default)")),
-    ('allow_get', 0,
-     _("use with allowed_dir; adds a /file?hash={hash} url that "
-       "allows users to download the torrent file")),
-    ('keep_dead', 0,
-     _("keep dead torrents after they expire (so they still show up on your "
-       "/scrape and web page). Only matters if allowed_dir is not set")),
-    ('scrape_allowed', 'full',
-     _("scrape access allowed (can be none, specific or full)")),
-    ('max_give', 200,
-     _("maximum number of peers to give with any one request")),
-    ('twisted', -1,
-     _("Use Twisted network libraries for network connections. 1 means use twisted, 0 means do not use twisted, -1 means autodetect, and prefer twisted")),
-    ('pid', '/var/run/bittorrent-tracker.pid',
-     "Path to PID file")
-    ] 
+# code duplication because ow.
+MAX_INCOMPLETE = 100
+if os.name == 'nt':
+    from BitTorrent.platform import win_version_num
+    # starting in XP SP2 the incomplete outgoing connection limit was set to 10
+    if win_version_num >= (2, 5, 1, 2, 0):
+        MAX_INCOMPLETE = 10
 
 def statefiletemplate(x):
     if type(x) != DictType:
@@ -247,7 +185,7 @@ class Tracker(object):
                 self.favicon = h.read()
                 h.close()
             except:
-                print _("**warning** specified favicon file -- %s -- does not exist.") % favicon
+                errorfunc(WARNING,_("specified favicon file -- %s -- does not exist.") % favicon)
         self.rawserver = rawserver
         self.cached = {}    # format: infohash: [[time1, l1, s1], [time2, l2, s2], [time3, l3, s3]]
         self.cached_t = {}  # format: infohash: [time, cache]
@@ -270,8 +208,8 @@ class Tracker(object):
                 statefiletemplate(tempstate)
                 self.state = tempstate
             except:
-                print _("**warning** statefile %s corrupt; resetting") % \
-                      self.dfile
+                errorfunc(WARNING, _("statefile %s corrupt; resetting") % \
+                      self.dfile)
         self.downloads    = self.state.setdefault('peers', {})
         self.completed    = self.state.setdefault('completed', {})
 
@@ -295,10 +233,10 @@ class Tracker(object):
         self.reannounce_interval = config['reannounce_interval']
         self.save_dfile_interval = config['save_dfile_interval']
         self.show_names = config['show_names']
-        rawserver.add_task(self.save_dfile, self.save_dfile_interval)
+        rawserver.add_task(self.save_dfile_interval, self.save_dfile)
         self.prevtime = time()
         self.timeout_downloaders_interval = config['timeout_downloaders_interval']
-        rawserver.add_task(self.expire_downloaders, self.timeout_downloaders_interval)
+        rawserver.add_task(self.timeout_downloaders_interval, self.expire_downloaders)
         self.logfile = None
         self.log = None
         if (config['logfile'] != '') and (config['logfile'] != '-'):
@@ -308,7 +246,7 @@ class Tracker(object):
                 sys.stdout = self.log
                 print _("# Log Started: "), isotime()
             except:
-                print _("**warning** could not redirect stdout to log file: "), sys.exc_info()[0]
+                 print _("**warning** could not redirect stdout to log file: "), sys.exc_info()[0]
 
         if config['hupmonitor']:
             def huphandler(signum, frame, self = self):
@@ -318,7 +256,7 @@ class Tracker(object):
                     sys.stdout = self.log
                     print _("# Log reopened: "), isotime()
                 except:
-                    print _("**warning** could not reopen logfile")
+                    print _("***warning*** could not reopen logfile")
 
             signal.signal(signal.SIGHUP, huphandler)
 
@@ -685,6 +623,9 @@ class Tracker(object):
         return data
 
     def get(self, connection, path, headers):
+        # DEBUG
+        print "track.py: get '%s'" % path
+        # END
         ip = connection.get_ip()
 
         nip = get_forwarded_ip(headers)
@@ -791,13 +732,13 @@ class Tracker(object):
             record['nat'] += 1
 
     def save_dfile(self):
-        self.rawserver.add_task(self.save_dfile, self.save_dfile_interval)
+        self.rawserver.add_task(self.save_dfile_interval, self.save_dfile)
         h = open(self.dfile, 'wb')
         h.write(bencode(self.state))
         h.close()
 
     def parse_allowed(self):
-        self.rawserver.add_task(self.parse_allowed, self.parse_dir_interval)
+        self.rawserver.add_task(self.parse_dir_interval, self.parse_allowed)
 
         # logging broken .torrent files would be useful but could confuse
         # programs parsing log files, so errors are just ignored for now
@@ -842,26 +783,56 @@ class Tracker(object):
                     del self.times[key]
                     del self.downloads[key]
                     del self.seedcount[key]
-        self.rawserver.add_task(self.expire_downloaders, self.timeout_downloaders_interval)
+        self.rawserver.add_task(self.timeout_downloaders_interval,
+                                self.expire_downloaders)
 
 def track(args):
-    if len(args) == 0:
-        print formatDefinitions(defaults, 80)
-        return
+    assert type(args) == list and \
+           len([x for x in args if type(x)==str])==len(args)
+    
+    config = {}
+    defaults = get_defaults('bittorrent-tracker')   # hard-coded defaults.
     try:
-        config, files = parseargs(args, defaults, 0, 0)
+        config, files = parse_configuration_and_args(defaults, 
+           'bittorrent-tracker', args )
     except ValueError, e:
         print _("error: ") + str(e)
-        print _("run with no arguments for parameter explanations")
+        print _("run with -? for parameter explanations")
         return
-    file(config['pid'], 'w').write(str(os.getpid()))
-    r = RawServer(Event(), config)
-    t = Tracker(config, r)
-    s = r.create_serversocket(config['port'], config['bind'], True)
-    r.start_listening(s, HTTPHandler(t.get, config['min_time_between_log_flushes']))
-    r.listen_forever()
-    t.save_dfile()
-    print _("# Shutting down: ") + isotime()
+    except BTFailure, e:
+        print _("error: ") + str(e)
+        print _("run with -? for parameter explanations")
+        return
+ 
+    if config['dfile']=="":
+        config['dfile'] = os.path.join(platform.get_temp_dir(), "dfile" +
+           str(os.getpid()))
+
+    config = Preferences().initWithDict(config)
+    ef = lambda e: errorfunc(WARNING, e)
+    platform.write_pid_file(config['pid'],ef)
+
+    t = None
+    try:
+        r = RawServer(config)
+        r.install_sigint_handler()
+        t = Tracker(config, r)
+        try:
+            #DEBUG
+            print "track: create_serversocket, port=", config['port']
+            #END
+            s = r.create_serversocket(config['port'], config['bind'], True)
+            r.start_listening(s, HTTPHandler(t.get,
+                config['min_time_between_log_flushes']))
+        except socket.error, e:
+            print "Unable to open port %d.  Use a different port?" % \
+                  config['port']
+            return
+
+        r.listen_forever(Event())
+    finally:
+        if t: t.save_dfile()
+        print _("# Shutting down: ") + isotime()
 
 def size_format(s):
     if (s < 1024):
@@ -875,3 +846,6 @@ def size_format(s):
     else:
         r = str(int((s/1099511627776.0)*100.0)/100.0) + 'TiB'
     return(r)
+
+def errorfunc( level, text ):
+    print "%s: %s" % (logging.getLevelName(level), text)

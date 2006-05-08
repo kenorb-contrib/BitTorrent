@@ -15,13 +15,15 @@ from __future__ import generators
 
 import os
 import sys
+import logging
 from sha import sha
 
+from BitTorrent.translation import _
 from BitTorrent.obsoletepythonsupport import *
 
 from BitTorrent.bencode import bencode
 from BitTorrent import btformats
-from BitTorrent import BTFailure, WARNING, ERROR
+from BitTorrent import BTFailure, filesystem_encoding, InfoHashType
 
 
 WINDOWS_UNSUPPORTED_CHARS ='"*/:<>?\|'
@@ -31,42 +33,14 @@ for x in WINDOWS_UNSUPPORTED_CHARS:
 windows_translate = ''.join(windows_translate)
 
 noncharacter_translate = {}
-for i in range(0xD800, 0xE000):
+for i in xrange(0xD800, 0xE000):
     noncharacter_translate[i] = ord('-')
-for i in range(0xFDD0, 0xFDF0):
+for i in xrange(0xFDD0, 0xFDF0):
     noncharacter_translate[i] = ord('-')
 for i in (0xFFFE, 0xFFFF):
     noncharacter_translate[i] = ord('-')
 
 del x, i
-
-def set_filesystem_encoding(encoding, errorfunc):
-    global filesystem_encoding
-    filesystem_encoding = 'ascii'
-    if encoding == '':
-        try:
-            sys.getfilesystemencoding
-        except AttributeError:
-            errorfunc(WARNING,
-                      _("This seems to be an old Python version which "
-                        "does not support detecting the filesystem "
-                        "encoding. Assuming 'ascii'."))
-            return
-        encoding = sys.getfilesystemencoding()
-        if encoding is None:
-            errorfunc(WARNING,
-                      _("Python failed to autodetect filesystem encoding. "
-                        "Using 'ascii' instead."))
-            return
-    try:
-        'a1'.decode(encoding)
-    except:
-        errorfunc(ERROR,
-                  _("Filesystem encoding '%s' is not supported. "
-                    "Using 'ascii' instead.") % encoding)
-        return
-    filesystem_encoding = encoding
-
 
 def generate_names(name, is_dir):
     if is_dir:
@@ -82,7 +56,6 @@ def generate_names(name, is_dir):
     while True:
         yield prefix + str(i) + suffix
         i += 1
-
 
 class ConvertedMetainfo(object):
 
@@ -100,6 +73,9 @@ class ConvertedMetainfo(object):
         self.total_bytes = 0
         self.sizes = []
         self.comment = None
+        self.title = None          # descriptive title text for whole torrent
+        self.creation_date = None
+        self.metainfo = metainfo
 
         btformats.check_message(metainfo, check_paths=False)
         info = metainfo['info']
@@ -164,7 +140,7 @@ class ConvertedMetainfo(object):
                             break
                 stack[-1][name] = None
                 res.append(name)
-                for j in range(j + 1, len(x)):
+                for j in xrange(j + 1, len(x)):
                     name = x[j][0][1]
                     stack.append({name: None})
                     res.append(name)
@@ -175,52 +151,60 @@ class ConvertedMetainfo(object):
         self.name_fs = self._to_fs(self.name)
         self.piece_length = info['piece length']
         self.is_trackerless = False
+        if metainfo.has_key('announce-list'):
+            self.announce_list = metainfo['announce-list']
+        else:
+            self.announce_list = None
         if metainfo.has_key('announce'):
             self.announce = metainfo['announce']
         elif metainfo.has_key('nodes'):
             self.is_trackerless = True
             self.nodes = metainfo['nodes']
 
+        if metainfo.has_key('title'):
+            self.title = metainfo['title']
         if metainfo.has_key('comment'):
             self.comment = metainfo['comment']
-            
+        if metainfo.has_key('creation date'):
+            self.creation_date = metainfo['creation date']
+
         self.hashes = [info['pieces'][x:x+20] for x in xrange(0,
             len(info['pieces']), 20)]
-        self.infohash = sha(bencode(info)).digest()
+        self.infohash = InfoHashType(sha(bencode(info)).digest())
 
     def show_encoding_errors(self, errorfunc):
         self.reported_errors = True
         if self.bad_torrent_unsolvable:
-            errorfunc(ERROR,
+            errorfunc(logging.ERROR,
                       _("This .torrent file has been created with a broken "
                         "tool and has incorrectly encoded filenames. Some or "
                         "all of the filenames may appear different from what "
                         "the creator of the .torrent file intended."))
         elif self.bad_torrent_noncharacter:
-            errorfunc(ERROR,
+            errorfunc(logging.ERROR,
                       _("This .torrent file has been created with a broken "
                         "tool and has bad character values that do not "
                         "correspond to any real character. Some or all of the "
                         "filenames may appear different from what the creator "
                         "of the .torrent file intended."))
         elif self.bad_torrent_wrongfield:
-            errorfunc(ERROR,
+            errorfunc(logging.ERROR,
                       _("This .torrent file has been created with a broken "
                         "tool and has incorrectly encoded filenames. The "
                         "names used may still be correct."))
         elif self.bad_conversion:
-            errorfunc(WARNING,
+            errorfunc(logging.WARNING,
                       _('The character set used on the local filesystem ("%s") '
                         'cannot represent all characters used in the '
                         'filename(s) of this torrent. Filenames have been '
                         'changed from the original.') % filesystem_encoding)
         elif self.bad_windows:
-            errorfunc(WARNING,
+            errorfunc(logging.WARNING,
                       _("The Windows filesystem cannot handle some "
                         "characters used in the filename(s) of this torrent. "
                         "Filenames have been changed from the original."))
         elif self.bad_path:
-            errorfunc(WARNING,
+            errorfunc(logging.WARNING,
                       _("This .torrent file has been created with a broken "
                         "tool and has at least 1 file with an invalid file "
                         "or directory name. However since all such files "
@@ -286,3 +270,77 @@ class ConvertedMetainfo(object):
             # character
             r, bad = self._fix_windows(r)
         return (bad, r)
+
+
+    def to_data(self):
+        return bencode(self.metainfo)
+
+
+    def check_for_resume(self, path):
+        """
+        Determine whether this torrent was previously downloaded to
+        path.  Returns:
+        
+        -1: STOP! gross mismatch of files
+         0: MAYBE a resume, maybe not
+         1: almost definitely a RESUME - file contents, sizes, and count match exactly
+        """
+        STOP   = -1
+        MAYBE  =  0
+        RESUME =  1
+        
+        if self.is_batch != os.path.isdir(path):
+            return STOP
+
+        disk_files = {}
+        if self.is_batch:
+
+            def collect_files(top, dir, files):
+                here = dir[len(top)+1:]
+                for f in files:
+                    fullpath = os.path.join(dir, f)
+                    if not os.path.isdir(fullpath):
+                        disk_files[os.path.join(here, f)] = os.stat(fullpath)[6]
+            os.path.walk(path, collect_files, path)
+            metainfo_files = dict(zip(self.files_fs, self.sizes))
+        else:
+            if os.access(path, os.F_OK):
+                disk_files[self.name_fs] = os.stat(path)[6]
+            metainfo_files = {self.name_fs : self.sizes[0]}
+
+        if len(disk_files) == 0:
+            # no files on disk, definitely not a resume
+            return STOP
+
+        if set(disk_files.keys()) != set(metainfo_files.keys()):
+            # check files
+            if len(disk_files) > len(metainfo_files):
+                # file on disk that's not in the torrent
+                return STOP
+            if len(metainfo_files) > len(disk_files):
+                #file in the torrent that's not on disk
+                return MAYBE
+            else:
+                # otherwise, file mismatch both on disk and in torrent
+                return STOP
+        else:
+            # check sizes
+            ret = RESUME
+            for f, s in disk_files.iteritems():
+                
+                if f not in disk_files:
+                    print f, disk_files, metainfo_files
+                if f not in metainfo_files:
+                    print f, disk_files, metainfo_files
+                    
+                if disk_files[f] > metainfo_files[f]:
+                    # file on disk that's bigger than the corresponding one in the torrent
+                    return STOP
+                elif disk_files[f] < metainfo_files[f]:
+                    # file on disk that's smaller than the corresponding one in the torrent
+                    ret = MAYBE
+                else:
+                    # file sizes match exactly
+                    continue
+            return ret
+

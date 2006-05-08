@@ -30,9 +30,9 @@ class NatCheck(object):
         self.buffer = StringIO()
         self.next_len = 1
         self.next_func = self.read_header_len
-        rawserver.async_start_connection((ip, port), self)
+        rawserver.force_start_connection((ip, port), self)
 
-    def connection_started(self, s):
+    def connection_made(self, s):
         self.connection = s
         self.connection.write(chr(len(protocol_name)) + protocol_name +
                               (chr(0) * 8) + self.downloadid)

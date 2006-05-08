@@ -11,6 +11,7 @@
 # Written by Bram Cohen
 
 import re
+from BitTorrent.translation import _
 
 from BitTorrent import BTFailure
 
@@ -22,7 +23,7 @@ def check_info(info, check_paths=True):
     if type(info) != dict:
         raise BTFailure, _("bad metainfo - not a dictionary")
     pieces = info.get('pieces')
-    if type(pieces) != str or len(pieces) % 20 != 0:
+    if type(pieces) != str or len(pieces) % 20 != 0 or len(pieces) == 0:
         raise BTFailure, _("bad metainfo - bad pieces key")
     piecelength = info.get('piece length')
     if type(piecelength) not in ints or piecelength <= 0:
@@ -79,6 +80,9 @@ def check_message(message, check_paths=True):
     check_info(message.get('info'), check_paths)
     if type(message.get('announce')) != str and type(message.get('nodes')) != list:
         raise BTFailure, _("bad metainfo - no announce URL string")
+    if message.has_key('title') and type(message.get('title')) != str:
+        raise BTFailure, _("bad metainfo - bad title - should be a string" )
+
     if message.has_key('nodes'):
         check_nodes(message.get('nodes'))
 

@@ -18,6 +18,7 @@ class IDChecker:
         self.id = id
 
 class KNodeBase(Node):
+    __slots__= ('cfa', 'table')
     def __init__(self, cfa):
         Node.__init__(self)
         self.cfa = cfa

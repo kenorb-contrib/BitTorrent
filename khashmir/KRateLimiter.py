@@ -63,7 +63,7 @@ class KRateLimiter:
         if self.q or self.curr > 0:
             self.running = True
             # sleep for at least a half second
-            self.call_later(self.run, max(self.curr / self.rate, 0.5))
+            self.call_later(max(self.curr / self.rate, 0.5), self.run)
         else:
             self.running = False
                           

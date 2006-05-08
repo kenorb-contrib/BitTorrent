@@ -135,7 +135,7 @@ class FindNode(ActionBase):
             ## all done!!
             self.finished=1
             self._cleanup()
-            self.callLater(self.callback, 0, (l[:K],))
+            self.callLater(0, self.callback, l[:K])
 
     def makeMsgFailed(self, node):
         return self._defaultGotNodes
@@ -204,7 +204,7 @@ class GetValue(FindNode):
             z = len(dict.get('values', []))
             v = filter(None, map(x, dict.get('values',[])))
             if(len(v)):
-                self.callLater(self.callback, 0, (v,))
+                self.callLater(0, self.callback, v)
         self.schedule()
         
     ## get value
@@ -234,7 +234,7 @@ class GetValue(FindNode):
             ## all done, didn't find it!!
             self.finished=1
             self._cleanup()
-            self.callLater(self.callback,0, ([],))
+            self.callLater(0, self.callback, [])
 
     ## get value
     def goWithNodes(self, nodes, found=None):
@@ -341,9 +341,9 @@ class KeyExpirer:
     def __init__(self, store, callLater):
         self.store = store
         self.callLater = callLater
-        self.callLater(self.doExpire, const.KEINITIAL_DELAY)
+        self.callLater(const.KEINITIAL_DELAY, self.doExpire)
     
     def doExpire(self):
         self.cut = time() - const.KE_AGE
         self.store.expire(self.cut)
-        self.callLater(self.doExpire, const.KE_DELAY)
+        self.callLater(const.KE_DELAY, self.doExpire)

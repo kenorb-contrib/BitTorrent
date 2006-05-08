@@ -10,27 +10,6 @@
 
 from __future__ import generators
 
-import sys
-
-if sys.version_info < (2, 3):
-    # Allow int() to create numbers larger than "small ints".
-    # This is NOT SAFE if int is used as the name of the type instead
-    # (as in "type(x) in (int, long)").
-    int = long
-
-    def enumerate(x):
-        i = 0
-        for y in x:
-            yield (i, y)
-            i += 1
-
-    def sum(seq):
-        r = 0
-        for x in seq:
-            r += x
-        return r
-
-del sys
 
 def import_curses():
     import curses
@@ -40,3 +19,18 @@ def import_curses():
         curses.use_default_colors = use_default_colors
     return curses
 
+has_set = False
+try:
+    # python 2.4
+    from __builtin__ import set
+    has_set = True
+except (ImportError, NameError): # I don't know if NameError ever gets raised
+    try:
+        # python 2.3
+        from sets import Set
+        set = Set
+        has_set = True
+    except ImportError:
+        # python 2.2
+        set = None 
+        pass

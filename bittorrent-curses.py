@@ -11,7 +11,7 @@
 # License.
 
 # Original version written by Henry 'Pi' James, modified by (at least)
-# John Hoffman and Uoti Urpala
+# John Hoffman and Uoti Urpala and David Harrison
 
 from __future__ import division
 
@@ -23,20 +23,34 @@ SPEW_SCROLL_RATE = 1
 import sys
 import os
 import threading
+import logging
+from logging import ERROR
 from time import time, strftime
+import traceback
 
-from BitTorrent.download import Feedback, Multitorrent
+from BitTorrent.MultiTorrent import MultiTorrent, TorrentAlreadyRunning
+from BitTorrent.Torrent import Feedback
 from BitTorrent.defaultargs import get_defaults
 from BitTorrent.parseargs import printHelp
 from BitTorrent.zurllib import urlopen
-from BitTorrent.bencode import bdecode
-from BitTorrent.ConvertedMetainfo import ConvertedMetainfo
 from BitTorrent.prefs import Preferences
 from BitTorrent.obsoletepythonsupport import import_curses
 from BitTorrent import configfile
 from BitTorrent import BTFailure
 from BitTorrent import version
 from BitTorrent import GetTorrent
+from BitTorrent.RawServer_twisted import RawServer, task
+from BitTorrent.ConvertedMetainfo import ConvertedMetainfo
+from BitTorrent import filesystem_encoding
+from BitTorrent.yielddefer import launch_coroutine, _wrap_task
+from BitTorrent import console, stderr_console
+debug = False
+#debug = True
+
+def wrap_log(context_string, logger):
+    """Useful when passing a logger to a deferred's errback.  The context
+       specifies what was being done when the exception was raised."""
+    return lambda e, *args, **kwargs : logger.error(context_string, exc_info=e)
 
 
 try:
@@ -45,7 +59,7 @@ try:
     from curses.wrapper import wrapper as curses_wrapper
     from signal import signal, SIGWINCH
 except:
-    print _("Textmode GUI initialization failed, cannot proceed.")
+    print _("Textmode UI initialization failed, cannot proceed.")
     print
     print _("This download interface requires the standard Python module "
             "\"curses\", which is unfortunately not available for the native "
@@ -233,17 +247,19 @@ class CursesDisplayer(object):
             else:
                 self.shareRating = _("%.3f  (%.1f MB up / %.1f MB down)") % (
                    upTotal / downTotal, upTotal / (1<<20), downTotal / (1<<20))
-            numCopies = statistics['numCopies']
-            nextCopies = ', '.join(["%d:%.1f%%" % (a,int(b*1000)/10) for a,b in
-                    zip(xrange(numCopies+1, 1000), statistics['numCopyList'])])
+            #numCopies = statistics['numCopies']
+            #nextCopies = ', '.join(["%d:%.1f%%" % (a,int(b*1000)/10) for a,b in
+            #        zip(xrange(numCopies+1, 1000), statistics['numCopyList'])])
             if not self.done:
-                self.seedStatus = _("%d seen now, plus %d distributed copies"
-                                    "(%s)") % (statistics['numSeeds' ],
-                                               statistics['numCopies'],
-                                               nextCopies)
+                self.seedStatus = _("%d seen now") % statistics['numSeeds']
+            #    self.seedStatus = _("%d seen now, plus %d distributed copies"
+            #                        "(%s)") % (statistics['numSeeds' ],
+            #                                   statistics['numCopies'],
+            #                                   nextCopies)
             else:
-                self.seedStatus = _("%d distributed copies (next: %s)") % (
-                    statistics['numCopies'], nextCopies)
+                 self.seedStatus = ""
+            #    self.seedStatus = _("%d distributed copies (next: %s)") % (
+            #        statistics['numCopies'], nextCopies)
             self.peerStatus = _("%d seen now") % statistics['numPeers']
 
         self.fieldwin.erase()
@@ -264,16 +280,21 @@ class CursesDisplayer(object):
         if not spew:
             errsize = self.spewh
             if self.errors:
-                self.spewwin.addnstr(0, 0, _("error(s):"), self.speww, curses.A_BOLD)
+                self.spewwin.addnstr(0, 0, _("log:"), self.speww,
+                                     curses.A_BOLD)
                 errsize = len(self.errors)
-                displaysize = min(errsize, self.spewh)
+                displaysize = min(errsize, self.spewh-1)
                 displaytop = errsize - displaysize
                 for i in range(displaysize):
-                    self.spewwin.addnstr(i, self.labelw, self.errors[displaytop + i],
-                                 self.speww-self.labelw-1, curses.A_BOLD)
+                    self.spewwin.addnstr(i, self.labelw,
+                                         self.errors[displaytop + i],
+                                         #self.speww-self.labelw-1,
+                                         self.speww-self.labelw-2,
+                                         curses.A_BOLD)
         else:
             if self.errors:
-                self.spewwin.addnstr(0, 0, _("error:"), self.speww, curses.A_BOLD)
+                self.spewwin.addnstr(0, 0, _("log:"), self.speww,
+                                     curses.A_BOLD)
                 self.spewwin.addnstr(0, self.labelw, self.errors[-1],
                                  self.speww-self.labelw-1, curses.A_BOLD)
             self.spewwin.addnstr(2, 0, _("  #     IP                 Upload           Download     Completed  Speed"), self.speww, curses.A_BOLD)
@@ -331,50 +352,190 @@ class CursesDisplayer(object):
         curses.doupdate()
 
 
-class DL(Feedback):
+class CursesTorrentApp(object):
 
+    class LogHandler(logging.Handler):
+        def __init__(self, app, level=logging.NOTSET):
+            logging.Handler.__init__(self,level)
+            self.app = app
+      
+        def emit(self, record):
+            self.app.display_error(record.getMessage() ) 
+            if record.exc_info is not None:
+                self.app.display_error( " %s: %s" % ( str(record.exc_info[0]),
+                                                      str(record.exc_info[1])))
+                tb = record.exc_info[2]
+                stack = traceback.extract_tb(tb)
+                l = traceback.format_list(stack)
+                for s in l:
+                    self.app.display_error( " %s" % s )
+            print 
+
+    class LogFilter(logging.Filter):
+        def filter( self, record):
+            if record.name == "NatTraversal":
+                return 0
+            return 1  # allow.
+        
     def __init__(self, metainfo, config, errlist):
+        assert isinstance(metainfo, ConvertedMetainfo )
         self.doneflag = threading.Event()
         self.metainfo = metainfo
         self.config = Preferences().initWithDict(config)
         self.errlist = errlist
+        self.torrent = None
+        self.logger = logging.getLogger("bittorrent-curses")
+        curses_handler = CursesTorrentApp.LogHandler(self)
+        logger = logging.getLogger()
+        logger.addHandler(curses_handler)
+
+        # disable stdout and stderr error reporting.
+        logging.getLogger().removeHandler(console)
+        if stderr_console is not None:
+          logging.getLogger().removeHandler(stderr_console)
+                                           
+        # We log everything.  If we want to except certain errors then
+        # either raise the level or install a logging.Filter:
+        curses_handler.addFilter(CursesTorrentApp.LogFilter())
+        logging.getLogger().setLevel(0)
+
+    def start_torrent( self, metainfo, save_incomplete_as, save_as ):
+        """Tells the MultiTorrent to begin downloading."""
+        #df = launch_coroutine(
+        #    _wrap_task(self.multitorrent.rawserver.add_task),
+        #    self._start_torrent, metainfo, save_incomplete_as, save_as)
+        #df.addErrback( wrap_log('Failed to start torrent', self.logger))
+        self._create_torrent( metainfo, save_incomplete_as, save_as )
+        self.multitorrent.rawserver.add_task( 1,
+                                              self._start_torrent, metainfo )
+
+    def _create_torrent( self, metainfo, save_incomplete_as, save_as ):
+        try:
+            # HEREDAVE:
+            # We have a race condition. The torrent might still be intializing
+            # from resumed state when this start_torrent is called.
+            #
+            # In the future there will be an INITIALIZING state.  If the
+            # torrent is INITIALIZING, I could then install a policy that
+            # will force it to start whenever the create_torrent completes.
+            #
+            # Another way is to rewrite bittorrent-curses based on Torrent
+            # and avoid all of the MultiTorrent stuff.
+            #
+            # For now I will simply periodically check whether
+            # initialized is complete before trying to start (see call
+            # to raw_server.add_task in start_torrent).
+            if not self.multitorrent.torrent_known(metainfo.infohash):
+                self.logger.debug("creating torrent")
+                df = self.multitorrent.create_torrent(metainfo,
+                                                      save_incomplete_as,
+                                                      save_as)
+                #yield df
+                #df.getResult()  # raises exception if one occurred in yield.
+                #self.logger.debug( "Torrent's state is now: %s" % 
+                #    self.multitorrent.get_torrent(metainfo.infohash).state )
+                
+        except KeyboardInterrupt:
+            raise
+        except Exception, e:
+            self.logger.error( "Failed to create torrent", exc_info = e )
+            return
+
+    def _start_torrent(self, metainfo):
+        try:
+            t = None
+            if self.multitorrent.torrent_known( metainfo.infohash ):
+              t = self.multitorrent.get_torrent(metainfo.infohash)
+        
+            # HACK!! Rewrite when INITIALIZING state is available.
+            if t is None or not t.is_initialized():
+                self.logger.debug( "Waiting for torrent to initialize." )
+                self.multitorrent.rawserver.add_task(3,
+                    self._start_torrent, metainfo)
+                return
+
+            if not self.multitorrent.torrent_running(metainfo.infohash):
+                #self.logger.debug("starting torrent")
+                df = self.multitorrent.start_torrent(metainfo.infohash)
+                #yield df
+                #df.getResult()  # raises exception if one occurred in yield.
+            
+            if not self.torrent:
+                self.torrent = self.multitorrent.get_torrent(metainfo.infohash)
+                
+        except KeyboardInterrupt:
+            raise
+        except Exception, e:
+            self.logger.error("Failed to start torrent", exc_info = e)
+            self.logger.debug("  Torrent's state is %s" % 
+                self.multitorrent.get_torrent(metainfo.infohash).state )
 
     def run(self, scrwin):
+      rawserver_doneflag = threading.Event()
+      try:
         def reread():
-            self.multitorrent.rawserver.external_add_task(self.reread_config,0)
+            self.multitorrent.rawserver.external_add_task(0,self.reread_config)
         def ulrate(value):
             self.multitorrent.set_option('max_upload_rate', value)
-            self.torrent.set_option('max_upload_rate', value)
+            if self.torrent != None:
+                self.torrent.set_option('max_upload_rate', value)
 
-        self.d = CursesDisplayer(scrwin, self.errlist, self.doneflag, reread, ulrate)
+        self.d = CursesDisplayer(scrwin, self.errlist, self.doneflag, 
+                                 reread, ulrate)
         try:
-            self.multitorrent = Multitorrent(self.config, self.doneflag,
-                                             self.global_error)
+            rawserver = RawServer(self.config)
+
             # raises BTFailure if bad
-            metainfo = ConvertedMetainfo(bdecode(self.metainfo))
-            torrent_name = metainfo.name_fs
+            metainfo = self.metainfo
+            torrent_name = metainfo.name_fs.decode(filesystem_encoding)
             if config['save_as']:
                 if config['save_in']:
                     raise BTFailure(_("You cannot specify both --save_as and "
                                       "--save_in"))
                 saveas = config['save_as']
+                savein = os.path.dirname(os.path.abspath(saveas))
             elif config['save_in']:
-                saveas = os.path.join(config['save_in'], torrent_name)
+                savein = config['save_in'].decode('utf-8')
+                saveas = os.path.join(savein,torrent_name)
             else:
                 saveas = torrent_name
+            if config['save_incomplete_in']:
+                save_incomplete_as = os.path.join(
+                    config['save_incomplete_in'].decode('utf-8'),torrent_name)
+            else:
+                save_incomplete_as = os.path.join(savein,torrent_name)
 
+            data_dir = config['data_dir']
+            self.multitorrent = MultiTorrent(self.config, self.doneflag,
+                                             rawserver, data_dir )
+                
             self.d.set_torrent_values(metainfo.name, os.path.abspath(saveas),
                                 metainfo.total_bytes, len(metainfo.hashes))
-            self.torrent = self.multitorrent.start_torrent(metainfo,
-                                Preferences(self.config), self, saveas)
+
+            self.start_torrent(self.metainfo, save_incomplete_as, saveas)
+                
         except BTFailure, e:
             errlist.append(str(e))
+            self.doneflag.set()
             return
         self.get_status()
-        self.multitorrent.rawserver.install_sigint_handler()
-        self.multitorrent.rawserver.listen_forever()
+        self.multitorrent.rawserver.install_sigint_handler(self.doneflag)
+        l = None
+        def shutdown_check():
+            if doneflag.isSet():  # ctrl-c will set this flag.
+               self.d.display({'activity':_("shutting down"), 
+                               'fractionDone':0})
+               df = self.multitorrent.shutdown()
+               set_flag = lambda *a : rawserver_doneflag.set()
+               df.addCallbacks(set_flag, set_flag)
+               l.stop()
+                
+        l = task.LoopingCall(shutdown_check)
+        self.multitorrent.rawserver.listen_forever(self.rawserver_doneflag)
         self.d.display({'activity':_("shutting down"), 'fractionDone':0})
-        self.torrent.shutdown()
+        self.multitorrent.shutdown()
+      finally:
+        self.doneflag.set()
 
     def reread_config(self):
         try:
@@ -389,29 +550,33 @@ class DL(Feedback):
         # the self.failed() callback can run during this loop.
         for option, value in newvalues.iteritems():
             self.multitorrent.set_option(option, value)
-        for option, value in newvalues.iteritems():
-            self.torrent.set_option(option, value)
+        if self.torrent is not None:
+            for option, value in newvalues.iteritems():
+                self.torrent.set_option(option, value)
 
     def get_status(self):
-        self.multitorrent.rawserver.add_task(self.get_status,
-                                             self.config['display_interval'])
-        status = self.torrent.get_status(self.config['spew'])
-        self.d.display(status)
-
-    def global_error(self, level, text):
+        self.multitorrent.rawserver.add_task(self.config['display_interval'],
+                                             self.get_status)
+        if self.torrent is not None:
+            status = self.torrent.get_status(self.config['spew'])
+            self.d.display(status)
+    
+    def display_error(self, text):
+        """Called by the logger via LogHandler to display error messages in the
+           curses window."""
         self.d.error(text)
 
-    def error(self, torrent, level, text):
-        self.d.error(text)
+    #def failed(self, torrent, is_external):
+    #    self.doneflag.set()
+    #
+    #def finished(self, torrent):
+    #    self.d.finished()
 
-    def failed(self, torrent, is_external):
-        self.doneflag.set()
 
-    def finished(self, torrent):
-        self.d.finished()
 
 
 if __name__ == '__main__':
+
     uiname = 'bittorrent-curses'
     defaults = get_defaults(uiname)
 
@@ -422,18 +587,17 @@ if __name__ == '__main__':
     try:
         config, args = configfile.parse_configuration_and_args(defaults,
                                        uiname, sys.argv[1:], 0, 1)
-
+        if debug:  #HACK
+            config['upnp'] = False
         torrentfile = None
         if len(args):
             torrentfile = args[0]
-        for opt in ('responsefile', 'url'):
-            if config[opt]:
-                print '"--%s"' % opt, _("deprecated, do not use")
-                torrentfile = config[opt]
         if torrentfile is not None:
-            metainfo, errors = GetTorrent.get(torrentfile)
-            if errors:
-                raise BTFailure(_("Error reading .torrent file: ") + '\n'.join(errors))
+            try:
+                metainfo = GetTorrent.get(torrentfile)
+            except GetTorrent.GetTorrentException, e:
+                raise BTFailure(_("Error reading .torrent file: ") + '\n' + \
+                                str(e))
         else:
             raise BTFailure(_("you must specify a .torrent file"))
     except BTFailure, e:
@@ -441,10 +605,12 @@ if __name__ == '__main__':
         sys.exit(1)
 
     errlist = []
-    dl = DL(metainfo, config, errlist)
-    curses_wrapper(dl.run)
+    app = CursesTorrentApp(metainfo, config, errlist)
+
+    curses_wrapper(app.run)
 
     if errlist:
-       print _("These errors occurred during execution:")
-       for error in errlist:
-          print error
+        print _("These errors occurred during execution:")
+        for error in errlist:
+            print error
+        sys.stdout.flush()

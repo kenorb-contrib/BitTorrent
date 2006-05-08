@@ -10,7 +10,6 @@
 # tracker announce --bind support added by Jeremy Evans 11/2005
 
 import sys
-
 import threading
 import thread
 from BitTorrent import PeerID
@@ -36,8 +35,9 @@ from gzip import GzipFile
 from StringIO import StringIO
 import pprint
 
-DEBUG=0
+DEBUG = False
 
+url_socket_timeout = 30
 http_bindaddr = None
 
 # ow ow ow.
@@ -60,10 +60,8 @@ class PreRawServerBuffer(object):
         self.pending_sockets_lock.release()
 
     def __add_pending_connection(self, addr):        
-        if addr not in self.pending_sockets:
-            self.pending_sockets[addr] = 1
-        else:
-            self.pending_sockets[addr] += 1
+        self.pending_sockets.setdefault(addr, 0)
+        self.pending_sockets[addr] += 1
 
     def _remove_pending_connection(self, addr):
         self.pending_sockets_lock.acquire()
@@ -98,7 +96,7 @@ class BindingHTTPConnection(HTTPConnection):
 
         ident = thread.get_ident()
         # never, ever, ever call urlopen from any of these threads        
-        assert ident not in unsafe_threads
+        assert ident not in unsafe_threads, "You may not use urllib from this thread!"
 
         """Connect to the host and port specified in __init__."""
         msg = "getaddrinfo returns an empty list"
@@ -113,6 +111,7 @@ class BindingHTTPConnection(HTTPConnection):
             rawserver._add_pending_connection(addr)
             try:
                 self.sock = socket.socket(af, socktype, proto)
+                self.sock.settimeout(url_socket_timeout)
                 if http_bindaddr:
                     self.sock.bind((http_bindaddr, 0))
                 if self.debuglevel > 0:
@@ -247,14 +246,21 @@ def test():
             print "no iscompressed function!  this shouldn't happen"
 
     print "Trying to GET a compressed document...\n"
-    fp = urlopen('http://a.scarywater.net/hng/index.shtml')
-    print fp.read()
+    #fp = urlopen('http://a.scarywater.net/hng/index.shtml')
+    fp = urlopen('http://hotornot.com')
+    print len(fp.read())
+    printcomp(fp)
+    fp.close()
+
+    print "Trying to GET a compressed document...\n"
+    fp = urlopen('http://bittorrent.com')
+    print len(fp.read())
     printcomp(fp)
     fp.close()
 
     print "Trying to GET an unknown document...\n"
     fp = urlopen('http://www.otaku.org/')
-    print fp.read()
+    print len(fp.read())
     printcomp(fp)
     fp.close()
 

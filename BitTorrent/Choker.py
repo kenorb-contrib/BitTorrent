@@ -12,6 +12,7 @@
 
 from random import randrange
 from math import sqrt
+from BitTorrent.obsoletepythonsupport import set
 
 class Choker(object):
 
@@ -22,15 +23,20 @@ class Choker(object):
         self.count = 0
         self.done = done
         self.unchokes_since_last = 0
-        schedule(self._round_robin, 10)
+        self.interval = 5
+        self.magic_number = 6 # magic 6 : (30 / self.interval)
+        schedule(self.interval, self._round_robin)
 
     def _round_robin(self):
-        self.schedule(self._round_robin, 10)
+        self.schedule(self.interval, self._round_robin)
         self.count += 1
+        # don't do more work than you have to
+        if len(self.connections) == 0:
+            return
         if self.done():
             self._rechoke_seed(True)
             return
-        if self.count % 3 == 0:
+        if self.count % self.magic_number == 0:
             for i in xrange(len(self.connections)):
                 u = self.connections[i].upload
                 if u.choked and u.interested:
@@ -68,56 +74,63 @@ class Choker(object):
     def _rechoke_seed(self, force_new_unchokes = False):
         if force_new_unchokes:
             # number of unchokes per 30 second period
-            i = (self._max_uploads() + 2) // 3
-            # this is called 3 times in 30 seconds, if i==4 then unchoke 1+1+2
+            i = (self._max_uploads() + 2) // self.magic_number
+            # this is called self.magic_number times in 30 seconds,
+            # if i==(self.magic_number+1) then unchoke 1+1+2
             # and so on; substract unchokes recently triggered by disconnects
-            num_force_unchokes = max(0, (i + self.count % 3) // 3 - \
-                                 self.unchokes_since_last)
+            num_force_unchokes = max(0,
+                                     (i + self.count % self.magic_number) //
+                                     self.magic_number - 
+                                     self.unchokes_since_last)
         else:
             num_force_unchokes = 0
         preferred = []
-        new_limit = self.count - 3
+        new_limit = self.count - self.magic_number
         for i in xrange(len(self.connections)):
             c = self.connections[i]
             u = c.upload
+            # Bram says c.download.have.numfalse is not needed, and I agree. -Greg
             if not u.choked and u.interested and c.download.have.numfalse:
-                if u.unchoke_time > new_limit or (
+                if c._decrypt is not None:
+                    preferred.append((2, -u.get_rate(), i))
+                elif u.unchoke_time > new_limit or (
                         u.buffer and c.connection.is_flushed()):
                     preferred.append((-u.unchoke_time, -u.get_rate(), i))
                 else:
                     preferred.append((1, -u.get_rate(), i))
         num_kept = self._max_uploads() - num_force_unchokes
         assert num_kept >= 0
+        
         preferred.sort()
         preferred = preferred[:num_kept]
-        mask = [0] * len(self.connections)
-        for _, _, i in preferred:
-            mask[i] = 1
+
         num_nonpref = self._max_uploads() - len(preferred)
         if force_new_unchokes:
             self.unchokes_since_last = 0
         else:
             self.unchokes_since_last += num_nonpref
         last_unchoked = None
-        for i in xrange(len(self.connections)):
-            c = self.connections[i]
+
+        cons = set(self.connections)
+        cons -= set([ c for junk, junk, c in preferred ])
+        for c in cons:
             u = c.upload
-            if not mask[i]:
-                if not u.interested:
+            if not u.interested:
+                u.choke()
+            elif u.choked:
+                if num_nonpref > 0 and c.connection.is_flushed() and c.download.have.numfalse:
+                    u.unchoke(self.count)
+                    num_nonpref -= 1
+                    if num_nonpref == 0:
+                        last_unchoked = i
+            else:
+                if num_nonpref == 0 or not c.download.have.numfalse:
                     u.choke()
-                elif u.choked:
-                    if num_nonpref > 0 and c.connection.is_flushed() and c.download.have.numfalse:
-                        u.unchoke(self.count)
-                        num_nonpref -= 1
-                        if num_nonpref == 0:
-                            last_unchoked = i
                 else:
-                    if num_nonpref == 0 or not c.download.have.numfalse:
-                        u.choke()
-                    else:
-                        num_nonpref -= 1
-                        if num_nonpref == 0:
-                            last_unchoked = i
+                    num_nonpref -= 1
+                    if num_nonpref == 0:
+                        last_unchoked = i
+                        
         if last_unchoked is not None:
             self.connections = self.connections[last_unchoked + 1:] + \
                                self.connections[:last_unchoked + 1]

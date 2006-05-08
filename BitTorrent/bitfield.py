@@ -32,13 +32,13 @@ class Bitfield:
         else:
             if extra:
                 if len(bitstring) != rlen + 1:
-                    raise ValueError
+                    raise ValueError("%s != %s" % (len(bitstring), rlen + 1))
                 if (ord(bitstring[-1]) << extra) & 0xFF != 0:
-                    raise ValueError
+                    raise ValueError("%s != %s" %
+                                     ((ord(bitstring[-1]) << extra) & 0xFF, 0))
             else:
                 if len(bitstring) != rlen:
-                    raise ValueError
-            c = counts
+                    raise ValueError("%s != %s" % (len(bitstring), rlen))
             self.numfalse = length - sum(array('B',
                                                bitstring.translate(counts)))
             if self.numfalse != 0:
@@ -75,3 +75,12 @@ class Bitfield:
             return r
         else:
             return self.bits.tostring()
+
+    def __getstate__(self):
+        d = {}
+        d['length'] = self.length
+        d['s'] = self.tostring()
+        return d
+
+    def __setstate__(self, d):
+        Bitfield.__init__(self, d['length'], d['s'])

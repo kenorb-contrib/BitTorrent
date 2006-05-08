@@ -1,0 +1,324 @@
+# By Greg Hazel and a smigden by Dave Harrison
+
+debug = False
+#debug = True
+
+import os
+import Queue
+import socket
+import itertools
+import random
+from pprint import pprint
+from BitTorrent.platform import bttime
+import BitTorrent.stackthreading as threading
+from BitTorrent.HostIP import get_host_ip, get_host_ips
+
+
+if os.name == 'nt':
+    import win32icmp
+    IP_TTL_EXPIRED_TRANSIT = 11013
+    IP_SUCCESS = 0
+
+def daemon_thread(target, args=()):
+    t = threading.Thread(target=target, args=args)
+    t.setDaemon(True)
+    return t
+
+def in_common(routes):
+    """routes is a list of lists, each containing a route to a peer."""
+    r = []
+    branch = False
+    for n in itertools.izip(*routes):
+
+        # strip dead nodes
+        f = [i for i in n if i != '*']
+
+        # ignore all dead nodes
+        if len(f) == 0:
+            continue
+        
+        if len(set(f)) == 1:
+            r.append(f[0])
+        else:
+            # more than one unique node, the tree has branched
+            branch = True
+            break
+    return (branch, r)
+
+
+class RTTMonitorBase(object):
+    def __init__(self, new_rtt=None):
+        self.instantanious_rtt = None
+        self.min_rtt = None
+        self.max_rtt = None
+        def f(rtt):
+            pass
+        if new_rtt:
+            self.new_rtt = new_rtt
+        else:
+            self.new_rtt = f
+
+    def set_nodes_restart(self, nodes):
+        pass
+
+    def get_min_rtt(self):
+        return self.min_rtt
+
+    def get_max_rtt(self):
+        return self.max_rtt
+
+    def get_current_rtt(self):
+        return self.instantanious_rtt
+
+
+class RTTMonitorUnix(RTTMonitorBase):
+    # I assume this will have a unix implementation some day
+    pass
+
+class Options(object):
+    pass
+
+def _set_min(x, y):
+    if x is None:
+        return y
+    if y is None:
+        return x
+    return min(x, y)
+_set_max = max
+
+class RTTMonitorWin32(RTTMonitorBase):
+    def __init__(self, new_rtt, interval = 0.5, timeout = 6.0):
+        self.nodes = []
+        self.timeout = int(1000 * timeout)
+        self.interval = interval
+        self.stop_event = threading.Event()
+        self.abort_traceroute = threading.Event()
+        self.finished_event = threading.Event()
+        # the thread is finished because it hasn't started
+        self.finished_event.set()
+
+        RTTMonitorBase.__init__(self, new_rtt)
+
+    def set_nodes_restart(self, nodes):
+        self.nodes = []
+        for node in nodes:
+            self.add_node(node)
+        t = threading.Thread(target=self.run, args=(list(self.nodes),))
+        t.setDaemon(True)
+        t.start()
+
+    def add_node(self, node):
+        self.nodes.append(node)
+
+    def get_route(self, q, dst):
+        try:
+            dst = socket.gethostbyname(dst)
+            self.traceroute(dst, self.timeout, lambda n : q.put((dst, n)))
+        except socket.gaierror:
+            # if hostbyname lookup fails, it's not a node we can use
+            # maybe this should be a warning or something, but a downed
+            # internet connection will cause a lot of these
+            pass
+
+    def run(self, nodes):
+        
+        q = Queue.Queue()
+
+        dst = None
+        # handy for hard-coding common node
+        #dst = '68.87.195.50'
+        if not dst: 
+            threads = []
+            for i in nodes:
+                t = daemon_thread(target=self.get_route, args=(q, i, ))
+                threads.append(t)
+                t.start()
+
+            waiter_done_event = threading.Event()
+            def waiter(threads, waiter_done_event):
+                try:
+                    for thread in threads:
+                        thread.join()
+                except Exception, e:
+                    print "waiter hiccupped", e
+                waiter_done_event.set()
+            waiting_thread = daemon_thread(target=waiter,
+                                           args=(threads, waiter_done_event, ))
+            waiting_thread.start()
+
+            common = []
+            routes = {}
+            while not waiter_done_event.isSet():
+                try:
+                    msg = q.get(True, 1.0)
+                except Queue.Empty:
+                    pass
+                else:
+                    dst = msg[0]
+                    # nodes appear in the queue in 
+                    # increasing order of TTL.
+                    new_node = msg[1]  
+                    if dst not in routes:
+                        l = []
+                        routes[dst] = l
+                    else:
+                        l = routes[dst]
+                    l.append(new_node)
+                    branch, common = in_common(routes.values())
+                    if branch:
+                        break
+
+            self.abort_traceroute.set()
+            waiter_done_event.wait()
+            self.abort_traceroute.clear()
+
+            local_ips = get_host_ips()
+            new_common = []
+            for c in common:
+                if c not in local_ips:
+                    new_common.append(c)
+            common = new_common
+            
+            if debug:
+                pprint(common)
+
+            if len(common) == 0:
+                # this should be inspected, it's not a simple debug message
+                if debug:
+                    print "No common node", routes
+                return
+
+            del routes
+
+            dst = common[-1]
+
+        # kill the old thread
+        self.stop_event.set()
+        # wait for it to finish
+        self.finished_event.wait()
+        # clear to indicate we're running
+        self.finished_event.clear()
+        self.stop_event.clear()
+        
+        if debug:
+            print "Farthest common hop [%s]" % dst
+
+        # range can change if the node in common changes
+        self.min_rtt = None
+        self.max_rtt = None
+
+        # Ping a representative peer but set the ttl to the length of the
+        # common path so that the farthest common hop responds with
+        # ICMP time exceeded.  (Some routers will send time exceeded 
+        # messages, but they won't respond to ICMP pings directly)  
+        representative = nodes[random.randrange(0, len(nodes))]
+        if debug: 
+            print "pinging representative %s ttl=%d" % (
+                representative,len(common))
+        try:            
+            while not self.stop_event.isSet():
+                start = bttime()
+                rtt = self.ping(representative, 5000, ttl=len(common))
+                self.instantanious_rtt = rtt
+
+                self.min_rtt = _set_min(self.min_rtt, rtt)
+                self.max_rtt = _set_max(self.max_rtt, rtt)
+
+                delta = bttime() - start
+                self.stop_event.wait(self.interval - delta)
+                if debug: print "RTTMonitor.py: new_rtt %s" % rtt
+                self.new_rtt(self.instantanious_rtt)
+        except Exception, e:
+            import traceback
+            traceback.print_exc()
+            print "ABORTING", e
+            
+        self.finished_event.set()
+
+    def traceroute(self, dst, timeout, report=None):
+        """If report is None then this returns the route as a list of IP
+           addresses.  If report is not None then this calls report as each
+           node is discovered in the path (e.g., if there are 6 hops in the
+           path then report gets called 6 times)."""
+
+        if debug:
+            print "Tracing route to [%s]" % dst
+
+        i = win32icmp.IcmpCreateFile()
+
+        o = Options()
+
+        route = None
+        if report == None:
+            route = []
+            def add_node(node):
+                route.append(node)
+            report = add_node
+
+        for ttl in xrange(64):
+            o.Ttl = ttl
+            try:
+                if ttl == 0:
+                    addr = get_host_ip()
+                    status = -1
+                    rtt = 0
+                else:
+                    addr, status, rtt = win32icmp.IcmpSendEcho(i, dst, None, o,
+                                                               timeout)
+                if debug:
+                    print "ttl", ttl, "\t", rtt, "ms\t", addr
+                report(addr)
+                if status == IP_SUCCESS:
+                    if debug:
+                        print "Traceroute complete in", ttl, "hops"
+                    break
+            except Exception, e:
+                report('*')
+                if debug:
+                    print "Hop", ttl, "failed:", str(e)
+            if self.abort_traceroute.isSet():
+                break
+
+        win32icmp.IcmpCloseHandle(i)
+
+        if route:
+            return route
+
+    def ping(self, dst, timeout, ttl = None):
+        """Returns ICMP echo round-trip time to dst or returns None if a
+           timeout occurs.  timeout is measured in milliseconds. 
+          
+           The TTL is useful if the caller wants to ping the router that 
+           is a number of hops in the direction of the dst, e.g., when a 
+           router will not respond to pings directly but will generate 
+           ICMP Time Exceeded messages."""
+        i = win32icmp.IcmpCreateFile()
+        rtt = None
+
+        try:
+            o = None
+            if ttl is not None:
+                o = Options()
+                o.Ttl = ttl
+
+            addr, status, rtt = win32icmp.IcmpSendEcho(i, dst, None, o, timeout)
+            if debug:
+                if status == IP_SUCCESS:
+                    print "Reply from", addr + ":", "time=" + str(rtt)
+                elif status == IP_TTL_EXPIRED_TRANSIT:
+                    print "Ping ttl expired %d: from %s time=%s" %(
+                          status, str(addr), str(rtt))
+                else:
+                    print "Ping failed", status
+        except Exception, e:
+            if debug:
+                print "Ping failed:", str(e)
+
+        win32icmp.IcmpCloseHandle(i)
+
+        return rtt
+
+if os.name == 'nt':
+    RTTMonitor = RTTMonitorWin32
+else:
+    RTTMonitor = RTTMonitorUnix

@@ -13,8 +13,10 @@
 from __future__ import generators
 
 import os
-import socket
 import sys
+import Queue
+import socket
+import logging
 import traceback
 if os.name == 'nt':
     import win32api
@@ -25,10 +27,15 @@ if os.name == 'nt':
     import pywin.mfc.object
 
 from binascii import b2a_hex
+from BitTorrent.translation import _
 
-from BitTorrent.RawServer_magic import RawServer, Handler
-from BitTorrent.platform import get_home_dir, get_config_dir
-from BitTorrent import INFO, WARNING, ERROR, CRITICAL, BTFailure, app_name
+from BitTorrent.RawServer_twisted import RawServer, Handler
+from BitTorrent.platform import get_home_dir, get_dot_dir
+from BitTorrent import BTFailure, app_name
+
+
+ipc_logger = logging.getLogger('IPC')
+ipc_logger.setLevel(logging.DEBUG)
 
 def toint(s):
     return int(b2a_hex(s), 16)
@@ -71,14 +78,14 @@ class MessageReceiver(Handler):
                 l = toint(self._message)
                 yield l
                 data = self._message
-                if action in ('show_error',):
+                if action in ('show_error','start_torrent'):
                     self.callback(action, data)
                 else:
                     yield 4
                     l = toint(self._message)
                     yield l
                     path = self._message
-                    if action in ('start_torrent'):
+                    if action in ('publish_torrent'):
                         self.callback(action, data, path)
 
     # copied from Connecter.py
@@ -112,28 +119,29 @@ class MessageReceiver(Handler):
         pass
 
 class IPC(object):
-    def __init__(self, config, log):
+    """Used for communication between raw server thread and other threads."""
+    def __init__(self, rawserver, config, name="controlsocket"):
+        self.rawserver = rawserver
+        self.name = name
         self.config = config
-        self.log = log
-        self.rawserver = None
-        self.callback = None        
+        self.callback = None
+        self._command_q = Queue.Queue()
 
     def create(self):
         pass
 
     def start(self, callback):
         self.callback = callback
+        while not self._command_q.empty():
+            self.callback(*self._command_q.get())
 
     def send_command(self, command, *args):
         pass
 
-    def handle_command(self, command, *args):
+    def handle_command(self, *args):
         if callable(self.callback):
-            return self.callback(command, *args)
-        self.log(WARNING, _("Unhandled command: %s %s"  % (str(command), str(args))))
-
-    def set_rawserver(self, rawserver):
-        self.rawserver = rawserver
+            return self.callback(*args)
+        self._command_q.put(args)
 
     def stop(self):
         pass
@@ -165,7 +173,7 @@ class IPCUnixSocket(IPCSocketBase):
 
     def __init__(self, *args):
         IPCSocketBase.__init__(self, *args)
-        self.socket_filename = os.path.join(self.config['data_dir'], 'ui_socket')
+        self.socket_filename = os.path.join(self.config['data_dir'], self.name)
         
     def create(self):
         filename = self.socket_filename
@@ -183,7 +191,7 @@ class IPCUnixSocket(IPCSocketBase):
                 raise BTFailure(_("Could not remove old control socket filename:")
                                 + str(e))
         try:
-            controlsocket = RawServer.create_unixserversocket(filename)
+            controlsocket = self.rawserver.create_unixserversocket(filename)
         except socket.error, e:
             raise BTFailure(_("Could not create control socket: ")+str(e))
 
@@ -209,13 +217,12 @@ class IPCUnixSocket(IPCSocketBase):
 class IPCWin32Socket(IPCSocketBase):
     def __init__(self, *args):
         IPCSocketBase.__init__(self, *args)
-        self.socket_filename = os.path.join(self.config['data_dir'], 'ui_socket')
+        self.socket_filename = os.path.join(self.config['data_dir'], self.name)
         self.mutex = None
         self.master = 0
 
     def _get_sic_path(self):
-        directory = get_config_dir()
-        configdir = os.path.join(directory, '.bittorrent')
+        configdir = get_dot_dir()
         filename = os.path.join(configdir, ".btcontrol")
         return filename
 
@@ -249,8 +256,8 @@ class IPCWin32Socket(IPCSocketBase):
         port_limit = 50000
         while self.port < port_limit:
             try:
-                controlsocket = RawServer.create_serversocket(self.port,
-                                                              '127.0.0.1', reuse=True)
+                controlsocket = self.rawserver.create_serversocket(self.port,
+                                                                   '127.0.0.1')
                 self.controlsocket = controlsocket
                 break
             except socket.error, e:
@@ -293,17 +300,17 @@ class IPCWin32Socket(IPCSocketBase):
             self.port = int(f.read())
             f.close()
         except:
-            if (r == win32event.WAIT_ABANDONED):
-                self.log(WARNING, _("A previous instance of BT was not cleaned up properly. Continuing."))
+            if r == win32event.WAIT_ABANDONED:
+                ipc_logger.warning(_("A previous instance of BT was not cleaned up properly. Continuing."))
                 # take over the role of master
                 takeover = 1
             else:
-                self.log(WARNING, (_("Another instance of BT is running, but \"%s\" does not exist.\n") % filename)+
+                ipc_logger.warning((_("Another instance of BT is running, but \"%s\" does not exist.\n") % filename)+
                                   _("I'll guess at the port."))
                 try:
                     self.port = CONTROL_SOCKET_PORT
                     self.send_command('no-op')
-                    self.log(WARNING, _("Port found: %d") % self.port)
+                    ipc_logger.warning(_("Port found: %d") % self.port)
                     try:
                         f = open(filename, "w")
                         f.write(str(self.port))
@@ -314,7 +321,7 @@ class IPCWin32Socket(IPCSocketBase):
                     # this is where this system falls down.
                     # There's another copy of BitTorrent running, or something locking the mutex,
                     # but I can't communicate with it.
-                    self.log(WARNING, _("Could not find port."))
+                    ipc_logger.warning(_("Could not find port."))
                 
         
         # we're done reading the control file, release the mutex so other instances can lock it and read the file
@@ -379,52 +386,68 @@ if os.name == 'nt':
         #    exec x
 
     class Server(HandlerObject):
-        def __init__(self, log, *args):
-            self.log = log
-            HandlerObject.__init__(self, *args)
-
         def CreateSystemTopic(self):
             return Topic(self.handler, dde.CreateServerSystemTopic())
 
         def Status(self, s):
-            #if self.log:
-            #    self.log(INFO, _("IPC Status: %s") % s)
-            pass
+            ipc_logger.debug(_("IPC Status: %s") % s)
 
         def stop(self):
             self.Shutdown()
             self.Destroy()
 
+class SingleInstanceMutex(object):
+    def __init__(self):
+        obtain_mutex = False
+        self.mutex = win32event.CreateMutex(None, obtain_mutex, app_name)
+        self.lasterror = win32api.GetLastError()
+
+    def close(self):
+        del self.mutex
+
+    def IsAnotherInstanceRunning(self):
+        return winerror.ERROR_ALREADY_EXISTS == self.lasterror
+
+if os.name == 'nt':
+    g_mutex = SingleInstanceMutex()
+
 class IPCWin32DDE(IPC):
     def create(self):
         self.server = None
 
-        # try to connect first
-        self.client = Server(None, None, dde.CreateServer())
-        self.client.Create(app_name, dde.CBF_FAIL_SELFCONNECTIONS|dde.APPCMD_CLIENTONLY)
-        self.conversation = dde.CreateConversation(self.client)
-        try:
-            self.conversation.ConnectTo(app_name, "controlsocket")
-            raise BTFailure(_("DDE Conversation connected."))
-        except dde.error, e:
-            # no one is listening
-            pass
+        if g_mutex.IsAnotherInstanceRunning():
+            for i in xrange(20):
+                # try to connect first
+                self.client = Server(None, dde.CreateServer())
+                self.client.Create(app_name, dde.CBF_FAIL_SELFCONNECTIONS|dde.APPCMD_CLIENTONLY)
+                self.conversation = dde.CreateConversation(self.client)
+                try:
+                    self.conversation.ConnectTo(app_name, self.name)
+                    raise BTFailure("DDE Conversation connected.")
+                except dde.error, e:
+                    # no one is listening
+                    pass
 
-        # clean up
-        self.client.stop()
-        del self.client
-        del self.conversation
+                # clean up
+                self.client.stop()
+                del self.client
+                del self.conversation
+                ipc_logger.warning("No DDE Server is listening, but the global mutex exists. Retry %d!" % i)
+
+            # continuing might be dangerous (two instances)
+            raise Exception("No DDE Server is listening, but the global mutex exists!")
 
         # start server
-        self.server = Server(self.log, self.handle_command, dde.CreateServer())
+        self.server = Server(self.handle_command, dde.CreateServer())
         self.server.Create(app_name, dde.CBF_FAIL_SELFCONNECTIONS|dde.APPCLASS_STANDARD)
-        self.server.AddTopic(Topic(self.handle_command, dde.CreateTopic("controlsocket")))
+        self.server.AddTopic(Topic(self.handle_command, dde.CreateTopic(self.name)))
+        
 
     def send_command(self, command, *args):
         s = '|'.join([command, ] + list(args))
         # null byte hack
         if s.count("\0") > 0:
-            self.log(WARNING, "IPC: String with null byte(s):" + s)
+            ipc_logger.warinig("IPC: String with null byte(s):" + s)
             s = s.replace("\0", "\\**0")
         result = self.conversation.Request(s)
 
@@ -439,4 +462,3 @@ if os.name == 'nt':
     ipc_interface = IPCWin32DDE
 else:
     ipc_interface = IPCUnixSocket
-    

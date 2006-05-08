@@ -13,7 +13,6 @@
 # Written by Bram Cohen and Matt Chisholm
 
 import os
-os.system('sh ./makei18n.sh')
 
 from BitTorrent.platform import install_translation
 install_translation()
@@ -38,6 +37,8 @@ else:
 os.rmdir('FOO')
 # done detecting case-insensitive filesystem
 
+extra_docs = []
+
 symlinks = ["bittorrent" , "bittorrent-curses", "bittorrent-console",
            "maketorrent",                      "maketorrent-console",
                           "launchmany-curses", "launchmany-console",
@@ -58,37 +59,49 @@ for s in symlinks:
 use_scripts = symlinks
 if sys.argv[1:2] == ['sdist'] or not case_sensitive_filesystem:
     use_scripts = scripts
+    extra_docs.append('BUILD.windows.txt')
 
 img_root, doc_root, locale_root = calc_unix_dirs()
 
-translations = []
+
+data_files = [
+    (img_root, ['images/bittorrent.ico',]),
+    (doc_root, ['credits.txt', 'credits-l10n.txt', 'LICENSE.txt', 'README.txt',
+                'TRACKERLESS.txt', 'redirdonate.html', 'public.key',
+                'INSTALL.unix.txt'] + extra_docs),
+    ]
+
+for d in ('flags', 'logo', 'themes/default',
+          'themes/default/statuslight', 'themes/default/torrentstate',
+          'themes/default/torrentops' , 'themes/default/fileops'     ,):
+    data_files.append(
+        (os.path.join(img_root, d),
+         glob.glob(os.path.join('images', d, '*.png')))
+        )
+
+if not os.path.exists('locale'):
+    os.system('sh ./makei18n.sh')
+
 for l in languages:
     path = os.path.join('locale', l, 'LC_MESSAGES', 'bittorrent.mo')
     if os.access(path, os.F_OK):
-        translations.append((os.path.join(locale_root, l, 'LC_MESSAGES'), 
+        data_files.append((os.path.join(locale_root, l, 'LC_MESSAGES'), 
                              [path,]))
 
-data_files = [ (img_root        , glob.glob('images/*png')+['images/bittorrent.ico',]),
-               (img_root+'/logo', glob.glob('images/logo/bittorrent_[0-9]*.png'     )),
-               (img_root+'/icons/default', glob.glob('images/icons/default/*.png'   )),
-               (img_root+'/icons/old'    , glob.glob('images/icons/old/*.png'       )),
-               (doc_root        , ['credits.txt', 'credits-l10n.txt',
-                                   'LICENSE.txt', 'README.txt',
-                                   'TRACKERLESS.txt', 'redirdonate.html',
-                                   'public.key',
-                                   ]       ),
-               ] + translations
 
 setup(
     name = "BitTorrent",
     version = version,
     author = "Bram Cohen",
-    author_email = "bram@bitconjurer.org",
+    author_email = "bugs@bittorrent.com",
     url = "http://bittorrent.com/",
     license = "BitTorrent Open Source License",
     scripts = use_scripts,
-    packages = ["BitTorrent", "khashmir"],
+    packages = ["BitTorrent", "khashmir", "BitTorrent.GUI_wx",],
+    py_modules = ["Zeroconf",],
     data_files = data_files,
+    summary = "Scatter-gather network file transfer",
+    description = """BitTorrent is a tool for distributing files.  It's extremely easy to use - downloads are started by clicking on hyperlinks.  Whenever more than one person is downloading at once they send pieces of the file(s) to each other, thus relieving the central server's bandwidth burden.  Even with many simultaneous downloads, the upload burden on the central server remains quite small, since each new downloader introduces new upload capacity.""",
     )
 
 for s in symlinks:

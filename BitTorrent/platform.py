@@ -8,7 +8,7 @@
 # for the specific language governing rights and limitations under the
 # License.
 
-# Written by Matt Chisholm and Uoti Urpala
+# Written by Greg Hazel, Matt Chisholm, Uoti Urpala, and David Harrison
 
 # This module is strictly for cross platform compatibility items and
 # should not import anything from other BitTorrent modules.
@@ -17,14 +17,25 @@ import os
 import re
 import sys
 import time
+import tarfile
 import gettext
 import locale
+import zurllib as urllib
+from traceback import print_exc
+
 if os.name == 'nt':
+    import pywintypes
     import _winreg
     import win32api
+    import win32file
     from win32com.shell import shellcon, shell
+    import win32con
     import win32com.client
     import ctypes
+    import struct
+    FILE_ATTRIBUTE_SPARSE_FILE = 0x00000200
+    FILE_SUPPORTS_SPARSE_FILES = 0x00000040
+    FSCTL_QUERY_ALLOCATED_RANGES = 0x000940CF
 elif os.name == 'posix' and os.uname()[0] == 'Darwin':
     has_pyobjc = False
     try:
@@ -32,9 +43,18 @@ elif os.name == 'posix' and os.uname()[0] == 'Darwin':
         has_pyobjc = True
     except ImportError:
         pass
-    
-from BitTorrent import app_name, version
-from BitTorrent.language import locale_sucks
+else:
+    try:
+        import statvfs
+    except ImportError:
+        pass
+
+
+from BitTorrent import app_name, version, LOCALE_URL
+from BitTorrent import language
+from BitTorrent.sparse_set import SparseSet
+from BitTorrent.defer import ThreadedDeferred
+
 
 if sys.platform.startswith('win'):
     bttime = time.clock
@@ -46,6 +66,15 @@ is_frozen_exe = (os.name == 'nt') and hasattr(sys, 'frozen') and (sys.frozen == 
 os_name = os.name
 os_version = None
 if os_name == 'nt':
+
+    wh = {(1, 4,  0): "95",
+          (1, 4, 10): "98",
+          (1, 4, 90): "ME",
+          (2, 4,  0): "NT",
+          (2, 5,  0): "2000",
+          (2, 5,  1): "XP"  ,
+          (2, 5,  2): "2003",
+          }
 
     class OSVERSIONINFOEX(ctypes.Structure):
         _fields_ = [("dwOSVersionInfoSize", ctypes.c_ulong),
@@ -61,30 +90,38 @@ if os_name == 'nt':
                     ("wReserved", ctypes.c_byte),
                     ]
 
+    class OSVERSIONINFO(ctypes.Structure):
+        _fields_ = [("dwOSVersionInfoSize", ctypes.c_ulong),
+                    ("dwMajorVersion", ctypes.c_ulong),
+                    ("dwMinorVersion", ctypes.c_ulong),
+                    ("dwBuildNumber", ctypes.c_ulong),
+                    ("dwPlatformId", ctypes.c_ulong),
+                    ("szCSDVersion", ctypes.c_char * 128),
+                    ]
+
     o = OSVERSIONINFOEX()
     o.dwOSVersionInfoSize = 156 # sizeof(OSVERSIONINFOEX)
 
-    ctypes.windll.kernel32.GetVersionExA(ctypes.byref(o))
-    
-    wh = {(1, 4,  0): "95",
-          (1, 4, 10): "98",
-          (1, 4, 90): "ME",
-          (2, 4,  0): "NT",
-          (2, 5,  0): "2000",
-          (2, 5,  1): "XP"  ,
-          (2, 5,  2): "2003",
-          }
-
-    win_version_num = (o.dwPlatformId, o.dwMajorVersion, o.dwMinorVersion,
-                       o.wServicePackMajor, o.wServicePackMinor, o.dwBuildNumber)
+    r = ctypes.windll.kernel32.GetVersionExA(ctypes.byref(o))
+    if r:
+        win_version_num = (o.dwPlatformId, o.dwMajorVersion, o.dwMinorVersion,
+                           o.wServicePackMajor, o.wServicePackMinor, o.dwBuildNumber)
+    else:
+        o = OSVERSIONINFOEX()
+        o.dwOSVersionInfoSize = 148 # sizeof(OSVERSIONINFO)
+        r = ctypes.windll.kernel32.GetVersionExA(ctypes.byref(o))
+        win_version_num = (o.dwPlatformId, o.dwMajorVersion, o.dwMinorVersion,
+                           0, 0, o.dwBuildNumber)
 
     wk = (o.dwPlatformId, o.dwMajorVersion, o.dwMinorVersion)
     if wh.has_key(wk):
         os_version = wh[wk]
     else:
         os_version = wh[max(wh.keys())]
-        sys.stderr.write("Couldn't identify windows version: %s, "
-                         "assuming '%s'\n" % (str(wk), os_version))
+        sys.stderr.write("Couldn't identify windows version: wk:%s, %s, "
+                         "assuming '%s'\n" % (str(wk),
+                                              str(win_version_num),
+                                              os_version))
     del wh, wk
 
 elif os_name == 'posix':
@@ -112,6 +149,16 @@ if os.name == 'posix':
             osx = True
 image_root  = os.path.join(app_root, 'images')
 locale_root = os.path.join(app_root, 'locale')
+if not os.path.exists(locale_root):
+    try:
+        os.makedirs(locale_root)
+    except (IOError, OSError):
+        pass
+
+plugin_path = []
+internal_plugin = os.path.join(app_root, 'BitTorrent', 'Plugins')
+if os.access(internal_plugin, os.F_OK):
+    plugin_path.append(internal_plugin)
 
 if not os.access(image_root, os.F_OK) or not os.access(locale_root, os.F_OK):
     # we guess that probably we are installed on *nix in this case
@@ -122,9 +169,113 @@ if not os.access(image_root, os.F_OK) or not os.access(locale_root, os.F_OK):
         image_root, doc_root, locale_root = map(
             lambda p: os.path.join(installed_prefix, p), calc_unix_dirs()
             )
+        systemwide_plugin = os.path.join(installed_prefix, 'lib', 'BitTorrent')
+        if os.access(systemwide_plugin, os.F_OK):
+            plugin_path.append(systemwide_plugin)
+
+def get_free_space(path):
+    # optimistic if we can't tell
+    free_to_user = 2**64
+
+    path, file = os.path.split(path)
+    if os.name == 'nt':
+        while not os.path.exists(path):
+            path, top = os.path.split(path)
+        free_to_user, total, total_free = win32api.GetDiskFreeSpaceEx(path)
+    elif hasattr(os, "statvfs"):
+        s = os.statvfs(path)
+        free_to_user = s[statvfs.F_BAVAIL] * long(s[statvfs.F_BSIZE])
+
+    return free_to_user
+
+def get_sparse_files_support(path):
+    supported = False
+
+    if os.name == 'nt':
+        drive, path = os.path.splitdrive(os.path.abspath(path))
+        if drive[-1] != '\\':
+            drive += '\\'
+        volumename, serialnumber, maxpath, fsflags, fs_name = win32api.GetVolumeInformation(drive)
+        if fsflags & FILE_SUPPORTS_SPARSE_FILES:
+            supported = True
+
+    return supported
+
+# is there a linux max path?
+def is_path_too_long(path):
+    if os.name == 'nt':
+        if len(path) > win32con.MAX_PATH:
+            return True
+
+    return False
+
+def is_sparse(path):
+    supported = get_sparse_files_support(path)
+    if not supported:
+        return False
+    if os.name == 'nt':
+        return bool(win32file.GetFileAttributes(path) & FILE_ATTRIBUTE_SPARSE_FILE)
+    return False
+
+def get_allocated_regions(path, f=None, begin=0, length=None):
+    supported = get_sparse_files_support(path)
+    if not supported:
+        return
+    if os.name == 'nt':
+        if not os.path.exists(path):
+            return False
+        if f is None:
+            f = file(path, 'r')
+        handle = win32file._get_osfhandle(f.fileno())
+        if length is None:
+            length = os.path.getsize(path) - begin
+        a = SparseSet()
+        interval = 10000000
+        i = begin
+        end = begin + length
+        while i < end:
+            d = struct.pack("<QQ", i, interval)
+            r = win32file.DeviceIoControl(handle, FSCTL_QUERY_ALLOCATED_RANGES,
+                                          d, interval, None)
+            for c in xrange(0, len(r), 16):
+                qq = struct.unpack("<QQ", buffer(r, c, 16))
+                b = qq[0]
+                e = b + qq[1]
+                a.add(b, e)
+            i += interval
+
+        return a
+    return
+
+def get_max_filesize(path):
+    fs_name = None
+    # optimistic if we can't tell
+    max_filesize = 2**64
+
+    if os.name == 'nt':
+        drive, path = os.path.splitdrive(os.path.abspath(path))
+        if drive[-1] != '\\':
+            drive += '\\'
+        volumename, serialnumber, maxpath, fsflags, fs_name = win32api.GetVolumeInformation(drive)
+        if fs_name == "FAT32":
+            max_filesize = 2**32 - 1
+        elif (fs_name == "FAT" or
+              fs_name == "FAT16"):
+            # information on this varies, so I chose the description from
+            # MS: http://support.microsoft.com/kb/q118335/
+            # which happens to also be the most conservative.
+            max_clusters = 2**16 - 11
+            max_cluster_size = 2**15
+            max_filesize = max_clusters * max_cluster_size
+    else:
+        path = os.path.realpath(path)
+        # not implemented yet
+        #fsname = crawl_path_for_mount_entry(path)
+
+    return fs_name, max_filesize
 
 # a cross-platform way to get user's config directory
-def get_config_dir():    
+def get_config_dir():
     shellvars = ['${APPDATA}', '${HOME}', '${USERPROFILE}']
     dir_root = get_dir_root(shellvars)
 
@@ -139,6 +290,9 @@ def get_config_dir():
             dir_root = tmp_dir_root
 
     return dir_root
+
+def get_dot_dir():
+    return os.path.join(get_config_dir(), '.bittorrent')
 
 def get_cache_dir():
     dir = None
@@ -157,7 +311,7 @@ def get_home_dir():
             # MS discourages you from writing directly in the home dir,
             # and sometimes (i.e. win98) there isn't one
             dir = get_shell_dir(shellcon.CSIDL_DESKTOPDIRECTORY)
-            
+
         dir_root = dir
 
     return dir_root
@@ -171,7 +325,7 @@ def get_temp_dir():
         try_dir_root = win32api.GetTempPath()
         if try_dir_root is not None:
             dir_root = try_dir_root
-    
+
     if dir_root is None:
         try_dir_root = None
         if os.name == 'nt':
@@ -204,6 +358,31 @@ def get_dir_root(shellvars, default_to_home=True):
                 dir_root = None
     return dir_root
 
+def get_local_data_dir():
+    if os.name == 'nt':
+        # this results in paths that are too long
+        # 86 characters: 'C:\Documents and Settings\Some Guy\Local Settings\Application Data\BitTorrent\incoming'
+        #return os.path.join(get_shell_dir(shellcon.CSIDL_LOCAL_APPDATA), app_name)
+        # I'm even a little nervous about this one
+        return get_dot_dir()
+    else:
+        # BUG: there might be a better place to save incomplete files in under OSX
+        return get_dot_dir()
+
+def get_incomplete_data_dir():
+    # 'incomplete' is a directory name and should not be localized
+    return os.path.join(get_local_data_dir(), 'incomplete')
+
+def get_save_dir():
+    dirname = '%s Downloads'%app_name
+    if os.name == 'nt':
+        d = get_shell_dir(shellcon.CSIDL_PERSONAL)
+        if d is None:
+            d = desktop
+    else:
+        d = desktop
+    return os.path.join(d, dirname)
+
 # this function is the preferred way to get windows' paths
 def get_shell_dir(value):
     dir = None
@@ -216,10 +395,17 @@ def get_shell_dir(value):
     return dir
 
 def get_startup_dir():
+    """get directory where symlinks/shortcuts to be run at startup belong"""
     dir = None
     if os.name == 'nt':
         dir = get_shell_dir(shellcon.CSIDL_STARTUP)
     return dir
+
+
+local_plugin = os.path.join(get_dot_dir(), 'Plugins')
+if os.access(local_plugin, os.F_OK):
+    plugin_path.append(local_plugin)
+
 
 def create_shortcut(source, dest, *args):
     if os.name == 'nt':
@@ -241,7 +427,123 @@ def remove_shortcut(dest):
     if os.name == 'nt':
         dest += ".lnk"
     os.unlink(dest)
-        
+
+
+def enforce_shortcut(config, log_func):
+    if os.name != 'nt':
+        return
+
+    path = win32api.GetModuleFileName(0)
+
+    if 'python' in path.lower():
+        # oops, running the .py too lazy to make that work
+        path = r"C:\Program Files\BitTorrent\bittorrent.exe"
+
+    root_key = _winreg.HKEY_CURRENT_USER
+    subkey = r'Software\Microsoft\Windows\CurrentVersion\run'
+    key = _winreg.CreateKey(root_key, subkey)
+    if config['launch_on_startup']:
+        _winreg.SetValueEx(key, app_name, 0, _winreg.REG_SZ,
+                           '"%s" --start_minimized' % path)
+    else:
+        try:
+            _winreg.DeleteValue(key, app_name)
+        except WindowsError, e:
+            # value doesn't exist
+            pass
+
+def enforce_association():
+    if os.name != 'nt':
+        return
+
+    INSTDIR, EXENAME = os.path.split(win32api.GetModuleFileName(0))
+    if 'python' in EXENAME.lower():
+        # oops, running the .py too lazy to make that work
+        INSTDIR = r"C:\Program Files\BitTorrent"
+        EXENAME = "bittorrent.exe"
+
+    # owie
+    edit_flags = chr(0x00) + chr(0x00) + chr(0x10) + chr(0x00)
+
+    # lots of wrappers for more direct NSIS mapping
+    HKCR = _winreg.HKEY_CLASSES_ROOT
+    HKCU = _winreg.HKEY_CURRENT_USER
+
+    def filter_vars(s):
+        s = s.replace("$INSTDIR", INSTDIR)
+        s = s.replace("${EXENAME}", EXENAME)
+        return s
+
+    def WriteReg(root_key, subkey, key_name, type, value):
+        subkey = filter_vars(subkey)
+        key_name = filter_vars(key_name)
+        value = filter_vars(value)
+        # CreateKey opens the key for us and creates it if it does not exist
+        #key = _winreg.OpenKey(root_key, subkey, 0, _winreg.KEY_ALL_ACCESS)
+        key = _winreg.CreateKey(root_key, subkey)
+        _winreg.SetValueEx(key, key_name, 0, type, value)
+    def WriteRegStr(root_key, subkey, key_name, value):
+        WriteReg(root_key, subkey, key_name, _winreg.REG_SZ, value)
+    def WriteRegBin(root_key, subkey, key_name, value):
+        WriteReg(root_key, subkey, key_name, _winreg.REG_BINARY, value)
+
+    def DeleteRegKey(root_key, subkey):
+        try:
+            _winreg.DeleteKey(root_key, subkey)
+        except WindowsError:
+            # key doesn't exist
+            pass
+
+    ## Begin NSIS copy/paste/translate
+
+    WriteRegStr(HKCR, '.torrent', "", "bittorrent")
+    DeleteRegKey(HKCR, r".torrent\Content Type")
+    # This line maks it so that BT sticks around as an option
+    # after installing some other default handler for torrent files
+    WriteRegStr(HKCR, r".torrent\OpenWithProgids", "bittorrent", "")
+
+    # this prevents user-preference from generating "Invalid Menu Handle" by looking for an app
+    # that no longer exists, and instead points it at us.
+    WriteRegStr(HKCU, r"Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.torrent", "Application", EXENAME)
+    WriteRegStr(HKCR, r"Applications\${EXENAME}\shell", "", "open")
+    WriteRegStr(HKCR, r"Applications\${EXENAME}\shell\open\command", "", r'"$INSTDIR\${EXENAME}" "%1"')
+
+    # Add a mime type
+    WriteRegStr(HKCR, r"MIME\Database\Content Type\application/x-bittorrent", "Extension", ".torrent")
+
+    # Add a shell command to match the 'bittorrent' handler described above
+    WriteRegStr(HKCR, "bittorrent", "", "TORRENT File")
+
+    WriteRegBin(HKCR, "bittorrent", "EditFlags", edit_flags)
+    # make us the default handler for bittorrent://
+    WriteRegBin(HKCR, "bittorrent", "URL Protocol", chr(0x0))
+    WriteRegStr(HKCR, r"bittorrent\Content Type", "", "application/x-bittorrent")
+    WriteRegStr(HKCR, r"bittorrent\DefaultIcon", "", r"$INSTDIR\${EXENAME},0")
+    WriteRegStr(HKCR, r"bittorrent\shell", "", "open")
+
+##    ReadRegStr $R1 HKCR "bittorrent\shell\open\command" ""
+##    StrCmp $R1 "" continue
+##
+##    WriteRegStr HKCR "bittorrent\shell\open\command" "backup" $R1
+##
+##    continue:
+    WriteRegStr(HKCR, r"bittorrent\shell\open\command", "", r'"$INSTDIR\${EXENAME}" "%1"')
+
+    # Add a shell command to handle torrent:// stuff
+    WriteRegStr(HKCR, "torrent", "", "TORRENT File")
+    WriteRegBin(HKCR, "torrent", "EditFlags", edit_flags)
+    # make us the default handler for torrent://
+    WriteRegBin(HKCR, "torrent", "URL Protocol", chr(0x0))
+    WriteRegStr(HKCR, r"torrent\Content Type", "", "application/x-bittorrent")
+    WriteRegStr(HKCR, r"torrent\DefaultIcon", "", "$INSTDIR\${EXENAME},0")
+    WriteRegStr(HKCR, r"torrent\shell", "", "open")
+
+##    ReadRegStr $R1 HKCR "torrent\shell\open\command" ""
+##    WriteRegStr HKCR "torrent\shell\open\command" "backup" $R1
+
+    WriteRegStr(HKCR, r"torrent\shell\open\command", "", r'"$INSTDIR\${EXENAME}" "%1"')
+
+
 def path_wrap(path):
     return path
 
@@ -249,7 +551,7 @@ if os.name == 'nt':
     def path_wrap(path):
         return path.decode('mbcs').encode('utf-8')
 
-def btspawn(torrentqueue, cmd, *args):
+def btspawn(cmd, *args):
     ext = ''
     if is_frozen_exe:
         ext = '.exe'
@@ -258,9 +560,9 @@ def btspawn(torrentqueue, cmd, *args):
         if os.access(path+'.py', os.F_OK):
             path = path+'.py'
     args = [path] + list(args) # $0
-    spawn(torrentqueue, *args)
+    spawn(*args)
 
-def spawn(torrentqueue, *args):
+def spawn(*args):
     if os.name == 'nt':
         # do proper argument quoting since exec/spawn on Windows doesn't
         bargs = args
@@ -268,9 +570,9 @@ def spawn(torrentqueue, *args):
         for a in bargs:
             if not a.startswith("/"):
                 a.replace('"', '\"')
-                a = '"%s"' % a 
+                a = '"%s"' % a
             args.append(a)
-        
+
         argstr = ' '.join(args[1:])
         # use ShellExecute instead of spawn*() because we don't want
         # handles (like the controlsocket) to be duplicated
@@ -279,14 +581,78 @@ def spawn(torrentqueue, *args):
         if os.access(args[0], os.X_OK):
             forkback = os.fork()
             if forkback == 0:
-                if torrentqueue is not None:
-                    #BUG: should we do this?
-                    #torrentqueue.set_done()
-                    torrentqueue.wrapped.ipc.stop()
+                # BUG: stop IPC!
                 os.execl(args[0], *args)
         else:
             #BUG: what should we do here?
             pass
+
+
+def get_language(name):
+    url = LOCALE_URL + name + ".tar.gz"
+    r = urllib.urlopen(url)
+    # urllib seems to ungzip for us
+    tarname = os.path.join(locale_root, name + ".tar")
+    f = file(tarname, 'wb')
+    f.write(r.read())
+    f.close()
+    tar = tarfile.open(tarname, "r")
+    for tarinfo in tar:
+        tar.extract(tarinfo, path=locale_root)
+    tar.close()
+
+
+##def smart_gettext_translation(domain, localedir, languages, fallback=False):
+##    try:
+##        t = gettext.translation(domain, localedir, languages=languages)
+##    except Exception, e:
+##        for lang in languages:
+##            try:
+##                get_language(lang)
+##            except Exception, e:
+##                #print "Failed on", lang, e
+##                pass
+##        t = gettext.translation(domain, localedir, languages=languages,
+##                                fallback=fallback)
+##    return t
+
+def smart_gettext_and_install(domain, localedir, languages, fallback=False):
+    try:
+        t = gettext.translation(domain, localedir, languages=languages)
+    except Exception, e:
+        # if we failed to find the language, fetch it from the web async-style
+        running_count = 0
+        running_deferred = {}
+        for lang in languages:
+            d = ThreadedDeferred(None, get_language, lang)
+            def translate_and_install(r):
+                running_deferred.pop(d)
+                # only let the last one try to install
+                if len(running_deferred) == 0:
+                    t = gettext.translation(domain, localedir,
+                                            languages=languages,
+                                            fallback=fallback)
+                    t.install(True)
+            def failed(e):
+                running_deferred.pop(d)
+                # don't raise an error, just continue untranslated
+                sys.stderr.write(_('Could not find translation for language "%s"\n') %
+                                 lang)
+            d.addCallback(translate_and_install)
+            d.addErrback(failed)
+            # accumulate all the deferreds first
+            running_deferred[d] = 1
+
+        # start them all, the last one finished will install the language
+        for d in running_deferred:
+            d.start()
+
+        return
+
+    # install it if we got it the first time
+    t.install(True)
+
+
 
 def _gettext_install(domain, localedir=None, languages=None, unicode=False):
     # gettext on win32 does not use locale.getdefaultlocale() by default
@@ -304,31 +670,32 @@ def _gettext_install(domain, localedir=None, languages=None, unicode=False):
             # this is the important addition - since win32 does not typically
             # have any enironment variable set, append the default locale before 'C'
             languages.append(locale.getdefaultlocale()[0])
-            
+
             if 'C' not in languages:
                 languages.append('C')
 
-    # this code is straight out of gettext.install        
+    # we don't call the smart version, because anyone calling this needs it
+    # before they can continue and we can not block on network IO
     t = gettext.translation(domain, localedir, languages=languages, fallback=True)
     t.install(unicode)
 
 
 def language_path():
-    config_dir = get_config_dir()
-    lang_file_name = os.path.join(config_dir, '.bittorrent', 'data', 'language')
+    dot_dir = get_dot_dir()
+    lang_file_name = os.path.join(dot_dir, 'data', 'language')
     return lang_file_name
 
 
 def read_language_file():
     lang = None
-        
+
     if os.name == 'nt':
         # this pulls user-preference language from the installer location
         try:
             regko = _winreg.OpenKey(_winreg.HKEY_CURRENT_USER, "Software\\BitTorrent")
             lang_num = _winreg.QueryValueEx(regko, "Language")[0]
             lang_num = int(lang_num)
-            lang = locale_sucks[lang_num]
+            lang = language.locale_sucks[lang_num]
         except:
             pass
     else:
@@ -348,11 +715,15 @@ def read_language_file():
                     lang += i
                 if lang == '':
                     lang = None
-        
+
     return lang
 
 
 def write_language_file(lang):
+
+    if lang != '': # system default
+        get_language(lang)
+
     if os.name == 'nt':
         regko = _winreg.CreateKey(_winreg.HKEY_CURRENT_USER, "Software\\BitTorrent")
         if lang == '':
@@ -361,15 +732,15 @@ def write_language_file(lang):
             lcid = None
 
             # I want two-way dicts
-            for id, code in locale_sucks.iteritems():
+            for id, code in language.locale_sucks.iteritems():
                 if code.lower() == lang.lower():
                     lcid = id
                     break
             if not lcid:
                 raise KeyError(lang)
-            
+
             _winreg.SetValueEx(regko, "Language", 0, _winreg.REG_SZ, str(lcid))
-            
+
     else:
         lang_file_name = language_path()
         lang_file = open(lang_file_name, 'w')
@@ -385,6 +756,74 @@ def install_translation():
             languages = [lang, ]
     except:
         #pass
-        from traceback import print_exc
         print_exc()
     _gettext_install('bittorrent', locale_root, languages=languages)
+
+
+def get_filesystem_encoding(encoding, errorfunc=None):
+    def dummy_log(e):
+        print e
+        pass
+    if not errorfunc:
+        errorfunc = dummy_log
+
+    default_encoding = 'ascii'
+    encoding = None
+    if not encoding:
+        try:
+            sys.getfilesystemencoding
+            encoding = sys.getfilesystemencoding()
+        except AttributeError:
+            errorfunc("This version of Python cannot detect filesystem encoding.")
+
+        if encoding is None:
+            encoding = default_encoding
+            errorfunc("Python failed to detect filesystem encoding. "
+                      "Assuming '%s' instead." % default_encoding)
+    try:
+        'a1'.decode(encoding)
+    except:
+        errorfunc("Filesystem encoding '%s' is not supported. Using '%s' instead." %
+                  (encoding, default_encoding))
+        encoding = default_encoding
+    return encoding
+
+def write_pid_file(fname, errorfunc = None):
+    """Creates a pid file on platforms that typically create such files;
+       otherwise, this returns without doing anything.  The fname should
+       not include a path.  The file will be placed in the appropriate
+       platform-specific directory (/var/run in linux).
+       """
+    assert type(fname) == str
+    assert errorfunc == None or callable(errorfunc)
+
+    if os.name == 'nt': return
+
+    try:
+        pid_fname = os.path.join('/var/run',fname)
+        file(pid_fname, 'w').write(str(os.getpid()))
+    except:
+        try:
+            pid_fname = os.path.join('/etc/tmp',fname)
+        except:
+            if errorfunc:
+                errorfunc(_("Couldn't open pid file. Continuing without one."))
+            else:
+                pass  # just continue without reporting warning.
+
+desktop = None
+
+if os.name == 'nt':
+    desktop = get_shell_dir(shellcon.CSIDL_DESKTOPDIRECTORY)
+else:
+    homedir = get_home_dir()
+    if homedir == None :
+        desktop = '/tmp/'
+    else:
+        desktop = homedir
+        if os.name in ('mac', 'posix'):
+            tmp_desktop = os.path.join(homedir, 'Desktop')
+            if os.access(tmp_desktop, os.R_OK|os.W_OK):
+                desktop = tmp_desktop + os.sep
+
+

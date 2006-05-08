@@ -8,10 +8,12 @@
 # for the specific language governing rights and limitations under the
 # License.
 
+_ = _ # put _ into the module namespace so the console doesn't override it
+
 from BitTorrent.defer import Deferred
 from BitTorrent.bencode import bencode, bdecode
 import socket
-from BitTorrent.RawServer_magic import Handler
+from BitTorrent.RawServer_twisted import Handler
 from BitTorrent.platform import bttime
 import time
 from math import log10
@@ -23,6 +25,7 @@ from khash import distance
 from cache import Cache
 from KRateLimiter import KRateLimiter
 from hammerlock import Hammerlock
+
 
 from const import *
 
@@ -63,7 +66,7 @@ class hostbroker(Handler):
     def expire_connections(self, loop=False):
         self.connections.expire(bttime() - KRPC_CONNECTION_CACHE_TIME)
         if loop:
-            self.call_later(self.expire_connections, KRPC_CONNECTION_CACHE_TIME, (True,))
+            self.call_later(KRPC_CONNECTION_CACHE_TIME, self.expire_connections, True)
 
     def data_came_in(self, addr, datagram):
         #if addr != self.addr:
@@ -87,7 +90,8 @@ class hostbroker(Handler):
 
 
 ## connection
-class KRPC:
+class KRPC(object):
+    __slots__ = ('noisy','call_later','transport','rltransport','factory','addr','tids','mtid','pinging')
     noisy = 0
     def __init__(self, addr, server, transport, rltransport, call_later):
         self.call_later = call_later
@@ -222,8 +226,8 @@ class KRPC:
         s = bencode(msg)
         d = Deferred()
         self.tids[msg[TID]] = d
-        self.call_later(self.timeOut, KRPC_TIMEOUT, (msg[TID],))
-        self.call_later(self._send, 0, (s, d))
+        self.call_later(KRPC_TIMEOUT, self.timeOut, msg[TID])
+        self.call_later(0, self._send, s, d)
         return d
 
     def timeOut(self, id):

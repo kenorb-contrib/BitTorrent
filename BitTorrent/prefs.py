@@ -10,9 +10,10 @@
 
 
 class Preferences(object):
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, persist_callback=None):
         self._parent = None
         self._options = {}
+        self._persist_callback = persist_callback
         if parent:
             self._parent = parent
 
@@ -38,6 +39,8 @@ class Preferences(object):
 
     def __setitem__(self, option, value):
         self._options.__setitem__(option, value)
+        if self._persist_callback:
+            self._persist_callback()
 
     def __len__(self):
         l = len(self._options)
@@ -48,8 +51,25 @@ class Preferences(object):
 
     def __delitem__(self, option):
         del(self._options[option])
+        if self._persist_callback:
+            self._persist_callback()
 
-    def clear(self): self._options.clear()
+    def __contains__(self, option):
+        if option in self._options:
+            return True
+        if self._parent and option in self._parent:
+            return True
+        return False
+
+    def setdefault(self, option, default):
+        if option not in self:
+            self[option] = default
+        return self[option]
+
+    def clear(self):
+        self._options.clear()
+        if self._persist_callback:
+            self._persist_callback()
 
     def has_key(self, option):
         if self._options.has_key(option):
@@ -81,7 +101,11 @@ class Preferences(object):
     def iteritems(self): return self.items().__iter__()
     def iterkeys(self): return self.keys().__iter__()
     def itervalues(self): return self.values().__iter__()
-    def update(self, dict): return self._options.update(dict)
+    def update(self, dict):
+        v = self._options.update(dict)
+        if self._persist_callback:
+            self._persist_callback()
+        return v
 
     def get(self, key, failobj=None):
         if not self.has_key(key):

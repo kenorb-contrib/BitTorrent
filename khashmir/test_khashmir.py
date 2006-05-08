@@ -10,7 +10,7 @@
 
 from unittest import *
 
-from BitTorrent import RawServer_magic
+from BitTorrent import RawServer_twisted
 
 from khashmir import *
 import khash

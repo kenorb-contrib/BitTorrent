@@ -25,8 +25,6 @@ from BitTorrent import BTFailure
 
 defaults = get_defaults('maketorrent-console')
 defaults.extend([
-    ('comment', '',
-     _("optional human-readable comment to put in .torrent")),
     ('target', '',
      _("optional target file for the torrent")),
     ])
@@ -41,25 +39,22 @@ def prog(amount):
     print '%.1f%% complete\r' % (amount * 100),
 
 if __name__ == '__main__':
+        
     config, args = configfile.parse_configuration_and_args(defaults,
-                                                           'maketorrent-console',
-                                                           sys.argv[1:],
-                                                           0, None)
+                                                    'maketorrent-console',
+                                                    sys.argv[1:], minargs=1)
 
-    if len(sys.argv) <= 1:
-        printHelp('maketorrent-console', defaults)
-    else:
-        try:
-            make_meta_files(args[0],
-                            args[1:],
-                            progressfunc=prog,
-                            filefunc=dc,
-                            piece_len_pow2=config['piece_size_pow2'],
-                            comment=config['comment'],
-                            target=config['target'],
-                            filesystem_encoding=config['filesystem_encoding'],
-                            use_tracker=config['use_tracker'],
-                            data_dir=config['data_dir'])
-        except BTFailure, e:
-            print str(e)
-            sys.exit(1)
+    try:
+        make_meta_files(args[0],
+                        args[1:],
+                        progressfunc=prog,
+                        filefunc=dc,
+                        piece_len_pow2=config['piece_size_pow2'],
+                        title=config['title'],
+                        comment=config['comment'],
+                        target=config['target'],
+                        use_tracker=config['use_tracker'],
+                        data_dir=config['data_dir'])
+    except BTFailure, e:
+        print str(e)
+        sys.exit(1)

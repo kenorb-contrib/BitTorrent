@@ -12,8 +12,9 @@ import khash
 from BitTorrent.platform import bttime as time
 from types import *
 
-class Node:
+class Node(object):
     """encapsulate contact info"""
+    __slots__ = ('fails','lastSeen','invalid','id','host','port','age')
     def __init__(self):
         self.fails = 0
         self.lastSeen = 0

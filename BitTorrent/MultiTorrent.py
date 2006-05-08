@@ -1,0 +1,705 @@
+# The contents of this file are subject to the BitTorrent Open Source License
+# Version 1.0 (the License).  You may not copy or use this file, in either
+# source code or executable form, except in compliance with the License.  You
+# may obtain a copy of the License at http://www.bittorrent.com/license/.
+#
+# Software distributed under the License is distributed on an AS IS basis,
+# WITHOUT WARRANTY OF ANY KIND, either express or implied.  See the License
+# for the specific language governing rights and limitations under the
+# License.
+
+# Author: Steve Hazel, Bram Cohen, and Uoti Urpala.
+
+import os
+import sys
+import shutil
+import socket
+import logging
+import traceback
+from copy import copy
+from BitTorrent.translation import _
+#import pdb #DEBUG
+
+from BitTorrent import GetTorrent
+from BitTorrent.platform import bttime
+from BitTorrent.Torrent import Feedback, Torrent
+from BitTorrent.bencode import bencode, bdecode
+from BitTorrent.ConvertedMetainfo import ConvertedMetainfo
+from BitTorrent.prefs import Preferences
+from BitTorrent.NatTraversal import NatTraverser
+from BitTorrent.BandwidthManager import BandwidthManager
+from BitTorrent.Rerequester import Rerequester, DHTRerequester
+from BitTorrent.NewRateLimiter import MultiRateLimiter as RateLimiter
+from BitTorrent.ConnectionManager import SingleportListener
+from BitTorrent.CurrentRateMeasure import Measure
+from BitTorrent.Storage import FilePool
+from BitTorrent.yielddefer import launch_coroutine, _wrap_task
+from BitTorrent.defer import Deferred
+from BitTorrent import BTFailure, InfoHashType
+from BitTorrent import configfile
+from BitTorrent import filesystem_encoding
+import BitTorrent
+from khashmir.utkhashmir import UTKhashmir
+
+
+class TorrentException(BTFailure):
+    pass
+class TorrentAlreadyInQueue(TorrentException):
+    pass
+class TorrentAlreadyRunning(TorrentException):
+    pass
+class TorrentNotInitialized(TorrentException):
+    pass
+class TorrentNotRunning(TorrentException):
+    pass
+class UnknownInfohash(TorrentException):
+    pass
+class TorrentShutdownFailed(TorrentException):
+    pass
+
+#class DummyTorrent(object):
+#    def __init__(self, infohash):
+#        self.metainfo = object()
+#        self.metainfo.infohash = infohash
+
+BUTLE_INTERVAL = 1
+
+class MultiTorrent(Feedback):
+    """A MultiTorrent object represents a set of BitTorrent file transfers.
+       It acts as a factory for Torrent objects, and it acts as
+       the interface through which communication is performed to and from
+       torrent file transfers.
+
+       """
+
+    def __init__(self, config, doneflag, rawserver,
+                 data_dir, listen_fail_ok=False, init_torrents=True):
+        """
+         @param config: program-wide configuration object.
+         @param doneflag: when flag is set, all threads clean up and exit.
+         @param rawserver: object that manages main event loop and event
+           scheduling.
+         @param data_dir:  where variable data such as fastresume information
+           and GUI state is saved.
+         @param listen_fail_ok: if false, a BTFailure is raised if
+           a server socket cannot be opened to accept incoming peer
+           connections.
+        """
+        assert isinstance(config, Preferences)
+        assert isinstance(data_dir, str)
+        assert isinstance(listen_fail_ok, bool)
+
+        self.config = config
+        self.data_dir = data_dir
+        self.last_save_time = 0
+        self.policies = []
+        self.torrents = {}
+        self.running = {}
+        self.log_root = "core.MultiTorrent"
+        self.logger = logging.getLogger(self.log_root)
+
+        self.auto_update_policy_index = None
+
+        self.dht = None
+        self.rawserver = rawserver
+        nattraverser = NatTraverser(self.rawserver)
+        self.singleport_listener = SingleportListener(self.rawserver,
+                                                      nattraverser)
+        self.ratelimiter = RateLimiter(self.rawserver.add_task)
+        self.ratelimiter.set_parameters(config['max_upload_rate'],
+                                        config['upload_unit_size'])
+        self.total_downmeasure = Measure(config['max_rate_period'])
+        self._find_port(listen_fail_ok)
+
+        self.filepool = FilePool(doneflag, config['max_files_open'],
+                                 config['num_disk_threads'])
+
+        try:
+            self._restore_state(init_torrents)
+        except BTFailure:
+            # don't be retarted.
+            self.logger.exception("_restore_state failed")
+
+        self.bandwidth_manager = BandwidthManager(
+            self.rawserver.external_add_task, config,
+            self.set_option, self.rawserver.get_remote_endpoints,
+            get_rates=self.get_total_rates )
+
+        self.rawserver.add_task(0, self.butle)
+
+
+    def butle(self):
+        policy = None
+        try:
+            for policy in self.policies:
+                policy.butle()
+        except:
+            # You had something to hide, should have hidden it shouldn't you?
+            self.logger.error("Butler error", exc_info=sys.exc_info())
+            # Should we remove policies?
+            #if policy:
+            #    self.policies.remove(policy)
+        self.rawserver.add_task(BUTLE_INTERVAL, self.butle)
+
+
+    def _find_port(self, listen_fail_ok=True):
+        """Run BitTorrent on the first available port found starting
+           from minport in the range [minport, maxport]."""
+
+        exc_info = None
+
+        self.config['minport'] = max(1024, self.config['minport'])
+
+        self.config['maxport'] = max(self.config['minport'],
+                                     self.config['maxport'])
+
+        e = (_("maxport less than minport - no ports to check") +
+             (": %s %s" % (self.config['minport'], self.config['maxport'])))
+
+        for port in xrange(self.config['minport'], self.config['maxport'] + 1):
+            try:
+                self.singleport_listener.open_port(port, self.config)
+                if self.config['start_trackerless_client']:
+                    self.dht = UTKhashmir(self.config['bind'],
+                                   self.singleport_listener.get_port(),
+                                   self.data_dir, self.rawserver,
+                                   int(self.config['max_upload_rate'] * 0.01),
+                                   rlcount=self.ratelimiter.increase_offset,
+                                   config=self.config)
+                break
+            except socket.error, e:
+                exc_info = sys.exc_info()
+        else:
+            if not listen_fail_ok:
+                raise BTFailure, (_("Could not open a listening port: %s.") %
+                                  str(e) )
+            self.global_error(logging.CRITICAL,
+                              (_("Could not open a listening port: %s. ") % e) +
+                              (_("Check your port range settings (%s:%s-%s).") %
+                               (self.config['bind'], self.config['minport'],
+                                self.config['maxport'])),
+                              exc_info=exc_info)
+
+    def shutdown(self):
+        df = launch_coroutine(_wrap_task(self.rawserver.add_task), self._shutdown)
+        df.addErrback(lambda e : self.logger.error('shutdown failed!',
+                                                   exc_info=e))
+        return df
+
+    def _shutdown(self):
+        self.close_listening_socket()
+        for t in self.torrents.itervalues():
+            try:
+                df = t.shutdown()
+                yield df
+                df.getResult()
+                totals = t.get_total_transfer()
+                t.uptotal = t.uptotal_old + totals[0]
+                t.downtotal = t.downtotal_old + totals[1]
+            except:
+                t.logger.debug("Torrent shutdown failed in state: %s", t.state)
+                print "Torrent shutdown failed in state:", t.state
+                traceback.print_exc()
+
+        # hmm
+        self._dump_torrents()
+
+
+    def close_listening_socket(self):
+        self.singleport_listener.close_sockets()
+
+    def set_option(self, option, value, infohash=None):
+        if infohash is not None:
+            t = self.get_torrent(infohash)
+            t.config[option] = value
+            t._dump_torrent_config()
+        else:
+            self.config[option] = value
+            self._dump_global_config()
+
+        if option in ['max_upload_rate', 'upload_unit_size']:
+            self.ratelimiter.set_parameters(self.config['max_upload_rate'],
+                                            self.config['upload_unit_size'])
+        elif option == 'max_download_rate':
+            pass # polled from the config automatically by MultiDownload
+        elif option == 'max_files_open':
+            self.filepool.set_max_files_open(value)
+        elif option == 'maxport':
+            if not self.config['minport'] <= self.singleport_listener.port <= \
+                   self.config['maxport']:
+                self._find_port()
+
+    def add_policy(self, policy):
+        self.policies.append(policy)
+
+    def add_auto_update_policy(self, policy):
+        self.add_policy(policy)
+        self.auto_update_policy_index = self.policies.index(policy)
+
+    def global_error(self, severity, message, exc_info=None):
+        self.logger.log(severity, message, exc_info=exc_info)
+
+    def create_torrent(self, metainfo, save_incomplete_as, save_as):
+        save_as = unicode(save_as)
+        save_as = save_as.encode(filesystem_encoding)
+        save_incomplete_as = unicode(save_incomplete_as)
+        save_incomplete_as = save_incomplete_as.encode(filesystem_encoding)
+        infohash = metainfo.infohash
+        if self.torrent_known(infohash):
+            if self.torrent_running(infohash):
+                msg = _("This torrent (or one with the same contents) is "
+                        "already running.")
+                raise TorrentAlreadyRunning(msg)
+            else:
+                raise TorrentAlreadyInQueue(_("This torrent (or one with the same contents) is "
+                                              "already waiting to run."))
+        self._dump_metainfo(metainfo)
+
+        #BUG.  Use _read_torrent_config for 5.0?  --Dave
+        config = configfile.read_torrent_config(self.config,
+                                                self.data_dir,
+                                                infohash, self.global_error)
+
+        t = Torrent(metainfo, save_incomplete_as, save_as, self.config,
+                    self.data_dir, self.rawserver, self.singleport_listener,
+                    self.ratelimiter, self.total_downmeasure,
+                    self.filepool, self.dht, self, self.log_root)
+        retdf = Deferred()
+
+        def torrent_started(*args):
+            if config:
+                t.update_config(config)
+
+            t._dump_torrent_config()
+            self._dump_torrents()
+            t.metainfo.show_encoding_errors(self.logger.log)
+
+            retdf.callback(t)
+
+        df = self._init_torrent(t, use_policy=False)
+        df.addCallback(torrent_started)
+
+        return retdf
+
+
+    def remove_torrent(self, ihash):
+        # this feels redundant. the torrent will stop the download itself,
+        # can't we accomplish the rest through a callback or something?
+        if self.torrent_running(ihash):
+            self.stop_torrent(ihash)
+
+        t = self.torrents[ihash]
+        df = t.shutdown()
+        df.addCallback(lambda *args: t.remove_state_files())
+        try:
+            del self.running[ihash]
+        except:
+            pass
+        del self.torrents[ihash]
+        self._dump_torrents()
+
+        return df
+
+
+    def reinitialize_torrent(self, infohash):
+        t = self.get_torrent(infohash)
+        if self.torrent_running(infohash):
+            assert t.is_running()
+            raise TorrentAlreadyRunning(infohash)
+        assert t.state == "failed"
+
+        df = self._init_torrent(t, use_policy=False)
+        return df
+
+
+    def start_torrent(self, infohash):
+        t = self.get_torrent(infohash)
+        if self.torrent_running(infohash):
+            assert t.is_running()
+            raise TorrentAlreadyRunning(infohash)
+        if not t.is_initialized():
+            raise TorrentNotInitialized(infohash)
+
+        t.logger.debug("starting torrent")
+
+        self.running[infohash] = t
+        t.start_download()
+        t._dump_torrent_config()
+        return t.state
+
+
+    def stop_torrent(self, infohash):
+        if not self.torrent_running(infohash):
+            raise TorrentNotRunning()
+        t = self.get_torrent(infohash)
+        assert t.is_running()
+
+        t.logger.debug("stopping torrent")
+
+        t.stop_download()
+        del self.running[infohash]
+        t._dump_torrent_config()
+        return t.state
+
+    def torrent_status(self, infohash, spew=False, fileinfo=False):
+        torrent = self.get_torrent(infohash)
+        status = torrent.get_status(spew, fileinfo)
+        return torrent.state, torrent.policy, torrent.completed, status
+
+    def get_torrent(self, infohash):
+        try:
+            t = self.torrents[infohash]
+        except KeyError:
+            raise UnknownInfohash(infohash)
+        return t
+
+    def get_torrents(self):
+        return copy(self.torrents.values())
+
+    def get_running(self):
+        return self.running.keys()
+
+    def torrent_running(self, ihash):
+        return ihash in self.running
+
+    def torrent_known(self, ihash):
+        return ihash in self.torrents
+
+    def set_config(self, option, value, infohash=None):
+        # BUG: DEPRECATED!!!! use set_option
+        self.set_option(option, value, infohash)
+
+    def pause(self):
+        for i in self.running.keys():
+            self.stop_torrent(i, pause=True)
+
+    def unpause(self):
+        for i in [t.metainfo.infohash for t in self.torrents.values() if t.is_initialized()]:
+            self.start_torrent(i)
+
+    def set_file_priority(self, infohash, filename, priority):
+        torrent = self.get_torrent(infohash)
+        if torrent is None or not self.torrent_running(infohash):
+            return
+        torrent.set_file_priority(filename, priority)
+
+    def set_torrent_priority(self, infohash, priority):
+        torrent = self.get_torrent(infohash)
+        if torrent is None:
+            return
+        torrent.priority = priority
+        torrent._dump_torrent_config()
+
+    def set_torrent_policy(self, infohash, policy):
+        torrent = self.get_torrent(infohash)
+        if torrent is None:
+            return
+        torrent.policy = policy
+        torrent._dump_torrent_config()
+
+    def get_all_rates(self):
+        rates = {}
+        for infohash, torrent in self.torrents.iteritems():
+            rates[infohash] = (torrent.get_uprate() or 0,
+                               torrent.get_downrate() or 0)
+        return rates
+
+    def get_total_rates(self):
+        u = 0.0
+        d = 0.0
+        for torrent in self.torrents.itervalues():
+            u += torrent.get_uprate() or 0
+            d += torrent.get_downrate() or 0
+        return u,d
+
+    def get_total_totals(self):
+        u = 0.0
+        d = 0.0
+        for torrent in self.torrents.itervalues():
+            u += torrent.get_uptotal() or 0
+            d += torrent.get_downtotal() or 0
+        return u,d
+
+
+    def auto_update_status(self):
+        if self.auto_update_policy_index is not None:
+            aub = self.policies[self.auto_update_policy_index]
+            return aub.get_auto_update_status()
+        return None, None
+
+
+    ## singletorrent callbacks
+    def started(self, torrent):
+        torrent.logger.debug("started torrent")
+        assert torrent.infohash in self.torrents
+        torrent._dump_torrent_config()
+        for policy in self.policies:
+            policy.started(torrent)
+
+    def failed(self, torrent):
+        torrent.logger.debug("torrent failed")
+        if torrent.infohash not in self.running:
+            return
+        del self.running[torrent.infohash]
+        t = self.get_torrent(torrent.infohash)
+        for policy in self.policies:
+            policy.failed(t)
+
+    def finishing(self, torrent):
+        torrent.logger.debug("torrent finishing")
+        t = self.get_torrent(torrent.infohash)
+
+    def finished(self, torrent):
+        torrent.logger.debug("torrent finished")
+        t = self.get_torrent(torrent.infohash)
+        t._dump_torrent_config()
+        for policy in self.policies:
+            policy.finished(t)
+
+    def exception(self, torrent, text):
+        torrent.logger.debug("torrent threw exception: " + text)
+        assert torrent.infohash in self.torrents
+        for policy in self.policies:
+            policy.exception(torrent, text)
+
+    def error(self, torrent, level, text):
+        torrent.logger.debug("torrent error: " + text)
+        assert torrent.infohash in self.torrents
+        for policy in self.policies:
+            policy.error(torrent, level, text)
+
+
+    ### persistence
+    def _dump_metainfo(self, metainfo):
+        infohash = metainfo.infohash
+        path = os.path.join(self.data_dir, 'metainfo',
+                            infohash.encode('hex'))
+
+        f = file(path+'.new', 'wb')
+        f.write(metainfo.to_data())
+        f.close()
+        shutil.move(path+'.new', path)
+
+    def _read_metainfo(self, infohash):
+        path = os.path.join(self.data_dir, 'metainfo',
+                            infohash.encode('hex'))
+        f = file(path, 'rb')
+        data = f.read()
+        f.close()
+        return ConvertedMetainfo(bdecode(data))
+
+    def _read_torrent_config(self, infohash):
+        path = os.path.join(self.data_dir, 'torrents', infohash.encode('hex'))
+        if not os.path.exists(path):
+            raise BTFailure,_("Coult not open the torrent config: " + infohash.encode('hex'))
+        f = file(path, 'rb')
+        data = f.read()
+        f.close()
+        torrent_config = bdecode(data)
+        if not torrent_config.has_key('destination_path') or \
+           torrent_config['destination_path'] == "":
+            raise BTFailure( _("Invalid torrent config file"))
+        if not torrent_config.has_key('working_path') or \
+           torrent_config['working_path'] == "":
+            raise BTFailure( _("Invalid torrent config file"))
+        return torrent_config
+
+    def _dump_global_config(self):
+        # BUG: we can save to different sections later
+        section = 'bittorrent'
+        configfile.save_global_config(self.config, section,
+                                      lambda *e : self.logger.error(*e))
+
+    def _dump_torrents(self):
+        self.last_save_time = bttime()
+        r = []
+        def write_entry(infohash, t):
+            r.append(' '.join((infohash.encode('hex'),
+                               str(t.uptotal), str(t.downtotal))))
+        r.append('BitTorrent UI state file, version 5')
+        r.append('Queued torrents')
+        for t in self.torrents.values():
+            write_entry(t.metainfo.infohash, self.torrents[t.metainfo.infohash])
+        r.append('End')
+        f = None
+        try:
+            path = os.path.join(self.data_dir, 'ui_state')
+            f = file(path+'.new', 'wb')
+            f.write('\n'.join(r) + '\n')
+            f.close()
+            shutil.move(path+'.new', path)
+        except Exception, e:
+            self.logger.error(_("Could not save UI state: ") + str(e))
+            if f is not None:
+                f.close()
+
+    def _init_torrent(self, t, initialize=True, use_policy=True):
+        self.torrents[t.infohash] = t
+        if not initialize:
+            t.logger.debug("created torrent")
+            return
+        t.logger.debug("created torrent, initializing")
+        df = t.initialize()
+        if use_policy and t.policy == "start":
+            df.addCallback(lambda r, t: self.start_torrent(t.infohash),
+                           (t,))
+        return df
+
+    def initialize_torrents(self):
+        df = launch_coroutine(_wrap_task(self.rawserver.add_task), self._initialize_torrents)
+        df.addErrback(lambda e : self.logger.error('initialize_torrents failed!',
+                                                   exc_info=e))
+        return df
+
+    def _initialize_torrents(self):
+        self.logger.debug("initializing torrents")
+        for t in copy(self.torrents).itervalues():
+            if t in self.torrents.values() and t.state == "created":
+                df = self._init_torrent(t)
+                # HACK
+                #yield df
+                #df.getResult()
+
+    # this function is so nasty!
+    def _restore_state(self, init_torrents):
+        def decode_line(line):
+            hashtext = line[:40]
+            try:
+                infohash = InfoHashType(hashtext.decode('hex'))
+            except:
+                raise BTFailure(_("Invalid state file contents"))
+            if len(infohash) != 20:
+                raise BTFailure(_("Invalid state file contents"))
+            if infohash in self.torrents:
+                raise BTFailure(_("Invalid state file (duplicate entry)"))
+
+            try:
+                metainfo = self._read_metainfo(infohash)
+            except OSError, e:
+                try:
+                    f.close()
+                except:
+                    pass
+                self.logger.error((_("Error reading metainfo file \"%s\".") %
+                                  hashtext) + " (" + str(e)+ "), " +
+                                  _("cannot restore state completely"))
+                return None
+            except Exception, e:
+                self.logger.error((_("Corrupt data in metainfo \"%s\", cannot restore torrent.") % hashtext) +
+                                  '('+str(e)+')')
+                return None
+
+            t = Torrent(metainfo, "",  "", self.config, self.data_dir,
+                        self.rawserver,
+                        self.singleport_listener, self.ratelimiter,
+                        self.total_downmeasure, self.filepool, self.dht, self,
+                        self.log_root)
+            t.metainfo.reported_errors = True # suppress redisplay on restart
+            if infohash != t.metainfo.infohash:
+                self.logger.error((_("Corrupt data in \"%s\", cannot restore torrent.") % hashtext) +
+                                  _("(infohash mismatch)"))
+                return None
+            if len(line) == 41:
+                t.working_path = None
+                t.destination_path = None
+                return infohash, t
+            try:
+                if version < 2:
+                    t.working_path = line[41:-1].decode('string_escape')
+                    t.destination_path = t.working_path
+                elif version == 3:
+                    up, down, working_path = line[41:-1].split(' ', 2)
+                    t.uptotal = t.uptotal_old = int(up)
+                    t.downtotal = t.downtotal_old = int(down)
+                    t.working_path = working_path.decode('string_escape')
+                    t.destination_path = t.working_path
+                elif version >= 4:
+                    up, down = line[41:-1].split(' ', 1)
+                    t.uptotal = t.uptotal_old = int(up)
+                    t.downtotal = t.downtotal_old = int(down)
+            except ValueError:  # unpack, int(), decode()
+                raise BTFailure(_("Invalid state file (bad entry)"))
+
+            torrent_config = self.config
+            try:
+                if version < 5:
+                    torrent_config = configfile.read_torrent_config(
+                                                           self.config,
+                                                           self.data_dir,
+                                                           infohash,
+                                                           self.global_error)
+                else:
+                    torrent_config = self._read_torrent_config(infohash)
+                t.update_config(torrent_config)
+            except BTFailure, e:
+                self.logger.error(e)
+                # if read_torrent_config fails then ignore the torrent...
+                return None
+
+            return infohash, t
+        # BEGIN _restore_state
+        filename = os.path.join(self.data_dir, 'ui_state')
+        if not os.path.exists(filename):
+            return
+        f = None
+        try:
+            f = file(filename, 'rb')
+            lines = f.readlines()
+            f.close()
+        except Exception, e:
+            if f is not None:
+                f.close()
+            raise BTFailure(str(e))
+        i = iter(lines)
+        try:
+            txt = 'BitTorrent UI state file, version '
+            version = i.next()
+            if not version.startswith(txt):
+                raise BTFailure(_("Bad UI state file"))
+            try:
+                version = int(version[len(txt):-1])
+            except:
+                raise BTFailure(_("Bad UI state file version"))
+            if version > 5:
+                raise BTFailure(_("Unsupported UI state file version (from "
+                                  "newer client version?)"))
+            if version < 3:
+                if i.next() != 'Running/queued torrents\n':
+                    raise BTFailure(_("Invalid state file contents"))
+            else:
+                if i.next() != 'Running torrents\n' and version != 5:
+                    raise BTFailure(_("Invalid state file contents"))
+                while version < 5:
+                    line = i.next()
+                    if line == 'Queued torrents\n':
+                        break
+                    t = decode_line(line)
+                    if t is None:
+                        continue
+                    infohash, t = t
+                    df = self._init_torrent(t, initialize=init_torrents)
+            while True:
+                line = i.next()
+                if (version < 5 and line == 'Known torrents\n') or (version == 5 and line == 'End\n'):
+                    break
+                t = decode_line(line)
+                if t is None:
+                    continue
+                infohash, t = t
+                if t.destination_path is None:
+                    raise BTFailure(_("Invalid state file contents"))
+                df = self._init_torrent(t, initialize=init_torrents)
+
+            while version < 5:
+                line = i.next()
+                if line == 'End\n':
+                    break
+                t = decode_line(line)
+                if t is None:
+                    continue
+                infohash, t = t
+                df = self._init_torrent(t, initialize=init_torrents)
+        except StopIteration:
+            raise BTFailure(_("Invalid state file contents"))
+
+

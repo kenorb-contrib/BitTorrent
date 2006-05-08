@@ -21,15 +21,18 @@ class Measure(object):
         self.last = self.ratesince
         self.rate = 0.0
         self.total = 0
+        self.when_next_expected = bttime() + fudge
 
     def update_rate(self, amount):
         self.total += amount
         t = bttime()
+        if t < self.when_next_expected and amount == 0:
+            return self.rate
         self.rate = (self.rate * (self.last - self.ratesince) +
-            amount) / (t - self.ratesince)
+                     amount) / (t - self.ratesince)
         self.last = t
-        if self.ratesince < t - self.max_rate_period:
-            self.ratesince = t - self.max_rate_period
+        self.ratesince = max(self.ratesince, t - self.max_rate_period)
+        self.when_next_expected = t + min((amount / max(self.rate, 0.0001)), 5)
 
     def get_rate(self):
         self.update_rate(0)

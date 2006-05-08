@@ -11,7 +11,7 @@
 from unittest import *
 from krpc import *
 from BitTorrent.defaultargs import common_options, rare_options
-from threading import Event
+from BitTorrent.stackthreading import Event
 from node import Node
 
 KRPC.noisy = 0

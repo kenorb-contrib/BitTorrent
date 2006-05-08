@@ -8,131 +8,228 @@
 # for the specific language governing rights and limitations under the
 # License.
 
-# Written by Bram Cohen
+# Written by Bram Cohen and Greg Hazel
 
-from random import randrange, shuffle, choice
+import array
+import random
+import itertools
 
+def resolve_typecode(n):
+    if n < 32768:
+        return 'h'
+    return 'l'
+
+class PieceBuckets(object):
+    """A PieceBuckets object is an array of arrays.  ith bucket contains
+       pieces that have i known instances within the network.  Pieces
+       within each bucket are randomly ordered."""
+    def __init__(self, typecode):
+        self.typecode = typecode
+        # [[piece]]
+        self.buckets = []
+        # {piece: (bucket, bucketpos)}
+        self.place_in_buckets = {}
+
+    def get_position(self, piece):  # returns which bucket piece is in.
+        return self.place_in_buckets[piece][0]
+
+    def __contains__(self, piece):
+        return piece in self.place_in_buckets
+
+    def _fast_add(self, piece, bucketindex):
+        while len(self.buckets) <= bucketindex:
+            self.buckets.append(array.array(self.typecode))
+        mylist = self.buckets[bucketindex]
+        mylist.append(piece)
+        self.place_in_buckets[piece] = (bucketindex, len(mylist)-1)
+
+    def add(self, piece, bucketindex):
+        assert not self.place_in_buckets.has_key(piece)
+        while len(self.buckets) <= bucketindex:
+            self.buckets.append(array.array(self.typecode))
+        mylist = self.buckets[bucketindex]
+        # randomly swap piece with piece already in bucket...
+        newspot = random.randrange(len(mylist) + 1)
+        if newspot == len(mylist):
+            mylist.append(piece)
+        else:
+            tomove = mylist[newspot]
+            self.place_in_buckets[tomove] = (bucketindex, len(mylist))
+            mylist.append(tomove)
+            mylist[newspot] = piece
+        self.place_in_buckets[piece] = (bucketindex, newspot)
+
+    def remove(self, piece):
+        bucketindex, bucketpos = self.place_in_buckets.pop(piece)
+        bucket = self.buckets[bucketindex]
+        tomove = bucket[-1]
+        if tomove != piece:
+            bucket[bucketpos] = tomove
+            self.place_in_buckets[tomove] = (bucketindex, bucketpos)
+        del bucket[-1]
+        while len(self.buckets) > 0 and len(self.buckets[-1]) == 0:
+            del self.buckets[-1]
+        return bucketindex
+
+    # to be removed
+    def bump(self, piece):
+        bucketindex, bucketpos = self.place_in_buckets[piece]
+        bucket = self.buckets[bucketindex]
+        tomove = bucket[-1]
+        if tomove != piece:
+            bucket[bucketpos] = tomove
+            self.place_in_buckets[tomove] = (bucketindex, bucketpos)
+            bucket[-1] = piece
+            self.place_in_buckets[piece] = (bucketindex, len(bucket)-1)
+
+    def prepend_bucket(self):
+        # it' possible we had everything to begin with
+        if len(self.buckets) == 0:
+            return
+        self.buckets.insert(0, array.array(self.typecode))
+        # bleh.
+        for piece in self.place_in_buckets:
+            index, pos = self.place_in_buckets[piece]
+            self.place_in_buckets[piece] = (index + 1, pos)
+
+    def popleft_bucket(self):
+        # it' possible we had everything to begin with
+        if len(self.buckets) == 0:
+            return
+        self.buckets.pop(0)
+        # bleh.
+        for piece in self.place_in_buckets:
+            index, pos = self.place_in_buckets[piece]
+            self.place_in_buckets[piece] = (index - 1, pos)
 
 class PiecePicker(object):
 
-    def __init__(self, numpieces, config):
+    def __init__(self, config, numpieces, not_have):
         self.config = config
         self.numpieces = numpieces
-        self.interests = [range(numpieces)]
-        self.pos_in_interests = range(numpieces)
-        self.numinterests = [0] * numpieces
-        self.have = [False] * numpieces
-        self.crosscount = [numpieces]
-        self.started = []
-        self.seedstarted = []
-        self.numgot = 0
-        self.scrambled = range(numpieces)
-        shuffle(self.scrambled)
+        self.typecode = resolve_typecode(numpieces)
+        self.piece_bucketss = [PieceBuckets(self.typecode)]
+        self.scrambled = array.array(self.typecode)
+        self.numgot = self.numpieces
+        for i in not_have:
+            self.scrambled.append(i)
+            self.piece_bucketss[0]._fast_add(i, 0)
+            self.numgot -= 1
+        random.shuffle(self.scrambled)
+
+    def get_distributed_copies(self):
+        base = 0
+        for i, bucket in enumerate(self.piece_bucketss[0].buckets):
+            l = len(bucket)
+            if l == 0:
+                # the whole bucket is full. keep going
+                continue
+            base = i + 1
+            # remove the fractional size of this bucket, and stop
+            base -= (float(l) / float(self.numpieces))
+            break
+        return base
+
+    def set_priority(self, pieces, priority):
+        while len(self.piece_bucketss) <= priority:
+            self.piece_bucketss.append(PieceBuckets(self.typecode))
+        for piece in pieces:
+            for p in self.piece_bucketss:
+                if piece in p:
+                    self.piece_bucketss[priority].add(piece, p.remove(piece))
+                break
+            else:
+                assert False
+
+    def got_have_all(self):
+        for p in self.piece_bucketss:
+            p.prepend_bucket()
 
     def got_have(self, piece):
-        numint = self.numinterests[piece]
-        self.crosscount[numint + self.have[piece]] -= 1
-        self.numinterests[piece] += 1
-        try:
-            self.crosscount[numint + 1 + self.have[piece]] += 1
-        except IndexError:
-            self.crosscount.append(1)
-        if self.have[piece]:
-            return
-        if numint == len(self.interests) - 1:
-            self.interests.append([])
-        self._shift_over(piece, self.interests[numint], self.interests[numint + 1])
+        for p in self.piece_bucketss:
+            if piece in p:
+                p.add(piece, p.remove(piece) + 1)
+                return
+
+    def lost_have_all(self):
+        for p in self.piece_bucketss:
+            p.popleft_bucket()
 
     def lost_have(self, piece):
-        numint = self.numinterests[piece]
-        self.crosscount[numint + self.have[piece]] -= 1
-        self.numinterests[piece] -= 1
-        self.crosscount[numint - 1 + self.have[piece]] += 1
-        if self.have[piece]:
-            return
-        self._shift_over(piece, self.interests[numint], self.interests[numint - 1])
-
-    def _shift_over(self, piece, l1, l2):
-        p = self.pos_in_interests[piece]
-        l1[p] = l1[-1]
-        self.pos_in_interests[l1[-1]] = p
-        del l1[-1]
-        newp = randrange(len(l2) + 1)
-        if newp == len(l2):
-            self.pos_in_interests[piece] = len(l2)
-            l2.append(piece)
-        else:
-            old = l2[newp]
-            self.pos_in_interests[old] = len(l2)
-            l2.append(old)
-            l2[newp] = piece
-            self.pos_in_interests[piece] = newp
-
-    def requested(self, piece, seed = False):
-        if piece not in self.started:
-            self.started.append(piece)
-        if seed and piece not in self.seedstarted:
-            self.seedstarted.append(piece)
+        for p in self.piece_bucketss:
+            if piece in p:
+                p.add(piece, p.remove(piece) - 1)
+                return
 
     def complete(self, piece):
-        assert not self.have[piece]
-        self.have[piece] = True
-        self.crosscount[self.numinterests[piece]] -= 1
-        try:
-            self.crosscount[self.numinterests[piece] + 1] += 1
-        except IndexError:
-            self.crosscount.append(1)
         self.numgot += 1
-        l = self.interests[self.numinterests[piece]]
-        p = self.pos_in_interests[piece]
-        l[p] = l[-1]
-        self.pos_in_interests[l[-1]] = p
-        del l[-1]
-        try:
-            self.started.remove(piece)
-            self.seedstarted.remove(piece)
-        except ValueError:
-            pass
-
-    def next(self, havefunc, seed = False):
-        bests = None
-        bestnum = 2 ** 30
-        if seed:
-            s = self.seedstarted
-        else:
-            s = self.started
-        for i in s:
-            if havefunc(i):
-                if self.numinterests[i] < bestnum:
-                    bests = [i]
-                    bestnum = self.numinterests[i]
-                elif self.numinterests[i] == bestnum:
-                    bests.append(i)
-        if bests:
-            return choice(bests)
         if self.numgot < self.config['rarest_first_cutoff']:
-            for i in self.scrambled:
-                if havefunc(i):
-                    return i
-            return None
-        for i in xrange(1, min(bestnum, len(self.interests))):
-            for j in self.interests[i]:
-                if havefunc(j):
-                    return j
+            self.scrambled.remove(piece)
+        else:
+            self.scrambled = None
+        for p in self.piece_bucketss:
+            if piece in p:
+                p.remove(piece)
+                break
+        else:
+            assert False
+       
+
+    def from_behind(self, haves, bans):
+        for piece_buckets in self.piece_bucketss:
+            for i in xrange(len(piece_buckets.buckets) - 1, 0, -1):
+                for j in piece_buckets.buckets[i]:
+                    if haves[j] and j not in bans:
+                        return j
         return None
 
-    def am_I_complete(self):
-        return self.numgot == self.numpieces
+    def next(self, haves, tiebreaks, bans, suggests):
+        """returns next piece to download.
+           @param haves: set of pieces the remote peer has.
+           @param tiebreaks: pieces with active (started) requests
+           @param bans: pieces not to pick.
+           @param suggests: set of suggestions made by the remote peer.
+        """
+        # first few pieces are provided in random rather than rarest-first 
+        if self.numgot < self.config['rarest_first_cutoff']:
+            for i in itertools.chain(tiebreaks, self.scrambled):
+                if haves[i] and i not in bans:
+                    return i
+            return None
 
+        # from highest priority to lowest priority piece buckets...
+        for k in xrange(len(self.piece_bucketss) - 1, -1, -1):
+
+            piece_buckets = self.piece_bucketss[k]
+
+            # Of the same priority, a suggestion is taken first.
+            for s in suggests:
+                if s not in bans and have(s) and s in piece_buckets:
+                     return s
+
+            bestnum = None
+            best = None
+            rarity_of_started = [(piece_buckets.get_position(i), i)
+                    for i in tiebreaks if i not in bans and haves[i] and
+                                          i in piece_buckets]
+            if rarity_of_started:
+                bestnum = min(rarity_of_started)[0]  # smallest bucket index
+                best = random.choice([j for (i, j) in rarity_of_started
+                    if i == bestnum]) # random pick of those in smallest bkt
+                                                      
+            for i in xrange(1, len(piece_buckets.buckets)):
+                if bestnum == i:      # if best of started is also rarest...
+                    return best
+                for j in piece_buckets.buckets[i]:
+                    if haves[j] and j not in bans:
+                        return j      # return first found.
+        return None
+    
+    # to be removed
     def bump(self, piece):
-        l = self.interests[self.numinterests[piece]]
-        pos = self.pos_in_interests[piece]
-        del l[pos]
-        l.append(piece)
-        for i in range(pos,len(l)):
-            self.pos_in_interests[l[i]] = i
-        try:
-            self.started.remove(piece)
-            self.seedstarted.remove(piece)
-        except ValueError:
-            pass
+        for p in self.piece_bucketss:
+            if piece in p:
+                p.bump(piece)
+                break
+        else:
+            assert False

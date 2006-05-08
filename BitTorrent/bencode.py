@@ -10,9 +10,12 @@
 
 # Written by Petru Paler
 
+from BitTorrent.translation import _
+
 from BitTorrent.obsoletepythonsupport import *
 
 from BitTorrent import BTFailure
+
 
 def decode_int(x, f):
     f += 1

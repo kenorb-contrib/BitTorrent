@@ -16,15 +16,18 @@ from __future__ import division
 
 import os
 import sys
+import math
 from sha import sha
 from time import time
 from threading import Event
+from BitTorrent.translation import _
 
 from BitTorrent.bencode import bencode, bdecode
 from BitTorrent.btformats import check_info
 from BitTorrent.parseargs import parseargs, printHelp
 from BitTorrent.obsoletepythonsupport import *
 from BitTorrent import BTFailure
+from BitTorrent import filesystem_encoding as global_filesystem_encoding
 
 from khashmir.node import Node
 from khashmir.ktable import KTable
@@ -32,26 +35,23 @@ from khashmir.util import packPeers, compact_peer_info
 
 ignore = ['core', 'CVS', 'Thumbs.db', 'desktop.ini']
 
-noncharacter_translate = {}
-for i in range(0xD800, 0xE000):
-    noncharacter_translate[i] = None
-for i in range(0xFDD0, 0xFDF0):
-    noncharacter_translate[i] = None
-for i in (0xFFFE, 0xFFFF):
-    noncharacter_translate[i] = None
-
-del i
+from ConvertedMetainfo import noncharacter_translate
 
 def dummy(v):
     pass
+
+def size_to_piece_len_pow2(size):
+    num_pieces_pow2 = 11 # 2**num_pieces_pow2 = desired number of pieces
+    return max(1, int(round(math.log(size, 2)) - num_pieces_pow2))
 
 def make_meta_files(url,
                     files,
                     flag=Event(),
                     progressfunc=dummy,
                     filefunc=dummy,
-                    piece_len_pow2=None,
+                    piece_len_pow2=0,
                     target=None,
+                    title=None,
                     comment=None,
                     filesystem_encoding=None,
                     use_tracker=True,
@@ -61,19 +61,8 @@ def make_meta_files(url,
                           "when generating multiple torrents at once"))
 
     if not filesystem_encoding:
-        try:
-            getattr(sys, 'getfilesystemencoding')
-        except AttributeError:
-            pass
-        else:
-            filesystem_encoding = sys.getfilesystemencoding()
-        if not filesystem_encoding:
-            filesystem_encoding = 'ascii'
-    try:
-        'a1'.decode(filesystem_encoding)
-    except:
-        raise BTFailure(_('Filesystem encoding "%s" is not supported in this version')
-                        % filesystem_encoding)
+        filesystem_encoding = global_filesystem_encoding
+
     files.sort()
     ext = '.torrent'
 
@@ -82,33 +71,43 @@ def make_meta_files(url,
         if not f.endswith(ext):
             togen.append(f)
 
-    total = 0
+    sizes = []
     for f in togen:
-        total += calcsize(f)
+        sizes.append(calcsize(f))
+    total = sum(sizes)
 
     subtotal = [0]
     def callback(x):
         subtotal[0] += x
         progressfunc(subtotal[0] / total)
-    for f in togen:
+    for i, f in enumerate(togen):
         if flag.isSet():
             break
+        if sizes[i] < 1:            
+            continue # duh, skip empty files/directories
         t = os.path.split(f)
         if t[1] == '':
             f = t[0]
         filefunc(f)
+        if piece_len_pow2 > 0:
+            my_piece_len_pow2 = piece_len_pow2
+        else:
+            my_piece_len_pow2 = size_to_piece_len_pow2(sizes[i])
+        
         if use_tracker:
             make_meta_file(f, url, flag=flag, progress=callback,
-                           piece_len_exp=piece_len_pow2, target=target,
-                           comment=comment, encoding=filesystem_encoding)
+                           piece_len_exp=my_piece_len_pow2, target=target,
+                           title=title, comment=comment, 
+                           encoding=filesystem_encoding)
         else:
             make_meta_file_dht(f, url, flag=flag, progress=callback,
-                           piece_len_exp=piece_len_pow2, target=target,
-                           comment=comment, encoding=filesystem_encoding, data_dir=data_dir)
+                           piece_len_exp=my_piece_len_pow2, target=target,
+                           title=title, comment=comment, 
+                           encoding=filesystem_encoding, data_dir=data_dir)
             
 
 def make_meta_file(path, url, piece_len_exp, flag=Event(), progress=dummy,
-                   comment=None, target=None, encoding='ascii'):
+                   title=None, comment=None, target=None, encoding='ascii'):
     data = {'announce': url.strip(),'creation date': int(time())}
     piece_length = 2 ** piece_len_exp
     a, b = os.path.split(path)
@@ -126,13 +125,16 @@ def make_meta_file(path, url, piece_len_exp, flag=Event(), progress=dummy,
     h = file(f, 'wb')
 
     data['info'] = info
+    if title:
+        data['title'] = title
     if comment:
         data['comment'] = comment
     h.write(bencode(data))
     h.close()
     
 def make_meta_file_dht(path, nodes, piece_len_exp, flag=Event(), progress=dummy,
-                   comment=None, target=None, encoding='ascii', data_dir=None):
+                   title=None, comment=None, target=None, encoding='ascii', 
+                   data_dir=None):
     # if nodes is empty, then get them out of the routing table in data_dir
     # else, expect nodes to be a string of comma seperated <ip>:<port> pairs
     # this has a lot of duplicated code from make_meta_file
@@ -165,6 +167,8 @@ def make_meta_file_dht(path, nodes, piece_len_exp, flag=Event(), progress=dummy,
     h = file(f, 'wb')
 
     data['info'] = info
+    if title:
+        data['title'] = title
     if comment:
         data['comment'] = comment
     h.write(bencode(data))
@@ -179,17 +183,20 @@ def calcsize(path):
 
 def makeinfo(path, piece_length, flag, progress, encoding):
     def to_utf8(name):
-        try:
-            u = name.decode(encoding)
-        except Exception, e:
-            raise BTFailure(_('Could not convert file/directory name "%s" to '
-                              'utf-8 (%s). Either the assumed filesystem '
-                              'encoding "%s" is wrong or the filename contains '
-                              'illegal bytes.') % (name, str(e), encoding))
-        if u.translate(noncharacter_translate) != u:
-            raise BTFailure(_('File/directory name "%s" contains reserved '
-                              'unicode values that do not correspond to '
-                              'characters.') % name)
+        if type(name) == unicode:
+            u = name
+        else:
+            try:
+                u = name.decode(encoding)
+            except Exception, e:
+                raise BTFailure(_('Could not convert file/directory name "%s" to '
+                                  'utf-8 (%s). Either the assumed filesystem '
+                                  'encoding "%s" is wrong or the filename contains '
+                                  'illegal bytes.') % (name, str(e), encoding))
+            if u.translate(noncharacter_translate) != u:
+                raise BTFailure(_('File/directory name "%s" contains reserved '
+                                  'unicode values that do not correspond to '
+                                  'characters.') % name)
         return u.encode('utf-8')
     path = os.path.abspath(path)
     if os.path.isdir(path):
