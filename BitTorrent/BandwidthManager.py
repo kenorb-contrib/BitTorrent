@@ -26,6 +26,8 @@ class NodeFeeder(object):
         ips = set()
         for (ip, port) in addrs:
             if ip is not None and ip != "0.0.0.0" and ip not in local_ips:
+                assert isinstance(ip, str)
+                assert isinstance(port, int)
                 ips.add(ip)
         
         self.rttmonitor.set_nodes_restart(ips)
@@ -220,10 +222,16 @@ class BandwidthManager(object):
             self.max_std *= 0.80 # FUDGE
             return
 
+        def set_if_enabled(option, value):
+            if not self.config['bandwidth_management']:
+                return
+            #print "Setting rate to ", value
+            self.set_config(option, value)
+
         # TODO: slow start should be smarter than this
         if self.start_time < bttime() + 20:
-            self.config['max_upload_rate'] = 10000000
-            self.config['max_dowload_rate'] = 10000000
+            set_if_enabled('max_upload_rate', 10000000)
+            set_if_enabled('max_download_rate', 10000000)
 
         if t < 3:
             # I simply don't believe you. Go away.
@@ -265,13 +273,6 @@ class BandwidthManager(object):
         self.max_rates["upload"] = max(max(self.u), self.max_rates["upload"])
         self.max_rates["download"] = max(max(self.d), self.max_rates["download"])
 
-
-        def set_if_enabled(option, value):
-            if not self.config['bandwidth_management']:
-                return
-            #print "Setting rate to ", value
-            self.set_config(option, value)
-        
         if debug:
             print "STDDEV", u, self.config['max_upload_rate'], self.max_std, std, pu, pd
         

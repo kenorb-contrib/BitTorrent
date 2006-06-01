@@ -88,21 +88,22 @@ for l in languages:
         data_files.append((os.path.join(locale_root, l, 'LC_MESSAGES'), 
                              [path,]))
 
+attrs = {
+    'name' : "BitTorrent",
+    'version' : version,
+    'author' : "Bram Cohen",
+    'author_email' : "bugs@bittorrent.com",
+    'url' : "http://bittorrent.com/",
+    'license' : "BitTorrent Open Source License",
+    'scripts' : use_scripts,
+    'packages' : ["BitTorrent", "khashmir", "BitTorrent.GUI_wx",],
+    'py_modules' : ["Zeroconf",],
+    'data_files' : data_files,
+    'description' : "Scatter-gather network file transfer",
+    'long_description' : """BitTorrent is a tool for distributing files.  It's extremely easy to use - downloads are started by clicking on hyperlinks.  Whenever more than one person is downloading at once they send pieces of the file(s) to each other, thus relieving the central server's bandwidth burden.  Even with many simultaneous downloads, the upload burden on the central server remains quite small, since each new downloader introduces new upload capacity.""",
+}
 
-setup(
-    name = "BitTorrent",
-    version = version,
-    author = "Bram Cohen",
-    author_email = "bugs@bittorrent.com",
-    url = "http://bittorrent.com/",
-    license = "BitTorrent Open Source License",
-    scripts = use_scripts,
-    packages = ["BitTorrent", "khashmir", "BitTorrent.GUI_wx",],
-    py_modules = ["Zeroconf",],
-    data_files = data_files,
-    summary = "Scatter-gather network file transfer",
-    description = """BitTorrent is a tool for distributing files.  It's extremely easy to use - downloads are started by clicking on hyperlinks.  Whenever more than one person is downloading at once they send pieces of the file(s) to each other, thus relieving the central server's bandwidth burden.  Even with many simultaneous downloads, the upload burden on the central server remains quite small, since each new downloader introduces new upload capacity.""",
-    )
+setup(**attrs)
 
 for s in symlinks:
     if os.path.islink(s):

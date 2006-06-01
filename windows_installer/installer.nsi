@@ -540,7 +540,8 @@ Function ${UN}MagicUninstall
   RMDir "$R0"
   
   IfErrors 0 dontwarn
-  MessageBox MB_OK "Not deleting $R0,$\r$\nbecause there are extra files or directories in it, or it is in use."   
+  ; no need for a warning, it is just annoying
+  ;MessageBox MB_OK "Not deleting $R0,$\r$\nbecause there are extra files or directories in it, or it is in use."   
  dontwarn:  
   
   SetShellVarContext current

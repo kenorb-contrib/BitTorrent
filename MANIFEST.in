@@ -19,7 +19,7 @@ include makei18n.sh language_codes.py po/*po
 include locale/*/LC_MESSAGES/bittorrent.mo
 
 # unix install stuffs
-include build_nix_pkg.sh
+include build_nix_pkg.sh debian/control install_nix.sh
 
 # include all top level scripts
 include bittorrent.py

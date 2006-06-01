@@ -46,12 +46,14 @@ basic_options = [
      _("directory under which variable data such as fastresume information "
        "and GUI state is saved. Defaults to subdirectory 'data' of the "
        "bittorrent config directory.")),
-    ('filesystem_encoding', '',
-     _("character encoding used on the local filesystem. "
-       "If left empty, autodetected. "
-       "Autodetection doesn't work under python versions older than 2.3")),
     ('language', '',
      _("ISO Language code to use") + ': ' + ', '.join(languages)),
+    ('use_factory_defaults', False,
+     _("Starts the application in a debug mode.  All settings revert to "
+       "default except those provided as command-line options.  Creates "
+       "temporary directories for dot, data, incomplete torrents and "
+       "complete torrents.  Allows multiple clients on the same machine to "
+       "communicate with each other." )),
     ]
 
 common_options = [

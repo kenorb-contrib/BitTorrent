@@ -11,7 +11,7 @@
 # Written by Matt Chisholm
 
 import os
-from sha import sha
+from BitTorrent.hash import sha
 from time import time
 try:
     getpid = os.getpid

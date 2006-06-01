@@ -19,9 +19,28 @@ from BitTorrent.Lists import QList
 from BitTorrent.obsoletepythonsupport import set
 from UserDict import IterableUserDict
 
-class DictWithLists(IterableUserDict):
+class ReallyIterableUserDict(IterableUserDict):
+    
+    # third level takes advantage of second level definitions
+    def iteritems(self):
+        for k in self:
+            yield (k, self[k])
+    def iterkeys(self):
+        return self.__iter__()
 
-    def __init__(self, dict = None, parent = IterableUserDict):
+    # fourth level uses definitions from lower levels
+    def itervalues(self):
+        for _, v in self.iteritems():
+            yield v
+    def values(self):
+        return [v for _, v in self.iteritems()]
+    def items(self):
+        return list(self.iteritems())
+    
+
+class DictWithLists(ReallyIterableUserDict):
+
+    def __init__(self, dict = None, parent = ReallyIterableUserDict):
         self.parent = parent
         self.parent.__init__(self, dict)
 
@@ -45,7 +64,7 @@ class DictWithLists(IterableUserDict):
 
         return data
     pop_from_row = pop
-    
+
     def __delitem__(self, key):
         self.pop(key)
 
@@ -120,22 +139,22 @@ class DictWithSets(DictWithLists):
         
 
 # from http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/107747
-class OrderedDict(IterableUserDict):
+class OrderedDict(ReallyIterableUserDict):
     def __init__(self, dict = None):
         self._keys = []
-        IterableUserDict.__init__(self, dict)
+        ReallyIterableUserDict.__init__(self, dict)
 
     def __delitem__(self, key):
-        IterableUserDict.__delitem__(self, key)
+        ReallyIterableUserDict.__delitem__(self, key)
         self._keys.remove(key)
 
     def __setitem__(self, key, item):
-        IterableUserDict.__setitem__(self, key, item)
+        ReallyIterableUserDict.__setitem__(self, key, item)
         if key not in self._keys:
             self._keys.append(key)
 
     def clear(self):
-        IterableUserDict.clear(self)
+        ReallyIterableUserDict.clear(self)
         self._keys = []
 
     def copy(self):
@@ -148,6 +167,9 @@ class OrderedDict(IterableUserDict):
 
     def keys(self):
         return self._keys[:]
+
+    def __iter__(self):
+        return iter(self._keys)
 
     def popitem(self):
         try:
@@ -163,7 +185,7 @@ class OrderedDict(IterableUserDict):
     def setdefault(self, key, failobj = None):
         if key not in self._keys:
             self._keys.append(key)
-        return IterableUserDict.setdefault(self, key, failobj)
+        return ReallyIterableUserDict.setdefault(self, key, failobj)
 
     def update(self, dict):
         for (key,val) in dict.items():
@@ -176,6 +198,9 @@ class OrderedDictWithLists(DictWithLists, OrderedDict):
 
     def __init__(self, dict = None, parent = OrderedDict):
         DictWithLists.__init__(self, dict, parent = parent)
+
+    def __iter__(self):
+        return iter(self._keys)
 
 
 if __name__=='__main__':
@@ -225,3 +250,20 @@ if __name__=='__main__':
     k = odl.keys()[0]
     assert k == '2'
 
+    od = OrderedDict()
+    od['2'] = [1,1,1,1,1]
+    od['1'] = [2,2,2,2,2]
+    od['3'] = [3,3,3,3,3]
+    r = []
+    for k in od.iterkeys():
+        r.append(k)
+    assert r == ['2', '1', '3']
+
+    odl = OrderedDictWithLists()
+    odl.setrow('2', [1,1,1,1,1])
+    odl.setrow('1', [2,2,2,2,2])
+    odl.setrow('3', [3,3,3,3,3])
+    r = []
+    for k in odl.iterkeys():
+        r.append(k)
+    assert r == ['2', '1', '3']

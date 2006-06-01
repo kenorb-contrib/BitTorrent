@@ -16,7 +16,7 @@ import pickle
 import zurllib
 import BitTorrent.stackthreading as threading
 import logging
-from sha import sha
+from BitTorrent.hash import sha
 from BitTorrent.translation import _
 
 DEBUG = False

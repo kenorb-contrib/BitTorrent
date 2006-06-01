@@ -39,11 +39,12 @@ class PerIPStats(object):
 
 class MultiDownload(object):
 
-    def __init__(self, config, storage, picker, numpieces,
+    def __init__(self, config, storage, urlage, picker, numpieces,
                  finished, total_downmeasure, downmeasure, measurefunc,
                  kickfunc, banfunc):
         self.config = config
         self.storage = storage
+        self.urlage = urlage
         self.picker = picker
         self.connection_manager = None
         self.chunksize = config['download_slice_size']
@@ -69,7 +70,10 @@ class MultiDownload(object):
         self.piece_states.place_in_buckets = dict(nowhere)
         
         self.last_update = 0
-        self.active_requests = SparseSet(self.storage.inactive_requests.keys())
+        indexes = self.storage.inactive_requests.keys()
+        indexes.sort()
+        self.active_requests = SparseSet(indexes)
+        self.all_requests = set()
 
 
     def attach_connection_manager(self, connection_manager):
@@ -125,29 +129,28 @@ class MultiDownload(object):
     def hashchecked(self, index):
         if not self.storage.do_I_have(index):
             if self.storage.endgame:
-                while self.storage.unrequested(index):
+                while self.storage.want_requests(index):
                     nb, nl = self.storage.new_request(index)
                     self.all_requests.add((index, nb, nl))
                 for d in self.downloads:
                     d.fix_download_endgame()
-                return
-            ds = [d for d in self.downloads if not d.choked]
-            random.shuffle(ds)
-            for d in ds:
-                d._request_more([index])
+            else:
+                ds = [d for d in self.downloads if not d.choked]
+                random.shuffle(ds)
+                for d in ds:
+                    d._request_more([index])
             return
 
         self.picker.complete(index)
         self.active_requests_remove(index)
 
-        if self.storage.have.numfalse == 0:
-            for d in [i for i in self.downloads
-                      if i.have.numfalse == 0]:
-                d.connection.close()
-
         self.connection_manager.hashcheck_succeeded(index)
 
         if self.storage.have.numfalse == 0:
+            for d in self.downloads:
+                if d.have.numfalse == 0:
+                    d.connection.close()
+
             self.finished()
 
     def time_until_rate(self):
@@ -165,18 +168,18 @@ class MultiDownload(object):
         # all connections at once.
         adjusted_rate = max(adjusted_rate, possible_burst)
         # don't let it go above the explicit max either.
-        adjusted_rate = max(adjusted_rate, rate)
+        adjusted_rate = min(adjusted_rate, rate)
 
         # we need to call this because the rate measure is dumb
         self.total_downmeasure.get_rate()
         t = self.total_downmeasure.time_until_rate(adjusted_rate)
-        #print "DOWNLOAD: burst_size:", possible_burst, "rate:", self.total_downmeasure.get_rate(), "new_rate:", adjusted_rate, t
+        #print "DOWNLOAD: burst_size:", possible_burst, "rate:", self.total_downmeasure.get_rate(), "rate_limit:", rate, "new_rate:", adjusted_rate, t
         return t
 
     def check_rate(self):
         t = self.time_until_rate()
         if t > 0:
-            self.postpone_func(t)
+            self.postpone_func()
         else:
             self.resume_func()
 
@@ -192,10 +195,7 @@ class MultiDownload(object):
 
     def make_download(self, connection):
         ip = connection.ip
-        perip = self.perip.get(ip)
-        if perip is None:
-            perip = PerIPStats()
-            self.perip[ip] = perip
+        perip = self.perip.setdefault(ip, PerIPStats())
         perip.numconnections += 1
         d = Download(self, connection)
         perip.lastdownload = d
@@ -226,3 +226,4 @@ class MultiDownload(object):
             return
         self.banfunc(ip)
         self.bad_peers[ip] = (True, self.perip[ip])
+

@@ -34,3 +34,11 @@ except (ImportError, NameError): # I don't know if NameError ever gets raised
         # python 2.2
         set = None 
         pass
+
+try:
+    from os import urandom
+except:
+    import random
+    def urandom(n):
+        return ''.join([ chr(random.randint(0, 255)) for x in xrange(n)])
+    del random

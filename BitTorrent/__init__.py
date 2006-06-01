@@ -11,7 +11,7 @@
 
 
 app_name = 'BitTorrent'
-version = '4.9.3'
+version = '4.9.7'
 
 URL = 'http://www.bittorrent.com/'
 DONATE_URL = URL + 'donate.myt?client=%(client)s'
@@ -26,15 +26,17 @@ import sys
 assert sys.version_info >= (2, 3, 0), _("Python %s or newer required") % '2.3.0'
 import os
 import time
-import atexit
 import shutil
+import urllib
+import codecs
 import logging
 import logging.handlers
 from StringIO import StringIO
 
+from BitTorrent import atexit_threads
+
 class BTFailure(Exception):
     pass
-
 
 class InfoHashType(str):
     def __repr__(self):
@@ -44,24 +46,36 @@ class InfoHashType(str):
 
 
 branch = None
-if os.access('.cdv', os.F_OK):
-    branch = os.path.split(os.path.realpath(os.path.split(sys.argv[0])[0]))[1]
+p = os.path.realpath(os.path.split(sys.argv[0])[0])
+if os.path.exists(os.path.join(p, '.cdv')):
+    branch = os.path.split(p)[1]
+del p
+
+
+def urlquote_error(error):
+     s = error.object[error.start:error.end]
+     s = s.encode('utf8')
+     s = urllib.quote(s)
+     s = s.decode('ascii')
+     return (s.decode('ascii'), s.end)
+
+codecs.register_error('urlquote', urlquote_error)
+
 
 from BitTorrent.language import languages, language_names
-from BitTorrent.platform import get_home_dir, is_frozen_exe, get_filesystem_encoding
+from BitTorrent.platform import get_temp_subdir, get_home_dir, get_dot_dir, is_frozen_exe
 
-filesystem_encoding = get_filesystem_encoding(None)
-
-def set_filesystem_encoding(encoding, errorfunc=None):
-    global filesystem_encoding
-    filesystem_encoding = get_filesystem_encoding(encoding, errorfunc=None)
 
 if os.name == 'posix':
     if os.uname()[0] == "Darwin":
         from BitTorrent.platform import install_translation
         install_translation()
 
-logroot = get_home_dir()
+if "-u" in sys.argv or "--use_factory_defaults" in sys.argv:
+    logroot = get_temp_subdir()
+else:
+    #logroot = get_home_dir()
+    logroot = get_dot_dir()
 
 # hackery to get around bug in py2exe that tries to write log files to
 # application directories, which may not be writable by non-admin users
@@ -85,35 +99,38 @@ logging.addLevelName(STDERR, 'STDERR')
 console = logging.StreamHandler()
 console.setLevel(logging.DEBUG)
 # set a format which is simpler for console use
-formatter = logging.Formatter('%(name)-12s: %(levelname)-8s %(message)s')
+#formatter = logging.Formatter(u'%(name)-12s: %(levelname)-8s %(message)s')
+formatter = logging.Formatter(u'%(message)s')
 # tell the handler to use this format
 console.setFormatter(formatter)
 # add the handler to the root logger
 logging.getLogger('').addHandler(console)
 
-bt_log_fmt = logging.Formatter('[' + str(version) + ' %(asctime)s] %(levelname)-8s: %(message)s',
-                               datefmt="%Y-%m-%d %H:%M:%S")
+bt_log_fmt = logging.Formatter(u'[' + unicode(version) + u' %(asctime)s] %(levelname)-8s: %(message)s',
+                               datefmt=u'%Y-%m-%d %H:%M:%S')
 
 stderr_console = None
 old_stderr = sys.stderr
 
 def inject_main_logfile():
-    # the main log file. log every kind of message, format properly, rotate the log
-    # someday - SocketHandler
-    mainlog = logging.handlers.RotatingFileHandler(filename=logpath, mode='a', maxBytes=2**20, backupCount=1)
+    # the main log file. log every kind of message, format properly,
+    # rotate the log someday - SocketHandler
+
+    mainlog = logging.handlers.RotatingFileHandler(filename=logpath,
+        mode='a', maxBytes=2**20, backupCount=1)
     mainlog.setFormatter(bt_log_fmt)
     mainlog.setLevel(logging.DEBUG)
     logger = logging.getLogger('')
     logging.getLogger('').addHandler(mainlog)
     logging.getLogger('').removeHandler(console)
-    atexit.register(lambda : logging.getLogger('').removeHandler(mainlog))
+    atexit_threads.register(lambda : logging.getLogger('').removeHandler(mainlog))
 
     if not is_frozen_exe:
         # write all stderr messages to stderr (unformatted)
         # as well as the main log (formatted)
         stderr_console = logging.StreamHandler(old_stderr)
         stderr_console.setLevel(STDERR)
-        stderr_console.setFormatter(logging.Formatter('%(message)s'))
+        stderr_console.setFormatter(logging.Formatter(u'%(message)s'))
         logging.getLogger('').addHandler(stderr_console)
 
 class StderrProxy(StringIO):
@@ -122,18 +139,15 @@ class StderrProxy(StringIO):
         logging.log(STDERR, self.getvalue())
         self.seek(0)
         self.truncate()
-        
+
     # whew. ugly. is there a simpler way to write this?
     # the goal is to stop every '\n' and flush to the log
     # otherwise keep buffering.
     def write(self, text, *args):
-        if not StringIO: # interpreter shutdown
-            return
-        
         if '\n' not in text:
             StringIO.write(self, text)
             return
-        
+
         last = False
         if text[-1] == '\n':
             last = True
@@ -149,4 +163,4 @@ class StderrProxy(StringIO):
 sys.stderr = StderrProxy()
 def reset_stderr():
     sys.stderr = old_stderr
-atexit.register(reset_stderr)
+atexit_threads.register(reset_stderr)

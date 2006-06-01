@@ -11,6 +11,7 @@
 import sys
 import weakref
 import traceback
+#import thread
 import BitTorrent.stackthreading as threading
 
 debug = False
@@ -26,6 +27,7 @@ class Deferred(object):
             self.stack = traceback.format_stack()[:-1]
         else:
             self.stack = None
+        #self.ident = thread.get_ident()
         self.callbacks = []
         self.errbacks = []
         self.calledBack = False
@@ -52,6 +54,10 @@ class Deferred(object):
         self.weakref = weakref.ref(self, pseudo_del)
 
     def getResult(self):
+        #if self.ident != thread.get_ident():
+        #    sys.stderr.write("getResult from the wrong thread!\n")
+        #    sys.stderr.writelines(self.stack)
+        #assert self.ident == thread.get_ident()
         self.erredBack = True
         self.calledBack = True
         self.called_errbacks[0] = True
@@ -71,27 +77,15 @@ class Deferred(object):
             return self.results[0]
         return None
 
-    # DUMB: addCallback should take: cb, *args, **kwargs
-    def addCallback(self, cb, args=(), kwargs={}):
+    def addCallback(self, cb, *args, **kwargs):
         assert callable(cb)
-        # these can go away when the function signature is sane
-        #####
-        assert isinstance(args, list) or isinstance(args, tuple)
-        assert isinstance(kwargs, dict)
-        #####
         self.callbacks.append((cb, args, kwargs))
         if self.calledBack:
             self.doCallbacks(self.results, [(cb, args, kwargs)])
         return self
 
-    # DUMB: addErrback should take: cb, *args, **kwargs
-    def addErrback(self, cb, args=(), kwargs={}):
+    def addErrback(self, cb, *args, **kwargs):
         assert callable(cb)
-        # these can go away when the function signature is sane
-        #####
-        assert isinstance(args, list) or isinstance(args, tuple)
-        assert isinstance(kwargs, dict)
-        #####
         self.errbacks.append((cb, args, kwargs))
         if self.erredBack:
             self.doCallbacks(self.failures, [(cb, args, kwargs)])
@@ -99,10 +93,11 @@ class Deferred(object):
 
     def addCallbacks(self, cb, eb, args=(), kwargs={},
                      ebargs=(), ebkwargs={}):
-        assert callable(cb)
-        assert callable(eb)
-        self.addCallback(cb, args, kwargs)
-        self.addErrback(eb, ebargs, ebkwargs)
+        self.addCallback(cb, *args, **kwargs)
+        self.addErrback(eb, *ebargs, **ebkwargs)
+
+    def chainDeferred(self, d):
+        return self.addCallbacks(d.callback, d.errback)
 
     def callback(self, result):
         self.results.append(result)
@@ -118,10 +113,30 @@ class Deferred(object):
             self.doCallbacks([failed], self.errbacks)
 
     def doCallbacks(self, results, callbacks):
+        #if self.ident != thread.get_ident():
+        #    sys.stderr.write("doCallbacks from the wrong thread!\n")
+        #    sys.stderr.writelines(self.stack)
+        #assert self.ident == thread.get_ident()
         for result in results:
             for cb, args, kwargs in callbacks:
                 result = cb(result, *args, **kwargs)
 
+
+# not totally safe, but a start.
+# This lets you call callback/errback from any thread.
+# The next step would be for addCallbak and addErrback to be safe.
+class ThreadableDeferred(Deferred):
+    def __init__(self, queue_func):
+        assert callable(queue_func)
+        self.queue_func = queue_func
+        Deferred.__init__(self)
+
+    def callback(self, result):
+        self.queue_func(Deferred.callback, self, result)
+
+    def errback(self, result):
+        self.queue_func(Deferred.errback, self, result)
+        
 
 # go ahead and forget to call start()!
 class ThreadedDeferred(Deferred):
@@ -153,3 +168,13 @@ class ThreadedDeferred(Deferred):
             self.queue_func(self.callback, r)
         except:
             self.queue_func(self.errback, sys.exc_info())
+
+
+class DeferredEvent(Deferred, threading._Event):
+    def __init__(self, *a, **kw):
+        threading._Event.__init__(self)
+        Deferred.__init__(self, *a, **kw)
+        
+    def set(self):
+        threading._Event.set(self)
+        self.callback(None) # hmm, None?

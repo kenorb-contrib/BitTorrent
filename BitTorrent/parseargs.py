@@ -66,11 +66,7 @@ def makeHelp(uiname, defaults):
     return ret
 
 def printHelp(uiname, defaults):
-    if uiname in ('bittorrent','maketorrent') and is_frozen_exe:
-        from BitTorrent.GUI import HelpWindow
-        HelpWindow(None, makeHelp(uiname, defaults))
-    else:
-        print makeHelp(uiname, defaults)
+    print makeHelp(uiname, defaults)
 
 def formatDefinitions(options, COLS):
     s = StringIO()

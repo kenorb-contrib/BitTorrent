@@ -23,10 +23,11 @@ import locale
 from BitTorrent.translation import _
 from ConfigParser import RawConfigParser
 from ConfigParser import MissingSectionHeaderError, ParsingError
-from BitTorrent import parseargs, set_filesystem_encoding
+from BitTorrent import parseargs
 from BitTorrent import app_name, version, BTFailure
-from BitTorrent.platform import get_dot_dir, get_save_dir, locale_root, is_frozen_exe, get_incomplete_data_dir, enforce_shortcut, enforce_association, smart_gettext_and_install
+from BitTorrent.platform import get_dot_dir, get_save_dir, locale_root, is_frozen_exe, get_incomplete_data_dir, enforce_shortcut, enforce_association, smart_gettext_and_install, desktop, set_config_dir
 from BitTorrent.zurllib import bind_tracker_connection, set_zurllib_rawserver
+from BitTorrent.platform import get_temp_dir, get_temp_subdir
 
 
 downloader_save_options = [
@@ -75,7 +76,6 @@ if os.name == 'nt':
         # General
         'enforce_association' ,
         'launch_on_startup'   ,
-        'start_minimized'     ,
         'minimize_to_tray'    ,
         'close_to_tray'       ,
 
@@ -93,7 +93,7 @@ def _read_config(filename):
     """Returns a RawConfigParser that has parsed the config file specified by
        the passed filename."""
 
-    # check for bad config files (Windows corrupts them all the time)
+    # check for bad config files
     p = RawConfigParser()
     fp = None
     try:
@@ -119,7 +119,7 @@ def _read_config(filename):
 
 def _write_config(error_callback, filename, p):
     try:
-        f = file(filename, 'w')
+        f = file(filename, 'wb')
         p.write(f)
         f.close()
     except Exception, e:
@@ -231,10 +231,21 @@ def read_torrent_config(global_config, path, infohash, error_callback):
                 if t == bool:
                     c[name] = value in ('1', 'True', True)
                 else:
-                    c[name] = type(global_config[name])(value)
+                    try:
+                        c[name] = type(global_config[name])(value)
+                    except ValueError, e:
+                        error_callback('ValueError %s (name:%s value:%s type:%s global:%s)' %
+                                       (str(e), name, repr(value),
+                                        type(global_config[name]), global_config[name]))
+                        # is this reasonable?
+                        c[name] = global_config[name]
             elif name == 'save_as':
                 # Backwards compatibility for BitTorrent 4.4 torrent_config file
                 c[name] = value
+            try:
+                c[name] = c[name].decode('utf-8')
+            except:
+                pass
         return c
 
 def remove_torrent_config(path, infohash, error_callback):
@@ -303,7 +314,22 @@ def parse_configuration_and_args(defaults, uiname, arglist=[], minargs=None,
         parseargs.printHelp(uiname, defaults)
         sys.exit(0)
 
-    presets = get_config(defconfig, uiname)
+    if "--use_factory_defaults" not in arglist:
+        presets = get_config(defconfig, uiname)
+
+    # run as if fresh install using temporary directories.
+    else:
+        presets = defconfig
+        temp_dir = get_temp_subdir()
+        set_config_dir(temp_dir)
+        save_in = os.path.join(temp_dir,"BitTorrentSaveIn")
+        presets['save_in'] = save_in
+        data_dir = os.path.join(temp_dir,"BitTorrentData")
+        presets['data_dir'] = data_dir
+        save_incomplete_in = os.path.join(temp_dir, "BitTorrentInc")
+        presets['save_incomplete_in'] = save_incomplete_in
+        presets['one_connection_per_ip'] = False
+
     config = args = None
     try:
         config, args = parseargs.parseargs(arglist, defaults, minargs, maxargs,
@@ -318,6 +344,8 @@ def parse_configuration_and_args(defaults, uiname, arglist=[], minargs=None,
     found_4x_config = False
 
     if datadir:
+        if not os.path.exists(datadir):
+            os.mkdir(datadir)
         if uiname in ('bittorrent', 'maketorrent'):
             values = {}
             p = _read_config(os.path.join(datadir, MAIN_CONFIG_FILE))
@@ -367,10 +395,8 @@ def parse_configuration_and_args(defaults, uiname, arglist=[], minargs=None,
     if os.name == 'nt' and config.has_key('enforce_association'):
         enforce_association()
 
-    if config.get('filesystem_encoding'):
-        set_filesystem_encoding(config['filesystem_encoding'])
-
-    if config.has_key('save_in') and config['save_in'] == '' and uiname != 'bittorrent':
+    if config.has_key('save_in') and config['save_in'] == '' and \
+       uiname != 'bittorrent':
         config['save_in'] = get_save_dir()
 
     if config.has_key('save_incomplete_in') and \
@@ -379,7 +405,7 @@ def parse_configuration_and_args(defaults, uiname, arglist=[], minargs=None,
         config['save_incomplete_in'] = data_dir
 
     if uiname == "test-client" or ( uiname.startswith( "bittorrent") \
-       and uiname != 'bittorrent-tracker' ): 
+       and uiname != 'bittorrent-tracker' ):
         if not config.has_key('ask_for_save') or not config['ask_for_save']:
             for k in ('save_in', 'save_incomplete_in'):
                 if config[k]:

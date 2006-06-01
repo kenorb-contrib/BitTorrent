@@ -72,8 +72,8 @@ class BandwidthGraphPanel(CustomWidgets.DoubleBufferedMixin, BTPanel):
                         rect.y + ((1.0 - (datum / y_div)) * (rect.height - 1)))
             last_datum = (i, datum)
 
-    def update(self):
-        if not self.IsShown():
+    def update(self, force=False):
+        if not self.IsShown() and not force:
             return
         dc = wx.BufferedDC(wx.ClientDC(self), self.buffer)
         self.draw(dc, size = self.GetClientSize())
@@ -270,7 +270,11 @@ class StatisticsPanel(wx.Panel):
         self.scrolled_window.SetSizer(self.scroll_sizer)
         self.SetSizerAndFit(self.sizer)
 
-
+        # this fixes background repaint issues on XP w/ themes
+        def OnSize(event):
+            self.Refresh()
+            event.Skip()
+        self.Bind(wx.EVT_SIZE, OnSize)
 
     def add_blank_row(self, sizer):
         sizer.AddSpacer((5, 5))
@@ -323,7 +327,7 @@ class BlingPanel(BTPanel):
 
     def __init__(self, parent, history, *a, **k):
         BTPanel.__init__(self, parent, *a, **k)
-        self.SetMinSize((200, 200))
+        #self.SetMinSize((200, 200))
 
         self.notebook = wx.Notebook(self, style=wx.CLIP_CHILDREN)
 
@@ -331,10 +335,17 @@ class BlingPanel(BTPanel):
         self.notebook.AddPage(self.statistics, _("Statistics"))
 
         self.bling = BandwidthGraphPanel(self.notebook, history)
+        self.speed_tab_index = self.notebook.GetPageCount()
         self.notebook.AddPage(self.bling, _("Speed"))
+
+        self.notebook.Bind(wx.EVT_NOTEBOOK_PAGE_CHANGED, self.OnPageChanged)
 
         self.sizer.Add(self.notebook, flag=wx.GROW, proportion=1)
 
         self.Hide()
         self.sizer.Layout()
-        self.visible = False
+
+    def OnPageChanged(self, event):
+        if event.GetSelection() == self.speed_tab_index:
+            self.bling.update(force=True)
+        event.Skip()

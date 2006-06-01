@@ -8,16 +8,46 @@
 # for the specific language governing rights and limitations under the
 # License.
 
-# Written by Bram Cohen
+# Written by Bram Cohen and David Harrison
+
+if __name__ == "__main__":
+    # for unit-testing.
+    import sys
+    sys.path.append("..")
 
 from BitTorrent.CurrentRateMeasure import Measure
 from BitTorrent.Connector import Connection
 import BitTorrent.Torrent
 import BitTorrent.Connector
-from sha import sha
+from BitTorrent.hash import sha
 import logging
 logger = logging.getLogger("BitTorrent.Upload")
 log = logger.debug
+
+def _compute_allowed_fast_list(infohash,ip, num_fast, num_pieces):
+    
+    # if ipv4 then  (for now assume IPv4)
+    iplist = [int(x) for x in ip.split(".")]
+
+    # classful heuristic.
+    iplist = [chr(iplist[0]),chr(iplist[1]),chr(iplist[2]),chr(0)]
+    h = "".join(iplist)
+    h = "".join([h,infohash])
+    fastlist = []
+    assert num_pieces < 2**32
+    if num_pieces <= num_fast:
+        return range(num_pieces) # <---- this would be bizarre
+    while True:
+        h = sha(h).digest() # rehash hash to generate new random string.
+        for i in xrange(5):
+            j = i*4
+            y = [ord(x) for x in h[j:j+4]]
+            z = (y[0] << 24) + (y[1]<<16) + (y[2]<<8) + y[3]
+            index = int(z % num_pieces)
+            if index not in fastlist:
+                fastlist.append(index)
+                if len(fastlist) >= num_fast:
+                    return fastlist
 
 class Upload(object):
     """Upload over a single connection."""
@@ -44,60 +74,27 @@ class Upload(object):
         self.allowed_fast_pieces = []
         if connection.uses_fast_extension:
             if storage.get_amount_left() == 0:
-                connection.send_have_all();
+                connection.send_have_all()
             elif storage.do_I_have_anything():
                 connection.send_bitfield(storage.get_have_list())
             else:
-                connection.send_have_none();
+                connection.send_have_none()
             self._send_allowed_fast_list()
         elif storage.do_I_have_anything():
-                connection.send_bitfield(storage.get_have_list())
+            connection.send_bitfield(storage.get_have_list())
 
 
     def _send_allowed_fast_list(self):
         """Computes and sends the 'allowed fast' set.  """
 
-        self.allowed_fast_pieces = self._compute_allowed_fast_list(
+        self.allowed_fast_pieces = _compute_allowed_fast_list(
                         self.torrent.infohash,
                         self.connection.ip, self.num_fast,
                         self.storage.get_num_pieces())
 
-        #log( "Upload: fast_list=%s" % str(self.allowed_fast_pieces))
         for index in self.allowed_fast_pieces:
             self.connection.send_allowed_fast(index)
 
-    def _compute_allowed_fast_list(self,infohash,ip, num_fast, num_pieces):
-        
-        #log( "compute_allowed_fast_list ip=%s, num_fast=%s, num_pieces=%s" %
-        #    ( ip, num_fast, num_pieces ) ) 
-
-        # if ipv4 then  (for now assume IPv4)
-        iplist = [int(x) for x in ip.split(".")]
-
-        # classful heuristic.
-        if iplist[0] | 0x7F==0xFF or iplist[0] & 0xC0==0x80: # class A or B
-            iplist = [chr(iplist[0]),chr(iplist[1]),chr(0),chr(0)]
-        else:
-            iplist = [chr(iplist[0]),chr(iplist[1]),chr(iplist[2]),chr(0)]
-        h = "".join(iplist)
-        h = "".join([h,infohash])
-        fastlist = []
-        assert num_pieces < 2**32
-        if num_pieces <= num_fast:
-            return range(num_pieces) # <---- this would be bizarre
-        while True:
-            h = sha(h).digest() # rehash hash to generate new random string.
-            #log( "infohash=%s" % h.encode('hex' ) )
-            for i in xrange(5):
-                j = i*4
-                y = [ord(x) for x in h[j:j+4]]
-                z = (y[0] << 24) + (y[1]<<16) + (y[2]<<8) + y[3]
-                index = int(z % num_pieces)
-                #log("z=%s=%d, index=%d" % ( hex(z), z, index ))
-                if index not in fastlist:
-                    fastlist.append(index)
-                    if len(fastlist) >= num_fast:
-                        return fastlist
 
     def got_not_interested(self):
         if self.interested:
@@ -191,3 +188,37 @@ class Upload(object):
 
     def get_rate(self):
         return self.measure.get_rate()
+
+if __name__ == "__main__":
+    # unit tests for allowed fast set generation.
+    n_tests = n_tests_passed = 0
+    infohash = "".join( ['\xaa']*20 )  # 20 byte string containing all 0xaa.
+    ip = "80.4.4.200"
+    expected_list = [1059,431,808,1217,287,376,1188]
+
+    n_tests += 1
+    fast_list =_compute_allowed_fast_list(
+                        infohash, ip, num_fast = 7, num_pieces = 1313 )
+    if expected_list != fast_list:
+        print ( "FAIL!! expected list = %s, but got %s" %
+            (str(expected_list), str(fast_list)) )
+    else:
+        n_tests_passed += 1
+
+    n_tests += 1
+    expected_list.extend( [353,508] )
+    fast_list =_compute_allowed_fast_list(
+                        infohash, ip, num_fast = 9, num_pieces = 1313 )
+    if expected_list != fast_list:
+        print ("FAIL!! expected list = %s, but got %s" %
+            (str(expected_list), str(fast_list)))
+    else:
+        n_tests_passed += 1
+
+    if n_tests == n_tests_passed:
+        print "Success. Passed all %d unit tests." % n_tests
+    else:
+        print "Passed only %d out of %d unit tests." % (n_tests_passed,n_tests)
+
+
+    

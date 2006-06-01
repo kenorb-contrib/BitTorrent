@@ -3,6 +3,7 @@
 #
 # by Greg Hazel
 
+import os        
 import sys
 import threading
 import traceback
@@ -34,7 +35,18 @@ class StackThread(Thread):
 
     def __init__(self, group=None, target=None, name=None,
                  args=(), kwargs={}, verbose=None):
-        
+
+        if name is None:
+            try:
+                raise ZeroDivisionError
+            except ZeroDivisionError:
+                f = sys.exc_info()[2].tb_frame.f_back
+
+            stack = traceback.extract_stack(f)
+            fn, ln, fc, cd = stack[0]
+            root, fn = os.path.split(fn)
+            name = '%s:%s in %s: %s' % (fn, ln, fc, cd)
+            
         base_Thread.__init__(self, group=group, target=target, name=name,
                              args=args, kwargs=kwargs, verbose=verbose)
         

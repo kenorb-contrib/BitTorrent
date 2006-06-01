@@ -6,9 +6,9 @@ msgid ""
 msgstr ""
 "Project-Id-Version: BitTorrent 4.2\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2006-05-05 18:48-0700\n"
-"PO-Revision-Date: 2006-05-05 07:42-0700\n"
-"Last-Translator: Parcharidis Miltiadis <parharidis@yahoo.com>\n"
+"POT-Creation-Date: 2006-05-18 17:41-0700\n"
+"PO-Revision-Date: 2006-05-15 11:22-0700\n"
+"Last-Translator: Rafael Zorzos <ralf_pokemaniac@yahoo.com>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -17,7 +17,7 @@ msgstr ""
 
 #: BitTorrent/GUI_wx/Bling.py:88
 msgid " seconds, "
-msgstr ""
+msgstr "Δευτρόλεπτα"
 
 #: BitTorrent/GUI_wx/Bling.py:89
 msgid " second interval"
@@ -67,240 +67,184 @@ msgstr "Συνδέσεις ανά Torrent"
 msgid "Statistics"
 msgstr "Στατιστικά"
 
-#: BitTorrent/GUI_wx/Bling.py:334 BitTorrent/GUI_wx/DownloadManager.py:2103
+#: BitTorrent/GUI_wx/Bling.py:335 BitTorrent/GUI_wx/DownloadManager.py:2178
 msgid "Speed"
 msgstr "Ταχύτητα"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:93
-#: BitTorrent/GUI_wx/DownloadManager.py:2504
+#: BitTorrent/GUI_wx/DownloadManager.py:98
+#: BitTorrent/GUI_wx/DownloadManager.py:2655
 msgid "Low"
 msgstr "Χαμηλή"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:94
-#: BitTorrent/GUI_wx/DownloadManager.py:783
-#: BitTorrent/GUI_wx/DownloadManager.py:1647
-#: BitTorrent/GUI_wx/DownloadManager.py:2504
+#: BitTorrent/GUI_wx/DownloadManager.py:99
+#: BitTorrent/GUI_wx/DownloadManager.py:757
+#: BitTorrent/GUI_wx/DownloadManager.py:1682
+#: BitTorrent/GUI_wx/DownloadManager.py:2655
 msgid "Normal"
 msgstr "Κανονική"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:95
-#: BitTorrent/GUI_wx/DownloadManager.py:2504
+#: BitTorrent/GUI_wx/DownloadManager.py:100
+#: BitTorrent/GUI_wx/DownloadManager.py:2655
 msgid "High"
 msgstr "Υψηλή"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:98
-#: BitTorrent/GUI_wx/DownloadManager.py:99
-#: BitTorrent/GUI_wx/DownloadManager.py:104
-#: BitTorrent/GUI_wx/DownloadManager.py:105
-#: BitTorrent/GUI_wx/DownloadManager.py:110
-#: BitTorrent/GUI_wx/DownloadManager.py:111 BitTorrent/StatusLight.py:24
-#: BitTorrent/StatusLight.py:25
-msgid "Paused"
-msgstr "Σε παύση"
-
-#: BitTorrent/GUI_wx/DownloadManager.py:100
-#: BitTorrent/GUI_wx/DownloadManager.py:101
-#: BitTorrent/GUI_wx/DownloadManager.py:102
-#: BitTorrent/GUI_wx/DownloadManager.py:103
-#: BitTorrent/GUI_wx/DownloadManager.py:106
-#: BitTorrent/GUI_wx/DownloadManager.py:107
-#: BitTorrent/GUI_wx/DownloadManager.py:108
-#: BitTorrent/GUI_wx/DownloadManager.py:109
-#: BitTorrent/GUI_wx/DownloadManager.py:112
-#: BitTorrent/GUI_wx/DownloadManager.py:113
-msgid "Starting"
-msgstr "Σε εκκίνηση"
-
-#: BitTorrent/GUI_wx/DownloadManager.py:114
-msgid "Queued"
-msgstr "Σε ουρά"
-
-#: BitTorrent/GUI_wx/DownloadManager.py:115
-#: BitTorrent/GUI_wx/DownloadManager.py:121
-msgid "Complete"
-msgstr ""
-
-#: BitTorrent/GUI_wx/DownloadManager.py:116
-#: BitTorrent/GUI_wx/DownloadManager.py:118
-#: BitTorrent/GUI_wx/DownloadManager.py:120
-msgid "Downloading"
-msgstr "Κατεβάζει"
-
-#: BitTorrent/GUI_wx/DownloadManager.py:117
-#: BitTorrent/GUI_wx/DownloadManager.py:119
-msgid "Seeding"
-msgstr "Διαμοίραση / Σπορά"
-
-#: BitTorrent/GUI_wx/DownloadManager.py:122
-#: BitTorrent/GUI_wx/DownloadManager.py:123
-#: BitTorrent/GUI_wx/DownloadManager.py:124
-#: BitTorrent/GUI_wx/DownloadManager.py:125
-#: BitTorrent/GUI_wx/DownloadManager.py:126
-#: BitTorrent/GUI_wx/DownloadManager.py:127
-msgid "Finishing"
-msgstr "Τελειώνει"
-
-#: BitTorrent/GUI_wx/DownloadManager.py:128
-#: BitTorrent/GUI_wx/DownloadManager.py:129
-#: BitTorrent/GUI_wx/DownloadManager.py:130
-#: BitTorrent/GUI_wx/DownloadManager.py:131
-#: BitTorrent/GUI_wx/DownloadManager.py:132
-#: BitTorrent/GUI_wx/DownloadManager.py:133
-msgid "Error"
-msgstr ""
-
-#: BitTorrent/GUI_wx/DownloadManager.py:245
-#: BitTorrent/GUI_wx/DownloadManager.py:264
+#: BitTorrent/GUI_wx/DownloadManager.py:213
+#: BitTorrent/GUI_wx/DownloadManager.py:233
 msgid "dialup"
 msgstr "Σύνδεση μέσω τηλεφώνου"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:246
+#: BitTorrent/GUI_wx/DownloadManager.py:214
 msgid "DSL/cable 128Kb up"
 msgstr "DSL/cable 128Kb ανέβασμα"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:247
+#: BitTorrent/GUI_wx/DownloadManager.py:215
 msgid "DSL/cable 256Kb up"
 msgstr "DSL/cable 256Kb ανέβασμα"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:248
+#: BitTorrent/GUI_wx/DownloadManager.py:216
 msgid "DSL 768Kb up"
 msgstr "DSL 768Kb ανέβασμα"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:249
+#: BitTorrent/GUI_wx/DownloadManager.py:217
 msgid "T1"
 msgstr "T1"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:250
+#: BitTorrent/GUI_wx/DownloadManager.py:218
 msgid "T1/E1"
 msgstr "T1/E1"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:251
-#: BitTorrent/GUI_wx/DownloadManager.py:268
+#: BitTorrent/GUI_wx/DownloadManager.py:219
+#: BitTorrent/GUI_wx/DownloadManager.py:237
 msgid "E1"
 msgstr "E1"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:252
-#: BitTorrent/GUI_wx/DownloadManager.py:270
+#: BitTorrent/GUI_wx/DownloadManager.py:220
+#: BitTorrent/GUI_wx/DownloadManager.py:239
 msgid "T3"
 msgstr "T3"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:253
-#: BitTorrent/GUI_wx/DownloadManager.py:271
+#: BitTorrent/GUI_wx/DownloadManager.py:221
+#: BitTorrent/GUI_wx/DownloadManager.py:240
 msgid "OC3"
 msgstr "OC3"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:265
+#: BitTorrent/GUI_wx/DownloadManager.py:222
+#: BitTorrent/GUI_wx/DownloadManager.py:241
+msgid "fast"
+msgstr ""
+
+#: BitTorrent/GUI_wx/DownloadManager.py:234
 msgid "DSL/cable 384Kb down"
 msgstr "DSL/cable 384Kb κατέβασμα"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:266
+#: BitTorrent/GUI_wx/DownloadManager.py:235
 msgid "DSL/cable 768Kb down"
 msgstr "DSL/cable 768Kb κατέβασμα"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:267
+#: BitTorrent/GUI_wx/DownloadManager.py:236
 msgid "DSL/T1"
 msgstr "DSL/T1"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:269
+#: BitTorrent/GUI_wx/DownloadManager.py:238
 msgid "DSL 6Mb down"
 msgstr "DSL 6Mb κατέβασμα"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:301
+#: BitTorrent/GUI_wx/DownloadManager.py:271
 msgid "Maximum upload rate"
 msgstr "Μέγιστος ρυθμός αποστολής"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:307
+#: BitTorrent/GUI_wx/DownloadManager.py:277
 msgid "Average maximum download rate"
 msgstr "Μέσος όρος μέγιστου ρυθμού λήψης"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:352
+#: BitTorrent/GUI_wx/DownloadManager.py:326
 #, python-format
 msgid "Hide %s"
 msgstr "Απόκρυψη %s"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:354
+#: BitTorrent/GUI_wx/DownloadManager.py:328
 #, python-format
 msgid "Show %s"
 msgstr "Εμφάνιση %s"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:372
-#: BitTorrent/GUI_wx/DownloadManager.py:376
+#: BitTorrent/GUI_wx/DownloadManager.py:346
+#: BitTorrent/GUI_wx/DownloadManager.py:350
 #, python-format
 msgid "Quit %s"
 msgstr "Έξοδος %s"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:482
+#: BitTorrent/GUI_wx/DownloadManager.py:456
 msgid "General"
 msgstr "Γενικά"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:490 BitTorrent/defaultargs.py:272
+#: BitTorrent/GUI_wx/DownloadManager.py:464 BitTorrent/defaultargs.py:278
 #, python-format
 msgid "Confirm before quitting %s"
 msgstr "Ερώτηση πρινς την έξοδο %s"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:502
+#: BitTorrent/GUI_wx/DownloadManager.py:476
 msgid "Enforce .torrent associations on startup"
 msgstr "Επέβαλε τις .torrent αναθέσεις κατά την εκκίνηση"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:509
+#: BitTorrent/GUI_wx/DownloadManager.py:483
 msgid "Launch BitTorrent when Windows starts"
 msgstr "Εκκίνηση του BitTorrent κατά την εκκίνηση των Windows"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:516
+#: BitTorrent/GUI_wx/DownloadManager.py:490
 msgid "Start minimized"
 msgstr "Εκκίνηση ελαχιστοποιημένο"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:523 BitTorrent/defaultargs.py:320
+#: BitTorrent/GUI_wx/DownloadManager.py:497 BitTorrent/defaultargs.py:331
 msgid "Minimize to the system tray"
 msgstr "Ελαχιστοποίηση στην περιοχή συστήματος"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:530 BitTorrent/defaultargs.py:322
+#: BitTorrent/GUI_wx/DownloadManager.py:504 BitTorrent/defaultargs.py:333
 msgid "Close to the system tray"
 msgstr "Κλείσιμο στην περιοχή συστήματος"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:547
+#: BitTorrent/GUI_wx/DownloadManager.py:521
 msgid "Saving"
 msgstr "Αποθηκεύεται"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:553
+#: BitTorrent/GUI_wx/DownloadManager.py:527
 msgid "Ask where to save each new download"
 msgstr ""
 "Να ερωτάσθε πού να αποθηκευτεί κάθε νέα αποφόρτωσηΕρώτηση για το που θα "
 "αποθηκεύεται κάθε νέο κατέβασμα"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:556
+#: BitTorrent/GUI_wx/DownloadManager.py:530
 msgid "Move completed downloads to:"
 msgstr "Μετέφερε τα ολοκληρωμένα κατεβάσματα στο:"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:565
+#: BitTorrent/GUI_wx/DownloadManager.py:539
 msgid "Store unfinished downloads in:"
 msgstr "Αποθήκευση ανολοκλήρωτων κατεβασμάτων στο:"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:591
+#: BitTorrent/GUI_wx/DownloadManager.py:565
 msgid "Network"
 msgstr "Δίκτυο"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:598
+#: BitTorrent/GUI_wx/DownloadManager.py:572
 msgid "Autodetect available bandwidth"
 msgstr "Αυτόματη ανίχνευση διαθέσιμου εύρους ταχύτητας"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:619
+#: BitTorrent/GUI_wx/DownloadManager.py:593
 msgid "Look for available port:"
 msgstr "Αναζήτηση για διαθέσιμες θύρες:"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:620
+#: BitTorrent/GUI_wx/DownloadManager.py:594
 msgid "starting at port:"
 msgstr "εκκίνηση στη θύρα:"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:626 BitTorrent/defaultargs.py:99
+#: BitTorrent/GUI_wx/DownloadManager.py:600 BitTorrent/defaultargs.py:101
 msgid "Enable automatic port mapping"
-msgstr ""
+msgstr "Εξουσιοδότηση αυτόματου εντοπισμού θύρας"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:647
+#: BitTorrent/GUI_wx/DownloadManager.py:621
 msgid "IP to report to the tracker:"
 msgstr "IP για αναφορά στον tracker:"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:652
+#: BitTorrent/GUI_wx/DownloadManager.py:626
 msgid ""
 "(Has no effect unless you are on the\n"
 "same local network as the tracker)"
@@ -308,27 +252,27 @@ msgstr ""
 "(Δεν έχει καμμία επίδραση εκτός αν είστε\n"
 " στο ίδιο τοπικό δίκτυο με τον tracker)"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:673
+#: BitTorrent/GUI_wx/DownloadManager.py:647
 msgid "Appearance"
 msgstr "Εμφάνιση"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:691
+#: BitTorrent/GUI_wx/DownloadManager.py:665
 msgid "Progress bar style:"
 msgstr "Στυλ γραμμής προόδου"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:696
+#: BitTorrent/GUI_wx/DownloadManager.py:670
 msgid "&None (just show percent complete)"
 msgstr "&None (απλά εμφάνισε το ποσοστό που ολοκληρώθηκε)"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:701
+#: BitTorrent/GUI_wx/DownloadManager.py:675
 msgid "&Ordinary progress bar"
 msgstr "&Ordinary γραμμή προόδου"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:706
+#: BitTorrent/GUI_wx/DownloadManager.py:680
 msgid "&Detailed progress bar"
 msgstr "&Detailed γραμμή προόδου"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:708
+#: BitTorrent/GUI_wx/DownloadManager.py:682
 msgid ""
 "(shows the percentage of complete, transferring, available and missing "
 "pieces in the torrent)"
@@ -336,557 +280,590 @@ msgstr ""
 "(δείχνει το ποσοστό ολοκληρωμένων, μεταφερόμενων, διαθέσιμων και εκλιπόντων "
 "κομματιών στο torrent)"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:724
+#: BitTorrent/GUI_wx/DownloadManager.py:698
 msgid "&Piece bar"
 msgstr "&Piece γραμμή"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:727
+#: BitTorrent/GUI_wx/DownloadManager.py:701
 msgid "(shows the status of each piece in the torrent)"
 msgstr "(εμφανίζει κατάστασης του κάθε κομματιού στο torrent)"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:776
+#: BitTorrent/GUI_wx/DownloadManager.py:750
 msgid "Toolbar style:"
 msgstr "Στυλ γραμμής εργαλείων"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:777
+#: BitTorrent/GUI_wx/DownloadManager.py:751
 msgid "Show text"
 msgstr "Εμφάνιση κειμένου"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:782
+#: BitTorrent/GUI_wx/DownloadManager.py:756
 msgid "Icon size:"
 msgstr "Μέγεθος εικονιδίου"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:783
+#: BitTorrent/GUI_wx/DownloadManager.py:757
 msgid "Small"
 msgstr "Μικρό"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:783
+#: BitTorrent/GUI_wx/DownloadManager.py:757
 msgid "Large"
 msgstr "Μεγάλο"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:843
+#: BitTorrent/GUI_wx/DownloadManager.py:781
+msgid "(Changing themes requires restart.)"
+msgstr ""
+
+#: BitTorrent/GUI_wx/DownloadManager.py:782
+msgid "Theme:"
+msgstr ""
+
+#: BitTorrent/GUI_wx/DownloadManager.py:865
 msgid "Language"
 msgstr "Γλώσσα"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:860
+#: BitTorrent/GUI_wx/DownloadManager.py:882
 #, python-format
 msgid "%s Settings"
 msgstr "%s Ρυθμίσεις"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:934
+#: BitTorrent/GUI_wx/DownloadManager.py:956
 #, python-format
 msgid "Couldn't open %s"
 msgstr "Δεν ήταν δυνατό το άνοιγμα %s"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:955
+#: BitTorrent/GUI_wx/DownloadManager.py:977
 msgid "Status"
-msgstr ""
+msgstr "Κατάσταση"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:959
-#: BitTorrent/GUI_wx/DownloadManager.py:1445
+#: BitTorrent/GUI_wx/DownloadManager.py:981
+#: BitTorrent/GUI_wx/DownloadManager.py:1480
 msgid "Name"
 msgstr "Όνομα"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:961
+#: BitTorrent/GUI_wx/DownloadManager.py:983
 msgid "Progress"
 msgstr "Πρόοδος"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:964
+#: BitTorrent/GUI_wx/DownloadManager.py:986
 msgid "Time remaining"
 msgstr "Χρόνος που απομένει"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:966
+#: BitTorrent/GUI_wx/DownloadManager.py:988
 msgid "Up rate"
 msgstr ""
 
-#: BitTorrent/GUI_wx/DownloadManager.py:969
+#: BitTorrent/GUI_wx/DownloadManager.py:991
 msgid "Down rate"
 msgstr ""
 
-#: BitTorrent/GUI_wx/DownloadManager.py:971
-#: BitTorrent/GUI_wx/DownloadManager.py:2506
+#: BitTorrent/GUI_wx/DownloadManager.py:993
+#: BitTorrent/GUI_wx/DownloadManager.py:2657
 msgid "Priority"
 msgstr "Προτεραιότητα"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:974
+#: BitTorrent/GUI_wx/DownloadManager.py:996
 msgid "Peers"
-msgstr ""
+msgstr "Ομότιμοι"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:1188
+#: BitTorrent/GUI_wx/DownloadManager.py:1210
 msgid "IP address"
 msgstr "Διεύθυνση IP"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:1191
+#: BitTorrent/GUI_wx/DownloadManager.py:1213
 msgid "Client"
 msgstr "Τερματικό"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:1194
+#: BitTorrent/GUI_wx/DownloadManager.py:1216
 msgid "Peer id"
 msgstr "Peer id"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:1198
+#: BitTorrent/GUI_wx/DownloadManager.py:1220
 msgid "Initiation"
-msgstr ""
+msgstr "Εκκίνηση"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:1200
+#: BitTorrent/GUI_wx/DownloadManager.py:1222
 msgid "KB/s down"
 msgstr "KB/s κατέβασμα"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:1202
+#: BitTorrent/GUI_wx/DownloadManager.py:1224
 msgid "KB/s up"
 msgstr "KB/s ανέβασμα"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:1204
+#: BitTorrent/GUI_wx/DownloadManager.py:1226
 msgid "MB downloaded"
 msgstr "MB αποφορτώθηκαν"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:1206
+#: BitTorrent/GUI_wx/DownloadManager.py:1228
 msgid "MB uploaded"
 msgstr "MB επιφορτώθηκαν"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:1208
+#: BitTorrent/GUI_wx/DownloadManager.py:1230
 #, python-format
 msgid "% complete"
 msgstr "% πλήρης"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:1211
+#: BitTorrent/GUI_wx/DownloadManager.py:1233
 msgid "KB/s est. peer download"
 msgstr "KB/s περίπου αποφόρτωσης ανα χρήστη"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:1252
-#: BitTorrent/GUI_wx/DownloadManager.py:1257
+#: BitTorrent/GUI_wx/DownloadManager.py:1275
+#: BitTorrent/GUI_wx/DownloadManager.py:1280
 msgid "Add Peer"
-msgstr ""
+msgstr "Προσθήκη ομότιμου"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:1257
+#: BitTorrent/GUI_wx/DownloadManager.py:1280
 msgid "Enter new peer in IP:port format"
-msgstr ""
+msgstr "Προσθήκη ομότιμου σε μορφή IP:θύρα"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:1287
+#: BitTorrent/GUI_wx/DownloadManager.py:1313
 msgid "remote"
 msgstr "μακρινός"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:1289
+#: BitTorrent/GUI_wx/DownloadManager.py:1315
 msgid "local"
 msgstr "τοπικός"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:1423
+#: BitTorrent/GUI_wx/DownloadManager.py:1458
 msgid "first"
 msgstr "πρώτο"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:1423
+#: BitTorrent/GUI_wx/DownloadManager.py:1458
 msgid "never"
 msgstr "ποτέ"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:1446 launchmany-curses.py:143
+#: BitTorrent/GUI_wx/DownloadManager.py:1481 launchmany-curses.py:143
 msgid "Size"
 msgstr "Μέγε8ος"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:1447
+#: BitTorrent/GUI_wx/DownloadManager.py:1482
 msgid "%"
 msgstr "%"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:1448 launchmany-curses.py:143
+#: BitTorrent/GUI_wx/DownloadManager.py:1483 launchmany-curses.py:143
 msgid "Download"
 msgstr "Κατέβασμα"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:1643
+#: BitTorrent/GUI_wx/DownloadManager.py:1678
 msgid "First"
 msgstr "Πρώτο"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:1643
+#: BitTorrent/GUI_wx/DownloadManager.py:1678
 msgid "Download first"
-msgstr ""
+msgstr "Κατέβασε πρώτο"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:1647
+#: BitTorrent/GUI_wx/DownloadManager.py:1682
 msgid "Download normally"
 msgstr "Κανονική αποφόρτωση"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:1656
+#: BitTorrent/GUI_wx/DownloadManager.py:1691
 msgid "Launch"
-msgstr ""
+msgstr "Εκκίνηση"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:1656
+#: BitTorrent/GUI_wx/DownloadManager.py:1691
 msgid "Launch file"
-msgstr ""
+msgstr "Άνοιγμα αρχείου"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:1825
+#: BitTorrent/GUI_wx/DownloadManager.py:1865
 msgid "Swarm:"
-msgstr ""
+msgstr "Πλήθος"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:1830
+#: BitTorrent/GUI_wx/DownloadManager.py:1870
 msgid "Peers:"
-msgstr ""
+msgstr "Ομότιμοι:"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:1830
+#: BitTorrent/GUI_wx/DownloadManager.py:1870
 msgid "Peers from tracker:"
-msgstr ""
+msgstr "Ομότιμοι από tracker:"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:1830
+#: BitTorrent/GUI_wx/DownloadManager.py:1870
 msgid "Distributed copies:"
 msgstr "Διανεμημένα αντίγραφα:"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:1830
+#: BitTorrent/GUI_wx/DownloadManager.py:1870
 msgid "Swarm speed:"
-msgstr ""
+msgstr "Ταχύτητα πλήθους "
 
-#: BitTorrent/GUI_wx/DownloadManager.py:1830
+#: BitTorrent/GUI_wx/DownloadManager.py:1870
 msgid "Discarded data:"
-msgstr ""
+msgstr "Αχρείαστα δεδομένα"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:1830
+#: BitTorrent/GUI_wx/DownloadManager.py:1870
 msgid "Next announce:"
-msgstr ""
+msgstr "Επόμενο ανάγγελμα"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:1844
+#: BitTorrent/GUI_wx/DownloadManager.py:1884
 msgid "Torrent file:"
-msgstr ""
+msgstr "Αρχείο Torrent"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:1852
+#: BitTorrent/GUI_wx/DownloadManager.py:1892
 msgid "Tracker:"
 msgstr "Tracker:"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:1852
+#: BitTorrent/GUI_wx/DownloadManager.py:1892
 msgid "Trackers:"
 msgstr "Trackers:"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:1852
+#: BitTorrent/GUI_wx/DownloadManager.py:1892
 msgid "Backup tracker:"
 msgstr "Εφεδρικός tracker:"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:1852
+#: BitTorrent/GUI_wx/DownloadManager.py:1892
 msgid "Backup trackers:"
 msgstr "Εφεδρικοί trackers:"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:1854
+#: BitTorrent/GUI_wx/DownloadManager.py:1894
 msgid "(trackerless torrent)"
 msgstr "(torrent χωρίς tracker)"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:1866
+#: BitTorrent/GUI_wx/DownloadManager.py:1906
 msgid "Infohash:"
-msgstr ""
+msgstr "'Ελεγχος αρχείου για ήδη κατεβασμένα κομμάτια"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:1874
+#: BitTorrent/GUI_wx/DownloadManager.py:1914
 msgid "Pieces:"
 msgstr "Κομμάτια:"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:1881
+#: BitTorrent/GUI_wx/DownloadManager.py:1921
 msgid "Created on:"
 msgstr "Δημιουργήθηκε την:"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:1903
-#: BitTorrent/GUI_wx/DownloadManager.py:1917
+#: BitTorrent/GUI_wx/DownloadManager.py:1943
+#: BitTorrent/GUI_wx/DownloadManager.py:1957
 #, python-format
 msgid "%s (all seeds)"
 msgstr ""
 
-#: BitTorrent/GUI_wx/DownloadManager.py:1905
-#: BitTorrent/GUI_wx/DownloadManager.py:1919
+#: BitTorrent/GUI_wx/DownloadManager.py:1945
+#: BitTorrent/GUI_wx/DownloadManager.py:1959
 #, python-format
 msgid "%s (%s seed)"
 msgstr ""
 
-#: BitTorrent/GUI_wx/DownloadManager.py:1907
-#: BitTorrent/GUI_wx/DownloadManager.py:1921
+#: BitTorrent/GUI_wx/DownloadManager.py:1947
+#: BitTorrent/GUI_wx/DownloadManager.py:1961
 #, python-format
 msgid "%s (%s seeds)"
 msgstr ""
 
-#: BitTorrent/GUI_wx/DownloadManager.py:1913
+#: BitTorrent/GUI_wx/DownloadManager.py:1953
 msgid "Unknown"
-msgstr ""
+msgstr "'Αγνωστο"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:1964
+#: BitTorrent/GUI_wx/DownloadManager.py:2004
 msgid "Torrent title:"
 msgstr "Τίτλος torrent:"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:1966
+#: BitTorrent/GUI_wx/DownloadManager.py:2006
 msgid "Torrent name:"
-msgstr ""
+msgstr "Όνομα αρχείου Torrent"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:1974
+#: BitTorrent/GUI_wx/DownloadManager.py:2014
 msgid "Download rate:"
-msgstr ""
+msgstr "Ρυθμός κατεβάσματος"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:1975
+#: BitTorrent/GUI_wx/DownloadManager.py:2015
 msgid "Upload rate:"
-msgstr ""
+msgstr "Ρυθμός φόρτωσης"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:1976
+#: BitTorrent/GUI_wx/DownloadManager.py:2016
 msgid "Time remaining:"
-msgstr ""
+msgstr "Εναπομείναντας χρόνος"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:1995
+#: BitTorrent/GUI_wx/DownloadManager.py:2035
 msgid "File name:"
 msgstr "Όνομα αρχείου:"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:1999
+#: BitTorrent/GUI_wx/DownloadManager.py:2039
 msgid "Directory name:"
 msgstr "Όνομα φακέλου:"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:2005
+#: BitTorrent/GUI_wx/DownloadManager.py:2045
 msgid "Save in:"
 msgstr "Αποθήκευση στο:"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:2009
+#: BitTorrent/GUI_wx/DownloadManager.py:2049
 msgid ", in one file"
 msgstr ", σε ένα αρχείο"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:2011
+#: BitTorrent/GUI_wx/DownloadManager.py:2051
 #, python-format
 msgid ", in %d files"
 msgstr ", σε %d αρχεία"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:2012
+#: BitTorrent/GUI_wx/DownloadManager.py:2052
 msgid "Total size:"
 msgstr "Συνολικό μέγεθος:"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:2082
+#: BitTorrent/GUI_wx/DownloadManager.py:2123
+#: BitTorrent/GUI_wx/DownloadManager.py:2207
+msgid "Show &Details"
+msgstr ""
+
+#: BitTorrent/GUI_wx/DownloadManager.py:2128
+msgid "Open &Folder"
+msgstr ""
+
+#: BitTorrent/GUI_wx/DownloadManager.py:2156
 msgid "Comments"
 msgstr "Σχόλια"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:2091
+#: BitTorrent/GUI_wx/DownloadManager.py:2165
 msgid "File List"
 msgstr "Λίστα αρχείων"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:2100
+#: BitTorrent/GUI_wx/DownloadManager.py:2174
 msgid "Peer List"
-msgstr ""
+msgstr "Λίστα Ομοτίτλων"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:2106
+#: BitTorrent/GUI_wx/DownloadManager.py:2181
 msgid "Log"
 msgstr "Καταγραφή"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:2109
+#: BitTorrent/GUI_wx/DownloadManager.py:2184
 msgid "Torrent"
-msgstr ""
+msgstr "Torrent"
 
 #: BitTorrent/GUI_wx/DownloadManager.py:2215
+msgid "Hide &Details"
+msgstr ""
+
+#: BitTorrent/GUI_wx/DownloadManager.py:2339
 #, python-format
 msgid "%.1f%% of %s"
-msgstr ""
+msgstr "%.1f%% από %s"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:2217
+#: BitTorrent/GUI_wx/DownloadManager.py:2341
 #, python-format
 msgid "%s"
-msgstr ""
+msgstr "%s"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:2256
+#: BitTorrent/GUI_wx/DownloadManager.py:2380
 #, python-format
 msgid "About %s"
 msgstr "Σχετικά με %s"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:2268
+#: BitTorrent/GUI_wx/DownloadManager.py:2392
 msgid "Beta"
 msgstr "Δοκιμαστική έκδοση"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:2270
+#: BitTorrent/GUI_wx/DownloadManager.py:2394
 #, python-format
 msgid "Version %s"
 msgstr "Έκδοση %s"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:2287
-#: BitTorrent/GUI_wx/DownloadManager.py:2314
+#: BitTorrent/GUI_wx/DownloadManager.py:2411
+#: BitTorrent/GUI_wx/DownloadManager.py:2452
 msgid "&Credits"
-msgstr ""
+msgstr "&Αναγνώριση"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:2290
-#: BitTorrent/GUI_wx/DownloadManager.py:2330
+#: BitTorrent/GUI_wx/DownloadManager.py:2414
+#: BitTorrent/GUI_wx/DownloadManager.py:2468
 msgid "&Translators"
-msgstr ""
+msgstr "&Μεταφραστές"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:2318
+#: BitTorrent/GUI_wx/DownloadManager.py:2456
 msgid "Hide &credits"
-msgstr ""
+msgstr "Κρύψε &αναγνώριση"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:2334
+#: BitTorrent/GUI_wx/DownloadManager.py:2472
 msgid "Hide &translators"
-msgstr ""
+msgstr "Κρύψε &μεταφραστές"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:2382
+#: BitTorrent/GUI_wx/DownloadManager.py:2520
 #, python-format
 msgid "Info for \"%s\""
 msgstr "Πληροφορίες για \"%s\""
 
-#: BitTorrent/GUI_wx/DownloadManager.py:2567
+#: BitTorrent/GUI_wx/DownloadManager.py:2549
+#, python-format
+msgid "%s Download Complete"
+msgstr ""
+
+#: BitTorrent/GUI_wx/DownloadManager.py:2550
+#, python-format
+msgid "%s has finished downloading."
+msgstr ""
+
+#: BitTorrent/GUI_wx/DownloadManager.py:2718
 msgid "&Add torrent file\tCtrl+O"
-msgstr ""
+msgstr "&Προσθήκη αρχείου Torrent\\tCtrl+O"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:2574
+#: BitTorrent/GUI_wx/DownloadManager.py:2725
 msgid "Add"
-msgstr ""
+msgstr "Προσθήκη"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:2580
+#: BitTorrent/GUI_wx/DownloadManager.py:2731
 msgid "Info"
-msgstr ""
+msgstr "Πληροφορίες"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:2580
+#: BitTorrent/GUI_wx/DownloadManager.py:2731
 msgid "Torrent info\tCtrl+I"
-msgstr ""
+msgstr "Πληροφορίες Torrent\\tCtrl+O"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:2585
+#: BitTorrent/GUI_wx/DownloadManager.py:2736
 msgid "Pause"
 msgstr "Παύση"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:2585
+#: BitTorrent/GUI_wx/DownloadManager.py:2736
 msgid "Pause torrent"
 msgstr "Παύση torrent"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:2589
+#: BitTorrent/GUI_wx/DownloadManager.py:2740
 msgid "Resume"
-msgstr ""
+msgstr "Επαναφορά"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:2589
+#: BitTorrent/GUI_wx/DownloadManager.py:2740
 msgid "Resume torrent"
-msgstr ""
+msgstr "Επαναφορά Torrent"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:2594
+#: BitTorrent/GUI_wx/DownloadManager.py:2745
 msgid "Open"
 msgstr "Άνοιγμα"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:2594
+#: BitTorrent/GUI_wx/DownloadManager.py:2745
 msgid "Open torrent"
-msgstr ""
+msgstr "Άνοιγμα Torrent"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:2599
+#: BitTorrent/GUI_wx/DownloadManager.py:2750
 msgid "Force Start"
 msgstr "Εξαναγκασμένη σύνδεση"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:2599
+#: BitTorrent/GUI_wx/DownloadManager.py:2750
 msgid "Force start torrent"
-msgstr ""
+msgstr "Εξαναγκαασμένη σύνδεση Torrent"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:2605
+#: BitTorrent/GUI_wx/DownloadManager.py:2756
 msgid "Remove"
-msgstr ""
+msgstr "Αφαίρεση"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:2605
+#: BitTorrent/GUI_wx/DownloadManager.py:2756
 msgid "Remove torrent"
 msgstr "Αφαίρεση torrent"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:2632
+#: BitTorrent/GUI_wx/DownloadManager.py:2786
 msgid "Add torrent &URL\tCtrl+U"
-msgstr ""
+msgstr "Προσθήκη Torrent &URL\\tCtrl+U"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:2635
+#: BitTorrent/GUI_wx/DownloadManager.py:2789
 msgid "Make &new torrent\tCtrl+N"
-msgstr ""
+msgstr "Δημιουργία &νέου Torrent\\tCtrl+N"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:2644
+#: BitTorrent/GUI_wx/DownloadManager.py:2798
 msgid "&Quit\tCtrl+Q"
-msgstr ""
+msgstr "&Έξοδος\\tCtrl+Q"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:2646
+#: BitTorrent/GUI_wx/DownloadManager.py:2800
 msgid "E&xit"
-msgstr ""
+msgstr "Έ&ξοδος"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:2648
+#: BitTorrent/GUI_wx/DownloadManager.py:2802
 msgid "&File"
 msgstr "&Αρχείο"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:2653
+#: BitTorrent/GUI_wx/DownloadManager.py:2807
 msgid "&Settings\tCtrl+S"
-msgstr ""
+msgstr "&Ρυθμίσεις\\tCtrl+S"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:2657
+#: BitTorrent/GUI_wx/DownloadManager.py:2811
 msgid "&Log\tCtrl+L"
-msgstr ""
+msgstr "&Καταγραφή\\tCtrl+L"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:2661
+#: BitTorrent/GUI_wx/DownloadManager.py:2815
 msgid "&Console\tCtrl+C"
-msgstr ""
+msgstr "&Κονσόλα\\tCtrl+C"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:2664
+#: BitTorrent/GUI_wx/DownloadManager.py:2818
 msgid "&Details\tCtrl+D"
-msgstr ""
+msgstr "&Λεπτομέριες\\tCtrl+D"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:2668
+#: BitTorrent/GUI_wx/DownloadManager.py:2822
 msgid "&View"
 msgstr "&Εμφάνιση"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:2674
+#: BitTorrent/GUI_wx/DownloadManager.py:2828
 msgid "&Torrent"
-msgstr ""
+msgstr "&Torrent"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:2679
+#: BitTorrent/GUI_wx/DownloadManager.py:2833
 msgid "&About\tCtrl+B"
-msgstr ""
+msgstr "&Σχετικά\\tCtrl+B"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:2681
+#: BitTorrent/GUI_wx/DownloadManager.py:2835
 msgid "FA&Q"
-msgstr ""
+msgstr "FA&Q"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:2686
+#: BitTorrent/GUI_wx/DownloadManager.py:2840
 msgid "&Help"
 msgstr "&Βοήθεια"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:2790
+#: BitTorrent/GUI_wx/DownloadManager.py:2946
 msgid "Search for torrents"
 msgstr "Έρευνα για torrents"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:3048
+#: BitTorrent/GUI_wx/DownloadManager.py:3209
 msgid "Save In"
-msgstr ""
+msgstr "Αποθήκευση Σε"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:3052
+#: BitTorrent/GUI_wx/DownloadManager.py:3213
 #, python-format
 msgid "Save \"%s\" in:"
-msgstr ""
+msgstr "Αποθήκευση \"%s\" Σε:"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:3055
+#: BitTorrent/GUI_wx/DownloadManager.py:3216
 #, python-format
 msgid ""
 "Choose a folder...\n"
 "(\"%s\" will be a sub-folder.)"
 msgstr ""
+"Διάλεξτε ένα φάκελο...\n"
+"(\"%s\" θα είναι υποφάκελος)"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:3060
+#: BitTorrent/GUI_wx/DownloadManager.py:3221
 msgid "Save As"
-msgstr ""
+msgstr "Αποθήκευση Ως"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:3064
+#: BitTorrent/GUI_wx/DownloadManager.py:3225
 #, python-format
 msgid "Save \"%s\" as:"
-msgstr ""
+msgstr "Αποθήκευση \"%s\" Ως:"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:3075
+#: BitTorrent/GUI_wx/DownloadManager.py:3236
 msgid "&Always save files in this directory"
-msgstr ""
+msgstr "&Παντα αποθήκευε αρχεία σε αυτό τον φάκελο"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:3081
+#: BitTorrent/GUI_wx/DownloadManager.py:3242
 msgid "Create &shortcut on the desktop"
-msgstr ""
+msgstr "Δημιουργία &συντόμευσης στην επιφάνια εργασίας"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:3175
+#: BitTorrent/GUI_wx/DownloadManager.py:3336
 #, python-format
 msgid "Really quit %s?"
-msgstr ""
+msgstr "Πραγματικά Έξοδος %s?"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:3176
+#: BitTorrent/GUI_wx/DownloadManager.py:3337
 #, python-format
 msgid "Are you sure you want to quit %s?"
-msgstr ""
+msgstr "Είσαστε σίγουρος οτι Θέλετε να φύγετε %s?"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:3177
+#: BitTorrent/GUI_wx/DownloadManager.py:3338
 msgid "&Don't ask again"
-msgstr ""
+msgstr "&Μην με ξαναρωτήσεις"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:3191
+#: BitTorrent/GUI_wx/DownloadManager.py:3352
 #, python-format
 msgid "New %s version available"
 msgstr "Καινούργια διαθέσιμη έκδοση %s"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:3193
+#: BitTorrent/GUI_wx/DownloadManager.py:3354
 #, python-format
 msgid "A newer version of %s is available.\n"
 msgstr "Υπάρχει νέα διαθέσημη έκδοση του %s. \n"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:3194
+#: BitTorrent/GUI_wx/DownloadManager.py:3355
 #, python-format
 msgid "You are using %s, and the new version is %s.\n"
 msgstr "Χρησιμοποιείτε την %s και η νέα έκδoση είναι %s.\n"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:3195
+#: BitTorrent/GUI_wx/DownloadManager.py:3356
 #, python-format
 msgid ""
 "You can always get the latest version from \n"
@@ -895,174 +872,232 @@ msgstr ""
 "Μπορείτε να βρείτε την νεότερη έκδοση στο \n"
 " %s"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:3196
+#: BitTorrent/GUI_wx/DownloadManager.py:3357
 msgid "&Remind me later"
-msgstr ""
+msgstr "&Θύμισε με μετά"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:3197
+#: BitTorrent/GUI_wx/DownloadManager.py:3358
 msgid "Download &Now"
-msgstr ""
+msgstr "Κατέβασε &Τώρα"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:3198
+#: BitTorrent/GUI_wx/DownloadManager.py:3359
 msgid "Download &Later"
-msgstr ""
+msgstr "Κατέβασε &Μετά"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:3332
+#: BitTorrent/GUI_wx/DownloadManager.py:3497
 #, python-format
 msgid "%s Log"
-msgstr ""
+msgstr "%s Καταγραφή"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:3462
+#: BitTorrent/GUI_wx/DownloadManager.py:3653
 msgid "Enter the URL of a torrent file to open:"
 msgstr "Δώστε την διεύθηνση (URL) για το άνοιγμα αρχείου torrent:"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:3463
+#: BitTorrent/GUI_wx/DownloadManager.py:3654
 msgid "Enter torrent URL"
 msgstr "Δώστε την διεύθηνση (URL) του torrent"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:3476
-msgid "Open torrent file:"
+#: BitTorrent/GUI_wx/DownloadManager.py:3665
+msgid "Open Path"
 msgstr ""
 
-#: BitTorrent/GUI_wx/DownloadManager.py:3502 BitTorrent/MultiTorrent.py:250
+#: BitTorrent/GUI_wx/DownloadManager.py:3679
+msgid "Open torrent file:"
+msgstr "Άνοιγμα αρχείου Torrent:"
+
+#: BitTorrent/GUI_wx/DownloadManager.py:3705 BitTorrent/MultiTorrent.py:252
 #: BitTorrent/OldTorrentQueue.py:586
 msgid "This torrent (or one with the same contents) is already running."
 msgstr "Αυτό το torrent (ή ένα με τα ίδια περιεχόμενα) είναι ήδη ενεργό."
 
-#: BitTorrent/GUI_wx/DownloadManager.py:3506 BitTorrent/MultiTorrent.py:254
+#: BitTorrent/GUI_wx/DownloadManager.py:3709 BitTorrent/MultiTorrent.py:256
 #: BitTorrent/OldTorrentQueue.py:590
 msgid "This torrent (or one with the same contents) is already waiting to run."
 msgstr ""
 "Αυτό το torrent (ή ένα με τα ίδια περιεχόμενα) ήδη περιμένει να "
 "ενεργοποιηθεί."
 
-#: BitTorrent/GUI_wx/DownloadManager.py:3598
+#: BitTorrent/GUI_wx/DownloadManager.py:3812
 msgid ""
-"The directory you chose already contains some files which appear to be from "
+"The folder you chose already contains some files which appear to be from "
 "this torrent.  Do you want to resume the download using these files, rather "
-"than starting the download over again in a subdirectory?"
+"than starting the download over again in a subfolder?"
 msgstr ""
 
-#: BitTorrent/GUI_wx/DownloadManager.py:3604
-msgid "Directory exists!"
+#: BitTorrent/GUI_wx/DownloadManager.py:3818
+msgid "Wrong folder?"
 msgstr ""
 
-#: BitTorrent/GUI_wx/DownloadManager.py:3618
+#: BitTorrent/GUI_wx/DownloadManager.py:3832
 #, python-format
 msgid ""
 "A different \"%s\" already exists.  Do you want to remove it and overwrite "
 "it with the contents of this torrent?"
 msgstr ""
+"Ένα διαφορετικό \"%s\" υπαρχει ήδη. Επιθυμείς να το αφαιρέσεις και να το "
+"παραγράψεις με τα περιεχόμενα αυτού του Torrent ?"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:3622
+#: BitTorrent/GUI_wx/DownloadManager.py:3836
 msgid "Files are different!"
-msgstr ""
+msgstr "Τα αρχεία είναι διαφορετικά !"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:3632
+#: BitTorrent/GUI_wx/DownloadManager.py:3846
 #, python-format
 msgid "\"%s\" already exists.  Do you want to choose a different file name?"
 msgstr ""
+"\"%s\" ήδη υπάρχει. Θέλεις να διαλέξεις ένα διαφορετικό όνομα αρχείου ? "
 
-#: BitTorrent/GUI_wx/DownloadManager.py:3634
+#: BitTorrent/GUI_wx/DownloadManager.py:3848
 msgid "File exists!"
 msgstr "Το αρχείο υπάρχει!"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:3655
+#: BitTorrent/GUI_wx/DownloadManager.py:3869
 #, python-format
 msgid ""
 "There is a file in this torrent that is %(file_size)s. This exceeds the "
 "maximum file size allowed on this %(fs_type)s, %(max_size)s.  Would you like "
 "to choose a different %(disk_term)s to save this torrent in?"
 msgstr ""
+"Υπάρχει ενα αρχείο σε αυτό το Torrent το οποίο είναι %(file_size)s. Αυτό "
+"ξεπερνά το μεέγιστο μέγεθος αρχείου που δικαιούται σε αυτό το %(fs_size)s, %"
+"(max_size)s. Θα ήθελες να διαλέξεις ένα διαφορετικό %(disk_term)s για να "
+"αποθηκε΄θσεις αθτό το Torrent ?"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:3665
+#: BitTorrent/GUI_wx/DownloadManager.py:3879
 #, python-format
 msgid "File too large for %s"
-msgstr ""
+msgstr "Το αρχείο είναι πολύ μεγαλο για %s"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:3685
+#: BitTorrent/GUI_wx/DownloadManager.py:3899
 #, python-format
 msgid ""
 "There is not enough space on this %s to save this torrent.  Would you like "
 "to choose a different %s to save it in?"
 msgstr ""
+"Δεν υπάρχει αρκετός χώρος σε αυτό το %s για να αποθηκεύσεις αυτό το Torrent. "
+"Θα ήθελες να διαλέξεις ένα διαφορετικό %s για να το αποθηκεύσεις ?"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:3689
+#: BitTorrent/GUI_wx/DownloadManager.py:3903
 #, python-format
 msgid "Not enough space on this %s"
+msgstr "Δεν υπάρχει αρκετός χώρος σε αυτό το %s"
+
+#: BitTorrent/GUI_wx/DownloadManager.py:3913
+msgid ""
+"The location you chose exceeds the maximum path length on this system.  You "
+"must choose a different folder."
 msgstr ""
 
-#: BitTorrent/GUI_wx/DownloadManager.py:3746
+#: BitTorrent/GUI_wx/DownloadManager.py:3916
+msgid "Maximum path exceeded"
+msgstr ""
+
+#: BitTorrent/GUI_wx/DownloadManager.py:3925
+msgid ""
+"The save location you specified does not exist (perhaps you mistyped it?)  "
+"Please choose a different folder."
+msgstr ""
+
+#: BitTorrent/GUI_wx/DownloadManager.py:3928
+msgid "No such folder"
+msgstr ""
+
+#: BitTorrent/GUI_wx/DownloadManager.py:3993
 #, python-format
 msgid ""
 "Are you sure you want to permanently remove \n"
 "\"%s\"?"
 msgstr ""
+"Είστε σίγουρος οτι θέλετε να αφαίρεσετε μόνιμα \n"
+" \"%s\" ?"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:3747
+#: BitTorrent/GUI_wx/DownloadManager.py:3994
 msgid "Really remove torrent?"
-msgstr ""
+msgstr "Σίγουρα θέλετε να αφαιρέσετε το Torrent ?"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:3777
+#: BitTorrent/GUI_wx/DownloadManager.py:4029
 msgid "Install update now?"
-msgstr ""
+msgstr "Εγκατάσταση αναβάθμισης τώρα ?"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:3922
+#: BitTorrent/GUI_wx/DownloadManager.py:4181
 #, python-format
 msgid "(%d torrents)"
-msgstr ""
+msgstr "(%d torrents)"
 
-#: BitTorrent/GUI_wx/DownloadManager.py:3929
+#: BitTorrent/GUI_wx/DownloadManager.py:4188
 msgid "(initializing)"
-msgstr ""
+msgstr "(έναρξη)"
 
-#: BitTorrent/GUI_wx/__init__.py:31
+#: BitTorrent/GUI_wx/__init__.py:32
 #, python-format
 msgid "wxPython version %s or newer required"
-msgstr ""
+msgstr "Χρειάζεται έκδοση %s του wxPython ή νεότερη"
 
-#: BitTorrent/GUI_wx/__init__.py:328 BitTorrent/GUI_wx/__init__.py:355
-#: BitTorrent/GUI_wx/__init__.py:400
+#: BitTorrent/GUI_wx/__init__.py:373 BitTorrent/GUI_wx/__init__.py:400
+#: BitTorrent/GUI_wx/__init__.py:445
 msgid "&Browse..."
-msgstr ""
+msgstr "&Ερεύνησε..."
 
-#: BitTorrent/GUI_wx/__init__.py:354 BitTorrent/GUI_wx/__init__.py:429
+#: BitTorrent/GUI_wx/__init__.py:399 BitTorrent/GUI_wx/__init__.py:474
 msgid "Choose a folder..."
-msgstr ""
+msgstr "Διάλεξε ένα φάκελο ..."
 
-#: BitTorrent/GUI_wx/__init__.py:399 BitTorrent/GUI_wx/__init__.py:428
+#: BitTorrent/GUI_wx/__init__.py:444 BitTorrent/GUI_wx/__init__.py:473
 msgid "Choose a file..."
-msgstr ""
+msgstr "Διάλεξε ένα αρχείο ..."
 
-#: BitTorrent/GUI_wx/__init__.py:401 BitTorrent/GUI_wx/__init__.py:432
+#: BitTorrent/GUI_wx/__init__.py:446 BitTorrent/GUI_wx/__init__.py:477
 msgid "All files (*.*)|*.*"
-msgstr ""
+msgstr "Όλα τα αρχεία (*.*)|*.*"
 
-#: BitTorrent/GUI_wx/__init__.py:430
+#: BitTorrent/GUI_wx/__init__.py:475
 msgid "Choose &file..."
-msgstr ""
+msgstr "Διάλεξε &αρχείο ..."
 
-#: BitTorrent/GUI_wx/__init__.py:431
+#: BitTorrent/GUI_wx/__init__.py:476
 msgid "Choose f&older..."
+msgstr "Διάλεξε φ&άκελο ..."
+
+#: BitTorrent/GUI_wx/OpenDialog.py:29
+msgid ""
+"Enter the URL or path to a torrent file on the Internet, your computer, or "
+"your network that you want to add."
 msgstr ""
 
-#: bittorrent.py:26 maketorrent.py:23
+#: BitTorrent/GUI_wx/OpenDialog.py:33
+msgid "Open:"
+msgstr ""
+
+#: BitTorrent/GUI_wx/OpenDialog.py:53
+msgid "&OK"
+msgstr ""
+
+#: BitTorrent/GUI_wx/OpenDialog.py:59
+msgid "&Cancel"
+msgstr ""
+
+#: BitTorrent/GUI_wx/OpenDialog.py:65
+msgid "&Browse"
+msgstr ""
+
+#: bittorrent.py:65 maketorrent.py:23
 #, python-format
 msgid "Install Python %s or greater"
-msgstr ""
+msgstr "Εγκατάστησε Python %s ή μεγαλύτερο"
 
-#: bittorrent.py:99
+#: bittorrent.py:139
 #, python-format
 msgid "%s already running"
 msgstr "%s ήδη σε εξέλιξη."
 
-#: bittorrent.py:102
+#: bittorrent.py:142
 #, python-format
 msgid ""
 "Failed to communicate with another %s process but one seems to be running."
 msgstr ""
+"Αποτυχία επικοινωνίας με άλλες διαδικασίες %s μα μια φαίνεται να δουλεύει"
 
-#: bittorrent.py:104
+#: bittorrent.py:144
 #, python-format
 msgid " Closing all %s windows may fix the problem."
 msgstr "Το πρόβλημα μπορεί να λυθεί, αν κλείσετε όλα τα %s παράθυρα."
@@ -1070,11 +1105,11 @@ msgstr "Το πρόβλημα μπορεί να λυθεί, αν κλείσετ�
 #: maketorrent.py:61
 #, python-format
 msgid "%s Publisher"
-msgstr ""
+msgstr "%s Εκδότης"
 
 #: maketorrent.py:72
 msgid "Publish this file/directory:"
-msgstr ""
+msgstr "Δημοσιοποίηση αυτού του φακέλου:"
 
 #: maketorrent.py:75
 msgid "(Directories will become batch torrents)"
@@ -1082,7 +1117,7 @@ msgstr "(Οι κατάλογοι θα γίνουν torrents δέσμης)"
 
 #: maketorrent.py:78
 msgid "Title"
-msgstr ""
+msgstr "Τίτλος"
 
 #: maketorrent.py:83
 msgid "Comments:"
@@ -1094,7 +1129,7 @@ msgstr "Μέγεθος μέρους:"
 
 #: maketorrent.py:93
 msgid "Auto"
-msgstr ""
+msgstr "Αυτόματο"
 
 #: maketorrent.py:100
 msgid "Use &tracker:"
@@ -1110,67 +1145,73 @@ msgstr "Δικτυακές συσκευές (προαιρετικό):"
 
 #: maketorrent.py:145
 msgid "&Close"
-msgstr ""
+msgstr "&Κλείσιμο"
 
 #: maketorrent.py:147
 msgid "&Publish"
-msgstr ""
+msgstr "&Δημοσιομοίηση"
 
 #: maketorrent.py:151
 msgid "&Advanced"
-msgstr ""
+msgstr "&Προηγμένα"
 
 #: maketorrent.py:153
 msgid "&Simple"
-msgstr ""
+msgstr "&Απλά"
 
-#: maketorrent.py:376
+#: maketorrent.py:380
 msgid "Host"
-msgstr ""
+msgstr "Οικοδεσπότης"
 
-#: maketorrent.py:377
+#: maketorrent.py:381
 msgid "Port"
-msgstr ""
+msgstr "Θύρα"
 
-#: maketorrent.py:489
+#: maketorrent.py:493
 msgid "Building torrents..."
 msgstr "Δημιουργία torrents..."
 
-#: maketorrent.py:500
+#: maketorrent.py:504
 msgid "Checking file sizes..."
 msgstr "Έλεγχος μεγέθους αρχείων..."
 
-#: maketorrent.py:512
+#: maketorrent.py:516
 msgid "&Abort"
 msgstr "&Αποβολή"
 
-#: maketorrent.py:517
+#: maketorrent.py:521
 msgid "&Ok"
-msgstr ""
+msgstr "&Εντάξει"
 
-#: maketorrent.py:524
+#: maketorrent.py:528
 msgid "&Start seeding"
-msgstr ""
+msgstr "&Άρχισε <>"
 
-#: maketorrent.py:561
+#: maketorrent.py:565
 msgid "building: "
-msgstr ""
+msgstr "δημιουργία:"
 
-#: maketorrent.py:585
+#: maketorrent.py:589
 msgid "Done."
 msgstr "Ολοκληρώθηκε."
 
-#: maketorrent.py:586
+#: maketorrent.py:590
 msgid "Done building torrents."
 msgstr "Η δημιουργία των torrents ολοκληρώθηκε."
 
-#: maketorrent.py:593
+#: maketorrent.py:597
 msgid "Error!"
 msgstr "Σφάλμα!"
 
-#: maketorrent.py:594
+#: maketorrent.py:598
 msgid "Error building torrents: "
 msgstr "Σφάλμα στη δημιουργία των torrents:"
+
+#: BitTorrent/StatusLight.py:24 BitTorrent/StatusLight.py:25
+#: BitTorrent/UI.py:38 BitTorrent/UI.py:39 BitTorrent/UI.py:44
+#: BitTorrent/UI.py:45 BitTorrent/UI.py:50 BitTorrent/UI.py:51
+msgid "Paused"
+msgstr "Σε παύση"
 
 #: BitTorrent/StatusLight.py:27 BitTorrent/StatusLight.py:28
 msgid "No torrents"
@@ -1178,39 +1219,41 @@ msgstr "Δεν υπάρχουν torrents"
 
 #: BitTorrent/StatusLight.py:30
 msgid "Starting up..."
-msgstr ""
+msgstr "Εκκίνηση ..."
 
 #: BitTorrent/StatusLight.py:31
 msgid "Starting download"
-msgstr ""
+msgstr "Άρχισε κατέβασμα"
 
 #: BitTorrent/StatusLight.py:33
 msgid "Checking connection..."
-msgstr ""
+msgstr "Έλεγχος σύνδεσης ..."
 
 #: BitTorrent/StatusLight.py:34
 msgid "Online, checking connection"
-msgstr ""
+msgstr "Σε σύνδεση, έλεγχος σύνδεσης"
 
 #: BitTorrent/StatusLight.py:36
 msgid "Online"
-msgstr ""
+msgstr "Σε σύνδεση"
 
 #: BitTorrent/StatusLight.py:37
 msgid "Online, running normally"
-msgstr ""
+msgstr "Σε σύνδεση, τρέχοντας κανονικά"
 
 #: BitTorrent/StatusLight.py:39
 msgid "Online, maybe firewalled"
-msgstr ""
+msgstr "Σε σύνδεση, μπορεί να βρίσκεται πίσω από προστατευτικό τοίχο"
 
 #: BitTorrent/StatusLight.py:40
 msgid "Online, but downloads may be slow due to firewall/NAT"
 msgstr ""
+"Σε σύνδεση, όμως τα κατεβάσματα μπορεί να είναι αργά λόλω προστατευτικού "
+"τοίχου"
 
 #: BitTorrent/StatusLight.py:42
 msgid "No network connection"
-msgstr ""
+msgstr "Δεν υπάρχει σύνδεση δικτίου"
 
 #: BitTorrent/StatusLight.py:43
 msgid "Check network connection"
@@ -1227,19 +1270,18 @@ msgstr ""
 "του καταλόγου διαμόρφωσης bittorrent."
 
 #: BitTorrent/defaultargs.py:50
-msgid ""
-"character encoding used on the local filesystem. If left empty, "
-"autodetected. Autodetection doesn't work under python versions older than 2.3"
-msgstr ""
-"η κωδικοποίηση χαρακτήρων χρησημοποιείται στο τοπικό σύστημα φακέλων. Αν "
-"αφεθεί κενό, θα εντοπιστεί αυτόματα. Ο αυτόματος εντοπισμός δεν λειτουργεί "
-"σε εκδόσεις του python παλιότερες της 2.3"
-
-#: BitTorrent/defaultargs.py:54
 msgid "ISO Language code to use"
 msgstr "κωδικός γλώσσας ISO για χρήση"
 
-#: BitTorrent/defaultargs.py:59
+#: BitTorrent/defaultargs.py:52
+msgid ""
+"Starts the application in a debug mode.  All settings revert to default "
+"except those provided as command-line options.  Creates temporary "
+"directories for dot, data, incomplete torrents and complete torrents.  "
+"Allows multiple clients on the same machine to communicate with each other."
+msgstr ""
+
+#: BitTorrent/defaultargs.py:61
 msgid ""
 "ip to report to the tracker (has no effect unless you are on the same local "
 "network as the tracker)"
@@ -1247,7 +1289,7 @@ msgstr ""
 "Διαδυκτιακή διεύθηνση IP προς αναφορά στον διακομιστή (σημαντικό μόνον εάν "
 "βρίσκεσται στο ίδιο δίκτυο με τον διακομιστή)"
 
-#: BitTorrent/defaultargs.py:62
+#: BitTorrent/defaultargs.py:64
 msgid ""
 "world-visible port number if it's different from the one the client listens "
 "on locally"
@@ -1255,67 +1297,67 @@ msgstr ""
 "Αριθμός φανερής θύρας εάν είναι διαφορετικός απο την τοπική θύρα εισόδου του "
 "τερματικού"
 
-#: BitTorrent/defaultargs.py:65
+#: BitTorrent/defaultargs.py:67
 msgid "minimum port to listen on, counts up if unavailable"
 msgstr ""
 "η μικρότερη θύρα προς χρήση. Σε περίπτωση που δεν είναι διαθέσιμη θα "
 "χρησιμοποιηθεί η επόμενη μεγαλύτερη θύρα"
 
-#: BitTorrent/defaultargs.py:67
+#: BitTorrent/defaultargs.py:69
 msgid "maximum port to listen on"
 msgstr "Μέγιστος αριθμός θύρας προς χρήση"
 
-#: BitTorrent/defaultargs.py:69 BitTorrent/defaultargs.py:167
+#: BitTorrent/defaultargs.py:71 BitTorrent/defaultargs.py:171
 msgid "ip to bind to locally"
 msgstr "Τοπική διαδικτυακή διεύθηνση"
 
-#: BitTorrent/defaultargs.py:71 BitTorrent/defaultargs.py:408
+#: BitTorrent/defaultargs.py:73 BitTorrent/defaultargs.py:416
 msgid "seconds between updates of displayed information"
 msgstr "Καθυστέριση μεταξύ ανανεώσεων σε δευτερόλεπτα"
 
-#: BitTorrent/defaultargs.py:73
+#: BitTorrent/defaultargs.py:75
 msgid "minutes to wait between requesting more peers"
 msgstr "Λεπτά αναμονής πριν την αναζήτηση νέων τερματικών"
 
-#: BitTorrent/defaultargs.py:75
+#: BitTorrent/defaultargs.py:77
 msgid "minimum number of peers to not do rerequesting"
 msgstr "ελάχιστος αριθμός τερματικών για την μή αναζήτηση νέων"
 
-#: BitTorrent/defaultargs.py:77
+#: BitTorrent/defaultargs.py:79
 msgid "number of peers at which to stop initiating new connections"
 msgstr "μέγιστος αριθμός τερματικών"
 
-#: BitTorrent/defaultargs.py:79 BitTorrent/defaultargs.py:238
+#: BitTorrent/defaultargs.py:81 BitTorrent/defaultargs.py:242
 msgid "max number of outgoing incomplete connections"
-msgstr ""
+msgstr "μέγιστος αριθμός των ανεκπλήρωτων συνδέσεων"
 
-#: BitTorrent/defaultargs.py:81
+#: BitTorrent/defaultargs.py:83
 msgid ""
 "maximum number of connections to allow, after this new incoming connections "
 "will be immediately closed"
 msgstr "Μέγιστος αριθμός επιτρεπόμενων συνδέσεων"
 
-#: BitTorrent/defaultargs.py:84
+#: BitTorrent/defaultargs.py:86
 msgid "whether to check hashes on disk"
 msgstr "Έλεγχος εγκυρότητος των εισερχόμενων πληροφοριών στον σκληρό δίσκο"
 
-#: BitTorrent/defaultargs.py:86
+#: BitTorrent/defaultargs.py:88 BitTorrent/defaultargs.py:323
 msgid "maximum B/s to upload at"
-msgstr ""
-
-#: BitTorrent/defaultargs.py:88
-msgid "average maximum B/s to download at"
-msgstr ""
+msgstr "μέγιστα B/s προς φόρτωση"
 
 #: BitTorrent/defaultargs.py:90
-msgid "automatic bandwidth management (Windows only)"
-msgstr ""
+msgid "average maximum B/s to download at"
+msgstr "Μέσος Όρος μέγιστων B/s για κατέβασμα"
 
 #: BitTorrent/defaultargs.py:92
+msgid "automatic bandwidth management (Windows only)"
+msgstr "αυτόματος χειρισμός εύρου ζώνης (μόνο στα Windows)"
+
+#: BitTorrent/defaultargs.py:94
 msgid "the number of uploads to fill out to with extra optimistic unchokes"
 msgstr "Αριθμός ανεβασμάτων προς ικανοποίηση"
 
-#: BitTorrent/defaultargs.py:94
+#: BitTorrent/defaultargs.py:96
 msgid ""
 "the maximum number of files in a multifile torrent to keep open at a time, 0 "
 "means no limit. Used to avoid running out of file descriptors."
@@ -1323,45 +1365,52 @@ msgstr ""
 "Μέγιστος αριθμός ανοικτών αρχείων εντός ενός τόρρεντ. Για την μη επιβολή "
 "ορίου βάλτε 0."
 
-#: BitTorrent/defaultargs.py:97
+#: BitTorrent/defaultargs.py:99
 msgid ""
 "Initialize a trackerless client.  This must be enabled in order to download "
 "trackerless torrents."
 msgstr "Ενεργοποίηση κατεβάσματος αρχείων χωρίς την χρήση ιχνηλάτη"
 
-#: BitTorrent/defaultargs.py:101
+#: BitTorrent/defaultargs.py:103
 msgid ""
 "Start the XMLRPC interface on the specified port. This XML-RPC-based RPC "
 "allows a remote program to control the client to enable automated hosting, "
 "conformance testing, and benchmarking."
 msgstr ""
+"Άρχισε την επιφάνεια XMLRPC στο επιθυμιτό σημείο. Αυτό το RPC poy είναι "
+"βασισμένο στο XML-RPC επιτρέπει σε ένα πρόγραμμα να ελέγχει το ώστε να "
+"επιτρέπει αυτόματο οικοδεσμωμα, ελεγχο επίδοσης. "
 
-#: BitTorrent/defaultargs.py:109
+#: BitTorrent/defaultargs.py:107
+msgid "Default cache farm location service."
+msgstr ""
+
+#: BitTorrent/defaultargs.py:113
 msgid "number of seconds to pause between sending keepalives"
 msgstr ""
 "Αριθμός δευτερολέπτων μεταξύ αποστολής σήματος ότι το τερματικό είναι ενεργό"
 
-#: BitTorrent/defaultargs.py:111
+#: BitTorrent/defaultargs.py:115
 msgid "how many bytes to query for per request."
 msgstr "Πόσα bytes να ζητηθούν ανά αίτηση"
 
-#: BitTorrent/defaultargs.py:113
+#: BitTorrent/defaultargs.py:117
 msgid ""
 "maximum length prefix encoding you'll accept over the wire - larger values "
 "get the connection dropped."
 msgstr ""
 "Μέγιστο αποδεκτό μέγεθος κωδικοποίησης. Μεγάλες τιμές μειώνουν την ταχύτητα"
 
-#: BitTorrent/defaultargs.py:116
+#: BitTorrent/defaultargs.py:120
 msgid ""
 "seconds to wait between closing sockets which nothing has been received on"
 msgstr "Χρόνος σε δευτερόλεπτα μεταξύ κλεισίματος ανενεργών συνδέσεων"
 
-#: BitTorrent/defaultargs.py:119
+#: BitTorrent/defaultargs.py:123
 msgid "seconds to wait between checking if any connections have timed out"
 msgstr "Χρόνος σε δευτερόλεπτα μεταξύ ελέγχων για νεκρές συνδέσεις"
 
-#: BitTorrent/defaultargs.py:121
+#: BitTorrent/defaultargs.py:125
 msgid ""
 "maximum length slice to send to peers, close connection if a larger request "
 "is received"
@@ -1369,74 +1418,78 @@ msgstr ""
 "Μέγιστο μέγεθος πληροφορίας προς αποστολή στα άλλα τερματικά. Εάν υπάρξει "
 "μεγαλύτερη αίτηση η σύνδεση θα κλείσει"
 
-#: BitTorrent/defaultargs.py:124
+#: BitTorrent/defaultargs.py:128
 msgid ""
 "maximum time interval over which to estimate the current upload and download "
 "rates"
 msgstr ""
 "Περίοδος μεταξύ διαδοχικών υπολογισμών ταχυτήτων ανεβάσματος και κατεβάσματος"
 
-#: BitTorrent/defaultargs.py:126
+#: BitTorrent/defaultargs.py:130
 msgid "maximum time to wait between retrying announces if they keep failing"
 msgstr "Μέγιστος χρόνος μεταξύ ανακοινώσεων"
 
-#: BitTorrent/defaultargs.py:128
+#: BitTorrent/defaultargs.py:132
 msgid ""
 "seconds to wait for data to come in over a connection before assuming it's "
 "semi-permanently choked"
 msgstr ""
 "Μέγιστος χρόνος αναμονής πριν την διακύρηξη της σύνδεσης ώς κεκορεσμένης"
 
-#: BitTorrent/defaultargs.py:131
+#: BitTorrent/defaultargs.py:135
 msgid "number of downloads at which to switch from random to rarest first"
 msgstr ""
 "Αριθμός συνδέσεων μετά τις οποίες η προταιρεότητα αλλάζει απο τυχαία σε ανα "
 "σπανιότητα"
 
-#: BitTorrent/defaultargs.py:133
+#: BitTorrent/defaultargs.py:137
 msgid "how many bytes to write into network buffers at once."
 msgstr "πόσα bytes να γράφονται στην λανθάνουσα μνήμη του δικτύου"
 
-#: BitTorrent/defaultargs.py:135
+#: BitTorrent/defaultargs.py:139
 msgid ""
 "refuse further connections from addresses with broken or intentionally "
 "hostile peers that send incorrect data"
 msgstr "Διακοπή συνδέσεων που αποστέλουν λάθος δεδομένα επανηλλημένως"
 
-#: BitTorrent/defaultargs.py:138
+#: BitTorrent/defaultargs.py:142
 msgid "do not connect to several peers that have the same IP address"
 msgstr "Απαγόρευση σύνδεσης σε πολλαπλά τερματικά που έχουν την ίδια διεύθηνση"
 
-#: BitTorrent/defaultargs.py:140
+#: BitTorrent/defaultargs.py:144
 msgid "if nonzero, set the TOS option for peer connections to this value"
 msgstr ""
+"Εάν όχι 0, ρύθμισε την επιλογή TOS να ομοιοτιμεί σθνδέσεις σε αυτη την τιμή "
 
-#: BitTorrent/defaultargs.py:142
+#: BitTorrent/defaultargs.py:146
 msgid ""
 "enable workaround for a bug in BSD libc that makes file reads very slow."
 msgstr ""
 "Ενεργοποίηση λύσης στο πρόβλημα αργής ανάγνωσης απο τον δίσκο στο "
 "λειτουργικό σύστημα BSD"
 
-#: BitTorrent/defaultargs.py:144
+#: BitTorrent/defaultargs.py:148
 msgid "address of HTTP proxy to use for tracker connections"
 msgstr "Διεύθυνση ενδιάμεσου διακομιστή προς χρήση απο τον ιχνηλάτη"
 
-#: BitTorrent/defaultargs.py:146 BitTorrent/defaultargs.py:171
+#: BitTorrent/defaultargs.py:150 BitTorrent/defaultargs.py:175
 msgid "close connections with RST and avoid the TCP TIME_WAIT state"
 msgstr "Διακοπή συνδέσεων με το RST και αποφυγή τροπη σε TCP TIME_WAIT"
 
-#: BitTorrent/defaultargs.py:148
+#: BitTorrent/defaultargs.py:152
 msgid "number of read threads to use in the storage object"
 msgstr ""
+"αριθμός διαβασμένων απειλών προς χρησημοποιηση στο αντικίμενο αποθήκευσης"
 
-#: BitTorrent/defaultargs.py:150
+#: BitTorrent/defaultargs.py:154
 msgid ""
 "number of simultaneous piece checks to run per torrent, set to a low number "
 "like 2 or 3"
 msgstr ""
+"αριθμός συχρονισμένων ελέγχων των κομματιών που θα γίνονται  σε κάθε "
+"Torrent, ρυθμισμένος σε ένα χαμηλό αριθμό όπως 2 ή 3"
 
-#: BitTorrent/defaultargs.py:152 BitTorrent/defaultargs.py:234
+#: BitTorrent/defaultargs.py:156 BitTorrent/defaultargs.py:238
 msgid ""
 "Use Twisted network libraries for network connections. 1 means use twisted, "
 "0 means do not use twisted, -1 means autodetect, and prefer twisted"
@@ -1444,63 +1497,69 @@ msgstr ""
 "Χρήση τρεπόμενων δικτύων βιβλιοθηκών για συνδέσεις. 1 για χρήση, 0 για μη "
 "χρήση, -1 για αυτόματη χρήση"
 
-#: BitTorrent/defaultargs.py:154
+#: BitTorrent/defaultargs.py:158
 msgid "Number of pieces allowed fast."
-msgstr ""
+msgstr "αριθμός κομμαρτιών που επιτρέπονατι γρήγορα"
 
-#: BitTorrent/defaultargs.py:163
+#: BitTorrent/defaultargs.py:167
 msgid "Port to listen on."
-msgstr ""
-
-#: BitTorrent/defaultargs.py:165
-msgid "file to store recent downloader info in"
-msgstr ""
+msgstr "θύρα που χρησημοποιήται"
 
 #: BitTorrent/defaultargs.py:169
-msgid "timeout for closing connections"
+msgid "file to store recent downloader info in"
 msgstr ""
+"αρχείο στο οποίο να αποθηκεύονται οι τελευταίες πληροφορίες κατεβάσματος"
 
 #: BitTorrent/defaultargs.py:173
-msgid "seconds between saving dfile"
-msgstr ""
-
-#: BitTorrent/defaultargs.py:175
-msgid "seconds between expiring downloaders"
-msgstr ""
+msgid "timeout for closing connections"
+msgstr "όριο χρόνου για συνδέσεις που κλέινουν"
 
 #: BitTorrent/defaultargs.py:177
-msgid "seconds downloaders should wait between reannouncements"
-msgstr ""
+msgid "seconds between saving dfile"
+msgstr "δευτερόλεπτα μεταξύ αποθήκευσης κατεβασμένου αρχείου"
 
 #: BitTorrent/defaultargs.py:179
+msgid "seconds between expiring downloaders"
+msgstr "δευτερόλεπτα μεταξύ ληγμένων κατεβαστατών"
+
+#: BitTorrent/defaultargs.py:181
+msgid "seconds downloaders should wait between reannouncements"
+msgstr "δευτερόλεπτα που οι κατεβαστές θα περιμένον μεταξύ επανακοινώσεων"
+
+#: BitTorrent/defaultargs.py:183
 msgid ""
 "default number of peers to send an info message to if the client does not "
 "specify a number"
 msgstr ""
+"προεπιλεγμένος αριθμός ομοτίμων στους οποίους να σταλεί ενα μήνθμα "
+"πληροφοριών εάν ο δεν ξεκαθαρίζει έναν αριθμό  "
 
-#: BitTorrent/defaultargs.py:182
+#: BitTorrent/defaultargs.py:186
 msgid "time to wait between checking if any connections have timed out"
 msgstr ""
+"χρόνος που πρέπει να περιμένει εάν οποιεσδήποτε συνδέσεις έχουν αποσθνδεθεί"
 
-#: BitTorrent/defaultargs.py:184
+#: BitTorrent/defaultargs.py:188
 msgid ""
 "how many times to check if a downloader is behind a NAT (0 = don't check)"
 msgstr ""
+"πόσες φορές να ελεγχθεί εάν ο κατεβαστής βρίσκεται πίσω από ένα ΝΑΤ (0=να "
+"μην γίνεται ελεγχος)"
 
-#: BitTorrent/defaultargs.py:187
+#: BitTorrent/defaultargs.py:191
 msgid "whether to add entries to the log for nat-check results"
-msgstr ""
+msgstr "πότε θα εισάγονται οι καταγραφές για τον έλεγχο ΝΑΤ"
 
-#: BitTorrent/defaultargs.py:189
+#: BitTorrent/defaultargs.py:193
 msgid "minimum time it must have been since the last flush to do another one"
 msgstr ""
 
-#: BitTorrent/defaultargs.py:192
+#: BitTorrent/defaultargs.py:196
 msgid ""
 "minimum time in seconds before a cache is considered stale and is flushed"
 msgstr ""
 
-#: BitTorrent/defaultargs.py:195
+#: BitTorrent/defaultargs.py:199
 msgid ""
 "only allow downloads for .torrents in this dir (and recursively in "
 "subdirectories of directories that have no .torrent files themselves). If "
@@ -1508,100 +1567,100 @@ msgid ""
 "peers or not"
 msgstr ""
 
-#: BitTorrent/defaultargs.py:200 BitTorrent/defaultargs.py:372
+#: BitTorrent/defaultargs.py:204 BitTorrent/defaultargs.py:376
 msgid "how often to rescan the torrent directory, in seconds"
 msgstr ""
 
-#: BitTorrent/defaultargs.py:202
+#: BitTorrent/defaultargs.py:206
 msgid ""
 "allow special keys in torrents in the allowed_dir to affect tracker access"
 msgstr ""
 
-#: BitTorrent/defaultargs.py:205
+#: BitTorrent/defaultargs.py:209
 msgid "whether to reopen the log file upon receipt of HUP signal"
 msgstr ""
 
-#: BitTorrent/defaultargs.py:207
+#: BitTorrent/defaultargs.py:211
 msgid "whether to display an info page when the tracker's root dir is loaded"
 msgstr ""
 
-#: BitTorrent/defaultargs.py:210
+#: BitTorrent/defaultargs.py:214
 msgid "a URL to redirect the info page to"
 msgstr ""
 
-#: BitTorrent/defaultargs.py:212
+#: BitTorrent/defaultargs.py:216
 msgid "whether to display names from allowed dir"
 msgstr ""
 
-#: BitTorrent/defaultargs.py:214
+#: BitTorrent/defaultargs.py:218
 msgid "file containing x-icon data to return when browser requests favicon.ico"
 msgstr ""
 
-#: BitTorrent/defaultargs.py:217
+#: BitTorrent/defaultargs.py:221
 msgid ""
 "ignore the ip GET parameter from machines which aren't on local network IPs "
 "(0 = never, 1 = always, 2 = ignore if NAT checking is not enabled). HTTP "
 "proxy headers giving address of original client are treated the same as --ip."
 msgstr ""
 
-#: BitTorrent/defaultargs.py:222
+#: BitTorrent/defaultargs.py:226
 msgid "file to write the tracker logs, use - for stdout (default)"
 msgstr ""
 
-#: BitTorrent/defaultargs.py:224
+#: BitTorrent/defaultargs.py:228
 msgid ""
 "use with allowed_dir; adds a /file?hash={hash} url that allows users to "
 "download the torrent file"
 msgstr ""
 
-#: BitTorrent/defaultargs.py:227
+#: BitTorrent/defaultargs.py:231
 msgid ""
 "keep dead torrents after they expire (so they still show up on your /scrape "
 "and web page). Only matters if allowed_dir is not set"
 msgstr ""
 
-#: BitTorrent/defaultargs.py:230
+#: BitTorrent/defaultargs.py:234
 msgid "scrape access allowed (can be none, specific or full)"
 msgstr ""
 
-#: BitTorrent/defaultargs.py:232
+#: BitTorrent/defaultargs.py:236
 msgid "maximum number of peers to give with any one request"
 msgstr ""
 
-#: BitTorrent/defaultargs.py:260
+#: BitTorrent/defaultargs.py:266
 msgid "path to the file that you are publishing (seeding)."
 msgstr ""
 
-#: BitTorrent/defaultargs.py:262 BitTorrent/defaultargs.py:428
+#: BitTorrent/defaultargs.py:268 BitTorrent/defaultargs.py:436
 msgid "display verbose information in user interface"
 msgstr ""
 
-#: BitTorrent/defaultargs.py:264 BitTorrent/defaultargs.py:430
+#: BitTorrent/defaultargs.py:270 BitTorrent/defaultargs.py:438
 msgid "provide debugging tools in user interface"
 msgstr ""
 
-#: BitTorrent/defaultargs.py:266
+#: BitTorrent/defaultargs.py:272
 msgid "start downloader in paused state"
 msgstr "Έναρξη με τα τόρρεντ σε παύση"
 
-#: BitTorrent/defaultargs.py:270
+#: BitTorrent/defaultargs.py:276
 #, python-format
 msgid "Start %s minimized"
 msgstr ""
 
-#: BitTorrent/defaultargs.py:274
+#: BitTorrent/defaultargs.py:280
 msgid ""
 "override the version provided by the http version check and enable version "
 "check debugging mode"
 msgstr ""
 
-#: BitTorrent/defaultargs.py:277
+#: BitTorrent/defaultargs.py:283
 msgid ""
 "override the current version used in the version check and enable version "
 "check debugging mode"
 msgstr ""
 
-#: BitTorrent/defaultargs.py:282
+#: BitTorrent/defaultargs.py:288
 msgid ""
 "The style of progressbar to show.  0 means no progress bar.  1 is an "
 "ordinary progress bar.  2 is a progress bar that shows transferring, "
@@ -1609,76 +1668,77 @@ msgid ""
 "codes each piece in the torrent based on its availability."
 msgstr ""
 
-#: BitTorrent/defaultargs.py:289
+#: BitTorrent/defaultargs.py:295
 msgid ""
 "specify window size and position, in the format: WIDTHxHEIGHT+XOFFSET+YOFFSET"
 msgstr ""
 
-#: BitTorrent/defaultargs.py:292
+#: BitTorrent/defaultargs.py:298
 #, python-format
 msgid "Start %s maximized"
 msgstr ""
 
-#: BitTorrent/defaultargs.py:294
+#: BitTorrent/defaultargs.py:300
 msgid "Widths of columns in torrent list in main window"
 msgstr ""
 
-#: BitTorrent/defaultargs.py:297
+#: BitTorrent/defaultargs.py:303
 msgid "Order of columns in torrent list in main window"
 msgstr ""
 
-#: BitTorrent/defaultargs.py:300
+#: BitTorrent/defaultargs.py:306
 msgid "Enabled columns in torrent list in main window"
 msgstr ""
 
-#: BitTorrent/defaultargs.py:302
+#: BitTorrent/defaultargs.py:308
 msgid "Default sort column in torrent list in main window"
 msgstr ""
 
-#: BitTorrent/defaultargs.py:304
+#: BitTorrent/defaultargs.py:310
 msgid "Default sort order in torrent list in main window"
 msgstr ""
 
-#: BitTorrent/defaultargs.py:306
+#: BitTorrent/defaultargs.py:312
 msgid "Whether to show text on the toolbar or not"
 msgstr ""
 
-#: BitTorrent/defaultargs.py:308
+#: BitTorrent/defaultargs.py:314
 msgid "Size in pixels of toolbar icons"
 msgstr ""
 
-#: BitTorrent/defaultargs.py:310
+#: BitTorrent/defaultargs.py:316
 msgid "Show details panel on startup"
 msgstr ""
 
-#: BitTorrent/defaultargs.py:312
+#: BitTorrent/defaultargs.py:318
 msgid "Which tab in the details panel to show by default"
 msgstr ""
 
-#: BitTorrent/defaultargs.py:318
+#: BitTorrent/defaultargs.py:320
+msgid "whether or not to ask for a location to save downloaded files in"
+msgstr ""
+
+#: BitTorrent/defaultargs.py:329
 #, python-format
 msgid "Launch %s when Windows starts"
 msgstr ""
 
-#: BitTorrent/defaultargs.py:324
+#: BitTorrent/defaultargs.py:335
 msgid "Enforce .torrent file associations on startup"
 msgstr ""
 
-#: BitTorrent/defaultargs.py:330
-msgid ""
-"file name (for single-file torrents) or directory name (for batch torrents) "
-"to save the torrent as, overriding the default name in the torrent. See also "
-"--save_in"
+#: BitTorrent/defaultargs.py:342
+msgid "Icon theme to use"
 msgstr ""
 
-#: BitTorrent/defaultargs.py:338 BitTorrent/defaultargs.py:362
+#: BitTorrent/defaultargs.py:348 BitTorrent/defaultargs.py:366
 msgid ""
 "the maximum number of uploads to allow at once. -1 means a (hopefully) "
 "reasonable number based on --max_upload_rate. The automatic values are only "
 "sensible when running one torrent at a time."
 msgstr ""
 
-#: BitTorrent/defaultargs.py:343
+#: BitTorrent/defaultargs.py:353
 msgid ""
 "local directory where the torrent contents will be saved. The file (single-"
 "file torrents) or directory (batch torrents) will be created under this "
@@ -1686,31 +1746,27 @@ msgid ""
 "save_as."
 msgstr ""
 
-#: BitTorrent/defaultargs.py:348
+#: BitTorrent/defaultargs.py:358
 msgid ""
 "local directory where the incomplete torrent downloads will be stored until "
 "completion.  Upon completion, downloads will be moved to the directory "
 "specified by --save_as."
 msgstr ""
 
-#: BitTorrent/defaultargs.py:356
-msgid "whether or not to ask for a location to save downloaded files in"
-msgstr ""
-
-#: BitTorrent/defaultargs.py:367
+#: BitTorrent/defaultargs.py:371
 msgid ""
 "local directory where the torrents will be saved, using a name determined by "
 "--saveas_style. If this is left empty each torrent will be saved under the "
 "directory of the corresponding .torrent file"
 msgstr ""
 
-#: BitTorrent/defaultargs.py:374
+#: BitTorrent/defaultargs.py:378
 msgid ""
 "wait this many seconds after noticing a torrent before starting it, to avoid "
 "race with tracker"
 msgstr ""
 
-#: BitTorrent/defaultargs.py:376
+#: BitTorrent/defaultargs.py:380
 msgid ""
 "How to name torrent downloads: 1: use name OF torrent file (minus ."
 "torrent);  2: use name encoded IN torrent file;  3: create a directory with "
@@ -1722,146 +1778,153 @@ msgid ""
 "security issues."
 msgstr ""
 
-#: BitTorrent/defaultargs.py:391
+#: BitTorrent/defaultargs.py:395
 msgid ""
 "whether to display the full path or the torrent contents for each torrent"
 msgstr ""
 
-#: BitTorrent/defaultargs.py:398
+#: BitTorrent/defaultargs.py:402
 msgid "directory to look for .torrent files (semi-recursive)"
 msgstr ""
 
-#: BitTorrent/defaultargs.py:403
+#: BitTorrent/defaultargs.py:407
+msgid ""
+"file name (for single-file torrents) or directory name (for batch torrents) "
+"to save the torrent as, overriding the default name in the torrent. See also "
+"--save_in"
+msgstr ""
+
+#: BitTorrent/defaultargs.py:411
 msgid "whether to display diagnostic info to stdout"
 msgstr ""
 
-#: BitTorrent/defaultargs.py:414
+#: BitTorrent/defaultargs.py:422
 msgid "optional human-readable title for entire .torrent"
 msgstr ""
 
-#: BitTorrent/defaultargs.py:416
+#: BitTorrent/defaultargs.py:424
 msgid "optional human-readable comment to put in .torrent"
 msgstr ""
 
-#: BitTorrent/defaultargs.py:418
+#: BitTorrent/defaultargs.py:426
 msgid ""
 "which power of two to set the piece size to, 0 means pick a good piece size"
 msgstr ""
 
-#: BitTorrent/defaultargs.py:421
+#: BitTorrent/defaultargs.py:429
 msgid "default tracker name"
 msgstr ""
 
-#: BitTorrent/defaultargs.py:424
+#: BitTorrent/defaultargs.py:432
 msgid ""
 "if false then make a trackerless torrent, instead of announce URL, use "
 "reliable node in form of <ip>:<port> or an empty string to pull some nodes "
 "from your routing table"
 msgstr ""
 
-#: bittorrent-console.py:59 bittorrent-curses.py:74
+#: bittorrent-console.py:55 bittorrent-curses.py:72
 msgid "download complete!"
 msgstr "Ολοκλήρωση αποφόρτωσης!"
 
-#: bittorrent-console.py:64 bittorrent-curses.py:79
+#: bittorrent-console.py:60 bittorrent-curses.py:77
 msgid "<unknown>"
 msgstr ""
 
-#: bittorrent-console.py:67 bittorrent-curses.py:82
+#: bittorrent-console.py:63 bittorrent-curses.py:80
 #, python-format
 msgid "finishing in %d:%02d:%02d"
 msgstr "ολοκλήρωση σε %d:%02d:%02d"
 
-#: bittorrent-console.py:114 bittorrent-curses.py:188
+#: bittorrent-console.py:110 bittorrent-curses.py:186
 msgid "download succeeded"
 msgstr "Επιτυχημένη αποφόρτωση"
 
-#: bittorrent-console.py:149 bittorrent-curses.py:245
+#: bittorrent-console.py:145 bittorrent-curses.py:243
 #, python-format
 msgid "oo  (%.1f MB up / %.1f MB down)"
 msgstr ""
 
-#: bittorrent-console.py:152 bittorrent-curses.py:248
+#: bittorrent-console.py:148 bittorrent-curses.py:246
 #, python-format
 msgid "%.3f  (%.1f MB up / %.1f MB down)"
 msgstr ""
 
-#: bittorrent-console.py:158 bittorrent-console.py:167
-#: bittorrent-curses.py:254 bittorrent-curses.py:263
+#: bittorrent-console.py:154 bittorrent-console.py:163
+#: bittorrent-curses.py:252 bittorrent-curses.py:261
 #, python-format
 msgid "%d seen now"
 msgstr ""
 
-#: bittorrent-console.py:170
+#: bittorrent-console.py:166
 msgid "Log: none"
 msgstr ""
 
-#: bittorrent-console.py:172
+#: bittorrent-console.py:168
 msgid "Log:"
 msgstr ""
 
-#: bittorrent-console.py:176
+#: bittorrent-console.py:172
 msgid "saving:        "
 msgstr "αποθήκευση:"
 
-#: bittorrent-console.py:177
+#: bittorrent-console.py:173
 msgid "file size:     "
 msgstr "μέγεθος αρχείου:"
 
-#: bittorrent-console.py:178
+#: bittorrent-console.py:174
 msgid "percent done:  "
 msgstr "ποσοστό ολοκλήρωσης:"
 
-#: bittorrent-console.py:179
+#: bittorrent-console.py:175
 msgid "time left:     "
 msgstr "υπολειπόμενος χρόνος:"
 
-#: bittorrent-console.py:180
+#: bittorrent-console.py:176
 msgid "download to:   "
 msgstr "αποφόρτωση στο:"
 
-#: bittorrent-console.py:181
+#: bittorrent-console.py:177
 msgid "download rate: "
 msgstr "ρυ8μός αποφόρτωσης:"
 
-#: bittorrent-console.py:182
+#: bittorrent-console.py:178
 msgid "upload rate:   "
 msgstr ""
 
-#: bittorrent-console.py:183
+#: bittorrent-console.py:179
 msgid "share rating:  "
 msgstr ""
 
-#: bittorrent-console.py:184
+#: bittorrent-console.py:180
 msgid "seed status:   "
 msgstr ""
 
-#: bittorrent-console.py:185
+#: bittorrent-console.py:181
 msgid "peer status:   "
 msgstr ""
 
-#: bittorrent-console.py:359 bittorrent-curses.py:493
+#: bittorrent-console.py:355 bittorrent-curses.py:502
 msgid "You cannot specify both --save_as and --save_in"
 msgstr ""
 
-#: bittorrent-console.py:396 bittorrent-curses.py:526 bittorrent-curses.py:535
+#: bittorrent-console.py:387 bittorrent-curses.py:533
 #: BitTorrent/launchmanycore.py:70
 msgid "shutting down"
 msgstr ""
 
-#: bittorrent-console.py:449 bittorrent-curses.py:599
+#: bittorrent-console.py:433 bittorrent-curses.py:605
 msgid "Error reading .torrent file: "
 msgstr ""
 
-#: bittorrent-console.py:451 bittorrent-curses.py:602
+#: bittorrent-console.py:435 bittorrent-curses.py:608
 msgid "you must specify a .torrent file"
 msgstr "Πρέπει να κα8ορίσεις ένα αρχείο .torrent"
 
-#: bittorrent-curses.py:62 launchmany-curses.py:40
+#: bittorrent-curses.py:60 launchmany-curses.py:40
 msgid "Textmode UI initialization failed, cannot proceed."
 msgstr ""
 
-#: bittorrent-curses.py:64 launchmany-curses.py:42
+#: bittorrent-curses.py:62 launchmany-curses.py:42
 msgid ""
 "This download interface requires the standard Python module \"curses\", "
 "which is unfortunately not available for the native Windows port of Python. "
@@ -1869,52 +1932,52 @@ msgid ""
 "systems (www.cygwin.com)."
 msgstr ""
 
-#: bittorrent-curses.py:69
+#: bittorrent-curses.py:67
 msgid "You may still use \"bittorrent-console\" to download."
 msgstr ""
 "Μπορείς ακόμα να χρησιμοποιήσεις το \"bittorrent-console\" για αποφόρτωση."
 
-#: bittorrent-curses.py:170
+#: bittorrent-curses.py:168
 msgid "file:"
 msgstr "αρχείο:"
 
-#: bittorrent-curses.py:171
+#: bittorrent-curses.py:169
 msgid "size:"
 msgstr "μέγε8ος:"
 
-#: bittorrent-curses.py:172
+#: bittorrent-curses.py:170
 msgid "dest:"
 msgstr "προορισμός:"
 
-#: bittorrent-curses.py:173
+#: bittorrent-curses.py:171
 msgid "progress:"
 msgstr "πρόοδος:"
 
-#: bittorrent-curses.py:174
+#: bittorrent-curses.py:172
 msgid "status:"
 msgstr "κατάσταση:"
 
-#: bittorrent-curses.py:175
+#: bittorrent-curses.py:173
 msgid "dl speed:"
 msgstr "ταχύτητα αποφόρτωσης:"
 
-#: bittorrent-curses.py:176
+#: bittorrent-curses.py:174
 msgid "ul speed:"
 msgstr ""
 
-#: bittorrent-curses.py:177
+#: bittorrent-curses.py:175
 msgid "sharing:"
 msgstr ""
 
-#: bittorrent-curses.py:178
+#: bittorrent-curses.py:176
 msgid "seeds:"
 msgstr ""
 
-#: bittorrent-curses.py:179
+#: bittorrent-curses.py:177
 msgid "peers:"
 msgstr ""
 
-#: bittorrent-curses.py:283 bittorrent-curses.py:296
+#: bittorrent-curses.py:281 bittorrent-curses.py:295
 msgid "log:"
 msgstr ""
 
@@ -1923,16 +1986,11 @@ msgid ""
 "  #     IP                 Upload           Download     Completed  Speed"
 msgstr ""
 
-#: bittorrent-curses.py:345
-#, python-format
-msgid "downloading %d pieces, have %d fragments, %d of %d pieces completed"
-msgstr ""
-
-#: bittorrent-curses.py:544 BitTorrent/launchmanycore.py:236
+#: bittorrent-curses.py:552 BitTorrent/launchmanycore.py:236
 msgid "Error reading config: "
 msgstr ""
 
-#: bittorrent-curses.py:613
+#: bittorrent-curses.py:619
 msgid "These errors occurred during execution:"
 msgstr "Κατά την διάρκεια της εκτέλεσης παρουσιάστηκαν τα ακόλου8α λά8η:"
 
@@ -2085,22 +2143,42 @@ msgstr "Αποτυχία ανάκτησης της καινούργιας έκδ
 msgid "Could not parse new version string from %s"
 msgstr "Αποτυχία προσπέλασης έκδοσης παραμέτρου από %s"
 
-#: BitTorrent/ConnectionManager.py:366
+#: BitTorrent/CacheFinder.py:35
+#, python-format
+msgid "Unable to read cache file. %s"
+msgstr ""
+
+#: BitTorrent/CacheFinder.py:37
+#, python-format
+msgid "Corrupted cache file. %s"
+msgstr ""
+
+#: BitTorrent/CacheFinder.py:39
+#, python-format
+msgid "Unable to load cache. %s"
+msgstr ""
+
+#: BitTorrent/CacheFinder.py:58
+#, python-format
+msgid "Unable to write cache file. %s"
+msgstr ""
+
+#: BitTorrent/ConnectionManager.py:374
 msgid "Can't start two separate instances of the same torrent"
 msgstr ""
 
-#: BitTorrent/ConvertedMetainfo.py:99
+#: BitTorrent/ConvertedMetainfo.py:119 BitTorrent/ConvertedMetainfo.py:126
 msgid "Bad file path component: "
 msgstr ""
 
-#: BitTorrent/ConvertedMetainfo.py:179
+#: BitTorrent/ConvertedMetainfo.py:205
 msgid ""
 "This .torrent file has been created with a broken tool and has incorrectly "
 "encoded filenames. Some or all of the filenames may appear different from "
 "what the creator of the .torrent file intended."
 msgstr ""
 
-#: BitTorrent/ConvertedMetainfo.py:185
+#: BitTorrent/ConvertedMetainfo.py:211
 msgid ""
 "This .torrent file has been created with a broken tool and has bad character "
 "values that do not correspond to any real character. Some or all of the "
@@ -2108,13 +2186,13 @@ msgid ""
 "intended."
 msgstr ""
 
-#: BitTorrent/ConvertedMetainfo.py:192
+#: BitTorrent/ConvertedMetainfo.py:218
 msgid ""
 "This .torrent file has been created with a broken tool and has incorrectly "
 "encoded filenames. The names used may still be correct."
 msgstr ""
 
-#: BitTorrent/ConvertedMetainfo.py:197
+#: BitTorrent/ConvertedMetainfo.py:223
 #, python-format
 msgid ""
 "The character set used on the local filesystem (\"%s\") cannot represent all "
@@ -2122,17 +2200,22 @@ msgid ""
 "changed from the original."
 msgstr ""
 
-#: BitTorrent/ConvertedMetainfo.py:203
+#: BitTorrent/ConvertedMetainfo.py:229
 msgid ""
 "The Windows filesystem cannot handle some characters used in the filename(s) "
 "of this torrent. Filenames have been changed from the original."
 msgstr ""
 
-#: BitTorrent/ConvertedMetainfo.py:208
+#: BitTorrent/ConvertedMetainfo.py:234
 msgid ""
 "This .torrent file has been created with a broken tool and has at least 1 "
 "file with an invalid file or directory name. However since all such files "
 "were marked as having length 0 those files are just ignored."
+msgstr ""
+
+#: BitTorrent/ConvertedMetainfo.py:392
+#, python-format
+msgid "Cannot find tracker with name %s"
 msgstr ""
 
 #: BitTorrent/GetTorrent.py:85
@@ -2140,21 +2223,21 @@ msgstr ""
 msgid "Could not read \"%s\", it is neither a file nor a URL."
 msgstr ""
 
-#: BitTorrent/GetTorrent.py:111
+#: BitTorrent/GetTorrent.py:110
 #, python-format
-msgid "\"%s\" is not a valid torrent file."
+msgid "\"%s\" is not a valid torrent file (%s)."
 msgstr ""
 
-#: BitTorrent/GetTorrent.py:126
+#: BitTorrent/GetTorrent.py:124
 #, python-format
 msgid "Could not download or open \"%s\""
 msgstr ""
 
-#: BitTorrent/GetTorrent.py:127
+#: BitTorrent/GetTorrent.py:125
 msgid "Try using a web browser to download the torrent file."
 msgstr ""
 
-#: BitTorrent/GetTorrent.py:169
+#: BitTorrent/GetTorrent.py:167
 #, python-format
 msgid "Could not read %s"
 msgstr ""
@@ -2299,87 +2382,87 @@ msgstr ""
 msgid "IPC Status: %s"
 msgstr ""
 
-#: BitTorrent/MultiTorrent.py:156
+#: BitTorrent/MultiTorrent.py:160
 msgid "maxport less than minport - no ports to check"
-msgstr ""
-
-#: BitTorrent/MultiTorrent.py:174
-#, python-format
-msgid "Could not open a listening port: %s."
-msgstr ""
-
-#: BitTorrent/MultiTorrent.py:177
-#, python-format
-msgid "Could not open a listening port: %s. "
 msgstr ""
 
 #: BitTorrent/MultiTorrent.py:178
 #, python-format
+msgid "Could not open a listening port: %s."
+msgstr ""
+
+#: BitTorrent/MultiTorrent.py:181
+#, python-format
+msgid "Could not open a listening port: %s. "
+msgstr ""
+
+#: BitTorrent/MultiTorrent.py:182
+#, python-format
 msgid "Check your port range settings (%s:%s-%s)."
 msgstr ""
 
-#: BitTorrent/MultiTorrent.py:494
+#: BitTorrent/MultiTorrent.py:500
 msgid "Coult not open the torrent config: "
 msgstr ""
 
-#: BitTorrent/MultiTorrent.py:501 BitTorrent/MultiTorrent.py:504
+#: BitTorrent/MultiTorrent.py:517 BitTorrent/MultiTorrent.py:519
 msgid "Invalid torrent config file"
 msgstr ""
 
-#: BitTorrent/MultiTorrent.py:532 BitTorrent/OldTorrentQueue.py:259
+#: BitTorrent/MultiTorrent.py:547 BitTorrent/OldTorrentQueue.py:259
 msgid "Could not save UI state: "
 msgstr "Αδυναμία αποθήκευσης κατάστασης UI:"
 
-#: BitTorrent/MultiTorrent.py:570 BitTorrent/MultiTorrent.py:572
-#: BitTorrent/MultiTorrent.py:668 BitTorrent/MultiTorrent.py:671
-#: BitTorrent/MultiTorrent.py:690 BitTorrent/MultiTorrent.py:703
+#: BitTorrent/MultiTorrent.py:584 BitTorrent/MultiTorrent.py:586
+#: BitTorrent/MultiTorrent.py:686 BitTorrent/MultiTorrent.py:689
+#: BitTorrent/MultiTorrent.py:708 BitTorrent/MultiTorrent.py:721
 #: BitTorrent/OldTorrentQueue.py:269 BitTorrent/OldTorrentQueue.py:271
 #: BitTorrent/OldTorrentQueue.py:358 BitTorrent/OldTorrentQueue.py:361
 #: BitTorrent/OldTorrentQueue.py:383 BitTorrent/OldTorrentQueue.py:400
 msgid "Invalid state file contents"
 msgstr "Άκυρα περιεχόμενα κατάστασης αρχείου"
 
-#: BitTorrent/MultiTorrent.py:574 BitTorrent/OldTorrentQueue.py:289
+#: BitTorrent/MultiTorrent.py:588 BitTorrent/OldTorrentQueue.py:289
 msgid "Invalid state file (duplicate entry)"
 msgstr "Αρχείο άκυρης κατάστασης (διπλή εισαγωγή)"
 
-#: BitTorrent/MultiTorrent.py:583
+#: BitTorrent/MultiTorrent.py:597
 #, python-format
 msgid "Error reading metainfo file \"%s\"."
 msgstr ""
 
-#: BitTorrent/MultiTorrent.py:585 BitTorrent/OldTorrentQueue.py:286
+#: BitTorrent/MultiTorrent.py:599 BitTorrent/OldTorrentQueue.py:286
 msgid "cannot restore state completely"
 msgstr "Αδυναμία πλήρους αποκατάστασης της κατάστασης"
 
-#: BitTorrent/MultiTorrent.py:588
+#: BitTorrent/MultiTorrent.py:602
 #, python-format
 msgid "Corrupt data in metainfo \"%s\", cannot restore torrent."
 msgstr ""
 
-#: BitTorrent/MultiTorrent.py:599 BitTorrent/OldTorrentQueue.py:296
+#: BitTorrent/MultiTorrent.py:613 BitTorrent/OldTorrentQueue.py:296
 #: BitTorrent/OldTorrentQueue.py:302
 #, python-format
 msgid "Corrupt data in \"%s\", cannot restore torrent."
 msgstr ""
 
-#: BitTorrent/MultiTorrent.py:600 BitTorrent/OldTorrentQueue.py:303
+#: BitTorrent/MultiTorrent.py:614 BitTorrent/OldTorrentQueue.py:303
 msgid "(infohash mismatch)"
 msgstr ""
 
-#: BitTorrent/MultiTorrent.py:621 BitTorrent/OldTorrentQueue.py:321
+#: BitTorrent/MultiTorrent.py:639 BitTorrent/OldTorrentQueue.py:321
 msgid "Invalid state file (bad entry)"
 msgstr "Αρχείο άκυρης κατάστασης (λανθασμένη εισαγωγή)"
 
-#: BitTorrent/MultiTorrent.py:658 BitTorrent/OldTorrentQueue.py:348
+#: BitTorrent/MultiTorrent.py:676 BitTorrent/OldTorrentQueue.py:348
 msgid "Bad UI state file"
 msgstr "Λανθασμένο αρχείο κατάστασης UI"
 
-#: BitTorrent/MultiTorrent.py:662 BitTorrent/OldTorrentQueue.py:352
+#: BitTorrent/MultiTorrent.py:680 BitTorrent/OldTorrentQueue.py:352
 msgid "Bad UI state file version"
 msgstr "Λανθασμένη έκδοση αρχείου κατάστασης UI"
 
-#: BitTorrent/MultiTorrent.py:664 BitTorrent/OldTorrentQueue.py:354
+#: BitTorrent/MultiTorrent.py:682 BitTorrent/OldTorrentQueue.py:354
 msgid "Unsupported UI state file version (from newer client version?)"
 msgstr ""
 "Μη υποστηριζόμενη έκδοση αρχείου κατάστασης UI (ίσως από νεώτερη έκδοση του "
@@ -2470,15 +2553,15 @@ msgstr ""
 "Δεν γίνεται η εκκίνηση του torrent επειδή ήδη συμπλήρωσε τις ρυθμίσεις του "
 "για το πότε να στματήσει να διαμοιράζει το πιο πρόσφατο ολοκληρωμένο torrent."
 
-#: BitTorrent/RawServer_twisted.py:404
+#: BitTorrent/RawServer_twisted.py:409
 msgid "connection refused"
 msgstr ""
 
-#: BitTorrent/RawServer_twisted.py:913
+#: BitTorrent/RawServer_twisted.py:918
 msgid "listen_forever() should only be called once per reactor."
 msgstr ""
 
-#: BitTorrent/RawServer_twisted.py:948
+#: BitTorrent/RawServer_twisted.py:951
 msgid ""
 "listen_once() might not return until there is activity, and might not "
 "process the event you want. Use listen_forever()."
@@ -2525,128 +2608,196 @@ msgstr ""
 msgid "Trackerless lookup failed: "
 msgstr ""
 
-#: BitTorrent/Storage.py:165
+#: BitTorrent/Storage.py:170
 #, python-format
 msgid "File %s belongs to another running torrent"
 msgstr "Το αρχείο %s ανήκει σε άλλο torrent που βρίσκεται σε εκτέλεση."
 
-#: BitTorrent/Storage.py:313
+#: BitTorrent/Storage.py:317
 #, python-format
 msgid "File %s already exists, but is not a regular file"
 msgstr "Το αρχείο %s ήδη υπάρχει, αλλά δεν είναι απλό αρχείο."
 
-#: BitTorrent/Storage.py:391
+#: BitTorrent/Storage.py:394
 msgid "Short read - something truncated files?"
 msgstr ""
 
-#: BitTorrent/Storage.py:456
-msgid "Unsupported fastresume file format, maybe from another client version?"
-msgstr ""
-
-#: BitTorrent/Storage.py:463
-#, python-format
-msgid ""
-"Another program appears to have moved, renamed, or deleted the file, or %s "
-"may have crashed last time it was run."
-msgstr ""
-
-#: BitTorrent/StorageWrapper.py:69
+#: BitTorrent/StorageWrapper.py:119
 msgid "bad data in responsefile - total too small"
 msgstr ""
 
-#: BitTorrent/StorageWrapper.py:71
+#: BitTorrent/StorageWrapper.py:121
 msgid "bad data in responsefile - total too big"
 msgstr ""
 
-#: BitTorrent/StorageWrapper.py:117
-msgid "checking existing file"
-msgstr "έλεγχος υπάρχοντος αρχείου"
-
-#: BitTorrent/StorageWrapper.py:168
+#: BitTorrent/StorageWrapper.py:191
 #, python-format
-msgid ""
-"--check_hashes 0 or fastresume info doesn't match file state (missing data %"
-"s)"
+msgid "Unsupported fastresume file format, probably corrupted: %s on (%s)"
 msgstr ""
 
-#: BitTorrent/StorageWrapper.py:188
-msgid "Bad fastresume info (illegal value)"
+#: BitTorrent/StorageWrapper.py:200
+msgid "Unsupported fastresume file format, maybe from another client version?"
 msgstr ""
 
-#: BitTorrent/StorageWrapper.py:241
-msgid "Couldn't read fastresume data: "
+#: BitTorrent/StorageWrapper.py:243
+#, python-format
+msgid "Bad fastresume info (truncation at piece %d)"
 msgstr ""
 
-#: BitTorrent/StorageWrapper.py:337
+#: BitTorrent/StorageWrapper.py:254
+#, python-format
+msgid "Bad fastresume info (illegal value at piece %d)"
+msgstr ""
+
+#: BitTorrent/StorageWrapper.py:536
 msgid "data corrupted on disk - maybe you have two copies running?"
 msgstr ""
 
-#: BitTorrent/StorageWrapper.py:548
+#: BitTorrent/StorageWrapper.py:666
 msgid "told file complete on start-up, but piece failed hash check"
 msgstr ""
 
-#: BitTorrent/Torrent.py:120
+#: BitTorrent/Torrent.py:124
 msgid "Initial startup"
 msgstr "Αρχική εκκίνηση"
 
-#: BitTorrent/Torrent.py:318
+#: BitTorrent/Torrent.py:328
 #, python-format
 msgid "Could not load fastresume data: %s"
 msgstr ""
 
-#: BitTorrent/Torrent.py:319
+#: BitTorrent/Torrent.py:329
 msgid "Will perform full hash check."
 msgstr ""
 
-#: BitTorrent/Torrent.py:326
+#: BitTorrent/Torrent.py:336
 #, python-format
 msgid "piece %d failed hash check, re-downloading it"
 msgstr ""
 
-#: BitTorrent/Torrent.py:429
+#: BitTorrent/Torrent.py:441
 msgid ""
 "Attempt to download a trackerless torrent with trackerless client turned off."
 msgstr ""
 
-#: BitTorrent/Torrent.py:474 BitTorrent/launchmanycore.py:143
+#: BitTorrent/Torrent.py:486 BitTorrent/launchmanycore.py:143
 msgid "downloading"
 msgstr ""
 
-#: BitTorrent/Torrent.py:491
+#: BitTorrent/Torrent.py:519
 msgid "stopped"
 msgstr ""
 
-#: BitTorrent/Torrent.py:574
+#: BitTorrent/Torrent.py:609
 msgid "download failed: "
 msgstr ""
 
-#: BitTorrent/Torrent.py:577
+#: BitTorrent/Torrent.py:612
 msgid "IO Error: No space left on disk, or cannot create a file that large"
 msgstr ""
 
-#: BitTorrent/Torrent.py:579
+#: BitTorrent/Torrent.py:614
 msgid "killed by IO error: "
 msgstr ""
 
-#: BitTorrent/Torrent.py:581
+#: BitTorrent/Torrent.py:616
 msgid "killed by OS error: "
 msgstr ""
 
-#: BitTorrent/Torrent.py:583
+#: BitTorrent/Torrent.py:618
 msgid "killed by internal exception: "
 msgstr ""
 
-#: BitTorrent/Torrent.py:599
+#: BitTorrent/Torrent.py:637
 msgid "Additional error when closing down due to error: "
 msgstr "Επιπλέον σφάλμα στο κλείσιμο λόγο σφάλματος:"
 
-#: BitTorrent/Torrent.py:633
+#: BitTorrent/Torrent.py:643
+#, python-format
+msgid "Error regarding \"%s\":\n"
+msgstr ""
+
+#: BitTorrent/Torrent.py:676
 msgid "seeding"
 msgstr "διαμοίραση"
 
-#: BitTorrent/Torrent.py:738
+#: BitTorrent/Torrent.py:788
 msgid "Could not write fastresume data: "
 msgstr "Αδυναμία εγγραφής δεδομένων επαναφοράς:"
+
+#: BitTorrent/UI.py:40 BitTorrent/UI.py:41 BitTorrent/UI.py:42
+#: BitTorrent/UI.py:43 BitTorrent/UI.py:46 BitTorrent/UI.py:47
+#: BitTorrent/UI.py:48 BitTorrent/UI.py:49 BitTorrent/UI.py:52
+#: BitTorrent/UI.py:53
+msgid "Starting"
+msgstr "Σε εκκίνηση"
+
+#: BitTorrent/UI.py:54
+msgid "Queued"
+msgstr "Σε ουρά"
+
+#: BitTorrent/UI.py:55 BitTorrent/UI.py:61
+msgid "Complete"
+msgstr "Ολοκληρωμένο"
+
+#: BitTorrent/UI.py:56 BitTorrent/UI.py:58 BitTorrent/UI.py:60
+msgid "Downloading"
+msgstr "Κατεβάζει"
+
+#: BitTorrent/UI.py:57 BitTorrent/UI.py:59
+msgid "Seeding"
+msgstr "Διαμοίραση / Σπορά"
+
+#: BitTorrent/UI.py:62 BitTorrent/UI.py:63 BitTorrent/UI.py:64
+#: BitTorrent/UI.py:65 BitTorrent/UI.py:66 BitTorrent/UI.py:67
+msgid "Finishing"
+msgstr "Τελειώνει"
+
+#: BitTorrent/UI.py:68 BitTorrent/UI.py:69 BitTorrent/UI.py:70
+#: BitTorrent/UI.py:71 BitTorrent/UI.py:72 BitTorrent/UI.py:73
+msgid "Error"
+msgstr "Σφάλμα"
+
+#: BitTorrent/UI.py:140
+#, python-format
+msgid "%d days"
+msgstr "%d ημέρες"
+
+#: BitTorrent/UI.py:142
+#, python-format
+msgid "1 day %d hours"
+msgstr "1 ημέρα, %d ώρες"
+
+#: BitTorrent/UI.py:144
+#, python-format
+msgid "%d:%02d hours"
+msgstr "%d:%02d ώρες"
+
+#: BitTorrent/UI.py:146
+#, python-format
+msgid "%d:%02d minutes"
+msgstr "%d:%02d λεπτά"
+
+#: BitTorrent/UI.py:148
+#, python-format
+msgid "%d seconds"
+msgstr "%d δευτερόλεπτα"
+
+#: BitTorrent/UI.py:150
+msgid "0 seconds"
+msgstr "0 δευτερόλεπτα"
+
+#: BitTorrent/UI.py:183
+msgid "drive"
+msgstr ""
+
+#: BitTorrent/UI.py:185
+msgid "volume"
+msgstr ""
+
+#: BitTorrent/UI.py:187
+msgid "disk"
+msgstr ""
 
 #: BitTorrent/XMultiTorrent.py:24 BitTorrent/XTorrentQueue.py:8
 msgid "Torrent already on disk."
@@ -2666,6 +2817,11 @@ msgstr ""
 
 #: BitTorrent/XMultiTorrent.py:28 BitTorrent/XTorrentQueue.py:12
 msgid "Torrent shut down failed."
+msgstr ""
+
+#: BitTorrent/__init__.py:26
+#, python-format
+msgid "Python %s or newer required"
 msgstr ""
 
 #: BitTorrent/bencode.py:76
@@ -2690,11 +2846,6 @@ msgstr ""
 
 #: BitTorrent/btformats.py:33
 msgid "bad metainfo - bad name"
-msgstr ""
-
-#: BitTorrent/btformats.py:35
-#, python-format
-msgid "name %s disallowed for security reasons"
 msgstr ""
 
 #: BitTorrent/btformats.py:37
@@ -2746,89 +2897,117 @@ msgstr ""
 msgid "bad metainfo - bad title - should be a string"
 msgstr ""
 
-#: BitTorrent/btformats.py:93
+#: BitTorrent/btformats.py:96
 msgid "bad metainfo - node is not a list"
 msgstr ""
 
-#: BitTorrent/btformats.py:95
+#: BitTorrent/btformats.py:98
 msgid "bad metainfo - node list must have only two elements"
 msgstr ""
 
-#: BitTorrent/btformats.py:98
+#: BitTorrent/btformats.py:101
 msgid "bad metainfo - node host must be a string"
 msgstr ""
 
-#: BitTorrent/btformats.py:100
+#: BitTorrent/btformats.py:103
 msgid "bad metainfo - node port must be an integer"
 msgstr ""
 
 #: BitTorrent/btformats.py:107
-msgid "failure reason must be a string"
+msgid "bad metainfo - caches entry is not a list"
 msgstr ""
 
-#: BitTorrent/btformats.py:111
-msgid "warning message must be a string"
+#: BitTorrent/btformats.py:110
+msgid "bad metainfo - cache entry is not a dict"
+msgstr ""
+
+#: BitTorrent/btformats.py:112
+msgid "bad metainfo - cache entry has no domain key"
+msgstr ""
+
+#: BitTorrent/btformats.py:114
+msgid "bad metainfo - cache entry domain not a string"
 msgstr ""
 
 #: BitTorrent/btformats.py:116
-msgid "invalid entry in peer list - peer info must be a dict"
+msgid "bad metainfo - cache entry domain too long"
 msgstr ""
 
-#: BitTorrent/btformats.py:118
-msgid "invalid entry in peer list - peer ip must be a string"
+#: BitTorrent/btformats.py:119
+msgid "bad metainfo - cache entry publisher not a string"
 msgstr ""
 
 #: BitTorrent/btformats.py:121
+msgid "bad metainfo - cache entry publisher longer than 32 chars"
+msgstr ""
+
+#: BitTorrent/btformats.py:128
+msgid "failure reason must be a string"
+msgstr ""
+
+#: BitTorrent/btformats.py:132
+msgid "warning message must be a string"
+msgstr ""
+
+#: BitTorrent/btformats.py:137
+msgid "invalid entry in peer list - peer info must be a dict"
+msgstr ""
+
+#: BitTorrent/btformats.py:139
+msgid "invalid entry in peer list - peer ip must be a string"
+msgstr ""
+
+#: BitTorrent/btformats.py:142
 msgid "invalid entry in peer list - peer port must be an integer"
 msgstr ""
 
-#: BitTorrent/btformats.py:125
+#: BitTorrent/btformats.py:146
 msgid "invalid entry in peer list - invalid peerid"
 msgstr ""
 
-#: BitTorrent/btformats.py:127
+#: BitTorrent/btformats.py:148
 msgid "invalid peer list"
 msgstr ""
 
-#: BitTorrent/btformats.py:130
+#: BitTorrent/btformats.py:151
 msgid "invalid announce interval"
 msgstr ""
 
-#: BitTorrent/btformats.py:133
+#: BitTorrent/btformats.py:154
 msgid "invalid min announce interval"
 msgstr ""
 
-#: BitTorrent/btformats.py:135
+#: BitTorrent/btformats.py:156
 msgid "invalid tracker id"
 msgstr ""
 
-#: BitTorrent/btformats.py:138
+#: BitTorrent/btformats.py:159
 msgid "invalid peer count"
 msgstr ""
 
-#: BitTorrent/btformats.py:141
+#: BitTorrent/btformats.py:162
 msgid "invalid seed count"
 msgstr ""
 
-#: BitTorrent/btformats.py:144
+#: BitTorrent/btformats.py:165
 msgid "invalid \"last\" entry"
 msgstr ""
 
-#: BitTorrent/configfile.py:141
+#: BitTorrent/configfile.py:130
 msgid "Could not permanently save options: "
 msgstr ""
 
-#: BitTorrent/configfile.py:152
+#: BitTorrent/configfile.py:141
 #, python-format
 msgid "Error reading config file. Old config file stored in \"%s\""
 msgstr ""
 
-#: BitTorrent/configfile.py:214
+#: BitTorrent/configfile.py:203
 #, python-format
 msgid "Configuration option mismatch: '%s'"
 msgstr ""
 
-#: BitTorrent/configfile.py:216
+#: BitTorrent/configfile.py:205
 #, python-format
 msgid "You must quit %s and reinstall it. (%s)"
 msgstr ""
@@ -2855,13 +3034,13 @@ msgstr ""
 msgid "Rereading config file"
 msgstr ""
 
-#: BitTorrent/makemetafile.py:60
+#: BitTorrent/makemetafile.py:61
 msgid ""
 "You can't specify the name of the .torrent file when generating multiple "
 "torrents at once"
 msgstr ""
 
-#: BitTorrent/makemetafile.py:192
+#: BitTorrent/makemetafile.py:190
 #, python-format
 msgid ""
 "Could not convert file/directory name \"%s\" to utf-8 (%s). Either the "
@@ -2869,7 +3048,7 @@ msgid ""
 "bytes."
 msgstr ""
 
-#: BitTorrent/makemetafile.py:197
+#: BitTorrent/makemetafile.py:196
 #, python-format
 msgid ""
 "File/directory name \"%s\" contains reserved unicode values that do not "
@@ -2913,38 +3092,38 @@ msgstr ""
 msgid "arguments are -\n"
 msgstr ""
 
-#: BitTorrent/parseargs.py:96
+#: BitTorrent/parseargs.py:92
 msgid " (defaults to "
 msgstr ""
 
-#: BitTorrent/parseargs.py:174 BitTorrent/parseargs.py:225
+#: BitTorrent/parseargs.py:170 BitTorrent/parseargs.py:221
 msgid "unknown option "
 msgstr ""
 
-#: BitTorrent/parseargs.py:180 BitTorrent/parseargs.py:190
+#: BitTorrent/parseargs.py:176 BitTorrent/parseargs.py:186
 msgid "parameter passed in at end with no value"
 msgstr ""
 
-#: BitTorrent/parseargs.py:194
+#: BitTorrent/parseargs.py:190
 msgid "command line parsing failed at "
 msgstr ""
 
-#: BitTorrent/parseargs.py:206
+#: BitTorrent/parseargs.py:202
 #, python-format
 msgid "Option %s is required."
 msgstr ""
 
-#: BitTorrent/parseargs.py:208
+#: BitTorrent/parseargs.py:204
 #, python-format
 msgid "Must supply at least %d arguments."
 msgstr ""
 
-#: BitTorrent/parseargs.py:210
+#: BitTorrent/parseargs.py:206
 #, python-format
 msgid "Too many arguments - %d maximum."
 msgstr ""
 
-#: BitTorrent/parseargs.py:257
+#: BitTorrent/parseargs.py:253
 #, python-format
 msgid "wrong format of %s - %s"
 msgstr "λάθος format %s - %s"
@@ -2983,6 +3162,27 @@ msgstr ""
 
 #: BitTorrent/parsedir.py:152
 msgid "done checking"
+msgstr ""
+
+#: BitTorrent/pdcp.py:35
+msgid "Garbage at end of PDCP response."
+msgstr ""
+
+#: BitTorrent/pdcp.py:37
+msgid "Malformed PDCP response."
+msgstr ""
+
+#: BitTorrent/pdcp.py:94
+msgid "PDCP UDP Protocol Timeout"
+msgstr ""
+
+#: BitTorrent/platform.py:697
+#, python-format
+msgid "Could not find translation for language \"%s\"\n"
+msgstr ""
+
+#: BitTorrent/platform.py:903
+msgid "Couldn't open pid file. Continuing without one."
 msgstr ""
 
 #: BitTorrent/track.py:103
@@ -3041,61 +3241,6 @@ msgstr ""
 msgid "# Shutting down: "
 msgstr ""
 
-#: BitTorrent/UI.py:102
-#, python-format
-msgid "%d days"
-msgstr "%d ημέρες"
-
-#: BitTorrent/UI.py:104
-#, python-format
-msgid "1 day %d hours"
-msgstr "1 ημέρα, %d ώρες"
-
-#: BitTorrent/UI.py:106
-#, python-format
-msgid "%d:%02d hours"
-msgstr "%d:%02d ώρες"
-
-#: BitTorrent/UI.py:108
-#, python-format
-msgid "%d:%02d minutes"
-msgstr "%d:%02d λεπτά"
-
-#: BitTorrent/UI.py:110
-#, python-format
-msgid "%d seconds"
-msgstr "%d δευτερόλεπτα"
-
-#: BitTorrent/UI.py:112
-msgid "0 seconds"
-msgstr "0 δευτερόλεπτα"
-
-#: BitTorrent/UI.py:145
-msgid "drive"
-msgstr ""
-
-#: BitTorrent/UI.py:147
-msgid "volume"
-msgstr ""
-
-#: BitTorrent/UI.py:149
-msgid "disk"
-msgstr ""
-
-#: BitTorrent/__init__.py:26
-#, python-format
-msgid "Python %s or newer required"
-msgstr ""
-
-#: BitTorrent/platform.py:640
-#, python-format
-msgid "Could not find translation for language \"%s\"\n"
-msgstr ""
-
-#: BitTorrent/platform.py:811
-msgid "Couldn't open pid file. Continuing without one."
-msgstr ""
-
 #: khashmir/krpc.py:218
 msgid "received unknown message type"
 msgstr ""
@@ -3107,23 +3252,4 @@ msgstr ""
 #: khashmir/krpc.py:243
 msgid "socket error"
 msgstr ""
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 

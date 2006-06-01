@@ -38,7 +38,7 @@ def _ScaleBlit(bmp, dc, dst_rect):
         except:
             pass
 
-    dc.DrawBitmap(bmp, dst_rect.x, dst_rect.y, True)
+    dc.DrawBitmap(bmp, dst_rect.x/sX, dst_rect.y/sY, True)
 
     if os.name == 'nt':
         try:
@@ -209,6 +209,7 @@ class SimpleDownloadGauge(ListCtrlPassThrough, ScaledBufferMixin, wx.Window):
             "smooth": True,
             "border color": wx.NamedColour("light gray"),
             "completed color": wx.Colour(0, 230, 50),
+            "line color"     : wx.Colour(0, 178, 39),
             "remaining color": wx.NamedColour("white"),
             "transferring color": wx.NamedColour("yellow"),
             "missing color": wx.NamedColour("red"),
@@ -227,8 +228,9 @@ class SimpleDownloadGauge(ListCtrlPassThrough, ScaledBufferMixin, wx.Window):
 
         new_green = {
             "smooth": True,
-            "border color": wx.NamedColour("light gray"),
+            "border color": wx.Colour(111, 111, 111),
             "completed color": wx.Colour(14, 183, 19),
+            "line color"     : wx.Colour(255, 255, 0),
             "remaining color": wx.NamedColour("white"),
             "transferring color": wx.Colour(94, 243, 99),
             "missing color": wx.Colour(255, 0, 0),
@@ -246,6 +248,7 @@ class SimpleDownloadGauge(ListCtrlPassThrough, ScaledBufferMixin, wx.Window):
             "smooth": True,
             "border color": wx.NamedColour("light gray"),
             "completed color": wx.NamedColour("blue"),
+            "line color"     : wx.NamedColour("blue"),
             "remaining color": wx.NamedColour("white"),
             "transferring color": wx.NamedColour("yellow"),
             "missing color": wx.Colour(255, 0, 0),
@@ -274,6 +277,7 @@ class SimpleDownloadGauge(ListCtrlPassThrough, ScaledBufferMixin, wx.Window):
         self.remaining_color = remaining_color
         self.border_color = border_color
         self.border = border
+        self.line_color = self.gauge_theme["line color"]
         self.top_line = top_line
         self.smoother = wx.BitmapFromImage(
             wx.GetApp().theme_library.get(("progressbar",)))
@@ -315,11 +319,19 @@ class SimpleDownloadGauge(ListCtrlPassThrough, ScaledBufferMixin, wx.Window):
         # top-line
         if self.top_line and self.percent is not None:
             dc.SetBrush(wx.TRANSPARENT_BRUSH)
-            dc.SetPen(wx.Pen(self.completed_color))
-            #dc.DrawLine(srect.x, srect.y,
-            #            srect.x + (srect.width * self.percent), srect.y)
-            dc.DrawRectangle(srect.x, srect.y,
-                             srect.x + (srect.width * self.percent), srect.y+2)
+            dc.SetPen(wx.Pen(self.line_color))
+            line_width = 1
+            # top:
+            line_position = 0
+            # middle:
+            #line_position = (srect.height) // 2
+            # bottom:
+            #line_position = srect.height - line_width
+            dc.DrawRectangle(srect.x, line_position,
+                             srect.width * self.percent, line_width)
+            dc.SetPen(wx.Pen(self.border_color))
+            dc.DrawRectangle(srect.x + srect.width * self.percent, line_position,
+                             srect.width, line_width)
 
     def draw_bar(self, dc, rect):
         if self.percent == None:
@@ -378,7 +390,10 @@ class FancyDownloadGauge(SimpleDownloadGauge):
             p_dirty = True
         self.percent = percent
 
-        self.missing_known = state == "running"
+        missing_known = state == "running"
+        if self.missing_known != missing_known:
+            p_dirty = True
+        self.missing_known = missing_known
 
         if not data:
             # no data. allow future SetValues to continue passing

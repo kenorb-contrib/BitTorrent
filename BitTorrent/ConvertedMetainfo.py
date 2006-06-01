@@ -16,21 +16,25 @@ from __future__ import generators
 import os
 import sys
 import logging
-from sha import sha
+import urlparse
+from BitTorrent.hash import sha
+import socket
+
+#debug=True
+global_logger = logging.getLogger("BitTorrent.ConvertedMetainfo")
 
 from BitTorrent.translation import _
 from BitTorrent.obsoletepythonsupport import *
 
 from BitTorrent.bencode import bencode
 from BitTorrent import btformats
-from BitTorrent import BTFailure, filesystem_encoding, InfoHashType
+from BitTorrent import BTFailure, InfoHashType
+from BitTorrent.platform import get_filesystem_encoding, encode_for_filesystem
 
-
-WINDOWS_UNSUPPORTED_CHARS ='"*/:<>?\|'
-windows_translate = [chr(i) for i in range(256)]
+WINDOWS_UNSUPPORTED_CHARS = u'"*/:<>?\|'
+windows_translate = {}
 for x in WINDOWS_UNSUPPORTED_CHARS:
-    windows_translate[ord(x)] = '-'
-windows_translate = ''.join(windows_translate)
+    windows_translate[ord(x)] = u'-'
 
 noncharacter_translate = {}
 for i in xrange(0xD800, 0xE000):
@@ -60,6 +64,9 @@ def generate_names(name, is_dir):
 class ConvertedMetainfo(object):
 
     def __init__(self, metainfo):
+        """metainfo is a dict.  When read from a metainfo (i.e.,
+           .torrent file), the file must first be bdecoded before
+           being passed to ConvertedMetainfo."""
         self.bad_torrent_wrongfield = False
         self.bad_torrent_unsolvable = False
         self.bad_torrent_noncharacter = False
@@ -76,9 +83,23 @@ class ConvertedMetainfo(object):
         self.title = None          # descriptive title text for whole torrent
         self.creation_date = None
         self.metainfo = metainfo
+        self.encoding = None
+        self.caches = None
 
         btformats.check_message(metainfo, check_paths=False)
         info = metainfo['info']
+        self.is_private = info.has_key("private") and info['private']
+        if 'encoding' in metainfo:
+            self.encoding = metainfo['encoding']
+        elif 'codepage' in metainfo:
+            self.encoding = 'cp%s' % metainfo['codepage']
+        if self.encoding is not None:
+            try:
+                for s in u'this is a test', u'these should also work in any encoding: 0123456789\0':
+                    assert s.encode(self.encoding).decode(self.encoding) == s
+            except:
+                self.encoding = 'iso-8859-1'
+                self.bad_torrent_unsolvable = True
         if info.has_key('length'):
             self.total_bytes = info['length']
             self.sizes.append(self.total_bytes)
@@ -92,27 +113,25 @@ class ConvertedMetainfo(object):
                 l = f['length']
                 self.total_bytes += l
                 self.sizes.append(l)
-                path = self._get_attr_utf8(f, 'path')
+                path = self._get_attr(f, 'path')
+                if len(path[-1]) == 0:
+                    if l > 0:
+                        raise BTFailure(_("Bad file path component: ")+x)
+                    # BitComet makes bad .torrent files with empty
+                    # filename part
+                    path.pop(-1)
+
                 for x in path:
                     if not btformats.allowed_path_re.match(x):
-                        if l > 0:
-                            raise BTFailure(_("Bad file path component: ")+x)
-                        # BitComet makes bad .torrent files with empty
-                        # filename part
-                        self.bad_path = True
-                        break
-                else:
-                    p = []
-                    for x in path:
-                        p.append((self._enforce_utf8(x), x))
-                    path = p
-                    self.orig_files.append('/'.join([x[0] for x in path]))
-                    k = []
-                    for u,o in path:
-                        tf2 = self._to_fs_2(u)
-                        k.append((tf2, u, o))
-                    r.append((k,i))
-                    i += 1
+                        raise BTFailure(_("Bad file path component: ")+x)
+
+                self.orig_files.append('/'.join(path))
+                k = []
+                for u in path:
+                    tf2 = self._to_fs_2(u)
+                    k.append((tf2, u))
+                r.append((k,i))
+                i += 1
             # If two or more file/subdirectory names in the same directory
             # would map to the same name after encoding conversions + Windows
             # workarounds, change them. Files are changed as
@@ -147,30 +166,38 @@ class ConvertedMetainfo(object):
                 self.files_fs[i] = os.path.join(*res)
                 prev = x
 
-        self.name = self._get_field_utf8(info, 'name')
+        self.name = self._get_attr(info, 'name')
         self.name_fs = self._to_fs(self.name)
         self.piece_length = info['piece length']
-        self.is_trackerless = False
-        if metainfo.has_key('announce-list'):
-            self.announce_list = metainfo['announce-list']
-        else:
-            self.announce_list = None
-        if metainfo.has_key('announce'):
-            self.announce = metainfo['announce']
-        elif metainfo.has_key('nodes'):
+
+        self.announce = metainfo.get('announce')
+        self.announce_list = metainfo.get('announce-list')
+        if 'announce-list' not in metainfo and 'announce' not in metainfo:
             self.is_trackerless = True
+        else:
+            self.is_trackerless = False
+            
+        if 'nodes' in metainfo:
             self.nodes = metainfo['nodes']
 
-        if metainfo.has_key('title'):
+        if 'title' in metainfo:
             self.title = metainfo['title']
-        if metainfo.has_key('comment'):
+        if 'comment' in metainfo:
             self.comment = metainfo['comment']
-        if metainfo.has_key('creation date'):
+        if 'creation date' in metainfo:
             self.creation_date = metainfo['creation date']
+        
+        self.url_list = metainfo.get('url-list', [])
+        if not isinstance(self.url_list, list):
+            self.url_list = [self.url_list, ]
+
+        if 'caches' in metainfo:
+            self.caches = metainfo['caches']
 
         self.hashes = [info['pieces'][x:x+20] for x in xrange(0,
             len(info['pieces']), 20)]
         self.infohash = InfoHashType(sha(bencode(info)).digest())
+
 
     def show_encoding_errors(self, errorfunc):
         self.reported_errors = True
@@ -197,7 +224,7 @@ class ConvertedMetainfo(object):
                       _('The character set used on the local filesystem ("%s") '
                         'cannot represent all characters used in the '
                         'filename(s) of this torrent. Filenames have been '
-                        'changed from the original.') % filesystem_encoding)
+                        'changed from the original.') % get_filesystem_encoding())
         elif self.bad_windows:
             errorfunc(logging.WARNING,
                       _("The Windows filesystem cannot handle some "
@@ -212,30 +239,33 @@ class ConvertedMetainfo(object):
                         "just ignored."))
 
     # At least BitComet seems to make bad .torrent files that have
-    # fields in an arbitrary encoding but separate 'field.utf-8' attributes
-    def _get_attr_utf8(self, d, attrib):
-        v = d.get(attrib + '.utf-8')
-        if v is not None:
-            if v != d[attrib]:
-                self.bad_torrent_wrongfield = True
-        else:
-            v = d[attrib]
+    # fields in an arbitrary encoding but separate 'field.utf-8'
+    # attributes; some of them also have an integer 'codepage' key or
+    # a string 'encoding' key at the root level.
+    def _get_attr(self, d, attrib):
+        def _decode(o, encoding):
+            if encoding is None:
+                encoding = 'utf8'
+            if isinstance(o, str):
+                try:
+                    s = o.decode(encoding)
+                except:
+                    self.bad_torrent_wrongfield = True
+                    s = o.decode(encoding, 'replace')
+                t = s.translate(noncharacter_translate)
+                if t != s:
+                    self.bad_torrent_noncharacter = True
+                return t
+            if isinstance(o, dict):
+                return dict([ (k, _decode(v, k.endswith('.utf-8') and None or encoding)) for k, v in o.iteritems() ])
+            if isinstance(o, list):
+                return [ _decode(i, encoding) for i in o ]
+            return o
+        # we prefer utf8 if we can find it. at least it declares its encoding
+        v = _decode(d.get(attrib + '.utf-8'), 'utf8')
+        if v is None:
+            v = _decode(d[attrib], self.encoding)
         return v
-
-    def _enforce_utf8(self, s):
-        try:
-            s = s.decode('utf-8')
-        except:
-            self.bad_torrent_unsolvable = True
-            s = s.decode('utf-8', 'replace')
-        t = s.translate(noncharacter_translate)
-        if t != s:
-            self.bad_torrent_noncharacter = True
-        return t.encode('utf-8')
-
-    def _get_field_utf8(self, d, attrib):
-        r = self._get_attr_utf8(d, attrib)
-        return self._enforce_utf8(r)
 
     def _fix_windows(self, name, t=windows_translate):
         bad = False
@@ -252,23 +282,12 @@ class ConvertedMetainfo(object):
         return self._to_fs_2(name)[1]
 
     def _to_fs_2(self, name):
-        bad = False
         if sys.platform.startswith('win'):
             name, bad = self._fix_windows(name)
-        name = name.decode('utf-8')
-        try:
-            r = name.encode(filesystem_encoding)
-        except:
-            self.bad_conversion = True
-            bad = True
-            r = name.encode(filesystem_encoding, 'replace')
 
-        if sys.platform.startswith('win'):
-            # encoding to mbcs with or without 'replace' will make the
-            # name unsupported by windows again because it adds random
-            # '?' characters which are invalid windows filesystem
-            # character
-            r, bad = self._fix_windows(r)
+        r, bad = encode_for_filesystem(name)
+        self.bad_conversion = bad
+
         return (bad, r)
 
 
@@ -280,7 +299,7 @@ class ConvertedMetainfo(object):
         """
         Determine whether this torrent was previously downloaded to
         path.  Returns:
-        
+
         -1: STOP! gross mismatch of files
          0: MAYBE a resume, maybe not
          1: almost definitely a RESUME - file contents, sizes, and count match exactly
@@ -288,21 +307,36 @@ class ConvertedMetainfo(object):
         STOP   = -1
         MAYBE  =  0
         RESUME =  1
-        
+
         if self.is_batch != os.path.isdir(path):
             return STOP
 
         disk_files = {}
         if self.is_batch:
-
-            def collect_files(top, dir, files):
-                here = dir[len(top)+1:]
-                for f in files:
-                    fullpath = os.path.join(dir, f)
-                    if not os.path.isdir(fullpath):
-                        disk_files[os.path.join(here, f)] = os.stat(fullpath)[6]
-            os.path.walk(path, collect_files, path)
             metainfo_files = dict(zip(self.files_fs, self.sizes))
+            metainfo_dirs = set()
+            for f in self.files_fs:
+                metainfo_dirs.add(os.path.split(f)[0])
+
+            # BUG: do this in a thread, so it doesn't block the UI
+            for (dirname, dirs, files) in os.walk(path):
+                here = dirname[len(path)+1:]
+                for f in files:
+                    p = os.path.join(here, f)
+                    if p in metainfo_files:
+                        disk_files[p] = os.stat(os.path.join(dirname, f))[6]
+                        if disk_files[p] > metainfo_files[p]:
+                            # file on disk that's bigger than the
+                            # corresponding one in the torrent
+                            return STOP
+                    else:
+                        # file on disk that's not in the torrent
+                        return STOP
+                for i, d in enumerate(dirs):
+                    if d not in metainfo_dirs:
+                        # directory on disk that's not in the torrent
+                        return STOP
+
         else:
             if os.access(path, os.F_OK):
                 disk_files[self.name_fs] = os.stat(path)[6]
@@ -314,33 +348,49 @@ class ConvertedMetainfo(object):
 
         if set(disk_files.keys()) != set(metainfo_files.keys()):
             # check files
-            if len(disk_files) > len(metainfo_files):
-                # file on disk that's not in the torrent
-                return STOP
             if len(metainfo_files) > len(disk_files):
                 #file in the torrent that's not on disk
                 return MAYBE
-            else:
-                # otherwise, file mismatch both on disk and in torrent
-                return STOP
         else:
             # check sizes
             ret = RESUME
             for f, s in disk_files.iteritems():
-                
-                if f not in disk_files:
-                    print f, disk_files, metainfo_files
-                if f not in metainfo_files:
-                    print f, disk_files, metainfo_files
-                    
-                if disk_files[f] > metainfo_files[f]:
-                    # file on disk that's bigger than the corresponding one in the torrent
-                    return STOP
-                elif disk_files[f] < metainfo_files[f]:
-                    # file on disk that's smaller than the corresponding one in the torrent
+
+                if disk_files[f] < metainfo_files[f]:
+                    # file on disk that's smaller than the
+                    # corresponding one in the torrent
                     ret = MAYBE
                 else:
                     # file sizes match exactly
                     continue
             return ret
+
+    def get_tracker_ips(self):
+        """Returns the list of tracker IP addresses or the empty list if the
+           torrent is trackerless.  This extracts the tracker ip addresses
+           from the urls in the announce or announce list."""
+        if hasattr(self, "_tracker_ips"):     # cache result.
+            return self._tracker_ips
+
+        if self.announce is not None:
+            urls = [self.announce]
+        elif self.announce_list is not None:  # list of lists.
+            urls = []
+            for ulst in self.announce_list:
+                urls.extend(ulst)
+        else:  # trackerless
+            assert self.is_trackerless
+            return []
+
+        tracker_ports = [urlparse.urlparse(url)[1] for url in urls]
+        trackers = [tp.split(':')[0] for tp in tracker_ports]
+        self._tracker_ips = []
+        for t in trackers:
+            try:
+                ip_list = socket.gethostbyname_ex(t)[2]
+                self._tracker_ips.extend(ip_list)
+            except socket.gaierror:
+                global_logger.error( _("Cannot find tracker with name %s") % t )
+        return self._tracker_ips
+
 

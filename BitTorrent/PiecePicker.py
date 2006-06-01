@@ -36,13 +36,6 @@ class PieceBuckets(object):
     def __contains__(self, piece):
         return piece in self.place_in_buckets
 
-    def _fast_add(self, piece, bucketindex):
-        while len(self.buckets) <= bucketindex:
-            self.buckets.append(array.array(self.typecode))
-        mylist = self.buckets[bucketindex]
-        mylist.append(piece)
-        self.place_in_buckets[piece] = (bucketindex, len(mylist)-1)
-
     def add(self, piece, bucketindex):
         assert not self.place_in_buckets.has_key(piece)
         while len(self.buckets) <= bucketindex:
@@ -113,7 +106,7 @@ class PiecePicker(object):
         self.numgot = self.numpieces
         for i in not_have:
             self.scrambled.append(i)
-            self.piece_bucketss[0]._fast_add(i, 0)
+            self.piece_bucketss[0].add(i, 0)
             self.numgot -= 1
         random.shuffle(self.scrambled)
 

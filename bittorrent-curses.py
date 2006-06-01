@@ -22,12 +22,13 @@ SPEW_SCROLL_RATE = 1
 
 import sys
 import os
-import threading
 import logging
 from logging import ERROR
-from time import time, strftime
+from time import time, strftime, sleep
 import traceback
 
+import BitTorrent.stackthreading as threading
+from BitTorrent.defer import DeferredEvent
 from BitTorrent.MultiTorrent import MultiTorrent, TorrentAlreadyRunning
 from BitTorrent.Torrent import Feedback
 from BitTorrent.defaultargs import get_defaults
@@ -41,11 +42,8 @@ from BitTorrent import version
 from BitTorrent import GetTorrent
 from BitTorrent.RawServer_twisted import RawServer, task
 from BitTorrent.ConvertedMetainfo import ConvertedMetainfo
-from BitTorrent import filesystem_encoding
 from BitTorrent.yielddefer import launch_coroutine, _wrap_task
 from BitTorrent import console, stderr_console
-debug = False
-#debug = True
 
 def wrap_log(context_string, logger):
     """Useful when passing a logger to a deferred's errback.  The context
@@ -106,7 +104,7 @@ class CursesDisplayer(object):
         self.doneflag = doneflag
 
         signal(SIGWINCH, self.winch_handler)
-        self.changeflag = threading.Event()
+        self.changeflag = DeferredEvent()
 
         self.done = False
         self.reread_config = reread_config
@@ -285,9 +283,10 @@ class CursesDisplayer(object):
                 errsize = len(self.errors)
                 displaysize = min(errsize, self.spewh-1)
                 displaytop = errsize - displaysize
+                errlst = [e[0:self.speww-self.labelw-2] for e in self.errors]
                 for i in range(displaysize):
                     self.spewwin.addnstr(i, self.labelw,
-                                         self.errors[displaytop + i],
+                                         errlst[displaytop + i],
                                          #self.speww-self.labelw-1,
                                          self.speww-self.labelw-2,
                                          curses.A_BOLD)
@@ -295,7 +294,8 @@ class CursesDisplayer(object):
             if self.errors:
                 self.spewwin.addnstr(0, 0, _("log:"), self.speww,
                                      curses.A_BOLD)
-                self.spewwin.addnstr(0, self.labelw, self.errors[-1],
+                err = self.errors[-1][0:self.speww-self.labelw-2]
+                self.spewwin.addnstr(0, self.labelw, err,
                                  self.speww-self.labelw-1, curses.A_BOLD)
             self.spewwin.addnstr(2, 0, _("  #     IP                 Upload           Download     Completed  Speed"), self.speww, curses.A_BOLD)
 
@@ -340,14 +340,14 @@ class CursesDisplayer(object):
                 self.spewwin.addnstr(i+3, 58, '%5.1f%%' % (int(spew[i]['completed']*1000)/10), 6)
                 if spew[i]['speed'] is not None:
                     self.spewwin.addnstr(i+3, 64, '%5.0f KB/s' % (spew[i]['speed']/1000), 10)
-
+            """
             self.spewwin.addnstr(self.spewh-1, 0,
                     _("downloading %d pieces, have %d fragments, "
                       "%d of %d pieces completed") %
                     (statistics['storage_active'], statistics['storage_dirty'],
                      statistics['storage_numcomplete'], self.numpieces),
                     self.speww-1)
-
+            """
         curses.panel.update_panels()
         curses.doupdate()
 
@@ -360,16 +360,18 @@ class CursesTorrentApp(object):
             self.app = app
       
         def emit(self, record):
-            self.app.display_error(record.getMessage() ) 
+            if len(record.getMessage()) > 0:
+                self.app.display_error(record.getMessage() ) 
             if record.exc_info is not None:
-                self.app.display_error( " %s: %s" % ( str(record.exc_info[0]),
-                                                      str(record.exc_info[1])))
+                self.app.display_error(
+                    "Traceback (most recent call last):" )
                 tb = record.exc_info[2]
                 stack = traceback.extract_tb(tb)
                 l = traceback.format_list(stack)
                 for s in l:
                     self.app.display_error( " %s" % s )
-            print 
+                self.app.display_error( " %s: %s" %
+                    ( str(record.exc_info[0]),str(record.exc_info[1])))
 
     class LogFilter(logging.Filter):
         def filter( self, record):
@@ -379,11 +381,12 @@ class CursesTorrentApp(object):
         
     def __init__(self, metainfo, config, errlist):
         assert isinstance(metainfo, ConvertedMetainfo )
-        self.doneflag = threading.Event()
+        self.doneflag = DeferredEvent()
         self.metainfo = metainfo
         self.config = Preferences().initWithDict(config)
         self.errlist = errlist
         self.torrent = None
+        self.multitorrent = None
         self.logger = logging.getLogger("bittorrent-curses")
         curses_handler = CursesTorrentApp.LogHandler(self)
         logger = logging.getLogger()
@@ -425,6 +428,7 @@ class CursesTorrentApp(object):
             # For now I will simply periodically check whether
             # initialized is complete before trying to start (see call
             # to raw_server.add_task in start_torrent).
+
             if not self.multitorrent.torrent_known(metainfo.infohash):
                 self.logger.debug("creating torrent")
                 df = self.multitorrent.create_torrent(metainfo,
@@ -471,23 +475,28 @@ class CursesTorrentApp(object):
                 self.multitorrent.get_torrent(metainfo.infohash).state )
 
     def run(self, scrwin):
-      rawserver_doneflag = threading.Event()
-      try:
+        core_doneflag = DeferredEvent()
+        rawserver_doneflag = DeferredEvent()
+        rawserver = RawServer(self.config)
+        rawserver.install_sigint_handler(core_doneflag)
+
         def reread():
-            self.multitorrent.rawserver.external_add_task(0,self.reread_config)
+            if self.multitorrent is not None:
+                self.multitorrent.rawserver.external_add_task(
+                    0,self.reread_config)
         def ulrate(value):
-            self.multitorrent.set_option('max_upload_rate', value)
+            if self.multitorrent is not None:
+                self.multitorrent.set_option('max_upload_rate', value)
             if self.torrent != None:
                 self.torrent.set_option('max_upload_rate', value)
-
+      
         self.d = CursesDisplayer(scrwin, self.errlist, self.doneflag, 
                                  reread, ulrate)
         try:
-            rawserver = RawServer(self.config)
-
-            # raises BTFailure if bad
+          try:
+             # raises BTFailure if bad
             metainfo = self.metainfo
-            torrent_name = metainfo.name_fs.decode(filesystem_encoding)
+            torrent_name = metainfo.name_fs
             if config['save_as']:
                 if config['save_in']:
                     raise BTFailure(_("You cannot specify both --save_as and "
@@ -495,47 +504,46 @@ class CursesTorrentApp(object):
                 saveas = config['save_as']
                 savein = os.path.dirname(os.path.abspath(saveas))
             elif config['save_in']:
-                savein = config['save_in'].decode('utf-8')
+                savein = config['save_in']
                 saveas = os.path.join(savein,torrent_name)
             else:
                 saveas = torrent_name
             if config['save_incomplete_in']:
+                save_incomplete_in= config['save_incomplete_in']
                 save_incomplete_as = os.path.join(
-                    config['save_incomplete_in'].decode('utf-8'),torrent_name)
+                    save_incomplete_in,torrent_name)
             else:
                 save_incomplete_as = os.path.join(savein,torrent_name)
-
+        
             data_dir = config['data_dir']
-            self.multitorrent = MultiTorrent(self.config, self.doneflag,
-                                             rawserver, data_dir )
+            self.multitorrent = \
+                MultiTorrent(self.config, core_doneflag, rawserver, data_dir )
                 
             self.d.set_torrent_values(metainfo.name, os.path.abspath(saveas),
                                 metainfo.total_bytes, len(metainfo.hashes))
-
             self.start_torrent(self.metainfo, save_incomplete_as, saveas)
-                
-        except BTFailure, e:
-            errlist.append(str(e))
-            self.doneflag.set()
-            return
-        self.get_status()
-        self.multitorrent.rawserver.install_sigint_handler(self.doneflag)
-        l = None
-        def shutdown_check():
-            if doneflag.isSet():  # ctrl-c will set this flag.
-               self.d.display({'activity':_("shutting down"), 
-                               'fractionDone':0})
-               df = self.multitorrent.shutdown()
-               set_flag = lambda *a : rawserver_doneflag.set()
-               df.addCallbacks(set_flag, set_flag)
-               l.stop()
-                
-        l = task.LoopingCall(shutdown_check)
-        self.multitorrent.rawserver.listen_forever(self.rawserver_doneflag)
-        self.d.display({'activity':_("shutting down"), 'fractionDone':0})
-        self.multitorrent.shutdown()
-      finally:
-        self.doneflag.set()
+            self.get_status()
+          except Exception, e:
+            self.logger.error( "", exc_info = e )
+            core_doneflag.set()
+
+        finally:
+            l = None
+            def shutdown():
+                self.d.display({'activity':_("shutting down"),
+                                'fractionDone':0})
+                if self.multitorrent:
+                    df = self.multitorrent.shutdown()
+                    set_flag = lambda *a : rawserver_doneflag.set()
+                    df.addCallbacks(set_flag, set_flag)
+                else:
+                    rawserver_doneflag.set()
+                       
+            rawserver.add_task(0, core_doneflag.addCallback,
+                lambda r: rawserver.external_add_task(0, shutdown))
+
+            rawserver.listen_forever(rawserver_doneflag)
+         
 
     def reread_config(self):
         try:
@@ -587,8 +595,6 @@ if __name__ == '__main__':
     try:
         config, args = configfile.parse_configuration_and_args(defaults,
                                        uiname, sys.argv[1:], 0, 1)
-        if debug:  #HACK
-            config['upnp'] = False
         torrentfile = None
         if len(args):
             torrentfile = args[0]
@@ -614,3 +620,14 @@ if __name__ == '__main__':
         for error in errlist:
             print error
         sys.stdout.flush()
+        
+    # if after a reasonable amount of time there are still
+    # non-daemon threads hanging around then print them.
+    nondaemons = [d for d in threading.enumerate() if not d.isDaemon()]
+    if len(nondaemons) > 1:
+       sleep(4)
+       nondaemons = [d for d in threading.enumerate() if not d.isDaemon()]
+       if len(nondaemons) > 1:
+           print "non-daemon threads not shutting down:"
+           for th in nondaemons:
+               print " ", th

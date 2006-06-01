@@ -1,14 +1,6 @@
 import sys
-from twisted.internet import defer, reactor
-from twisted.python import failure
-
-# CRUFT
-def getResult(df):
-    if isinstance(df.result, failure.Failure):
-        if df._debugInfo is not None:
-            df._debugInfo.failResult = None
-        df.result.raiseException()
-    return df.result
+from twisted.internet import reactor
+from BitTorrent.defer import Deferred
 
 class ThreadProxy(object):
     __slots__ = ('obj', 'queue_task')
@@ -18,17 +10,19 @@ class ThreadProxy(object):
 
     def __gen_call_wrapper__(self, f):
         def outer(*args, **kwargs):
-            df = defer.Deferred()
-            # CRUFT
-            df.getResult = lambda : getResult(df)
+            df = Deferred()
             def inner(*args, **kwargs):
                 try:
                     v = f(*args, **kwargs)
                 except:
-                    self.queue_task(df.errback, failure.Failure())
+                    # hm, the exc_info holds a reference to the deferred, I think
+                    self.queue_task(df.errback, sys.exc_info())
                 else:
-                    if isinstance(v, defer.Deferred):
-                        self.queue_task(v.chainDeferred, df)
+                    if isinstance(v, Deferred):
+                        # v is owned by the proxied thread, so add the callback
+                        # now, but the task itself should queue for the caller
+                        # thread
+                        v.addCallback(lambda r : self.queue_task(df.callback, r))
                     else:
                         self.queue_task(df.callback, v)
             reactor.callFromThread(inner, *args, **kwargs)

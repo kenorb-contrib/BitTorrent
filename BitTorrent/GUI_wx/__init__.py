@@ -46,7 +46,7 @@ if profile:
     prof_file_name = 'ui.mainloop.prof'
 
 def gui_wrap(_f, *args, **kwargs):
-    wx.GetApp().CallAfter(_f, *args, **kwargs)
+    wx.the_app.CallAfter(_f, *args, **kwargs)
 
 SPACING = 8  # default pixels between widgets
 PORT_RANGE = 5 # how many ports to try
@@ -54,12 +54,6 @@ PORT_RANGE = 5 # how many ports to try
 WILDCARD = "Torrent files (*.torrent)|*.torrent|"\
            "All files (*.*)|*.*"
 
-
-def get_theme_root(theme_name):
-    for t in (theme_name, 'default'):
-        td = os.path.join(image_root, 'themes', t)
-        if os.path.exists(td):
-            return td
 
 
 def list_themes():
@@ -82,11 +76,14 @@ class ImageLibrary(object):
         self.image_root = image_root
         self._data = {}
 
-    def get(self, key, size=None):
+    def get(self, key, size=None, base=None):
+        if base is None:
+            base = self.image_root
+
         if self._data.has_key((key, size)):
             return self._data[(key, size)]
 
-##        utorrent_toolbar = os.path.join(self.image_root, "toolbar.bmp")
+##        utorrent_toolbar = os.path.join(base, "toolbar.bmp")
 ##        if os.path.exists(utorrent_toolbar):
 ##            try:
 ##                assert False, "Use wx.Bitmap instead"
@@ -105,7 +102,7 @@ class ImageLibrary(object):
 ##                pass
 
 
-##        utorrent_tstatus = os.path.join(self.image_root, "tstatus.bmp")
+##        utorrent_tstatus = os.path.join(base, "tstatus.bmp")
 ##        if os.path.exists(utorrent_tstatus):
 ##            try:
 ##                assert False, "Use wx.Bitmap instead"
@@ -137,13 +134,14 @@ class ImageLibrary(object):
 ##            except:
 ##                pass
 
+        name = os.path.join(base, *key)
+
         ext = '.png'
 
-        name = os.path.join(self.image_root, *key)
         if size is not None:
             sized_name = name + '_%d' % size + ext
             if os.path.exists(sized_name):
-               name = sized_name
+                name = sized_name
             else:
                 name += ext
         else:
@@ -158,6 +156,31 @@ class ImageLibrary(object):
         self._data[(key, size)] = i
 
         return i
+
+
+
+class ThemeLibrary(ImageLibrary):
+
+    def __init__(self, themes_root, theme_name):
+        self.themes_root = themes_root
+        for t in (theme_name, 'default'):
+            image_root = os.path.join(themes_root, 'themes', t)
+            if os.path.exists(image_root):
+                self.theme_name = t
+                ImageLibrary.__init__(self, image_root)
+                return
+        assert False, 'default theme path "%s" must exist' % image_root
+
+
+    def get(self, key, size=None):
+        try:
+            return ImageLibrary.get(self, key, size=size)
+        except AssertionError, e:
+            # Fall back to default theme.
+            # Should probably log this to make theme developers happy.
+            return ImageLibrary.get(self, key, size=size,
+                                    base=os.path.join(self.themes_root, 'themes', 'default'))
+
 
 
 class XSizer(wx.BoxSizer):
@@ -621,7 +644,7 @@ class BTDialog(wx.Dialog, MagicShow):
 
     def __init__(self, *a, **k):
         wx.Dialog.__init__(self, *a, **k)
-        self.SetIcon(wx.GetApp().icon)
+        self.SetIcon(wx.the_app.icon)
 
 
 
@@ -630,7 +653,7 @@ class BTFrame(wx.Frame, MagicShow):
 
     def __init__(self, *a, **k):
         wx.Frame.__init__(self, *a, **k)
-        self.SetIcon(wx.GetApp().icon)
+        self.SetIcon(wx.the_app.icon)
 
 
     def load_geometry(self, geometry, default_size=None):
@@ -686,7 +709,7 @@ class BTFrameWithSizer(BTFrame):
 
     def __init__(self, *a, **k):
         BTFrame.__init__(self, *a, **k)
-        self.SetIcon(wx.GetApp().icon)
+        self.SetIcon(wx.the_app.icon)
         self.panel = self.panel_class(self)
         self.sizer = self.sizer_class(*self.sizer_args)
         self.Add(self.panel, flag=wx.GROW, proportion=1)
@@ -713,6 +736,11 @@ class BTApp(wx.App):
                     pass
             wx.FutureCall(6, start_profile)
 
+        wx.the_app = self
+        self._CallAfterId = wx.NewEventType()
+        self.Connect(-1, -1, self._CallAfterId,
+                     lambda event: event.callable(*event.args, **event.kw) )
+       
         # this breaks TreeListCtrl, and I'm too lazy to figure out why
         #wx.IdleEvent_SetMode(wx.IDLE_PROCESS_SPECIFIED)
         # this fixes 24bit-color toolbar buttons
@@ -734,7 +762,8 @@ class BTApp(wx.App):
 
     def _CallAfter(self, _f, *a, **kw):
         try:
-            if wx.GetApp().doneflag.isSet():
+            if self.doneflag.isSet():
+                #print "dropping", _f
                 return
         except:
             # assume any kind of error means the app is dying
@@ -744,13 +773,27 @@ class BTApp(wx.App):
         #        return a[1].gen.gi_frame.f_code.co_name
         #    return _f.__name__
         #print who()
-        try:
+
+        if profile:
             self.prof.start()
             _f(*a, **kw)
             self.prof.stop()
-        except:
+        else:
             _f(*a, **kw)
 
-    def CallAfter(self, _f, *a, **kw):
-        wx.CallAfter(self._CallAfter, _f, *a, **kw)
+#    def CallAfter(self, _f, *a, **kw):
+#        wx.CallAfter(self._CallAfter, _f, *a, **kw)
+    def CallAfter(self, callable, *args, **kw):
+        """
+        Call the specified function after the current and pending event
+        handlers have been completed.  This is also good for making GUI
+        method calls from non-GUI threads.  Any extra positional or
+        keyword args are passed on to the callable when it is called.
+        """
 
+        evt = wx.PyEvent()
+        evt.SetEventType(self._CallAfterId)
+        evt.callable = self._CallAfter
+        evt.args = (callable, ) + args
+        evt.kw = kw
+        wx.PostEvent(self, evt)

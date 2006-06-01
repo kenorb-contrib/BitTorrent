@@ -14,6 +14,7 @@ import os
 import sys
 import shutil
 import socket
+import cPickle
 import logging
 import traceback
 from copy import copy
@@ -21,7 +22,7 @@ from BitTorrent.translation import _
 #import pdb #DEBUG
 
 from BitTorrent import GetTorrent
-from BitTorrent.platform import bttime
+from BitTorrent.platform import bttime, encode_for_filesystem
 from BitTorrent.Torrent import Feedback, Torrent
 from BitTorrent.bencode import bencode, bdecode
 from BitTorrent.ConvertedMetainfo import ConvertedMetainfo
@@ -34,10 +35,9 @@ from BitTorrent.ConnectionManager import SingleportListener
 from BitTorrent.CurrentRateMeasure import Measure
 from BitTorrent.Storage import FilePool
 from BitTorrent.yielddefer import launch_coroutine, _wrap_task
-from BitTorrent.defer import Deferred
+from BitTorrent.defer import Deferred, DeferredEvent
 from BitTorrent import BTFailure, InfoHashType
 from BitTorrent import configfile
-from BitTorrent import filesystem_encoding
 import BitTorrent
 from khashmir.utkhashmir import UTKhashmir
 
@@ -104,15 +104,20 @@ class MultiTorrent(Feedback):
         self.rawserver = rawserver
         nattraverser = NatTraverser(self.rawserver)
         self.singleport_listener = SingleportListener(self.rawserver,
-                                                      nattraverser)
+                                                      nattraverser,
+                                                      self.log_root)
         self.ratelimiter = RateLimiter(self.rawserver.add_task)
         self.ratelimiter.set_parameters(config['max_upload_rate'],
                                         config['upload_unit_size'])
         self.total_downmeasure = Measure(config['max_rate_period'])
+
         self._find_port(listen_fail_ok)
 
-        self.filepool = FilePool(doneflag, config['max_files_open'],
-                                 config['num_disk_threads'])
+        self.filepool_doneflag = DeferredEvent()
+        self.filepool = FilePool(self.filepool_doneflag,
+                                 self.rawserver.add_task,
+                                 self.rawserver.external_add_task,
+                                 config['max_files_open'], config['num_disk_threads'])
 
         try:
             self._restore_state(init_torrents)
@@ -201,6 +206,10 @@ class MultiTorrent(Feedback):
                 print "Torrent shutdown failed in state:", t.state
                 traceback.print_exc()
 
+        # the filepool must be shut down after the torrents,
+        # or pending ops could never complete
+        self.filepool_doneflag.set()
+
         # hmm
         self._dump_torrents()
 
@@ -240,10 +249,8 @@ class MultiTorrent(Feedback):
         self.logger.log(severity, message, exc_info=exc_info)
 
     def create_torrent(self, metainfo, save_incomplete_as, save_as):
-        save_as = unicode(save_as)
-        save_as = save_as.encode(filesystem_encoding)
-        save_incomplete_as = unicode(save_incomplete_as)
-        save_incomplete_as = save_incomplete_as.encode(filesystem_encoding)
+        #save_as, junk = encode_for_filesystem(save_as)
+        #save_incomplete_as, junk = encode_for_filesystem(save_incomplete_as)
         infohash = metainfo.infohash
         if self.torrent_known(infohash):
             if self.torrent_running(infohash):
@@ -258,7 +265,8 @@ class MultiTorrent(Feedback):
         #BUG.  Use _read_torrent_config for 5.0?  --Dave
         config = configfile.read_torrent_config(self.config,
                                                 self.data_dir,
-                                                infohash, self.global_error)
+                                                infohash,
+                                                lambda s : self.global_error(logging.ERROR, s))
 
         t = Torrent(metainfo, save_incomplete_as, save_as, self.config,
                     self.data_dir, self.rawserver, self.singleport_listener,
@@ -295,6 +303,9 @@ class MultiTorrent(Feedback):
             del self.running[ihash]
         except:
             pass
+        # give the torrent a blank feedback, so post-mortem errors don't
+        # confuse multitorrent
+        t.feedback = Feedback()
         del self.torrents[ihash]
         self._dump_torrents()
 
@@ -328,7 +339,7 @@ class MultiTorrent(Feedback):
         return t.state
 
 
-    def stop_torrent(self, infohash):
+    def stop_torrent(self, infohash, pause=False):
         if not self.torrent_running(infohash):
             raise TorrentNotRunning()
         t = self.get_torrent(infohash)
@@ -336,7 +347,7 @@ class MultiTorrent(Feedback):
 
         t.logger.debug("stopping torrent")
 
-        t.stop_download()
+        t.stop_download(pause=pause)
         del self.running[infohash]
         t._dump_torrent_config()
         return t.state
@@ -344,7 +355,7 @@ class MultiTorrent(Feedback):
     def torrent_status(self, infohash, spew=False, fileinfo=False):
         torrent = self.get_torrent(infohash)
         status = torrent.get_status(spew, fileinfo)
-        return torrent.state, torrent.policy, torrent.completed, status
+        return torrent, status
 
     def get_torrent(self, infohash):
         try:
@@ -425,7 +436,7 @@ class MultiTorrent(Feedback):
         if self.auto_update_policy_index is not None:
             aub = self.policies[self.auto_update_policy_index]
             return aub.get_auto_update_status()
-        return None, None
+        return None, None, None
 
 
     ## singletorrent callbacks
@@ -470,6 +481,9 @@ class MultiTorrent(Feedback):
 
 
     ### persistence
+
+    ## These should be the .torrent file!
+    #################
     def _dump_metainfo(self, metainfo):
         infohash = metainfo.infohash
         path = os.path.join(self.data_dir, 'metainfo',
@@ -487,6 +501,7 @@ class MultiTorrent(Feedback):
         data = f.read()
         f.close()
         return ConvertedMetainfo(bdecode(data))
+    #################
 
     def _read_torrent_config(self, infohash):
         path = os.path.join(self.data_dir, 'torrents', infohash.encode('hex'))
@@ -495,12 +510,21 @@ class MultiTorrent(Feedback):
         f = file(path, 'rb')
         data = f.read()
         f.close()
-        torrent_config = bdecode(data)
-        if not torrent_config.has_key('destination_path') or \
-           torrent_config['destination_path'] == "":
+        try:
+            torrent_config = cPickle.loads(data)
+        except:
+            # backward compatibility with <= 4.9.3
+            torrent_config = bdecode(data)
+            for k, v in torrent_config.iteritems():
+                try:
+                    torrent_config[k] = v.decode('utf8')
+                    if k in ('destination_path', 'working_path'):
+                        torrent_config[k] = encode_for_filesystem(torrent_config[k])[0]
+                except:
+                    pass
+        if not torrent_config.get('destination_path'):
             raise BTFailure( _("Invalid torrent config file"))
-        if not torrent_config.has_key('working_path') or \
-           torrent_config['working_path'] == "":
+        if not torrent_config.get('working_path'):
             raise BTFailure( _("Invalid torrent config file"))
         return torrent_config
 
@@ -541,8 +565,7 @@ class MultiTorrent(Feedback):
         t.logger.debug("created torrent, initializing")
         df = t.initialize()
         if use_policy and t.policy == "start":
-            df.addCallback(lambda r, t: self.start_torrent(t.infohash),
-                           (t,))
+            df.addCallback(lambda r, t: self.start_torrent(t.infohash), t)
         return df
 
     def initialize_torrents(self):
@@ -606,12 +629,16 @@ class MultiTorrent(Feedback):
             try:
                 if version < 2:
                     t.working_path = line[41:-1].decode('string_escape')
+                    t.working_path = t.working_path.decode('utf-8')
+                    t.working_path = encode_for_filesystem(t.working_path)[0]
                     t.destination_path = t.working_path
                 elif version == 3:
                     up, down, working_path = line[41:-1].split(' ', 2)
                     t.uptotal = t.uptotal_old = int(up)
                     t.downtotal = t.downtotal_old = int(down)
                     t.working_path = working_path.decode('string_escape')
+                    t.working_path = t.working_path.decode('utf-8')
+                    t.working_path = encode_for_filesystem(t.working_path)[0]
                     t.destination_path = t.working_path
                 elif version >= 4:
                     up, down = line[41:-1].split(' ', 1)
@@ -627,7 +654,7 @@ class MultiTorrent(Feedback):
                                                            self.config,
                                                            self.data_dir,
                                                            infohash,
-                                                           self.global_error)
+                                                           lambda s : self.global_error(logging.ERROR, s))
                 else:
                     torrent_config = self._read_torrent_config(infohash)
                 t.update_config(torrent_config)

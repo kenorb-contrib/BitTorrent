@@ -10,17 +10,56 @@
 # for the specific language governing rights and limitations under the
 # License.
 
-# Written by Uoti Urpala and Matt Chisholm
+# Written by Matt Chisholm and Greg Hazel
 
 from __future__ import division
 
-from BitTorrent.translation import _
-
-import sys
 import os
+import sys
+try:
+    from BitTorrent.translation import _
+except ImportError:
+    if os.name == 'posix':
+        # Ugly Idiot-proofing -- this should stop ALL bug reports from
+        # people unable to run BitTorrent after installation on Debian
+        # and RedHat based systems.
+        pythonversion = sys.version[:3]
+        py24 = os.path.exists('/usr/lib/python2.4/site-packages/BitTorrent/')
+        py23 = os.path.exists('/usr/lib/python2.3/site-packages/BitTorrent/')
+        if not py24 and not py23:
+            print "There is no BitTorrent package installed on this system."
+        elif py24 and py23:
+            print """
+There is more than one BitTorrent package installed on this system,
+at least one under Python 2.3 and at least one under Python 2.4."""
+        else:
+            print """
+A BitTorrent package for the wrong version of Python is installed on this 
+system.  The default version of Python on this system is %s.  However, the
+BitTorrent package is installed under Python %s.""" % (pythonversion, (py24 and '2.4' or '2.3'))
+        print """
+        To install BitTorrent correctly you must first:
+
+        * Remove *all* versions of BitTorrent currently installed.
+
+        Then, you have two options:
+
+        * Download and install the .deb or .rpm package for
+          BitTorrent & Python %s
+        * Download the source .tar.gz and follow the directions for
+          installing under Python %s
+
+        Visit http://www.bittorrent.com/ to download BitTorrent.
+        """ % (pythonversion, pythonversion)
+        sys.exit(1)
+    else:
+        raise
+
+
+import time
 import BitTorrent.stackthreading as threading
 import random
-import atexit
+from BitTorrent import atexit_threads
 import logging
 
 assert sys.version_info >= (2, 3), _("Install Python %s or greater") % '2.3'
@@ -29,11 +68,12 @@ from BitTorrent import BTFailure, app_name, inject_main_logfile, old_stderr
 
 from BitTorrent import configfile
 
+from BitTorrent.defer import DeferredEvent
 from BitTorrent.defaultargs import get_defaults
 from BitTorrent.IPC import ipc_interface
 from BitTorrent.prefs import Preferences
 from BitTorrent.platform import os_version, is_frozen_exe
-from BitTorrent.RawServer_twisted import RawServer, task
+from BitTorrent.RawServer_twisted import RawServer
 from BitTorrent import zurllib
 from BitTorrent import GetTorrent
 
@@ -51,11 +91,11 @@ rawserver = None
 
 if __name__ == '__main__':
 
-    #try:
-    #    import psyco
-    #    psyco.profile()
-    #except ImportError:
-    #    pass
+    try:
+        import psyco
+        psyco.profile()
+    except ImportError:
+        pass
 
     zurllib.add_unsafe_thread()
 
@@ -75,8 +115,8 @@ if __name__ == '__main__':
 
     ipc = ipc_interface(rawserver, config, "controlsocket")
 
-    # make sure we clean up the ipc when we close
-    atexit.register(ipc.stop)
+    # make sure we clean up the ipc when everything is done
+    atexit_threads.register_verbose(ipc.stop)
 
     # this could be on the ipc object
     ipc_master = True
@@ -122,7 +162,7 @@ if __name__ == '__main__':
     #import memleak_detection
     #memleak_detection.begin_sampling('memleak_sample.log')
 
-    core_doneflag = threading.Event()
+    core_doneflag = DeferredEvent()
 
     mainloop = MainLoop(config)
 
@@ -143,7 +183,7 @@ if __name__ == '__main__':
 
         data_dir = config['data_dir']
 
-        rawserver_doneflag = threading.Event()
+        rawserver_doneflag = DeferredEvent()
         try:
             multitorrent = MultiTorrent(config, core_doneflag, rawserver,
                                         data_dir, listen_fail_ok=True,
@@ -156,33 +196,27 @@ if __name__ == '__main__':
                                                   test_current_version=config['current_version'])
             multitorrent.add_auto_update_policy(auto_update_butler)
             rawserver.add_task(0, auto_update_butler.check_version)
-            gui_wrap(mainloop.attach_multitorrent,
-                     ThreadProxy.ThreadProxy(multitorrent, gui_wrap),
-                     core_doneflag)
+            mainloop.attach_multitorrent(ThreadProxy.ThreadProxy(multitorrent,
+                                                                 gui_wrap),
+                                         core_doneflag)
 
             ipc.start(mainloop.external_command)
             rawserver.associate_thread()
 
-            l = None
             def shutdown():
-                if core_doneflag.isSet():
-                    df = multitorrent.shutdown()
-                    set_flag = lambda *a : rawserver_doneflag.set()
-                    df.addCallbacks(set_flag, set_flag)
-                    l.stop()
+                df = multitorrent.shutdown()
+                set_flag = lambda *a : rawserver_doneflag.set()
+                df.addCallbacks(set_flag, set_flag)
                     
-            l = task.LoopingCall(shutdown)
-            rawserver.add_task(0, l.start, 1)
+            rawserver.add_task(0, core_doneflag.addCallback, lambda r: rawserver.external_add_task(0, shutdown))
             rawserver.listen_forever(rawserver_doneflag)
-
-            ipc.stop()
         except:
             # oops, we failed.
             # one message for the log w/ exception info
             global_logger.exception("BitTorrent core initialization failed!")
             # one message for the user w/o info
             global_logger.critical("BitTorrent core initialization failed!")
-            
+
             core_doneflag.set()
             rawserver_doneflag.set()
             try:
@@ -209,4 +243,3 @@ if __name__ == '__main__':
     except KeyboardInterrupt:
         # the gui main loop is closed in MainLoop
         pass
-

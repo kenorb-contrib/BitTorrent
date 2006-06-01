@@ -14,6 +14,7 @@ from __future__ import generators
 
 import os
 import sys
+import time
 import Queue
 import socket
 import logging
@@ -433,6 +434,7 @@ class IPCWin32DDE(IPC):
                 del self.client
                 del self.conversation
                 ipc_logger.warning("No DDE Server is listening, but the global mutex exists. Retry %d!" % i)
+                time.sleep(1.0)
 
             # continuing might be dangerous (two instances)
             raise Exception("No DDE Server is listening, but the global mutex exists!")

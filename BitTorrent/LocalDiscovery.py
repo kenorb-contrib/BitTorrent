@@ -48,6 +48,7 @@ class LocalDiscovery(object):
                 port = int(info.port)
             except:
                 discovery_logger.exception("Invalid Service (port not an int): %s" + repr(info.__dict__))
+                return
                 
             addr = (host, port)
             if addr == (get_host_ip(), self.port):

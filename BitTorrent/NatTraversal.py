@@ -21,6 +21,7 @@ from BitTorrent.yielddefer import launch_coroutine, _wrap_task
 from BitTorrent.HostIP import get_host_ip
 from BitTorrent.obsoletepythonsupport import has_set, set
 from twisted import internet
+import twisted.copyright
 
 from urllib2 import URLError, HTTPError, Request
 from httplib import BadStatusLine
@@ -47,20 +48,19 @@ class NATEventLoop(threading.Thread):
     def __init__(self):
         threading.Thread.__init__(self)
         self.queue = Queue.Queue()
-        self.killswitch = threading.Event()
+        self.killswitch = defer.DeferredEvent()
+        def ignore(*a, **kw):
+            pass
+        self.killswitch.addCallback(ignore)            
         self.setDaemon(True)
 
     def run(self):
 
         while not self.killswitch.isSet():
 
-            try:
-                event = self.queue.get(timeout=1)
-            except Queue.Empty:
-                continue
+            (f, a, kw) = self.queue.get()
             
             try:
-                (f, a, kw) = event
                 nat_logger.debug("NATEventLoop Event: %s" % f.__name__)
                 f(*a, **kw)
                 nat_logger.debug("NATEventLoop Event: %s finished." % f.__name__)
@@ -68,7 +68,8 @@ class NATEventLoop(threading.Thread):
                 # sys can be none during interpritter shutdown
                 if sys is None:
                     break
-                nat_logger.exception("Error in NATEventLoop for %s" % str(event))
+                nat_logger.exception("Error in NATEventLoop for %s" % str(f.__name__))
+
 
 class NatTraverser(object):
     def __init__(self, rawserver):
@@ -154,12 +155,15 @@ class NatTraverser(object):
         for request in self.list_requests:
             request.errback(e)
         self.list_requests = []
-    
+
+    def _gen_deferred(self):
+        return defer.ThreadableDeferred(_wrap_task(self.rawserver.external_add_task))
 
     def register_port(self, external_port, internal_port, protocol,
                       host = None, service_name = None, remote_host=''):
         mapping = UPnPPortMapping(external_port, internal_port, protocol,
                                   host, service_name, remote_host)
+        mapping.d = self._gen_deferred()
         self.register_requests.append(mapping)
 
         self.add_task(self._flush_queue)
@@ -177,7 +181,7 @@ class NatTraverser(object):
         d.callback(matches)
 
     def list_ports(self):
-        d = defer.Deferred()
+        d = self._gen_deferred()
         self.list_requests.append(d)
         self.add_task(self._flush_queue)
         return d
@@ -248,7 +252,7 @@ class UPnPPortMapping(object):
 
     def populate_host(self):
         # throw out '' or None or ints, also look for semi-valid IPs
-        if (not isinstance(self.host, str)) or (self.host.count('.') < 3): 
+        if not isinstance(self.host, str) or self.host.count('.') < 3:
             self.host = get_host_ip()
         
     def __str__(self):
@@ -507,16 +511,26 @@ class ManualUPnP(NATBase, Handler):
                 yield df
                 # hm, failures.
                 result = df.result
-                if result == 1:
+                # blargh
+                if twisted.copyright.version >= '2.4.0':
+                    success = None
+                    # ACKKKK..K. Prevents "Unhandled error in Deferred"
+                    if df._debugInfo is not None:
+                        df._debugInfo.failResult = None
+                else:
+                    success = 1
+                if result is success:
                     break
                 else:
                     # I suppose keep trying on different ports, but why would
                     # joinGroup fail?
+                    self.transport = None
                     x = s.listening_port.stopListening()
                     if isinstance(x, internet.defer.Deferred):
                         yield df
             except socket.error, e:
                 pass
+            
 
         if not self.transport:
             # resume init services, because we couldn't bind to a port

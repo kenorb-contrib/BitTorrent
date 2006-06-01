@@ -310,8 +310,8 @@ class StoreValue(ActionBase):
                         except KRPCSelfNodeError:
                             pass
                         else:
-                            df.addCallback(self.storedValue,(),{'node':node})
-                            df.addErrback(self.storeFailed, (), {'node':node})
+                            df.addCallback(self.storedValue, node=node)
+                            df.addErrback(self.storeFailed, node=node)
                             self.outstanding += 1
                             num -= 1
                         

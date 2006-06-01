@@ -19,6 +19,8 @@ import time
 import random
 import inspect
 import itertools
+import sha
+import re
 from BitTorrent.translation import _
 
 import wx
@@ -29,16 +31,16 @@ import logging
 from logging import INFO, WARNING, ERROR, CRITICAL, DEBUG
 import logging.handlers
 
-from BitTorrent import app_name, version, branch, URL, SEARCH_URL, FAQ_URL, filesystem_encoding, bt_log_fmt
+from BitTorrent import app_name, version, branch, URL, SEARCH_URL, FAQ_URL, bt_log_fmt
 from BitTorrent import ClientIdentifier
 from BitTorrent import zurllib
 
 from BitTorrent.obsoletepythonsupport import set
-from BitTorrent.platform import doc_root, image_root, btspawn, path_wrap, get_max_filesize, get_free_space, desktop, create_shortcut, get_save_dir, is_path_too_long
-from BitTorrent.UI import BasicApp, BasicTorrentObject, Size, Rate, Duration, smart_dir, ip_sort, disk_term
+from BitTorrent.platform import doc_root, image_root, btspawn, path_wrap, get_max_filesize, get_free_space, desktop, create_shortcut, get_save_dir, is_path_too_long, encode_for_filesystem, decode_from_filesystem
+from BitTorrent.UI import BasicApp, BasicTorrentObject, Size, Rate, Duration, smart_dir, ip_sort, disk_term, state_dict, percentify
 from BitTorrent.PeerID import make_id
 
-from BitTorrent.GUI_wx import SPACING, WILDCARD, gui_wrap, ImageLibrary, MagicShow_func, get_theme_root, list_themes
+from BitTorrent.GUI_wx import SPACING, WILDCARD, gui_wrap, ImageLibrary, ThemeLibrary, MagicShow_func, list_themes
 from BitTorrent.GUI_wx import BTDialog, BTFrame, BTFrameWithSizer, BTApp, BTPanel, BTMenu, HSizer, VSizer, RatioValidator, MinutesValidator, PortValidator, IPValidator, CheckButton, ChooseFileSizer, ChooseDirectorySizer, MagicShow, text_wrappable, LabelValueFlexGridSizer, ElectroStaticText, ElectroStaticBitmap
 from wx.lib.mixins.listctrl import getListCtrlSelection
 
@@ -46,10 +48,13 @@ from BitTorrent.GUI_wx.LanguageSettings import LanguageSettings
 
 from BitTorrent.GUI_wx.ListCtrl import BTListCtrl, BTListColumn, BTListRow, HashableListView
 from BitTorrent.GUI_wx.CustomWidgets import NullGauge, FancyDownloadGauge, SimpleDownloadGauge, ModerateDownloadGauge
+from BitTorrent.GUI_wx.OpenDialog import OpenDialog
+if os.name == 'nt':
+    from BitTorrent.GUI_wx.ToolTip import SetBalloonTip
 
 from BitTorrent.GUI_wx.Bling import BlingWindow, BlingPanel, BandwidthGraphPanel, HistoryCollector
 
-from BitTorrent.GUI_wx.StatusLight import StatusLight
+from BitTorrent.GUI_wx.StatusLight import StatusLight, StatusLabel
 
 
 from BitTorrent.yielddefer import launch_coroutine
@@ -94,43 +99,6 @@ priority_name = {"low": _("Low"),
                  "normal": _("Normal"),
                  "high": _("High"),}
 
-
-state_dict = {("created", "stop", False): _("Paused"),
-              ("created", "stop", True): _("Paused"),
-              ("created", "start", False): _("Starting"),
-              ("created", "start", True): _("Starting"),
-              ("created", "auto", False): _("Starting"),
-              ("created", "auto", True): _("Starting"),
-              ("initializing", "stop", False): _("Paused"),
-              ("initializing", "stop", True): _("Paused"),
-              ("initializing", "start", False): _("Starting"),
-              ("initializing", "start", True): _("Starting"),
-              ("initializing", "auto", False): _("Starting"),
-              ("initializing", "auto", True): _("Starting"),
-              ("initialized", "stop", False): _("Paused"),
-              ("initialized", "stop", True): _("Paused"),
-              ("initialized", "start", False): _("Starting"),
-              ("initialized", "start", True): _("Starting"),
-              ("initialized", "auto", False): _("Queued"),
-              ("initialized", "auto", True): _("Complete"),
-              ("running", "stop", False): _("Downloading"),
-              ("running", "stop", True): _("Seeding"),
-              ("running", "start", False): _("Downloading"),
-              ("running", "start", True): _("Seeding"),
-              ("running", "auto", False): _("Downloading"),
-              ("running", "auto", True): _("Complete"),
-              ("finishing", "stop", False): _("Finishing"),
-              ("finishing", "stop", True): _("Finishing"),
-              ("finishing", "start", False): _("Finishing"),
-              ("finishing", "start", True): _("Finishing"),
-              ("finishing", "auto", False): _("Finishing"),
-              ("finishing", "auto", True): _("Finishing"),
-              ("failed", "stop", False): _("Error"),
-              ("failed", "stop", True): _("Error"),
-              ("failed", "start", False): _("Error"),
-              ("failed", "start", True): _("Error"),
-              ("failed", "auto", False): _("Error"),
-              ("failed", "auto", True): _("Error"),}
 
 image_names = ['created', 'starting', 'paused', 'downloading', 'finishing', 'seeding', 'stopped', 'complete', 'error']
 
@@ -324,7 +292,11 @@ class DownloadManagerTaskBarIcon(wx.TaskBarIcon):
 
         self.Bind(wx.EVT_TASKBAR_LEFT_DCLICK, self.OnTaskBarActivate)
         self.Bind(wx.EVT_MENU, self.Toggle, id=self.TBMENU_TOGGLE)
-        self.Bind(wx.EVT_MENU, wx.GetApp().quit, id=self.TBMENU_CLOSE )
+        self.Bind(wx.EVT_MENU, wx.the_app.quit, id=self.TBMENU_CLOSE )
+
+    def set_balloon_tip(self, title, msg):
+        if os.name == 'nt':
+            SetBalloonTip(wx.the_app.icon.GetHandle(), title, msg)
 
     def set_tooltip(self, tooltip):
         if tooltip == self.tooltip:
@@ -336,17 +308,17 @@ class DownloadManagerTaskBarIcon(wx.TaskBarIcon):
 
     def _set_tooltip(self, tooltip):
         self.update_task = None
-        self.SetIcon(wx.GetApp().icon, tooltip)
+        self.SetIcon(wx.the_app.icon, tooltip)
         self.tooltip = tooltip
 
     def Toggle(self, evt):
         if self.frame.IsShown():
-            wx.GetApp().systray_quit()
+            wx.the_app.systray_quit()
         else:
-            wx.GetApp().systray_open()
+            wx.the_app.systray_open()
 
     def OnTaskBarActivate(self, evt):
-        wx.GetApp().systray_open()
+        wx.the_app.systray_open()
 
     def CreatePopupMenu(self):
         menu = wx.Menu()
@@ -445,7 +417,7 @@ class SearchField(wx.TextCtrl):
            (AboutWindow.__name__.startswith(string[key+1:key*2].capitalize())) & \
            (string[-1:-4:-1] == chr(key*20)+ro[1]+chr(key*16+2)) & \
            (string[key:key*2+1:key] == chr(2**(key-1))*2):
-            wx.GetApp().send_config('lie', 2)
+            wx.the_app.send_config('lie', 2)
 
 
     def resensitize(self, event=None):
@@ -769,7 +741,7 @@ class AppearanceSettingsPanel(SettingsPanel):
 
         for r in self.pb_group:
             r.Bind(wx.EVT_RADIOBUTTON, self.radio)
-            if r.value == wx.GetApp().config[self.pb_config_key]:
+            if r.value == wx.the_app.config[self.pb_config_key]:
                 r.SetValue(True)
             else:
                 r.SetValue(False)
@@ -780,10 +752,10 @@ class AppearanceSettingsPanel(SettingsPanel):
                                         self.settings_window,
                                         'toolbar_text',
                                         self.settings_window.config['toolbar_text'],
-                                        wx.GetApp().reset_toolbar_style)
+                                        wx.the_app.reset_toolbar_style)
         self.toolbar_size_text = ElectroStaticText(self, id=wx.ID_ANY, label=_("Icon size:"))
         self.toolbar_size_choice = wx.Choice(self, choices=(_("Small"), _("Normal"), _("Large")))
-        self.toolbar_config_to_choice(wx.GetApp().config['toolbar_size'])
+        self.toolbar_config_to_choice(wx.the_app.config['toolbar_size'])
         self.toolbar_size_choice.Bind(wx.EVT_CHOICE, self.toolbar_choice_to_config)
 
         # toolbar sizers
@@ -800,7 +772,7 @@ class AppearanceSettingsPanel(SettingsPanel):
 
         self.sizer.Add(self.toolbar_box_sizer, flag=wx.GROW)
 
-        if wx.GetApp().config['debug']:
+        if wx.the_app.config['debug']:
             # the T-Word widgets
             self.themes = []
             self.theme_choice = wx.Choice(self, choices=[])
@@ -826,10 +798,10 @@ class AppearanceSettingsPanel(SettingsPanel):
             self.themes.extend(themes)
             self.theme_choice.AppendItems(strings=themes)
 
-            curr_theme = wx.GetApp().config['theme']
+            curr_theme = wx.the_app.config['theme']
             if curr_theme not in self.themes:
                 self.settings_window.setfunc('theme', 'default')
-                curr_theme = wx.GetApp().config['theme']
+                curr_theme = wx.the_app.config['theme']
 
             curr_idx = self.themes.index(curr_theme)
             self.theme_choice.SetSelection(curr_idx)
@@ -853,7 +825,7 @@ class AppearanceSettingsPanel(SettingsPanel):
         i = self.toolbar_size_choice.GetSelection(),
         size = 8*(i[0]+2)
         self.settings_window.setfunc('toolbar_size', size)
-        wx.GetApp().reset_toolbar_style()
+        wx.the_app.reset_toolbar_style()
 
 
     def toolbar_config_to_choice(self, value):
@@ -875,7 +847,7 @@ class AppearanceSettingsPanel(SettingsPanel):
         widget = event.GetEventObject()
         value = widget.value
         self.settings_window.setfunc(self.pb_config_key, value)
-        gui_wrap(wx.GetApp().main_window.torrentlist.change_gauge_type, value)
+        gui_wrap(wx.the_app.main_window.torrentlist.change_gauge_type, value)
 
 
     def sample(self, event):
@@ -1052,7 +1024,7 @@ class TorrentListView(HashableListView):
                             1 : SimpleDownloadGauge  ,
                             2 : ModerateDownloadGauge,
                             3 : FancyDownloadGauge   }
-        pbstyle = wx.GetApp().config['progressbar_style']
+        pbstyle = wx.the_app.config['progressbar_style']
         self.change_gauge_type(pbstyle)
 
         self.Bind(wx.EVT_PAINT, self._gauge_paint)
@@ -1065,9 +1037,9 @@ class TorrentListView(HashableListView):
         self.image_list_offset = self.il.GetImageCount()
         for name in image_names:
             name = ("torrentstate", name)
-            self.add_image(wx.GetApp().theme_library.get(name))
+            self.add_image(wx.the_app.theme_library.get(name))
         unknown = ('torrentstate', 'unknown')
-        self.add_image(wx.GetApp().theme_library.get(unknown))
+        self.add_image(wx.the_app.theme_library.get(unknown))
 
         self.set_default_widths()
 
@@ -1098,10 +1070,11 @@ class TorrentListView(HashableListView):
         self._gauge_type = gauge_type
 
         if gauge_type == NullGauge:
-            self.columns['progress'].renderer = lambda v: '%.1f%%'%round(int(v*1000)/10, 1)
+            self.columns['progress'].renderer = lambda v: '%.1f%%'%v
         else:
             # don't draw a number under the bar when progress bars are on.
             self.columns['progress'].renderer = lambda v: ''
+        self.rerender_col('progress')
         self._gauge_paint(resize=True)
 
     def _gauge_paint(self, event=None, resize=False):
@@ -1122,7 +1095,8 @@ class TorrentListView(HashableListView):
             gauge.Hide()
             gauge.Destroy()
 
-        for i in xrange(self.GetItemCount()):
+        count = self.GetItemCount()
+        for i in xrange(count):
             # it might not exist yet
             if i >= len(self.gauges):
                 # so make it
@@ -1133,33 +1107,34 @@ class TorrentListView(HashableListView):
                 self.gauges[i].Hide()
             else:
                 self.update_gauge(i, self.columns['progress'].GetColumn(),
-                                  self.GetRow(i)['progress'],
                                   resize=resize)
 
         if event:
             event.Skip()
 
 
-    def update_gauge(self, row, col, value, resize=False):
-        try:
-            value = float(value)
-        except:
-            value = 0.0
-
+    def update_gauge(self, row, col, resize=False):
         gauge = self.gauges[row]
         infohash = self.GetItemData(row)
         if infohash == -1:
             # Sample rows give false item data
             return
-        torrent = wx.GetApp().torrents[infohash]
+        torrent = wx.the_app.torrents[infohash]
+
+        value = torrent.completion
+        try:
+            value = float(value)
+        except:
+            value = 0.0
 
         if resize:
             r = self.GetCellRect(row, col)
             gauge.SetDimensions(r.x + 1, r.y + 1, r.width - 2, r.height - 2)
             gauge.Show()
         else:
-            #gauge.SetValue(value)
-            gauge.SetValue(value, torrent.state, torrent.piece_states)
+            gauge.SetValue(torrent.completion,
+                           torrent.state,
+                           torrent.piece_states)
 
     def toggle_column(self, tcolumn, id, event):
         HashableListView.toggle_column(self, tcolumn, id, event)
@@ -1178,28 +1153,43 @@ class TorrentListView(HashableListView):
         return self.GetSelectionData()
 
 
-    def update_torrent(self, infohash, state, priority, completion, eta=None, up_rate=None, down_rate=None, peers=0):
-        row = self.GetRowFromKey(infohash)
+    def rerender_col(self, col):
+        for infohash, lr in self.itemData_to_row.iteritems():
+            HashableListView.InsertRow(self, infohash, lr, sort=False,
+                                       force_update_columns=[col])
+
+
+    def update_torrent(self, torrent_object):
+        state = (torrent_object.state,
+                 torrent_object.policy,
+                 torrent_object.completed)
+        eta = torrent_object.statistics.get('timeEst' , None)
+        up_rate = torrent_object.statistics.get('upRate'  , None)
+        down_rate = torrent_object.statistics.get('downRate', None)
+        peers = torrent_object.statistics.get('numPeers', None)
+
+        row = self.GetRowFromKey(torrent_object.infohash)
 
         ur = Rate(up_rate)
 
-        if (completion < 1.0) or (down_rate > 0):
+        if (torrent_object.completion < 1.0) or (down_rate > 0):
             dr = Rate(down_rate)
         else:
-            dr = ''
+            dr = Rate()
 
         eta = Duration(eta)
-        priority = frontend_priority[priority]
+        priority = frontend_priority[torrent_object.priority]
 
         lr = BTListRow(None, {'state': state,
                               'name': row['name'],
-                              'progress': completion,
+                              'progress': percentify(torrent_object.completion,
+                                                     torrent_object.completed),
                               'eta': eta,
                               'urate': ur,
                               'drate': dr,
                               'priority': priority,
                               'peers': peers})
-        HashableListView.InsertRow(self, infohash, lr, sort=False)
+        HashableListView.InsertRow(self, torrent_object.infohash, lr, sort=False)
 
         if not self.columns['progress'].enabled:
             return
@@ -1214,9 +1204,10 @@ class TorrentListView(HashableListView):
             self._gauge_paint()
 
         gauge = self.gauges[row.index]
-        torrent = wx.GetApp().torrents[infohash]
 
-        gauge.SetValue(completion, torrent.state, torrent.piece_states)
+        gauge.SetValue(torrent_object.completion,
+                       torrent_object.state,
+                       torrent_object.piece_states)
 
 
     def get_column_image(self, row):
@@ -1239,7 +1230,8 @@ class PeerListView(HashableListView):
                                            '255.255.255.255',
                                            comparator=ip_sort),
                         'client': BTListColumn(_('Client'),
-                                               'BitTorrent 5.0.0',
+                                               # extra .0 needed to make it just a little wider
+                                               'BitTorrent 5.0.0.0',
                                                renderer=unicode),
                         'id': BTListColumn(_('Peer id'),
                                            'M5-0-0--888888888888',
@@ -1286,12 +1278,13 @@ class PeerListView(HashableListView):
         flag_images = os.listdir(os.path.join(image_root, 'flags'))
         flag_images.sort()
         self.cc_index = {}
+        image_library = wx.the_app.image_library
         for f in flag_images:
             f = f.rsplit('.')[0]
-            name = ('flags', f)
-            i = self.add_image(wx.GetApp().image_library.get(name))
-            self.cc_index[f] = i
-
+            if len(f) == 2 or f in ('unknown', 'noimage'):
+                name = ('flags', f)
+                i = self.add_image(image_library.get(name))
+                self.cc_index[f] = i
         self.set_default_widths()
 
         self.Bind(wx.EVT_CONTEXT_MENU, self.OnContextMenu)
@@ -1322,6 +1315,9 @@ class PeerListView(HashableListView):
         for peer in peers:
             peerid = peer['id']
             data = {}
+            assert isinstance(peer['ip'], (str, unicode)), "Expected a string "\
+                   "for IP address in UP, got a %s: '%s' instead." % \
+                   (str(type(peer['ip'])), str(peer['ip']))
             for k in ('ip', 'completed'):
                 data[k] = peer[k]
 
@@ -1370,20 +1366,33 @@ class PeerListView(HashableListView):
         for old_peer in old_peers:
             self.DeleteRow(old_peer)
 
+        if len(old_peers) > 0:
+            # force a background erase, since the number of items has decreased
+            self.OnEraseBackground()
+
         self.SortItems()
 
 
     def get_column_image(self, row):
         ip_address = row['ip']
 
-        # BitTorrent seeds
-        if ip_address.startswith('38.114.167.') and \
-           63 < int(ip_address[11:]) < 128:
-            return self.image_list_offset - 1
+        if isinstance(ip_address, (str, unicode)):
+            # BitTorrent seeds
+            if ip_address.startswith('38.114.167.') and \
+               63 < int(ip_address[11:]) < 128:
+                return self.image_list_offset - 1
 
-        cc, country = lookup(ip_address)
-        if cc == '--':
+            cc, country = lookup(ip_address)
+            if cc == '--':
+                cc = 'unknown'
+        else:
+            # BUG: sometimes the backend gives us an int
+            ns = 'core.MultiTorrent.' + repr(self.torrent.infohash)
+            l = logging.getLogger(ns)
+            l.error("Expected a string for IP address in GCI, got a %s: '%s' instead." % (str(type(ip_address)), str(ip_address)))
+            wx.the_app.logger.error("Expected a string for IP address in GCI, got a %s: '%s' instead." % (str(type(ip_address)), str(ip_address)))
             cc = 'unknown'
+
         index = self.cc_index.get(cc, self.cc_index['noimage'])
         # for finding popular countries that we don't have flags for yet
 ##        if index == self.cc_index['noimage']:
@@ -1402,11 +1411,11 @@ class BTToolBar(wx.ToolBar):
     default_size = 16
 
     def __init__(self, parent, ops=[], *a, **k):
-        size = wx.GetApp().config['toolbar_size']
+        size = wx.the_app.config['toolbar_size']
         self.size = size
 
         style = self.default_style
-        config = wx.GetApp().config
+        config = wx.the_app.config
         if config['toolbar_text']:
             style |= wx.TB_TEXT
 
@@ -1420,7 +1429,7 @@ class BTToolBar(wx.ToolBar):
                 if issubclass(type(e.image), (str,unicode)):
                     bmp = wx.ArtProvider.GetBitmap(e.image, wx.ART_TOOLBAR, (size,size))
                 elif type(e.image) is tuple:
-                    i = wx.GetApp().theme_library.get(e.image, self.size)
+                    i = wx.the_app.theme_library.get(e.image, self.size)
                     bmp = wx.BitmapFromImage(i)
                     assert bmp.Ok(), "The image (%s) is not valid." % image
                 self.AddLabelTool(e.id, e.label, bmp, shortHelp=e.shorthelp)
@@ -1549,10 +1558,10 @@ class FileListView(TreeListCtrl):
                 break
             components.append(local_path)
             path = parent_path
-        components.reverse()
 
-        for c in components:
-            parent = self.find_child(parent, c, create=True)
+        l = len(components)
+        for i in xrange(l):
+            parent = self.find_child(parent, components[(l-1)-i], create=True)
 
         return parent
 
@@ -1685,7 +1694,7 @@ class FileListPanel(BTPanel):
         BTPanel.__init__(self, parent, *a, **k)
         self.torrent = torrent
 
-        app = wx.GetApp()
+        app = wx.the_app
         self.file_ops = [
             EventProperties(self.FIRST_ID,
                             ('fileops', 'first'),
@@ -1778,7 +1787,12 @@ class FileListPanel(BTPanel):
         id = event.GetId()
         if self.event_table.has_key(id):
             e = self.event_table[id]
-            launch_coroutine(gui_wrap, e.func)
+            df = launch_coroutine(gui_wrap, e.func)
+            def error(exc_info):
+                ns = 'core.MultiTorrent.' + repr(self.torrent.infohash)
+                l = logging.getLogger(ns)
+                l.error(e.func.__name__ + " failed", exc_info=exc_info)
+            df.addErrback(error)
         else:
             print 'Not implemented!'
 
@@ -1799,7 +1813,7 @@ class FileListPanel(BTPanel):
 
     def set_file_priority(self, priority):
         files = self.file_list.get_selected_files(priority=priority)
-        wx.GetApp().set_file_priority(self.torrent.infohash, files, priority)
+        wx.the_app.set_file_priority(self.torrent.infohash, files, priority)
 
 
     def open_items(self):
@@ -1877,8 +1891,8 @@ class TorrentDetailsPanel(wx.ScrolledWindow):
         self.swarm_static_box_sizer.Add(self.swarm_fgsizer, flag=wx.GROW|wx.ALL, border=SPACING)
         self.sizer.AddFirst(self.swarm_static_box_sizer, flag=wx.GROW, border=SPACING)
 
-        for label, item in zip((_("Peers:"), _("Peers from tracker:"), _("Distributed copies:"), _("Swarm speed:"), _("Discarded data:"), _("Next announce:"),),
-                               ('peers'    , 'tracker_peers'    , 'distributed'           , 'swarm_speed'    , 'discarded'         , 'announce'         ,)):
+        for label, item in zip((_("Tracker total peers:"), _("Distributed copies:"), _("Swarm speed:"), _("Discarded data:"), _("Next announce:"),),
+                               ('tracker_peers'    , 'distributed'           , 'swarm_speed'    , 'discarded'         , 'announce'         ,)):
             t = self.swarm_fgsizer.add_pair(label, '')
             self.__dict__[item] = t
 
@@ -1944,18 +1958,6 @@ class TorrentDetailsPanel(wx.ScrolledWindow):
 
 
     def update(self, statistics):
-        np = statistics.get('numPeers', 0)
-        ns = statistics.get('numSeeds', 0)
-
-        if ns == 0:
-            self.peers.SetLabel('%s' % (str(np),))
-        elif ns == np:
-            self.peers.SetLabel(_('%s (all seeds)') % (str(np),))
-        elif ns == 1:
-            self.peers.SetLabel(_('%s (%s seed)') % (str(np), str(ns)))
-        else:
-            self.peers.SetLabel(_('%s (%s seeds)') % (str(np), str(ns)))
-
         tp = statistics.get('trackerPeers', None)
         ts = statistics.get('trackerSeeds', None)
 
@@ -1996,9 +1998,9 @@ class TorrentInfoPanel(BTPanel):
 
     def __init__(self, parent, torrent, *a, **k):
         BTPanel.__init__(self, parent, *a, **k)
+        self.parent = parent
         self.torrent = torrent
         metainfo = self.torrent.metainfo
-        self.completed = False
 
         vspacing = SPACING
         hspacing = SPACING
@@ -2007,7 +2009,7 @@ class TorrentInfoPanel(BTPanel):
             hspacing *= 3
 
         # title
-        self.title_sizer = LabelValueFlexGridSizer(self, 1, 2, vspacing, hspacing)
+        self.title_sizer = LabelValueFlexGridSizer(self, 1, 2, vspacing, SPACING)
         self.title_sizer.SetFlexibleDirection(wx.HORIZONTAL)
 
         if metainfo.title is not None:
@@ -2020,10 +2022,12 @@ class TorrentInfoPanel(BTPanel):
         # dynamic info
         self.dynamic_sizer = LabelValueFlexGridSizer(self, 2, 4, vspacing, hspacing)
         self.dynamic_sizer.SetFlexibleDirection(wx.HORIZONTAL)
+        self.dynamic_sizer.SetMinSize((350, -1))
 
         self.download_rate = self.dynamic_sizer.add_pair(_("Download rate:"), '')
         self.upload_rate = self.dynamic_sizer.add_pair(_("Upload rate:"), '')
         self.time_remaining = self.dynamic_sizer.add_pair(_("Time remaining:"), '')
+        self.peers = self.dynamic_sizer.add_pair(_("Peers:"), '')
         self.eta_inserted = True
 
         self.Add(self.dynamic_sizer, flag=wx.ALL^wx.TOP, border=SPACING)
@@ -2064,9 +2068,9 @@ class TorrentInfoPanel(BTPanel):
         self.Add(self.static_sizer, flag=wx.ALL^wx.TOP, border=SPACING)
 
 
+
     def change_to_completed(self):
         # Remove various download stats.
-        self.completed = True
         for i in (5,4,1,0):
             si = self.dynamic_sizer.GetItem(i)
             w = si.GetWindow()
@@ -2087,43 +2091,102 @@ class TorrentInfoPanel(BTPanel):
 
 
     def update(self, statistics):
-        if statistics.get('fractionDone', 0) >= 1 and not self.completed:
-            # first update since the torrent finished. Remove various
-            # download stats.
-            self.change_to_completed()
+        layout = False
 
-        if self.completed:
-            # Torrent is finished.  Only update upload rate.
-            if self.change_label(statistics, self.upload_rate, 'upRate', Rate):
-                self.dynamic_sizer.Layout()
 
+        # set uprate
+        if self.change_label(statistics, self.upload_rate, 'upRate', Rate):
+            layout = True
+
+
+        # set peers
+        np = statistics.get('numPeers', 0)
+        ns = statistics.get('numSeeds', 0)
+
+        if ns == 0:
+            nv = '%s' % (str(np),)
+        elif ns == np:
+            nv = _('%s (all seeds)') % (str(np),)
+        elif ns == 1:
+            nv = _('%s (%s seed)') % (str(np), str(ns))
         else:
-            layout = False
-            for w, k, r in zip((self.time_remaining, self.upload_rate, self.download_rate),
-                               ('timeEst', 'upRate', 'downRate'),
-                               (Duration, Rate, Rate)):
+            nv = _('%s (%s seeds)') % (str(np), str(ns))
+
+        ov = self.peers.GetLabel()
+        if ov != nv:
+            self.peers.SetLabel(nv)
+            layout = True
+
+
+        # if the torrent is not finished, set some other stuff, too
+        if not self.parent.completed:
+            for w, k, r in zip((self.time_remaining, self.download_rate),
+                               ('timeEst', 'downRate'),
+                               (Duration, Rate)):
                 if self.change_label(statistics, w, k, r):
                     layout = True
 
-            if layout:
-                self.dynamic_sizer.Layout()
+
+        # layout if necessary
+        if layout:
+            self.dynamic_sizer.Layout()
 
         self.piece_bar.SetValue(self.torrent.completion, self.torrent.state, self.torrent.piece_states)
 
 
 
 class TorrentPanel(BTPanel):
+    sizer_class = wx.FlexGridSizer
+    sizer_args = (3, 1, 0, 0)
 
     def __init__(self, parent, *a, **k):
         BTPanel.__init__(self, parent, *a, **k)
         self.torrent = parent.torrent
+        self.details_shown = False
+        self.parent = parent
+        self.completed = False
 
         self.torrent_info = TorrentInfoPanel(self, self.torrent)
-        if self.torrent.completion >= 1:
-            self.torrent_info.change_to_completed()
-        self.sizer.Add(self.torrent_info, flag=wx.GROW, proportion=0)
+        self.sizer.Add(self.torrent_info, flag=wx.GROW)
+        self.sizer.AddGrowableRow(0)
+        self.sizer.AddGrowableRow(2)
+        self.sizer.AddGrowableCol(0)
+
+        self.outer_button_sizer = wx.FlexGridSizer(1, 2, SPACING, SPACING)
+        self.outer_button_sizer.AddGrowableCol(0)
+        self.left_button_sizer = HSizer()
+        self.outer_button_sizer.Add(self.left_button_sizer)
+        self.right_button_sizer = HSizer()
+        self.outer_button_sizer.Add(self.right_button_sizer)
+
+        self.details_button = wx.Button(parent=self, id=wx.ID_ANY, label=_("Show &Details"))
+        self.details_button.Bind(wx.EVT_BUTTON, self.toggle_details)
+
+        self.open_button = wx.Button(parent=self, id=wx.ID_OPEN)
+        self.open_button.Bind(wx.EVT_BUTTON, self.open_torrent)
+        self.open_folder_button = wx.Button(parent=self, id=wx.ID_ANY, label=_("Open &Folder"))
+        self.open_folder_button.Bind(wx.EVT_BUTTON, self.open_folder)
+
+        self.left_button_sizer.Add(self.details_button,
+                                   flag=wx.ALIGN_LEFT|wx.LEFT,
+                                   border=SPACING)
+        self.right_button_sizer.Add(self.open_button,
+                                    flag=wx.RIGHT,
+                                    border=SPACING)
+        self.right_button_sizer.Add(self.open_folder_button,
+                                    flag=wx.RIGHT,
+                                    border=SPACING)
+
+        self.open_button.Disable()
+        if self.torrent.metainfo.is_batch:
+            self.open_button.Hide()
+
+        self.sizer.Add(self.outer_button_sizer, flag=wx.GROW|wx.ALIGN_BOTTOM, border=0)
 
         self.notebook = wx.Notebook(self)
+        self.speed_tab_index = None
+        self.notebook.Bind(wx.EVT_NOTEBOOK_PAGE_CHANGING, self.OnPageChanging)
+        self.notebook.Bind(wx.EVT_NOTEBOOK_PAGE_CHANGED, self.OnPageChanged)
         self.tab_height = self.notebook.GetBestFittingSize().y
 
         metainfo = self.torrent.metainfo
@@ -2150,6 +2213,7 @@ class TorrentPanel(BTPanel):
         self.notebook.AddPage(self.peer_tab_panel, _("Peer List"))
 
         self.bandwidth_panel = BandwidthGraphPanel(self.notebook, self.torrent.bandwidth_history)
+        self.speed_tab_index = self.notebook.GetPageCount()
         self.notebook.AddPage(self.bandwidth_panel, _("Speed"))
 
         self.log_panel = LogPanel(self.notebook, self.torrent)
@@ -2159,10 +2223,45 @@ class TorrentPanel(BTPanel):
         self.notebook.AddPage(self.torrent_panel, _("Torrent"))
 
         self.notebook.SetPageSize(wx.Size(300, 200))
+        self.notebook.Hide()
 
-        self.sizer.Add(self.notebook, flag=wx.GROW, proportion=1)
+        if self.torrent.completion >= 1:
+            self.change_to_completed()
 
         self.sizer.Layout()
+
+
+    def change_to_completed(self):
+        self.completed = True
+        self.torrent_info.change_to_completed()
+        self.open_button.Enable()
+
+
+    def toggle_details(self, event=None):
+        if self.details_shown:
+            self.sizer.AddGrowableRow(0)
+            self.notebook.Hide()
+            self.sizer.Detach(self.notebook)
+            self.sizer.Layout()
+            self.details_button.SetLabel(_("Show &Details"))
+            self.parent.sizer.Fit(self.parent)
+            self.details_shown = False
+        else:
+            self.sizer.RemoveGrowableRow(0)
+            self.notebook.Show()
+            self.sizer.Add(self.notebook, flag=wx.GROW, proportion=1)
+            self.sizer.Layout()
+            self.details_button.SetLabel(_("Hide &Details"))
+            self.parent.sizer.Fit(self.parent)
+            self.details_shown = True
+
+
+    def open_torrent(self, event):
+        wx.the_app.launch_torrent(self.torrent.metainfo.infohash)
+
+
+    def open_folder(self, event):
+        wx.the_app.launch_torrent_folder(self.torrent.metainfo.infohash)
 
 
     def BindChildren(self, evt_id, func):
@@ -2183,6 +2282,13 @@ class TorrentPanel(BTPanel):
         y = tis.y + tds.y + self.tab_height
         return wx.Size(x, y)
 
+    def OnPageChanging(self, event):
+        wx.the_app.make_statusrequest()
+
+    def OnPageChanged(self, event):
+        if event.GetSelection() == self.speed_tab_index:
+            self.bandwidth_panel.update(force=True)
+        event.Skip()
 
     def wants_peers(self):
         return self.IsShown() and self.peer_tab_index == self.notebook.GetSelection()
@@ -2205,6 +2311,11 @@ class TorrentPanel(BTPanel):
 
 
     def update_info(self, statistics):
+        if statistics.get('fractionDone', 0) >= 1 and not self.completed:
+            # first update since the torrent finished. Remove various
+            # download stats, enable open button.
+            self.change_to_completed()
+
         self.torrent_info.update(statistics)
 
 
@@ -2218,21 +2329,14 @@ class TorrentWindow(BTFrameWithSizer):
 
     def __init__(self, torrent, parent, *a, **k):
         self.torrent = torrent
-        s = k.get('style', wx.DEFAULT_FRAME_STYLE)
-        s |= wx.WANTS_CHARS
-        k['style'] = s
+        k['style'] = k.get('style', wx.DEFAULT_FRAME_STYLE) | wx.WANTS_CHARS
         BTFrameWithSizer.__init__(self, parent, *a, **k)
         self.Bind(wx.EVT_CLOSE, self.close)
         self.Bind(wx.EVT_CHAR, self.key)
         self.panel.BindChildren(wx.EVT_CHAR, self.key)
-        self.panel.sizer.Layout()
         self.sizer.Layout()
-        self.sizer.Fit(self)
-
-
-    def GetBestFittingSize(self):
-        return self.panel.GetBestFittingSize()
-
+        self.Fit()
+        self.SetMinSize(self.GetSize())
 
     def key(self, event):
         c = event.GetKeyCode()
@@ -2240,8 +2344,17 @@ class TorrentWindow(BTFrameWithSizer):
             self.close()
         event.Skip()
 
+
     def SortListItems(self, col=-1, ascending=1):
         self.panel.peer_list.SortListItems(col, ascending)
+
+
+    def details_shown(self):
+        return self.panel.details_shown
+
+
+    def toggle_details(self):
+        self.panel.toggle_details()
 
 
     def update_peers(self, peers, bad_peers):
@@ -2261,8 +2374,9 @@ class TorrentWindow(BTFrameWithSizer):
 
 
     def update(self, statistics):
-        if 'fractionDone' in statistics:
-            title=_('%.1f%% of %s')%(statistics['fractionDone']*100, self.torrent.metainfo.name)
+        percent = percentify(self.torrent.completion, self.torrent.completed)
+        if percent is not None:
+            title=_('%.1f%% of %s')%(percent, self.torrent.metainfo.name)
         else:
             title=_('%s')%(self.torrent.metainfo.name)
         self.SetTitle(title)
@@ -2307,7 +2421,7 @@ class AboutWindow(BTDialog):
 
         self.sizer = VSizer()
 
-        i = wx.GetApp().image_library.get(('logo', 'banner'))
+        i = wx.the_app.image_library.get(('logo', 'banner'))
         b = wx.BitmapFromImage(i)
         self.bitmap = ElectroStaticBitmap(self, b)
 
@@ -2407,7 +2521,7 @@ class LogWindow(wx.LogWindow, MagicShow):
     def __init__(self, *a, **k):
         wx.LogWindow.__init__(self, *a, **k)
         frame = self.GetFrame()
-        frame.SetIcon(wx.GetApp().icon)
+        frame.SetIcon(wx.the_app.icon)
         frame.GetStatusBar().Destroy()
         # don't give all log messages to their previous handlers
         # we'll enable this as we need it.
@@ -2422,12 +2536,12 @@ class LogWindow(wx.LogWindow, MagicShow):
 class TorrentObject(BasicTorrentObject):
     """Object for holding all information about a torrent"""
 
-    def __init__(self, torrent, completion):
-        BasicTorrentObject.__init__(self, torrent, completion)
-        self.bandwidth_history = HistoryCollector(wx.GetApp().GRAPH_TIME_SPAN,
-                                                  wx.GetApp().GRAPH_UPDATE_INTERVAL)
+    def __init__(self, torrent):
+        BasicTorrentObject.__init__(self, torrent)
+        self.bandwidth_history = HistoryCollector(wx.the_app.GRAPH_TIME_SPAN,
+                                                  wx.the_app.GRAPH_UPDATE_INTERVAL)
 
-        wx.GetApp().torrent_logger.flush(self.infohash, self.handler)
+        wx.the_app.torrent_logger.flush(self.infohash, self.handler)
 
         self._torrent_window = None
         self.restore_window()
@@ -2443,7 +2557,9 @@ class TorrentObject(BasicTorrentObject):
             self._torrent_window = TorrentWindow(self,
                                                  None,
                                                  id=wx.ID_ANY,
-                                                 title=_('Info for "%s"')%self.metainfo.name)
+                                                 title=_('%s')%self.metainfo.name)
+            if self.torrent.config.get('details_shown', False):
+                self._torrent_window.toggle_details()
             g = self.torrent.config.get('window_geometry', '')
             size = self._torrent_window.GetBestFittingSize()
             self._torrent_window.load_geometry(g, default_size=size)
@@ -2462,8 +2578,17 @@ class TorrentObject(BasicTorrentObject):
             self._torrent_window.reset_toolbar_style()
 
 
-    def update(self, state, policy, completed, statistics):
-        BasicTorrentObject.update(self, state, policy, completed, statistics)
+    def update(self, torrent, statistics):
+        oc = self.completed
+        BasicTorrentObject.update(self, torrent, statistics)
+        # It was not complete, but now it's complete, and it was
+        # finished_this_session.  That means it's newly finished.
+        if wx.the_app.task_bar_icon is not None:
+            if torrent.finished_this_session and not oc and self.completed:
+                # new completion status
+                wx.the_app.task_bar_icon.set_balloon_tip(_('%s Download Complete') % app_name,
+                                                          _('%s has finished downloading.') % self.metainfo.name)
+
 
         if self._torrent_window is not None:
             self.torrent_window.update(statistics)
@@ -2478,7 +2603,7 @@ class TorrentObject(BasicTorrentObject):
 
 
     def save_gui_state(self):
-        app = wx.GetApp()
+        app = wx.the_app
         i = self.infohash
         if self._torrent_window is not None:
             win = self._torrent_window
@@ -2486,6 +2611,8 @@ class TorrentObject(BasicTorrentObject):
             page = win.panel.notebook.GetSelection()
             if page != -1:
                 app.send_config('window_tab', page, i)
+
+            app.send_config('details_shown', win.details_shown(), i)
 
             if win.IsShown():
                 app.send_config('window_shown', True, i)
@@ -2519,36 +2646,43 @@ class MainStatusBar(wx.StatusBar):
 
     def __init__(self, parent, wxid=wx.ID_ANY):
         wx.StatusBar.__init__(self, parent, wxid, style=wx.ST_SIZEGRIP|wx.WS_EX_PROCESS_IDLE )
-        self.SetFieldsCount(3)
-        self.SetStatusWidths([-2, 24, self.status_text_width+32])
-        self.sizeChanged = False
-        self.Bind(wx.EVT_SIZE, self.OnSize)
-        # idle events? why?
-        self.Bind(wx.EVT_IDLE, self.OnIdle)
-        self.status_light = StatusLight(self)
-        self.Reposition()
-
-
-    def OnSize(self, evt):
-        self.Reposition()
-        self.sizeChanged = True
-
-
-    def OnIdle(self, evt):
-        if self.sizeChanged:
-            self.Reposition()
-
-
-    def Reposition(self):
-        rect = self.GetFieldRect(i=1)
-        self.status_light.SetPosition((rect.x, rect.y))
-        self.sizeChanged = False
-
+        self.SetFieldsCount(2)
+        self.SetStatusWidths([-2, self.status_text_width+32])
+##        self.SetFieldsCount(3)
+##        self.SetStatusWidths([-2, 24, self.status_text_width+32])
+##        self.sizeChanged = False
+        self.status_label = StatusLabel()
+        self.current_text = ''
+##        self.Bind(wx.EVT_SIZE, self.OnSize)
+##        # idle events? why?
+##        self.Bind(wx.EVT_IDLE, self.OnIdle)
+##        self.status_light = StatusLight(self)
+##        self.Reposition()
 
     def send_status_message(self, msg):
-        self.status_light.send_message(msg)
-        t = self.status_light.get_label()
-        self.SetStatusText(t, 2)
+        self.status_label.send_message(msg)
+        t = self.status_label.get_label()
+        if t != self.current_text:
+            self.SetStatusText(t, 1)
+            self.current_text = t
+
+##    def OnSize(self, evt):
+##        self.Reposition()
+##        self.sizeChanged = True
+##
+##    def OnIdle(self, evt):
+##        if self.sizeChanged:
+##            self.Reposition()
+##
+##    def Reposition(self):
+##        rect = self.GetFieldRect(i=1)
+##        self.status_light.SetPosition((rect.x, rect.y))
+##        self.sizeChanged = False
+##
+##    def send_status_message(self, msg):
+##        self.status_light.send_message(msg)
+##        t = self.status_light.get_label()
+##        self.SetStatusText(t, 1)
 
 
 
@@ -2621,7 +2755,7 @@ class MainWindow(BTFrame):
     def __init__(self, *a, **k):
         BTFrame.__init__(self, *a, **k)
 
-        app = wx.GetApp()
+        app = wx.the_app
 
         #self.SetBackgroundColour(wx.WHITE)
 
@@ -2634,7 +2768,7 @@ class MainWindow(BTFrame):
         self.extra_ops = [
             EventProperties(OPEN_ID,
                             ('add',),
-                            app.select_torrent_file,
+                            app.select_torrent,
                             _("Add"), add_label.replace('&', '')),
             ]
         self.torrent_ops = [
@@ -2664,16 +2798,19 @@ class MainWindow(BTFrame):
                                   in_toolbar=False),
 
                   EventProperties(REMOVE_ID,
-                                  wx.ART_DELETE,
+                                  ('torrentops', 'remove'),
                                   app.confirm_remove_infohash,
-                                  _("Remove"), _("Remove torrent")+'\tDelete',
-                                  in_toolbar=False),
+                                  _("Remove"), _("Remove torrent")+'\tDelete'),
                   ]
 
         for o in self.extra_ops:
-            self.Bind(wx.EVT_MENU,
-                      lambda e, o=o: launch_coroutine(gui_wrap, o.func, e),
-                      id=o.id)
+            def run(e, o=o):
+                df = launch_coroutine(gui_wrap, o.func, e)
+                def error(exc_info):
+                    wx.the_app.logger.error(o.func.__name__ + " failed", exc_info=exc_info)
+                df.addErrback(error)
+
+            self.Bind(wx.EVT_MENU, run, id=o.id)
 
         self.torrent_event_table = {}
         for e in self.torrent_ops:
@@ -2691,13 +2828,13 @@ class MainWindow(BTFrame):
         # File menu
         self.file_menu = BTMenu()
 
-        self.file_menu.Append(OPEN_ID, add_label)
-
+        self.add_menu_item(self.file_menu, add_label,
+                           wx.the_app.select_torrent_file)
         self.add_menu_item(self.file_menu, _("Add torrent &URL\tCtrl+U"),
-                           wx.GetApp().enter_torrent_url)
+                           wx.the_app.enter_torrent_url)
         self.file_menu.AppendSeparator()
         self.add_menu_item(self.file_menu, _("Make &new torrent\tCtrl+N" ),
-                           wx.GetApp().launch_maketorrent)
+                           wx.the_app.launch_maketorrent)
         self.file_menu.AppendSeparator()
 
         # On the Mac, the name of the item which exits the program is
@@ -2705,9 +2842,9 @@ class MainWindow(BTFrame):
         # this for you - just name the item "Exit" and wxMac will change
         # it for you.
         if '__WXGTK__' in wx.PlatformInfo:
-            self.add_menu_item(self.file_menu, _("&Quit\tCtrl+Q"), wx.GetApp().quit)
+            self.add_menu_item(self.file_menu, _("&Quit\tCtrl+Q"), wx.the_app.quit)
         else:
-            self.add_menu_item(self.file_menu, _("E&xit"), wx.GetApp().quit)
+            self.add_menu_item(self.file_menu, _("E&xit"), wx.the_app.quit)
 
         self.menu_bar.Append(self.file_menu, _("&File"))
         # End file menu
@@ -2715,19 +2852,19 @@ class MainWindow(BTFrame):
         # View menu
         self.view_menu = BTMenu()
         settings_id = self.add_menu_item(self.view_menu, _("&Settings\tCtrl+S"),
-                                         lambda e: wx.GetApp().settings_window.MagicShow())
-        wx.GetApp().s_macPreferencesMenuItemId = settings_id
+                                         lambda e: wx.the_app.settings_window.MagicShow())
+        wx.the_app.s_macPreferencesMenuItemId = settings_id
 
         self.add_menu_item(self.view_menu, _("&Log\tCtrl+L"),
-                           lambda e: wx.GetApp().log.MagicShow())
+                           lambda e: wx.the_app.log.MagicShow())
 
         if console:
             self.add_menu_item(self.view_menu, _("&Console\tCtrl+C"),
-                               lambda e: MagicShow_func(wx.GetApp().console))
+                               lambda e: MagicShow_func(wx.the_app.console))
 
         self.add_menu_check_item(self.view_menu, _("&Details\tCtrl+D"),
                                  lambda e: self.toggle_bling_panel(),
-                                 wx.GetApp().config['show_details']
+                                 wx.the_app.config['show_details']
                                  )
         self.menu_bar.Append(self.view_menu, _("&View"))
         # End View menu
@@ -2741,15 +2878,15 @@ class MainWindow(BTFrame):
         # Help menu
         self.help_menu = BTMenu()
         about_id = self.add_menu_item(self.help_menu, _("&About\tCtrl+B"),
-                                      lambda e: wx.GetApp().about_window.MagicShow())
+                                      lambda e: wx.the_app.about_window.MagicShow())
         self.add_menu_item(self.help_menu, _("FA&Q"),
-                           lambda e: wx.GetApp().visit_url(
+                           lambda e: wx.the_app.visit_url(
             FAQ_URL % {'client':make_id()}))
 
-        wx.GetApp().s_macAboutMenuItemId = about_id
-        wx.GetApp().s_macHelpMenuTitleName = _("&Help")
+        wx.the_app.s_macAboutMenuItemId = about_id
+        wx.the_app.s_macHelpMenuTitleName = _("&Help")
 
-        self.menu_bar.Append(self.help_menu, wx.GetApp().s_macHelpMenuTitleName)
+        self.menu_bar.Append(self.help_menu, wx.the_app.s_macHelpMenuTitleName)
         # End Help menu
 
         self.SetMenuBar(self.menu_bar)
@@ -2774,21 +2911,27 @@ class MainWindow(BTFrame):
         self.list_sizer.AddGrowableCol(0)
         self.list_sizer.AddGrowableRow(0)
 
+        self.splitter = wx.SplitterWindow(self, wx.ID_ANY, style=wx.SP_LIVE_UPDATE)
+        self.splitter.SetMinimumPaneSize(1)
+        self.splitter.SetSashGravity(1.0)
+        self.list_sizer.Add(self.splitter, flag=wx.GROW)
+
         # widgets
-        column_order = wx.GetApp().config['column_order']
-        enabled_columns = wx.GetApp().config['enabled_columns']
-        self.torrentlist = TorrentListView(self, column_order, enabled_columns)
-        w = wx.GetApp().config['column_widths']
+        column_order = wx.the_app.config['column_order']
+        enabled_columns = wx.the_app.config['enabled_columns']
+        self.torrentlist = TorrentListView(self.splitter, column_order, enabled_columns)
+        w = wx.the_app.config['column_widths']
         self.torrentlist.set_column_widths(w)
 
 
-        dt = FileDropTarget(self, lambda p : wx.GetApp().open_torrent_arg_with_callbacks(p))
+        dt = FileDropTarget(self, lambda p : wx.the_app.open_torrent_arg_with_callbacks(p))
         self.SetDropTarget(dt)
 
         self.torrent_context_menu = TorrentMenu(self.torrent_ops)
         self.torrentlist.SetContextMenu(self.torrent_context_menu)
 
-        self.list_sizer.Add(self.torrentlist, flag=wx.GROW)
+        self.splitter.Initialize(self.torrentlist)
+
         # HACK for 16x16
         if '__WXMSW__' in wx.PlatformInfo:
             self.SetBackgroundColour(self.tool_bar.GetBackgroundColour())
@@ -2805,13 +2948,13 @@ class MainWindow(BTFrame):
         self.check_torrent_selection(None)
         self.Bind(wx.EVT_CLOSE, self.close)
 
-        self.Bind(wx.EVT_MENU, wx.GetApp().force_remove, id=FORCE_REMOVE_ID)
+        self.Bind(wx.EVT_MENU, wx.the_app.force_remove, id=FORCE_REMOVE_ID)
         extra_accels = wx.AcceleratorTable([(wx.ACCEL_SHIFT, wx.WXK_DELETE, FORCE_REMOVE_ID),
                                       ])
         self.SetAcceleratorTable(extra_accels)
 
         # restore GUI state
-        config = wx.GetApp().config
+        config = wx.the_app.config
         geometry = config['geometry']
 
         # make a guess
@@ -2831,28 +2974,30 @@ class MainWindow(BTFrame):
 
     def torrent_double_clicked(self, event):
         infohashes = self.torrentlist.get_selected_infohashes()
-        app = wx.GetApp()
+        app = wx.the_app
         for infohash in infohashes:
             torrent = app.torrents[infohash]
-            if torrent.completion >= 1:
-                launch_coroutine(gui_wrap, app.launch_torrent, infohash)
+            df = launch_coroutine(gui_wrap, app.show_torrent, infohash)
+            def error(exc_info):
+                wx.the_app.logger.error(app.show_torrent.__name__ + " failed", exc_info=exc_info)
+            df.addErrback(error)
 
 
     def _build_tool_bar(self):
 
-        size = wx.GetApp().config['toolbar_size']
+        size = wx.the_app.config['toolbar_size']
 
         self.tool_bar = DownloaderToolBar(self, ops=[self.extra_ops, self.torrent_ops])
 
         self.search_bar = BTToolBar(self)
 
-        i = wx.GetApp().theme_library.get(('search',), size)
+        i = wx.the_app.theme_library.get(('search',), size)
         bmp = wx.BitmapFromImage(i)
         assert bmp.Ok(), "The image (%s) is not valid." % image
         tid = wx.NewId()
         self.search_bar.AddLabelTool(tid, "Search", bmp, shortHelp="Search")
         self.search_field = SearchField(self.search_bar, _("Search for torrents"),
-                                        wx.GetApp().visit_url)
+                                        wx.the_app.visit_url)
         self.search_bar.AddControl(self.search_field)
         # HACK -- we should find some better spacer and then a StaticText
         #self.search_bar.AddControl(ElectroStaticText(self.search_bar, label="  "))
@@ -2876,7 +3021,7 @@ class MainWindow(BTFrame):
                 w = 185
             elif self.search_bar.size == 32:
                 w = 195
-            if wx.GetApp().config['toolbar_text']:
+            if wx.the_app.config['toolbar_text']:
                 w += 25
             self.tool_sizer.SetItemMinSize(self.search_bar, w, s.height)
 
@@ -2905,29 +3050,24 @@ class MainWindow(BTFrame):
         try:
             return self._bling_panel
         except AttributeError:
-            self._bling_panel = BlingPanel(self, wx.GetApp().bling_history)
+            self._bling_panel = BlingPanel(self.splitter, wx.the_app.bling_history, size=(0,0))
             gui_wrap(self._bling_panel.notebook.SetSelection,
-                     wx.GetApp().config['details_tab'])
+                     wx.the_app.config['details_tab'])
             return self._bling_panel
 
     bling_panel = property(_get_bling_panel)
 
+    def HistoryReady(self):
+        #self.Bind(wx.EVT_SIZE, self.OnSize)
+        pass
 
     def toggle_bling_panel(self):
-        if self.bling_panel.visible:
-            self.bling_panel.Hide()
-            self.list_sizer.Detach(self.bling_panel)
-            self.bling_panel.sizer.Layout()
-            self.list_sizer.Layout()
-            self.sizer.Layout()
-            self.bling_panel.visible = False
+        if self.bling_panel.IsShown():
+            self.splitter.Unsplit()
         else:
-            self.list_sizer.Add(self.bling_panel, flag=wx.GROW)#, proportion=2)
-            self.bling_panel.Show()
-            self.bling_panel.sizer.Layout()
-            self.list_sizer.Layout()
-            self.sizer.Layout()
-            self.bling_panel.visible = True
+            self.splitter.SplitHorizontally(self.torrentlist, self.bling_panel,
+                                            # should be in user config
+                                            self.GetSize().height - 300)
 
 
     def OnTorrentEvent(self, event):
@@ -2937,12 +3077,15 @@ class MainWindow(BTFrame):
             e = self.torrent_event_table[tid]
             infohashes = self.torrentlist.get_selected_infohashes()
             for infohash in infohashes:
-                launch_coroutine(gui_wrap, e.func, infohash)
+                df = launch_coroutine(gui_wrap, e.func, infohash)
+                def error(exc_info):
+                    wx.the_app.logger.error(e.func.__name__ + " failed", exc_info=exc_info)
+                df.addErrback(error)
         elif tid in (PRIORITY_LOW_ID, PRIORITY_NORMAL_ID, PRIORITY_HIGH_ID):
             infohashes = self.torrentlist.get_selected_infohashes()
             for infohash in infohashes:
                 p = backend_priority[tid]
-                wx.GetApp().multitorrent.set_torrent_priority(infohash, p)
+                wx.the_app.multitorrent.set_torrent_priority(infohash, p)
             self.torrent_menu.set_priority(tid)
             self.torrent_context_menu.set_priority(tid)
         else:
@@ -2958,10 +3101,10 @@ class MainWindow(BTFrame):
 
 
     def close(self, event):
-        if wx.GetApp().config['close_to_tray']:
-            wx.GetApp().systray_quit()
+        if wx.the_app.config['close_to_tray']:
+            wx.the_app.systray_quit()
         else:
-            wx.GetApp().quit()
+            wx.the_app.quit()
 
 
     def _enable_id(self, item_id, enable):
@@ -3001,7 +3144,7 @@ class MainWindow(BTFrame):
             infohash = self.torrentlist.GetItemData(index)
 
             if infohash:
-                torrent = wx.GetApp().torrents[infohash]
+                torrent = wx.the_app.torrents[infohash]
                 # only show open button on completed torrents
                 self._enable_id(LAUNCH_ID, torrent.completion >= 1)
 
@@ -3015,8 +3158,8 @@ class MainWindow(BTFrame):
     def check_torrent_start_stop(self, index=None):
         infohash = self.torrentlist.GetItemData(index)
         if infohash is not None:
-            torrent = wx.GetApp().torrents[infohash]
-            show_stop = torrent.policy != "stop"
+            torrent = wx.the_app.torrents[infohash]
+            show_stop = torrent.policy != "stop" and torrent.state != "failed"
             self.toggle_stop_start_button(show_stop)
             self.torrent_menu.toggle_stop_start_menu_item(show_stop)
             self.torrent_context_menu.toggle_stop_start_menu_item(show_stop)
@@ -3028,7 +3171,7 @@ class MainWindow(BTFrame):
             self.sizer.Layout()
 
     def MyIconize(self, event):
-        if wx.GetApp().config['minimize_to_tray']:
+        if wx.the_app.config['minimize_to_tray']:
             if self.IsShown():
                 self.Show(False)
             else:
@@ -3060,10 +3203,11 @@ class MainWindow(BTFrame):
 
         lr = BTListRow(None, {'state': state,
                               'name': torrent_object.metainfo.name,
-                              'progress': torrent_object.completion,
-                              'eta': Duration(0),
-                              'urate': Rate(0),
-                              'drate': Rate(0),
+                              'progress': percentify(torrent_object.completion,
+                                                     torrent_object.completed),
+                              'eta': Duration(),
+                              'urate': Rate(),
+                              'drate': Rate(),
                               'priority': priority,
                               'peers': 0})
         self.torrentlist.InsertRow(torrent_object.infohash, lr)
@@ -3075,7 +3219,7 @@ class MainWindow(BTFrame):
 
 
     def save_gui_state(self):
-        app = wx.GetApp()
+        app = wx.the_app
 
         c = self.torrentlist.get_sort_column()
         o = self.torrentlist.get_sort_order()
@@ -3098,7 +3242,7 @@ class MainWindow(BTFrame):
             app.send_config('geometry', g)
             app.send_config('start_maximized', False)
 
-        if wx.GetApp().bling_history is not None:
+        if wx.the_app.bling_history is not None:
             show_bling = self.bling_panel.IsShown()
             app.send_config('show_details', show_bling)
             bling_tab = self.bling_panel.notebook.GetSelection()
@@ -3231,7 +3375,7 @@ class CheckBoxDialog(BTDialog):
 
 
     def setfunc(self, key, value):
-        wx.GetApp().send_config(key, value)
+        wx.the_app.send_config(key, value)
 
 
 class ConfirmQuitDialog(CheckBoxDialog):
@@ -3242,7 +3386,7 @@ class ConfirmQuitDialog(CheckBoxDialog):
                                 label=_("Are you sure you want to quit %s?")%app_name,
                                 checkbox_label=_("&Don't ask again"),
                                 checkbox_key='confirm_quit',
-                                checkbox_value=not wx.GetApp().config['confirm_quit'],
+                                checkbox_value=not wx.the_app.config['confirm_quit'],
                                 )
 
     def setfunc(self, key, value):
@@ -3302,6 +3446,8 @@ class LogProxy(wx.PyLog):
         # don't add the version number to dialogs and the status bar
         if level == wx.LOG_Error or level == wx.LOG_Status:
             self.log.PassMessages(True)
+            if ']' in msg:
+                msg = ''.join(msg.split(']')[1:]).strip()
             wx.LogGeneric(level, msg)
             self.log.PassMessages(False)
         else:
@@ -3359,6 +3505,7 @@ class MainLoop(BasicApp, BTApp):
         self.bling_history = None
         self.update_bwg_handle = None
         self.multitorrent_doneflag = None
+        self.open_dialog_history = []
         self._stderr_buffer = ''
         self.torrent_logger = TorrentLogger()
         logging.getLogger('core.MultiTorrent').addHandler(self.torrent_logger)
@@ -3369,20 +3516,21 @@ class MainLoop(BasicApp, BTApp):
         BTApp.OnInit(self)
 
         self.image_library = ImageLibrary(image_root)
-        self.theme_library = ImageLibrary(get_theme_root(self.config['theme']))
+        self.theme_library = ThemeLibrary(image_root, self.config['theme'])
 
         # Main window
         self.main_window = MainWindow(None, wx.ID_ANY, app_name)
 
-        # this code might look a little weird, but an initial Iconize can cut
-        # the memory footprint of the process in half (causes GDI handles to
-        # be flushed, and not recreated until they're shown).
         self.main_window.Hide()
-        self.main_window.Iconize(True)
-        self.main_window.Iconize(False)
 
-        self.main_window.Show()
-        self.main_window.Raise()
+        if not self.config['start_minimized']:
+            # this code might look a little weird, but an initial Iconize can cut
+            # the memory footprint of the process in half (causes GDI handles to
+            # be flushed, and not recreated until they're shown).
+            self.main_window.Iconize(True)
+            self.main_window.Iconize(False)
+            self.main_window.Show()
+            self.main_window.Raise()
 
         self.SetTopWindow(self.main_window)
 
@@ -3420,6 +3568,10 @@ class MainLoop(BasicApp, BTApp):
             # hack up and down to do the normal history things
             try:
                 def OnKeyDown(s, event):
+                    # If the auto-complete window is up let it do its thing.
+                    if self.console.shell.AutoCompActive():
+                        event.Skip()
+                        return
                     key = event.GetKeyCode()
                     if key == wx.WXK_UP:
                         self.console.shell.OnHistoryReplace(step=+1)
@@ -3443,13 +3595,26 @@ class MainLoop(BasicApp, BTApp):
         self.SetAppName(app_name)
         return True
 
+    # this function must be thread-safe!
     def attach_multitorrent(self, multitorrent, doneflag):
+        if not self.IsMainLoopRunning():
+            # the app is dead, tell the multitorrent to die too
+            doneflag.set()
+            return
+
+        # I'm specifically using wx.CallAfter here, because I need it to occur
+        # even if the wxApp doneflag is set.
+        wx.CallAfter(self._attach_multitorrent, multitorrent, doneflag)
+
+    def _attach_multitorrent(self, multitorrent, doneflag):
         self.multitorrent = multitorrent
         self.multitorrent_doneflag = doneflag
+
         self.multitorrent.initialize_torrents()
 
         if self.config['publish']:
             publish_torrent_path = self.external_torrents.pop(0)
+            # BUG: does not handle errors! -Greg
             gui_wrap(launch_coroutine,
                      gui_wrap,
                      self.publish_torrent,
@@ -3524,17 +3689,38 @@ class MainLoop(BasicApp, BTApp):
 
 
     def enter_torrent_url(self, widget):
+        s = ''
+        if wx.TheClipboard.Open():
+            do = wx.TextDataObject()
+            if wx.TheClipboard.GetData(do):
+                t = do.GetText()
+                t = t.strip()
+                if "://" in t or os.path.sep in t or (os.path.altsep and os.path.altsep in t):
+                    s = t
+            wx.TheClipboard.Close()
         d = wx.TextEntryDialog(parent=self.main_window,
                                message=_("Enter the URL of a torrent file to open:"),
                                caption=_("Enter torrent URL"),
+                               defaultValue = s,
                                style=wx.OK|wx.CANCEL,
                                )
         if d.ShowModal() == wx.ID_OK:
             path = d.GetValue()
             df = self.open_torrent_arg_with_callbacks(path)
 
+    def select_torrent(self, *a):
+        image = wx.the_app.theme_library.get(('add',), 32)
+        d = OpenDialog(self.main_window,
+                       title=_("Open Path"),
+                       bitmap=wx.BitmapFromImage(image),
+                       browse=self.select_torrent_file,
+                       history=self.open_dialog_history)
+        if d.ShowModal() == wx.ID_OK:
+            path = d.GetValue()
+            self.open_dialog_history.append(path)
+            df = self.open_torrent_arg_with_callbacks(path)
 
-    def select_torrent_file(self, widget):
+    def select_torrent_file(self, widget=None):
         open_location = self.config['open_from']
         if not open_location:
             open_location = self.config['save_in']
@@ -3550,9 +3736,30 @@ class MainLoop(BasicApp, BTApp):
             open_from, filename = os.path.split(path)
             self.send_config('open_from', open_from)
 
+    def rize_up(self):
+        if not self.main_window.IsShown():
+            self.main_window.Show(True)
+            self.main_window.Iconize(False)
+        if '__WXGTK__' not in wx.PlatformInfo:
+            # this plays havoc with multiple virtual desktops
+            self.main_window.Raise()
+
+    def torrent_already_open(self, metainfo):
+        self.rize_up()
+        msg = _("This torrent (or one with the same contents) "
+                "has already been added.")
+        self.logger.warning(msg)
+        d = wx.MessageBox(
+            message=msg,
+            caption=_("Torrent already added"),
+            style=wx.OK,
+            parent= self.main_window
+            )
+        return
+
     def open_torrent_metainfo(self, metainfo):
         """This method takes torrent metainfo and:
-        1. figures out whether the torrent is running
+        1. asserts that we don't know about the torrent
         2. gets a save path for it
         3. checks to make sure the save path is acceptable:
           a. does the file already exist?
@@ -3560,20 +3767,10 @@ class MainLoop(BasicApp, BTApp):
           c. does the disk have enough space left?
         4. tells TQ to start the torrent and returns a deferred object
         """
-        if self.torrents.has_key(metainfo.infohash):
-            # Is the torrent running already?
-            state = self.torrents[metainfo.infohash].state
-            if state == "running":
-                # BUG: should we ask TQ whether the torrent is running?
-                msg = _("This torrent (or one with the same contents) is "
-                        "already running.")
-            else:
-                # BUG: should we tell the butler to start the torrent?
-                msg = _("This torrent (or one with the same contents) is "
-                        "already waiting to run.")
-            self.logger.critical(msg)
-            return
 
+        self.rize_up()
+
+        assert not self.torrents.has_key(metainfo.infohash)
 
         ask_for_save = self.config['ask_for_save'] or not self.config['save_in']
         save_in = self.config['save_in']
@@ -3584,17 +3781,20 @@ class MainLoop(BasicApp, BTApp):
 
         # wx expects paths sent to the gui to be unicode, not utf-8
         save_as = os.path.join(save_in.decode('utf-8'),
-                               metainfo.name_fs.decode(filesystem_encoding))
-        save_incomplete_as = os.path.join(save_incomplete_in.decode('utf-8'),
-                                          metainfo.name_fs.decode(filesystem_encoding))
+                               decode_from_filesystem(metainfo.name_fs))
         original_save_as = save_as
 
-        biggest_file = max(metainfo.sizes)
+        # Choose an incomplete filename which is likely to be both short and
+        # unique.  Just for kicks, also foil multi-user birthday attacks.
+        foil = sha.sha(save_incomplete_in)
+        foil.update(metainfo.infohash)
+        incomplete_name = metainfo.infohash.encode('hex')[:8]
+        incomplete_name += '-'
+        incomplete_name += foil.hexdigest()[:4]
+        save_incomplete_as = os.path.join(save_incomplete_in.decode('utf-8'),
+                                          incomplete_name)
 
-        if not self.main_window.IsShown():
-            self.main_window.Show(True)
-            self.main_window.Iconize(False)
-        self.main_window.Raise()
+        biggest_file = max(metainfo.sizes)
 
         while True:
 
@@ -3611,7 +3811,7 @@ class MainLoop(BasicApp, BTApp):
                     if metainfo.is_batch:
                         save_in = dialog_path
                         save_as = os.path.join(dialog_path,
-                                               metainfo.name_fs.decode(filesystem_encoding))
+                                               decode_from_filesystem(metainfo.name_fs))
 
                     else:
                         save_as = dialog_path
@@ -3621,7 +3821,7 @@ class MainLoop(BasicApp, BTApp):
                         os.makedirs(save_in)
 
                     if d.GetAlways():
-                        a = wx.GetApp()
+                        a = wx.the_app
                         a.send_config('save_in', save_in)
                         a.send_config('ask_for_save', False)
 
@@ -3788,7 +3988,9 @@ class MainLoop(BasicApp, BTApp):
 
                 if not ask_for_save:
                     # the save path is acceptable, start the torrent.
-                    return self.multitorrent.create_torrent(metainfo, save_incomplete_as, save_as)
+                    fs_save_as, junk = encode_for_filesystem(save_as)
+                    fs_save_incomplete_as, junk = encode_for_filesystem(save_incomplete_as)
+                    return self.multitorrent.create_torrent(metainfo, fs_save_incomplete_as, fs_save_as)
 
 
     def run(self):
@@ -3826,7 +4028,13 @@ class MainLoop(BasicApp, BTApp):
     def force_remove(self, event):
         infohashes = self.main_window.torrentlist.get_selected_infohashes()
         for infohash in infohashes:
-            launch_coroutine(gui_wrap, self.remove_infohash, infohash)
+            df = launch_coroutine(gui_wrap, self.remove_infohash, infohash)
+            def error(exc_info):
+                ns = 'core.MultiTorrent.' + repr(infohash)
+                l = logging.getLogger(ns)
+                l.error(self.remove_infohash.__name__ + " failed", exc_info=exc_info)
+            df.addErrback(error)
+
 
 
     def confirm_remove_infohash(self, infohash):
@@ -3841,7 +4049,12 @@ class MainLoop(BasicApp, BTApp):
                     parent=self.main_window)
                 if d == wx.NO:
                     return
-            launch_coroutine(gui_wrap, self.remove_infohash, infohash)
+            df = launch_coroutine(gui_wrap, self.remove_infohash, infohash)
+            def error(exc_info):
+                ns = 'core.MultiTorrent.' + repr(infohash)
+                l = logging.getLogger(ns)
+                l.error(self.remove_infohash.__name__ + " failed", exc_info=exc_info)
+            df.addErrback(error)
             # Could also do this but it's harder to understand:
             #return self.remove_infohash(infohash)
 
@@ -3916,17 +4129,14 @@ class MainLoop(BasicApp, BTApp):
         if self.update_bwg_handle is None:
             self.update_bandwidth_graphs()
 
-        # this event helps remove visual corruption on winxp w/ themes
-        def refresh_bling(event):
-            gui_wrap(self.main_window.bling_panel.Refresh)
-            event.Skip()
-
-        self.main_window.Bind(wx.EVT_SIZE, refresh_bling)
-
+        self.main_window.HistoryReady()
 
     def update_bandwidth_graphs(self):
-        # BUG: no error handling
-        launch_coroutine(gui_wrap, self._update_bandwidth_graphs)
+        df = launch_coroutine(gui_wrap, self._update_bandwidth_graphs)
+        def error(exc_info):
+            wx.the_app.logger.error(self._update_bandwidth_graphs.__name__ + " failed", exc_info=exc_info)
+        df.addErrback(error)
+
 
     def _update_bandwidth_graphs(self):
         df = self.multitorrent.get_all_rates()
@@ -3950,8 +4160,8 @@ class MainLoop(BasicApp, BTApp):
 
     def update_status(self):
         df = launch_coroutine(gui_wrap, BasicApp.update_status, self)
-        def eb(e):
-            self.logger.error("update_status error:", exc_info=e)
+        def eb(exc_info):
+            self.logger.error(BasicApp.update_status.__name__ + " error:", exc_info=exc_info)
         df.addErrback(eb)
         yield df
         # wx specific code
@@ -3968,13 +4178,17 @@ class MainLoop(BasicApp, BTApp):
 
         self.main_window.check_torrent_selection()
 
+        # anyone can call this function to initiate an update, so allow this
+        # task to be re-entrant (prevent double-queueing)
+        if self.update_handle is not None:
+            self.update_handle.Stop()
         self.update_handle = wx.FutureCall(self.config['display_interval'] * 1000, self.make_statusrequest)
 
         self.main_window.bling_panel.statistics.update_values(global_stats)
 
 
-    def new_displayed_torrent(self, torrent, completion):
-        torrent_object = BasicApp.new_displayed_torrent(self, torrent, completion)
+    def new_displayed_torrent(self, torrent):
+        torrent_object = BasicApp.new_displayed_torrent(self, torrent)
 
         if len(self.torrents) == 1:
             self.send_status_message('start')
@@ -3989,18 +4203,11 @@ class MainLoop(BasicApp, BTApp):
         self.main_window.removed_torrent(infohash)
 
 
-    def update_torrent(self, infohash, state, policy, completed, statistics):
-        self.main_window.torrentlist.update_torrent(infohash,
-                                                    (state, policy, completed),
-                                                    statistics['priority'],
-                                                    statistics['fractionDone'],
-                                                    statistics.get('timeEst' , None),
-                                                    statistics.get('upRate'  , None),
-                                                    statistics.get('downRate', None),
-                                                    statistics.get('numPeers', None))
-        if statistics.get('ever_got_incoming'):
+    def update_torrent(self, torrent_object):
+        self.main_window.torrentlist.update_torrent(torrent_object)
+        if torrent_object.statistics.get('ever_got_incoming'):
             self.send_status_message('seen_remote_peers')
-        elif statistics.get('numPeers'):
+        elif torrent_object.statistics.get('numPeers'):
             self.send_status_message('seen_peers')
 
 

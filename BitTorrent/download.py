@@ -18,7 +18,6 @@ from BitTorrent.platform import bttime
 from BitTorrent.CurrentRateMeasure import Measure
 from BitTorrent.bitfield import Bitfield
 from BitTorrent.defer import Deferred
-from BitTorrent.bitfield import Bitfield
 
 logger = logging.getLogger("BitTorrent.Download")
 log = logger.debug
@@ -50,7 +49,7 @@ class BadDataGuard(object):
            self.stats.numgood // 30:
             self.multidownload.ban(self.ip)
         elif bump:
-            self.multidownload.active_requests_remove(index)
+            self.multidownload.active_requests.remove(index)
             self.multidownload.picker.bump(index)
 
     def good(self, index):
@@ -72,6 +71,7 @@ class Download(object):
         self.connection = connection
         self.choked = True
         self.interested = False
+        self.prefer_full = False
         self.active_requests = set()
         self.measure = Measure(multidownload.config['max_rate_period'])
         self.peermeasure = Measure(
@@ -96,9 +96,14 @@ class Download(object):
             self.multidownload.lost_have_all()
         else:
             # arg, slow
+            count = 0
+            target = len(self.have) - self.have.numfalse
             for i in xrange(len(self.have)):
                 if self.have[i]:
                     self.multidownload.lost_have(i)
+                    count += 1
+                    if count == target:
+                        break
         self._letgo()
         self.guard.download = None
         
@@ -111,6 +116,7 @@ class Download(object):
         lost = []
         for index, begin, length in self.active_requests:
             self.multidownload.storage.request_lost(index, begin, length)
+            self.multidownload.active_requests.remove(index)
             if index not in lost:
                 lost.append(index)
         self.active_requests.clear()
@@ -138,7 +144,7 @@ class Download(object):
             self.choked = False
             if self.interested:
                 self._request_more()
-        
+
     def got_piece(self, index, begin, piece):
         req = (index, begin, len(piece))
 
@@ -171,7 +177,7 @@ class Download(object):
         self.last = bttime()
         self.update_rate(len(piece))
         df = self.multidownload.storage.write(index, begin, piece, self.guard)
-        df.addCallback(self._got_piece, (index,))
+        df.addCallback(self._got_piece, index)
 
     def _got_piece(self, hashchecked, index):
         if hashchecked:
@@ -221,7 +227,8 @@ class Download(object):
 
             # request as many chunks of interesting piece as fit in backlog.
             while len(self.active_requests) < b:
-                begin, length = self.multidownload.storage.new_request(interest)
+                begin, length = self.multidownload.storage.new_request(interest,
+                                                                       self.prefer_full)
                 self.multidownload.active_requests_add(interest)
                 self.active_requests.add((interest, begin, length))
                 self.connection.send_request(interest, begin, length)
@@ -292,8 +299,9 @@ class Download(object):
 
             # request chunks until no more chunks or no more room in backlog.
             while len(self.active_requests) < b:
+                begin, length = self.multidownload.storage.new_request(piece,
+                                                                       self.prefer_full)
                 self.multidownload.active_requests_add(piece)
-                begin,length = self.multidownload.storage.new_request(piece)
                 self.active_requests.add((piece, begin, length))
                 self.connection.send_request(piece, begin, length)
                 if not self.multidownload.storage.want_requests(piece):
@@ -321,8 +329,8 @@ class Download(object):
             return
         random.shuffle(want)
         for req in want[:self._backlog() - len(self.active_requests)]:
-            self.connection.send_request(*req)
             self.active_requests.add(req)
+            self.connection.send_request(*req)
         
     def got_have(self, index):
         if self.have[index]:
@@ -347,28 +355,56 @@ class Download(object):
                     self.connection.send_interested()
         
     def got_have_bitfield(self, have):
-        if self.multidownload.storage.get_amount_left() == 0 and have.numfalse == 0:
-            self.connection.close()
+        if have.numfalse == 0:
+            self._got_have_all(have)
             return
         self.have = have
-        if self.have.numfalse == 0:
-            self.multidownload.got_have_all()
-        else:
-            for i in xrange(len(self.have)):
-                if self.have[i]:
-                    self.multidownload.got_have(i)
+        # arg, slow
+        count = 0
+        target = len(self.have) - self.have.numfalse
+        for i in xrange(len(self.have)):
+            if self.have[i]:
+                self.multidownload.got_have(i)
+                count += 1
+                if count == target:
+                    break
         if self.multidownload.storage.endgame:
             for piece, begin, length in self.multidownload.all_requests:
                 if self.have[piece]:
                     self.interested = True
                     self.connection.send_interested()
                     return
-        for i in xrange(len(self.have)):
-            if self.have[i] and \
-                   self.multidownload.storage.want_requests(i):
+        for piece in self.multidownload.storage.iter_want():
+            if self.have[piece]:
                 self.interested = True
                 self.connection.send_interested()
                 return
+
+    def _got_have_all(self, have=None):
+        if self.multidownload.storage.get_amount_left() == 0:
+            self.connection.close()
+            return
+        if have is None:
+            # bleh
+            n = self.multidownload.numpieces
+            rlen, extra = divmod(n, 8)
+            if extra:
+                extra = chr((0xFF << (8 - extra)) & 0xFF)
+            else:
+                extra = ''
+            s = (chr(0xFF) * rlen) + extra
+            have = Bitfield(n, s)
+        self.have = have
+        self.multidownload.got_have_all()
+        if self.multidownload.storage.endgame:
+            for piece, begin, length in self.multidownload.all_requests:
+                self.interested = True
+                self.connection.send_interested()
+                return
+        for i in self.multidownload.storage.iter_want():
+            self.interested = True
+            self.connection.send_interested()
+            return
         
     def update_rate(self, amount):
         self.measure.update_rate(amount)
@@ -387,11 +423,7 @@ class Download(object):
 
     def got_have_all(self):
         assert self.connection.uses_fast_extension
-        num_pieces = self.multidownload.storage.get_num_pieces()
-        b = Bitfield(num_pieces)
-        for i in xrange(num_pieces):
-            b[i] = True
-        self.got_have_bitfield(b)
+        self._got_have_all()
 
     def got_suggest_piece(self, piece):
         assert self.connection.uses_fast_extension

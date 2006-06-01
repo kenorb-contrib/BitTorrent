@@ -14,6 +14,7 @@ from __future__ import division
 
 import os
 import os.path
+import math
 import atexit
 import itertools
 import webbrowser
@@ -30,9 +31,59 @@ from BitTorrent.MultiTorrent import UnknownInfohash, TorrentAlreadyInQueue, Torr
 from BitTorrent.obsoletepythonsupport import set
 from BitTorrent.yielddefer import launch_coroutine
 from BitTorrent.defer import ThreadedDeferred
-from BitTorrent.platform import desktop
+from BitTorrent.platform import desktop, bttime
 from BitTorrent.Torrent import *
 from BitTorrent.ThreadProxy import ThreadProxy
+
+
+state_dict = {("created", "stop", False): _("Paused"),
+              ("created", "stop", True): _("Paused"),
+              ("created", "start", False): _("Starting"),
+              ("created", "start", True): _("Starting"),
+              ("created", "auto", False): _("Starting"),
+              ("created", "auto", True): _("Starting"),
+              ("initializing", "stop", False): _("Paused"),
+              ("initializing", "stop", True): _("Paused"),
+              ("initializing", "start", False): _("Starting"),
+              ("initializing", "start", True): _("Starting"),
+              ("initializing", "auto", False): _("Starting"),
+              ("initializing", "auto", True): _("Starting"),
+              ("initialized", "stop", False): _("Paused"),
+              ("initialized", "stop", True): _("Paused"),
+              ("initialized", "start", False): _("Starting"),
+              ("initialized", "start", True): _("Starting"),
+              ("initialized", "auto", False): _("Queued"),
+              ("initialized", "auto", True): _("Complete"),
+              ("running", "stop", False): _("Downloading"),
+              ("running", "stop", True): _("Seeding"),
+              ("running", "start", False): _("Downloading"),
+              ("running", "start", True): _("Seeding"),
+              ("running", "auto", False): _("Downloading"),
+              ("running", "auto", True): _("Complete"),
+              ("finishing", "stop", False): _("Finishing"),
+              ("finishing", "stop", True): _("Finishing"),
+              ("finishing", "start", False): _("Finishing"),
+              ("finishing", "start", True): _("Finishing"),
+              ("finishing", "auto", False): _("Finishing"),
+              ("finishing", "auto", True): _("Finishing"),
+              ("failed", "stop", False): _("Error"),
+              ("failed", "stop", True): _("Error"),
+              ("failed", "start", False): _("Error"),
+              ("failed", "start", True): _("Error"),
+              ("failed", "auto", False): _("Error"),
+              ("failed", "auto", True): _("Error"),}
+
+
+def percentify(fraction, completed):
+    if fraction is None:
+        return None
+
+    if completed and fraction >= 1.0:
+        percent = 100.0
+    else:
+        percent = min(99.9, math.floor(fraction * 1000.0) / 10.0)
+
+    return percent
 
 
 class Size(long):
@@ -74,7 +125,7 @@ class Size(long):
 class Rate(Size):
     """displays rate in human-readable format"""
 
-    def __init__(self, value, precision=2**10):
+    def __init__(self, value=None, precision=2**10):
         Size.__init__(self, value, precision)
 
     def __str__(self, precision=2**10):
@@ -97,7 +148,7 @@ class Duration(float):
 
     def __str__(self):
         if self.empty or self > 365 * 24 * 60 * 60:
-            return '?'
+            return ''
         elif self >= 172800:
             return _("%d days") % (self//86400) # 2 days or longer
         elif self >= 86400:
@@ -152,7 +203,7 @@ else:
 class BasicTorrentObject(object):
     """Object for holding all information about a torrent"""
 
-    def __init__(self, torrent, completion):
+    def __init__(self, torrent):
         self.torrent = torrent
         self.pending = None
         self.infohash   = torrent.metainfo.infohash
@@ -164,7 +215,7 @@ class BasicTorrentObject(object):
         self.policy = torrent.policy
         self.completed = torrent.completed
         self.priority = torrent.priority
-        self.completion = completion
+        self.completion = None
         self.piece_states = None
 
         self.uptotal    = 0
@@ -172,14 +223,23 @@ class BasicTorrentObject(object):
         self.up_down_ratio = 0
         self.peers = 0
 
+        self.statistics = {}
+
         self.handler = logging.handlers.MemoryHandler(0) # capacity is ignored
         logging.getLogger("core.MultiTorrent." + repr(self.infohash)).addHandler(self.handler)
 
 
-    def update(self, state, policy, completed, statistics):
-        self.state = state
-        self.policy = policy
-        self.completed = completed
+    def update(self, torrent, statistics):
+        self.torrent = torrent
+        self.statistics = statistics
+
+        self.destination_path = torrent.destination_path
+        self.working_path = torrent.working_path
+
+        self.state = torrent.state
+        self.policy = torrent.policy
+        self.completed = torrent.completed
+
         self.priority = statistics['priority']
         self.completion = statistics['fractionDone']
         self.piece_states = statistics['pieceStates']
@@ -218,6 +278,8 @@ class BasicApp(object):
         self.external_torrents = []
         self.installer_to_launch_at_exit = None
         self.logger = logging.getLogger('UI')
+
+        self.next_autoupdate_nag = bttime()
 
         def gui_wrap(_f, *args, **kwargs):
             f(*args, **kwargs)
@@ -266,14 +328,30 @@ class BasicApp(object):
     def open_torrent_arg_with_callbacks(self, path):
         """Open a torrent from path (URL, file) non-blockingly, and
         call the appropriate GUI callback when necessary."""
-        def callback(m):
-            self.gui_wrap(self.open_torrent_metainfo, m)
-        def  errback(e):
-            c,e,t = e
-            if issubclass(c, GetTorrent.GetTorrentException):
-                self.logger.critical(e)
+        def errback(e):
+            exc_type, value, tb = e
+            if issubclass(exc_type, GetTorrent.GetTorrentException):
+                self.logger.critical(unicode(value.args[0]))
             else:
                 self.logger.error("open_torrent_arg_with_callbacks failed", exc_info=e)
+        def callback(metainfo):
+            def open(metainfo):
+                df = self.multitorrent.torrent_known(metainfo.infohash)
+                yield df
+                known = df.getResult()
+                if known:
+                    self.torrent_already_open(metainfo)
+                else:
+                    df = self.open_torrent_metainfo(metainfo)
+                    if df is not None:
+                        yield df
+                        try:
+                            df.getResult()
+                        except TorrentAlreadyInQueue:
+                            pass
+                        except TorrentAlreadyRunning:
+                            pass
+            launch_coroutine(self.gui_wrap, open, metainfo)
         df = self.open_torrent_arg(path)
         df.addCallback(callback)
         df.addErrback(errback)
@@ -312,18 +390,17 @@ class BasicApp(object):
                 yield df
                 known = df.getResult()
                 if known:
-                    # BUG: we should probably report this?
-                    continue
-                
-                df = self.open_torrent_metainfo(metainfo)
-                if df is not None:
-                    yield df
-                    try:
-                        df.getResult()
-                    except TorrentAlreadyInQueue:
-                        pass
-                    except TorrentAlreadyRunning:
-                        pass
+                    self.torrent_already_open(metainfo)
+                else:
+                    df = self.open_torrent_metainfo(metainfo)
+                    if df is not None:
+                        yield df
+                        try:
+                            df.getResult()
+                        except TorrentAlreadyInQueue:
+                            pass
+                        except TorrentAlreadyRunning:
+                            pass
         self.open_external_torrents_deferred = None
 
 
@@ -342,6 +419,11 @@ class BasicApp(object):
             self.open_external_torrents_deferred.addErrback(errback)
 
 
+    def torrent_already_open(self, metainfo):
+        """Tell the user."""
+        raise NotImplementedError('BasicApp.torrent_already_open() not implemented')
+
+
     def open_torrent_metainfo(self, metainfo):
         """Get a valid save path from the user, and then tell
         multitorrent to create a new torrent from metainfo."""
@@ -356,6 +438,17 @@ class BasicApp(object):
                 LaunchPath.launchdir(torrent.working_path)
             else:
                 LaunchPath.launchfile(torrent.working_path)
+
+
+    def launch_torrent_folder(self, infohash):
+        """Launch the torrent location according to operating system."""
+        if self.torrents.has_key(infohash):
+            torrent = self.torrents[infohash]
+            if torrent.metainfo.is_batch:
+                LaunchPath.launchdir(torrent.working_path)
+            else:
+                path, file = os.path.split(torrent.working_path)
+                LaunchPath.launchdir(path)
 
 
     def launch_installer_at_exit(self):
@@ -391,8 +484,7 @@ class BasicApp(object):
             infohashes.add(torrent.metainfo.infohash)
             if torrent.metainfo.infohash not in self.torrents:
                 # create new torrent widget
-                completion = None
-                to = self.new_displayed_torrent(torrent, completion)
+                to = self.new_displayed_torrent(torrent)
 
         for infohash, torrent in copy(self.torrents).iteritems():
             # remove nonexistent torrents
@@ -411,18 +503,19 @@ class BasicApp(object):
                                                   )
             yield df
             try:
-                state, policy, completed, statistics = df.getResult()
+                core_torrent, statistics = df.getResult()
             except UnknownInfohash:
                 # looks like it's gone now
                 if infohash in self.torrents:
                     self.torrents.pop(infohash)
                     self.torrent_removed(infohash)
             else:
+                core_torrent = ThreadProxy(core_torrent, self.gui_wrap)
                 # the infohash might have been removed from torrents
                 # while we were yielding above, so we need to check
                 if infohash in self.torrents:
-                    torrent.update(state, policy, completed, statistics)
-                    self.update_torrent(infohash, state, policy, completed, statistics)
+                    torrent.update(core_torrent, statistics)
+                    self.update_torrent(torrent)
                     if statistics['fractionDone'] is not None:
                         amount_done = statistics['fractionDone'] * torrent.metainfo.total_bytes
                         total_completion += amount_done
@@ -434,7 +527,7 @@ class BasicApp(object):
 
         df = self.multitorrent.auto_update_status()
         yield df
-        available_version, installable_version = df.getResult()
+        available_version, installable_version, delay = df.getResult()
         if available_version is not None:
             if installable_version is None:
                 self.notify_of_new_version(available_version)
@@ -443,7 +536,9 @@ class BasicApp(object):
                     atexit.register(self.launch_installer_at_exit)
                 torrent = self.torrents[installable_version]
                 self.installer_to_launch_at_exit = torrent.working_path
-                self.prompt_for_quit_for_new_version(available_version)
+                if bttime() > self.next_autoupdate_nag:
+                    self.prompt_for_quit_for_new_version(available_version)
+                    self.next_autoupdate_nag = bttime() + delay
 
         def get_global_stats(mt):
             stats = {}
@@ -484,9 +579,9 @@ class BasicApp(object):
         raise NotImplementedError('BasicApp._update_status() not implemented')
 
 
-    def new_displayed_torrent(self, torrent, completion):
+    def new_displayed_torrent(self, torrent):
         """Tell the UI that it should draw a new torrent."""
-        torrent_object = self.torrent_object_class(torrent, completion)
+        torrent_object = self.torrent_object_class(torrent)
         self.torrents[torrent.metainfo.infohash] = torrent_object
         return torrent_object
 
@@ -496,7 +591,7 @@ class BasicApp(object):
         raise NotImplementedError('BasicApp.torrent_removed() removing missing torrents not implemented')
 
 
-    def update_torrent(self, infohash, state, policy, completed, statistics):
+    def update_torrent(self, torrent_object):
         """Tell the GUI to update a torrent's info."""
         raise NotImplementedError('BasicApp.update_torrent() updating existing torrents not implemented')
 
@@ -520,9 +615,15 @@ class BasicApp(object):
         """Tell multitorrent to remove a torrent."""
         df = self.multitorrent.remove_torrent(infohash)
         yield df
-        self.torrent_removed(infohash)
-        tw = self.torrents.pop(infohash)
-        tw.clean_up()
+        try:
+            df.getResult()
+        except KeyError:
+            pass # it was already gone, who cares
+
+        if infohash in self.torrents:
+            self.torrent_removed(infohash)
+            tw = self.torrents.pop(infohash)
+            tw.clean_up()
 
 
     def set_file_priority(self, infohash, filenames, dowhat):
@@ -546,7 +647,7 @@ class BasicApp(object):
                     pass
 
             if torrent.state == "running":
-                df = self.multitorrent.stop_torrent(infohash)
+                df = self.multitorrent.stop_torrent(infohash, pause=pause)
                 yield df
                 torrent.state = df.getResult()
 

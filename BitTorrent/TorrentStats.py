@@ -14,9 +14,10 @@ from __future__ import division
 
 class TorrentStats(object):
 
-    def __init__(self, choker, upfunc, downfunc, uptotal, downtotal,
+    def __init__(self, logger, choker, upfunc, downfunc, uptotal, downtotal,
                  remainingfunc, pcfunc, piece_states, finflag,
                  downloader, file_priorities, files, ever_got_incoming, rerequester):
+        self.logger = logger
         self.downloader = downloader
         self.file_priorities = file_priorities
         self.picker = downloader.picker
@@ -38,6 +39,13 @@ class TorrentStats(object):
         l = [ ]
         for c in self.choker.connections:
             rec = {}
+            try:
+                assert isinstance(c.ip, str), "IP must be a string! got: %s " % c.ip
+                
+                assert c.ip.count('.') == 3, "Invalid IP! got: %s " % c.ip
+            except:
+                self.logger.exception('stats collection error')
+                continue
             rec['id'] = c.id
             rec["ip"] = c.ip
             rec["is_optimistic_unchoke"] = (c is self.choker.connections[0])

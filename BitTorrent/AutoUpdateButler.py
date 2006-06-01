@@ -11,7 +11,6 @@
 # written by Matt Chisholm
 
 import os
-from sha import sha
 import pickle
 import logging
 from BitTorrent.translation import _
@@ -20,6 +19,7 @@ from BitTorrent import zurllib
 from BitTorrent import GetTorrent
 from BitTorrent import app_name, version, BTFailure
 
+from BitTorrent.hash import sha
 from BitTorrent.ConvertedMetainfo import ConvertedMetainfo
 from BitTorrent.bencode import bdecode, bencode
 from BitTorrent.platform import osx, get_temp_dir, doc_root, os_version
@@ -59,6 +59,11 @@ class AutoUpdateButler(TorrentButler):
         self.current_version = Version.from_str(version)
 
         self.debug_mode = DEBUG
+
+        self.delay = 60*60*24
+        if self.debug_mode:
+            self.delay = 10
+
         if test_new_version:
             test_new_version = Version.from_str(test_new_version)
             self.debug_mode = True
@@ -100,17 +105,17 @@ class AutoUpdateButler(TorrentButler):
         if not self._can_install():
             # Auto-update doesn't work here, so just notify the user
             # of the new available version.
-            r = self.available_version, None
+            r = self.available_version, None, self.delay
             self.available_version = None
         elif self.installable_version is not None:
             # Auto-update is done, notify the user of the version
             # ready to install.
-            r = self.available_version, self.installable_version
+            r = self.available_version, self.installable_version, self.delay
             self.available_version = None
         else:
             # Auto-update is in progress, don't tell the user
             # anything, and don't reset anything.
-            r = None, None
+            r = None, None, None
         return r
 
 
@@ -120,8 +125,8 @@ class AutoUpdateButler(TorrentButler):
                 t = self.multitorrent.get_torrent(i)
                 if t.state == 'initialized':
                     self.multitorrent.start_torrent(t)
-                state, policy, completed, status = self.multitorrent.torrent_status(i)
-                if completed:
+                torrent, status = self.multitorrent.torrent_status(i)
+                if torrent.completed:
                     self.finished(t)
             except UnknownInfohash:
                 self.debug('butle() removing' + i.short())
@@ -193,7 +198,7 @@ class AutoUpdateButler(TorrentButler):
 
 
     def _calc_installer_dir(self):
-        """Find a place to store the installer while it's being downloaded."""        
+        """Find a place to store the installer while it's being downloaded."""
         temp_dir = get_temp_dir()
         return temp_dir
 
@@ -213,7 +218,7 @@ class AutoUpdateButler(TorrentButler):
             assert len(s) == 5
             available_version = Version.from_str(s)
         except:
-            raise BTFailure(_("Could not parse new version string from %s")%url)        
+            raise BTFailure(_("Could not parse new version string from %s")%url)
 
         return available_version
 
@@ -287,15 +292,12 @@ class AutoUpdateButler(TorrentButler):
             to butle it.
         9.  AutoUpdateButler.started() ensures that only the most recent
             auto-update torrent is running.
-        10. AutoUpdateButler.finished() initiates the user feedback when
-            it's time to launch the installer.
+        10. AutoUpdateButler.finished() indicates the new version is available,
+            the UI polls for that value later.
 
         Whether an auto-update was found and started or not, requeue
         the call to check_version() to run a day later.  This means
-        that the version check runs at startup, and once a day.  It
-        also means that the user is asked to restart the client and
-        let the installer run, or notified of a new version, once a
-        day.
+        that the version check runs at startup, and once a day.
         """
         debug_prefix = '_check_version() run#%d: '%self.runs
         self.debug(debug_prefix + 'starting')
@@ -399,7 +401,4 @@ class AutoUpdateButler(TorrentButler):
         """Run the auto-update check once a day, or every ten seconds
         in debug mode."""
         self.runs += 1
-        delay = 60*60*24
-        if self.debug_mode:
-            delay = 10
-        self.rawserver.external_add_task(delay, self.check_version)
+        self.rawserver.external_add_task(self.delay, self.check_version)

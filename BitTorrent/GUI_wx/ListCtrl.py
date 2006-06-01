@@ -143,8 +143,42 @@ class BTListCtrl(wx.ListCtrl, ColumnSorterMixin, ContextMenuMixin):
         self.SetColumnContextMenu(cmenu)
 
         ColumnSorterMixin.__init__(self, len(self.enabled_columns))
+        self._last_scrollpos = 0
+        self.Bind(wx.EVT_ERASE_BACKGROUND, self.OnEraseBackground)
 
         self.default_rect = wx.Rect(0,0)
+
+    def OnEraseBackground(self, event=None):
+        nsp = self.GetScrollPos(wx.VERTICAL)
+        if self._last_scrollpos != nsp:
+            self._last_scrollpos = nsp
+            # should only refresh visible items, hmm
+            wx.CallAfter(self.Refresh)
+        dc = wx.ClientDC(self)
+        # erase the section of the background which is not covered by the
+        # items or the selected column highlighting
+        dc.SetBackground(wx.Brush(self.GetBackgroundColour()))
+        f = self.GetRect()
+        r = wx.Region(0, 0, f.width, f.height)
+        x = self.GetVisibleViewRect()
+        offset = self._get_origin_offset(include_header=True)
+        x.Offset(offset)
+        r.SubtractRect(x)
+        if '__WXMSW__' in wx.PlatformInfo:
+            c = self.GetColumnRect(self.enabled_columns.index(self.selected_column))
+            r.SubtractRect(c)
+        dc.SetClippingRegionAsRegion(r)
+        dc.Clear()
+
+        if '__WXMSW__' in wx.PlatformInfo:
+            # draw the selected column highlighting under the items
+            dc.DestroyClippingRegion()
+            r = wx.Region(0, 0, f.width, f.height)
+            r.SubtractRect(x)
+            dc.SetClippingRegionAsRegion(r)
+            dc.SetPen(wx.TRANSPARENT_PEN)
+            dc.SetBrush(wx.Brush(wx.Colour(247, 247, 247)))
+            dc.DrawRectangle(c.x, c.y, c.width, c.height)
 
     def update_enabled_columns(self):
         self.enabled_columns = [name for name in self.column_order
@@ -199,9 +233,16 @@ class BTListCtrl(wx.ListCtrl, ColumnSorterMixin, ContextMenuMixin):
         self.default_rect = self.GetItemRect(0)
         self.DeleteRow(-1)
 
-    def _get_origin_offset(self):
-        # Hm, I think this is a legit bug in wxGTK
-        if '__WXGTK__' in wx.PlatformInfo:
+    def _get_origin_offset(self, include_header=None):
+
+        if include_header is None:
+            # Hm, I think this is a legit bug in wxGTK
+            if '__WXGTK__' in wx.PlatformInfo:
+                include_header = True
+            else:
+                include_header = False
+
+        if include_header:            
             i = self.GetTopItem()
             try:
                 r = self.GetItemRect(i)
@@ -213,6 +254,10 @@ class BTListCtrl(wx.ListCtrl, ColumnSorterMixin, ContextMenuMixin):
     def add_image(self, image):
         b = wx.BitmapFromImage(image)
         assert b.Ok(), "The image (%s) is not valid." % str(image)
+        if '__WXMSW__' in wx.PlatformInfo:
+            # hack for 16-bit color mode
+            if b.GetDepth() > 24: # I mean, has alpha
+                b.SetMask(wx.Mask(b, wx.Colour(0, 0, 0)))
         return self.il.Add(b)
 
     # Arrow drawing
@@ -409,6 +454,25 @@ class BTListCtrl(wx.ListCtrl, ColumnSorterMixin, ContextMenuMixin):
             if pos[0] < loc:
                 return n
 
+    def GetVisibleViewRect(self):
+        width = 0
+        for n in xrange(self.GetColumnCount()):
+            width += self.GetColumnWidth(n)
+        height = 0
+        if self.GetItemCount() > 0:
+            i = self.GetTopItem()
+            r1 = self.GetItemRect(i)
+            last = min(i + self.GetCountPerPage(), self.GetItemCount() - 1)
+            r2 = self.GetItemRect(last)
+            height = r2.y + r2.height - r1.y
+        x, y = self._get_origin_offset()
+        # there is a 2 pixel strip on either side which is not part of the item
+        if '__WXMSW__' in wx.PlatformInfo:
+            x += 2
+            width -= 4
+            
+        return wx.Rect(x, y, x+width, y+height)
+        
     def GetViewRect(self):
         width = 0
         for n in xrange(self.GetColumnCount()):

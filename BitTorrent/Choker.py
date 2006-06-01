@@ -154,7 +154,7 @@ class Choker(object):
 
     def _max_uploads(self):
         uploads = self.config['max_uploads']
-        rate = self.config['max_upload_rate']
+        rate = self.config['max_upload_rate']  / 1024
         if uploads > 0:
             pass
         elif rate <= 0:

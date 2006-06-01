@@ -27,7 +27,7 @@ from threading import Event
 import wx
 import wx.grid
 
-from BitTorrent import version, filesystem_encoding, app_name
+from BitTorrent import version, app_name
 from BitTorrent import configfile
 from BitTorrent.GUI_wx import SPACING, BTApp, BTFrameWithSizer, BTDialog, BTPanel, Grid, VSizer, HSizer, ChooseFileOrDirectorySizer
 from BitTorrent.UI import Size
@@ -167,6 +167,8 @@ class MainWindow(BTFrameWithSizer):
         self.choose_file_sizer = ChooseFileOrDirectorySizer(self.panel, path,
                                                             setfunc=setfunc)
 
+        self.choose_file_sizer.pathbox.Bind(wx.EVT_TEXT, self.check_buttons)
+
         self.box = self.panel.sizer
         self.box.AddFirst(self.top_text, flag=wx.ALIGN_LEFT)
         self.box.Add(self.choose_file_sizer, flag=wx.GROW)
@@ -233,6 +235,8 @@ class MainWindow(BTFrameWithSizer):
         self.toggle_advanced(None)
         if self.config['verbose']:
             self.toggle_advanced(None)
+
+        self.check_buttons()
 
         self.Show()
 
@@ -335,7 +339,7 @@ class MainWindow(BTFrameWithSizer):
     def check_buttons(self, *widgets):
         file_name = self.get_file()
         tracker = self.announce_entry.GetValue()
-        if file_name not in (None, ''):
+        if file_name not in (None, '') and os.path.exists(file_name):
             if self.config['use_tracker']:
                 if len(tracker) >= len('http://x.cc'):
                     self.makebutton.Enable(True)

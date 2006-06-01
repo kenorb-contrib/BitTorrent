@@ -40,10 +40,10 @@ import thread
 
 class Rerequester(object):
 
-    STATES = ['started', 'completed', 'stopped']    
+    STATES = ['started', 'completed', 'stopped']
 
     def __init__(self, url, announce_list, config, sched, externalsched, rawserver,
-                 howmany, connect, 
+                 howmany, connect,
                  amount_left, up, down, port, myid, infohash, errorfunc, doneflag,
                  upratefunc, downratefunc, ever_got_incoming, diefunc, sfunc):
         """
@@ -151,7 +151,7 @@ class Rerequester(object):
         return ('%s?info_hash=%s&peer_id=%s&port=%s&key=%s' %
                 (self.baseurl, quote(self.infohash), quote(peerid), str(port),
                  b2a_hex(''.join([chr(random.randrange(256)) for i in xrange(4)]))))
-   
+
     def change_port(self, peerid, port):
         assert thread.get_ident() == self.rawserver.ident
 
@@ -239,14 +239,17 @@ class Rerequester(object):
             s += '&compact=1'
         if event is not None:
             s += '&event=' + event
-            
+
         def _start_announce(*a):
             self.running_df = ThreadedDeferred(_wrap_task(self.externalsched),
                                                self._rerequest, s, self.peerid,
                                                daemon=True)
             def _rerequest_finish(x):
                 self.running_df = None
-            self.running_df.addCallback(_rerequest_finish)
+            def _rerequest_error(e):
+                self.errorfunc(logging.ERROR, _("Rerequest failed!"),
+                               exception=True, exc_info=e)
+            self.running_df.addCallbacks(_rerequest_finish, _rerequest_error)
             if event == 'stopped':
                 # if self._rerequest needs any state, pass it through args
                 self.cleanup()
@@ -257,7 +260,7 @@ class Rerequester(object):
             self.running_df.addCallback(_start_announce)
         else:
             _start_announce()
-            
+
     # Must destroy all references that could cause reference circles
     def cleanup(self):
         assert thread.get_ident() == self.rawserver.ident
@@ -312,6 +315,16 @@ class Rerequester(object):
                 self.baseurl = self.announce_list_gen.next()
             except StopIteration:
                 self.fail_wait = None
+
+                if self.howmany() > 0:
+                    # sched shouldn't be strictly necessary
+                    def die():
+                        self.diefunc(logging.CRITICAL,
+                                     _("Aborting the torrent as it could not "
+                                       "connect to the tracker while not "
+                                       "connected to any peers. "))
+                    self.sched(0, die)
+
                 # restart the generator
                 self.announce_list_gen = announce_list_gen(self.announce_list)
                 # start from the top next _check
@@ -325,14 +338,14 @@ class Rerequester(object):
                 if isinstance(exc, socket.error):
                     self._check()
                     return
-        
+
         if self.fail_wait is None:
             self.fail_wait = 50
         else:
             self.fail_wait *= 1.4 + random.random() * .2
         self.fail_wait = min(self.fail_wait,
                              self.config['max_announce_retry_interval'])
-        
+
 
     def _postrequest(self, data=None, errormsg=None, exc=None, peerid=None):
         assert thread.get_ident() == self.rawserver.ident
@@ -359,17 +372,8 @@ class Rerequester(object):
         else:
             self.tracker_num_seeds = self.tracker_num_peers = None
         if r.has_key('failure reason'):
-            if self.howmany() > 0:
-                self.errorfunc(logging.ERROR, _("rejected by tracker - ") +
-                               r['failure reason'])
-            else:
-                # sched shouldn't be strictly necessary
-                def die():
-                    self.diefunc(logging.CRITICAL,
-                                 _("Aborting the torrent as it was rejected by "
-                                   "the tracker while not connected to any peers. ") + 
-                                 _(" Message from the tracker: ") + r['failure reason'])
-                self.sched(0, die)
+            self.errorfunc(logging.ERROR, _("rejected by tracker - ") +
+                           r['failure reason'])
             self._fail()
         else:
             self.fail_wait = None
@@ -410,10 +414,11 @@ class DHTRerequester(Rerequester):
             amount_left, up, down, port, myid, infohash, errorfunc, doneflag,
             upratefunc, downratefunc, ever_got_incoming, diefunc, sfunc, dht):
         self.dht = dht
-        Rerequester.__init__(self, "http://localhost/announce", config, sched,  howmany, connect, externalsched,
+        Rerequester.__init__(self, "http://localhost/announce", [], config, sched, externalsched,
+                             howmany, connect,
                              amount_left, up, down, port, myid, infohash, errorfunc, doneflag,
                              upratefunc, downratefunc, ever_got_incoming, diefunc, sfunc)
-    
+
     def _announce(self, event=None):
         self.current_started = bttime()
         self._rerequest("", self.peerid)
@@ -424,14 +429,14 @@ class DHTRerequester(Rerequester):
             self.dht.getPeersAndAnnounce(self.infohash, self.port, self._got_peers)
         except Exception, e:
             self._postrequest(errormsg=_("Trackerless lookup failed: ") + str(e), peerid=self.wanted_peerid)
-        
+
     def _got_peers(self, peers):
         if not self.howmany:
             return
         if not peers:
             self._postrequest(bencode({'peers':''}), peerid=self.wanted_peerid)
         else:
-            self._postrequest(bencode({'peers':peers[0]}), peerid=None)            
+            self._postrequest(bencode({'peers':peers[0]}), peerid=None)
 
     def _announced_peers(self, nodes):
         pass

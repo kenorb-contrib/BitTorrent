@@ -46,5 +46,5 @@ class StatusLight(wx.Panel, _StatusLight):
         self.bitmap.SetBitmap(self.images[state])
         self.SetToolTipString(self.get_tip())
         
-
-    
+class StatusLabel(_StatusLight):
+    pass    

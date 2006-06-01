@@ -15,7 +15,6 @@ import os
 import signal
 import re
 import logging
-from threading import Event
 from urlparse import urlparse
 from traceback import print_exc
 from time import time, gmtime, strftime, localtime
@@ -29,6 +28,7 @@ from BitTorrent.translation import _
 from BitTorrent.obsoletepythonsupport import *
 
 from BitTorrent import platform, BTFailure
+from BitTorrent.defer import DeferredEvent
 from BitTorrent.configfile import parse_configuration_and_args
 #from BitTorrent.parseargs import parseargs, printHelp
 from BitTorrent.RawServer_twisted import RawServer
@@ -829,7 +829,7 @@ def track(args):
                   config['port']
             return
 
-        r.listen_forever(Event())
+        r.listen_forever(DeferredEvent())
     finally:
         if t: t.save_dfile()
         print _("# Shutting down: ") + isotime()

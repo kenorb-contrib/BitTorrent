@@ -9,7 +9,9 @@
 # License.
 
 # Originally written by Bram Cohen, heavily modified by Uoti Urpala
-# Fast and cache extensions added by David Harrison
+# Fast extensions added by David Harrison
+
+from __future__ import generators
 
 # DEBUG
 # If you think FAST_EXTENSION is causing problems then set the following:
@@ -17,13 +19,11 @@
 disable_fast_extension = False
 # END DEBUG
 
-from __future__ import generators
-
 # for crypto
-from os import urandom
 from random import randrange
-from sha import sha
+from BitTorrent.hash import sha
 from Crypto.Cipher import ARC4
+# urandom comes from obsoletepythonsupport
 
 from struct import pack, unpack
 
@@ -31,7 +31,6 @@ from BitTorrent.RawServer_twisted import Handler
 from BitTorrent.bitfield import Bitfield
 from BitTorrent.obsoletepythonsupport import *
 import logging
-
 
 def toint(s):
     return unpack("!i", s)[0]
@@ -58,11 +57,11 @@ CANCEL = chr(8)
 PORT = chr(9)
 
 # no args
-#GET_METAINFO =   chr(10)
-#GIVE_METAINFO =  chr(11)
+WANT_METAINFO = chr(10)
+METAINFO = chr(11)
 
 # index
-#SUSPECT_PIECE =  chr(12)
+SUSPECT_PIECE = chr(12)
 
 # no args
 SUGGEST_PIECE =  chr(13)
@@ -86,9 +85,6 @@ message_dict = {chr(0):'CHOKE',
                 chr(7):'PIECE',
                 chr(8):'CANCEL',
                 chr(9):'PORT',
-                #chr(10): 'GET_METAINFO',    # proposed CACHE_EXTENSION
-                #chr(11): 'GIVE_METAINFO',   # proposed CACHE_EXTENSION
-                #chr(12): 'SUSPECT_PIECE',   # proposed CACHE_EXTENSION
                 chr(13): 'SUGGEST_PIECE',   # proposed FAST_EXTENSION
                 chr(14): 'HAVE_ALL',        # proposed FAST_EXTENSION
                 chr(15): 'HAVE_NONE',       # proposed FAST_EXTENSION
@@ -104,16 +100,13 @@ message_dict = {chr(0):'CHOKE',
 #       broadcast listen port.
 #  reserved[7]
 DHT = 0x01
-CACHE_EXTENSION = 0x02  # caching extensions.
 FAST_EXTENSION = 0x04   # suggest, haveall, havenone, reject request,
                         # and allow fast extensions.
 
-# Cache extension is currently disabled.
-#FLAGS = '\0' * 7 + chr( DHT | CACHE_EXTENSION | FAST_EXTENSION )
-if disable_fast_extension:
-    FLAGS = '\0' * 7 + chr( DHT )
-else:
-    FLAGS = '\0' * 7 + chr( DHT | FAST_EXTENSION )
+LAST_BYTE = DHT
+if not disable_fast_extension:
+    LAST_BYTE |= FAST_EXTENSION
+FLAGS = '\0' * 7 + chr( LAST_BYTE )
 protocol_name = 'BitTorrent protocol'
 
 # for crypto
@@ -133,14 +126,6 @@ if noisy:
     connection_logger = logging.getLogger("BitTorrent.Connector")
     log = connection_logger.debug
 
-
-def protocol_violation(s, c=None):
-    a = ''
-    if noisy:
-        if c is not None:
-            a = (c.ip, c.port)
-        log( "FAUX PAS: %s %s" % ( s, a ))
-
 # Dave's comments: Connection is a bad name. 
 
 class Connection(Handler):
@@ -149,7 +134,7 @@ class Connection(Handler):
        semantics."""
 
     def __init__(self, parent, connection, id, is_local,
-                 obfuscate_outgoing=False):
+                 obfuscate_outgoing=False, log_prefix = ""):
         self.parent = parent
         self.connection = connection
         self.id = id
@@ -171,26 +156,47 @@ class Connection(Handler):
         self._privkey = None        
         self.choke_sent = True
         self.uses_dht = False
-        self.uses_cache_extension = False
         self.uses_fast_extension = False
+        self.obfuscate_outgoing = obfuscate_outgoing
         self.dht_port = None
         self.sloppy_pre_connection_counter = 0
         self.received_data = False
+        self.log_prefix = log_prefix
         if self.locally_initiated:
-            if obfuscate_outgoing:
-                privkey = bytetonum(urandom(20))
-                self._privkey = privkey
-                pubkey = pow(2, privkey, dh_prime)
-                out = numtobyte(pubkey) + urandom(randrange(PAD_MAX))
-                connection.write(out)
-            else:
-                connection.write(chr(len(protocol_name)) + protocol_name +
-                                 FLAGS + self.parent.download_id)
-                if self.id is not None:
-                    connection.write(self.parent.my_id)
+            # Blech! infohash should be passed as an arg to __init__ when
+            # initiating.  --Dave
+            self.logger = logging.getLogger(
+                self.log_prefix + '.' + repr(self.parent.download_id) +
+                '.peer_id_not_yet')
+        else:
+            self.logger = logging.getLogger(
+                self.log_prefix + '.infohash_not_yet.peer_id_not_yet' )
+        if self.locally_initiated:
+            self.send_handshake()
         # Greg's comments: ow ow ow
         self.connection.handler = self
 
+    def protocol_violation(self, s, c=None):
+        a = ''
+        if noisy:
+            if c is not None:
+                a = (c.ip, c.port)
+            log( "FAUX PAS: %s %s" % ( s, a ))
+        self.logger.info( s )
+
+    def send_handshake(self):
+        flags = FLAGS
+        if self.obfuscate_outgoing:
+            privkey = bytetonum(urandom(20))
+            self._privkey = privkey
+            pubkey = pow(2, privkey, dh_prime)
+            out = numtobyte(pubkey) + urandom(randrange(PAD_MAX))
+            self.connection.write(out)
+        else:
+            self.connection.write(chr(len(protocol_name)) + protocol_name +
+                             flags + self.parent.download_id)
+            if self.id is not None:
+                self.connection.write(self.parent.my_id)
 
     def set_parent(self, parent):
         self.parent = parent
@@ -235,7 +241,7 @@ class Connection(Handler):
         self._send_message(pack("!ciii", REQUEST, index, begin, length))
 
     def send_cancel(self, index, begin, length):
-        self._send_message(pack("!ciii", CANCEL,index, begin, length))
+        self._send_message(pack("!ciii", CANCEL, index, begin, length))
 
     def send_bitfield(self, bitfield):
         if noisy:
@@ -269,16 +275,6 @@ class Connection(Handler):
 
     def send_keepalive(self):
         self._send_message('')
-
-    #def send_get_metainfo(self):
-    #    assert(self.uses_cache_extension)
-    #    self._send_message(pack("!c", GET_METAINFO))
-
-    # There is some question as to whether this should be implemented
-    # as a single message that contains the entire metainfo as this
-    # could result in a particularly large file.  --D. Harrison
-    #def send_give_metainfo(self, metainfo):
-    #    pass
 
     def send_partial(self, bytes):
         if self.closed:
@@ -360,19 +356,19 @@ class Connection(Handler):
                     yield len(self._rest)
                     x += self._message
                     if len(x) >= 520:
-                        protocol_violation('VC not found',
+                        self.protocol_violation('VC not found',
                                            self.connection)
                         return
                 yield i + 8 + 4 + 2 - len(x)
                 x = decrypt((x + self._message)[-6:])
                 self._decrypt = decrypt
                 if x[0:4] != '\x00\x00\x00\x02':
-                    protocol_violation('bad crypto method selected, not 2',
+                    self.protocol_violation('bad crypto method selected, not 2',
                                        self.connection)
                     return
                 padlen = (ord(x[4]) << 8) + ord(x[5])
                 if padlen > 512:
-                    protocol_violation('padlen too long',
+                    self.protocol_violation('padlen too long',
                                        self.connection)
                     return
                 self.connection.write(chr(len(protocol_name)) + protocol_name +
@@ -399,7 +395,7 @@ class Connection(Handler):
                     yield len(self._rest)
                     x += self._message
                     if len(x) >= 532:
-                        protocol_violation('incoming VC not found',
+                        self.protocol_violation('incoming VC not found',
                                            self.connection)
                         return
                 yield i + 20 + 20 + 8 + 4 + 2 - len(x)
@@ -410,20 +406,23 @@ class Connection(Handler):
                                     for i in range(20)])
                 self.parent.select_torrent_obfuscated(self, streamid)
                 if self.parent.download_id is None:
-                    protocol_violation('download id unknown/rejected',
+                    self.protocol_violation('download id unknown/rejected',
                                        self.connection)
                     return
+                self.logger = logging.getLogger(
+                    self.log_prefix + '.' + repr(self.parent.download_id) +
+                    '.peer_id_not_yet' )
                 SKEY = self.parent.download_id
                 decrypt = ARC4.new(sha('keyA' + S + SKEY).digest()).decrypt
                 decrypt('x'*1024)
                 s = decrypt(self._message[20:34])
                 if s[0:8] != '\x00' * 8:
-                    protocol_violation('BAD VC', self.connection)
+                    self.protocol_violation('BAD VC', self.connection)
                     return
                 crypto_provide = toint(s[8:12])
                 padlen = (ord(s[12]) << 8) + ord(s[13])
                 if padlen > 512:
-                    protocol_violation('BAD padlen, too long', self.connection)
+                    self.protocol_violation('BAD padlen, too long', self.connection)
                     return
                 self._decrypt = decrypt
                 yield padlen + 2
@@ -432,7 +431,7 @@ class Connection(Handler):
                 encrypt('x'*1024)
                 self.connection.encrypt = encrypt
                 if not crypto_provide & 2:
-                    protocol_violation("peer doesn't support crypto mode 2", self.connection)
+                    self.protocol_violation("peer doesn't support crypto mode 2", self.connection)
                     return
                 padlen = randrange(PAD_MAX)
                 s = '\x00' * 11 + '\x02\x00' + chr(padlen) + urandom(padlen)
@@ -440,16 +439,13 @@ class Connection(Handler):
             S = SKEY = s = x = streamid = VC = padlen = None
             yield 1 + len(protocol_name)
             if self._message != chr(len(protocol_name)) + protocol_name:
-                protocol_violation('classic handshake fails', self.connection)
+                self.protocol_violation('classic handshake fails', self.connection)
                 return
 
         yield 8  # reserved
         # dht is on last reserved byte
         if ord(self._message[7]) & DHT:
             self.uses_dht = True
-        if ord(self._message[7]) & CACHE_EXTENSION:
-            if noisy: log( "Implements CACHE_EXTENSION")
-            self.uses_cache_extension = True
         if ord(self._message[7]) & FAST_EXTENSION:
             if disable_fast_extension:
                 self.uses_fast_extension = False
@@ -462,10 +458,10 @@ class Connection(Handler):
             # modifies self.parent if successful
             self.parent.select_torrent(self, self._message)
             if self.parent.download_id is None:
-                protocol_violation("no download_id from parent (peer from a torrent you're not running)", self.connection)
+                self.protocol_violation("no download_id from parent (peer from a torrent you're not running)", self.connection)
                 return
         elif self._message != self.parent.download_id:
-            protocol_violation("incorrect download_id from parent",
+            self.protocol_violation("incorrect download_id from parent",
                                self.connection)
             return
         if not self.locally_initiated:
@@ -475,19 +471,23 @@ class Connection(Handler):
         yield 20  # peer id
         if not self.id:
             self.id = self._message
+            self.logger = logging.getLogger(
+                self.log_prefix + '.' + repr(self.parent.download_id) +
+                '.' + self._message.encode('hex') )
+
             if self.id == self.parent.my_id:
-                protocol_violation("talking to self", self.connection)
+                self.protocol_violation("talking to self", self.connection)
                 return
             for v in self.parent.connections.itervalues():
                 if v is not self:
                     if v.id == self.id:
-                        protocol_violation(
+                        self.protocol_violation(
                             "duplicate connection (id collision)",
                             self.connection)
                         return
                     if self.parent.config['one_connection_per_ip'] and \
                            v.ip == self.ip:
-                        protocol_violation(
+                        self.protocol_violation(
                             "duplicate connection (ip collision)",
                             self.connection)
                         return
@@ -497,7 +497,7 @@ class Connection(Handler):
                 self.parent.everinc = True
         else:
             if self._message != self.id:
-                protocol_violation("incorrect id")
+                self.protocol_violation("incorrect id")
                 return
         self.complete = True
         self.parent.connection_completed(self)
@@ -506,7 +506,7 @@ class Connection(Handler):
             yield 4   # message length
             l = toint(self._message)
             if l > self.parent.config['max_message_length']:
-                protocol_violation("message length exceeds max (%s %s)" %
+                self.protocol_violation("message length exceeds max (%s %s)" %
                     (l, self.parent.config['max_message_length']),
                     self.connection)
                 return
@@ -556,18 +556,27 @@ class Connection(Handler):
                 self.close()
                 return
             i, a, b = unpack("!xiii", message)
-            if noisy: log( "GOT  REQUEST %d %d %d" % (i, a, b) )
+            if noisy: log( "GOT REQUEST %d %d %d" % (i, a, b) )
             if i >= self.parent.numpieces:
+                self.protocol_violation(
+                     "Requested piece index %d > numpieces which is %d" %
+                     (i,self.parent.numpieces), self.connection )
                 self.close()
                 return
             self.upload.got_request(i, a, b)
         elif t == CANCEL:
             if len(message) != 13:
+                self.protocol_violation(
+                    "Invalid cancel message length %d" % len(message),
+                    self.connection )
                 self.close()
                 return
             i, a, b = unpack("!xiii", message)
-            if noisy: log( "GOT  CANCEL %d %d %d" % (i, a, b) )
+            if noisy: log( "GOT CANCEL %d %d %d" % (i, a, b) )
             if i >= self.parent.numpieces:
+                self.protocol_violation(
+                     "Cancelled piece index %d > numpieces which is %d" %
+                     (i,self.parent.numpieces), self.connection )
                 self.close()
                 return
             self.upload.got_cancel(i, a, b)
@@ -590,31 +599,49 @@ class Connection(Handler):
             self.parent.got_port(self)
         elif t == SUGGEST_PIECE:
             if not self.uses_fast_extension:
+                self.protocol_violation(
+                    "Received 'SUGGEST_PIECE' when fast extension disabled.",
+                    self.connection )
                 self.close()
                 return
             i = unpack("!xi", message)[0]
             if noisy: log( "GOT SUGGEST_PIECE %d" % i )
             if i >= self.parent.numpieces:
+                self.protocol_violation(
+                    "Received 'SUGGEST_PIECE' with piece id %d > numpieces." %
+                    self.parent.numpieces, self.connection )
                 self.close()
                 return
             self.download.got_suggest_piece(i)
         elif t == HAVE_ALL:
             if noisy: log( "GOT %s" % message_dict[t] )
             if not self.uses_fast_extension:
+                self.protocol_violation(
+                    "Received 'HAVE_ALL' when fast extension disabled.",
+                    self.connection )
                 self.close()
                 return
             self.download.got_have_all()
         elif t == HAVE_NONE:
             if noisy: log( "GOT %s" % message_dict[t] )
             if not self.uses_fast_extension:
+                self.protocol_violation(
+                    "Received 'HAVE_NONE' when fast extension disabled.",
+                    self.connection )
                 self.close()
                 return
             self.download.got_have_none()
         elif t == REJECT_REQUEST:
             if not self.uses_fast_extension:
+                self.protocol_violation(
+                    "Received 'REJECT_REQUEST' when fast extension disabled.",
+                    self.connection )
                 self.close()
                 return
             if len(message) != 13:
+                self.protocol_violation(
+                    "Received 'REJECT_REQUEST' with length %d != 13." %
+                    len(message), self.connection )
                 self.close()
                 return
             i, a, b = unpack("!xiii", message)
@@ -625,6 +652,9 @@ class Connection(Handler):
             self.download.got_reject_request(i, a, b)
         elif t == ALLOWED_FAST:
             if not self.uses_fast_extension:
+                self.protocol_violation(
+                    "Received 'ALLOWED_FAST' when fast extension disabled.",
+                    self.connection )
                 self.close()
                 return
             i = unpack("!xi", message)[0]
@@ -676,6 +706,11 @@ class Connection(Handler):
                 self.close()
                 return
 
+    def _optional_restart(self):            
+        if self.locally_initiated and not self.obfuscate_outgoing and not self.received_data:
+            dns = (self.connection.ip, self.connection.port)
+            self.parent.start_connection(dns, id=None, encrypt=True)
+
     def connection_lost(self, conn):
         assert conn is self.connection
         self.closed = True
@@ -684,20 +719,20 @@ class Connection(Handler):
         # ARG. Thanks Uoti
         if hasattr(self.parent, 'ratelimiter'):
             self.parent.ratelimiter.dequeue(self)
-        if self.locally_initiated and not self.received_data:
-            dns = (self.connection.ip, self.connection.port)
-            self.parent.start_connection(dns, id=None, encrypt=True)
+        self._optional_restart()
         self.connection = None
         self.parent.replace_connection()
         if self.complete:
             self.parent.complete_connections.remove(self)
-            if self.download is not None: self.download.disconnected()
+            if self.download is not None:
+                self.download.disconnected()
             self.parent.choker.connection_lost(self)
-            self.upload = self.download = None
+            self.upload = None
+            self.download = None
 
     def connection_flushed(self, connection):
         if self.complete and self.next_upload is None and (self._partial_message is not None
                                              or (self.upload and self.upload.buffer)):
-                self.parent.ratelimiter.queue(self)
+            self.parent.ratelimiter.queue(self)
 
 

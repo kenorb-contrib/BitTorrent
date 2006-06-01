@@ -23,6 +23,7 @@ import traceback
 
 from DictWithLists import DictWithLists
 
+from BitTorrent.defer import DeferredEvent
 from BitTorrent.translation import _
 from BitTorrent import BTFailure
 from BitTorrent.obsoletepythonsupport import set
@@ -127,6 +128,7 @@ class Handler(object):
 
 
 class ConnectionWrapper(object):
+
     def __init__(self, rawserver, handler, context, tos=0):
         self.ip = None             # peer ip
         self.tos = tos
@@ -191,7 +193,10 @@ class ConnectionWrapper(object):
         self.callback_connection = callback_connection
         self.reset_timeout = reset_timeout
 
-        self.buffer.attachConsumer(self.transport)
+        if hasattr(transport, 'addBufferCallback'):
+            self.buffer = PassBuffer(self.transport, self._flushed, self.buffer)
+        else:
+            self.buffer.attachConsumer(self.transport)
 
         try:
             address = self.transport.getPeer()
@@ -232,6 +237,9 @@ class ConnectionWrapper(object):
     def write(self, b):
         if self.encrypt is not None:
             b = self.encrypt(b)
+        # bleh
+        if isinstance(b, buffer):
+            b = str(b)
         self.buffer.add(b)
 
     def _flushed(self):
@@ -300,7 +308,34 @@ class ConnectionWrapper(object):
             self.callback_connection.connection = None
             del self.callback_connection
 
+# hint: not actually a buffer
+class PassBuffer(object):
 
+    def __init__(self, consumer, callback_onflushed, old_buffer):
+        self.consumer = consumer
+        self.callback_onflushed = callback_onflushed
+        self._is_flushed = False
+        self.consumer.addBufferCallback(self._flushed, "buffer empty")
+        # swallow the data written to the old buffer
+        if old_buffer._buffer_list:
+            self.consumer.writeSequence(old_buffer._buffer_list)
+            old_buffer._buffer_list[:] = []
+
+    def add(self, b):
+        self._is_flushed = False
+        self.consumer.write(b)
+
+    def stopWriting(self):
+        pass
+    
+    def is_flushed(self):
+        return self._is_flushed
+    
+    def _flushed(self):
+        self._is_flushed = True
+        self.callback_onflushed()
+
+        
 class OutputBuffer(object):
 
     # This is an IPullProducer which has an unlimited buffer size,
@@ -319,8 +354,6 @@ class OutputBuffer(object):
         self.consumer = consumer
 
     def add(self, b):
-        if isinstance(b, buffer):
-            b = str(b)
         self._buffer_list.append(b)
 
         if self.consumer and not self.registered:
@@ -385,7 +418,7 @@ class CallbackConnection(object):
         #print ("Connection Lost", self.connection.ip, self.connection.port,
         #       str(reason).split(":")[-1])
         # hack to try and dig up the connection if one was ever made
-        if "connection" not in self.__dict__:
+        if not hasattr(self, "connection"):
             self.connection = self.factory.connection
         if self.connection is not None:
             self.factory.rawserver._remove_socket(self.connection)
@@ -613,7 +646,7 @@ class RawServer(RawServerMixin):
         4. tells the raw_server to listen for I/O or scheduled tasks
            until the done_flag is set.
 
-            done_flag = Event()
+            done_flag = DeferredEvent()
             r.listen_forever(done_flag)
 
            When a remote client opens a connection, a new socket is
@@ -643,6 +676,7 @@ class RawServer(RawServerMixin):
 
         # init is fine until the loop starts
         self.ident = thread.get_ident()
+        self.associated = False
 
         self.single_sockets = set()
         self.udp_sockets = set()
@@ -653,11 +687,6 @@ class RawServer(RawServerMixin):
         # this can go away when urllib does
         self.pending_sockets_lock = threading.Lock()
 
-        # sometimes twisted is really annoying
-        def callAfter(_f, *a, **kw):
-            reactor.threadCallQueue.append((_f, a, kw))
-        reactor.callAfter = callAfter
-
         ##############################################################
         if profile:
             try:
@@ -666,12 +695,13 @@ class RawServer(RawServerMixin):
                 pass
             self.prof = hotshot.Profile(prof_file_name)
 
-            def _profile_call(_f, *a, **kw):
-                callAfter(self.prof.runcall, _f, *a, **kw)
-            reactor.callAfter = _profile_call
+            callLater = reactor.callLater
+            def _profile_call(delay, _f, *a, **kw):
+                return callLater(delay, self.prof.runcall, _f, *a, **kw)
+            reactor.callLater = _profile_call
             o = reactor.callFromThread
             def _profile_call2(_f, *a, **kw):
-                o(self.prof.runcall, _f, *a, **kw)
+                return o(self.prof.runcall, _f, *a, **kw)
             reactor.callFromThread = _profile_call2
         ##############################################################
             
@@ -722,16 +752,14 @@ class RawServer(RawServerMixin):
         addrs = [(s.ip, s.port) for s in self.single_sockets]
         return addrs
 
-    def add_task(self, delay, _f, *args, **kwargs):
-        """Schedule the passed function 'func' to be called after
-           'delay' seconds and pass the 'args'.
-
-           This should only be called by RawServer's thread."""
-        #assert thread.get_ident() == self.ident
-        if delay == 0:
-            return reactor.callAfter(_f, *args, **kwargs)
-        else:
-            return reactor.callLater(delay, _f, *args, **kwargs)
+##    def add_task(self, delay, _f, *args, **kwargs):
+##        """Schedule the passed function 'func' to be called after
+##           'delay' seconds and pass the 'args'.
+##
+##           This should only be called by RawServer's thread."""
+##        #assert thread.get_ident() == self.ident
+##        return reactor.callLater(delay, _f, *args, **kwargs)
+    add_task = reactor.callLater
 
     def external_add_task(self, delay, _f, *args, **kwargs):
         """Schedule the passed function 'func' to be called after
@@ -901,7 +929,7 @@ class RawServer(RawServerMixin):
         return self.force_start_connection(dns, handler, context, do_bind)
 
     def associate_thread(self):
-        assert not hasattr(self, 'associated'), "RawServer has already been associated with a thread"
+        assert not self.associated, "RawServer has already been associated with a thread"
         self.ident = thread.get_ident()
         self.associated = True
 
@@ -911,35 +939,21 @@ class RawServer(RawServerMixin):
            thread.  The doneFlag tells all threads to clean-up and then
            exit."""
 
-        assert isinstance(doneflag, threading._Event)
+        assert isinstance(doneflag, DeferredEvent)
         self.doneflag = doneflag
+        if not self.associated:
+            self.associate_thread()
         if self.listened:
             Exception(_("listen_forever() should only be called once per reactor."))
+        reactor.callLater(0, self.doneflag.addCallback, lambda *a : self.external_add_task(0, self.stop))
         self.listened = True
 
-        l = task.LoopingCall(self.stop)
-        reactor.callLater(0, l.start, 1)
-
-##        import hotshot
-##        import hotshot.stats
-##        prof_file_name = 'core.prof'
-##
-##        prof = hotshot.Profile(prof_file_name)
-##        prof.start()
-
+        reactor.suggestThreadPoolSize(1)
         if noSignals:
             reactor.run(installSignalHandlers=False)
         else:
             reactor.run()
 
-##        prof.stop()
-##        prof.close()
-##        stats = hotshot.stats.load(prof_file_name)
-##        os.unlink(prof_file_name)
-##        stats.strip_dirs()
-##        stats.sort_stats('time', 'calls')
-##        print "Core Profile:"
-##        stats.print_stats(20)
         if profile:
             self.prof.close()
             stats = hotshot.stats.load(prof_file_name)
@@ -952,22 +966,21 @@ class RawServer(RawServerMixin):
         rawserver_logger.warning(_("listen_once() might not return until there is activity, and might not process the event you want. Use listen_forever()."))
         reactor.iterate(period)
 
-    def stop(self):
-        if self.doneflag.isSet():
-
-            for connection in self.single_sockets:
-                try:
-                    connection.close()
-                except:
-                    pass
-
-            reactor.suggestThreadPoolSize(0)
+    def stop(self, r=None):
+        assert thread.get_ident() == self.ident
+        
+        for connection in self.single_sockets:
             try:
-                reactor.stop()
-            except RuntimeError:
-                # exceptions.RuntimeError: can't stop reactor that isn't running
+                connection.close()
+            except:
                 pass
 
+        reactor.suggestThreadPoolSize(0)
+        try:
+            reactor.stop()
+        except RuntimeError:
+            # exceptions.RuntimeError: can't stop reactor that isn't running
+            pass
 
     def _remove_socket(self, s):
         # opt-out

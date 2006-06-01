@@ -182,6 +182,15 @@ class SparseSet(object):
         for b, e in izip(self._begins, self._ends):
             yield (b, e)
 
+    def largest_range(self):
+        m = None
+        r = None
+        for b, e in izip(self._begins, self._ends):
+            if b - e > m:
+                m = b - e
+                r = (b, e)
+        return r
+
     def __eq__(self, s):
         if not isinstance(s, SparseSet):
             return False

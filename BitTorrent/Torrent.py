@@ -20,11 +20,14 @@ import sys
 import time
 import errno
 import shutil
+import cPickle
 import logging
 import itertools
 import traceback
 import random
+import urlparse
 from cStringIO import StringIO
+from BitTorrent.hash import sha
 from BitTorrent.translation import _
 
 import BitTorrent.stackthreading as threading
@@ -42,14 +45,15 @@ from BitTorrent.Rerequester import Rerequester, DHTRerequester
 from BitTorrent.NewRateLimiter import MultiRateLimiter as RateLimiter
 from BitTorrent.CurrentRateMeasure import Measure
 from BitTorrent.Storage import Storage, FilePool
+from BitTorrent.HTTPConnector import URLage
 from BitTorrent.StorageWrapper import StorageWrapper
 from BitTorrent.Upload import Upload
 from BitTorrent.MultiDownload import MultiDownload
 from BitTorrent import version
 from BitTorrent import BTFailure
-from BitTorrent import filesystem_encoding
 from BitTorrent.prefs import Preferences
-from BitTorrent.bencode import bencode, bdecode
+#from BitTorrent.bencode import bencode
+
 
 from khashmir import const
 
@@ -90,9 +94,9 @@ class Torrent(object):
                  singleport_listener, ratelimiter, total_downmeasure,
                  filepool, dht, feedback, log_root):
         self.state = "created"
-
         self.data_dir = data_dir
         self.feedback = feedback
+        self.finished_this_session = False
         self._rawserver = rawserver
         self._singleport_listener = singleport_listener
         self._ratelimiter = ratelimiter
@@ -124,6 +128,11 @@ class Torrent(object):
 
         self.metainfo = metainfo
         self.infohash = metainfo.infohash
+
+        self.log_root = log_root
+        self.logger = logging.getLogger(log_root + '.' + repr(self.infohash))
+        self.logger.setLevel(logging.DEBUG)
+
         self.total_bytes = metainfo.total_bytes
         if not metainfo.reported_errors:
             metainfo.show_encoding_errors(self._error)
@@ -141,9 +150,6 @@ class Torrent(object):
         self.downtotal = 0
         self.downtotal_old = 0
         self.context_valid = True
-
-        self.logger = logging.getLogger(log_root + '.' + repr(self.metainfo.infohash))
-        self.logger.setLevel(logging.DEBUG)
 
     def update_config(self, config):
         self.config.update(config)
@@ -236,6 +242,56 @@ class Torrent(object):
         self._rawserver.external_add_task(delay, self._context_wrap,
                                           func, *a, **kw)
 
+    def _register_files(self):
+        if self.metainfo.is_batch:
+            myfiles = [os.path.join(self.destination_path, f) for f in
+                       self.metainfo.files_fs]
+        else:
+            myfiles = [self.destination_path, ]
+
+        for filename in myfiles:
+            if is_path_too_long(filename):
+                raise BTFailure("Filename path exceeds platform limit: %s" % filename)
+
+
+        # if the destination path contains any of the files in the torrent
+        # then use the destination path instead of the working path.
+        if len([x for x in myfiles if os.path.exists(x)]) > 0:
+            self.working_path = self.destination_path
+        else:
+            if self.metainfo.is_batch:
+                myfiles = [os.path.join(self.working_path, f) for f in
+                           self.metainfo.files_fs]
+            else:
+                myfiles = [self.working_path, ]
+
+        assert self._myfiles == None, '_myfiles should be None!'
+        self._filepool.add_files(myfiles, self)
+        self._myfiles = myfiles
+
+    def _build_url_mapping(self):
+        # TODO: support non [-1] == '/' urls
+        url_suffixes = []
+
+        if self.metainfo.is_batch:
+            for filename in self.metainfo.orig_files:
+                path = '%s/%s' % (self.metainfo.name, filename)
+                # am I right that orig_files could have windows paths?
+                path = path.replace('\\', '/')
+                url_suffixes.append(path)
+        else:
+            url_suffixes = [self.metainfo.name, ]
+        self._url_suffixes = url_suffixes
+
+        total = 0
+        piece_size = self.metainfo.piece_length
+        self._urls = zip(self._url_suffixes, self.metainfo.sizes)
+
+    def _unregister_files(self):
+        if self._myfiles is not None:
+            self._filepool.remove_files(self._myfiles)
+            self._myfiles = None
+
     def initialize(self):
         self.context_valid = True
         assert self.state in ["created", "failed", "finishing"]
@@ -266,38 +322,16 @@ class Torrent(object):
 
         self._myid = self._make_id()
         random.seed(self._myid)
+        self._build_url_mapping()
+        self._urlage = URLage(self._urls)
 
-        if self.metainfo.is_batch:
-            myfiles = [os.path.join(self.destination_path, f) for f in
-                       self.metainfo.files_fs]
-        else:
-            myfiles = [self.destination_path, ]
-
-        for filename in myfiles:
-            if is_path_too_long(filename):
-                raise BTFailure("Filename path exceeds platform limit: %s" % filename)
-
-
-        # if the destination path contains any of the files in the torrent
-        # then use the destination path instead of the working path.
-        if len([x for x in myfiles if os.path.exists(x)]) > 0:
-            self.working_path = self.destination_path
-        else:
-            if self.metainfo.is_batch:
-                myfiles = [os.path.join(self.working_path, f) for f in
-                           self.metainfo.files_fs]
-            else:
-                myfiles = [self.working_path, ]
-
-        assert self._myfiles == None, '_myfiles should always be None in _initialize'
-        self._filepool.add_files(myfiles, self)
-        self._myfiles = myfiles
-        df = Deferred()
+        self._register_files()
         #self.logger.debug("_start_download: self.working_path=%s", self.working_path)
         self._storage = Storage(self.config, self._filepool, self.working_path,
                                 zip(self._myfiles, self.metainfo.sizes),
-                                self.add_task, self.external_add_task, df,
+                                self.add_task, self.external_add_task,
                                 self._doneflag)
+        df = self._storage.startup_df
         yield df
         if df.getResult() != True:
             # initialization was aborted
@@ -312,7 +346,7 @@ class Torrent(object):
                     resumefile = file(filename, 'rb')
                 except Exception, e:
                     self._error(logging.WARNING,
-                        _("Could not load fastresume data: %s") % str(e)
+                        _("Could not load fastresume data: %s") % unicode(e.args[0])
                         + ' ' + _("Will perform full hash check."))
                     if resumefile is not None:
                         resumefile.close()
@@ -370,40 +404,54 @@ class Torrent(object):
             self.add_task(0, kick)
         def banpeer(ip):
             self._connection_manager.ban(ip)
-        downloader = MultiDownload(self.config, self._storagewrapper,
-                                   self._picker, numpieces, self.finished,
-                                   self._total_downmeasure,
-                                   self._downmeasure,
-                                   self._ratemeasure.data_came_in,
-                                   kickpeer, banpeer)
+        self.multidownload = MultiDownload(self.config, self._storagewrapper,
+                                           self._urlage, self._picker,
+                                           numpieces, self.finished,
+                                           self._total_downmeasure,
+                                           self._downmeasure,
+                                           self._ratemeasure.data_came_in,
+                                           kickpeer, banpeer)
 
         # HERE. Yipee! Uploads are created by callback while Download
         # objects are created by MultiDownload.   --Dave
         def make_upload(connection):
             return Upload(connection, self._ratelimiter, self._upmeasure,
-                        self._choker, self._storagewrapper,
-                        self.config['max_slice_length'],
-                        self.config['max_rate_period'],
-                        self.config['num_fast'], self)
+                          self._choker, self._storagewrapper,
+                          self.config['max_slice_length'],
+                          self.config['max_rate_period'],
+                          self.config['num_fast'], self)
 
         if self._dht:
             addContact = self._dht.addContact
         else:
             addContact = None
+
         self._connection_manager = \
-            ConnectionManager(make_upload, downloader, self._choker,
+            ConnectionManager(make_upload, self.multidownload, self._choker,
                      numpieces, self._ratelimiter,
                      self._rawserver, self.config, self._myid,
                      self.add_task, self.infohash, self, addContact,
-                     0)
-        downloader.attach_connection_manager(self._connection_manager)
+                     0, self.metainfo.get_tracker_ips(), self.log_root)
+        self.multidownload.attach_connection_manager(self._connection_manager)
 
-        self._statuscollector = TorrentStats(self._choker,
+        self._statuscollector = TorrentStats(self.logger, self._choker,
             self.get_uprate, self.get_downrate, self._upmeasure.get_total,
             self._downmeasure.get_total, self._ratemeasure.get_time_left,
-            self.get_percent_complete, downloader.aggregate_piece_states,
-            self.finflag, downloader, self.get_file_priorities, self._myfiles,
+            self.get_percent_complete, self.multidownload.aggregate_piece_states,
+            self.finflag, self.multidownload, self.get_file_priorities, self._myfiles,
             self._connection_manager.ever_got_incoming, None)
+
+        for url_prefix in self.metainfo.url_list:
+            r = urlparse.urlparse(url_prefix)
+            host = r[1]
+            if ':' in host:
+                host, port = host.split(':')
+                port = int(port)
+            else:
+                port = 80
+            # TODO: async hostname resolution
+            ip = socket.gethostbyname(host)
+            self.connect_http((ip, port), url_prefix)
 
         #self.logger.debug( "start_download: st..per says amount left is %d." %
         #                   self._storagewrapper.amount_left )
@@ -417,6 +465,7 @@ class Torrent(object):
         self.time_started = bttime()
 
         self._connection_manager.reported_port = self.reported_port
+        self._connection_manager.unthrottle_connections()
 
         self._singleport_listener.add_torrent(self.infohash,
                                               self._connection_manager)
@@ -473,13 +522,14 @@ class Torrent(object):
         self.feedback.started(self)
 
         if self._storagewrapper.amount_left == 0 and not self.completed:
-            # by default, self.finished() resets the policy to "auto",
+            # By default, self.finished() resets the policy to "auto",
             # but if we discover on startup that we are already finished,
-            # we don't want to reset it
-            self.finished(policy=self.policy)
+            # we don't want to reset it.
+            # Also, if we discover on startup that we are already finished,
+            # don't set finished_this_session.
+            self.finished(policy=self.policy, finished_this_session=False)
 
-
-    def stop_download(self):
+    def stop_download(self, pause=False):
         assert self.state == "running"
 
         self.state = "initialized"
@@ -501,7 +551,10 @@ class Torrent(object):
         del self.reserved_ports[:]
 
         if self._connection_manager is not None:
-            self._connection_manager.close_connections()
+            if pause:
+                self._connection_manager.throttle_connections()
+            else:
+                self._connection_manager.close_connections()
 
         if self.config['check_hashes']:
             self._save_fastresume()
@@ -519,6 +572,7 @@ class Torrent(object):
 
         if self.state == "running":
             self.stop_download()
+        # above is the last thing to set.
 
         if self._storagewrapper is not None:
             df = self._storagewrapper.done_checking_df
@@ -531,9 +585,7 @@ class Torrent(object):
                 yield df
                 df.getResult()
 
-        if self._myfiles is not None:
-            self._filepool.remove_files(self._myfiles)
-            self._myfiles = None
+        self._unregister_files()
 
         self.context_valid = False
 
@@ -546,9 +598,7 @@ class Torrent(object):
         # don't try to announce again telling we're leaving the torrent
         self._announced = False
         self._error(level, text)
-        # this could complete later. sorry that's just the way it is.
-        self.shutdown()
-        self.feedback.failed(self)
+        self.failed()
 
     def set_file_priority(self, filename, priority):
         if self._storagewrapper is None or self._picker is None:
@@ -570,22 +620,29 @@ class Torrent(object):
     def got_exception(self, type, e, stack, cannot_shutdown=False):
         severity = logging.CRITICAL
         msg = "Torrent got exception: %s" % type
+        try:
+            e_str = unicode(e.args[0])
+        except:
+            e_str = str(e)
         if isinstance(e, BTFailure):
-            self._activity = ( _("download failed: ") + str(e), 0)
+            self._activity = ( _("download failed: ") + e_str, 0)
         elif isinstance(e, IOError):
             if e.errno == errno.ENOSPC:
                 msg = _("IO Error: No space left on disk, "
                         "or cannot create a file that large")
-            self._activity = (_("killed by IO error: ") + str(e), 0)
+            self._activity = (_("killed by IO error: ") + e_str, 0)
         elif isinstance(e, OSError):
-            self._activity = (_("killed by OS error: ") + str(e), 0)
+            self._activity = (_("killed by OS error: ") + e_str, 0)
         else:
-            self._activity = (_("killed by internal exception: ") + str(e), 0)
+            self._activity = (_("killed by internal exception: ") + e_str, 0)
 
         self.logger.log(severity, msg, exc_info=(type, e, stack))
         # steve wanted this too
         traceback.print_exception(type, e, stack, file=sys.stdout)
 
+        self.failed(cannot_shutdown)
+
+    def failed(self, cannot_shutdown=False):
         if cannot_shutdown:
             self.state = "failed"
         else:
@@ -600,22 +657,27 @@ class Torrent(object):
                                         "error: "))
         self.feedback.failed(self)
 
-    def _error(self, level, text, exception=False):
-        self.logger.log(level, text)
+    def _error(self, level, text, exception=False, exc_info=None):
+        self.logger.log(level,
+                        _('Error regarding "%s":\n')%self.metainfo.name + text,
+                        exc_info=exc_info)
         if exception:
             self.feedback.exception(self, text)
         else:
             self.feedback.error(self, level, text)
 
-    def finished(self, policy="auto"):
+    def finished(self, policy="auto", finished_this_session=True):
+        assert self.state == "running"
         # because _finished() calls shutdown(), which invalidates the torrent
         # context, we need to use _rawserver.add_task directly here
-        df = launch_coroutine(_wrap_task(self._rawserver.add_task), self._finished, policy=policy)
+        df = launch_coroutine(_wrap_task(self._rawserver.add_task), self._finished, policy=policy, finished_this_session=finished_this_session)
         df.addErrback(lambda e : self.got_exception(*e))
         return df
 
-    def _finished(self, policy="auto"):
-        assert self.state == "running"
+    def _finished(self, policy="auto", finished_this_session=True):
+        if self.state != "running":
+            return
+
         self.finflag.set()
         # Call self._storage.close() to flush buffers and change files to
         # read-only mode (when they're possibly reopened). Let exceptions
@@ -642,6 +704,9 @@ class Torrent(object):
 
         config = self.config
 
+        if finished_this_session:
+            self.finished_this_session = True
+
         def move(working_path, destination_path):
             # this function is called from another thread, so don't do anything
             # that isn't thread safe in here
@@ -653,7 +718,7 @@ class Torrent(object):
                                   destination_path)
             except Exception, e:
                 if os.path.exists(destination_path):
-                    self.logger.debug(str(e))
+                    self.logger.debug(unicode(e.args[0]))
 
             self.logger.debug("deleting any directory that might be in the way")
             try:
@@ -662,7 +727,7 @@ class Torrent(object):
                                   destination_path)
             except Exception, e:
                 if os.path.exists(destination_path):
-                    self.logger.debug(str(e))
+                    self.logger.debug(unicode(e.args[0]))
 
             self.logger.debug("actually moving file")
             shutil.move(working_path, destination_path)
@@ -670,12 +735,15 @@ class Torrent(object):
 
 
         if self.working_path != self.destination_path:
-            self.logger.debug("torrent finishing: shutting down, moving file, and restarting")
-            df = self.shutdown()
-            yield df
-            df.getResult()
+##            self.logger.debug("torrent finishing: shutting down, moving file, and restarting")
+##            df = self.shutdown()
+##            yield df
+##            df.getResult()
+            self.logger.debug("torrent finishing: pausing, moving file, and restarting")
+            self.stop_download(pause=True)
+            self._unregister_files()
 
-            self.logger.debug("successfully shut down torrent, moving file")
+            self.logger.debug("successfully paused torrent, moving file")
 
             self.state = "finishing"
             df = ThreadedDeferred(_wrap_task(self._rawserver.external_add_task),
@@ -683,20 +751,30 @@ class Torrent(object):
             yield df
             df.getResult()
 
-            self.logger.debug("moved file, reinitializing")
+            self.logger.debug("moved file, restarting")
 
             assert self.state == "finishing"
             self.working_path = self.destination_path
-            self.state = "created"
-            df = self.initialize()
-            yield df
-            df.getResult()
-
-            self.logger.debug("re-initialized")
-
+##            self.state = "created"
+##            df = self.initialize()
+##            yield df
+##            df.getResult()
             self.completed = True
             self.feedback.finished(self)
 
+            self.state = "initializing"
+            self._register_files()
+            df = self._storage.initialize(self.working_path,
+                                          zip(self._myfiles,
+                                              self.metainfo.sizes))
+            yield df
+            df.getResult()
+
+            # so we store new path names
+            self._storagewrapper.fastresume_dirty = True
+            self._statuscollector.files = self._myfiles
+
+            self.state = "initialized"
             self.logger.debug("attempting restart")
             self.start_download()
             self.logger.debug("re-started torrent")
@@ -724,10 +802,9 @@ class Torrent(object):
             return
         if not self.config['data_dir']:
             return
-        if not self._storagewrapper.fastresume_dirty:
-            return
-        amount_done = self.total_bytes - self._ratemeasure.get_size_left()
         filename = self.fastresume_file_path()
+        if os.path.exists(filename) and not self._storagewrapper.fastresume_dirty:
+            return
         resumefile = None
         try:
             resumefile = file(filename, 'wb')
@@ -735,18 +812,22 @@ class Torrent(object):
             resumefile.close()
         except Exception, e:
             self._error(logging.WARNING, _("Could not write fastresume data: ") +
-                        str(e))
+                        unicode(e.args[0]))
             if resumefile is not None:
                 resumefile.close()
 
     def _dump_torrent_config(self):
         d = self.config.getDict()
-        nd = {}
-        for k,v in d.iteritems():
-            # can't bencode floats!
-            if not isinstance(v, float):
-                nd[k] = v
-        s = bencode(nd)
+##        nd = {}
+##        for k,v in d.iteritems():
+##            # can't bencode floats!
+##            if not isinstance(v, float):
+##                if isinstance(v, unicode):
+##                    # FIXME -- what is the right thing to do here?
+##                    v = v.encode('utf8')
+##                nd[k] = v
+##        s = bencode(nd)
+        s = cPickle.dumps(d)
         path = self.config_file_path()
         f = file(path+'.new', 'wb')
         f.write(s)
@@ -759,12 +840,12 @@ class Torrent(object):
         try:
             os.remove(self.config_file_path())
         except Exception, e:
-            self.logger.debug("error removing config file: %s", str(e))
+            self.logger.debug("error removing config file: %s", unicode(e.args[0]))
 
         try:
             os.remove(self.fastresume_file_path())
         except Exception, e:
-            self.logger.debug("error removing fastresume file: %s", str(e))
+            self.logger.debug("error removing fastresume file: %s", unicode(e.args[0]))
 
     def get_downrate(self):
         if self.is_running():

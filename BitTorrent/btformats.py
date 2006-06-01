@@ -20,7 +20,7 @@ allowed_path_re = re.compile(r'^[^/\\.~][^/\\]*$')
 ints = (long, int)
 
 def check_info(info, check_paths=True):
-    if type(info) != dict:
+    if not isinstance(info, dict):
         raise BTFailure, _("bad metainfo - not a dictionary")
     pieces = info.get('pieces')
     if type(pieces) != str or len(pieces) % 20 != 0 or len(pieces) == 0:
@@ -29,10 +29,10 @@ def check_info(info, check_paths=True):
     if type(piecelength) not in ints or piecelength <= 0:
         raise BTFailure, _("bad metainfo - illegal piece length")
     name = info.get('name')
-    if type(name) != str:
+    if not isinstance(name, str):
         raise BTFailure, _("bad metainfo - bad name")
-    if not allowed_path_re.match(name):
-        raise BTFailure, _("name %s disallowed for security reasons") % name
+    #if not allowed_path_re.match(name):
+    #    raise BTFailure, _("name %s disallowed for security reasons") % name
     if info.has_key('files') == info.has_key('length'):
         raise BTFailure, _("single/multiple file mix") 
     if info.has_key('length'): 
@@ -86,6 +86,9 @@ def check_message(message, check_paths=True):
     if message.has_key('nodes'):
         check_nodes(message.get('nodes'))
 
+    if message.has_key('caches'):
+        check_caches(message.get('caches'))
+
 def check_nodes(nodes):
     ## note, these strings need changing
     for node in nodes:
@@ -98,6 +101,24 @@ def check_nodes(nodes):
             raise BTFailure, _("bad metainfo - node host must be a string")
         if type(port) != int:
             raise BTFailure, _("bad metainfo - node port must be an integer")
+
+def check_caches(caches):
+    if type(caches) != list:
+        raise BTFailure, _("bad metainfo - caches entry is not a list")        
+    for entry in caches:
+        if type(entry) != dict:
+            raise BTFailure, _("bad metainfo - cache entry is not a dict")
+        if not entry.has_key("domain"):
+            raise BTFailure, _("bad metainfo - cache entry has no domain key")
+        if type(entry['domain']) != str:
+            raise BTFailure, _("bad metainfo - cache entry domain not a string")            
+        if len(entry['domain']) > 255:
+            raise BTFailure, _("bad metainfo - cache entry domain too long")            
+        if entry.has_key("publisher"):
+            if type(entry['publisher']) != str:
+                raise BTFailure, _("bad metainfo - cache entry publisher not a string")
+            if len(entry['publisher']) > 32:
+                raise BTFailure, _("bad metainfo - cache entry publisher longer than 32 chars")                
         
 def check_peers(message):
     if type(message) != dict:

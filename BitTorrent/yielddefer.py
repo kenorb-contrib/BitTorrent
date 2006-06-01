@@ -39,10 +39,14 @@ from twisted.internet import defer
 debug = False
 
 class GenWithDeferred(object):
-    __slots__ = ['gen', 'deferred', 'stack']
-    def __init__(self, gen, deferred):
+    if debug:
+        __slots__ = ['gen', 'deferred', 'queue_task', 'stack']
+    else:
+        __slots__ = ['gen', 'deferred', 'queue_task']
+    def __init__(self, gen, deferred, queue_task):
         self.gen = gen
         self.deferred = deferred
+        self.queue_task = queue_task
 
         if debug:
             try:
@@ -53,12 +57,9 @@ class GenWithDeferred(object):
             self.stack = traceback.extract_stack(f)
             # cut out GenWithDeferred() and launch_coroutine
             self.stack = self.stack[:-2]
-        else:
-            self.stack = []
 
-def _queue_task_chain(v, queue_task, g):
-    queue_task(_recall, queue_task, g)
-    # twisted deferreds change the result based on what each callback returns!
+def _queue_task_chain(v, g):
+    g.queue_task(_recall, g)
     return v
 
 class FakeTb(object):
@@ -69,7 +70,7 @@ class FakeTb(object):
         self.tb_orig = tb
         self.tb_next = tb.tb_next
         
-def _recall(queue_task, g):
+def _recall(g):
     try:
         t = g.gen.next()
     except StopIteration:
@@ -85,6 +86,8 @@ def _recall(queue_task, g):
             if not sys:
                 return
             stream = sys.stderr
+            # HERE.  This should really be logged or else bittorrent-
+            # curses will never be able to properly output. --Dave
             _print_traceback(stream, g.stack,
                              "generator %s" % g.gen.gi_frame.f_code.co_name, 0,
                              exc_type, value, tb)
@@ -104,21 +107,18 @@ def _recall(queue_task, g):
             del g.deferred
             return
 
-        a = (queue_task, g)
-        # CRUFT: twisted deferred and bt deferreds differ in their parameter
-        # names, so pass blank dicts.
-        t.addCallbacks(_queue_task_chain, _queue_task_chain, a, {}, a, {})
+        t.addCallback(_queue_task_chain, g)
+        t.addErrback(_queue_task_chain, g)
         del t
-        del a
 
 def _launch_generator(queue_task, g, main_df):
-    g2 = GenWithDeferred(g, main_df)
+    g2 = GenWithDeferred(g, main_df, queue_task)
     ## the first one is fired for you
     ##_recall(queue_task, g2)
     # the first one is not fired for you, because if it errors the sys.exc_info
     # causes an unresolvable circular reference that makes the g2.deferred never
     # be deleted.
-    queue_task(_recall, queue_task, g2)
+    queue_task(_recall, g2)
 
 def launch_coroutine(queue_task, f, *args, **kwargs):
     main_df = Deferred()
@@ -127,7 +127,7 @@ def launch_coroutine(queue_task, f, *args, **kwargs):
     except Exception, e:
         if debug:
             traceback.print_exc()
-        main_df.errback(e)
+        main_df.errback(sys.exc_info())
     else:        
         if isinstance(g, types.GeneratorType):
             _launch_generator(queue_task, g, main_df)

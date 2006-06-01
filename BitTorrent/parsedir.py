@@ -11,7 +11,7 @@
 # Written by John Hoffman and Uoti Urpala
 
 import os
-from sha import sha
+from BitTorrent.hash import sha
 
 _ = _ # put _ into the module namespace so the console doesn't override it
 

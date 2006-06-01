@@ -13,6 +13,8 @@
 # Original version written by John Hoffman, heavily modified for different
 # multitorrent architecture by Uoti Urpala (over 40% shorter than original)
 
+raise ImportError("launchmanycore has not been ported to the 5.0 backend. Please look for it in a future release. Thanks for your patience.")
+
 import os
 from cStringIO import StringIO
 from traceback import print_exc

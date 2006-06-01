@@ -21,6 +21,7 @@ import tarfile
 import gettext
 import locale
 import zurllib as urllib
+import shutil
 from traceback import print_exc
 
 if os.name == 'nt':
@@ -193,11 +194,12 @@ def get_sparse_files_support(path):
 
     if os.name == 'nt':
         drive, path = os.path.splitdrive(os.path.abspath(path))
-        if drive[-1] != '\\':
-            drive += '\\'
-        volumename, serialnumber, maxpath, fsflags, fs_name = win32api.GetVolumeInformation(drive)
-        if fsflags & FILE_SUPPORTS_SPARSE_FILES:
-            supported = True
+        if len(drive) > 0: # might be a network path
+            if drive[-1] != '\\':
+                drive += '\\'
+            volumename, serialnumber, maxpath, fsflags, fs_name = win32api.GetVolumeInformation(drive)
+            if fsflags & FILE_SUPPORTS_SPARSE_FILES:
+                supported = True
 
     return supported
 
@@ -254,19 +256,20 @@ def get_max_filesize(path):
 
     if os.name == 'nt':
         drive, path = os.path.splitdrive(os.path.abspath(path))
-        if drive[-1] != '\\':
-            drive += '\\'
-        volumename, serialnumber, maxpath, fsflags, fs_name = win32api.GetVolumeInformation(drive)
-        if fs_name == "FAT32":
-            max_filesize = 2**32 - 1
-        elif (fs_name == "FAT" or
-              fs_name == "FAT16"):
-            # information on this varies, so I chose the description from
-            # MS: http://support.microsoft.com/kb/q118335/
-            # which happens to also be the most conservative.
-            max_clusters = 2**16 - 11
-            max_cluster_size = 2**15
-            max_filesize = max_clusters * max_cluster_size
+        if len(drive) > 0: # might be a network path
+            if drive[-1] != '\\':
+                drive += '\\'
+            volumename, serialnumber, maxpath, fsflags, fs_name = win32api.GetVolumeInformation(drive)
+            if fs_name == "FAT32":
+                max_filesize = 2**32 - 1
+            elif (fs_name == "FAT" or
+                  fs_name == "FAT16"):
+                # information on this varies, so I chose the description from
+                # MS: http://support.microsoft.com/kb/q118335/
+                # which happens to also be the most conservative.
+                max_clusters = 2**16 - 11
+                max_cluster_size = 2**15
+                max_filesize = max_clusters * max_cluster_size
     else:
         path = os.path.realpath(path)
         # not implemented yet
@@ -274,8 +277,20 @@ def get_max_filesize(path):
 
     return fs_name, max_filesize
 
+_config_dir = None
+def set_config_dir(dir):
+    """Set the root directory for configuration information."""
+    # Normally we won't set it this way.  This is called if the
+    # --use_factory_defaults command-line option is specfied.  By changing
+    # the config directory early in the initialization we can guarantee
+    # that the system acts like a fresh install.
+    _config_dir = dir
+
 # a cross-platform way to get user's config directory
 def get_config_dir():
+    if _config_dir is not None:
+        return _config_dir
+
     shellvars = ['${APPDATA}', '${HOME}', '${USERPROFILE}']
     dir_root = get_dir_root(shellvars)
 
@@ -338,6 +353,53 @@ def get_temp_dir():
             os.access(try_dir_root, os.R_OK|os.W_OK)):
             dir_root = try_dir_root
     return dir_root
+
+MAX_DIR = 5
+_tmp_subdir = None
+def get_temp_subdir():
+    """Creates a unique subdirectory of the platform temp directory.
+       This revolves between MAX_DIR directory names deleting the oldest
+       whenever MAX_DIR exist.  Upon return the number of temporary
+       subdirectories should never exceed MAX_DIR-1.  If one has already
+       been created for this execution, this returns that subdirectory.
+
+       @return the absolute path of the created temporary directory.
+       """
+    global _tmp_subdir
+    if _tmp_subdir is not None:
+        return _tmp_subdir
+    tmp = get_temp_dir()
+    target = None   # holds the name of the directory that will be made.
+    for i in xrange(MAX_DIR):
+        subdir = ("BitTorrentTemp%d" % i)
+        path = os.path.join(tmp, subdir)
+        if not os.path.exists(path):
+            target = path
+            break
+
+    # subdir should not in normal behavior be None.  It can occur if something
+    # prevented a directory from being removed on a previous call or if
+    # MAX_DIR is changed.
+    if target is None:
+       subdir = "BitTorrentTemp0"
+       path = os.path.join(tmp, subdir)
+       shutil.rmtree( path, ignore_errors = True )
+       target = path
+       i = 0
+
+    # create the temp dir.
+    os.mkdir(target)
+
+    # delete the oldest directory.
+    oldest_i = ( i + 1 ) % MAX_DIR
+    oldest_subdir = ("BitTorrentTemp%d" % oldest_i)
+    oldest_path = os.path.join(tmp, oldest_subdir)
+    if os.path.exists( oldest_path ):
+        shutil.rmtree( oldest_path, ignore_errors = True )
+
+    _tmp_subdir = target
+    return target
+
 
 def get_dir_root(shellvars, default_to_home=True):
     def check_sysvars(x):
@@ -545,11 +607,7 @@ def enforce_association():
 
 
 def path_wrap(path):
-    return path
-
-if os.name == 'nt':
-    def path_wrap(path):
-        return path.decode('mbcs').encode('utf-8')
+    return decode_from_filesystem(path)
 
 def btspawn(cmd, *args):
     ext = ''
@@ -760,32 +818,67 @@ def install_translation():
     _gettext_install('bittorrent', locale_root, languages=languages)
 
 
-def get_filesystem_encoding(encoding, errorfunc=None):
+def encode_for_filesystem(path):
+    assert isinstance(path, unicode)
+
+    bad = False
+    encoding = get_filesystem_encoding()
+    if encoding == None:
+        encoded_path = path
+    else:
+        try:
+            encoded_path = path.encode(encoding)
+        except:
+            bad = True
+            path.replace(u"%", urllib.quote(u"%"))
+            encoded_path = path.encode(encoding, 'urlquote')
+
+    return (encoded_path, bad)
+
+
+def decode_from_filesystem(path):
+    encoding = get_filesystem_encoding()
+    if encoding == None:
+        assert isinstance(path, unicode)
+        decoded_path = path
+    else:
+        assert isinstance(path, str)
+        decoded_path = path.decode(encoding)
+
+    return decoded_path
+
+
+def get_filesystem_encoding(errorfunc=None):
     def dummy_log(e):
         print e
         pass
     if not errorfunc:
         errorfunc = dummy_log
 
-    default_encoding = 'ascii'
-    encoding = None
-    if not encoding:
+
+    default_encoding = 'utf8'
+
+    if os.path.supports_unicode_filenames:
+        encoding = None
+    else:
         try:
-            sys.getfilesystemencoding
             encoding = sys.getfilesystemencoding()
         except AttributeError:
             errorfunc("This version of Python cannot detect filesystem encoding.")
+
 
         if encoding is None:
             encoding = default_encoding
             errorfunc("Python failed to detect filesystem encoding. "
                       "Assuming '%s' instead." % default_encoding)
-    try:
-        'a1'.decode(encoding)
-    except:
-        errorfunc("Filesystem encoding '%s' is not supported. Using '%s' instead." %
-                  (encoding, default_encoding))
-        encoding = default_encoding
+        else:
+            try:
+                'a1'.decode(encoding)
+            except:
+                errorfunc("Filesystem encoding '%s' is not supported. Using '%s' instead." %
+                          (encoding, default_encoding))
+                encoding = default_encoding
+
     return encoding
 
 def write_pid_file(fname, errorfunc = None):

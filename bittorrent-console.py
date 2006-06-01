@@ -20,14 +20,14 @@ install_translation()
 import pdb
 import sys
 import os
-import threading
-from time import strftime, sleep
 from cStringIO import StringIO
 import logging
 from logging import ERROR
-
+from time import strftime, sleep
 import traceback
-import BitTorrent
+
+import BitTorrent.stackthreading as threading
+from BitTorrent.defer import DeferredEvent
 from BitTorrent import inject_main_logfile
 from BitTorrent.MultiTorrent import Feedback, MultiTorrent
 from BitTorrent.defaultargs import get_defaults
@@ -41,11 +41,7 @@ from BitTorrent import console, stderr_console
 from BitTorrent import GetTorrent
 from BitTorrent.RawServer_twisted import RawServer, task
 from BitTorrent.ConvertedMetainfo import ConvertedMetainfo
-from BitTorrent import filesystem_encoding
 from BitTorrent.platform import get_temp_dir
-#debug = False
-debug = True
-
 inject_main_logfile()
 
 def wrap_log(context_string, logger):
@@ -343,8 +339,8 @@ class TorrentApp(object):
 
         
     def run(self):
-        core_doneflag = threading.Event()
-        rawserver_doneflag = threading.Event()
+        core_doneflag = DeferredEvent()
+        rawserver_doneflag = DeferredEvent()
         self.d = HeadlessDisplayer(core_doneflag)
         rawserver = RawServer(self.config)
         rawserver.install_sigint_handler(core_doneflag)
@@ -353,26 +349,22 @@ class TorrentApp(object):
           try:
             # raises BTFailure if bad
             metainfo = self.metainfo
-            torrent_name = metainfo.name_fs.decode(filesystem_encoding)
+            torrent_name = metainfo.name_fs
             if config['save_as']:
                 if config['save_in']:
                     raise BTFailure(_("You cannot specify both --save_as and "
                                       "--save_in"))
-                saveas = config['save_as'].decode('utf-8')
-                saveas = saveas.encode(filesystem_encoding)
+                saveas = config['save_as']
                 savein = os.path.dirname(os.path.abspath(saveas))
             elif config['save_in']:
-                savein = config['save_in'].decode('utf-8')
-                savein = savein.encode(filesystem_encoding)
+                savein = config['save_in']
                 saveas = os.path.join(savein,torrent_name)
             else:
                 saveas = torrent_name
             if config['save_incomplete_in']:
-                save_incomplete_in=config['save_incomplete_in'].decode('utf-8')
-                save_incomplete_in = \
-                    save_incomplete_in.encode(filesystem_encoding)
+                save_incomplete_in = config['save_incomplete_in']
                 save_incomplete_as = os.path.join(
-                    config['save_incomplete_in'].decode('utf-8'),torrent_name)
+                    config['save_incomplete_in'],torrent_name)
             else:
                 save_incomplete_as = os.path.join(savein,torrent_name)
         
@@ -385,26 +377,25 @@ class TorrentApp(object):
             self.start_torrent(self.metainfo, save_incomplete_as, saveas)
         
             self.get_status()
-          except:
+          except Exception, e:
+            self.logger.error( "", exc_info = e )
             core_doneflag.set()
-            raise
 
         finally:
             l = None
-            def shutdown_check():
-                if core_doneflag.isSet():  # ctrl-c will set this flag.
-                   self.d.display({'activity':_("shutting down"), 
-                                   'fractionDone':0})
-                   if self.multitorrent:
-                       df = self.multitorrent.shutdown()
-                       set_flag = lambda *a : rawserver_doneflag.set()
-                       df.addCallbacks(set_flag, set_flag)
-                   else:
-                       rawserver_doneflag.set()
-                   l.stop()
+            def shutdown():
+               self.d.display({'activity':_("shutting down"), 
+                               'fractionDone':0})
+               if self.multitorrent:
+                   df = self.multitorrent.shutdown()
+                   set_flag = lambda *a : rawserver_doneflag.set()
+                   df.addCallbacks(set_flag, set_flag)
+               else:
+                   rawserver_doneflag.set()
+
+            rawserver.add_task(0, core_doneflag.addCallback,
+                lambda r: rawserver.external_add_task(0, shutdown))
                     
-            l = task.LoopingCall(shutdown_check)
-            rawserver.add_task(0, l.start, 1)
             rawserver.listen_forever(rawserver_doneflag)
 
     def get_status(self):
@@ -432,13 +423,6 @@ if __name__ == '__main__':
     try:
         config, args = configfile.parse_configuration_and_args(defaults,
                                        uiname, sys.argv[1:], 0, 1)
-
-        if debug:
-            # SUPER HACK
-            #args = ["c:/Documents and Settings/David Harrison/Desktop/one-archives-vol-1-enhanced.torrent"]
-            args = ["c:/Documents and Settings/David Harrison/Desktop/flyabout.m4v.torrent"]
-            config['upnp'] = False
-
         torrentfile = None
         if len(args):
             torrentfile = args[0]
@@ -463,8 +447,13 @@ if __name__ == '__main__':
     except Exception, e:
         logging.getLogger().exception(e)
 
-    sleep(3)
-    if threading.activeCount() > 1:
-       print "active threads:"
-       for th in threading.enumerate():
-          print th
+    # if after a reasonable amount of time there are still
+    # non-daemon threads hanging around then print them.
+    nondaemons = [d for d in threading.enumerate() if not d.isDaemon()]
+    if len(nondaemons) > 1:
+       sleep(4)
+       nondaemons = [d for d in threading.enumerate() if not d.isDaemon()]
+       if len(nondaemons) > 1:
+           print "non-daemon threads not shutting down:"
+           for th in nondaemons:
+               print " ", th

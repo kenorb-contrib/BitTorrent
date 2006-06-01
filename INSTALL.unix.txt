@@ -1,3 +1,8 @@
+The easiest way to install BitTorrent is to run the install_nix.sh
+script included in the source code.  The rest of these directions are
+included for historical reasons.
+----------------------------------------
+
 Before installing BitTorrent 5.x, remove any older versions of the
 BitTorrent client that may be installed.  This command will tell you
 if you have an older version of BitTorrent installed:
@@ -24,6 +29,9 @@ http://gtk.org/
 Install Twisted, version 2 or later.
 http://twistedmatrix.com/trac/
 
+Install PyCrypto, version 2 or later.
+http://www.amk.ca/python/code/crypto
+
 In all cases, it is STRONGLY recommended that you install these
 packages using the standard package management system on your
 particular distribution.
@@ -47,18 +55,13 @@ First, remove any older versions of BitTorrent that may be installed:
 
 $ sudo apt-get remove bittorrent bittorrent-gui
 
-Ensure that you have the 'alien' and 'fakeroot' programs installed.
-Then generate a .deb format package using these three commands:
+Build a proper deb using the following command:
 
-$ python setup.py bdist_dumb
-$ cd dist/
-$ fakeroot alien BitTorrent-5.x.y.linux-i686.tar.gz
-
-you should now have a .deb package in: bittorrent-5.x.y.linux_i686-2_all.deb
+$ sh build_nix_pkg.sh deb
 
 then install the .deb:
 
-$ sudo dpkg -i bittorrent-5.x.y.linux_i686-2_all.deb
+$ sudo dpkg -i dist/bittorrent_5.x.y_python2.z.deb
 
 
 How to build an .rpm format package and install it:

@@ -101,15 +101,13 @@ def get(arg):
        (All have the base class GetTorrent.GetTorrentException)
        """
     data = _get(arg)
-    
     metainfo = None
     try:
         b = bdecode(data)
         metainfo = ConvertedMetainfo(b)
     except Exception, e:
         raise MetainfoException(
-            (_('"%s" is not a valid torrent file.') % arg)
-            #+ ("\n(%s)" % str(e))
+            (_('"%s" is not a valid torrent file (%s).') % (arg, unicode(e)))
             )
 
     return metainfo
