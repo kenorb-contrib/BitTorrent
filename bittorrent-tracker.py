@@ -13,9 +13,8 @@
 # Written by Bram Cohen
 
 if __name__ == '__main__':
-    from BitTorrent.platform import install_translation
-    install_translation()
-
+    from BitTorrent.translation import _
+    
 import os
 from sys import argv
 from BitTorrent.track import track

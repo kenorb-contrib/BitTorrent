@@ -92,7 +92,8 @@ class Torrent(object):
     def __init__(self, metainfo, working_path, destination_path, config,
                  data_dir, rawserver,
                  singleport_listener, ratelimiter, total_downmeasure,
-                 filepool, dht, feedback, log_root):
+                 filepool, dht, feedback, log_root,
+                 hidden=False, is_auto_update=False):
         self.state = "created"
         self.data_dir = data_dir
         self.feedback = feedback
@@ -117,6 +118,7 @@ class Torrent(object):
         self.reserved_ports = []
         self.reported_port = None
         self._myfiles = None
+        self._last_myfiles = None
         self.total_bytes = None
         self._doneflag = threading.Event()
         self.finflag = threading.Event()
@@ -142,6 +144,9 @@ class Torrent(object):
         self.destination_path = destination_path # sets in config.
         self.priority = "normal"
         self.policy = "auto"
+
+        self.hidden = hidden #sets in config
+        self.is_auto_update = is_auto_update #sets in config
 
         self._completed = False
         self.config['finishtime'] = 0
@@ -184,6 +189,18 @@ class Torrent(object):
     def _get_priority(self):
         return self.config['priority']
     priority = property(_get_priority, _set_priority)
+
+    def _set_hidden(self, value):
+        self.config['hidden'] = value
+    def _get_hidden(self):
+        return self.config['hidden']
+    hidden = property(_get_hidden, _set_hidden)
+
+    def _set_is_auto_update(self, value):
+        self.config['is_auto_update'] = value
+    def _get_is_auto_update(self):
+        return self.config['is_auto_update']
+    is_auto_update = property(_get_is_auto_update, _set_is_auto_update)
 
     def _set_completed(self, val):
         self._completed = val
@@ -290,6 +307,7 @@ class Torrent(object):
     def _unregister_files(self):
         if self._myfiles is not None:
             self._filepool.remove_files(self._myfiles)
+            self._last_myfiles = self._myfiles
             self._myfiles = None
 
     def initialize(self):
@@ -426,12 +444,15 @@ class Torrent(object):
         else:
             addContact = None
 
+        df = self.metainfo.get_tracker_ips(_wrap_task(self.external_add_task))
+        yield df
+        tracker_ips = df.getResult()
         self._connection_manager = \
             ConnectionManager(make_upload, self.multidownload, self._choker,
                      numpieces, self._ratelimiter,
                      self._rawserver, self.config, self._myid,
                      self.add_task, self.infohash, self, addContact,
-                     0, self.metainfo.get_tracker_ips(), self.log_root)
+                     0, tracker_ips, self.log_root)
         self.multidownload.attach_connection_manager(self._connection_manager)
 
         self._statuscollector = TorrentStats(self.logger, self._choker,
@@ -451,7 +472,7 @@ class Torrent(object):
                 port = 80
             # TODO: async hostname resolution
             ip = socket.gethostbyname(host)
-            self.connect_http((ip, port), url_prefix)
+            self._connection_manager.start_http_connection((ip, port), url_prefix)
 
         #self.logger.debug( "start_download: st..per says amount left is %d." %
         #                   self._storagewrapper.amount_left )
@@ -480,19 +501,20 @@ class Torrent(object):
                     for ip, port in self.metainfo.nodes:
                         self._dht.addContact(ip, port)
                 self._rerequest = DHTRerequester(self.config,
-                    self.add_task,
-                    self._connection_manager.how_many_connections,
-                    self._connection_manager.start_connection,
-                    self.external_add_task,
-                    self._storagewrapper.get_amount_left,
-                    self._upmeasure.get_total,
-                    self._downmeasure.get_total, self.reported_port, self._myid,
-                    self.infohash, self._error, self.finflag,
-                    self._upmeasure.get_rate,
-                    self._downmeasure.get_rate,
-                    self._connection_manager.ever_got_incoming,
-                    self._no_announce_shutdown, self._announce_done,
-                    self._dht)
+                                                 self.add_task,
+                                                 self._connection_manager.how_many_connections,
+                                                 self._connection_manager.start_connection,
+                                                 self.external_add_task,
+                                                 self._rawserver,
+                                                 self._storagewrapper.get_amount_left,
+                                                 self._upmeasure.get_total,
+                                                 self._downmeasure.get_total, self.reported_port, self._myid,
+                                                 self.infohash, self._error, self.finflag,
+                                                 self._upmeasure.get_rate,
+                                                 self._downmeasure.get_rate,
+                                                 self._connection_manager.ever_got_incoming,
+                                                 self._no_announce_shutdown, self._announce_done,
+                                                 self._dht)
         else:
             self._rerequest = Rerequester(self.metainfo.announce,
                 self.metainfo.announce_list, self.config,
@@ -658,9 +680,10 @@ class Torrent(object):
         self.feedback.failed(self)
 
     def _error(self, level, text, exception=False, exc_info=None):
-        self.logger.log(level,
-                        _('Error regarding "%s":\n')%self.metainfo.name + text,
-                        exc_info=exc_info)
+        if level > logging.WARNING:
+            self.logger.log(level,
+                            _('Error regarding "%s":\n')%self.metainfo.name + text,
+                            exc_info=exc_info)
         if exception:
             self.feedback.exception(self, text)
         else:
@@ -834,7 +857,7 @@ class Torrent(object):
         f.close()
         shutil.move(path+'.new', path)
 
-    def remove_state_files(self):
+    def remove_state_files(self, del_files=False):
         assert self.state == "created"
 
         try:
@@ -846,6 +869,26 @@ class Torrent(object):
             os.remove(self.fastresume_file_path())
         except Exception, e:
             self.logger.debug("error removing fastresume file: %s", unicode(e.args[0]))
+
+        if del_files:
+            try:
+                for file in self._last_myfiles:
+                    try:
+                        os.remove(file)
+                    except OSError:
+                        pass
+                    d, f = os.path.split(file)
+                    try:
+                        os.rmdir(d)
+                    except OSError:
+                        pass
+
+                try:
+                    os.rmdir(self.working_path)
+                except OSError:
+                    pass
+            except Exception, e:
+                self.logger.debug("error removing incomplete files: %s", unicode(e.args[0]))
 
     def get_downrate(self):
         if self.is_running():

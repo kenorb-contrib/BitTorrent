@@ -34,17 +34,18 @@ import logging.handlers
 from BitTorrent import app_name, version, branch, URL, SEARCH_URL, FAQ_URL, bt_log_fmt
 from BitTorrent import ClientIdentifier
 from BitTorrent import zurllib
+from BitTorrent import LaunchPath
 
 from BitTorrent.obsoletepythonsupport import set
+from BitTorrent.yielddefer import launch_coroutine
 from BitTorrent.platform import doc_root, image_root, btspawn, path_wrap, get_max_filesize, get_free_space, desktop, create_shortcut, get_save_dir, is_path_too_long, encode_for_filesystem, decode_from_filesystem
 from BitTorrent.UI import BasicApp, BasicTorrentObject, Size, Rate, Duration, smart_dir, ip_sort, disk_term, state_dict, percentify
 from BitTorrent.PeerID import make_id
 
 from BitTorrent.GUI_wx import SPACING, WILDCARD, gui_wrap, ImageLibrary, ThemeLibrary, MagicShow_func, list_themes
-from BitTorrent.GUI_wx import BTDialog, BTFrame, BTFrameWithSizer, BTApp, BTPanel, BTMenu, HSizer, VSizer, RatioValidator, MinutesValidator, PortValidator, IPValidator, CheckButton, ChooseFileSizer, ChooseDirectorySizer, MagicShow, text_wrappable, LabelValueFlexGridSizer, ElectroStaticText, ElectroStaticBitmap
-from wx.lib.mixins.listctrl import getListCtrlSelection
+from BitTorrent.GUI_wx import BTDialog, BTFrame, BTFrameWithSizer, BTApp, BTPanel, BTMenu, HSizer, VSizer, CheckButton, ChooseFileSizer, ChooseDirectorySizer, MagicShow, LabelValueFlexGridSizer, ElectroStaticText, ElectroStaticBitmap
 
-from BitTorrent.GUI_wx.LanguageSettings import LanguageSettings
+from BitTorrent.GUI_wx.SettingsWindow import SettingsWindow
 
 from BitTorrent.GUI_wx.ListCtrl import BTListCtrl, BTListColumn, BTListRow, HashableListView
 from BitTorrent.GUI_wx.CustomWidgets import NullGauge, FancyDownloadGauge, SimpleDownloadGauge, ModerateDownloadGauge
@@ -53,14 +54,7 @@ if os.name == 'nt':
     from BitTorrent.GUI_wx.ToolTip import SetBalloonTip
 
 from BitTorrent.GUI_wx.Bling import BlingWindow, BlingPanel, BandwidthGraphPanel, HistoryCollector
-
 from BitTorrent.GUI_wx.StatusLight import StatusLight, StatusLabel
-
-
-from BitTorrent.yielddefer import launch_coroutine
-
-from BitTorrent import LaunchPath
-from BitTorrent.sparse_set import SparseSet
 
 try:
     from BitTorrent.ipfree import lookup
@@ -142,140 +136,6 @@ state_images = {("created", "stop", False): "created",
                 ("failed", "start", True): "error",
                 ("failed", "auto", False): "error",
                 ("failed", "auto", True): "error",}
-
-
-class RateSlider(wx.Slider):
-    base = 10
-    multiplier = 4
-    max_exponent = 4.49
-    key = ''
-    slider_scale = 1000 # slider goes from 0 to slider_scale * max_exponent
-    backend_conversion = 1024 # slider deals in KB, backend in B
-
-    speed_classes = {}
-
-    def __init__(self, parent, label):
-        settings_window = parent.settings_window
-        value = 1
-        if self.key:
-            value = settings_window.config[self.key] / self.backend_conversion
-        wx.Slider.__init__(self, parent, wx.ID_ANY,
-                           value=self.rate_to_slider(value), minValue=0,
-                           maxValue=self.max_exponent * self.slider_scale)
-        self.label = label
-        self.value_to_label()
-        self.Bind(wx.EVT_SLIDER, self.on_slider)
-
-    def rate_to_slider(self, value):
-        value / self.backend_conversion
-        r = math.log(value/self.multiplier, self.base)
-        return r * self.slider_scale
-
-    def slider_to_rate(self, value):
-        r = self._slider_to_rate(value)
-        return r * self.backend_conversion
-
-    def _slider_to_rate(self, value):
-        value /= self.slider_scale
-        r = int(round(self.base**value * self.multiplier))
-        return r
-
-    def value_to_label(self):
-        value = self._slider_to_rate(self.GetValue())
-        conn_type = ''
-        for key, conn in self.speed_classes.items():
-            min_v, max_v = key
-            if min_v <= value <= max_v:
-                conn_type = ' (%s)'%conn
-                break
-        label = unicode(Rate(value*self.backend_conversion)) + conn_type
-        self.label.SetLabel(label)
-
-    def on_slider(self, event):
-        assert event.GetInt() == self.GetValue()
-        self.set_max_rate()
-
-    def set_max_rate(self):
-        value = self.slider_to_rate(self.GetValue())
-        if self.key:
-            self.GetParent().settings_window.setfunc(self.key, value)
-        self.value_to_label()
-
-
-
-class UploadRateSlider(RateSlider):
-    base = 10
-    multiplier = 4
-    max_exponent = 4.49
-    key = 'max_upload_rate'
-
-    speed_classes = {
-        (    4,    5):_("dialup"            ),
-        (    6,   14):_("DSL/cable 128Kb up"),
-        (   15,   29):_("DSL/cable 256Kb up"),
-        (   30,   91):_("DSL 768Kb up"      ),
-        (   92,  137):_("T1"                ),
-        (  138,  182):_("T1/E1"             ),
-        (  183,  249):_("E1"                ),
-        (  250, 5446):_("T3"                ),
-        ( 5447,18871):_("OC3"               ),
-        (18872,125e6):_("fast"              ),
-        }
-
-
-class DownloadRateSlider(RateSlider):
-    base = 10
-    multiplier = 4
-    max_exponent = 4.49
-    key = 'max_download_rate'
-
-    speed_classes = {
-        (    4,    5):_("dialup"              ),
-        (    6,   46):_("DSL/cable 384Kb down"),
-        (   47,   93):_("DSL/cable 768Kb down"),
-        (   93,  182):_("DSL/T1"              ),
-        (  182,  249):_("E1"                  ),
-        (  250,  729):_("DSL 6Mb down"        ),
-        (  730, 5442):_("T3"                  ),
-        ( 5443,18858):_("OC3"                 ),
-        (18859,125e6):_("fast"                ),
-        }
-
-
-
-class RateSliderBox(wx.StaticBox):
-    label = ''
-    slider_class = RateSlider
-
-    def __init__(self, parent):
-        wx.StaticBox.__init__(self, parent, label=self.label)
-        self.sizer = wx.StaticBoxSizer(self, wx.VERTICAL)
-        self.settings_window = parent.settings_window
-
-        self.label = ElectroStaticText(parent, wx.ID_ANY, 'label')
-
-        self.slider = self.slider_class(parent, self.label)
-
-        self.sizer.Add(self.label, proportion=1, flag=wx.GROW|wx.TOP|wx.LEFT|wx.RIGHT, border=SPACING)
-        self.sizer.Add(self.slider, proportion=1, flag=wx.GROW|wx.BOTTOM|wx.LEFT|wx.RIGHT, border=SPACING)
-
-    def enable(self, enable):
-        self.slider.Enable(enable)
-
-    def set_max_rate(self):
-        self.slider.set_max_rate()
-
-
-
-class UploadRateSliderBox(RateSliderBox):
-    label = _("Maximum upload rate")
-    slider_class = UploadRateSlider
-
-
-
-class DownloadRateSliderBox(RateSliderBox):
-    label = _("Average maximum download rate")
-    slider_class = DownloadRateSlider
 
 
 class DownloadManagerTaskBarIcon(wx.TaskBarIcon):
@@ -425,525 +285,6 @@ class SearchField(wx.TextCtrl):
         self.reset_text()
         if self.timeout_id is not None:
             self.timeout_id = None
-
-
-
-class SettingsPanel(wx.Panel):
-    """Base class for settings panels"""
-    label = ''
-
-    def __init__(self, parent, *a, **k):
-        debug = None
-        if 'debug' in k:
-            debug = k.pop('debug')
-        style = k.get('style', 0)
-        k['style'] = style | wx.CLIP_CHILDREN | wx.TAB_TRAVERSAL
-
-        wx.Panel.__init__(self, parent, *a, **k)
-        parent.AddPage(self, self.label)
-        self.settings_window = parent.GetParent()
-
-        self.debug = self.settings_window.config['debug']
-        if debug is not None:
-            self.debug = debug
-
-        self.sizer = VSizer()
-        self.SetSizerAndFit(self.sizer)
-
-
-
-class GeneralSettingsPanel(SettingsPanel):
-    label = _("General")
-
-    def __init__(self, parent, *a, **k):
-        SettingsPanel.__init__(self, parent, *a, **k)
-
-        # widgets
-        self.confirm_checkbutton = CheckButton(
-            self,
-            _("Confirm before quitting %s")%app_name,
-            self.settings_window,
-            'confirm_quit',
-            self.settings_window.config['confirm_quit'])
-
-        # sizers
-        self.sizer.AddFirst(self.confirm_checkbutton)
-
-        if os.name == 'nt':
-            # widgets
-            self.enforce_checkbutton = CheckButton(
-                self,
-                _("Enforce .torrent associations on startup"),
-                self.settings_window,
-                'enforce_association',
-                self.settings_window.config['enforce_association'])
-
-            self.startup_checkbutton = CheckButton(
-                self,
-                _("Launch BitTorrent when Windows starts"),
-                self.settings_window,
-                'launch_on_startup',
-                self.settings_window.config['launch_on_startup'])
-
-            self.start_minimized_checkbutton = CheckButton(
-                self,
-                _("Start minimized"),
-                self.settings_window,
-                'start_minimized',
-                self.settings_window.config['start_minimized'])
-
-            self.minimize_checkbutton = CheckButton(
-                self,
-                _("Minimize to the system tray"),
-                self.settings_window,
-                'minimize_to_tray',
-                self.settings_window.config['minimize_to_tray'])
-
-            self.quit_checkbutton = CheckButton(
-                self,
-                _("Close to the system tray"),
-                self.settings_window,
-                'close_to_tray',
-                self.settings_window.config['close_to_tray'])
-
-            # sizers
-            self.sizer.Add(wx.StaticLine(self, style=wx.LI_HORIZONTAL), flag=wx.GROW)
-            self.sizer.Add(self.enforce_checkbutton)
-            self.sizer.Add(wx.StaticLine(self, style=wx.LI_HORIZONTAL), flag=wx.GROW)
-            self.sizer.Add(self.startup_checkbutton)
-            self.sizer.Add(self.start_minimized_checkbutton)
-            self.sizer.Add(wx.StaticLine(self, style=wx.LI_HORIZONTAL), flag=wx.GROW)
-            self.sizer.Add(self.minimize_checkbutton)
-            self.sizer.Add(self.quit_checkbutton)
-
-
-class SavingSettingsPanel(SettingsPanel):
-    label = _("Saving")
-
-    def __init__(self, parent, *a, **k):
-        SettingsPanel.__init__(self, parent, *a, **k)
-        # widgets
-        self.ask_checkbutton = CheckButton(self,
-            _("Ask where to save each new download"), self.settings_window,
-            'ask_for_save', self.settings_window.config['ask_for_save'])
-
-        self.save_static_box = wx.StaticBox(self, label=_("Move completed downloads to:"))
-
-        self.save_box = ChooseDirectorySizer(self,
-                                             self.settings_window.config['save_in'],
-                                             setfunc = lambda v: self.settings_window.setfunc('save_in', v),
-                                             editable = False,
-                                             button_label = "&Browse")
-
-
-        self.incoming_static_box = wx.StaticBox(self, label=_("Store unfinished downloads in:"))
-
-        self.incoming_box = ChooseDirectorySizer(self,
-                                                 self.settings_window.config['save_incomplete_in'],
-                                                 setfunc = lambda v: self.settings_window.setfunc('save_incomplete_in', v),
-                                                 editable = False,
-                                                 button_label = "B&rowse")
-
-        # sizers
-        self.save_static_box_sizer = wx.StaticBoxSizer(self.save_static_box, wx.VERTICAL)
-        self.save_static_box_sizer.Add(self.save_box,
-                                    flag=wx.ALL|wx.GROW,
-                                    border=SPACING)
-
-        self.incoming_static_box_sizer = wx.StaticBoxSizer(self.incoming_static_box, wx.VERTICAL)
-        self.incoming_static_box_sizer.Add(self.incoming_box,
-                                           flag=wx.ALL|wx.GROW,
-                                           border=SPACING)
-
-        self.sizer.AddFirst(self.ask_checkbutton)
-        self.sizer.Add(self.save_static_box_sizer, flag=wx.GROW)
-        self.sizer.Add(self.incoming_static_box_sizer, flag=wx.GROW)
-
-
-
-class NetworkSettingsPanel(SettingsPanel):
-    label = _("Network")
-
-    def __init__(self, parent, *a, **k):
-        SettingsPanel.__init__(self, parent, *a, **k)
-
-        if os.name == 'nt':
-            self.autodetect = CheckButton(self,
-                                          _("Autodetect available bandwidth"),
-                                          self.settings_window,
-                                          'bandwidth_management',
-                                          self.settings_window.config['bandwidth_management'],
-                                          self.bandwidth_management_callback
-                                          )
-
-            self.sizer.AddFirst(self.autodetect)
-            self.up_rate_slider = UploadRateSliderBox(self)
-            self.sizer.Add(self.up_rate_slider.sizer, flag=wx.GROW)
-        else:
-            self.up_rate_slider = UploadRateSliderBox(self)
-            self.sizer.AddFirst(self.up_rate_slider.sizer, flag=wx.GROW)
-
-        self.down_rate_slider = DownloadRateSliderBox(self)
-        self.sizer.Add(self.down_rate_slider.sizer, flag=wx.GROW)
-
-        if os.name == 'nt':
-            self.bandwidth_management_callback()
-
-        # Network widgets
-        self.port_box = wx.StaticBox(self, label=_("Look for available port:"))
-        port_text = ElectroStaticText(self, wx.ID_ANY, _("starting at port:") + ' ')
-        port_range = ElectroStaticText(self, wx.ID_ANY, " (1024-65535)")
-        self.port_field = PortValidator(self, 'minport',
-                                        self.settings_window.config,
-                                        self.settings_window.setfunc)
-        self.port_field.add_end('maxport')
-        self.upnp = CheckButton(self, _("Enable automatic port mapping")+" (&UPnP)",
-                                self.settings_window,
-                                'upnp',
-                                self.settings_window.config['upnp'],
-                                None)
-
-        # Network sizers
-        self.port_box_line1 = wx.BoxSizer(wx.HORIZONTAL)
-        self.port_box_line1.Add(port_text , flag=wx.ALIGN_CENTER_VERTICAL, border=SPACING)
-        self.port_box_line1.Add(self.port_field)
-        self.port_box_line1.Add(port_range, flag=wx.ALIGN_CENTER_VERTICAL, border=SPACING)
-
-        self.port_box_sizer = wx.StaticBoxSizer(self.port_box, wx.VERTICAL)
-        self.port_box_sizer.Add(self.port_box_line1, flag=wx.TOP|wx.LEFT|wx.RIGHT, border=SPACING)
-        self.port_box_sizer.Add(self.upnp, flag=wx.ALL, border=SPACING)
-
-        self.sizer.Add(self.port_box_sizer, flag=wx.GROW)
-
-        # debug only code
-        if self.debug:
-            # widgets
-            self.ip_box = wx.StaticBox(self, label=_("IP to report to the tracker:"))
-            self.ip_field = IPValidator(self, 'ip',
-                                        self.settings_window.config,
-                                        self.settings_window.setfunc)
-            ip_label = ElectroStaticText(self, wx.ID_ANY,
-                                     _("(Has no effect unless you are on the\nsame local network as the tracker)"))
-
-            # sizers
-            self.ip_box_sizer = wx.StaticBoxSizer(self.ip_box, wx.VERTICAL)
-
-            self.ip_box_sizer.Add(self.ip_field, flag=wx.TOP|wx.LEFT|wx.RIGHT|wx.GROW, border=SPACING)
-            self.ip_box_sizer.Add(ip_label, flag=wx.ALL, border=SPACING)
-
-            self.sizer.Add(self.ip_box_sizer, flag=wx.GROW)
-
-
-    def bandwidth_management_callback(self):
-        enable = not self.autodetect.GetValue()
-        if enable:
-            self.up_rate_slider.set_max_rate()
-            self.down_rate_slider.set_max_rate()
-        self.up_rate_slider.enable(enable)
-        self.down_rate_slider.enable(enable)
-
-
-class AppearanceSettingsPanel(SettingsPanel):
-    label = _("Appearance")
-    pb_config_key = 'progressbar_style'
-    # sample data
-    sample_value = 0.4
-
-    sample_data = {'h': SparseSet(xrange(0, 80)),
-                   't': SparseSet(xrange(80, 100)),
-                   }
-    for i in range(20,0,-1):
-        s = SparseSet()
-        s.add(200-i*5, 200-(i-1)*5)
-        sample_data[i-1] = s
-    del i,s
-
-    def __init__(self, parent, *a, **k):
-        SettingsPanel.__init__(self, parent, *a, **k)
-
-        # widgets
-        self.gauge_box = wx.StaticBox(self, label=_("Progress bar style:"))
-
-        self.gauge_sizer = wx.StaticBoxSizer(self.gauge_box, wx.VERTICAL)
-
-        self.null_radio = wx.RadioButton(self,
-                                         label=_("&None (just show percent complete)"),
-                                         style=wx.RB_GROUP)
-        self.null_radio.value = 0
-
-        self.simple_radio = wx.RadioButton(self,
-                                           label=_("&Ordinary progress bar"))
-        self.simple_radio.value = 1
-        self.simple_sample = self.new_sample(SimpleDownloadGauge, 1)
-
-        self.moderate_radio = wx.RadioButton(self,
-                                             label=_("&Detailed progress bar"))
-        self.moderate_radio.value = 2
-        msg = _("(shows the percentage of complete, transferring, available and missing pieces in the torrent)")
-        if not text_wrappable:
-            half = len(msg)//2
-            for i in xrange(half):
-                if msg[half+i] == ' ':
-                    msg = msg[:half+i+1] + '\n' + msg[half+i+1:]
-                    break
-                elif msg[half-i] == ' ':
-                    msg = msg[:half-i+1] + '\n' + msg[half-i+1:]
-                    break
-        self.moderate_text = ElectroStaticText(self, wx.ID_ANY, msg)
-
-        if text_wrappable: self.moderate_text.Wrap(250)
-        self.moderate_sample = self.new_sample(ModerateDownloadGauge, 2)
-
-        self.fancy_radio = wx.RadioButton(self,
-                                          label=_("&Piece bar"))
-        self.fancy_radio.value = 3
-        self.fancy_text = ElectroStaticText(self, wx.ID_ANY,
-                                        _("(shows the status of each piece in the torrent)"))
-        if text_wrappable: self.fancy_text.Wrap(250)
-
-        # generate random sample data
-        r = set(range(200))
-        self.sample_data = {}
-
-        for key, count in (('h',80), ('t',20)) + tuple([(i,5) for i in range(19)]):
-            self.sample_data[key] = SparseSet()
-            for d in random.sample(r, count):
-                self.sample_data[key].add(d)
-                r.remove(d)
-        for d in r:
-            self.sample_data[0].add(d)
-
-        self.fancy_sample = self.new_sample(FancyDownloadGauge, 3)
-
-        # sizers
-        gauge = wx.TOP|wx.LEFT|wx.RIGHT
-        extra = wx.TOP|wx.LEFT|wx.RIGHT|wx.GROW
-        self.gauge_sizer.Add(self.null_radio     , flag=gauge, border=SPACING)
-        self.gauge_sizer.AddSpacer((SPACING, SPACING))
-
-        self.gauge_sizer.Add(self.simple_radio   , flag=gauge, border=SPACING)
-        self.gauge_sizer.Add(self.simple_sample  , flag=extra, border=SPACING)
-        self.gauge_sizer.AddSpacer((SPACING, SPACING))
-
-        self.gauge_sizer.Add(self.moderate_radio , flag=gauge, border=SPACING)
-        self.gauge_sizer.Add(self.moderate_sample, flag=extra, border=SPACING)
-        self.gauge_sizer.Add(self.moderate_text  , flag=extra, border=SPACING)
-        self.gauge_sizer.AddSpacer((SPACING, SPACING))
-
-        self.gauge_sizer.Add(self.fancy_radio    , flag=gauge, border=SPACING)
-        self.gauge_sizer.Add(self.fancy_sample   , flag=extra, border=SPACING)
-        self.gauge_sizer.Add(self.fancy_text     , flag=extra, border=SPACING)
-
-        self.sizer.AddFirst(self.gauge_sizer, flag=wx.GROW)
-
-        # setup
-        self.pb_group = (self.null_radio, self.simple_radio, self.moderate_radio, self.fancy_radio)
-
-        for r in self.pb_group:
-            r.Bind(wx.EVT_RADIOBUTTON, self.radio)
-            if r.value == wx.the_app.config[self.pb_config_key]:
-                r.SetValue(True)
-            else:
-                r.SetValue(False)
-
-        # toolbar widgets
-        self.toolbar_box = wx.StaticBox(self, label=_("Toolbar style:"))
-        self.toolbar_text = CheckButton(self, _("Show text"),
-                                        self.settings_window,
-                                        'toolbar_text',
-                                        self.settings_window.config['toolbar_text'],
-                                        wx.the_app.reset_toolbar_style)
-        self.toolbar_size_text = ElectroStaticText(self, id=wx.ID_ANY, label=_("Icon size:"))
-        self.toolbar_size_choice = wx.Choice(self, choices=(_("Small"), _("Normal"), _("Large")))
-        self.toolbar_config_to_choice(wx.the_app.config['toolbar_size'])
-        self.toolbar_size_choice.Bind(wx.EVT_CHOICE, self.toolbar_choice_to_config)
-
-        # toolbar sizers
-        self.toolbar_sizer = HSizer()
-        self.toolbar_sizer.AddFirst(self.toolbar_text, flag=wx.ALIGN_CENTER_VERTICAL)
-        line = wx.StaticLine(self, id=wx.ID_ANY, style=wx.VERTICAL)
-        self.toolbar_sizer.Add(line,
-                               flag=wx.ALIGN_CENTER_VERTICAL|wx.GROW)
-        self.toolbar_sizer.Add(self.toolbar_size_text, flag=wx.ALIGN_CENTER_VERTICAL)
-        self.toolbar_sizer.Add(self.toolbar_size_choice, flag=wx.GROW|wx.ALIGN_TOP, proportion=1)
-
-        self.toolbar_box_sizer = wx.StaticBoxSizer(self.toolbar_box, wx.VERTICAL)
-        self.toolbar_box_sizer.Add(self.toolbar_sizer, flag=wx.GROW)
-
-        self.sizer.Add(self.toolbar_box_sizer, flag=wx.GROW)
-
-        if wx.the_app.config['debug']:
-            # the T-Word widgets
-            self.themes = []
-            self.theme_choice = wx.Choice(self, choices=[])
-            self.theme_choice.Enable(False)
-            self.theme_choice.Bind(wx.EVT_CHOICE, self.set_theme)
-            self.restart_hint = ElectroStaticText(self, id=wx.ID_ANY, label=_("(Changing themes requires restart.)"))
-            self.theme_static_box = wx.StaticBox(self, label=_("Theme:"))
-
-            # the T-Word sizers
-            self.theme_sizer = VSizer()
-            self.theme_sizer.AddFirst(self.theme_choice, flag=wx.GROW|wx.ALIGN_RIGHT)
-            self.theme_sizer.Add(self.restart_hint, flag=wx.GROW|wx.ALIGN_RIGHT)
-
-            self.theme_static_box_sizer = wx.StaticBoxSizer(self.theme_static_box, wx.VERTICAL)
-            self.theme_static_box_sizer.Add(self.theme_sizer, flag=wx.GROW)
-            self.sizer.Add(self.theme_static_box_sizer, flag=wx.GROW)
-
-            self.get_themes()
-
-
-    def get_themes(self):
-        def _callback(themes):
-            self.themes.extend(themes)
-            self.theme_choice.AppendItems(strings=themes)
-
-            curr_theme = wx.the_app.config['theme']
-            if curr_theme not in self.themes:
-                self.settings_window.setfunc('theme', 'default')
-                curr_theme = wx.the_app.config['theme']
-
-            curr_idx = self.themes.index(curr_theme)
-            self.theme_choice.SetSelection(curr_idx)
-            self.theme_choice.Enable(True)
-
-        def callback(themes):
-            gui_wrap(_callback, themes)
-
-        df = list_themes()
-        df.addCallback(callback)
-        df.getResult()
-
-
-    def set_theme(self, e):
-        i = self.theme_choice.GetSelection()
-        t = self.themes[i]
-        self.settings_window.setfunc('theme', t)
-
-
-    def toolbar_choice_to_config(self, *a):
-        i = self.toolbar_size_choice.GetSelection(),
-        size = 8*(i[0]+2)
-        self.settings_window.setfunc('toolbar_size', size)
-        wx.the_app.reset_toolbar_style()
-
-
-    def toolbar_config_to_choice(self, value):
-        i = (value//8) - 2
-        self.toolbar_size_choice.SetSelection(i)
-
-
-    def new_sample(self, sample_class, value):
-        sample = sample_class(self, size=wx.Size(-1, -1), style=wx.SUNKEN_BORDER)
-        # I happen to know 200 is the right number because I looked.
-        sample.SetValue(self.sample_value, 'running', (200, 0, self.sample_data))
-        sample.Bind(wx.EVT_LEFT_DOWN, self.sample)
-        sample.Bind(wx.EVT_CONTEXT_MENU, None)
-        sample.value = value
-        return sample
-
-
-    def radio(self, event):
-        widget = event.GetEventObject()
-        value = widget.value
-        self.settings_window.setfunc(self.pb_config_key, value)
-        gui_wrap(wx.the_app.main_window.torrentlist.change_gauge_type, value)
-
-
-    def sample(self, event):
-        self.radio(event)
-        pb = event.GetEventObject()
-        value = pb.value
-        for p in self.pb_group:
-            if p.value == value:
-                p.SetValue(True)
-                break
-
-
-
-class LanguageSettingsPanel(LanguageSettings):
-    label = _("Language")
-
-    def __init__(self, parent, *a, **k):
-        LanguageSettings.__init__(self, parent, *a, **k)
-        parent.AddPage(self, self.label)
-        self.settings_window = parent.GetParent()
-
-
-
-class SettingsWindow(BTDialog):
-
-    use_listbook = False
-
-    def __init__(self, main_window, config, setfunc):
-        BTDialog.__init__(self, main_window, style=wx.DEFAULT_DIALOG_STYLE|wx.CLIP_CHILDREN|wx.WANTS_CHARS)
-        self.Bind(wx.EVT_CLOSE, self.close)
-        self.Bind(wx.EVT_CHAR, self.key)
-        self.SetTitle(_("%s Settings")%app_name)
-
-        self.setfunc = setfunc
-        self.config = config
-
-        if self.use_listbook:
-            self.notebook = wx.Listbook(self)
-            # BUG use real icons
-            imagelist = wx.ImageList(32, 32)
-            p = os.path.join(image_root, 'logo', 'bittorrent_icon_32.png')
-            assert os.access(p, os.F_OK)
-            bitmap = wx.Bitmap(p, type=wx.BITMAP_TYPE_ANY)
-            assert bitmap.Ok()
-            imagelist.Add(bitmap)
-            # end bug
-            self.notebook.AssignImageList(imagelist)
-        else:
-            self.notebook = wx.Notebook(self)
-
-        self.notebook.Bind(wx.EVT_CHAR, self.key)
-
-        self.general_panel    =    GeneralSettingsPanel(self.notebook)
-        self.saving_panel     =     SavingSettingsPanel(self.notebook)
-        self.network_panel    =    NetworkSettingsPanel(self.notebook)
-        self.appearance_panel = AppearanceSettingsPanel(self.notebook)
-        self.language_panel   =   LanguageSettingsPanel(self.notebook)
-
-        if self.use_listbook:
-            for i in range(self.notebook.GetPageCount()):
-                # BUG use real icons
-                self.notebook.SetPageImage(i, 0)
-
-        self.vbox = VSizer()
-        self.vbox.AddFirst(self.notebook, proportion=1, flag=wx.GROW)
-
-        self.vbox.Layout()
-
-        self.SetSizerAndFit(self.vbox)
-        self.SetFocus()
-
-
-    def key(self, event):
-        c = event.GetKeyCode()
-        if c == wx.WXK_ESCAPE:
-            self.close()
-        event.Skip()
-
-
-    def get_save_in(self, *e):
-        d = wx.DirDialog(self, "", style=wx.DD_DEFAULT_STYLE|wx.DD_NEW_DIR_BUTTON)
-        d.SetPath(self.config['save_in'])
-        if d.ShowModal() == wx.ID_OK:
-            path = d.GetPath()
-            self.saving_panel.save_in_button.SetLabel(path)
-            self.setfunc('save_in', path)
-
-
-    def start_torrent_behavior_changed(self, event):
-        widget = event.GetEventObject()
-        state_name = widget.state_name
-        self.setfunc('start_torrent_behavior', state_name)
-
-
-    def close(self, *e):
-        self.Hide()
 
 
 
@@ -1251,12 +592,15 @@ class PeerListView(HashableListView):
                                                   1.0,
                                                   renderer=lambda v: '%.1f'%round(int(v*1000)/10, 1)),
                         'speed': BTListColumn(_('KB/s est. peer download'),
-                                              Rate(1024**2 - 1))
+                                              Rate(1024**2 - 1)),
+                        'total_eta': BTListColumn(_('est. peer total ETA'),
+                                                  Duration(1700000),
+                                                  enabled=VERBOSE),
                         }
 
         self.column_order = ['ip', 'id', 'client', 'completed',
                              'down_rate', 'up_rate', 'down_size', 'up_size',
-                             'speed', 'initiation']
+                             'speed', 'initiation', 'total_eta']
 
 
         HashableListView.__init__(self, *a, **k)
@@ -1315,13 +659,7 @@ class PeerListView(HashableListView):
         for peer in peers:
             peerid = peer['id']
             data = {}
-            assert isinstance(peer['ip'], (str, unicode)), "Expected a string "\
-                   "for IP address in UP, got a %s: '%s' instead." % \
-                   (str(type(peer['ip'])), str(peer['ip']))
-            for k in ('ip', 'completed'):
-                data[k] = peer[k]
-
-            for k in ('id',):
+            for k in ('ip', 'completed', 'id',):
                 data[k] = peer[k]
 
             client, version = ClientIdentifier.identify_client(peerid)
@@ -1342,6 +680,10 @@ class PeerListView(HashableListView):
             data['up_size'  ] = Size(ul[0], precision=1024**2)
 
             data['speed'] = Rate(peer['speed'])
+            if 'total_eta' in peer:
+                data['total_eta'] = Duration(peer['total_eta'])
+            else:
+                data['total_eta'] = ''
 
             colour = None
 
@@ -1376,21 +718,13 @@ class PeerListView(HashableListView):
     def get_column_image(self, row):
         ip_address = row['ip']
 
-        if isinstance(ip_address, (str, unicode)):
-            # BitTorrent seeds
-            if ip_address.startswith('38.114.167.') and \
-               63 < int(ip_address[11:]) < 128:
-                return self.image_list_offset - 1
+        # BitTorrent seeds
+        if ip_address.startswith('38.114.167.') and \
+           63 < int(ip_address[11:]) < 128:
+            return self.image_list_offset - 1
 
-            cc, country = lookup(ip_address)
-            if cc == '--':
-                cc = 'unknown'
-        else:
-            # BUG: sometimes the backend gives us an int
-            ns = 'core.MultiTorrent.' + repr(self.torrent.infohash)
-            l = logging.getLogger(ns)
-            l.error("Expected a string for IP address in GCI, got a %s: '%s' instead." % (str(type(ip_address)), str(ip_address)))
-            wx.the_app.logger.error("Expected a string for IP address in GCI, got a %s: '%s' instead." % (str(type(ip_address)), str(ip_address)))
+        cc, country = lookup(ip_address)
+        if cc == '--':
             cc = 'unknown'
 
         index = self.cc_index.get(cc, self.cc_index['noimage'])
@@ -1872,24 +1206,31 @@ class LogPanel(BTPanel):
         self.log.Bind(evt_id, func)
 
 
-class TorrentDetailsPanel(wx.ScrolledWindow):
+class TorrentDetailsPanel(wx.Panel):
 
     def __init__(self, parent, torrent, *a, **k):
-        k['style'] = k.get('style', 0) | wx.HSCROLL | wx.VSCROLL
-        k.setdefault('size', wx.DefaultSize)
-        wx.ScrolledWindow.__init__(self, parent, *a, **k)
+        wx.Panel.__init__(self, parent, *a, **k)
         self.torrent = torrent
 
-        self.panel = wx.Panel(self)
-        self.sizer = VSizer()
+        self.sizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.scrolled_window = wx.ScrolledWindow(self)
+        self.scrolled_window.SetScrollRate(1, 1)
+        self.sizer.Add(self.scrolled_window, flag=wx.GROW, proportion=1)
 
-        self.swarm_fgsizer = LabelValueFlexGridSizer(self.panel,5,2,SPACING,SPACING)
+        self.scroll_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.panel = wx.Panel(self.scrolled_window)
+        self.scroll_sizer.Add(self.panel, flag=wx.GROW, proportion=1)
+
+        self.outer = VSizer()
+
+        self.swarm_fgsizer = LabelValueFlexGridSizer(self.panel, 5, 2, SPACING, SPACING)
         self.swarm_fgsizer.SetFlexibleDirection(wx.HORIZONTAL)
+        self.swarm_fgsizer.AddGrowableCol(1)
 
         self.swarm_static_box = wx.StaticBox(self.panel, label=_("Swarm:"))
         self.swarm_static_box_sizer = wx.StaticBoxSizer(self.swarm_static_box, wx.HORIZONTAL)
-        self.swarm_static_box_sizer.Add(self.swarm_fgsizer, flag=wx.GROW|wx.ALL, border=SPACING)
-        self.sizer.AddFirst(self.swarm_static_box_sizer, flag=wx.GROW, border=SPACING)
+        self.swarm_static_box_sizer.Add(self.swarm_fgsizer, flag=wx.GROW|wx.ALL, border=SPACING, proportion=1)
+        self.outer.AddFirst(self.swarm_static_box_sizer, flag=wx.GROW, border=SPACING, proportion=1)
 
         for label, item in zip((_("Tracker total peers:"), _("Distributed copies:"), _("Swarm speed:"), _("Discarded data:"), _("Next announce:"),),
                                ('tracker_peers'    , 'distributed'           , 'swarm_speed'    , 'discarded'         , 'announce'         ,)):
@@ -1902,14 +1243,15 @@ class TorrentDetailsPanel(wx.ScrolledWindow):
         if metainfo.announce_list is not None:
             rows += sum([len(l) for l in metainfo.announce_list]) - 1
 
-        self.torrent_fgsizer = LabelValueFlexGridSizer(self.panel, rows,2,SPACING,SPACING)
+        self.torrent_fgsizer = LabelValueFlexGridSizer(self.panel, rows, 2, SPACING, SPACING)
         self.torrent_fgsizer.SetFlexibleDirection(wx.HORIZONTAL)
+        self.torrent_fgsizer.AddGrowableCol(1)
 
         self.torrent_static_box = wx.StaticBox(self.panel, label=_("Torrent file:"))
         self.torrent_static_box_sizer = wx.StaticBoxSizer(self.torrent_static_box, wx.HORIZONTAL)
-        self.torrent_static_box_sizer.Add(self.torrent_fgsizer, flag=wx.GROW|wx.ALL, border=SPACING)
+        self.torrent_static_box_sizer.Add(self.torrent_fgsizer, flag=wx.GROW|wx.ALL, border=SPACING, proportion=1)
 
-        self.sizer.Add(self.torrent_static_box_sizer, flag=wx.GROW, border=SPACING)
+        self.outer.Add(self.torrent_static_box_sizer, flag=wx.GROW, border=SPACING, proportion=1)
 
 
         # announce             Singular       Plural            Backup, singular      Backup, plural
@@ -1944,17 +1286,22 @@ class TorrentDetailsPanel(wx.ScrolledWindow):
 
         self.torrent_fgsizer.add_pair(_("Created on:"), time_str)
 
-        self.panel.SetSizerAndFit(self.sizer)
+        self.panel.SetSizerAndFit(self.outer)
+        self.scrolled_window.SetSizer(self.scroll_sizer)
+        self.SetSizerAndFit(self.sizer)
 
-        size = self.sizer.GetMinSize()
-        self.SetVirtualSize(size)
-        self.SetScrollRate(1,1)
+        # this fixes background repaint issues on XP w/ themes
+        def OnSize(event):
+            self.Refresh()
+            event.Skip()
+        self.Bind(wx.EVT_SIZE, OnSize)
 
 
     def GetBestFittingSize(self):
-        ssbs = self.swarm_static_box_sizer.GetMinSize()
-        tsbs = self.torrent_static_box_sizer.GetMinSize()
-        return wx.Size(max(ssbs.x, tsbs.x) + SPACING*4, ssbs.y + SPACING)
+        ssbs = self.swarm_static_box_sizer.GetBetFittingSize()
+        tsbs = self.torrent_static_box_sizer.GetBestFittingSize()
+        return wx.Size(max(ssbs.x, tsbs.x) + SPACING*4,
+                       ssbs.y + tsbs.y + SPACING*2)
 
 
     def update(self, statistics):
@@ -1980,9 +1327,6 @@ class TorrentDetailsPanel(wx.ScrolledWindow):
 
         self.distributed.SetLabel(dist_label)
 
-        # BUG: this shows how many pieces are being transferred, do we want to show it?
-        # BUG: If you want that, let me know and I'll implement it correctly. - Greg
-
         self.discarded.SetLabel(unicode(Size(statistics.get('discarded',0))))
         self.swarm_speed.SetLabel(unicode(Rate(statistics.get('swarm_speed',0))))
         t = statistics.get('announceTime')
@@ -1990,7 +1334,7 @@ class TorrentDetailsPanel(wx.ScrolledWindow):
             self.announce.SetLabel(unicode(Duration(t*-1)))
         else:
             # TODO: None means the torrent is not initialized yet
-            self.announce.SetLabel('?')
+            self.announce.SetLabel('')
 
 
 
@@ -2011,18 +1355,21 @@ class TorrentInfoPanel(BTPanel):
         # title
         self.title_sizer = LabelValueFlexGridSizer(self, 1, 2, vspacing, SPACING)
         self.title_sizer.SetFlexibleDirection(wx.HORIZONTAL)
+        self.title_sizer.AddGrowableCol(1)
 
         if metainfo.title is not None:
             self.title_sizer.add_pair(_("Torrent title:"), metainfo.title.replace('&', '&&'))
         else:
             self.title_sizer.add_pair(_("Torrent name:"), metainfo.name.replace('&', '&&'))
 
-        self.Add(self.title_sizer, flag=wx.ALL, border=SPACING)
+        self.Add(self.title_sizer, flag=wx.GROW|wx.ALL, border=SPACING)
 
         # dynamic info
         self.dynamic_sizer = LabelValueFlexGridSizer(self, 2, 4, vspacing, hspacing)
         self.dynamic_sizer.SetFlexibleDirection(wx.HORIZONTAL)
-        self.dynamic_sizer.SetMinSize((350, -1))
+        self.dynamic_sizer.SetMinSize((375, -1))
+        self.dynamic_sizer.AddGrowableCol(1)
+        self.dynamic_sizer.AddGrowableCol(3)
 
         self.download_rate = self.dynamic_sizer.add_pair(_("Download rate:"), '')
         self.upload_rate = self.dynamic_sizer.add_pair(_("Upload rate:"), '')
@@ -2030,33 +1377,20 @@ class TorrentInfoPanel(BTPanel):
         self.peers = self.dynamic_sizer.add_pair(_("Peers:"), '')
         self.eta_inserted = True
 
-        self.Add(self.dynamic_sizer, flag=wx.ALL^wx.TOP, border=SPACING)
+        self.Add(self.dynamic_sizer, flag=wx.GROW|wx.ALL^wx.TOP, border=SPACING)
 
         self.piece_bar = FancyDownloadGauge(self, border=False, size=wx.Size(-1, -1), style=wx.SUNKEN_BORDER)
         self.Add(self.piece_bar, flag=wx.GROW|wx.ALL^wx.TOP, border=SPACING)
 
         # static info
-        self.static_sizer = LabelValueFlexGridSizer(self, 4, 2, vspacing, hspacing)
+        self.static_sizer = LabelValueFlexGridSizer(self, 2, 2, vspacing, hspacing)
+        self.static_sizer.AddGrowableCol(1)
 
         # original filename
         fullpath = self.torrent.destination_path
 
         if fullpath is not None:
-            path, filename = os.path.split(fullpath)
-            filename = path_wrap(filename)
-            path = path_wrap(path)
-            if not metainfo.is_batch:
-                self.static_sizer.add_pair(_("File name:"), filename.replace('&', '&&'))
-##                if filename != metainfo.name:
-##                    self.static_sizer.add_pair(_("Original file name:"), metainfo.name.replace('&', '&&'))
-            else:
-                self.static_sizer.add_pair(_("Directory name:"), filename.replace('&', '&&'))
-##                if filename != metainfo.name:
-##                    self.static_sizer.add_pair(_("Original directory name:"), metainfo.name.replace('&', '&&'))
-
-            if path[:-1] != os.sep:
-                path += os.sep
-            self.static_sizer.add_pair(_("Save in:"), path.replace('&', '&&'))
+            self.static_sizer.add_pair(_("Save as:"), fullpath.replace('&', '&&'), dotify_value=True)
 
         # size
         size = Size(metainfo.total_bytes)
@@ -2065,7 +1399,7 @@ class TorrentInfoPanel(BTPanel):
             num_files = _(", in %d files") % len(metainfo.sizes)
         self.static_sizer.add_pair(_("Total size:"), unicode(size)+num_files)
 
-        self.Add(self.static_sizer, flag=wx.ALL^wx.TOP, border=SPACING)
+        self.Add(self.static_sizer, flag=wx.GROW|wx.ALL^wx.TOP, border=SPACING)
 
 
 
@@ -2146,11 +1480,12 @@ class TorrentPanel(BTPanel):
         self.parent = parent
         self.completed = False
 
-        self.torrent_info = TorrentInfoPanel(self, self.torrent)
-        self.sizer.Add(self.torrent_info, flag=wx.GROW)
         self.sizer.AddGrowableRow(0)
         self.sizer.AddGrowableRow(2)
         self.sizer.AddGrowableCol(0)
+
+        self.torrent_info = TorrentInfoPanel(self, self.torrent)
+        self.sizer.Add(self.torrent_info, flag=wx.GROW)
 
         self.outer_button_sizer = wx.FlexGridSizer(1, 2, SPACING, SPACING)
         self.outer_button_sizer.AddGrowableCol(0)
@@ -2244,7 +1579,7 @@ class TorrentPanel(BTPanel):
             self.sizer.Detach(self.notebook)
             self.sizer.Layout()
             self.details_button.SetLabel(_("Show &Details"))
-            self.parent.sizer.Fit(self.parent)
+            self.parent.Fit()
             self.details_shown = False
         else:
             self.sizer.RemoveGrowableRow(0)
@@ -2252,7 +1587,7 @@ class TorrentPanel(BTPanel):
             self.sizer.Add(self.notebook, flag=wx.GROW, proportion=1)
             self.sizer.Layout()
             self.details_button.SetLabel(_("Hide &Details"))
-            self.parent.sizer.Fit(self.parent)
+            self.parent.Fit()
             self.details_shown = True
 
 
@@ -2276,10 +1611,11 @@ class TorrentPanel(BTPanel):
 
 
     def GetBestFittingSize(self):
-        tis = self.torrent_info.GetBestFittingSize()
-        tds = self.torrent_panel.GetBestFittingSize()
-        x = min(max(tis.x, tds.x), 600)
-        y = tis.y + tds.y + self.tab_height
+        tis = self.torrent_info.GetSize()
+        tibs = self.torrent_info.GetBestFittingSize()
+        tdbs = self.torrent_panel.GetBestFittingSize()
+        x = min(max(tis.x, tdbs.x), 600)
+        y = tibs.y + tdbs.y + self.tab_height
         return wx.Size(x, y)
 
     def OnPageChanging(self, event):
@@ -2343,6 +1679,12 @@ class TorrentWindow(BTFrameWithSizer):
         if c == wx.WXK_ESCAPE:
             self.close()
         event.Skip()
+
+
+    def GetBestFittingSize(self):
+        sbs = self.GetSize()
+        pbs = BTFrameWithSizer.GetBestFittingSize(self)
+        return wx.Size(sbs.x, pbs.y)
 
 
     def SortListItems(self, col=-1, ascending=1):
@@ -2544,7 +1886,7 @@ class TorrentObject(BasicTorrentObject):
         wx.the_app.torrent_logger.flush(self.infohash, self.handler)
 
         self._torrent_window = None
-        self.restore_window()
+        wx.the_app.CallAfter(self.restore_window)
 
 
     def restore_window(self):
@@ -2799,7 +2141,7 @@ class MainWindow(BTFrame):
 
                   EventProperties(REMOVE_ID,
                                   ('torrentops', 'remove'),
-                                  app.confirm_remove_infohash,
+                                  app.confirm_remove_infohashes,
                                   _("Remove"), _("Remove torrent")+'\tDelete'),
                   ]
 
@@ -2914,6 +2256,8 @@ class MainWindow(BTFrame):
         self.splitter = wx.SplitterWindow(self, wx.ID_ANY, style=wx.SP_LIVE_UPDATE)
         self.splitter.SetMinimumPaneSize(1)
         self.splitter.SetSashGravity(1.0)
+        self.splitter.Bind(wx.EVT_SPLITTER_SASH_POS_CHANGED,
+                           self.on_splitter_sash_pos_changed)
         self.list_sizer.Add(self.splitter, flag=wx.GROW)
 
         # widgets
@@ -2965,7 +2309,7 @@ class MainWindow(BTFrame):
         # add window border width on either side
         size.width += pos.x * 2
         size.width = max(size.width, 500)
-        size.height = max(size.height, 338)
+        size.height = max(size.height, 340)
         self.load_geometry(geometry, default_size=size)
 
         if config['start_maximized']:
@@ -2982,6 +2326,10 @@ class MainWindow(BTFrame):
                 wx.the_app.logger.error(app.show_torrent.__name__ + " failed", exc_info=exc_info)
             df.addErrback(error)
 
+
+    def on_splitter_sash_pos_changed(self, event):
+        pos = event.GetSashPosition()
+        wx.the_app.send_config('splitter_height', self.GetSize().height - pos)
 
     def _build_tool_bar(self):
 
@@ -3066,8 +2414,8 @@ class MainWindow(BTFrame):
             self.splitter.Unsplit()
         else:
             self.splitter.SplitHorizontally(self.torrentlist, self.bling_panel,
-                                            # should be in user config
-                                            self.GetSize().height - 300)
+                                            (self.GetSize().height -
+                                             wx.the_app.config['splitter_height']))
 
 
     def OnTorrentEvent(self, event):
@@ -3076,11 +2424,19 @@ class MainWindow(BTFrame):
         if self.torrent_event_table.has_key(tid):
             e = self.torrent_event_table[tid]
             infohashes = self.torrentlist.get_selected_infohashes()
-            for infohash in infohashes:
-                df = launch_coroutine(gui_wrap, e.func, infohash)
+
+            # moo. I am a cow.
+            if tid == REMOVE_ID:
+                df = launch_coroutine(gui_wrap, e.func, infohashes)
                 def error(exc_info):
                     wx.the_app.logger.error(e.func.__name__ + " failed", exc_info=exc_info)
                 df.addErrback(error)
+            else:                
+                for infohash in infohashes:
+                    df = launch_coroutine(gui_wrap, e.func, infohash)
+                    def error(exc_info):
+                        wx.the_app.logger.error(e.func.__name__ + " failed", exc_info=exc_info)
+                    df.addErrback(error)
         elif tid in (PRIORITY_LOW_ID, PRIORITY_NORMAL_ID, PRIORITY_HIGH_ID):
             infohashes = self.torrentlist.get_selected_infohashes()
             for infohash in infohashes:
@@ -3133,7 +2489,8 @@ class MainWindow(BTFrame):
                 self._enable_id(i, True)
 
             # show/hide start/stop button
-            self.check_torrent_start_stop(index)
+            infohash = self.torrentlist.GetItemData(index)
+            self.check_torrent_start_stop(infohash)
 
             # en/disable move up
             self._enable_id(UP_ID, index > 0)
@@ -3155,14 +2512,12 @@ class MainWindow(BTFrame):
                     m.set_priority(priority)
 
 
-    def check_torrent_start_stop(self, index=None):
-        infohash = self.torrentlist.GetItemData(index)
-        if infohash is not None:
-            torrent = wx.the_app.torrents[infohash]
-            show_stop = torrent.policy != "stop" and torrent.state != "failed"
-            self.toggle_stop_start_button(show_stop)
-            self.torrent_menu.toggle_stop_start_menu_item(show_stop)
-            self.torrent_context_menu.toggle_stop_start_menu_item(show_stop)
+    def check_torrent_start_stop(self, infohash):
+        torrent = wx.the_app.torrents[infohash]
+        show_stop = torrent.policy != "stop" and torrent.state != "failed"
+        self.toggle_stop_start_button(show_stop)
+        self.torrent_menu.toggle_stop_start_menu_item(show_stop)
+        self.torrent_context_menu.toggle_stop_start_menu_item(show_stop)
 
     def toggle_stop_start_button(self, show_stop):
         changed = self.tool_bar.toggle_stop_start_button(show_stop)
@@ -3242,7 +2597,7 @@ class MainWindow(BTFrame):
             app.send_config('geometry', g)
             app.send_config('start_maximized', False)
 
-        if wx.the_app.bling_history is not None:
+        if app.bling_history is not None:
             show_bling = self.bling_panel.IsShown()
             app.send_config('show_details', show_bling)
             bling_tab = self.bling_panel.notebook.GetSelection()
@@ -3394,6 +2749,23 @@ class ConfirmQuitDialog(CheckBoxDialog):
 
 
 
+class ConfirmRemoveDialog(CheckBoxDialog):
+
+    def __init__(self, parent, title='', label='', checkbox_label=''):
+        self.del_files = True
+        CheckBoxDialog.__init__(self, parent=parent,
+                                title=title,
+                                label=label,
+                                checkbox_label=checkbox_label,
+                                checkbox_key='jesus christ no key',
+                                checkbox_value=self.del_files,
+                                )
+
+    def setfunc(self, key, value):
+        self.del_files = value
+
+
+
 class NotifyNewVersionDialog(CheckBoxDialog):
 
     def __init__(self, parent, new_version):
@@ -3447,7 +2819,7 @@ class LogProxy(wx.PyLog):
         if level == wx.LOG_Error or level == wx.LOG_Status:
             self.log.PassMessages(True)
             if ']' in msg:
-                msg = ''.join(msg.split(']')[1:]).strip()
+                msg = msg.split(']', 1)[1].strip()
             wx.LogGeneric(level, msg)
             self.log.PassMessages(False)
         else:
@@ -3664,9 +3036,7 @@ class MainLoop(BasicApp, BTApp):
         if self.main_window:
             if confirm_quit and self.config['confirm_quit']:
                 d = ConfirmQuitDialog(self.main_window)
-                d.ShowModal()
-                r = d.GetReturnCode()
-                if r == wx.ID_CANCEL:
+                if d.ShowModal() == wx.ID_CANCEL:
                     return
 
             for t in self.torrents.values():
@@ -4024,39 +3394,103 @@ class MainLoop(BasicApp, BTApp):
 
     about_window = property(_get_about_window)
 
+    def _remove_infohash(self, infohash, del_files):
+        df = launch_coroutine(gui_wrap, self.remove_infohash, infohash, del_files=del_files)
+        def error(exc_info):
+            ns = 'core.MultiTorrent.' + repr(infohash)
+            l = logging.getLogger(ns)
+            l.error(self.remove_infohash.__name__ + " failed", exc_info=exc_info)
+        df.addErrback(error)
+        return df
 
     def force_remove(self, event):
         infohashes = self.main_window.torrentlist.get_selected_infohashes()
         for infohash in infohashes:
-            df = launch_coroutine(gui_wrap, self.remove_infohash, infohash)
-            def error(exc_info):
-                ns = 'core.MultiTorrent.' + repr(infohash)
-                l = logging.getLogger(ns)
-                l.error(self.remove_infohash.__name__ + " failed", exc_info=exc_info)
-            df.addErrback(error)
+            self._remove_infohash(infohash, del_files=True)
+           
 
+    def confirm_remove_infohashes(self, infohashes):
+        infohashes = [ i for i in infohashes if i in self.torrents ]
+
+        if len(infohashes) == 1:
+            return self.confirm_remove_infohash(infohashes[0])
+        
+        del_files = False
+        for infohash in infohashes:
+            t = self.torrents[infohash]
+            inco = ((not t.completed) and
+                    (t.working_path != t.destination_path) and
+                    t.working_path.startswith(self.config['save_incomplete_in']))
+            if inco:
+                del_files = True
+                break
+
+        if not wx.GetKeyState(wx.WXK_SHIFT):
+            title = _("Really remove torrents?")
+            label = _('Are you sure you want to remove %d torrents?') % len(infohashes)
+            checkbox_label = _("&Delete incomplete downloaded file(s)")
+
+            if del_files:
+                d = ConfirmRemoveDialog(self.main_window,
+                                        title=title,
+                                        label=label,
+                                        checkbox_label=checkbox_label)
+                if d.ShowModal() == wx.ID_CANCEL:
+                    return
+
+                del_files = d.del_files
+            else:
+                r = wx.MessageBox(
+                    message=label,
+                    caption=title,
+                    style=wx.OK|wx.CANCEL,
+                    parent=self.main_window
+                    )
+                if r == wx.CANCEL:
+                    return
+
+        for infohash in infohashes:
+            self._remove_infohash(infohash, del_files=del_files)    
 
 
     def confirm_remove_infohash(self, infohash):
-        if self.torrents.has_key(infohash):
-            t = self.torrents[infohash]
-            name = t.metainfo.name
-            if not wx.GetKeyState(wx.WXK_SHIFT):
-                d = wx.MessageBox(
-                    message=_('Are you sure you want to permanently remove \n"%s"?') % name,
-                    caption=_("Really remove torrent?"),
-                    style=wx.YES_NO|wx.YES_DEFAULT,
-                    parent=self.main_window)
-                if d == wx.NO:
+        if infohash not in self.torrents:
+            return
+
+        t = self.torrents[infohash]
+        name = t.metainfo.name
+        inco = ((not t.completed) and
+                (t.working_path != t.destination_path) and
+                t.working_path.startswith(self.config['save_incomplete_in']))
+        del_files = inco
+        if not wx.GetKeyState(wx.WXK_SHIFT):
+            title=_("Really remove torrent?")
+            label=_('Are you sure you want to remove "%s"?') % name
+            checkbox_label=_("&Delete incomplete downloaded file(s)")
+
+            if del_files:
+                d = ConfirmRemoveDialog(self.main_window,
+                                        title=title,
+                                        label=label,
+                                        checkbox_label=checkbox_label)
+                if d.ShowModal() == wx.ID_CANCEL:
                     return
-            df = launch_coroutine(gui_wrap, self.remove_infohash, infohash)
-            def error(exc_info):
-                ns = 'core.MultiTorrent.' + repr(infohash)
-                l = logging.getLogger(ns)
-                l.error(self.remove_infohash.__name__ + " failed", exc_info=exc_info)
-            df.addErrback(error)
-            # Could also do this but it's harder to understand:
-            #return self.remove_infohash(infohash)
+
+                del_files = d.del_files
+            else:
+                r = wx.MessageBox(
+                    message=label,
+                    caption=title,
+                    style=wx.OK|wx.CANCEL,
+                    parent=self.main_window
+                    )
+                if r == wx.CANCEL:
+                    return
+
+
+        self._remove_infohash(infohash, del_files=del_files)
+        # Could also do this but it's harder to understand:
+        #return self.remove_infohash(infohash)
 
 
     def show_torrent(self, infohash):
@@ -4066,9 +3500,7 @@ class MainLoop(BasicApp, BTApp):
 
     def notify_of_new_version(self, new_version):
         d = NotifyNewVersionDialog(self.main_window, new_version)
-        d.ShowModal()
-        r = d.GetReturnCode()
-        if r == wx.ID_OK:
+        if d.ShowModal() == wx.ID_OK:
             self.visit_url(URL)
 
 
@@ -4134,7 +3566,8 @@ class MainLoop(BasicApp, BTApp):
     def update_bandwidth_graphs(self):
         df = launch_coroutine(gui_wrap, self._update_bandwidth_graphs)
         def error(exc_info):
-            wx.the_app.logger.error(self._update_bandwidth_graphs.__name__ + " failed", exc_info=exc_info)
+            wx.the_app.logger.error(self._update_bandwidth_graphs.__name__ + " failed",
+                                    exc_info=exc_info)
         df.addErrback(error)
 
 
@@ -4158,11 +3591,41 @@ class MainLoop(BasicApp, BTApp):
         self.update_bwg_handle = wx.FutureCall(self.GRAPH_UPDATE_INTERVAL,
                                                self.update_bandwidth_graphs)
 
+    def start_torrent(self, infohash):
+        df = launch_coroutine(gui_wrap, BasicApp.start_torrent, self, infohash)
+        yield df
+        if not df.getResult():
+            return
+        # wx specific code
+        df = launch_coroutine(self.gui_wrap, self.update_single_torrent, infohash)
+        yield df
+        df.getResult()
+        self.main_window.check_torrent_start_stop(infohash)
+
+    def stop_torrent(self, infohash):
+        df = launch_coroutine(gui_wrap, BasicApp.stop_torrent, self, infohash)
+        yield df
+        if not df.getResult():
+            return
+        # wx specific code
+        df = launch_coroutine(self.gui_wrap, self.update_single_torrent, infohash)
+        yield df
+        df.getResult()
+        self.main_window.check_torrent_start_stop(infohash)
+
+    def force_start_torrent(self, infohash):
+        df = launch_coroutine(gui_wrap, BasicApp.force_start_torrent, self, infohash)
+        yield df
+        if not df.getResult():
+            return
+        # wx specific code
+        df = launch_coroutine(self.gui_wrap, self.update_single_torrent, infohash)
+        yield df
+        df.getResult()
+        self.main_window.check_torrent_start_stop(infohash)
+
     def update_status(self):
         df = launch_coroutine(gui_wrap, BasicApp.update_status, self)
-        def eb(exc_info):
-            self.logger.error(BasicApp.update_status.__name__ + " error:", exc_info=exc_info)
-        df.addErrback(eb)
         yield df
         # wx specific code
         average_completion, global_stats = df.getResult()

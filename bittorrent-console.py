@@ -14,8 +14,7 @@
 
 from __future__ import division
 
-from BitTorrent.platform import install_translation
-install_translation()
+from BitTorrent.translation import _
 
 import pdb
 import sys

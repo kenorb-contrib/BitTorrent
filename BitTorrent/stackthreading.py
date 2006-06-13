@@ -33,7 +33,7 @@ base_Thread = Thread
 
 class StackThread(Thread):
 
-    def __init__(self, group=None, target=None, name=None,
+    def __init__(self, group=None, target=None, name=None, depth=1,
                  args=(), kwargs={}, verbose=None):
 
         if name is None:
@@ -43,7 +43,8 @@ class StackThread(Thread):
                 f = sys.exc_info()[2].tb_frame.f_back
 
             stack = traceback.extract_stack(f)
-            fn, ln, fc, cd = stack[0]
+            fn, ln, fc, cd = stack[-depth]
+            #sys.stdout.writelines([str(s)+'\n' for s in stack])
             root, fn = os.path.split(fn)
             name = '%s:%s in %s: %s' % (fn, ln, fc, cd)
             

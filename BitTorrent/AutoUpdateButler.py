@@ -41,7 +41,7 @@ DEBUG = False
 
 class AutoUpdateButler(TorrentButler):
 
-    def __init__(self, multitorrent, rawserver, 
+    def __init__(self, multitorrent, rawserver,
                  test_new_version=None, test_current_version=None):
         TorrentButler.__init__(self, multitorrent)
 
@@ -169,7 +169,7 @@ class AutoUpdateButler(TorrentButler):
             return True
         if self.installer_dir is None:
             return False
-        
+
         if os.name == 'nt':
             return True
         elif osx:
@@ -184,11 +184,11 @@ class AutoUpdateButler(TorrentButler):
             ext = 'exe'
         elif osx:
             ext = 'dmg'
-        elif os.name == 'posix': 
-            ext = 'tar.gz' 
+        elif os.name == 'posix':
+            ext = 'tar.gz'
         else:
             return
-        
+
         parts = [app_name, str(available_version)]
         if available_version.is_beta():
             parts.append('Beta')
@@ -305,7 +305,7 @@ class AutoUpdateButler(TorrentButler):
         url = self.version_site + self.current_version.name()
 
         df = ThreadedDeferred(_wrap_task(self.rawserver.external_add_task),
-                              self._get_available, url)
+                              self._get_available, url, daemon=True)
         yield df
         try:
             available_version = df.getResult()
@@ -316,7 +316,7 @@ class AutoUpdateButler(TorrentButler):
 
         if available_version.is_beta():
             if available_version[1] != self.current_version[1]:
-                available_version = self.current_version 
+                available_version = self.current_version
         if self.current_version.is_beta():
             stable_url = self.version_site + 'stable'
             df = ThreadedDeferred(_wrap_task(self.rawserver.external_add_task),
@@ -371,8 +371,11 @@ class AutoUpdateButler(TorrentButler):
                 metainfo = ConvertedMetainfo(b)
                 infohash = metainfo.infohash
                 self.available_version = available_version
+
+                self.multitorrent.remove_auto_updates_except(infohash)
+
                 try:
-                    df = self.multitorrent.create_torrent(metainfo, installer_path, installer_path)
+                    df = self.multitorrent.create_torrent(metainfo, installer_path, installer_path, hidden=True, is_auto_update=True)
                     yield df
                     df.getResult()
                 except TorrentAlreadyRunning:

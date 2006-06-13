@@ -41,4 +41,3 @@ except:
     import random
     def urandom(n):
         return ''.join([ chr(random.randint(0, 255)) for x in xrange(n)])
-    del random

@@ -12,8 +12,7 @@
 
 # Written by Henry 'Pi' James, Loring Holden and Matt Chisholm
 
-from BitTorrent.platform import install_translation
-install_translation()
+from BitTorrent.translation import _
 
 from sys import *
 from os.path import *
@@ -39,6 +38,7 @@ labels = {'metafile'   : _("metainfo file: %s"       ),
           'dirname'    : _("directory name: %s"      ),
           'archive'    : _("archive size:"           ),
           'announce'   : _("tracker announce url: %s"),
+          'announce-list'   : _("tracker announce list: %s"),
           'nodes'      : _("trackerless nodes:"      ),
           'comment'    : _("comment:"                ),
           }
@@ -86,6 +86,9 @@ for metainfo_name in argv[1:]:
 
     if metainfo.has_key('announce'):
         print labels['announce'] % metainfo['announce']
+    if 'announce-list' in metainfo:
+        print labels['announce-list'] % metainfo['announce-list']
+        
     if metainfo.has_key('nodes'):
         print labels['nodes']
         for n in metainfo['nodes']:
@@ -95,3 +98,4 @@ for metainfo_name in argv[1:]:
     if metainfo.has_key('comment'):
         print metainfo['comment']
     print
+

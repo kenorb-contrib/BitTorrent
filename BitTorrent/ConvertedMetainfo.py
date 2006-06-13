@@ -30,6 +30,7 @@ from BitTorrent.bencode import bencode
 from BitTorrent import btformats
 from BitTorrent import BTFailure, InfoHashType
 from BitTorrent.platform import get_filesystem_encoding, encode_for_filesystem
+from BitTorrent.defer import ThreadedDeferred
 
 WINDOWS_UNSUPPORTED_CHARS = u'"*/:<>?\|'
 windows_translate = {}
@@ -117,8 +118,10 @@ class ConvertedMetainfo(object):
                 if len(path[-1]) == 0:
                     if l > 0:
                         raise BTFailure(_("Bad file path component: ")+x)
-                    # BitComet makes bad .torrent files with empty
-                    # filename part
+                    # BitComet makes .torrent files with directories
+                    # listed along with the files, which we don't support
+                    # yet, in part because some idiot interpreted this as
+                    # a bug in BitComet rather than a feature.
                     path.pop(-1)
 
                 for x in path:
@@ -176,7 +179,7 @@ class ConvertedMetainfo(object):
             self.is_trackerless = True
         else:
             self.is_trackerless = False
-            
+
         if 'nodes' in metainfo:
             self.nodes = metainfo['nodes']
 
@@ -186,7 +189,7 @@ class ConvertedMetainfo(object):
             self.comment = metainfo['comment']
         if 'creation date' in metainfo:
             self.creation_date = metainfo['creation date']
-        
+
         self.url_list = metainfo.get('url-list', [])
         if not isinstance(self.url_list, list):
             self.url_list = [self.url_list, ]
@@ -239,9 +242,9 @@ class ConvertedMetainfo(object):
                         "just ignored."))
 
     # At least BitComet seems to make bad .torrent files that have
-    # fields in an arbitrary encoding but separate 'field.utf-8'
-    # attributes; some of them also have an integer 'codepage' key or
-    # a string 'encoding' key at the root level.
+    # fields in an unspecified non-utf8 encoding.  Some of those have separate
+    # 'field.utf-8' attributes.  Less broken .torrent files have an integer
+    # 'codepage' key or a string 'encoding' key at the root level.
     def _get_attr(self, d, attrib):
         def _decode(o, encoding):
             if encoding is None:
@@ -365,10 +368,14 @@ class ConvertedMetainfo(object):
                     continue
             return ret
 
-    def get_tracker_ips(self):
+    def get_tracker_ips(self, wrap_task):
         """Returns the list of tracker IP addresses or the empty list if the
            torrent is trackerless.  This extracts the tracker ip addresses
            from the urls in the announce or announce list."""
+        df = ThreadedDeferred(wrap_task, self._get_tracker_ips, daemon=True)
+        return df
+
+    def _get_tracker_ips(self):
         if hasattr(self, "_tracker_ips"):     # cache result.
             return self._tracker_ips
 
@@ -392,5 +399,6 @@ class ConvertedMetainfo(object):
             except socket.gaierror:
                 global_logger.error( _("Cannot find tracker with name %s") % t )
         return self._tracker_ips
+
 
 

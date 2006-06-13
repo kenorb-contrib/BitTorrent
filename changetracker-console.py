@@ -12,8 +12,7 @@
 
 # Written by Henry 'Pi' James and Bram Cohen
 
-from BitTorrent.platform import install_translation
-install_translation()
+from BitTorrent.translation import _
 
 from os.path import basename
 from sys import argv, exit

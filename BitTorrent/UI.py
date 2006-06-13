@@ -465,9 +465,34 @@ class BasicApp(object):
 
     def make_statusrequest(self, event = None):
         """Make status request."""
-        # BUG: we're not handling errors here.
-        launch_coroutine(self.gui_wrap, self.update_status)
+        df = launch_coroutine(self.gui_wrap, self.update_status)
+        def errback(e):
+            self.logger.error("update_status failed", exc_info=e)
+        df.addErrback(errback)
         return True
+
+
+    def update_single_torrent(self, infohash):
+        torrent = self.torrents[infohash]
+        df = self.multitorrent.torrent_status(infohash,
+                                              torrent.wants_peers(),
+                                              torrent.wants_files()
+                                              )
+        yield df
+        try:
+            core_torrent, statistics = df.getResult()
+        except UnknownInfohash:
+            # looks like it's gone now
+            if infohash in self.torrents:
+                self.torrents.pop(infohash)
+                self.torrent_removed(infohash)
+        else:
+            # the infohash might have been removed from torrents
+            # while we were yielding above, so we need to check
+            if infohash in self.torrents:
+                core_torrent = ThreadProxy(core_torrent, self.gui_wrap)
+                torrent.update(core_torrent, statistics)
+                self.update_torrent(torrent)
 
 
     def update_status(self):
@@ -478,13 +503,18 @@ class BasicApp(object):
         torrents = df.getResult()
 
         infohashes = set()
+        au_torrents = {}
 
         for torrent in torrents:
             torrent = ThreadProxy(torrent, self.gui_wrap)
             infohashes.add(torrent.metainfo.infohash)
-            if torrent.metainfo.infohash not in self.torrents:
+            if (not torrent.hidden and
+                torrent.metainfo.infohash not in self.torrents):
                 # create new torrent widget
                 to = self.new_displayed_torrent(torrent)
+
+            if torrent.is_auto_update:
+                au_torrents[torrent.metainfo.infohash] = torrent
 
         for infohash, torrent in copy(self.torrents).iteritems():
             # remove nonexistent torrents
@@ -510,10 +540,10 @@ class BasicApp(object):
                     self.torrents.pop(infohash)
                     self.torrent_removed(infohash)
             else:
-                core_torrent = ThreadProxy(core_torrent, self.gui_wrap)
                 # the infohash might have been removed from torrents
                 # while we were yielding above, so we need to check
                 if infohash in self.torrents:
+                    core_torrent = ThreadProxy(core_torrent, self.gui_wrap)
                     torrent.update(core_torrent, statistics)
                     self.update_torrent(torrent)
                     if statistics['fractionDone'] is not None:
@@ -534,7 +564,7 @@ class BasicApp(object):
             else:
                 if self.installer_to_launch_at_exit is None:
                     atexit.register(self.launch_installer_at_exit)
-                torrent = self.torrents[installable_version]
+                torrent = au_torrents[installable_version]
                 self.installer_to_launch_at_exit = torrent.working_path
                 if bttime() > self.next_autoupdate_nag:
                     self.prompt_for_quit_for_new_version(available_version)
@@ -551,11 +581,13 @@ class BasicApp(object):
             stats['total_uptotal'] = Size(u)
             stats['total_downtotal'] = Size(d)
 
-            stats['num_torrents'] = len(mt.torrents)
-            stats['num_running_torrents'] = len(mt.running)
+            torrents = mt.get_visible_torrents()
+            running = mt.get_visible_running()
+            stats['num_torrents'] = len(torrents)
+            stats['num_running_torrents'] = len(running)
 
             stats['num_connections'] = 0
-            for t in mt.get_torrents():
+            for t in torrents:
                 stats['num_connections'] += t.get_num_connections()
 
             try:
@@ -608,12 +640,12 @@ class BasicApp(object):
         """Tell multitorrent to set a config item."""
         self.config[option] = value
         if self.multitorrent:
-            self.multitorrent.set_config(option, value, infohash)
+            self.multitorrent.set_option(option, value, infohash)
 
 
-    def remove_infohash(self, infohash):
+    def remove_infohash(self, infohash, del_files=False):
         """Tell multitorrent to remove a torrent."""
-        df = self.multitorrent.remove_torrent(infohash)
+        df = self.multitorrent.remove_torrent(infohash, del_files=del_files)
         yield df
         try:
             df.getResult()
@@ -652,6 +684,7 @@ class BasicApp(object):
                 torrent.state = df.getResult()
 
             torrent.pending = None
+            yield True
 
 
     def start_torrent(self, infohash):
@@ -671,6 +704,7 @@ class BasicApp(object):
             df.getResult()
 
             torrent.pending = None
+            yield True
 
 
     def force_start_torrent(self, infohash):
@@ -693,6 +727,7 @@ class BasicApp(object):
                 torrent.state = df.getResult()
 
             torrent.pending = None
+            yield True
 
 
     def external_command(self, action, *datas):

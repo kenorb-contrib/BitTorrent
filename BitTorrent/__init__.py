@@ -11,12 +11,12 @@
 
 
 app_name = 'BitTorrent'
-version = '4.9.7'
+version = '4.9.9'
 
 URL = 'http://www.bittorrent.com/'
-DONATE_URL = URL + 'donate.myt?client=%(client)s'
-FAQ_URL = URL + 'FAQ.myt?client=%(client)s'
-SEARCH_URL = 'http://www.bittorrent.com/search_result.myt?client=%(client)s&search=%(search)s'
+DONATE_URL = URL + 'donate.html?client=%(client)s'
+FAQ_URL = URL + 'FAQ.html?client=%(client)s'
+SEARCH_URL = 'http://www.bittorrent.com/search_result.html?client=%(client)s&search=%(search)s'
 LOCALE_URL = URL + 'translations/'
 
 NAG_FREQUENCY = 3
@@ -57,7 +57,7 @@ def urlquote_error(error):
      s = s.encode('utf8')
      s = urllib.quote(s)
      s = s.decode('ascii')
-     return (s.decode('ascii'), s.end)
+     return (s, s.end)
 
 codecs.register_error('urlquote', urlquote_error)
 
@@ -68,8 +68,7 @@ from BitTorrent.platform import get_temp_subdir, get_home_dir, get_dot_dir, is_f
 
 if os.name == 'posix':
     if os.uname()[0] == "Darwin":
-        from BitTorrent.platform import install_translation
-        install_translation()
+        from BitTorrent.translation import _
 
 if "-u" in sys.argv or "--use_factory_defaults" in sys.argv:
     logroot = get_temp_subdir()
@@ -77,8 +76,6 @@ else:
     #logroot = get_home_dir()
     logroot = get_dot_dir()
 
-# hackery to get around bug in py2exe that tries to write log files to
-# application directories, which may not be writable by non-admin users
 if is_frozen_exe:
     if logroot is None:
         logroot = os.path.splitdrive(sys.executable)[0]
@@ -88,6 +85,8 @@ if is_frozen_exe:
 else:
     logname = os.path.split(os.path.abspath(sys.argv[0]))[1]
 logname = os.path.splitext(logname)[0] + '.log'
+if logroot != '' and not os.path.exists(logroot):
+    os.makedirs(logroot)
 logpath = os.path.join(logroot, logname)
 
 
@@ -114,7 +113,7 @@ old_stderr = sys.stderr
 
 def inject_main_logfile():
     # the main log file. log every kind of message, format properly,
-    # rotate the log someday - SocketHandler
+    # rotate the log. someday - SocketHandler
 
     mainlog = logging.handlers.RotatingFileHandler(filename=logpath,
         mode='a', maxBytes=2**20, backupCount=1)
@@ -133,32 +132,25 @@ def inject_main_logfile():
         stderr_console.setFormatter(logging.Formatter(u'%(message)s'))
         logging.getLogger('').addHandler(stderr_console)
 
-class StderrProxy(StringIO):
+root_logger = logging.getLogger('')
 
-    def _flush_to_log(self):
-        logging.log(STDERR, self.getvalue())
-        self.seek(0)
-        self.truncate()
+class StderrProxy(StringIO):
 
     # whew. ugly. is there a simpler way to write this?
     # the goal is to stop every '\n' and flush to the log
     # otherwise keep buffering.
     def write(self, text, *args):
-        if '\n' not in text:
-            StringIO.write(self, text)
-            return
-
-        last = False
-        if text[-1] == '\n':
-            last = True
         lines = text.split('\n')
         for t in lines[:-1]:
-            StringIO.write(self, t)
-            self._flush_to_log()
+            if len(t) > 0:
+                StringIO.write(self, t)
+            # the docs don't say it, but logging.log is new in 2.4
+            #logging.log(STDERR, self.getvalue())
+            root_logger.log(STDERR, self.getvalue())
+            self.seek(0)
+            self.truncate()
         if len(lines[-1]) > 0:
             StringIO.write(self, lines[-1])
-            if last:
-                self._flush_to_log()
 
 sys.stderr = StderrProxy()
 def reset_stderr():

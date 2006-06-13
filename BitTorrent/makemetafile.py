@@ -188,7 +188,7 @@ def makeinfo(path, piece_length, flag, progress):
                 u = decode_from_filesystem(name)
             except Exception, e:
                 raise BTFailure(_('Could not convert file/directory name "%s" to '
-                                  'utf-8 (%s). Either the assumed filesystem '
+                                  'Unicode (%s). Either the assumed filesystem '
                                   'encoding "%s" is wrong or the filename contains '
                                   'illegal bytes.') % (name, str(e), get_filesystem_encoding()))
 

@@ -125,9 +125,12 @@ class MultiTorrent(Feedback):
             # don't be retarted.
             self.logger.exception("_restore_state failed")
 
+        def no_dump_set_option(option, value):
+            self.set_option(option, value, dump=False)
+
         self.bandwidth_manager = BandwidthManager(
             self.rawserver.external_add_task, config,
-            self.set_option, self.rawserver.get_remote_endpoints,
+            no_dump_set_option, self.rawserver.get_remote_endpoints,
             get_rates=self.get_total_rates )
 
         self.rawserver.add_task(0, self.butle)
@@ -217,14 +220,16 @@ class MultiTorrent(Feedback):
     def close_listening_socket(self):
         self.singleport_listener.close_sockets()
 
-    def set_option(self, option, value, infohash=None):
+    def set_option(self, option, value, infohash=None, dump=True):
         if infohash is not None:
             t = self.get_torrent(infohash)
             t.config[option] = value
-            t._dump_torrent_config()
+            if dump:
+                t._dump_torrent_config()
         else:
             self.config[option] = value
-            self._dump_global_config()
+            if dump:
+                self._dump_global_config()
 
         if option in ['max_upload_rate', 'upload_unit_size']:
             self.ratelimiter.set_parameters(self.config['max_upload_rate'],
@@ -248,7 +253,8 @@ class MultiTorrent(Feedback):
     def global_error(self, severity, message, exc_info=None):
         self.logger.log(severity, message, exc_info=exc_info)
 
-    def create_torrent(self, metainfo, save_incomplete_as, save_as):
+    def create_torrent(self, metainfo, save_incomplete_as, save_as,
+                       hidden=False, is_auto_update=False):
         #save_as, junk = encode_for_filesystem(save_as)
         #save_incomplete_as, junk = encode_for_filesystem(save_incomplete_as)
         infohash = metainfo.infohash
@@ -271,7 +277,8 @@ class MultiTorrent(Feedback):
         t = Torrent(metainfo, save_incomplete_as, save_as, self.config,
                     self.data_dir, self.rawserver, self.singleport_listener,
                     self.ratelimiter, self.total_downmeasure,
-                    self.filepool, self.dht, self, self.log_root)
+                    self.filepool, self.dht, self, self.log_root,
+                    hidden=hidden, is_auto_update=is_auto_update)
         retdf = Deferred()
 
         def torrent_started(*args):
@@ -290,15 +297,23 @@ class MultiTorrent(Feedback):
         return retdf
 
 
-    def remove_torrent(self, ihash):
+    def remove_torrent(self, ihash, del_files=False):
         # this feels redundant. the torrent will stop the download itself,
         # can't we accomplish the rest through a callback or something?
         if self.torrent_running(ihash):
             self.stop_torrent(ihash)
 
         t = self.torrents[ihash]
+
+        # super carefully determine whether these are really incomplete files
+        inco = ((not t.completed) and
+                (t.working_path != t.destination_path) and
+                t.working_path.startswith(self.config['save_incomplete_in']))
+        del_files = del_files and inco
+
         df = t.shutdown()
-        df.addCallback(lambda *args: t.remove_state_files())
+
+        df.addCallback(lambda *args: t.remove_state_files(del_files=del_files))
         try:
             del self.running[ihash]
         except:
@@ -370,15 +385,17 @@ class MultiTorrent(Feedback):
     def get_running(self):
         return self.running.keys()
 
+    def get_visible_torrents(self):
+        return [t for t in self.torrents.values() if not t.hidden]
+
+    def get_visible_running(self):
+        return [i for i in self.running.keys() if not self.torrents[i].hidden]
+
     def torrent_running(self, ihash):
         return ihash in self.running
 
     def torrent_known(self, ihash):
         return ihash in self.torrents
-
-    def set_config(self, option, value, infohash=None):
-        # BUG: DEPRECATED!!!! use set_option
-        self.set_option(option, value, infohash)
 
     def pause(self):
         for i in self.running.keys():
@@ -438,6 +455,11 @@ class MultiTorrent(Feedback):
             return aub.get_auto_update_status()
         return None, None, None
 
+    def remove_auto_updates_except(self, infohash):
+        for t in self.torrents.values():
+            if t.is_auto_update and t.metainfo.infohash != infohash:
+                self.remove_torrent(t.metainfo.infohash, del_files=True)
+
 
     ## singletorrent callbacks
     def started(self, torrent):
@@ -469,13 +491,15 @@ class MultiTorrent(Feedback):
 
     def exception(self, torrent, text):
         torrent.logger.debug("torrent threw exception: " + text)
-        assert torrent.infohash in self.torrents
+        if torrent.infohash not in self.torrents:
+            return
         for policy in self.policies:
             policy.exception(torrent, text)
 
     def error(self, torrent, level, text):
-        torrent.logger.debug("torrent error: " + text)
-        assert torrent.infohash in self.torrents
+        torrent.logger.log(level, text)
+        if torrent.infohash not in self.torrents:
+            return
         for policy in self.policies:
             policy.error(torrent, level, text)
 

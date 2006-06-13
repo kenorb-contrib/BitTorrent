@@ -13,10 +13,10 @@
 # Written by Bram Cohen
 
 if __name__ == '__main__':
-    from BitTorrent.platform import install_translation
-    install_translation()
+    from BitTorrent.translation import _
 
 import sys
+import locale
 from BitTorrent.defaultargs import get_defaults
 from BitTorrent import configfile
 from BitTorrent.makemetafile import make_meta_files
@@ -39,14 +39,16 @@ def prog(amount):
     print '%.1f%% complete\r' % (amount * 100),
 
 if __name__ == '__main__':
-        
+
     config, args = configfile.parse_configuration_and_args(defaults,
                                                     'maketorrent-console',
                                                     sys.argv[1:], minargs=1)
 
+    le = locale.getpreferredencoding()
+
     try:
         make_meta_files(args[0],
-                        args[1:],
+                        [s.decode(le) for s in args[1:]],
                         progressfunc=prog,
                         filefunc=dc,
                         piece_len_pow2=config['piece_size_pow2'],

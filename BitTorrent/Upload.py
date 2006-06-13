@@ -24,7 +24,7 @@ import logging
 logger = logging.getLogger("BitTorrent.Upload")
 log = logger.debug
 
-def _compute_allowed_fast_list(infohash,ip, num_fast, num_pieces):
+def _compute_allowed_fast_list(infohash, ip, num_fast, num_pieces):
     
     # if ipv4 then  (for now assume IPv4)
     iplist = [int(x) for x in ip.split(".")]

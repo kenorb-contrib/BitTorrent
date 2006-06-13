@@ -15,8 +15,7 @@
 
 from __future__ import division
 
-from BitTorrent.platform import install_translation
-install_translation()
+from BitTorrent.translation import _
 
 SPEW_SCROLL_RATE = 1
 

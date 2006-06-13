@@ -99,11 +99,11 @@ class Download(object):
             count = 0
             target = len(self.have) - self.have.numfalse
             for i in xrange(len(self.have)):
+                if count == target:
+                    break
                 if self.have[i]:
                     self.multidownload.lost_have(i)
                     count += 1
-                    if count == target:
-                        break
         self._letgo()
         self.guard.download = None
         
@@ -363,11 +363,11 @@ class Download(object):
         count = 0
         target = len(self.have) - self.have.numfalse
         for i in xrange(len(self.have)):
+            if count == target:
+                break
             if self.have[i]:
                 self.multidownload.got_have(i)
                 count += 1
-                if count == target:
-                    break
         if self.multidownload.storage.endgame:
             for piece, begin, length in self.multidownload.all_requests:
                 if self.have[piece]:

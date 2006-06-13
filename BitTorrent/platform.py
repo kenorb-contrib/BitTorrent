@@ -22,7 +22,7 @@ import gettext
 import locale
 import zurllib as urllib
 import shutil
-from traceback import print_exc
+import traceback
 
 if os.name == 'nt':
     import pywintypes
@@ -75,6 +75,7 @@ if os_name == 'nt':
           (2, 5,  0): "2000",
           (2, 5,  1): "XP"  ,
           (2, 5,  2): "2003",
+          (2, 6,  0): "Vista",
           }
 
     class OSVERSIONINFOEX(ctypes.Structure):
@@ -294,7 +295,7 @@ def get_config_dir():
     shellvars = ['${APPDATA}', '${HOME}', '${USERPROFILE}']
     dir_root = get_dir_root(shellvars)
 
-    if (dir_root is None) and (os.name == 'nt'):
+    if dir_root is None and os.name == 'nt':
         app_dir = get_shell_dir(shellcon.CSIDL_APPDATA)
         if app_dir is not None:
             dir_root = app_dir
@@ -306,8 +307,26 @@ def get_config_dir():
 
     return dir_root
 
-def get_dot_dir():
+def get_old_dot_dir():
     return os.path.join(get_config_dir(), '.bittorrent')
+
+def get_dot_dir():
+    dot_dir = get_old_dot_dir()
+    if os.name == 'nt':
+        new_dot_dir = os.path.join(get_config_dir(), app_name)
+        if os.path.exists(dot_dir):
+            if os.path.exists(new_dot_dir):
+                count = 0
+                for root, dirs, files in os.walk(new_dot_dir):
+                    count = len(dirs) + len(files)
+                    break
+                if count == 0:
+                    shutil.rmtree(new_dot_dir)
+                    shutil.move(dot_dir, new_dot_dir)
+            else:
+                shutil.move(dot_dir, new_dot_dir)
+        dot_dir = new_dot_dir
+    return dot_dir
 
 def get_cache_dir():
     dir = None
@@ -431,12 +450,15 @@ def get_local_data_dir():
         # BUG: there might be a better place to save incomplete files in under OSX
         return get_dot_dir()
 
+def get_old_incomplete_data_dir():
+    return os.path.join(get_old_dot_dir(), 'incomplete')
+
 def get_incomplete_data_dir():
     # 'incomplete' is a directory name and should not be localized
     return os.path.join(get_local_data_dir(), 'incomplete')
 
 def get_save_dir():
-    dirname = '%s Downloads'%app_name
+    dirname = '%s Downloads' % app_name
     if os.name == 'nt':
         d = get_shell_dir(shellcon.CSIDL_PERSONAL)
         if d is None:
@@ -483,7 +505,7 @@ def create_shortcut(source, dest, *args):
         # the function couldn't do what was requested
         os.symlink(source, dest)
         # linux also can't do args... maybe we should spit out a shell script?
-        assert not args;
+        assert not args
 
 def remove_shortcut(dest):
     if os.name == 'nt':
@@ -518,6 +540,13 @@ def enforce_association():
     if os.name != 'nt':
         return
 
+    try:
+        _enforce_association()
+    except WindowsError:
+        # access denied. not much we can do.
+        traceback.print_exc()
+
+def _enforce_association():
     INSTDIR, EXENAME = os.path.split(win32api.GetModuleFileName(0))
     if 'python' in EXENAME.lower():
         # oops, running the .py too lazy to make that work
@@ -806,7 +835,7 @@ def write_language_file(lang):
         lang_file.close()
 
 
-def install_translation():
+def install_translation(unicode=False):
     languages = None
     try:
         lang = read_language_file()
@@ -814,8 +843,8 @@ def install_translation():
             languages = [lang, ]
     except:
         #pass
-        print_exc()
-    _gettext_install('bittorrent', locale_root, languages=languages)
+        traceback.print_exc()
+    _gettext_install('bittorrent', locale_root, languages=languages, unicode=unicode)
 
 
 def encode_for_filesystem(path):

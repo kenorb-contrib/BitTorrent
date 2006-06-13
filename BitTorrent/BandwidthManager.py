@@ -7,22 +7,27 @@ import socket
 import itertools
 from BitTorrent.obsoletepythonsupport import set
 from BitTorrent.RTTMonitor import RTTMonitor
+from BitTorrent.defer import ThreadedDeferred
+from BitTorrent.yielddefer import _wrap_task
 from BitTorrent.HostIP import get_host_ips
 from BitTorrent.platform import bttime
 from BitTorrent.Lists import SizedList
 
 class NodeFeeder(object):
-    def __init__(self, add_task, get_remote_endpoints, rttmonitor):
-        self.add_task = add_task
+    def __init__(self, external_add_task,
+                 get_remote_endpoints, rttmonitor):
+        self.external_add_task = external_add_task
         self.get_remote_endpoints = get_remote_endpoints
         self.rttmonitor = rttmonitor
-        self.add_task(3, self._collect_nodes)
+        self.external_add_task(3, self._start)
 
-    def _collect_nodes(self):
+    def _start(self):
+        df = ThreadedDeferred(_wrap_task(self.external_add_task), get_host_ips, daemon=True)
+        df.addCallback(self._collect_nodes)
+
+    def _collect_nodes(self, local_ips):
         addrs = self.get_remote_endpoints()
         
-        local_ips = get_host_ips()
-    
         ips = set()
         for (ip, port) in addrs:
             if ip is not None and ip != "0.0.0.0" and ip not in local_ips:
@@ -36,7 +41,7 @@ class NodeFeeder(object):
         if len(ips) > 0:
             delay = 300
     
-        self.add_task(delay, self._collect_nodes)
+        self.external_add_task(delay, self._collect_nodes, local_ips)
 
 
 def ratio_sum_lists(a, b):
@@ -75,16 +80,16 @@ def standard_deviation(l):
 
 class BandwidthManager(object):
     
-    def __init__(self, external_add_task, config, set_config,
+    def __init__(self, external_add_task, config, set_option,
                        get_remote_endpoints, get_rates):
         self.external_add_task = external_add_task
         self.config = config
-        self.set_config = set_config
+        self.set_option = set_option
         self.get_rates = get_rates
         def got_new_rtt(rtt):
             self.external_add_task(0, self._inspect_rates, rtt)
         self.rttmonitor = RTTMonitor(got_new_rtt)
-        self.nodefeeder = NodeFeeder(add_task=external_add_task,
+        self.nodefeeder = NodeFeeder(external_add_task=external_add_task,
                                      get_remote_endpoints=get_remote_endpoints,
                                      rttmonitor=self.rttmonitor)
 
@@ -226,7 +231,7 @@ class BandwidthManager(object):
             if not self.config['bandwidth_management']:
                 return
             #print "Setting rate to ", value
-            self.set_config(option, value)
+            self.set_option(option, value)
 
         # TODO: slow start should be smarter than this
         if self.start_time < bttime() + 20:
@@ -291,7 +296,7 @@ class BandwidthManager(object):
             
         #self._affect_rate("download", t, cd, self.last_cd, pd,
         #                  self.config['max_download_rate'],
-        #                  lambda r : self.set_config('max_download_rate', r))
+        #                  lambda r : self.set_option('max_download_rate', r))
 
         self.max_std = max(self.max_std, std)
 

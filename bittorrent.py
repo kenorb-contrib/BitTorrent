@@ -230,8 +230,7 @@ if __name__ == '__main__':
             raise
 
 
-    corethread = threading.Thread(target = init_core,
-                                  args = (mainloop,))
+    corethread = threading.Thread(target=init_core, args=(mainloop,))
 
     corethread.setDaemon(False)
     corethread.start()

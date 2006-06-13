@@ -14,7 +14,6 @@ from __future__ import division
 from __future__ import generators
 
 import os
-import gc
 import sys
 import struct
 import cPickle
@@ -437,8 +436,6 @@ class StorageWrapper(object):
             self._piece_buf = df.getResult()
         except BTFailure: # short read
             self._piece_buf = ''
-        # I die! Someone tell me why this is happening.
-        gc.collect()
         p = i - self._pieces_in_buf[0]
         yield buffer(self._piece_buf, p * self.piece_size, self._piecelen(i))
         

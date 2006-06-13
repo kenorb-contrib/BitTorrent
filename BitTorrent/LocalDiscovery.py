@@ -42,7 +42,7 @@ class LocalDiscovery(object):
         discovery_logger.info("Service %s added", repr(name))
         # Request more information about the service
         info = server.getServiceInfo(type, name)
-        if info:
+        if info and info.address is not None:
             host = socket.inet_ntoa(info.address)
             try:
                 port = int(info.port)

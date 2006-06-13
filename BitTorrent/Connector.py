@@ -138,6 +138,7 @@ class Connection(Handler):
         self.parent = parent
         self.connection = connection
         self.id = id
+        self.ip = None
         self.ip = connection.ip
         self.locally_initiated = is_local
         self.complete = False
@@ -471,9 +472,9 @@ class Connection(Handler):
         yield 20  # peer id
         if not self.id:
             self.id = self._message
-            self.logger = logging.getLogger(
-                self.log_prefix + '.' + repr(self.parent.download_id) +
-                '.' + self._message.encode('hex') )
+            ns = (self.log_prefix + '.' + repr(self.parent.download_id) +
+                  '.' + self._message.encode('hex'))
+            self.logger = logging.getLogger(ns)
 
             if self.id == self.parent.my_id:
                 self.protocol_violation("talking to self", self.connection)
@@ -485,8 +486,8 @@ class Connection(Handler):
                             "duplicate connection (id collision)",
                             self.connection)
                         return
-                    if self.parent.config['one_connection_per_ip'] and \
-                           v.ip == self.ip:
+                    if (self.parent.config['one_connection_per_ip'] and
+                        v.ip == self.ip):
                         self.protocol_violation(
                             "duplicate connection (ip collision)",
                             self.connection)

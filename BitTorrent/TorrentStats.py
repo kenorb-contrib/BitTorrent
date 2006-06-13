@@ -39,26 +39,17 @@ class TorrentStats(object):
         l = [ ]
         for c in self.choker.connections:
             rec = {}
-            try:
-                assert isinstance(c.ip, str), "IP must be a string! got: %s " % c.ip
-                
-                assert c.ip.count('.') == 3, "Invalid IP! got: %s " % c.ip
-            except:
-                self.logger.exception('stats collection error')
-                continue
             rec['id'] = c.id
             rec["ip"] = c.ip
             rec["is_optimistic_unchoke"] = (c is self.choker.connections[0])
+
             if c.locally_initiated:
-                if c._decrypt:
-                    rec["initiation"] = "L+"
-                else:
-                    rec["initiation"] = "L"
+                rec["initiation"] = "L"
             else:
-                if c._decrypt:
-                    rec["initiation"] = "R+"
-                else:
-                    rec["initiation"] = "R"
+                rec["initiation"] = "R"
+            if c._decrypt:
+                rec["initiation"] += '+'
+
             u = c.upload
             rec["upload"] = (u.measure.get_total(), int(u.measure.get_rate()),
                              u.interested, u.choked)
@@ -68,6 +59,8 @@ class TorrentStats(object):
                                d.interested, d.choked, d.is_snubbed())
             rec['completed'] = 1 - d.have.numfalse / len(d.have)
             rec['speed'] = d.connection.download.peermeasure.get_rate()
+            if d.have.numfalse > 0:
+                rec['total_eta'] = self.storage.total_length / max(1, d.connection.download.peermeasure.get_rate())
             l.append(rec)
         return l
 

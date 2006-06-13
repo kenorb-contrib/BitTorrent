@@ -544,7 +544,8 @@ Function ${UN}MagicUninstall
   ;MessageBox MB_OK "Not deleting $R0,$\r$\nbecause there are extra files or directories in it, or it is in use."   
  dontwarn:  
   
-  SetShellVarContext current
+  ;SetShellVarContext current
+  SetShellVarContext all
   Delete "$SMSTARTUP\${APPNAME}.lnk"
 
   SetShellVarContext all
@@ -737,8 +738,13 @@ continue:
   System::Call 'Shell32::SHChangeNotify(i 0x8000000, i 0, i 0, i 0)'
 
   ; Add items to start menu
+
+  ; newer versions of BT use the registry 'run' section
   SetShellVarContext current
-  CreateShortCut "$SMSTARTUP\${APPNAME}.lnk"                  "$INSTDIR\${EXENAME}"
+  Delete "$SMSTARTUP\${APPNAME}.lnk"
+
+  SetShellVarContext all
+  ;CreateShortCut "$SMSTARTUP\${APPNAME}.lnk"                  "$INSTDIR\${EXENAME}"
 
   CreateDirectory "$SMPROGRAMS\${APPNAME}"
   CreateShortCut "$SMPROGRAMS\${APPNAME}\BitTorrent.lnk"      "$INSTDIR\${EXENAME}"

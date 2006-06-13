@@ -180,6 +180,7 @@ class Rerequester(object):
     def _check(self):
         assert thread.get_ident() == self.rawserver.ident
         assert not self.dead
+        self.errorfunc(logging.INFO, 'check: ' + str(self.current_started))
         if self.current_started is not None:
             if self.current_started <= bttime() - 58:
                 self.errorfunc(logging.WARNING,
@@ -226,6 +227,7 @@ class Rerequester(object):
         assert not self.dead
         assert thread.get_ident() == self.rawserver.ident
         self.current_started = bttime()
+        self.errorfunc(logging.INFO, 'announce: ' + str(self.current_started))
         s = ('%s&uploaded=%s&downloaded=%s&left=%s' %
              (self.url, str(self.up()*self.config.get('lie',1) - self.previous_up),
               str(self.down() - self.previous_down), str(self.amount_left())))
@@ -350,12 +352,13 @@ class Rerequester(object):
     def _postrequest(self, data=None, errormsg=None, exc=None, peerid=None):
         assert thread.get_ident() == self.rawserver.ident
         self.current_started = None
+        self.errorfunc(logging.INFO, 'postrequest: ' + str(self.current_started))
         self.last_time = bttime()
+        if self.dead:
+            return
         if errormsg is not None:
             self.errorfunc(logging.WARNING, errormsg)
             self._fail(exc)
-            return
-        if self.dead:
             return
         try:
             r = bdecode(data)
@@ -410,11 +413,11 @@ class Rerequester(object):
             self._check()
 
 class DHTRerequester(Rerequester):
-    def __init__(self, config, sched, howmany, connect, externalsched,
+    def __init__(self, config, sched, howmany, connect, externalsched, rawserver,
             amount_left, up, down, port, myid, infohash, errorfunc, doneflag,
             upratefunc, downratefunc, ever_got_incoming, diefunc, sfunc, dht):
         self.dht = dht
-        Rerequester.__init__(self, "http://localhost/announce", [], config, sched, externalsched,
+        Rerequester.__init__(self, "http://localhost/announce", [], config, sched, externalsched, rawserver,
                              howmany, connect,
                              amount_left, up, down, port, myid, infohash, errorfunc, doneflag,
                              upratefunc, downratefunc, ever_got_incoming, diefunc, sfunc)
@@ -426,7 +429,7 @@ class DHTRerequester(Rerequester):
     def _rerequest(self, url, peerid):
         self.peers = ""
         try:
-            self.dht.getPeersAndAnnounce(self.infohash, self.port, self._got_peers)
+            self.dht.getPeersAndAnnounce(str(self.infohash), self.port, self._got_peers)
         except Exception, e:
             self._postrequest(errormsg=_("Trackerless lookup failed: ") + str(e), peerid=self.wanted_peerid)
 

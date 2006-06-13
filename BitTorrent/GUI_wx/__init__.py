@@ -18,18 +18,20 @@ import wx
 import wx.grid
 import wxPython
 import traceback
+import bisect
 from BitTorrent.translation import _
 
 from UserDict import UserDict
 from BitTorrent import zurllib
 
-from BitTorrent.platform import image_root, desktop
+from BitTorrent.platform import image_root, desktop, bttime
 import BitTorrent.stackthreading as threading
 from BitTorrent.defer import ThreadedDeferred
 
 vs = wxPython.__version__
 min_wxpython = "2.6"
 assert vs >= min_wxpython, _("wxPython version %s or newer required") % min_wxpython
+assert 'unicode' in wx.PlatformInfo, _("The Unicode versions of wx and wxPython are required")
 
 text_wrappable = wx.__version__[4] >= '2'
 
@@ -227,29 +229,70 @@ class LabelValueFlexGridSizer(wx.FlexGridSizer):
         self.Add(h)
 
 
-    def add_value(self, value):
-        t = ElectroStaticText(self.parent_widget, id=wx.ID_ANY, label=value)
-        self.Add(t)
+    def add_value(self, value, dotify=False):
+        t = ElectroStaticText(self.parent_widget, id=wx.ID_ANY, label="",
+                              dotify=dotify)
+        self.Add(t, flag=wx.FIXED_MINSIZE|wx.GROW)
+        t.SetLabel(value)
         return t
 
 
-    def add_pair(self, label, value):
+    def add_pair(self, label, value, dotify_value=False):
         self.add_label(label)
-        t = self.add_value(value)
+        t = self.add_value(value, dotify=dotify_value)
         return t
 
 
 
 class ElectroStaticText(wx.StaticText):
-    def __init__(self, parent, id=wx.ID_ANY, label=''):
+    def __init__(self, parent, id=wx.ID_ANY, label='', dotify=False):
         wx.StaticText.__init__(self, parent, id, label)
         self.label = label
+        self._string = self.label
+        if dotify:
+            self.Bind(wx.EVT_PAINT, self.DotifyOnPaint)
 
     def SetLabel(self, label):
         if label != self.label:
-            wx.StaticText.SetLabel(self, label)
-        self.label = label
+            self.label = label
+            self._string = self.label
+            wx.StaticText.SetLabel(self, self.label)
 
+    def dotdotdot(self, label, width, max_width):
+
+        label_reverse = label[::-1]
+
+        beginning_values = self.dc.GetPartialTextExtents(label)
+        ending_values = self.dc.GetPartialTextExtents(label_reverse)
+
+        halfwidth = (width - self.dc.GetTextExtent("...")[0]) / 2
+
+        beginning = bisect.bisect_left(beginning_values, halfwidth)
+        ending = bisect.bisect_left(ending_values, halfwidth)
+
+        if ending > 0:
+            string = label[:beginning] + "..." + label[(0 - ending):]
+        else:
+            string = label[:beginning] + "..."
+
+        return string
+
+    def DotifyOnPaint(self, event):
+        self.dc = wx.PaintDC(self)
+        self.dc.SetFont(self.GetFont())
+
+        width = self.GetSize().width
+        str_width = self.dc.GetTextExtent(self._string)[0]
+        max_width = self.dc.GetTextExtent(self.label)[0]
+
+        if width >= max_width:
+            self._string = self.label
+        elif width != str_width:
+            string = self.dotdotdot(self.label, width, max_width)
+            self._string = string
+        wx.StaticText.SetLabel(self, self._string)
+
+        event.Skip()
 
 
 class ElectroStaticBitmap(wx.Window):
@@ -737,10 +780,12 @@ class BTApp(wx.App):
             wx.FutureCall(6, start_profile)
 
         wx.the_app = self
-        self._CallAfterId = wx.NewEventType()
-        self.Connect(-1, -1, self._CallAfterId,
-                     lambda event: event.callable(*event.args, **event.kw) )
-       
+        self._DoIterationId = wx.NewEventType()
+        self.Connect(-1, -1, self._DoIterationId, self._doIteration)
+        self.evt = wx.PyEvent()
+        self.evt.SetEventType(self._DoIterationId)
+        self.event_queue = []
+
         # this breaks TreeListCtrl, and I'm too lazy to figure out why
         #wx.IdleEvent_SetMode(wx.IDLE_PROCESS_SPECIFIED)
         # this fixes 24bit-color toolbar buttons
@@ -760,7 +805,17 @@ class BTApp(wx.App):
             stats.print_stats(20)
         pass
 
-    def _CallAfter(self, _f, *a, **kw):
+    def who(self, _f, a):
+        if _f.__name__ == "_recall":
+            if not hasattr(a[0], 'gen'):
+                return str(a[0])
+            return a[0].gen.gi_frame.f_code.co_name
+        return _f.__name__
+
+    def _doIteration(self, event):
+
+        _f, a, kw = self.event_queue.pop(0)
+
         try:
             if self.doneflag.isSet():
                 #print "dropping", _f
@@ -768,21 +823,20 @@ class BTApp(wx.App):
         except:
             # assume any kind of error means the app is dying
             return
-        #def who():
-        #    if _f.__name__ == "_recall":
-        #        return a[1].gen.gi_frame.f_code.co_name
-        #    return _f.__name__
-        #print who()
 
+##        t = bttime()
+##        print self.who(_f, a)
         if profile:
             self.prof.start()
             _f(*a, **kw)
             self.prof.stop()
         else:
             _f(*a, **kw)
+##        print self.who(_f, a), 'done in', bttime() - t
+##        if bttime() - t > 1.0:
+##            print 'TOO SLOW!'
+##            assert False
 
-#    def CallAfter(self, _f, *a, **kw):
-#        wx.CallAfter(self._CallAfter, _f, *a, **kw)
     def CallAfter(self, callable, *args, **kw):
         """
         Call the specified function after the current and pending event
@@ -791,9 +845,6 @@ class BTApp(wx.App):
         keyword args are passed on to the callable when it is called.
         """
 
-        evt = wx.PyEvent()
-        evt.SetEventType(self._CallAfterId)
-        evt.callable = self._CallAfter
-        evt.args = (callable, ) + args
-        evt.kw = kw
-        wx.PostEvent(self, evt)
+        # append (right) and pop (left) are atomic
+        self.event_queue.append((callable, args, kw))
+        wx.PostEvent(self, self.evt)

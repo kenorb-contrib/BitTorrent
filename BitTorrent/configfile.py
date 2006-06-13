@@ -25,7 +25,7 @@ from ConfigParser import RawConfigParser
 from ConfigParser import MissingSectionHeaderError, ParsingError
 from BitTorrent import parseargs
 from BitTorrent import app_name, version, BTFailure
-from BitTorrent.platform import get_dot_dir, get_save_dir, locale_root, is_frozen_exe, get_incomplete_data_dir, enforce_shortcut, enforce_association, smart_gettext_and_install, desktop, set_config_dir
+from BitTorrent.platform import get_dot_dir, get_save_dir, locale_root, is_frozen_exe, get_incomplete_data_dir, enforce_shortcut, enforce_association, smart_gettext_and_install, desktop, set_config_dir, get_old_incomplete_data_dir
 from BitTorrent.zurllib import bind_tracker_connection, set_zurllib_rawserver
 from BitTorrent.platform import get_temp_dir, get_temp_subdir
 
@@ -65,6 +65,7 @@ downloader_save_options = [
     'sort_ascending'        ,
     'show_details'          ,
     'details_tab'           ,
+    'splitter_height'       ,
     'theme'                 ,
 
     'donated'               ,
@@ -399,10 +400,11 @@ def parse_configuration_and_args(defaults, uiname, arglist=[], minargs=None,
        uiname != 'bittorrent':
         config['save_in'] = get_save_dir()
 
-    if config.has_key('save_incomplete_in') and \
-       config['save_incomplete_in'] == '':
-        data_dir = get_incomplete_data_dir()
-        config['save_incomplete_in'] = data_dir
+    incomplete = get_incomplete_data_dir()
+    if config.get('save_incomplete_in') == '':
+        config['save_incomplete_in'] = incomplete
+    if config.get('save_incomplete_in') == get_old_incomplete_data_dir():
+        config['save_incomplete_in'] = incomplete
 
     if uiname == "test-client" or ( uiname.startswith( "bittorrent") \
        and uiname != 'bittorrent-tracker' ):

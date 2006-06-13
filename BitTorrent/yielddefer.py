@@ -58,6 +58,13 @@ class GenWithDeferred(object):
             # cut out GenWithDeferred() and launch_coroutine
             self.stack = self.stack[:-2]
 
+    def cleanup(self):
+        del self.gen
+        del self.deferred
+        del self.queue_task
+        if debug:
+            del self.stack
+
 def _queue_task_chain(v, g):
     g.queue_task(_recall, g)
     return v
@@ -75,7 +82,7 @@ def _recall(g):
         t = g.gen.next()
     except StopIteration:
         g.deferred.callback(None)
-        del g.deferred
+        g.cleanup()
     except Exception, e:
 
         exc_type, value, tb = sys.exc_info()
@@ -99,12 +106,12 @@ def _recall(g):
         ## Magic Traceback Hacking
             
         g.deferred.errback((exc_type, value, tb))
-        del g.deferred
+        g.cleanup()
     else:
         # (half) CRUFT - remove when bittorrent uses twisted deferreds
         if not isinstance(t, Deferred) and not isinstance(t, defer.Deferred):
             g.deferred.callback(t)
-            del g.deferred
+            g.cleanup()
             return
 
         t.addCallback(_queue_task_chain, g)

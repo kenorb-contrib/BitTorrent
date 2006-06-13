@@ -477,11 +477,12 @@ if __name__ == '__main__':
 
     all = []
     def xcombinations(items, n):
-        if n==0: yield []
+        if n == 0:
+            yield []
         else:
             for i in xrange(len(items)):
-                for cc in xcombinations(items[:i]+items[i+1:],n-1):
-                    yield [items[i]]+cc
+                for cc in xcombinations(items[:i] + items[i+1:], n - 1):
+                    yield [items[i]] + cc
 
     for uc in xcombinations(range(5), 5):
         all.append(uc)

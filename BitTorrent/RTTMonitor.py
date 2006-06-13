@@ -126,7 +126,7 @@ class RTTMonitorWin32(RTTMonitorBase):
 
         dst = None
         # handy for hard-coding common node
-        #dst = '68.87.195.50'
+        #dst = '68.87.195.50'; nodes = [dst,]; common = nodes
         if not dst: 
             threads = []
             for i in nodes:

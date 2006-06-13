@@ -23,6 +23,7 @@ from BitTorrent import version
 
 def make_id():
     myid = 'M' + version.split()[0].replace('.', '-')
-    myid = myid + ('-' * (8-len(myid)))+sha(repr(time())+ ' ' +
-                                            str(getpid())).digest()[-6:].encode('hex')
+    padded = myid[:8] + '-' * (8-len(myid))
+    myid = padded + sha(repr(time()) + ' ' +
+                        str(getpid())).digest()[-6:].encode('hex')
     return myid

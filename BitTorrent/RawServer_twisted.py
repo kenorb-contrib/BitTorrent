@@ -93,12 +93,8 @@ from twisted.internet import interfaces, address
 NOLINGER = struct.pack('ii', 1, 0)
 
 # python sucks.
-SHUT_WR = 1
-if hasattr(socket, "SHUT_WR"):
-    SHUT_WR = socket.SHUT_WR
-SHUT_RD = 0
-if hasattr(socket, "SHUT_RD"):
-    SHUT_RD = socket.SHUT_RD
+SHUT_RD = getattr(socket, 'SHUT_RD', 0)
+SHUT_WR = getattr(socket, 'SHUT_WR', 1)
 
 # this is a base class for all the callbacks the server could use
 class Handler(object):
@@ -220,12 +216,6 @@ class ConnectionWrapper(object):
                 pass
 
     def sendto(self, packet, flags, addr):
-        # all this can go away once we pin down the bug
-        if not hasattr(self.transport, "listening"):
-            rawserver_logger.warning("UDP port never setup properly when asked to write")
-        elif not self.transport.listening:
-            rawserver_logger.warning("UDP port cleaned up already when asked to write")
-
         ret = None
         try:
             ret = self.transport.write(packet, addr)
@@ -415,13 +405,10 @@ class CallbackConnection(object):
     # twisted api inconsistancy workaround
     # sometimes connectionLost is called (not queued) from inside write()
     def post_connectionLost(self, reason):
-        #print ("Connection Lost", self.connection.ip, self.connection.port,
-        #       str(reason).split(":")[-1])
-        # hack to try and dig up the connection if one was ever made
-        if not hasattr(self, "connection"):
-            self.connection = self.factory.connection
-        if self.connection is not None:
-            self.factory.rawserver._remove_socket(self.connection)
+        s = self.connection
+        #print ("Connection Lost", s.ip, s.port, str(reason).split(":")[-1])
+        assert self.connection is not None
+        self.factory.rawserver._remove_socket(self.connection)
 
     def dataReceived(self, data):
         self.optionalResetTimeout()
@@ -876,6 +863,7 @@ class RawServer(RawServerMixin):
 
         if len(letters.intersection(addr)) > 0:
             rawserver_logger.warning("Don't pass host names to RawServer")
+            # this blocks, that's why we throw the warning
             addr = socket.gethostbyname(addr)
 
         self._add_pending_connection(addr)
