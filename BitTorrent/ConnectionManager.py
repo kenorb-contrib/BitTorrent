@@ -35,9 +35,9 @@ class GaurdedInitialConnection(Handler):
     def __init__(self, parent, id, encrypt=False, log_prefix=""):
         self.parent = parent
         self.id = id
-        self.accept = True
         self.log_prefix = log_prefix
         self.encrypt = encrypt
+        self.connector = None
 
     def _make_connection(self, s):
         return Connection(self.parent, s, self.id, True,
@@ -46,10 +46,6 @@ class GaurdedInitialConnection(Handler):
         
     def connection_made(self, s):
         del self.parent.pending_connections[(s.ip, s.port)]
-
-        # prevents conenctions we no longer care about from being accepted
-        if not self.accept:
-            return
 
         con = self._make_connection(s)
         self.parent._add_connection(con)
@@ -60,13 +56,7 @@ class GaurdedInitialConnection(Handler):
         self.parent.replace_connection()
         
     def connection_failed(self, addr, exception):
-        
         del self.parent.pending_connections[addr]
-
-        # we shouldn't rotate the spares with replace_connection()
-        # if the ConnectionManager object has stopped all connections
-        if not self.accept:
-            return
 
         self.parent.replace_connection()
 
@@ -112,6 +102,8 @@ class ConnectionManager(object):
         self.everinc = False
         self.tracker_ips = tracker_ips
         self.log_prefix = log_prefix
+
+        self.closed = False        
 
         # submitted
         self.pending_connections = {}
@@ -160,6 +152,8 @@ class ConnectionManager(object):
         """@param dns: domain name/ip address and port pair.
            @param id: peer id.
            """
+        if self.closed:
+            return True 
         if dns[0] in self.banned:
             return True
         if id == self.my_id:
@@ -194,12 +188,8 @@ class ConnectionManager(object):
 
         h = handler(self, id, *a, **kw)
         self.pending_connections[dns] = h
-        new_connection = self.rawserver.start_connection(dns, h, self.context)
-
-        if not new_connection:
-            del self.pending_connections[dns]
-            self.spares[(dns, id)] = (handler, a, kw)
-            return False
+        connector = self.rawserver.start_connection(dns, h, self.context)
+        h.connector = connector
 
         return True
 
@@ -259,10 +249,18 @@ class ConnectionManager(object):
     def unthrottle_connections(self):
         self.throttled = False        
 
+    def reopen(self, port):
+        self.closed = False
+        self.reported_port = port
+        self.unthrottle_connections()        
+
     def close_connections(self):
+        self.closed = True
+
+        pending = self.pending_connections.values()
         # drop connections which could be made after we're not interested
-        for c in self.pending_connections.itervalues():
-            c.accept = False
+        for h in pending:
+            h.connector.close()
             
         for c in self.connections.itervalues():
             if not c.closed:
@@ -281,9 +279,12 @@ class ConnectionManager(object):
         return True
 
     def _add_connection(self, con):
+        self.connections[con.connection] = con
+        if self.closed:
+            con.connection.close()
+            return
         if self.throttled:
             con.connection.pause_reading()
-        self.connections[con.connection] = con
 
     def ban(self, ip):
         self.banned.add(ip)

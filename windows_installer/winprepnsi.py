@@ -1,6 +1,7 @@
 import sys
 import os
 from BitTorrent import version, app_name, languages, language_names
+from BitTorrent.NewVersion import Version
 from BitTorrent.language import locale_sucks
 
 NSIS_DIR = "C:\\Program Files\\NSIS"
@@ -8,8 +9,9 @@ NSIS_DIR = "C:\\Program Files\\NSIS"
 if not os.path.exists(NSIS_DIR):
     raise Exception("Please set NSIS_DIR in winprepnsi.py!")
 
+currentversion = Version.from_str(version)
 version_str = version
-if int(version_str[2]) % 2:
+if currentversion.is_beta():
     version_str = version_str + '-Beta'
 
 nsis_language_names = {

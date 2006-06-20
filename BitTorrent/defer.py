@@ -178,3 +178,14 @@ class DeferredEvent(Deferred, threading._Event):
     def set(self):
         threading._Event.set(self)
         self.callback(None) # hmm, None?
+
+
+def run_deferred(df, f, *a, **kw):
+    try:
+        v = f(*a, **kw)
+    except:
+        df.errback(sys.exc_info())
+    else:
+        df.callback(v)
+    return df
+        

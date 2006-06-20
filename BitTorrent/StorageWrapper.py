@@ -465,6 +465,7 @@ class StorageWrapper(object):
                 yield False                
 
             piece_len = self._piecelen(i)
+            #global_logger.debug( "i=%d, piece_len=%d" % (i,piece_len) )
 
             if not self._waspre(i, piece_len):
                 # hole in the file

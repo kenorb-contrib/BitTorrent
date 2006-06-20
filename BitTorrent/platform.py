@@ -528,7 +528,7 @@ def enforce_shortcut(config, log_func):
     key = _winreg.CreateKey(root_key, subkey)
     if config['launch_on_startup']:
         _winreg.SetValueEx(key, app_name, 0, _winreg.REG_SZ,
-                           '"%s" --start_minimized' % path)
+                           '"%s" --force_start_minimized' % path)
     else:
         try:
             _winreg.DeleteValue(key, app_name)
@@ -687,7 +687,7 @@ def get_language(name):
     for tarinfo in tar:
         tar.extract(tarinfo, path=locale_root)
     tar.close()
-
+    
 
 ##def smart_gettext_translation(domain, localedir, languages, fallback=False):
 ##    try:
@@ -721,7 +721,8 @@ def smart_gettext_and_install(domain, localedir, languages, fallback=False):
                                             fallback=fallback)
                     t.install(True)
             def failed(e):
-                running_deferred.pop(d)
+                if d in running_deferred:
+                    running_deferred.pop(d)
                 # don't raise an error, just continue untranslated
                 sys.stderr.write(_('Could not find translation for language "%s"\n') %
                                  lang)

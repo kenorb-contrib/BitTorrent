@@ -20,6 +20,7 @@ import socket
 import logging
 import traceback
 if os.name == 'nt':
+    from BitTorrent import pykill
     import win32api
     import win32event
     import winerror
@@ -417,7 +418,7 @@ class IPCWin32DDE(IPC):
         self.server = None
 
         if g_mutex.IsAnotherInstanceRunning():
-            for i in xrange(20):
+            for i in xrange(10):
                 # try to connect first
                 self.client = Server(None, dde.CreateServer())
                 self.client.Create(app_name, dde.CBF_FAIL_SELFCONNECTIONS|dde.APPCMD_CLIENTONLY)
@@ -436,6 +437,10 @@ class IPCWin32DDE(IPC):
                 ipc_logger.warning("No DDE Server is listening, but the global mutex exists. Retry %d!" % i)
                 time.sleep(1.0)
 
+                # oh no you didn't!
+                if i == 5:
+                    pykill.kill_process(app_name)
+
             # continuing might be dangerous (two instances)
             raise Exception("No DDE Server is listening, but the global mutex exists!")
 
@@ -443,7 +448,6 @@ class IPCWin32DDE(IPC):
         self.server = Server(self.handle_command, dde.CreateServer())
         self.server.Create(app_name, dde.CBF_FAIL_SELFCONNECTIONS|dde.APPCLASS_STANDARD)
         self.server.AddTopic(Topic(self.handle_command, dde.CreateTopic(self.name)))
-        
 
     def send_command(self, command, *args):
         s = '|'.join([command, ] + list(args))

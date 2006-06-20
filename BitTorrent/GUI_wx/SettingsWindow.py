@@ -102,14 +102,15 @@ class RateSliderBox(wx.StaticBox):
 
         self.setfunc = lambda v : self.settings_window.setfunc(key, v)
         self.slider = RateSlider(parent, self.settings_window.config[key], speed_classes)
-        self.slider.Bind(wx.EVT_SLIDER, self.OnSlider)
-        self.LoadValue()
+        self.slider.Bind(wx.EVT_SLIDER, self.OnSlider)  # bind event to handler.
+        self.LoadValue()  
 
         self.sizer.Add(self.text, proportion=1, flag=wx.GROW|wx.TOP|wx.LEFT|wx.RIGHT, border=SPACING)
         self.sizer.Add(self.slider, proportion=1, flag=wx.GROW|wx.BOTTOM|wx.LEFT|wx.RIGHT, border=SPACING)
 
     def LoadValue(self):
-        self.slider.SetValue(self.settings_window.config[self.key])
+        bytes = self.settings_window.config[self.key]
+        self.slider.SetValue(self.slider.bytes_to_slider(bytes))
         self.text.SetLabel(self.slider.slider_to_label(self.slider.GetValue()))
 
     def OnSlider(self, event):

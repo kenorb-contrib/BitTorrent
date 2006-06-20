@@ -11,13 +11,14 @@
 
 
 app_name = 'BitTorrent'
-version = '4.9.9'
+version = '4.20.0'
 
 URL = 'http://www.bittorrent.com/'
 DONATE_URL = URL + 'donate.html?client=%(client)s'
 FAQ_URL = URL + 'FAQ.html?client=%(client)s'
 SEARCH_URL = 'http://www.bittorrent.com/search_result.html?client=%(client)s&search=%(search)s'
-LOCALE_URL = URL + 'translations/'
+#LOCALE_URL = URL + 'translations/'
+LOCALE_URL = 'http://translations.bittorrent.com/'
 
 NAG_FREQUENCY = 3
 PORT_RANGE = 5
@@ -124,6 +125,7 @@ def inject_main_logfile():
     logging.getLogger('').removeHandler(console)
     atexit_threads.register(lambda : logging.getLogger('').removeHandler(mainlog))
 
+    global stderr_console
     if not is_frozen_exe:
         # write all stderr messages to stderr (unformatted)
         # as well as the main log (formatted)
@@ -156,3 +158,6 @@ sys.stderr = StderrProxy()
 def reset_stderr():
     sys.stderr = old_stderr
 atexit_threads.register(reset_stderr)
+
+
+

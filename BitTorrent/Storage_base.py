@@ -61,7 +61,10 @@ def open_sparse_file(path, mode, length=0, overlapped=False):
     #flags |= win32file.FILE_FLAG_NO_BUFFERING
 
     access = win32file.GENERIC_READ
+    # Shared write is necessary because lock is assigned
+    # per file handle. --Dave
     share = win32file.FILE_SHARE_READ | win32file.FILE_SHARE_WRITE
+    #share = win32file.FILE_SHARE_READ #| win32file.FILE_SHARE_WRITE
 
     if is_open_for_write(mode):
         access |= win32file.GENERIC_WRITE
@@ -70,11 +73,11 @@ def open_sparse_file(path, mode, length=0, overlapped=False):
         CreateFile = win32file.CreateFileW
     else:
         CreateFile = win32file.CreateFile
-        
+
     handle = CreateFile(path, access, share, None,
                         win32file.OPEN_ALWAYS,
                         flags, None)
-
+    
     if supported and is_open_for_write(mode):
         _sparse_magic(handle, length)
     fd = win32file._open_osfhandle(handle, os.O_BINARY)

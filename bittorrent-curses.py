@@ -42,7 +42,14 @@ from BitTorrent import GetTorrent
 from BitTorrent.RawServer_twisted import RawServer, task
 from BitTorrent.ConvertedMetainfo import ConvertedMetainfo
 from BitTorrent.yielddefer import launch_coroutine, _wrap_task
-from BitTorrent import console, stderr_console
+inject_main_logfile()
+from BitTorrent import console
+from BitTorrent import stderr_console  # must import after inject_main_logfile
+                                       # because import is really a copy.
+                                       # If imported earlier, stderr_console
+                                       # doesn't reflect the changes made in 
+                                       # inject_main_logfile!! 
+                                       # BAAAHHHH!!
 
 def wrap_log(context_string, logger):
     """Useful when passing a logger to a deferred's errback.  The context
@@ -392,6 +399,7 @@ class CursesTorrentApp(object):
         logger.addHandler(curses_handler)
 
         # disable stdout and stderr error reporting.
+        global stderr_console
         logging.getLogger().removeHandler(console)
         if stderr_console is not None:
           logging.getLogger().removeHandler(stderr_console)

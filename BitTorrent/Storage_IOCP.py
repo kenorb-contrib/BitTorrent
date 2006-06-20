@@ -235,7 +235,6 @@ class FilePool(object):
         return df
 
     def _produce_handle(self, df, filename, for_write, length):
-        
         if filename in self.open_file_to_handles:
             handle = self.open_file_to_handles.pop_from_row(filename)
             if for_write and not is_open_for_write(handle.mode):

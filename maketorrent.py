@@ -23,9 +23,6 @@ assert sys.version_info >= (2, 3), _("Install Python %s or greater") % '2.3'
 
 from threading import Event
 
-import wx
-import wx.grid
-
 from BitTorrent import version, app_name
 from BitTorrent import configfile
 from BitTorrent.GUI_wx import SPACING, BTApp, BTFrameWithSizer, BTDialog, BTPanel, Grid, VSizer, HSizer, ChooseFileOrDirectorySizer
@@ -34,6 +31,9 @@ from BitTorrent.defaultargs import get_defaults
 from BitTorrent.makemetafile import make_meta_files
 from BitTorrent.parseargs import makeHelp
 from BitTorrent.platform import btspawn
+
+import wx
+import wx.grid
 
 defaults = get_defaults('maketorrent')
 defconfig = dict([(name, value) for (name, value, doc) in defaults])

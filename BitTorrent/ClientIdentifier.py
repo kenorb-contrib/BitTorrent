@@ -46,7 +46,7 @@ matches = (
            ('-KT(?P<version>\d+)(?P<rc>R\d+)-+.+$', "KTorrent"        ),
 # Unknown but seen in peer lists:
            ('-S(?P<version>10059)-+.+$'      , "S (unknown)"          ),
-           ('-TR(?P<version>\d+)-+.+$'       , "TR (unknown)"         ),
+           ('-TR(?P<version>\d+)-+.+$'       , "transmission"         ),
            ('S\x05\x07\x06\x00{7}.+'         , "S 576 (unknown)"      ),
 # Clients I've never actually seen in a peer list:           
            ('exbc..---.+$'                   , "BitVampire 1.3.1"     ),

@@ -11,6 +11,7 @@
 # Written by Bram Cohen, Uoti Urpala
 
 import random
+import struct
 import socket
 import logging
 from binascii import b2a_hex
@@ -392,8 +393,8 @@ class Rerequester(object):
             peers = {}
             if type(p) == str:
                 for x in xrange(0, len(p), 6):
-                    ip = '.'.join([str(ord(i)) for i in p[x:x+4]])
-                    port = (ord(p[x+4]) << 8) | ord(p[x+5])
+                    ip = socket.inet_ntoa(p[x:x+4])
+                    port = struct.unpack('>H', p[x+4:x+6])[0]
                     peers[(ip, port)] = None
             else:
                 for x in p:

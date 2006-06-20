@@ -1185,7 +1185,7 @@ class LogPanel(BTPanel):
 
         self.log = wx.TextCtrl(self, id=wx.ID_ANY,
                                    value='',
-                                   style=wx.TE_MULTILINE|wx.TE_READONLY)
+                                   style=wx.TE_MULTILINE|wx.TE_READONLY|wx.TE_RICH2)
         self.Add(self.log, flag=wx.GROW, proportion=1)
 
         class MyTorrentLogger(logging.Handler):
@@ -1737,6 +1737,7 @@ class TorrentWindow(BTFrameWithSizer):
 
 
     def close(self, *e):
+        # this should set the app preference
         self.Hide()
 
 
@@ -2895,7 +2896,8 @@ class MainLoop(BasicApp, BTApp):
 
         self.main_window.Hide()
 
-        if not self.config['start_minimized']:
+        if (not self.config['start_minimized'] and
+            not self.config['force_start_minimized']):
             # this code might look a little weird, but an initial Iconize can cut
             # the memory footprint of the process in half (causes GDI handles to
             # be flushed, and not recreated until they're shown).
@@ -3015,9 +3017,10 @@ class MainLoop(BasicApp, BTApp):
         for t in self.torrents.values():
             t.restore_window()
 
+        # the order here is important.
         self.main_window.Show(True)
-        self.main_window.Iconize(False)
         self.main_window.Raise()
+        self.main_window.Iconize(False)
 
     def systray_quit(self):
         for t in self.torrents.values():
@@ -3582,11 +3585,15 @@ class MainLoop(BasicApp, BTApp):
             u, d = v
             if infohash in self.torrents:
                 t = self.torrents[infohash]
-                t.bandwidth_history.update(upload_rate=u, download_rate=d)
+                t.bandwidth_history.update(upload_rate=u, download_rate=d,
+                                           max_upload_rate=self.config['max_upload_rate'],
+                                           max_download_rate=self.config['max_download_rate'])
             tu += u
             td += d
 
-        self.bling_history.update(upload_rate=tu, download_rate=td)
+        self.bling_history.update(upload_rate=tu, download_rate=td,
+                                  max_upload_rate=self.config['max_upload_rate'],
+                                  max_download_rate=self.config['max_download_rate'])
 
         self.update_bwg_handle = wx.FutureCall(self.GRAPH_UPDATE_INTERVAL,
                                                self.update_bandwidth_graphs)

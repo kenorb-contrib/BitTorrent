@@ -50,28 +50,23 @@ http_bindaddr = None
 class PreRawServerBuffer(object):
     def __init__(self):
         self.pending_sockets = {}
-        self.pending_sockets_lock = threading.Lock()
+        self.pending_sockets_lock = threading.RLock()
 
-    def _add_pending_connection(self, addr):
+    def add_pending_connection(self, addr):
         # the XP connection rate limiting is unique at the IP level
         assert isinstance(addr, str)
         self.pending_sockets_lock.acquire()
-        self.__add_pending_connection(addr)
-        self.pending_sockets_lock.release()
-
-    def __add_pending_connection(self, addr):        
         self.pending_sockets.setdefault(addr, 0)
         self.pending_sockets[addr] += 1
-
-    def _remove_pending_connection(self, addr):
-        self.pending_sockets_lock.acquire()
-        self.__remove_pending_connection(addr)
         self.pending_sockets_lock.release()
 
-    def __remove_pending_connection(self, addr):
+    def remove_pending_connection(self, addr):
+        self.pending_sockets_lock.acquire()
         self.pending_sockets[addr] -= 1
         if self.pending_sockets[addr] <= 0:
             del self.pending_sockets[addr]
+        self.pending_sockets_lock.release()
+
 rawserver = PreRawServerBuffer()
 
 def bind_tracker_connection(bindaddr):
@@ -81,8 +76,8 @@ def bind_tracker_connection(bindaddr):
 def set_zurllib_rawserver(new_rawserver):
     global rawserver
     for addr in rawserver.pending_sockets:
-        new_rawserver._add_pending_connections(addr)
-        rawserver._remove_pending_connection(addr)
+        new_rawserver.add_pending_connections(addr)
+        rawserver.remove_pending_connection(addr)
     assert len(rawserver.pending_sockets) == 0
     rawserver = new_rawserver
 
@@ -108,7 +103,7 @@ class BindingHTTPConnection(HTTPConnection):
             # the obvious multithreading problem is avoided by using locks.
             # the lock is only acquired during the function call, so there's
             # no danger of urllib blocking rawserver.
-            rawserver._add_pending_connection(addr)
+            rawserver.add_pending_connection(addr)
             try:
                 self.sock = socket.socket(af, socktype, proto)
                 self.sock.settimeout(url_socket_timeout)
@@ -123,7 +118,7 @@ class BindingHTTPConnection(HTTPConnection):
                 if self.sock:
                     self.sock.close()
                 self.sock = None
-            rawserver._remove_pending_connection(addr)
+            rawserver.remove_pending_connection(addr)
 
             if self.sock:
                 break

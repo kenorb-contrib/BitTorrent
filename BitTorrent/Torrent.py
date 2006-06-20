@@ -155,6 +155,9 @@ class Torrent(object):
         self.downtotal = 0
         self.downtotal_old = 0
         self.context_valid = True
+ 
+        # do file lock.
+
 
     def update_config(self, config):
         self.config.update(config)
@@ -485,8 +488,7 @@ class Torrent(object):
 
         self.time_started = bttime()
 
-        self._connection_manager.reported_port = self.reported_port
-        self._connection_manager.unthrottle_connections()
+        self._connection_manager.reopen(self.reported_port)
 
         self._singleport_listener.add_torrent(self.infohash,
                                               self._connection_manager)

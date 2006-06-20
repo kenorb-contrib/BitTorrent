@@ -12,6 +12,19 @@
 
 # Written by Bram Cohen, Uoti Urpala, John Hoffman, and David Harrison
 
+# Dave:
+# 1. We need to lock the output file so that only one
+#    BitTorrent client can write to the file.
+# 2. Only allow one torrent to download per console client.
+# 3. Don't seed already downloaded torrents unless console is
+#    specifically set to do so.
+# 4. Use separate configuration.
+#
+# Sol'n:
+# 1. Run on top of Torrent directly?
+# 2. Modify MultiTorrent to support single torrents?
+# 3.
+
 from __future__ import division
 
 from BitTorrent.translation import _
@@ -36,12 +49,18 @@ from BitTorrent.prefs import Preferences
 from BitTorrent import configfile
 from BitTorrent import BTFailure
 from BitTorrent import version
-from BitTorrent import console, stderr_console
 from BitTorrent import GetTorrent
 from BitTorrent.RawServer_twisted import RawServer, task
 from BitTorrent.ConvertedMetainfo import ConvertedMetainfo
 from BitTorrent.platform import get_temp_dir
 inject_main_logfile()
+from BitTorrent import console
+from BitTorrent import stderr_console  # must import after inject_main_logfile
+                                       # because import is really a copy.
+                                       # If imported earlier, stderr_console
+                                       # doesn't reflect the changes made in 
+                                       # inject_main_logfile!! 
+                                       # BAAAHHHH!!
 
 def wrap_log(context_string, logger):
     """Useful when passing a logger to a deferred's errback.  The context
@@ -232,6 +251,7 @@ class TorrentApp(object):
             self.app = app
       
         def emit(self, record):
+            #print "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
             self.app.display_error(record.getMessage() ) 
             if record.exc_info is not None:
                 self.app.display_error( " %s: %s" % ( str(record.exc_info[0]),
@@ -256,13 +276,14 @@ class TorrentApp(object):
         self.multitorrent = None
         self.logger = logging.getLogger("bittorrent-console")
         self.log_handler = TorrentApp.LogHandler(self)
-        logger  = logging.getLogger()
+        logger = logging.getLogger()
         logger.addHandler(self.log_handler)
 
-        # disable stdout and stderr error reporting.
-        logging.getLogger().removeHandler(console)
+        # disable stdout and stderr error reporting to stderr.
+        global stderr_console
+        logging.getLogger('').removeHandler(console)
         if stderr_console is not None:
-            logging.getLogger().removeHandler(stderr_console)
+            logging.getLogger('').removeHandler(stderr_console)
         logging.getLogger().setLevel(0)
 
     def start_torrent(self,metainfo,save_incomplete_as,save_as):
@@ -422,6 +443,7 @@ if __name__ == '__main__':
     try:
         config, args = configfile.parse_configuration_and_args(defaults,
                                        uiname, sys.argv[1:], 0, 1)
+
         torrentfile = None
         if len(args):
             torrentfile = args[0]

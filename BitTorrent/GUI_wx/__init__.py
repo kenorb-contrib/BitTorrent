@@ -14,6 +14,17 @@ from __future__ import division
 
 import os
 
+try:
+    import wxversion
+except:
+    pass
+else:
+    # doesn't work in py2exe
+    try:
+        wxversion.select('2.6')
+    except:
+        pass
+    
 import wx
 import wx.grid
 import wxPython
@@ -651,6 +662,7 @@ class BTPanel(wx.Panel):
     sizer_args = (wx.VERTICAL,)
 
     def __init__(self, *a, **k):
+        k['style'] = k.get('style', 0) | wx.CLIP_CHILDREN
         wx.Panel.__init__(self, *a, **k)
         self.sizer = self.sizer_class(*self.sizer_args)
         self.SetSizer(self.sizer)
@@ -665,6 +677,8 @@ class BTPanel(wx.Panel):
             self.sizer.Add(widget, *a, **k)
 
 
+# handles quirks in the design of wx.  For example, the wx.LogWindow is not
+# really a window, but this make it respond to shows as if it were.
 def MagicShow_func(win, show=True):
     win.Show(show)
     if show:
@@ -763,7 +777,7 @@ class BTFrameWithSizer(BTFrame):
 
 
 class BTApp(wx.App):
-    """Base class for all BitTorrent applications"""
+    """Base class for all wx-based BitTorrent applications"""
 
     def __init__(self, *a, **k):
         wx.App.__init__(self, *a, **k)

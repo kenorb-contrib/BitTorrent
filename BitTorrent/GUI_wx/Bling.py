@@ -29,9 +29,12 @@ class HistoryCollector(object):
         self.interval = interval
         self.upload_data = SizedList(self.max_len)
         self.download_data = SizedList(self.max_len)
+        self.max_upload_rate = 0
+        self.max_download_rate = 0
         self.viewer = None
 
-    def update(self, upload_rate, download_rate):
+    def update(self, upload_rate, download_rate,
+               max_upload_rate, max_download_rate):
 #         if (len(self.data) == 0):
 #             self.data.append(random.random() * 500.0)
 #         else:
@@ -39,6 +42,8 @@ class HistoryCollector(object):
 
         self.upload_data.append(upload_rate or 0)
         self.download_data.append(download_rate or 0)
+        self.max_upload_rate = max_upload_rate
+        self.max_download_rate = max_download_rate
         if self.viewer:
             self.viewer()
 
@@ -71,6 +76,13 @@ class BandwidthGraphPanel(CustomWidgets.DoubleBufferedMixin, BTPanel):
                         rect.x + (((i + (max_len - len(data))) / x_div) * (rect.width - 1)),
                         rect.y + ((1.0 - (datum / y_div)) * (rect.height - 1)))
             last_datum = (i, datum)
+
+    def draw_max_line(self, dc, data, max_data, rect, offset=0):
+        y_div = float(max_data)
+        pos = (1.0 - (data / y_div)) * (rect.height - 1)
+        if pos >= 0 and pos < rect.height:
+            dc.DrawLine(rect.x + offset, rect.y + pos,
+                        rect.x + rect.width, rect.y + pos)
 
     def update(self, force=False):
         if not self.IsShown() and not force:
@@ -214,11 +226,18 @@ class BandwidthGraphPanel(CustomWidgets.DoubleBufferedMixin, BTPanel):
         dc.DrawLine(i_rect.x, i_rect.y + (i_rect.height * 0.25),
                     i_rect.GetRight(), i_rect.y + (i_rect.height * 0.25))
 
+        pen = wx.Pen(ur_color, 1, wx.SHORT_DASH)
+        dc.SetPen(pen)
+        self.draw_max_line(dc, self.history.max_upload_rate, max_data, i_rect,
+                           offset=3)
         pen = wx.Pen(ur_color, 1, wx.SOLID)
         dc.SetPen(pen)
         self.draw_graph(dc, self.history.max_len, self.history.upload_data,
                         max_data, i_rect)
 
+        pen = wx.Pen(dr_color, 1, wx.SHORT_DASH)
+        dc.SetPen(pen)
+        self.draw_max_line(dc, self.history.max_download_rate, max_data, i_rect)
         pen = wx.Pen(dr_color, 1, wx.SOLID)
         dc.SetPen(pen)
         self.draw_graph(dc, self.history.max_len, self.history.download_data,

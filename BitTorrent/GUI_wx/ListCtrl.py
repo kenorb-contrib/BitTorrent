@@ -230,6 +230,8 @@ class BTListCtrl(wx.ListCtrl, ColumnSorterMixin, ContextMenuMixin):
             header_width = dc.GetTextExtent(column.GetText())[0]
             header_width += 4 # arbitrary allowance for header decorations
             column.width = max(column.width, header_width)
+            if name in self.enabled_columns:
+                self.SetColumnWidth(column.GetColumn(), column.width)
         self.default_rect = self.GetItemRect(0)
         self.DeleteRow(-1)
 

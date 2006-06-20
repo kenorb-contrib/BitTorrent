@@ -272,6 +272,8 @@ def get_defaults(ui):
              'local directory to look in for .torrent files to open'),
             ('start_minimized', False,
              _("Start %s minimized")%app_name),
+            ('force_start_minimized', False,
+             _("Start %s minimized (but do not save that preference)")%app_name),
             ('confirm_quit', True,
              _("Confirm before quitting %s")%app_name),
             ('new_version', '',
@@ -357,7 +359,7 @@ def get_defaults(ui):
             ('save_incomplete_in', '',
              _("local directory where the incomplete torrent downloads will be "
                "stored until completion.  Upon completion, downloads will be "
-               "moved to the directory specified by --save_as.")),
+               "moved to the directory specified by --save_in.")),
             ])
 
     if ui.startswith('launchmany'):

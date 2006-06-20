@@ -41,7 +41,6 @@ from BitTorrent import configfile
 import BitTorrent
 from khashmir.utkhashmir import UTKhashmir
 
-
 class TorrentException(BTFailure):
     pass
 class TorrentAlreadyInQueue(TorrentException):
@@ -55,6 +54,8 @@ class TorrentNotRunning(TorrentException):
 class UnknownInfohash(TorrentException):
     pass
 class TorrentShutdownFailed(TorrentException):
+    pass
+class TooManyTorrents(TorrentException):
     pass
 
 #class DummyTorrent(object):
@@ -70,11 +71,15 @@ class MultiTorrent(Feedback):
        the interface through which communication is performed to and from
        torrent file transfers.
 
+       If you wish to instantiate MultiTorrent to download only a single
+       torrent then pass is_single_torrent=True.
+
        """
 
     def __init__(self, config, doneflag, rawserver,
-                 data_dir, listen_fail_ok=False, init_torrents=True):
-        """
+                 data_dir, listen_fail_ok=False, init_torrents=True,
+                 is_single_torrent=False):
+        """TooManyRunning
          @param config: program-wide configuration object.
          @param doneflag: when flag is set, all threads clean up and exit.
          @param rawserver: object that manages main event loop and event
@@ -84,6 +89,10 @@ class MultiTorrent(Feedback):
          @param listen_fail_ok: if false, a BTFailure is raised if
            a server socket cannot be opened to accept incoming peer
            connections.
+         @param init_torrents: restore state from prior instantiations of
+           MultiTorrent.
+         @param is_single_torrent: if true then allow only one torrent
+           at a time in this MultiTorrent.
         """
         assert isinstance(config, Preferences)
         assert isinstance(data_dir, str)
@@ -97,6 +106,7 @@ class MultiTorrent(Feedback):
         self.running = {}
         self.log_root = "core.MultiTorrent"
         self.logger = logging.getLogger(self.log_root)
+        self.is_single_torrent = is_single_torrent
 
         self.auto_update_policy_index = None
 
@@ -104,7 +114,7 @@ class MultiTorrent(Feedback):
         self.rawserver = rawserver
         nattraverser = NatTraverser(self.rawserver)
         self.singleport_listener = SingleportListener(self.rawserver,
-                                                      nattraverser,
+                                                     nattraverser,
                                                       self.log_root)
         self.ratelimiter = RateLimiter(self.rawserver.add_task)
         self.ratelimiter.set_parameters(config['max_upload_rate'],
@@ -117,7 +127,8 @@ class MultiTorrent(Feedback):
         self.filepool = FilePool(self.filepool_doneflag,
                                  self.rawserver.add_task,
                                  self.rawserver.external_add_task,
-                                 config['max_files_open'], config['num_disk_threads'])
+                                 config['max_files_open'], 
+                                 config['num_disk_threads'])
 
         try:
             self._restore_state(init_torrents)
@@ -255,6 +266,9 @@ class MultiTorrent(Feedback):
 
     def create_torrent(self, metainfo, save_incomplete_as, save_as,
                        hidden=False, is_auto_update=False):
+        if self.is_single_torrent and len(self.torrents) > 0:
+            raise TooManyTorrents(metainfo.infohash)
+
         #save_as, junk = encode_for_filesystem(save_as)
         #save_incomplete_as, junk = encode_for_filesystem(save_incomplete_as)
         infohash = metainfo.infohash
@@ -339,6 +353,8 @@ class MultiTorrent(Feedback):
 
 
     def start_torrent(self, infohash):
+        if self.is_single_torrent and len(self.torrents) > 0:
+            raise TooManyTorrents(infohash)
         t = self.get_torrent(infohash)
         if self.torrent_running(infohash):
             assert t.is_running()

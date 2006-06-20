@@ -78,6 +78,7 @@ if os.name == 'nt':
         'enforce_association' ,
         'launch_on_startup'   ,
         'minimize_to_tray'    ,
+        'start_minimized'     ,
         'close_to_tray'       ,
 
         # Bandwidth
@@ -360,6 +361,7 @@ def parse_configuration_and_args(defaults, uiname, arglist=[], minargs=None,
                         # identify 4.x version config file
                         if name in ('start_torrent_behavior',
                                     'seed_forever',
+                                    'progressbar_hack',
                                     'seed_last_forever',
                                     'next_torrent_ratio',
                                     'next_torrent_time',

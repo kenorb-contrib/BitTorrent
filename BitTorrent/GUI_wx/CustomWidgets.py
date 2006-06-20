@@ -175,7 +175,7 @@ class ListCtrlPassThrough(object):
                     self.listctrl.DeselectAll()
                 f = self.listctrl.GetFocusedItem()
                 if f > -1:
-                    for j in range(min(i,f), max(i,f)):
+                    for j in xrange(min(i,f), max(i,f)):
                         self.listctrl.Select(j)
                     self.listctrl.Select(f)
             else:

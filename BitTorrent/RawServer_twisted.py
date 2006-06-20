@@ -23,7 +23,7 @@ import traceback
 
 from DictWithLists import DictWithLists
 
-from BitTorrent.defer import DeferredEvent
+from BitTorrent.defer import DeferredEvent, Deferred, run_deferred
 from BitTorrent.translation import _
 from BitTorrent import BTFailure
 from BitTorrent.obsoletepythonsupport import set
@@ -90,6 +90,8 @@ from twisted.internet.protocol import DatagramProtocol, Protocol, ClientFactory
 from twisted.protocols.policies import TimeoutMixin
 from twisted.internet import interfaces, address
 
+from BitTorrent.ConnectionRateLimitReactor import connectionRateLimitReactor
+
 NOLINGER = struct.pack('ii', 1, 0)
 
 # python sucks.
@@ -118,7 +120,7 @@ class Handler(object):
     def connection_flushed(self, s):
         pass
 
-    # called when an active connection dies (lost or requested to close)
+    # called when a connection dies (lost or requested to close)
     def connection_lost(self, s):
         pass
 
@@ -129,10 +131,10 @@ class ConnectionWrapper(object):
         self.ip = None             # peer ip
         self.tos = tos
         self.port = None           # peer port
-        self.accept = True
         self.dying = False
         self.paused = False
         self.encrypt = None
+        self.connector = None
         self.transport = None
         self.reset_timeout = None
         self.callback_connection = None
@@ -275,12 +277,8 @@ class ConnectionWrapper(object):
             else:
                 self.transport.loseConnection()
         else:
-            self.accept = False
-
-            if self.handler:
-                self.handler.connection_failed((self.ip, self.port),
-                                               "Connection closed manually before compelted")
-                self.dying = True
+            if self.connector:
+                self.connector.disconnect()
 
     def _cleanup(self):
 
@@ -422,23 +420,10 @@ class CallbackConnection(object):
         s.rawserver._make_wrapped_call(s.handler.data_came_in,
                                        (host, port), data, wrapper=s)
 
-    def connectionRefused(self):
-        s = self.connection
-        dns = (s.ip, s.port)
-        reason = _("connection refused")
-
-        #print "Connection Refused"
-
-        if not s.dying:
-            s.handler.connection_failed(dns, reason)
-
-            s.dying = True
-
-        s.rawserver._remove_socket(s)
-
     def optionalResetTimeout(self):
         if self.can_timeout:
             self.resetTimeout()
+
 
 class CallbackProtocol(CallbackConnection, TimeoutMixin, Protocol):
 
@@ -466,14 +451,13 @@ class CallbackProtocol(CallbackConnection, TimeoutMixin, Protocol):
             # happens when the peer is a unix socket
             pass
 
-        if outgoing:
-            self.factory.rawserver._remove_pending_connection(addr[0])
-        else:
+        if not outgoing:
             args = self.factory.get_connection_data(key)
             c = ConnectionWrapper(*args)
 
         self.attachTransport(transport, c)
         Protocol.makeConnection(self, transport)
+
 
 class CallbackDatagramProtocol(CallbackConnection, DatagramProtocol):
 
@@ -481,10 +465,6 @@ class CallbackDatagramProtocol(CallbackConnection, DatagramProtocol):
         self.can_timeout = False
         self.attachTransport(self.transport, self.connection)
         DatagramProtocol.startProtocol(self)
-
-    def connectionRefused(self):
-        # we don't use these at all for udp, so skip the CallbackConnection
-        DatagramProtocol.connectionRefused(self)
 
 
 class ConnectionFactory(ClientFactory):
@@ -501,40 +481,18 @@ class ConnectionFactory(ClientFactory):
     def pop_connection_data(self, key):
         return self.connection_data.pop_from_row(key)
 
-    def _resolveConnection(self, connector, pop = False):
+    def clientConnectionFailed(self, connector, reason):
         peer = connector.getDestination()
         addr = (peer.host, peer.port)
-
-        if pop:
-            s = self.pop_connection_data(addr)
-        else:
-            s = self.get_connection_data(addr)
-
-        return (addr, s)
-
-    def _removeConnection(self, addr, s):
-        self.rawserver._remove_pending_connection(addr[0])
-        self.rawserver._remove_socket(s)
-
-    def connectionStarting(self, connector):
-        addr, s = self._resolveConnection(connector)
-
-        if not s.accept:
-            connector.stopConnecting()
-
-            self._removeConnection(addr, s)
-
-    def clientConnectionFailed(self, connector, reason):
-        addr, s = self._resolveConnection(connector, pop=True)
+        s = self.pop_connection_data(addr)
 
         # opt-out
         if not s.dying:
             # this might not work - reason is not an exception
             s.handler.connection_failed(addr, reason)
-
             s.dying = True
 
-        self._removeConnection(addr, s)
+        self.rawserver._remove_socket(s)
 
 
 # storage for socket creation requestions, and proxy once the connection is made
@@ -669,11 +627,6 @@ class RawServer(RawServerMixin):
         self.udp_sockets = set()
         self.listened = False
 
-        # for connection rate limiting
-        self.pending_sockets = {}
-        # this can go away when urllib does
-        self.pending_sockets_lock = threading.Lock()
-
         ##############################################################
         if profile:
             try:
@@ -691,7 +644,11 @@ class RawServer(RawServerMixin):
                 return o(self.prof.runcall, _f, *a, **kw)
             reactor.callFromThread = _profile_call2
         ##############################################################
-            
+
+        connectionRateLimitReactor(reactor, self.config['max_incomplete'])
+        # bleh
+        self.add_pending_connection = reactor.add_pending_connection
+        self.remove_pending_connection = reactor.remove_pending_connection
         self.reactor = reactor
 
         self.factory = ConnectionFactory()
@@ -857,7 +814,7 @@ class RawServer(RawServerMixin):
 
     stop_listening_multicast = stop_listening_udp
 
-    def force_start_connection(self, dns, handler, context=None, do_bind=True):
+    def start_connection(self, dns, handler, context=None, do_bind=True):
         addr = dns[0]
         port = int(dns[1])
 
@@ -866,12 +823,10 @@ class RawServer(RawServerMixin):
             # this blocks, that's why we throw the warning
             addr = socket.gethostbyname(addr)
 
-        self._add_pending_connection(addr)
-
         bindaddr = None
         if do_bind:
             bindaddr = self.config['bind']
-            if bindaddr and len(bindaddr) >= 0:
+            if isinstance(bindaddr, str) and len(bindaddr) >= 0:
                 bindaddr = (bindaddr, 0)
             else:
                 bindaddr = None
@@ -880,44 +835,15 @@ class RawServer(RawServerMixin):
 
         self.factory.add_connection_data((addr, port), c)
 
-        reactor.connectTCP(addr, port, self.factory, bindAddress=bindaddr)
+        connector = reactor.connectTCP(addr, port, self.factory, bindAddress=bindaddr)
+        c.connector = connector
 
         self.single_sockets.add(c)
         return c
 
-    def _add_pending_connection(self, addr):
-        # the XP connection rate limiting is unique at the IP level
-        assert isinstance(addr, str)
-        self.pending_sockets_lock.acquire()
-        self.__add_pending_connection(addr)
-        self.pending_sockets_lock.release()
-
-    def __add_pending_connection(self, addr):
-        self.pending_sockets.setdefault(addr, 0)
-        self.pending_sockets[addr] += 1
-
-    def _remove_pending_connection(self, addr):
-        self.pending_sockets_lock.acquire()
-        self.__remove_pending_connection(addr)
-        self.pending_sockets_lock.release()
-
-    def __remove_pending_connection(self, addr):
-        self.pending_sockets[addr] -= 1
-        if self.pending_sockets[addr] <= 0:
-            del self.pending_sockets[addr]
-
-    def start_connection(self, dns, handler, context=None, do_bind=True):
-
-        # the XP connection rate limiting is unique at the IP level
-        addr = dns[0]
-        if (len(self.pending_sockets) >= self.config['max_incomplete'] and
-            addr not in self.pending_sockets):
-            return None
-
-        return self.force_start_connection(dns, handler, context, do_bind)
-
     def associate_thread(self):
-        assert not self.associated, "RawServer has already been associated with a thread"
+        assert not self.associated, \
+               "RawServer has already been associated with a thread"
         self.ident = thread.get_ident()
         self.associated = True
 
@@ -933,7 +859,7 @@ class RawServer(RawServerMixin):
             self.associate_thread()
         if self.listened:
             Exception(_("listen_forever() should only be called once per reactor."))
-        reactor.callLater(0, self.doneflag.addCallback, lambda *a : self.external_add_task(0, self.stop))
+        reactor.callLater(0, self.doneflag.addCallback, self._safestop)
         self.listened = True
 
         reactor.suggestThreadPoolSize(1)
@@ -954,10 +880,20 @@ class RawServer(RawServerMixin):
         rawserver_logger.warning(_("listen_once() might not return until there is activity, and might not process the event you want. Use listen_forever()."))
         reactor.iterate(period)
 
-    def stop(self, r=None):
+    def stop(self):
+        self.doneflag.set()
+
+    def _safestop(self, r=None):
+        if not threadable.isInIOThread():
+            self.external_add_task(0, self._stop)
+        else:
+            self._stop()
+
+    def _stop(self, r=None):
         assert thread.get_ident() == self.ident
-        
-        for connection in self.single_sockets:
+
+        connections = list(self.single_sockets)
+        for connection in connections:
             try:
                 connection.close()
             except:

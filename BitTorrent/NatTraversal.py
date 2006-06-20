@@ -368,10 +368,10 @@ def urlopen_custom(req, rawserver):
         data = header_str + data
 
         try:
-            rawserver._add_pending_connection(host)
+            rawserver.add_pending_connection(host)
             s.connect((host, port))
         finally:
-            rawserver._remove_pending_connection(host)
+            rawserver.remove_pending_connection(host)
             
         s.send(data)
         r = HTTPResponse(s, method=method)
