@@ -93,7 +93,7 @@ class BandwidthManager(object):
                                      get_remote_endpoints=get_remote_endpoints,
                                      rttmonitor=self.rttmonitor)
 
-        self.start_time = bttime()
+        self.start_time = None
 
         self.max_samples = 10 # hmm...
         self.u = SizedList(self.max_samples)
@@ -101,7 +101,8 @@ class BandwidthManager(object):
         self.t = SizedList(self.max_samples * 10)
         self.ur = SizedList(self.max_samples)
         self.dr = SizedList(self.max_samples)
-        
+
+        self.current_std = 0.001        
         self.max_std = 0.001
 
         self.max_rates = {}
@@ -206,11 +207,11 @@ class BandwidthManager(object):
         rate = self._method_stddev(type, std, max_std, rate)
 
         rock_bottom = False
-        if rate <= 1000:
+        if rate <= 4096:
             if debug:
                 print "Rock bottom"
             rock_bottom = True
-            rate = 1000
+            rate = 4096
     
         set(int(rate))
 
@@ -227,6 +228,8 @@ class BandwidthManager(object):
             self.max_std *= 0.80 # FUDGE
             return
 
+        if self.start_time == None:
+            self.start_time = bttime()
         def set_if_enabled(option, value):
             if not self.config['bandwidth_management']:
                 return
@@ -234,7 +237,7 @@ class BandwidthManager(object):
             self.set_option(option, value)
 
         # TODO: slow start should be smarter than this
-        if self.start_time < bttime() + 20:
+        if self.start_time + 20 > bttime():
             set_if_enabled('max_upload_rate', 10000000)
             set_if_enabled('max_download_rate', 10000000)
 
@@ -262,7 +265,7 @@ class BandwidthManager(object):
         #cdr = correlation(self.d, self.dr)
         #e = time.time()
 
-        std = standard_deviation(self.t)
+        self.current_std = standard_deviation(self.t)
         
         pu = ratio_sum_lists(self.u, self.t)
         pd = ratio_sum_lists(self.d, self.t)
@@ -279,26 +282,28 @@ class BandwidthManager(object):
         self.max_rates["download"] = max(max(self.d), self.max_rates["download"])
 
         if debug:
-            print "STDDEV", u, self.config['max_upload_rate'], self.max_std, std, pu, pd
+            print "STDDEV", u, self.config['max_upload_rate'], \
+                  self.max_std, self.current_std, pu, pd
         
-        rb = self._affect_rate("upload", std, self.max_std,
+        rb = self._affect_rate("upload", self.current_std, self.max_std,
                                self.config['max_upload_rate'],
                                lambda r : set_if_enabled('max_upload_rate', r))
-        if rb:
-            v = int(self.config['max_download_rate'] * 0.80) # FUDGE
-            v = max(v, 2000) # FUDGE
-            set_if_enabled('max_download_rate', v) 
-        else:
-            v = int(self.config['max_download_rate'] + 6000) # FUDGE
-            set_if_enabled('max_download_rate', v) 
-        if debug:
-            print "DOWNLOAD SET to", v
+        # don't adjust download rate, it's not nearly correlated enough
+##        if rb:
+##            v = int(self.config['max_download_rate'] * 0.90) # FUDGE
+##            v = max(v, 2000) # FUDGE
+##            set_if_enabled('max_download_rate', v) 
+##        else:
+##            v = int(self.config['max_download_rate'] + 6000) # FUDGE
+##            set_if_enabled('max_download_rate', v) 
+##        if debug:
+##            print "DOWNLOAD SET to", v
             
         #self._affect_rate("download", t, cd, self.last_cd, pd,
         #                  self.config['max_download_rate'],
         #                  lambda r : self.set_option('max_download_rate', r))
 
-        self.max_std = max(self.max_std, std)
+        self.max_std = max(self.max_std, self.current_std)
 
         #self.last_cu = cu
         #self.last_cd = cd

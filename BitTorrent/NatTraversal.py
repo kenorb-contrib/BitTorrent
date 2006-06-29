@@ -33,7 +33,7 @@ from httplib import HTTPResponse
 import BitTorrent.stackthreading as threading
 
 nat_logger = logging.getLogger('NatTraversal')
-nat_logger.setLevel(logging.DEBUG)
+nat_logger.setLevel(logging.WARNING)
 
 def UnsupportedWarning(s):
     nat_logger.warning("NAT Traversal warning " + ("(%s: %s)."  % (os_version, s)))
@@ -486,14 +486,12 @@ class ManualUPnP(NATBase, Handler):
         # this service can only be provided if rawserver supports multicast
         if not hasattr(self.rawserver, "create_multicastsocket"):
             raise AttributeError, "RawServer does not support create_multicastsocket!"
-
-                
+               
         self.rawserver.external_add_task(0, launch_coroutine,
                                          _wrap_task(self.rawserver.add_task),
                                          self.begin_discovery)
 
     def begin_discovery(self):
-
         # bind to an available port, and join the multicast group
         # HEREDAVE! Trying 5000 is excessive especially if there is a
         # reason for the failure.  For example, what if the network interface
@@ -521,6 +519,13 @@ class ManualUPnP(NATBase, Handler):
                     success = 1
                 if result is success:
                     break
+                elif isinstance(result, twisted.python.failure.Failure):
+                    # HACK.  If the failure contains a 'No such device' error
+                    # then we abort the discovery because this error denotes
+                    # that the peer is not connected to the network.
+                    if hasattr( result.value, "__getitem__" ) and \
+                       result.value[2] == 19:
+                        yield 0   # abort discovery.      
                 else:
                     # I suppose keep trying on different ports, but why would
                     # joinGroup fail?
@@ -705,8 +710,8 @@ class WindowsUPnP(NATBase):
         except pywintypes.com_error, e:
             #if e[1].lower() == "exception occurred.":
             if (e[2][5] == -2147221164):
-                # I think this is Class Not Registered
-                # it happens on Windows 98 after the XP ICS wizard has been run
+                # I think this is Class Not Registered.
+                # Happens on Windows 98 after the XP ICS wizard has been run
                 raise WindowsUPnPException("exception occurred, class not registered")
             else:
                 raise

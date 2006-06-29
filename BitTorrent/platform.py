@@ -13,6 +13,7 @@
 # This module is strictly for cross platform compatibility items and
 # should not import anything from other BitTorrent modules.
 
+#import pdb #DEBUG
 import os
 import re
 import sys
@@ -50,6 +51,120 @@ else:
     except ImportError:
         pass
 
+
+# NOTE: intentionally appears in the file before importing anything
+# from BitTorrent because it is called when setting --use_factory_defaults.
+def get_dir_root(shellvars, default_to_home=True):
+    def check_sysvars(x):
+        y = os.path.expandvars(x)
+        if y != x and os.path.isdir(y):
+            return y
+        return None
+
+    dir_root = None
+    for d in shellvars:
+        dir_root = check_sysvars(d)
+        if dir_root is not None:
+            break
+    else:
+        if default_to_home:
+            dir_root = os.path.expanduser('~')
+            if dir_root == '~' or not os.path.isdir(dir_root):
+                dir_root = None
+    return dir_root
+
+
+# NOTE: intentionally appears in the file before importing anything
+# from BitTorrent because it is called when setting --use_factory_defaults.
+def get_temp_dir():
+    shellvars = ['${TMP}', '${TEMP}']
+    dir_root = get_dir_root(shellvars, default_to_home=False)
+
+    #this method is preferred to the envvars
+    if os.name == 'nt':
+        try_dir_root = win32api.GetTempPath()
+        if try_dir_root is not None:
+            dir_root = try_dir_root
+
+    if dir_root is None:
+        try_dir_root = None
+        if os.name == 'nt':
+            # this should basically never happen. GetTempPath always returns something
+            try_dir_root = r'C:\WINDOWS\Temp'
+        elif os.name == 'posix':
+            try_dir_root = '/tmp'
+        if (try_dir_root is not None and
+            os.path.isdir(try_dir_root) and
+            os.access(try_dir_root, os.R_OK|os.W_OK)):
+            dir_root = try_dir_root
+    return dir_root
+
+MAX_DIR = 5
+_tmp_subdir = None
+
+# NOTE: intentionally appears in the file before importing anything
+# from BitTorrent because it is called when setting --use_factory_defaults.
+def get_temp_subdir():
+    """Creates a unique subdirectory of the platform temp directory.
+       This revolves between MAX_DIR directory names deleting the oldest
+       whenever MAX_DIR exist.  Upon return the number of temporary
+       subdirectories should never exceed MAX_DIR-1.  If one has already
+       been created for this execution, this returns that subdirectory.
+
+       @return the absolute path of the created temporary directory.
+       """
+    global _tmp_subdir
+    if _tmp_subdir is not None:
+        return _tmp_subdir
+    tmp = get_temp_dir()
+    target = None   # holds the name of the directory that will be made.
+    for i in xrange(MAX_DIR):
+        subdir = ("BitTorrentTemp%d" % i)
+        path = os.path.join(tmp, subdir)
+        if not os.path.exists(path):
+            target = path
+            break
+
+    # subdir should not in normal behavior be None.  It can occur if something
+    # prevented a directory from being removed on a previous call or if
+    # MAX_DIR is changed.
+    if target is None:
+       subdir = "BitTorrentTemp0"
+       path = os.path.join(tmp, subdir)
+       shutil.rmtree( path, ignore_errors = True )
+       target = path
+       i = 0
+
+    # create the temp dir.
+    os.mkdir(target)
+
+    # delete the oldest directory.
+    oldest_i = ( i + 1 ) % MAX_DIR
+    oldest_subdir = ("BitTorrentTemp%d" % oldest_i)
+    oldest_path = os.path.join(tmp, oldest_subdir)
+    if os.path.exists( oldest_path ):
+        shutil.rmtree( oldest_path, ignore_errors = True )
+
+    _tmp_subdir = target
+    return target
+
+# NOTE: intentionally appears in the file before importing anything
+# from BitTorrent because it is called when setting --use_factory_defaults.
+_config_dir = None
+def set_config_dir(dir):
+    """Set the root directory for configuration information."""
+    global _config_dir
+    # Normally we won't set it this way.  This is called if the
+    # --use_factory_defaults command-line option is specfied.  By changing
+    # the config directory early in the initialization we can guarantee
+    # that the system acts like a fresh install.
+    _config_dir = dir
+
+# Check for a set the configuration directory before importing
+# any other BitTorrent modules.
+if "--use_factory_defaults" in sys.argv or "-u" in sys.argv:
+    temp_dir = get_temp_subdir()
+    set_config_dir(temp_dir)
 
 from BitTorrent import app_name, version, LOCALE_URL
 from BitTorrent import language
@@ -278,17 +393,9 @@ def get_max_filesize(path):
 
     return fs_name, max_filesize
 
-_config_dir = None
-def set_config_dir(dir):
-    """Set the root directory for configuration information."""
-    # Normally we won't set it this way.  This is called if the
-    # --use_factory_defaults command-line option is specfied.  By changing
-    # the config directory early in the initialization we can guarantee
-    # that the system acts like a fresh install.
-    _config_dir = dir
-
-# a cross-platform way to get user's config directory
 def get_config_dir():
+    """a cross-platform way to get user's config directory.
+    """
     if _config_dir is not None:
         return _config_dir
 
@@ -311,6 +418,7 @@ def get_old_dot_dir():
     return os.path.join(get_config_dir(), '.bittorrent')
 
 def get_dot_dir():
+    """So called because on Unix platforms this returns ~/.bittorrent."""
     dot_dir = get_old_dot_dir()
     if os.name == 'nt':
         new_dot_dir = os.path.join(get_config_dir(), app_name)
@@ -350,94 +458,6 @@ def get_home_dir():
 
     return dir_root
 
-def get_temp_dir():
-    shellvars = ['${TMP}', '${TEMP}']
-    dir_root = get_dir_root(shellvars, default_to_home=False)
-
-    #this method is preferred to the envvars
-    if os.name == 'nt':
-        try_dir_root = win32api.GetTempPath()
-        if try_dir_root is not None:
-            dir_root = try_dir_root
-
-    if dir_root is None:
-        try_dir_root = None
-        if os.name == 'nt':
-            # this should basically never happen. GetTempPath always returns something
-            try_dir_root = r'C:\WINDOWS\Temp'
-        elif os.name == 'posix':
-            try_dir_root = '/tmp'
-        if (try_dir_root is not None and
-            os.path.isdir(try_dir_root) and
-            os.access(try_dir_root, os.R_OK|os.W_OK)):
-            dir_root = try_dir_root
-    return dir_root
-
-MAX_DIR = 5
-_tmp_subdir = None
-def get_temp_subdir():
-    """Creates a unique subdirectory of the platform temp directory.
-       This revolves between MAX_DIR directory names deleting the oldest
-       whenever MAX_DIR exist.  Upon return the number of temporary
-       subdirectories should never exceed MAX_DIR-1.  If one has already
-       been created for this execution, this returns that subdirectory.
-
-       @return the absolute path of the created temporary directory.
-       """
-    global _tmp_subdir
-    if _tmp_subdir is not None:
-        return _tmp_subdir
-    tmp = get_temp_dir()
-    target = None   # holds the name of the directory that will be made.
-    for i in xrange(MAX_DIR):
-        subdir = ("BitTorrentTemp%d" % i)
-        path = os.path.join(tmp, subdir)
-        if not os.path.exists(path):
-            target = path
-            break
-
-    # subdir should not in normal behavior be None.  It can occur if something
-    # prevented a directory from being removed on a previous call or if
-    # MAX_DIR is changed.
-    if target is None:
-       subdir = "BitTorrentTemp0"
-       path = os.path.join(tmp, subdir)
-       shutil.rmtree( path, ignore_errors = True )
-       target = path
-       i = 0
-
-    # create the temp dir.
-    os.mkdir(target)
-
-    # delete the oldest directory.
-    oldest_i = ( i + 1 ) % MAX_DIR
-    oldest_subdir = ("BitTorrentTemp%d" % oldest_i)
-    oldest_path = os.path.join(tmp, oldest_subdir)
-    if os.path.exists( oldest_path ):
-        shutil.rmtree( oldest_path, ignore_errors = True )
-
-    _tmp_subdir = target
-    return target
-
-
-def get_dir_root(shellvars, default_to_home=True):
-    def check_sysvars(x):
-        y = os.path.expandvars(x)
-        if y != x and os.path.isdir(y):
-            return y
-        return None
-
-    dir_root = None
-    for d in shellvars:
-        dir_root = check_sysvars(d)
-        if dir_root is not None:
-            break
-    else:
-        if default_to_home:
-            dir_root = os.path.expanduser('~')
-            if dir_root == '~' or not os.path.isdir(dir_root):
-                dir_root = None
-    return dir_root
 
 def get_local_data_dir():
     if os.name == 'nt':
@@ -458,7 +478,7 @@ def get_incomplete_data_dir():
     return os.path.join(get_local_data_dir(), 'incomplete')
 
 def get_save_dir():
-    dirname = '%s Downloads' % app_name
+    dirname = u'%s Downloads' % unicode(app_name)
     if os.name == 'nt':
         d = get_shell_dir(shellcon.CSIDL_PERSONAL)
         if d is None:
@@ -473,7 +493,6 @@ def get_shell_dir(value):
     if os.name == 'nt':
         try:
             dir = shell.SHGetFolderPath(0, value, 0, 0)
-            dir = dir.encode('mbcs')
         except:
             pass
     return dir
@@ -687,7 +706,7 @@ def get_language(name):
     for tarinfo in tar:
         tar.extract(tarinfo, path=locale_root)
     tar.close()
-    
+
 
 ##def smart_gettext_translation(domain, localedir, languages, fallback=False):
 ##    try:
@@ -703,29 +722,94 @@ def get_language(name):
 ##                                fallback=fallback)
 ##    return t
 
-def smart_gettext_and_install(domain, localedir, languages, fallback=False):
+
+def blocking_smart_gettext_and_install(domain, localedir, languages,
+                                       fallback=False, unicode=False):
     try:
-        t = gettext.translation(domain, localedir, languages=languages)
+        t = gettext.translation(domain, localedir, languages=languages,
+                                fallback=fallback)
+    except Exception, e:
+        # if we failed to find the language, fetch it from the web
+        running_count = 0
+        running_deferred = {}
+
+        # Get some reasonable defaults for arguments that were not supplied
+        if languages is None:
+            languages = []
+            for envar in ('LANGUAGE', 'LC_ALL', 'LC_MESSAGES', 'LANG'):
+                val = os.environ.get(envar)
+                if val:
+                    languages = val.split(':')
+                    break
+            if 'C' not in languages:
+                languages.append('C')
+
+        # now normalize and expand the languages
+        nelangs = []
+        for lang in languages:
+            for nelang in gettext._expand_lang(lang):
+                if nelang not in nelangs:
+                    nelangs.append(nelang)
+        languages = nelangs
+                
+        for lang in languages:
+            try:
+                get_language(lang)
+            except: #urllib.HTTPError:
+                pass
+                
+        t = gettext.translation(domain, localedir,
+                                languages=languages,
+                                fallback=True)
+    t.install(unicode)
+
+
+def smart_gettext_and_install(domain, localedir, languages,
+                              fallback=False, unicode=False):
+    try:
+        t = gettext.translation(domain, localedir, languages=languages,
+                                fallback=fallback)
     except Exception, e:
         # if we failed to find the language, fetch it from the web async-style
         running_count = 0
         running_deferred = {}
+
+        # Get some reasonable defaults for arguments that were not supplied
+        if languages is None:
+            languages = []
+            for envar in ('LANGUAGE', 'LC_ALL', 'LC_MESSAGES', 'LANG'):
+                val = os.environ.get(envar)
+                if val:
+                    languages = val.split(':')
+                    break
+            if 'C' not in languages:
+                languages.append('C')
+
+        # now normalize and expand the languages
+        nelangs = []
+        for lang in languages:
+            for nelang in gettext._expand_lang(lang):
+                if nelang not in nelangs:
+                    nelangs.append(nelang)
+        languages = nelangs
+
         for lang in languages:
             d = ThreadedDeferred(None, get_language, lang)
-            def translate_and_install(r):
-                running_deferred.pop(d)
+            def translate_and_install(r, td=d):
+                running_deferred.pop(td)
                 # only let the last one try to install
                 if len(running_deferred) == 0:
                     t = gettext.translation(domain, localedir,
                                             languages=languages,
-                                            fallback=fallback)
-                    t.install(True)
-            def failed(e):
-                if d in running_deferred:
-                    running_deferred.pop(d)
+                                            fallback=True)
+                    t.install(unicode)
+            def failed(e, tlang=lang, td=d):
+                if td in running_deferred:
+                    running_deferred.pop(td)
                 # don't raise an error, just continue untranslated
-                sys.stderr.write(_('Could not find translation for language "%s"\n') %
-                                 lang)
+                sys.stderr.write('Could not find translation for language "%s"\n' %
+                                 tlang)
+                #traceback.print_exc(e)
             d.addCallback(translate_and_install)
             d.addErrback(failed)
             # accumulate all the deferreds first
@@ -738,7 +822,7 @@ def smart_gettext_and_install(domain, localedir, languages, fallback=False):
         return
 
     # install it if we got it the first time
-    t.install(True)
+    t.install(unicode)
 
 
 
@@ -762,19 +846,24 @@ def _gettext_install(domain, localedir=None, languages=None, unicode=False):
             if 'C' not in languages:
                 languages.append('C')
 
-    # we don't call the smart version, because anyone calling this needs it
-    # before they can continue and we can not block on network IO
-    t = gettext.translation(domain, localedir, languages=languages, fallback=True)
-    t.install(unicode)
+    # we call the smart version, because anyone calling this needs it
+    # before they can continue. yes, we do block on network IO. there is no
+    # alternative (installing post-startup causes already loaded strings not
+    # to be re-loaded)
+    blocking_smart_gettext_and_install(domain, localedir,
+                                       languages=languages,
+                                       unicode=unicode)
 
 
 def language_path():
-    dot_dir = get_dot_dir()
+    dot_dir = get_dot_dir()  
     lang_file_name = os.path.join(dot_dir, 'data', 'language')
     return lang_file_name
 
 
 def read_language_file():
+    """Reads the language file.  The language file contains the
+       name of the selected language, not any translations."""
     lang = None
 
     if os.name == 'nt':
@@ -808,6 +897,8 @@ def read_language_file():
 
 
 def write_language_file(lang):
+    """Writes the language file.  The language file contains the
+       name of the selected language, not any translations."""
 
     if lang != '': # system default
         get_language(lang)

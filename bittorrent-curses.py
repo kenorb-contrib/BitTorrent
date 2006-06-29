@@ -16,16 +16,17 @@
 from __future__ import division
 
 from BitTorrent.translation import _
-
 SPEW_SCROLL_RATE = 1
 
+import pdb #DEBUG
 import sys
 import os
 import logging
-from logging import ERROR
+from logging import ERROR, WARNING
 from time import time, strftime, sleep
 import traceback
 
+from BitTorrent import platform
 import BitTorrent.stackthreading as threading
 from BitTorrent.defer import DeferredEvent
 from BitTorrent.MultiTorrent import MultiTorrent, TorrentAlreadyRunning
@@ -42,6 +43,7 @@ from BitTorrent import GetTorrent
 from BitTorrent.RawServer_twisted import RawServer, task
 from BitTorrent.ConvertedMetainfo import ConvertedMetainfo
 from BitTorrent.yielddefer import launch_coroutine, _wrap_task
+from BitTorrent import inject_main_logfile
 inject_main_logfile()
 from BitTorrent import console
 from BitTorrent import stderr_console  # must import after inject_main_logfile
@@ -50,6 +52,7 @@ from BitTorrent import stderr_console  # must import after inject_main_logfile
                                        # doesn't reflect the changes made in 
                                        # inject_main_logfile!! 
                                        # BAAAHHHH!!
+
 
 def wrap_log(context_string, logger):
     """Useful when passing a logger to a deferred's errback.  The context
@@ -343,9 +346,11 @@ class CursesDisplayer(object):
                     self.spewwin.addnstr(i+3, 53, 'C', 1)
                 if dl[4]:
                     self.spewwin.addnstr(i+3, 55, 'S', 1)
-                self.spewwin.addnstr(i+3, 58, '%5.1f%%' % (int(spew[i]['completed']*1000)/10), 6)
+                self.spewwin.addnstr(i+3, 58,
+                    '%5.1f%%' % (int(spew[i]['completed']*1000)/10), 6)
                 if spew[i]['speed'] is not None:
-                    self.spewwin.addnstr(i+3, 64, '%5.0f KB/s' % (spew[i]['speed']/1000), 10)
+                    self.spewwin.addnstr(i+3, 64,
+                        '%5.0f KB/s' % (spew[i]['speed']/1000), 10)
             """
             self.spewwin.addnstr(self.spewh-1, 0,
                     _("downloading %d pieces, have %d fragments, "
@@ -394,9 +399,11 @@ class CursesTorrentApp(object):
         self.torrent = None
         self.multitorrent = None
         self.logger = logging.getLogger("bittorrent-curses")
-        curses_handler = CursesTorrentApp.LogHandler(self)
+        log_handler = CursesTorrentApp.LogHandler(self)
+        log_handler.setLevel(WARNING)
+        #log_handler.setLevel(0)
         logger = logging.getLogger()
-        logger.addHandler(curses_handler)
+        logger.addHandler(log_handler)
 
         # disable stdout and stderr error reporting.
         global stderr_console
@@ -406,86 +413,38 @@ class CursesTorrentApp(object):
                                            
         # We log everything.  If we want to except certain errors then
         # either raise the level or install a logging.Filter:
-        curses_handler.addFilter(CursesTorrentApp.LogFilter())
+        log_handler.addFilter(CursesTorrentApp.LogFilter())
         logging.getLogger().setLevel(0)
 
-    def start_torrent( self, metainfo, save_incomplete_as, save_as ):
+    def start_torrent(self,metainfo,save_incomplete_in,save_in):
         """Tells the MultiTorrent to begin downloading."""
-        #df = launch_coroutine(
-        #    _wrap_task(self.multitorrent.rawserver.add_task),
-        #    self._start_torrent, metainfo, save_incomplete_as, save_as)
-        #df.addErrback( wrap_log('Failed to start torrent', self.logger))
-        self._create_torrent( metainfo, save_incomplete_as, save_as )
-        self.multitorrent.rawserver.add_task( 1,
-                                              self._start_torrent, metainfo )
-
-    def _create_torrent( self, metainfo, save_incomplete_as, save_as ):
         try:
-            # HEREDAVE:
-            # We have a race condition. The torrent might still be intializing
-            # from resumed state when this start_torrent is called.
-            #
-            # In the future there will be an INITIALIZING state.  If the
-            # torrent is INITIALIZING, I could then install a policy that
-            # will force it to start whenever the create_torrent completes.
-            #
-            # Another way is to rewrite bittorrent-curses based on Torrent
-            # and avoid all of the MultiTorrent stuff.
-            #
-            # For now I will simply periodically check whether
-            # initialized is complete before trying to start (see call
-            # to raw_server.add_task in start_torrent).
-
-            if not self.multitorrent.torrent_known(metainfo.infohash):
-                self.logger.debug("creating torrent")
-                df = self.multitorrent.create_torrent(metainfo,
-                                                      save_incomplete_as,
-                                                      save_as)
-                #yield df
-                #df.getResult()  # raises exception if one occurred in yield.
-                #self.logger.debug( "Torrent's state is now: %s" % 
-                #    self.multitorrent.get_torrent(metainfo.infohash).state )
-                
+            self.d.display({'activity':_("initializing"), 
+                               'fractionDone':0})
+            multitorrent = self.multitorrent
+            df = multitorrent.create_torrent(metainfo, save_incomplete_in,
+                                             save_in)
+            df.addErrback( wrap_log('Failed to start torrent', self.logger))
+            def create_finished(*args, **argv):
+                self.torrent = multitorrent.get_torrent(metainfo.infohash)
+                if self.torrent.is_initialized():
+                   multitorrent.start_torrent(metainfo.infohash)
+                else:
+                   self.d.display({'activity':_("already being downloaded"), 
+                               'fractionDone':0})
+                   self.core_doneflag.set()  # e.g., if already downloading...
+            df.addCallback( create_finished )
         except KeyboardInterrupt:
             raise
         except Exception, e:
             self.logger.error( "Failed to create torrent", exc_info = e )
             return
-
-    def _start_torrent(self, metainfo):
-        try:
-            t = None
-            if self.multitorrent.torrent_known( metainfo.infohash ):
-              t = self.multitorrent.get_torrent(metainfo.infohash)
         
-            # HACK!! Rewrite when INITIALIZING state is available.
-            if t is None or not t.is_initialized():
-                self.logger.debug( "Waiting for torrent to initialize." )
-                self.multitorrent.rawserver.add_task(3,
-                    self._start_torrent, metainfo)
-                return
-
-            if not self.multitorrent.torrent_running(metainfo.infohash):
-                #self.logger.debug("starting torrent")
-                df = self.multitorrent.start_torrent(metainfo.infohash)
-                #yield df
-                #df.getResult()  # raises exception if one occurred in yield.
-            
-            if not self.torrent:
-                self.torrent = self.multitorrent.get_torrent(metainfo.infohash)
-                
-        except KeyboardInterrupt:
-            raise
-        except Exception, e:
-            self.logger.error("Failed to start torrent", exc_info = e)
-            self.logger.debug("  Torrent's state is %s" % 
-                self.multitorrent.get_torrent(metainfo.infohash).state )
-
     def run(self, scrwin):
-        core_doneflag = DeferredEvent()
+        self.core_doneflag = DeferredEvent()
         rawserver_doneflag = DeferredEvent()
         rawserver = RawServer(self.config)
-        rawserver.install_sigint_handler(core_doneflag)
+        rawserver.install_sigint_handler(self.core_doneflag)
 
         def reread():
             if self.multitorrent is not None:
@@ -524,7 +483,8 @@ class CursesTorrentApp(object):
         
             data_dir = config['data_dir']
             self.multitorrent = \
-                MultiTorrent(self.config, core_doneflag, rawserver, data_dir )
+                MultiTorrent(self.config, self.core_doneflag, rawserver,
+                             data_dir, is_single_torrent = True )
                 
             self.d.set_torrent_values(metainfo.name, os.path.abspath(saveas),
                                 metainfo.total_bytes, len(metainfo.hashes))
@@ -532,7 +492,7 @@ class CursesTorrentApp(object):
             self.get_status()
           except Exception, e:
             self.logger.error( "", exc_info = e )
-            core_doneflag.set()
+            self.core_doneflag.set()
 
         finally:
             l = None
@@ -546,8 +506,10 @@ class CursesTorrentApp(object):
                 else:
                     rawserver_doneflag.set()
                        
-            rawserver.add_task(0, core_doneflag.addCallback,
+            rawserver.add_task(0, self.core_doneflag.addCallback,
                 lambda r: rawserver.external_add_task(0, shutdown))
+
+            self.logger.debug( "listen_forever" )
 
             rawserver.listen_forever(rawserver_doneflag)
          
@@ -581,17 +543,9 @@ class CursesTorrentApp(object):
            curses window."""
         self.d.error(text)
 
-    #def failed(self, torrent, is_external):
-    #    self.doneflag.set()
-    #
-    #def finished(self, torrent):
-    #    self.d.finished()
-
-
 
 
 if __name__ == '__main__':
-
     uiname = 'bittorrent-curses'
     defaults = get_defaults(uiname)
 
@@ -600,6 +554,15 @@ if __name__ == '__main__':
         printHelp(uiname, defaults)
         sys.exit(1)
     try:
+        # Modifying default values from get_defaults is annoying...
+        # Implementing specific default values for each uiname in
+        # defaultargs.py is even more annoying.  --Dave
+        data_dir = [[name, value,doc] for (name, value, doc) in defaults
+                        if name == "data_dir"][0]
+        defaults = [(name, value,doc) for (name, value, doc) in defaults
+                        if not name == "data_dir"]        
+        data_dir[1] = os.path.join( platform.get_dot_dir(), "curses" )
+        defaults.append( tuple(data_dir) )
         config, args = configfile.parse_configuration_and_args(defaults,
                                        uiname, sys.argv[1:], 0, 1)
         torrentfile = None
@@ -619,9 +582,7 @@ if __name__ == '__main__':
 
     errlist = []
     app = CursesTorrentApp(metainfo, config, errlist)
-
     curses_wrapper(app.run)
-
     if errlist:
         print _("These errors occurred during execution:")
         for error in errlist:

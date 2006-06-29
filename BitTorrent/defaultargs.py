@@ -138,6 +138,8 @@ rare_options = [
        "hostile peers that send incorrect data")),
     ('one_connection_per_ip', True,
      _("do not connect to several peers that have the same IP address")),
+    ('one_download_per_torrent', True,
+     _("do not allow simultaneous downloads of the same torrent.")),
     ('peer_socket_tos', 8,
      _("if nonzero, set the TOS option for peer connections to this value")),
     ('bad_libc_workaround', BAD_LIBC_WORKAROUND_DEFAULT,

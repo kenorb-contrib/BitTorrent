@@ -75,11 +75,13 @@ def bind_tracker_connection(bindaddr):
 
 def set_zurllib_rawserver(new_rawserver):
     global rawserver
-    for addr in rawserver.pending_sockets:
-        new_rawserver.add_pending_connections(addr)
-        rawserver.remove_pending_connection(addr)
-    assert len(rawserver.pending_sockets) == 0
+    old_rawserver = rawserver
     rawserver = new_rawserver
+    while old_rawserver.pending_sockets:
+        addr = old_rawserver.pending_sockets.keys()[0]
+        new_rawserver.add_pending_connection(addr)
+        old_rawserver.remove_pending_connection(addr)
+    assert len(old_rawserver.pending_sockets) == 0
 
 unsafe_threads = []
 def add_unsafe_thread():

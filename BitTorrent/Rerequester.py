@@ -181,7 +181,7 @@ class Rerequester(object):
     def _check(self):
         assert thread.get_ident() == self.rawserver.ident
         assert not self.dead
-        self.errorfunc(logging.INFO, 'check: ' + str(self.current_started))
+        #self.errorfunc(logging.INFO, 'check: ' + str(self.current_started))
         if self.current_started is not None:
             if self.current_started <= bttime() - 58:
                 self.errorfunc(logging.WARNING,

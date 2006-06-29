@@ -2344,7 +2344,7 @@ class MainWindow(BTFrame):
         bmp = wx.BitmapFromImage(i)
         assert bmp.Ok(), "The image (%s) is not valid." % image
         tid = wx.NewId()
-        self.search_bar.AddLabelTool(tid, "Search", bmp, shortHelp="Search")
+        self.search_bar.AddLabelTool(tid, _("Search"), bmp, shortHelp=_("Search"))
         self.search_field = SearchField(self.search_bar, _("Search for torrents"),
                                         wx.the_app.visit_url)
         self.search_bar.AddControl(self.search_field)
@@ -2432,7 +2432,7 @@ class MainWindow(BTFrame):
                 def error(exc_info):
                     wx.the_app.logger.error(e.func.__name__ + " failed", exc_info=exc_info)
                 df.addErrback(error)
-            else:                
+            else:
                 for infohash in infohashes:
                     df = launch_coroutine(gui_wrap, e.func, infohash)
                     def error(exc_info):
@@ -3146,14 +3146,14 @@ class MainLoop(BasicApp, BTApp):
         assert not self.torrents.has_key(metainfo.infohash)
 
         ask_for_save = self.config['ask_for_save'] or not self.config['save_in']
-        save_in = self.config['save_in']
+        save_in = self.config['save_in'].decode('utf-8')
         if not save_in:
             save_in = get_save_dir()
 
-        save_incomplete_in = self.config['save_incomplete_in']
+        save_incomplete_in = self.config['save_incomplete_in'].decode('utf-8')
 
-        # wx expects paths sent to the gui to be unicode, not utf-8
-        save_as = os.path.join(save_in.decode('utf-8'),
+        # wx expects paths sent to the gui to be unicode
+        save_as = os.path.join(save_in,
                                decode_from_filesystem(metainfo.name_fs))
         original_save_as = save_as
 
@@ -3164,7 +3164,7 @@ class MainLoop(BasicApp, BTApp):
         incomplete_name = metainfo.infohash.encode('hex')[:8]
         incomplete_name += '-'
         incomplete_name += foil.hexdigest()[:4]
-        save_incomplete_as = os.path.join(save_incomplete_in.decode('utf-8'),
+        save_incomplete_as = os.path.join(save_incomplete_in,
                                           incomplete_name)
 
         biggest_file = max(metainfo.sizes)
@@ -3410,20 +3410,23 @@ class MainLoop(BasicApp, BTApp):
         infohashes = self.main_window.torrentlist.get_selected_infohashes()
         for infohash in infohashes:
             self._remove_infohash(infohash, del_files=True)
-           
+
 
     def confirm_remove_infohashes(self, infohashes):
         infohashes = [ i for i in infohashes if i in self.torrents ]
 
         if len(infohashes) == 1:
             return self.confirm_remove_infohash(infohashes[0])
-        
+
         del_files = False
         for infohash in infohashes:
             t = self.torrents[infohash]
+            fs_save_incomplete_in, junk = encode_for_filesystem(
+                self.config['save_incomplete_in'].decode('utf-8')
+                )
             inco = ((not t.completed) and
                     (t.working_path != t.destination_path) and
-                    t.working_path.startswith(self.config['save_incomplete_in']))
+                    t.working_path.startswith(fs_save_incomplete_in))
             if inco:
                 del_files = True
                 break
@@ -3453,7 +3456,7 @@ class MainLoop(BasicApp, BTApp):
                     return
 
         for infohash in infohashes:
-            self._remove_infohash(infohash, del_files=del_files)    
+            self._remove_infohash(infohash, del_files=del_files)
 
 
     def confirm_remove_infohash(self, infohash):
@@ -3462,9 +3465,12 @@ class MainLoop(BasicApp, BTApp):
 
         t = self.torrents[infohash]
         name = t.metainfo.name
+        fs_save_incomplete_in, junk = encode_for_filesystem(
+            self.config['save_incomplete_in'].decode('utf-8')
+            )
         inco = ((not t.completed) and
                 (t.working_path != t.destination_path) and
-                t.working_path.startswith(self.config['save_incomplete_in']))
+                t.working_path.startswith(fs_save_incomplete_in))
         del_files = inco
         if not wx.GetKeyState(wx.WXK_SHIFT):
             title=_("Really remove torrent?")
@@ -3579,6 +3585,10 @@ class MainLoop(BasicApp, BTApp):
         yield df
         rates = df.getResult()
 
+        df = self.multitorrent.get_variance()
+        yield df
+        variance, max_variance = df.getResult()
+
         tu = 0.0
         td = 0.0
         for infohash, v in rates.iteritems():
@@ -3587,13 +3597,15 @@ class MainLoop(BasicApp, BTApp):
                 t = self.torrents[infohash]
                 t.bandwidth_history.update(upload_rate=u, download_rate=d,
                                            max_upload_rate=self.config['max_upload_rate'],
-                                           max_download_rate=self.config['max_download_rate'])
+                                           max_download_rate=self.config['max_download_rate'],
+                                           variance=variance, max_variance=max_variance)
             tu += u
             td += d
 
         self.bling_history.update(upload_rate=tu, download_rate=td,
                                   max_upload_rate=self.config['max_upload_rate'],
-                                  max_download_rate=self.config['max_download_rate'])
+                                  max_download_rate=self.config['max_download_rate'],
+                                  variance=variance, max_variance=max_variance)
 
         self.update_bwg_handle = wx.FutureCall(self.GRAPH_UPDATE_INTERVAL,
                                                self.update_bandwidth_graphs)

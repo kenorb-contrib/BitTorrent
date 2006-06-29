@@ -18,6 +18,7 @@ import random
 import wx
 from BitTorrent.translation import _
 from BitTorrent import app_name
+from BitTorrent.obsoletepythonsupport import set
 from BitTorrent.sparse_set import SparseSet
 from BitTorrent.GUI_wx import VSizer, HSizer, BTDialog, CheckButton, ChooseDirectorySizer, SPACING, ElectroStaticText, IPValidator, PortValidator, text_wrappable, gui_wrap
 from BitTorrent.GUI_wx.CustomWidgets import NullGauge, FancyDownloadGauge, SimpleDownloadGauge, ModerateDownloadGauge
@@ -88,10 +89,10 @@ class RateSlider(wx.Slider):
                 break
         label = unicode(Rate(value*self.backend_conversion)) + conn_type
         return label
-    
+
 
 class RateSliderBox(wx.StaticBox):
-    
+
     def __init__(self, parent, label, key, settings_window, speed_classes):
         self.key = key
         self.settings_window = settings_window
@@ -103,7 +104,7 @@ class RateSliderBox(wx.StaticBox):
         self.setfunc = lambda v : self.settings_window.setfunc(key, v)
         self.slider = RateSlider(parent, self.settings_window.config[key], speed_classes)
         self.slider.Bind(wx.EVT_SLIDER, self.OnSlider)  # bind event to handler.
-        self.LoadValue()  
+        self.LoadValue()
 
         self.sizer.Add(self.text, proportion=1, flag=wx.GROW|wx.TOP|wx.LEFT|wx.RIGHT, border=SPACING)
         self.sizer.Add(self.slider, proportion=1, flag=wx.GROW|wx.BOTTOM|wx.LEFT|wx.RIGHT, border=SPACING)
@@ -223,7 +224,7 @@ class SavingSettingsPanel(SettingsPanel):
                                              self.settings_window.config['save_in'],
                                              setfunc = lambda v: self.settings_window.setfunc('save_in', v),
                                              editable = False,
-                                             button_label = "&Browse")
+                                             button_label = _("&Browse"))
 
 
         self.incoming_static_box = wx.StaticBox(self, label=_("Store unfinished downloads in:"))
@@ -232,7 +233,7 @@ class SavingSettingsPanel(SettingsPanel):
                                                  self.settings_window.config['save_incomplete_in'],
                                                  setfunc = lambda v: self.settings_window.setfunc('save_incomplete_in', v),
                                                  editable = False,
-                                                 button_label = "B&rowse")
+                                                 button_label = _("B&rowse"))
 
         # sizers
         self.save_static_box_sizer = wx.StaticBoxSizer(self.save_static_box, wx.VERTICAL)

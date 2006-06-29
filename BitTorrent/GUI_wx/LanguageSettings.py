@@ -105,7 +105,10 @@ class LanguageSettings(wx.Panel):
 
     def language_was_set(self, *a):
         self.clear_error()
-
+        wx.MessageBox("You must restart %s for the language "
+                      "setting to take effect." % app_name,
+                      "%s translation" % app_name,
+                      style=wx.ICON_INFORMATION)
 
     def clear_error(self):
         index = self.box_sizer.GetItem(self.bottom_error)

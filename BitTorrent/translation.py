@@ -15,5 +15,4 @@ if encoding is not None:
 
 from BitTorrent.platform import install_translation
 install_translation(unicode=True)
-
 _ = _ # not a typo

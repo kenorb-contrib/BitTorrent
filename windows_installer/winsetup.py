@@ -91,8 +91,8 @@ if 1:
         # no build path setup, no worries.
         pass
 
-mfc = os.path.join(get_shell_dir(shellcon.CSIDL_SYSTEM), "mfc71.dll")
-unicows = os.path.join(get_shell_dir(shellcon.CSIDL_SYSTEM), "unicows.dll")
+mfc = os.path.join(get_shell_dir(shellcon.CSIDL_SYSTEM), "mfc71.dll").encode('utf8')
+unicows = os.path.join(get_shell_dir(shellcon.CSIDL_SYSTEM), "unicows.dll").encode('utf8')
 ms = [mfc, unicows, ]
 
 try:

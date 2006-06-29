@@ -1,4 +1,3 @@
-# -*- coding: UTF-8 -*-
 # The contents of this file are subject to the BitTorrent Open Source License
 # Version 1.1 (the License).  You may not copy or use this file, in either
 # source code or executable form, except in compliance with the License.  You
@@ -23,38 +22,64 @@ class LanguageDict(dict):
 language_names = LanguageDict()
 
 language_names.update( {
-    'af'   :u'Afrikaans'            ,    'bg'   :u'Български'            ,
-    'da'   :u'Dansk'                ,    'ca'   :u'Català'               ,
-    'cs'   :u'Čeština'              ,    'de'   :u'Deutsch'              ,
-    'en'   :u'English'              ,    'es'   :u'Español'              ,
-    'es_MX':u'Español de Mexico '   ,    'fr'   :u'Français'             ,
-    'el'   :u'Ελληνικά'             ,    'he'   :u'עברית'                ,
-    'hu'   :u'Magyar'               ,    'it'   :u'Italiano'             ,
-    'is'   :u'Íslenska'             ,    'ja'   :u'日本語'            ,
-    'ko'   :u'한국어'            ,'nl'   :u'Nederlands'           ,
-    'nb_NO':u'Norsk bokmål'         ,    'pl'   :u'Polski'               ,
-    'pt'   :u'Português'            ,    'pt_BR':u'Português do Brasil'  ,
-    'ro'   :u'Română'               ,    'ru'   :u'Русский'              ,
-    'sk'   :u'Slovenský'            ,    'sl'   :u'Slovensko'            ,
-    'sv'   :u'Svenska'              ,    'tr'   :u'Türkçe'               ,
-    'vi'   :u'Tiê?ng Viê?t'           ,
-    'zh_CN':u'简体中文'               , # Simplified
-    'zh_TW':u'繁體中文'               , # Traditional
+    'de'   :u'Deutsch',
+    'en'   :u'English',
+    'es'   :u'Espa\xf1ol',
+    'es_MX':u'Espa\xf1ol de Mexico',
+    'fr'   :u'Fran\xe7ais',
+    'it'   :u'Italiano',
+    'ja'   :u'\u65e5\u672c\u8a9e',
+    'ko'   :u'\ud55c\uad6d\uc5b4',
+    'pt'   :u'Portugu\xeas',
+    'pt_BR':u'Portugu\xeas do Brasil',
+    'zh_CN':u'\u7b80\u4f53\u4e2d\u6587', # Simplified
+    'zh_TW':u'\u7e41\u9ad4\u4e2d\u6587', # Traditional
     } )
 
 unfinished_language_names = {
-    'ar'   :u'العربية'       ,    'bs'   :u'Bosanski'             ,
-    'eo'   :u'Esperanto'            ,    'eu'   :u'Euskara'              ,
-    'et'   :u'Eesti'                ,    'fi'   :u'Suomi'                ,
-    'fa'   :u'فارسی'                ,    'ga'   :u'Gaeilge'              ,
-    'gl'   :u'Galego'               ,    'hr'   :u'Hrvatski'             ,
-    'hy'   :u'Հայերեն'       ,    'in'   :u'Bahasa indonesia'     ,
-    'ka'   :u'ქართული ენა',    'lt'   :u'Lietuvių'        ,
-    'ms'   :u'Bahasa melayu'        ,    'ml'   :u'Malayalam'            ,
-    'sq'   :u'Shqipe'                ,    'th'   :u'ภาษาไทย'              ,
-    'tlh'  :u'tlhIngan-Hol'         ,    'uk'   :u'Українська'           ,
-    'hi'   :u'हिंदी'                  ,    'cy'   :u'Cymraeg'              ,
-    'nn_NO':u'Norsk Nynorsk'        ,    'te'   :u'	తెలుగు'             ,
+    'af'   :u'Afrikaans',
+    'ar'   :u'\u0627\u0644\u0639\u0631\u0628\u064a\u0629',
+    'bg'   :u'\u0411\u044a\u043b\u0433\u0430\u0440\u0441\u043a\u0438',
+    'bs'   :u'Bosanski',
+    'da'   :u'Dansk',
+    'ca'   :u'Catal\xe0',
+    'cs'   :u'\u010ce\u0161tina',
+    'eo'   :u'Esperanto',
+    'eu'   :u'Euskara',
+    'et'   :u'Eesti',
+    'fi'   :u'Suomi',
+    'fa'   :u'\u0641\u0627\u0631\u0633\u06cc',
+    'ga'   :u'Gaeilge',
+    'gl'   :u'Galego',
+    'el'   :u'\u0395\u03bb\u03bb\u03b7\u03bd\u03b9\u03ba\u03ac',
+    'he'   :u'\u05e2\u05d1\u05e8\u05d9\u05ea',
+    'hu'   :u'Magyar',
+    'hr'   :u'Hrvatski',
+    'hy'   :u'\u0540\u0561\u0575\u0565\u0580\u0565\u0576',
+    'in'   :u'Bahasa indonesia',
+    'is'   :u'\xcdslenska',
+    'ka'   :u'\u10e5\u10d0\u10e0\u10d7\u10e3\u10da\u10d8 \u10d4\u10dc\u10d0',
+    'lt'   :u'Lietuvi\u0173',
+    'ms'   :u'Bahasa melayu',
+    'ml'   :u'Malayalam',
+    'nl'   :u'Nederlands',
+    'nb_NO':u'Norsk bokm\xe5l',
+    'pl'   :u'Polski',
+    'ro'   :u'Rom\xe2n\u0103',
+    'ru'   :u'\u0420\u0443\u0441\u0441\u043a\u0438\u0439',
+    'sq'   :u'Shqipe',
+    'sk'   :u'Slovensk\xfd',
+    'sl'   :u'Slovensko',
+    'sv'   :u'Svenska',
+    'th'   :u'\u0e20\u0e32\u0e29\u0e32\u0e44\u0e17\u0e22',
+    'tlh'  :u'tlhIngan-Hol',
+    'tr'   :u'T\xfcrk\xe7e',
+    'uk'   :u'\u0423\u043a\u0440\u0430\u0457\u043d\u0441\u044c\u043a\u0430',
+    'vi'   :u'Ti\xea?ng Vi\xea?t',
+    'hi'   :u'\u0939\u093f\u0902\u0926\u0940',
+    'cy'   :u'Cymraeg',
+    'nn_NO':u'Norsk Nynorsk',
+    'te'   :u'  \u0c24\u0c46\u0c32\u0c41\u0c17\u0c41',
     }
 
 #language_names.update(unfinished_language_names)
@@ -143,7 +168,7 @@ locale_sucks = {
     0x0429: "fa",       # Farsi
     0x040B: "fi",       # Finnish
     0x0438: "fo",       # Faroese
-    0x000C: "fr",       # French (added) 
+    0x000C: "fr",       # French (added)
     0x080C: "fr_BE",    # French - Belgium
     0x0C0C: "fr_CA",    # French - Canada
     0x100C: "fr_CH",    # French - Switzerland

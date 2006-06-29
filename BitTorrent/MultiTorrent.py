@@ -19,7 +19,6 @@ import logging
 import traceback
 from copy import copy
 from BitTorrent.translation import _
-#import pdb #DEBUG
 
 from BitTorrent import GetTorrent
 from BitTorrent.platform import bttime, encode_for_filesystem
@@ -29,6 +28,7 @@ from BitTorrent.ConvertedMetainfo import ConvertedMetainfo
 from BitTorrent.prefs import Preferences
 from BitTorrent.NatTraversal import NatTraverser
 from BitTorrent.BandwidthManager import BandwidthManager
+from BitTorrent.InternetWatcher import InternetWatcher
 from BitTorrent.Rerequester import Rerequester, DHTRerequester
 from BitTorrent.NewRateLimiter import MultiRateLimiter as RateLimiter
 from BitTorrent.ConnectionManager import SingleportListener
@@ -94,6 +94,10 @@ class MultiTorrent(Feedback):
          @param is_single_torrent: if true then allow only one torrent
            at a time in this MultiTorrent.
         """
+        # is_single_torrent will go away when we move MultiTorrent into
+        # a separate process, in which case, single torrent applications like
+        # curses and console will act as a client to the MultiTorrent daemon.
+        #   --Dave
         assert isinstance(config, Preferences)
         assert isinstance(data_dir, str)
         assert isinstance(listen_fail_ok, bool)
@@ -113,6 +117,7 @@ class MultiTorrent(Feedback):
         self.dht = None
         self.rawserver = rawserver
         nattraverser = NatTraverser(self.rawserver)
+        self.internet_watcher = InternetWatcher(self.rawserver)
         self.singleport_listener = SingleportListener(self.rawserver,
                                                      nattraverser,
                                                       self.log_root)
@@ -130,11 +135,12 @@ class MultiTorrent(Feedback):
                                  config['max_files_open'], 
                                  config['num_disk_threads'])
 
-        try:
-            self._restore_state(init_torrents)
-        except BTFailure:
-            # don't be retarted.
-            self.logger.exception("_restore_state failed")
+        if not is_single_torrent:
+            try:
+                self._restore_state(init_torrents)
+            except BTFailure:
+                # don't be retarted.
+                self.logger.exception("_restore_state failed")
 
         def no_dump_set_option(option, value):
             self.set_option(option, value, dump=False)
@@ -264,13 +270,15 @@ class MultiTorrent(Feedback):
     def global_error(self, severity, message, exc_info=None):
         self.logger.log(severity, message, exc_info=exc_info)
 
-    def create_torrent(self, metainfo, save_incomplete_as, save_as,
+    def create_torrent(self, metainfo, save_incomplete_in, save_in,
                        hidden=False, is_auto_update=False):
         if self.is_single_torrent and len(self.torrents) > 0:
-            raise TooManyTorrents(metainfo.infohash)
+            print "create_torrent: len(self.torrents)=", len(self.torrents)
+            raise TooManyTorrents(_("MultiTorrent is set to download only "
+                 "a single torrent, but tried to create more than one."))
 
-        #save_as, junk = encode_for_filesystem(save_as)
-        #save_incomplete_as, junk = encode_for_filesystem(save_incomplete_as)
+        #save_in, junk = encode_for_filesystem(save_in)
+        #save_incomplete_in, junk = encode_for_filesystem(save_incomplete_in)
         infohash = metainfo.infohash
         if self.torrent_known(infohash):
             if self.torrent_running(infohash):
@@ -288,7 +296,7 @@ class MultiTorrent(Feedback):
                                                 infohash,
                                                 lambda s : self.global_error(logging.ERROR, s))
 
-        t = Torrent(metainfo, save_incomplete_as, save_as, self.config,
+        t = Torrent(metainfo, save_incomplete_in, save_in, self.config,
                     self.data_dir, self.rawserver, self.singleport_listener,
                     self.ratelimiter, self.total_downmeasure,
                     self.filepool, self.dht, self, self.log_root,
@@ -320,9 +328,12 @@ class MultiTorrent(Feedback):
         t = self.torrents[ihash]
 
         # super carefully determine whether these are really incomplete files
+        fs_save_incomplete_in, junk = encode_for_filesystem(
+            self.config['save_incomplete_in'].decode('utf-8')
+            )
         inco = ((not t.completed) and
                 (t.working_path != t.destination_path) and
-                t.working_path.startswith(self.config['save_incomplete_in']))
+                t.working_path.startswith(fs_save_incomplete_in))
         del_files = del_files and inco
 
         df = t.shutdown()
@@ -345,7 +356,7 @@ class MultiTorrent(Feedback):
         t = self.get_torrent(infohash)
         if self.torrent_running(infohash):
             assert t.is_running()
-            raise TorrentAlreadyRunning(infohash)
+            raise TorrentAlreadyRunning(infohash.encode("hex"))
         assert t.state == "failed"
 
         df = self._init_torrent(t, use_policy=False)
@@ -353,14 +364,15 @@ class MultiTorrent(Feedback):
 
 
     def start_torrent(self, infohash):
-        if self.is_single_torrent and len(self.torrents) > 0:
-            raise TooManyTorrents(infohash)
+        if self.is_single_torrent and len(self.torrents) > 1:
+            raise TooManyTorrents(_("MultiTorrent is set to download only "
+                 "a single torrent, but tried to create more than one."))
         t = self.get_torrent(infohash)
         if self.torrent_running(infohash):
             assert t.is_running()
-            raise TorrentAlreadyRunning(infohash)
+            raise TorrentAlreadyRunning(infohash.encode("hex"))
         if not t.is_initialized():
-            raise TorrentNotInitialized(infohash)
+            raise TorrentNotInitialized(infohash.encode("hex"))
 
         t.logger.debug("starting torrent")
 
@@ -392,7 +404,7 @@ class MultiTorrent(Feedback):
         try:
             t = self.torrents[infohash]
         except KeyError:
-            raise UnknownInfohash(infohash)
+            raise UnknownInfohash(infohash.encode("hex"))
         return t
 
     def get_torrents(self):
@@ -448,13 +460,16 @@ class MultiTorrent(Feedback):
                                torrent.get_downrate() or 0)
         return rates
 
+    def get_variance(self):
+        return self.bandwidth_manager.current_std, self.bandwidth_manager.max_std
+
     def get_total_rates(self):
         u = 0.0
         d = 0.0
         for torrent in self.torrents.itervalues():
             u += torrent.get_uprate() or 0
             d += torrent.get_downrate() or 0
-        return u,d
+        return u, d
 
     def get_total_totals(self):
         u = 0.0
@@ -462,8 +477,7 @@ class MultiTorrent(Feedback):
         for torrent in self.torrents.itervalues():
             u += torrent.get_uptotal() or 0
             d += torrent.get_downtotal() or 0
-        return u,d
-
+        return u, d
 
     def auto_update_status(self):
         if self.auto_update_policy_index is not None:
@@ -705,6 +719,7 @@ class MultiTorrent(Feedback):
 
             return infohash, t
         # BEGIN _restore_state
+        assert not self.is_single_torrent
         filename = os.path.join(self.data_dir, 'ui_state')
         if not os.path.exists(filename):
             return

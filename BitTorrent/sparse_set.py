@@ -97,7 +97,6 @@ class SparseSet(object):
             end = begin + 1
         else:
             assert end > begin
-        assert end > begin
 
         b_i = bisect_left(self._begins, begin)
         s_b_i = max(b_i - 1, 0)
@@ -161,8 +160,6 @@ class SparseSet(object):
         raise IndexError("SparseSet index '%s' out of range" % i)
 
     def __iter__(self):
-        # kinda slow - as i increases, the time to retreive
-        # an item increases
         for b, e in izip(self._begins, self._ends):
             for i in xrange(b, e):
                 yield i

@@ -85,11 +85,11 @@ message_dict = {chr(0):'CHOKE',
                 chr(7):'PIECE',
                 chr(8):'CANCEL',
                 chr(9):'PORT',
-                chr(13): 'SUGGEST_PIECE',   # proposed FAST_EXTENSION
-                chr(14): 'HAVE_ALL',        # proposed FAST_EXTENSION
-                chr(15): 'HAVE_NONE',       # proposed FAST_EXTENSION
-                chr(16): 'REJECT_REQUEST',  # proposed FAST_EXTENSION
-                chr(17): 'ALLOWED_FAST'     # proposed FAST_EXTENSION
+                chr(13): 'SUGGEST_PIECE',   # FAST_EXTENSION
+                chr(14): 'HAVE_ALL',        # FAST_EXTENSION
+                chr(15): 'HAVE_NONE',       # FAST_EXTENSION
+                chr(16): 'REJECT_REQUEST',  # FAST_EXTENSION
+                chr(17): 'ALLOWED_FAST'     # FAST_EXTENSION
                 }
 
 # reserved flags:
@@ -204,6 +204,8 @@ class Connection(Handler):
 
     def close(self):
         if not self.closed:
+            dns = (self.connection.ip, self.connection.port)
+            self.parent.remove_dns_from_cache(dns)
             self.connection.close()
 
     def send_interested(self):

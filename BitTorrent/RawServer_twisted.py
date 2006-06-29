@@ -373,7 +373,7 @@ class OutputBuffer(object):
         to_write = len(self._buffer_list)
         if to_write > 0:
             self.consumer.writeSequence(self._buffer_list)
-            self._buffer_list[:] = []
+            del self._buffer_list[:]
             self.callback_onflushed()
         else:
             self.stopWriting()
@@ -397,6 +397,8 @@ class CallbackConnection(object):
         s.handler.connection_made(s)
         self.optionalResetTimeout()
 
+        self.factory.rawserver.connectionMade(s)
+
     def connectionLost(self, reason):
         reactor.callLater(0, self.post_connectionLost, reason)
 
@@ -404,9 +406,8 @@ class CallbackConnection(object):
     # sometimes connectionLost is called (not queued) from inside write()
     def post_connectionLost(self, reason):
         s = self.connection
-        #print ("Connection Lost", s.ip, s.port, str(reason).split(":")[-1])
-        assert self.connection is not None
-        self.factory.rawserver._remove_socket(self.connection)
+        #print s.ip, s.port, reason.getErrorMessage()
+        self.factory.rawserver._remove_socket(self.connection, was_connected=True)
 
     def dataReceived(self, data):
         self.optionalResetTimeout()
@@ -626,6 +627,7 @@ class RawServer(RawServerMixin):
         self.single_sockets = set()
         self.udp_sockets = set()
         self.listened = False
+        self.connections = 0
 
         ##############################################################
         if profile:
@@ -659,6 +661,8 @@ class RawServer(RawServerMixin):
         #l2 = task.LoopingCall(self._print_connection_count)
         #l2.start(1)
 
+
+    ##############################################################
     def _print_connection_count(self):
         def _sl(x):
             if hasattr(x, "__len__"):
@@ -685,13 +689,16 @@ class RawServer(RawServerMixin):
             if state not in d:
                 d[state] = 0
             d[state] += 1
-        self._log(d)
+        #rawserver_logger.debug(d)
+        print d
 
-        sizes = "ps(" + _sl(self.pending_sockets)
+        sizes = "cc(" + _sl(self.connections)
         sizes += ") ss(" + _sl(self.single_sockets)
         sizes += ") us(" + _sl(self.udp_sockets) + ")"
-        rawserver_logger.debug(sizes)
-
+        #rawserver_logger.debug(sizes)
+        print sizes
+    ##############################################################
+        
     def get_remote_endpoints(self):
         addrs = [(s.ip, s.port) for s in self.single_sockets]
         return addrs
@@ -906,7 +913,7 @@ class RawServer(RawServerMixin):
             # exceptions.RuntimeError: can't stop reactor that isn't running
             pass
 
-    def _remove_socket(self, s):
+    def _remove_socket(self, s, was_connected=False):
         # opt-out
         if not s.dying:
             self._make_wrapped_call(s.handler.connection_lost, s, wrapper=s)
@@ -915,3 +922,9 @@ class RawServer(RawServerMixin):
 
         self.single_sockets.remove(s)
 
+        if was_connected:
+            self.connections -= 1
+            
+    def connectionMade(self, s):
+        self.connections += 1
+        

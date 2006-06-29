@@ -73,6 +73,8 @@ from BitTorrent.defaultargs import get_defaults
 from BitTorrent.IPC import ipc_interface
 from BitTorrent.prefs import Preferences
 from BitTorrent.platform import os_version, is_frozen_exe
+if os.name == 'nt':
+    from BitTorrent.platform import win_version_num
 from BitTorrent.RawServer_twisted import RawServer
 from BitTorrent import zurllib
 from BitTorrent import GetTorrent
@@ -92,8 +94,11 @@ rawserver = None
 if __name__ == '__main__':
 
     try:
-        import psyco
-        psyco.profile()
+        # 95, 98, and ME seem to have problems with psyco
+        # so only import it on NT and up
+        if os.name == 'nt' and win_version_num >= (2, 4, 0):
+            import psyco
+            psyco.profile()
     except ImportError:
         pass
 
@@ -108,6 +113,8 @@ if __name__ == '__main__':
 
     config = Preferences().initWithDict(config)
     # bug set in DownloadInfoFrame
+
+    from BitTorrent import platform
 
     rawserver = RawServer(config, tos=config['peer_socket_tos'])
     zurllib.set_zurllib_rawserver(rawserver)

@@ -28,6 +28,7 @@ from BitTorrent import app_name, version, BTFailure
 from BitTorrent.platform import get_dot_dir, get_save_dir, locale_root, is_frozen_exe, get_incomplete_data_dir, enforce_shortcut, enforce_association, smart_gettext_and_install, desktop, set_config_dir, get_old_incomplete_data_dir
 from BitTorrent.zurllib import bind_tracker_connection, set_zurllib_rawserver
 from BitTorrent.platform import get_temp_dir, get_temp_subdir
+from BitTorrent.shortargs import convert_from_shortforms
 
 
 downloader_save_options = [
@@ -264,9 +265,10 @@ def parse_configuration_and_args(defaults, uiname, arglist=[], minargs=None,
        from values read from the config file, and again overrides the
        config file with the arguments that appear in the arglist.
 
-       'defaults' is a list of tuples of the form (optname, value, desc)
-       where 'optname' is a string containing the option's name,
-       value is the option's value, and desc is the option's description.
+       'defaults' is a list of tuples of the form (optname, value,
+       desc) where 'optname' is a string containing the option's name,
+       value is the option's default value, and desc is the option's
+       description.
 
        'uiname' is a string specifying the user interface that has been
        created by the caller.  Ex: bittorrent, maketorrent.
@@ -307,6 +309,9 @@ def parse_configuration_and_args(defaults, uiname, arglist=[], minargs=None,
     assert minargs is None or type(minargs) in (int,long) and minargs>=0
     assert maxargs is None or type(maxargs) in (int,long) and maxargs>=minargs
 
+    # remap shortform arguments to their long-forms.
+    arglist = convert_from_shortforms(arglist)
+
     defconfig = dict([(name, value) for (name, value, doc) in defaults])
     if arglist[0:] == ['--version']:
         print version
@@ -321,16 +326,13 @@ def parse_configuration_and_args(defaults, uiname, arglist=[], minargs=None,
 
     # run as if fresh install using temporary directories.
     else:
-        presets = defconfig
+        presets = {}
         temp_dir = get_temp_subdir()
-        set_config_dir(temp_dir)
-        save_in = os.path.join(temp_dir,"BitTorrentSaveIn")
-        presets['save_in'] = save_in
-        data_dir = os.path.join(temp_dir,"BitTorrentData")
-        presets['data_dir'] = data_dir
-        save_incomplete_in = os.path.join(temp_dir, "BitTorrentInc")
-        presets['save_incomplete_in'] = save_incomplete_in
-        presets['one_connection_per_ip'] = False
+        #set_config_dir(temp_dir)  # is already set in platform.py.
+        presets["save_in"] = os.path.join(temp_dir,"save_in")
+        presets["data_dir"] = os.path.join(temp_dir,"data")
+        presets["save_incomplete_in"] = os.path.join(temp_dir,"incomplete")
+        presets["one_connection_per_ip"] = False
 
     config = args = None
     try:

@@ -28,8 +28,9 @@ for l in languages:
     if not os.path.exists(r'po\%s.po' % (l)):
         print r'Warning: po\%s.po does not exist.' % (l)
     else:
-        os.system(r'copy po\%s.po %s\bittorrent.po' %(l,path))
+        os.system(r'copy po\%s.po %s\bittorrent.po' % (l, path))
         os.system(r'"%s\msgfmt.exe" -o %s\bittorrent.mo %s\bittorrent.po' % (GNUWIN_BIN, path, path))
+        os.remove(r'%s\bittorrent.po' % (path,))
 
 
 

@@ -31,10 +31,13 @@ class HistoryCollector(object):
         self.download_data = SizedList(self.max_len)
         self.max_upload_rate = 0
         self.max_download_rate = 0
+        self.variance = 0
+        self.max_variance = 1
         self.viewer = None
 
     def update(self, upload_rate, download_rate,
-               max_upload_rate, max_download_rate):
+               max_upload_rate, max_download_rate,
+               variance, max_variance):
 #         if (len(self.data) == 0):
 #             self.data.append(random.random() * 500.0)
 #         else:
@@ -44,6 +47,8 @@ class HistoryCollector(object):
         self.download_data.append(download_rate or 0)
         self.max_upload_rate = max_upload_rate
         self.max_download_rate = max_download_rate
+        self.variance = variance
+        self.max_variance = max_variance
         if self.viewer:
             self.viewer()
 
@@ -243,7 +248,10 @@ class BandwidthGraphPanel(CustomWidgets.DoubleBufferedMixin, BTPanel):
         self.draw_graph(dc, self.history.max_len, self.history.download_data,
                         max_data, i_rect)
 
-
+        #pen = wx.Pen(wx.NamedColor("yellow"), 1, wx.SHORT_DASH)
+        #dc.SetPen(pen)
+        #self.draw_max_line(dc, self.history.variance, self.history.max_variance, i_rect)
+        
 
 class StatisticsPanel(wx.Panel):
 

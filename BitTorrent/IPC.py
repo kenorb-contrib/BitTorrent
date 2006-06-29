@@ -162,7 +162,7 @@ class IPCSocketBase(IPC):
                                        ControlsocketListener(self.handle_command))
 
     def stop(self):
-        # safe double-stop, since TorrentQueue seems to be prone to do so
+        # safe double-stop, since MultiTorrent seems to be prone to do so
         if self.controlsocket:
             # it's possible we're told to stop after controlsocket creation but
             # before rawserver registration
@@ -418,6 +418,8 @@ class IPCWin32DDE(IPC):
         self.server = None
 
         if g_mutex.IsAnotherInstanceRunning():
+            # test whether there is a program actually running that holds
+            # the mutex.
             for i in xrange(10):
                 # try to connect first
                 self.client = Server(None, dde.CreateServer())

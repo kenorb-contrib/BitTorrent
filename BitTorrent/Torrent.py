@@ -13,7 +13,6 @@
 from __future__ import division
 from __future__ import generators
 
-#import pdb #DEBUG
 import os
 import gc
 import sys
@@ -26,9 +25,11 @@ import itertools
 import traceback
 import random
 import urlparse
+from IPC import ipc_interface
 from cStringIO import StringIO
 from BitTorrent.hash import sha
 from BitTorrent.translation import _
+from NamedMutex import NamedMutex
 
 import BitTorrent.stackthreading as threading
 
@@ -125,6 +126,7 @@ class Torrent(object):
         self._contfunc = None
         self._activity = (_("Initial startup"), 0)
         self._pending_file_priorities = []
+        self._mutex = None
         self.time_created = bttime()
         self.time_started = None
 
@@ -156,9 +158,6 @@ class Torrent(object):
         self.downtotal_old = 0
         self.context_valid = True
  
-        # do file lock.
-
-
     def update_config(self, config):
         self.config.update(config)
 
@@ -323,8 +322,23 @@ class Torrent(object):
 
     # this function is so nasty!
     def _initialize(self):
+
         self._doneflag = threading.Event()
 
+        # only one torrent object for of a particular infohash at a time.
+        # Note: This must be done after doneflag is created if shutdown()
+        # is to be called from got_exception().
+        if self.config["one_download_per_torrent"]:
+            self._mutex = NamedMutex(self.infohash.encode("hex"))
+            if not self._mutex.acquire(False):
+               try:
+                   raise BTFailure(_("Torrent already being downloaded." ))
+               except BTFailure, e:
+                   # perform exception handling including shutting down 
+                   # the torrent.
+                   self.got_exception(*sys.exc_info(),
+                       **{'cannot_shutdown':True})
+                   return
         self.reported_port = self.config['forwarded_port']
         if not self.reported_port:
             self.reported_port = \
@@ -359,6 +373,7 @@ class Torrent(object):
             return
 
         resumefile = None
+        # HEREDAVE: should probably be self.data_dir?
         if self.config['data_dir']:
             filename = os.path.join(self.config['data_dir'], 'resume',
                                     self.infohash.encode('hex'))
@@ -412,7 +427,7 @@ class Torrent(object):
         self._downmeasure = Measure(self.config['max_rate_period'])
         self._ratemeasure = RateMeasure(self._storagewrapper.amount_left_with_partials)
         self._picker = PiecePicker(self.config, numpieces,
-                                   self._storagewrapper.have_set.iterneg(0, numpieces))
+            self._storagewrapper.have_set.iterneg(0, numpieces))
 
         self._periodic_save_fastresume()
 
@@ -461,9 +476,10 @@ class Torrent(object):
         self._statuscollector = TorrentStats(self.logger, self._choker,
             self.get_uprate, self.get_downrate, self._upmeasure.get_total,
             self._downmeasure.get_total, self._ratemeasure.get_time_left,
-            self.get_percent_complete, self.multidownload.aggregate_piece_states,
-            self.finflag, self.multidownload, self.get_file_priorities, self._myfiles,
-            self._connection_manager.ever_got_incoming, None)
+            self.get_percent_complete, 
+            self.multidownload.aggregate_piece_states,
+            self.finflag, self.multidownload, self.get_file_priorities, 
+            self._myfiles, self._connection_manager.ever_got_incoming, None)
 
         for url_prefix in self.metainfo.url_list:
             r = urlparse.urlparse(url_prefix)
@@ -476,10 +492,6 @@ class Torrent(object):
             # TODO: async hostname resolution
             ip = socket.gethostbyname(host)
             self._connection_manager.start_http_connection((ip, port), url_prefix)
-
-        #self.logger.debug( "start_download: st..per says amount left is %d." %
-        #                   self._storagewrapper.amount_left )
-        #print self.infohash.encode('hex'), self.metainfo, "INITIALIZED"
 
         self.state = "initialized"
 
@@ -495,7 +507,9 @@ class Torrent(object):
         self._listening = True
         if self.metainfo.is_trackerless:
             if not self._dht:
-                self._error(self, logging.CRITICAL, _("Attempt to download a trackerless torrent with trackerless client turned off."))
+                self._error(self, logging.CRITICAL, 
+                   _("Attempt to download a trackerless torrent "
+                     "with trackerless client turned off."))
                 return
             else:
                 if len(self._dht.table.findNodes(self.metainfo.infohash,
@@ -503,20 +517,21 @@ class Torrent(object):
                     for ip, port in self.metainfo.nodes:
                         self._dht.addContact(ip, port)
                 self._rerequest = DHTRerequester(self.config,
-                                                 self.add_task,
-                                                 self._connection_manager.how_many_connections,
-                                                 self._connection_manager.start_connection,
-                                                 self.external_add_task,
-                                                 self._rawserver,
-                                                 self._storagewrapper.get_amount_left,
-                                                 self._upmeasure.get_total,
-                                                 self._downmeasure.get_total, self.reported_port, self._myid,
-                                                 self.infohash, self._error, self.finflag,
-                                                 self._upmeasure.get_rate,
-                                                 self._downmeasure.get_rate,
-                                                 self._connection_manager.ever_got_incoming,
-                                                 self._no_announce_shutdown, self._announce_done,
-                                                 self._dht)
+                    self.add_task,
+                    self._connection_manager.how_many_connections,
+                    self._connection_manager.start_connection,
+                    self.external_add_task,
+                    self._rawserver,
+                    self._storagewrapper.get_amount_left,
+                    self._upmeasure.get_total,
+                    self._downmeasure.get_total, self.reported_port, 
+                    self._myid,
+                    self.infohash, self._error, self.finflag,
+                    self._upmeasure.get_rate,
+                    self._downmeasure.get_rate,
+                    self._connection_manager.ever_got_incoming,
+                    self._no_announce_shutdown, self._announce_done,
+                    self._dht)
         else:
             self._rerequest = Rerequester(self.metainfo.announce,
                 self.metainfo.announce_list, self.config,
@@ -615,6 +630,11 @@ class Torrent(object):
 
         self.state = "created"
 
+        # release mutex on this torrent.
+        if self.config["one_download_per_torrent"]:
+           if self._mutex is not None and self._mutex.owner():
+               self._mutex.release()
+
         self._rawserver.add_task(0, gc.collect)
 
     def _no_announce_shutdown(self, level, text):
@@ -662,7 +682,8 @@ class Torrent(object):
 
         self.logger.log(severity, msg, exc_info=(type, e, stack))
         # steve wanted this too
-        traceback.print_exception(type, e, stack, file=sys.stdout)
+        # Dave doesn't want it.
+        #traceback.print_exception(type, e, stack, file=sys.stdout)
 
         self.failed(cannot_shutdown)
 
@@ -810,6 +831,7 @@ class Torrent(object):
         self._dump_torrent_config()
 
     def fastresume_file_path(self):
+        # HEREDAVE: should probably be self.data_dir?
         return os.path.join(self.config['data_dir'], 'resume',
                             self.infohash.encode('hex'))
 
@@ -825,6 +847,7 @@ class Torrent(object):
     def _save_fastresume(self):
         if not self.is_initialized():
             return
+        # HEREDAVE: should probably be self.data_dir?
         if not self.config['data_dir']:
             return
         filename = self.fastresume_file_path()

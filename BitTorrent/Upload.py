@@ -109,7 +109,7 @@ class Upload(object):
     def get_upload_chunk(self, index, begin, length):
         df = self.storage.read(index, begin, length)
         def fail(e):
-            log( "get_upload_chunk failed: %s" % str(e[1]) )
+            log( "get_upload_chunk failed", exc_info=e )
             self.connection.close()
             return None
         def update_rate(piece):  # piece is actual data.

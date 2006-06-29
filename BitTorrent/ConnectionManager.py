@@ -24,7 +24,10 @@ from BitTorrent.HTTPConnector import HTTPConnection
 from BitTorrent.platform import is_frozen_exe
 from BitTorrent.ClientIdentifier import identify_client
 from BitTorrent.LocalDiscovery import LocalDiscovery
+from BitTorrent.InternetWatcher import InternetSubscriber
+from BitTorrent.DictWithLists import OrderedDict
 from twisted.internet import task
+import random
 import logging
 
 #global_logger = logging.getLogger( "BitTorrent.ConnectionManager" )
@@ -70,7 +73,7 @@ class HTTPInitialConnection(GaurdedInitialConnection):
         return HTTPConnection(self.parent, piece_size, urlage, s, self.id, True)
     
 
-class ConnectionManager(object):
+class ConnectionManager(InternetSubscriber):
 
     def __init__(self, make_upload, downloader, choker,
                  numpieces, ratelimiter,
@@ -102,7 +105,6 @@ class ConnectionManager(object):
         self.everinc = False
         self.tracker_ips = tracker_ips
         self.log_prefix = log_prefix
-
         self.closed = False        
 
         # submitted
@@ -113,6 +115,10 @@ class ConnectionManager(object):
         self.complete_connections = set()
         
         self.spares = {}
+        self.cached_peers = OrderedDict()
+        self.cache_limit = 100
+
+        self.reopen(reported_port)        
 
         self.banned = set()
         self.schedulefunc(config['keepalive_interval'],
@@ -123,7 +129,49 @@ class ConnectionManager(object):
         self.downloader.resume_func = self.unthrottle_connections
 
         self.cruise_control = task.LoopingCall(self._check_throttle)
-        self.cruise_control.start(0.5)
+        self.cruise_control.start(1.0)
+
+    def reopen(self, port):
+        self.closed = False
+        self.reported_port = port
+        self.unthrottle_connections()
+        self.rawserver.internet_watcher.add_subscriber(self)
+
+    def internet_active(self):
+        for dns in self.cached_peers.iterkeys():
+            self._fire_cached_connection(dns)
+
+    def remove_dns_from_cache(self, dns):
+        # could have been an incoming connection
+        # or could have been dropped by the cache limit
+        if dns in self.cached_peers:
+            del self.cached_peers[dns]
+
+    def try_one_connection(self):
+        keys = self.cached_peers.keys()
+        if not keys:
+            return False
+        dns = random.choice(keys)
+        self._fire_cached_connection(dns)
+        return True
+
+    def _fire_cached_connection(self, dns):
+        (id, handler, a, kw) = self.cached_peers[dns]
+        return self._start_connection(dns, id, handler, *a, **kw)        
+
+    def close_connections(self):
+        self.rawserver.internet_watcher.remove_subscriber(self)
+        self.closed = True
+
+        pending = self.pending_connections.values()
+        # drop connections which could be made after we're not interested
+        for h in pending:
+            h.connector.close()
+            
+        for c in self.connections.itervalues():
+            if not c.closed:
+                c.connection.close()
+                c.closed = True
 
     def send_keepalives(self):
         self.schedulefunc(self.config['keepalive_interval'],
@@ -158,6 +206,15 @@ class ConnectionManager(object):
             return True
         if id == self.my_id:
             return True
+
+        # store the first instance only
+        if dns not in self.cached_peers:
+            # obey the cache size limit
+            if len(self.cached_peers) > self.cache_limit:
+                olddns = self.cached_peers.keys()[0]
+                self.remove_dns_from_cache(olddns)
+            self.cached_peers[dns] = (id, handler, a, kw)
+        
         for v in self.connections.itervalues():
             if id and v.id == id:
                 return True
@@ -248,24 +305,6 @@ class ConnectionManager(object):
 
     def unthrottle_connections(self):
         self.throttled = False        
-
-    def reopen(self, port):
-        self.closed = False
-        self.reported_port = port
-        self.unthrottle_connections()        
-
-    def close_connections(self):
-        self.closed = True
-
-        pending = self.pending_connections.values()
-        # drop connections which could be made after we're not interested
-        for h in pending:
-            h.connector.close()
-            
-        for c in self.connections.itervalues():
-            if not c.closed:
-                c.connection.close()
-                c.closed = True
 
     def singleport_connection(self, con):
         if con.ip in self.banned:
@@ -439,3 +478,8 @@ class SingleportListener(Handler):
 
     def replace_connection(self):
         pass
+
+    def remove_dns_from_cache(self, dns):
+        # since this was incoming, we don't cache the peer anyway
+        pass
+    
