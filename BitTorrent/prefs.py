@@ -29,7 +29,9 @@ class Preferences(object):
             return dict([(x, y) for x, y in self._options.items() if y != self._parent.get(x, None)])
         else:
             return dict(self._options)
-            
+
+    # To catch encoding errors, if something was ever stored as
+    # unicode, it must ALWAYS be stored as unicode.
     def __getitem__(self, option):
         if self._options.has_key(option):
             return self._options[option]
@@ -38,6 +40,14 @@ class Preferences(object):
         return None
 
     def __setitem__(self, option, value):
+        if self._options.has_key(option):
+            # The next two asserts are a short-term hack.  A more general 
+            # solution is to associate allowed type(s) for each option, and 
+            # then have the Preferences object enforce those types.  --Dave.
+            assert not isinstance(self._options[option], unicode) or \
+                isinstance(value, unicode)
+            assert not isinstance(self._options[option], str) or \
+                isinstance(value, str)
         self._options.__setitem__(option, value)
         if self._persist_callback:
             self._persist_callback()

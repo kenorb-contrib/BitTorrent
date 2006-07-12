@@ -19,22 +19,22 @@ import sys
 import time
 import errno
 import shutil
+import random
+import socket
 import cPickle
 import logging
+import urlparse
 import itertools
 import traceback
-import random
-import urlparse
-from IPC import ipc_interface
 from cStringIO import StringIO
 from BitTorrent.hash import sha
 from BitTorrent.translation import _
-from NamedMutex import NamedMutex
+from BitTorrent.NamedMutex import NamedMutex
 
 import BitTorrent.stackthreading as threading
 
 from BitTorrent.platform import bttime, is_path_too_long
-from BitTorrent.Choker import Choker
+from BitTorrent.platform import decode_from_filesystem, get_filesystem_encoding
 from BitTorrent.ConnectionManager import ConnectionManager
 from BitTorrent import PeerID
 from BitTorrent.defer import Deferred, ThreadedDeferred
@@ -51,7 +51,7 @@ from BitTorrent.StorageWrapper import StorageWrapper
 from BitTorrent.Upload import Upload
 from BitTorrent.MultiDownload import MultiDownload
 from BitTorrent import version
-from BitTorrent import BTFailure
+from BitTorrent import BTFailure, UserFailure
 from BitTorrent.prefs import Preferences
 #from BitTorrent.bencode import bencode
 
@@ -91,10 +91,18 @@ class Torrent(object):
     PRIORITIES = ["low", "normal", "high"]
 
     def __init__(self, metainfo, working_path, destination_path, config,
-                 data_dir, rawserver,
+                 data_dir, rawserver, choker,
                  singleport_listener, ratelimiter, total_downmeasure,
                  filepool, dht, feedback, log_root,
                  hidden=False, is_auto_update=False):
+        # The passed working path and destination_path should be filesystem
+        # encoded or should be unicode if the filesystem supports unicode.
+        fs_encoding = get_filesystem_encoding()
+        assert fs_encoding == None and isinstance(working_path,unicode) \
+               or isinstance(working_path,str)
+        assert fs_encoding == None and isinstance(destination_path,unicode) \
+               or isinstance(destination_path,str)
+
         self.state = "created"
         self.data_dir = data_dir
         self.feedback = feedback
@@ -105,6 +113,7 @@ class Torrent(object):
         self._filepool = filepool
         self._dht = dht
         self._picker = None
+        self._choker = choker
         self._storage = None
         self._storagewrapper = None
         self._ratemeasure = None
@@ -143,6 +152,7 @@ class Torrent(object):
 
         self.config = Preferences(config)#, persist_callback=self._dump_torrent_config)
         self.working_path = working_path #sets in config. See _set_working_path
+
         self.destination_path = destination_path # sets in config.
         self.priority = "normal"
         self.policy = "auto"
@@ -157,7 +167,7 @@ class Torrent(object):
         self.downtotal = 0
         self.downtotal_old = 0
         self.context_valid = True
- 
+
     def update_config(self, config):
         self.config.update(config)
 
@@ -216,12 +226,24 @@ class Torrent(object):
     finishtime = property(_get_finishtime)
 
     def _set_destination_path(self, value):
+        # The following assertion will not always work.  Consider
+        # Torrent.py: self.working_path = self.destination_path
+        # This assignment retrieves a unicode path from
+        # config['destination_path'].
+        #assert isinstance(value,str) # assume filesystem encoding.
+        #
+        # The following if statement is not necessary because config here
+        # is not really a config file, but rather state that is pickled when
+        # the Torrent shuts down.
+        #if isinstance(value, str):
+        #    value = decode_from_filesystem(value)
         self.config['destination_path'] = value
     def _get_destination_path(self):
         return self.config['destination_path']
     destination_path = property(_get_destination_path, _set_destination_path)
 
     def _set_working_path(self, value):
+        # See comments for _set_destination_path.
         self.config['working_path'] = value
     def _get_working_path(self):
         return self.config['working_path']
@@ -271,7 +293,6 @@ class Torrent(object):
         for filename in myfiles:
             if is_path_too_long(filename):
                 raise BTFailure("Filename path exceeds platform limit: %s" % filename)
-
 
         # if the destination path contains any of the files in the torrent
         # then use the destination path instead of the working path.
@@ -332,9 +353,10 @@ class Torrent(object):
             self._mutex = NamedMutex(self.infohash.encode("hex"))
             if not self._mutex.acquire(False):
                try:
-                   raise BTFailure(_("Torrent already being downloaded." ))
-               except BTFailure, e:
-                   # perform exception handling including shutting down 
+                   raise UserFailure(_("Torrent already being downloaded or "
+                                     "seeded." ))
+               except UserFailure, e:
+                   # perform exception handling including shutting down
                    # the torrent.
                    self.got_exception(*sys.exc_info(),
                        **{'cannot_shutdown':True})
@@ -361,7 +383,7 @@ class Torrent(object):
         self._urlage = URLage(self._urls)
 
         self._register_files()
-        #self.logger.debug("_start_download: self.working_path=%s", self.working_path)
+        self.logger.debug("_start_download: self.working_path=%s", self.working_path)
         self._storage = Storage(self.config, self._filepool, self.working_path,
                                 zip(self._myfiles, self.metainfo.sizes),
                                 self.add_task, self.external_add_task,
@@ -373,9 +395,8 @@ class Torrent(object):
             return
 
         resumefile = None
-        # HEREDAVE: should probably be self.data_dir?
-        if self.config['data_dir']:
-            filename = os.path.join(self.config['data_dir'], 'resume',
+        if self.data_dir:
+            filename = os.path.join(self.data_dir, 'resume',
                                     self.infohash.encode('hex'))
             if os.path.exists(filename):
                 try:
@@ -407,7 +428,9 @@ class Torrent(object):
                                               self.metainfo.piece_length,
                                               statusfunc, self._doneflag,
                                               data_flunked, self.infohash,
-                                              errorfunc, resumefile,
+                                              errorfunc, self.working_path,
+                                              self.destination_path,
+                                              resumefile,
                                               self.add_task,
                                               self.external_add_task)
 
@@ -422,7 +445,6 @@ class Torrent(object):
 
         numpieces = len(self.metainfo.hashes)
 
-        self._choker = Choker(self.config, self.add_task, self.finflag.isSet)
         self._upmeasure = Measure(self.config['max_rate_period'])
         self._downmeasure = Measure(self.config['max_rate_period'])
         self._ratemeasure = RateMeasure(self._storagewrapper.amount_left_with_partials)
@@ -476,10 +498,10 @@ class Torrent(object):
         self._statuscollector = TorrentStats(self.logger, self._choker,
             self.get_uprate, self.get_downrate, self._upmeasure.get_total,
             self._downmeasure.get_total, self._ratemeasure.get_time_left,
-            self.get_percent_complete, 
-            self.multidownload.aggregate_piece_states,
-            self.finflag, self.multidownload, self.get_file_priorities, 
-            self._myfiles, self._connection_manager.ever_got_incoming, None)
+            self.get_percent_complete, self.multidownload.aggregate_piece_states,
+            self.finflag, self._connection_manager, self.multidownload,
+            self.get_file_priorities, self._myfiles,
+            self._connection_manager.ever_got_incoming, None)
 
         for url_prefix in self.metainfo.url_list:
             r = urlparse.urlparse(url_prefix)
@@ -507,7 +529,7 @@ class Torrent(object):
         self._listening = True
         if self.metainfo.is_trackerless:
             if not self._dht:
-                self._error(self, logging.CRITICAL, 
+                self._error(self, logging.CRITICAL,
                    _("Attempt to download a trackerless torrent "
                      "with trackerless client turned off."))
                 return
@@ -524,7 +546,7 @@ class Torrent(object):
                     self._rawserver,
                     self._storagewrapper.get_amount_left,
                     self._upmeasure.get_total,
-                    self._downmeasure.get_total, self.reported_port, 
+                    self._downmeasure.get_total, self.reported_port,
                     self._myid,
                     self.infohash, self._error, self.finflag,
                     self._upmeasure.get_rate,
@@ -548,6 +570,7 @@ class Torrent(object):
                 self._no_announce_shutdown, self._announce_done)
 
         self._statuscollector.rerequester = self._rerequest
+        self.multidownload.rerequester = self._rerequest
 
         self._announced = True
         if self._dht and len(self._dht.table.findNodes(self.infohash)) == 0:
@@ -580,6 +603,7 @@ class Torrent(object):
             self._rerequest.announce_stop()
             self._announced = False
         self._statuscollector.rerequester = None
+        self.multidownload.rerequester = None
 
         if self._listening:
             self._singleport_listener.remove_torrent(self.infohash)
@@ -680,7 +704,10 @@ class Torrent(object):
         else:
             self._activity = (_("killed by internal exception: ") + e_str, 0)
 
-        self.logger.log(severity, msg, exc_info=(type, e, stack))
+        if isinstance(e, UserFailure):
+            self.logger.log(severity, e_str )
+        else:
+            self.logger.log(severity, msg, exc_info=(type, e, stack))
         # steve wanted this too
         # Dave doesn't want it.
         #traceback.print_exception(type, e, stack, file=sys.stdout)

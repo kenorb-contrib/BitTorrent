@@ -9,8 +9,12 @@
 import threading
 from twisted.python import threadable
 from twisted.internet import interfaces
-from zope.interface import implements
 
+try:
+    from zope.interface import implements
+    zope = True
+except ImportError:
+    zope = False
 
 class HookedFactory(object):
     def __init__(self, reactor, factory, host):
@@ -36,7 +40,8 @@ class HookedFactory(object):
     
 
 class IRobotConnector(object):
-    implements(interfaces.IConnector)
+    if zope:
+        implements(interfaces.IConnector)
     def __init__(self, reactor, host, port, factory, timeout, bindAddress):
         self.reactor = reactor
         self.host = host

@@ -14,25 +14,24 @@
 # makeHelp has no less than 4 elif's based on uiname.  If we are
 # going to add an elif for each ui then why not put the code
 # in the UI file.  If we put it all here then the modification
-# of code that should affect one UI can cause unintended 
+# of code that should affect one UI can cause unintended
 # side effects causing other UI's to break.  Furthermore to
 # add ui requires searching through defaultargs and parseargs
 # to modify if-statements.  Default behavior could be provided
 # with a UI class.  GUI-specific deviations could be written
 # in a subclass.
 #
-# printHelp reaches into GUI to create a HelpWindow based on 
-# uiname as an antecedent.  
-#  
+# printHelp reaches into GUI to create a HelpWindow based on
+# uiname as an antecedent.
+#
 # If you don't like the idea of creating a class then we could at
-# least pass in arg descriptions like [OPTIONS] [TORRENTDIRECTORY] 
+# least pass in arg descriptions like [OPTIONS] [TORRENTDIRECTORY]
 # rather than defining them directly in makeHelp.
 #
 # I like the function parseargs.  It makes no UI-specific assumptions.
 
 
 from types import *
-from cStringIO import StringIO
 
 from BitTorrent.translation import _
 
@@ -47,7 +46,7 @@ class UsageException(BTFailure):
     pass
 
 def makeHelp(uiname, defaults):
-    ret = ''
+    ret = u''
     ret += (_("Usage: %s ") % uiname)
     if uiname.startswith('launchmany'):
         ret += _("[OPTIONS] [TORRENTDIRECTORY]\n\n")
@@ -69,8 +68,8 @@ def printHelp(uiname, defaults):
     print makeHelp(uiname, defaults)
 
 def formatDefinitions(options, COLS):
-    s = StringIO()
-    indent = " " * 10
+    s = u''
+    indent = u" " * 10
     width = COLS - 11
 
     if width < 15:
@@ -81,28 +80,28 @@ def formatDefinitions(options, COLS):
         (longname, default, doc) = option
         if doc == '':
             continue
-        s.write('--' + longname)
+        s += u'--' + longname
         is_boolean = type(default) is bool
         if is_boolean:
-            s.write(', --no_' + longname)
+            s += u', --no_' + longname
         else:
-            s.write(' <arg>')
-        s.write('\n')
+            s += u' <arg>'
+        s += u'\n'
         if default is not None:
-            doc += _(" (defaults to ") + repr(default) + ')'
+            doc += _(u" (defaults to ") + repr(default) + u')'
         i = 0
         for word in doc.split():
             if i == 0:
-                s.write(indent + word)
+                s += indent + word
                 i = len(word)
             elif i + len(word) >= width:
-                s.write('\n' + indent + word)
+                s += u'\n' + indent + word
                 i = len(word)
             else:
-                s.write(' ' + word)
+                s += u' ' + word
                 i += len(word) + 1
-        s.write('\n\n')
-    return s.getvalue()
+        s += u'\n\n'
+    return s
 
 def usage(str):
     raise UsageException(str)
@@ -116,7 +115,7 @@ def format_key(key):
 def parseargs(argv, defaults, minargs=None, maxargs=None, presets=None):
     """This function parses command-line arguments and uses them to override
        the presets which in turn override the defaults (see defaultargs.py).
-       As currently used, the presets come from a config file (see 
+       As currently used, the presets come from a config file (see
        configfile.py).
 
        Options have the form:
@@ -126,14 +125,14 @@ def parseargs(argv, defaults, minargs=None, maxargs=None, presets=None):
        If a string or number appears on the line without being preceeded
        by a --option, then the string or number is an argument.
 
-       @param argv: command-line arguments. Command-line options override 
+       @param argv: command-line arguments. Command-line options override
           defaults and presets.
        @param defaults: list of (optionname,value,documentation) 3-tuples.
        @param minargs: minimum number of arguments in argv.
        @param maxargs: maximum number of arguments in argv.
-       @param presets: a dict containing option-value pairs.  Presets 
+       @param presets: a dict containing option-value pairs.  Presets
           typically come from a config file.  Presets override defaults.
-       @returns the pair (config,args) where config is a dict containing
+       @return: the pair (config,args) where config is a dict containing
           option-value pairs, and args is a list of the arguments in the
           order they appeared in argv.
        """
@@ -190,12 +189,12 @@ def parseargs(argv, defaults, minargs=None, maxargs=None, presets=None):
                 raise UsageException(_("command line parsing failed at ")+argv[pos])
 
             presets[key] = value
-    parse_options(config, presets)
+    parse_options(config, presets, None)
     config.update(presets)
 
     # if a key appears in the config with a None value then this is because
     # the key appears in the defaults with a None value and the value was
-    # not provided by the user.  keys appearing in defaults with a none 
+    # not provided by the user.  keys appearing in defaults with a none
     # value are REQUIRED arguments.
     for key, value in config.items():
         if value is None:
@@ -207,9 +206,15 @@ def parseargs(argv, defaults, minargs=None, maxargs=None, presets=None):
 
     return (config, args)
 
-def parse_options(defaults, newvalues):
+def parse_options(defaults, newvalues, encoding):
     """Given the type provided by the default value, this tries to cast/convert
        the corresponding newvalue to the type of the default value.
+       By calling eval() on it, in some cases!
+
+       Entertainly, newvalue sometimes holds strings and, apparently,
+       sometimes holds values which have already been cast appropriately.
+
+       This function is like a boat made of shit, floating on a river of shit.
 
        @param defaults: dict of key-value pairs where value is the default.
        @param newvalues: dict of key-value pairs which override the default.
@@ -228,7 +233,8 @@ def parse_options(defaults, newvalues):
                     value = False
                 newvalues[key] = value
             elif t in (StringType, NoneType):
-                newvalues[key] = value
+                # force ASCII
+                newvalues[key] = value.decode('ascii').encode('ascii')
             elif t in (IntType, LongType):
                 if value == 'False':
                     newvalues[key] == 0
@@ -246,9 +252,15 @@ def parse_options(defaults, newvalues):
                         newvalues[key] = n
                     except:
                         newvalues[key] = t()
+            elif t is UnicodeType:
+                if type(value) == StringType:
+                    try:
+                        newvalues[key] = value.decode(encoding)
+                    except:
+                        newvalues[key] = value.decode('ascii')
             else:
                 raise TypeError, str(t)
 
         except ValueError, e:
-            raise UsageException(_("wrong format of %s - %s") % (format_key(key), str(e)))
+            raise UsageException(_("wrong format of %s - %s") % (format_key(key), unicode(e.args[0])))
 

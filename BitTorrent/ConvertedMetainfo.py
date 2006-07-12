@@ -180,22 +180,18 @@ class ConvertedMetainfo(object):
         else:
             self.is_trackerless = False
 
-        if 'nodes' in metainfo:
-            self.nodes = metainfo['nodes']
+        self.nodes = metainfo.get('nodes')
 
-        if 'title' in metainfo:
-            self.title = metainfo['title']
-        if 'comment' in metainfo:
-            self.comment = metainfo['comment']
-        if 'creation date' in metainfo:
-            self.creation_date = metainfo['creation date']
+        self.title = metainfo.get('title')
+        self.comment = metainfo.get('comment')
+        self.creation_date = metainfo.get('creation date')
+        self.locale = metainfo.get('locale')
 
         self.url_list = metainfo.get('url-list', [])
         if not isinstance(self.url_list, list):
             self.url_list = [self.url_list, ]
 
-        if 'caches' in metainfo:
-            self.caches = metainfo['caches']
+        self.caches = metainfo.get('caches')
 
         self.hashes = [info['pieces'][x:x+20] for x in xrange(0,
             len(info['pieces']), 20)]

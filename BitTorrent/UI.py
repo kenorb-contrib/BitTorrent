@@ -550,10 +550,13 @@ class BasicApp(object):
                         amount_done = statistics['fractionDone'] * torrent.metainfo.total_bytes
                         total_completion += amount_done
                         total_bytes += torrent.metainfo.total_bytes
+        all_completed = False
         if total_bytes == 0:
             average_completion = 0
         else:
             average_completion = total_completion / total_bytes
+            if total_completion == total_bytes:
+                all_completed = True
 
         df = self.multitorrent.auto_update_status()
         yield df
@@ -604,7 +607,7 @@ class BasicApp(object):
         yield df
         global_stats = df.getResult()
 
-        yield average_completion, global_stats
+        yield average_completion, all_completed, global_stats
 
 
     def _update_status(self, total_completion):
@@ -702,7 +705,7 @@ class BasicApp(object):
             df = self.multitorrent.set_torrent_policy(infohash, "auto")
             yield df
             df.getResult()
-
+                
             torrent.pending = None
             yield True
 
@@ -724,7 +727,10 @@ class BasicApp(object):
 
                 df = self.multitorrent.start_torrent(infohash)
                 yield df
-                torrent.state = df.getResult()
+                try:
+                    torrent.state = df.getResult()
+                except TorrentAlreadyRunning:
+                    torrent.state = "running"
 
             torrent.pending = None
             yield True

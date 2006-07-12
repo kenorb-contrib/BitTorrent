@@ -25,11 +25,10 @@ from ConfigParser import RawConfigParser
 from ConfigParser import MissingSectionHeaderError, ParsingError
 from BitTorrent import parseargs
 from BitTorrent import app_name, version, BTFailure
-from BitTorrent.platform import get_dot_dir, get_save_dir, locale_root, is_frozen_exe, get_incomplete_data_dir, enforce_shortcut, enforce_association, smart_gettext_and_install, desktop, set_config_dir, get_old_incomplete_data_dir
+from BitTorrent.platform import get_dot_dir, get_save_dir, locale_root, is_frozen_exe, get_incomplete_data_dir, enforce_shortcut, enforce_association, smart_gettext_and_install, desktop, set_config_dir, get_old_incomplete_data_dir, decode_from_filesystem, encode_for_filesystem
 from BitTorrent.zurllib import bind_tracker_connection, set_zurllib_rawserver
-from BitTorrent.platform import get_temp_dir, get_temp_subdir
+from BitTorrent.platform import get_temp_dir, get_temp_subdir, old_broken_config_subencoding
 from BitTorrent.shortargs import convert_from_shortforms
-
 
 downloader_save_options = [
     # General
@@ -117,10 +116,14 @@ def _read_config(filename):
             bad_config(filename)
         else:
             fp.close()
+
     return p
 
 
 def _write_config(error_callback, filename, p):
+    if not p.has_section('format'):
+        p.add_section('format')
+    p.set('format', 'encoding', 'utf-8')
     try:
         f = file(filename, 'wb')
         p.write(f)
@@ -130,7 +133,7 @@ def _write_config(error_callback, filename, p):
             f.close()
         except:
             pass
-        error_callback(_("Could not permanently save options: ")+str(e))
+        error_callback(_("Could not permanently save options: ")+unicode(e.args[0]))
 
 
 def bad_config(filename):
@@ -174,6 +177,12 @@ def get_config(defaults, section):
             pass
 
     p = _read_config(os.path.join(configdir, 'config'))  # returns parser.
+
+    if p.has_section('format'):
+        encoding = p.get('format', 'encoding')
+    else:
+        encoding = old_broken_config_subencoding
+
     values = {}
     if p.has_section(section):
         for name, value in p.items(section):
@@ -186,8 +195,9 @@ def get_config(defaults, section):
     if defaults.get('data_dir') == '' and \
            'data_dir' not in values and os.path.isdir(configdir):
         datadir = os.path.join(configdir, 'data')
-        values['data_dir'] = datadir
-    parseargs.parse_options(defaults, values)
+        values['data_dir'] = decode_from_filesystem(datadir)
+
+    parseargs.parse_options(defaults, values, encoding)
     return values
 
 
@@ -200,8 +210,14 @@ def save_global_config(defaults, section, error_callback,
         p.remove_section(alt_uiname[section])
     p.add_section(section)
     for name in save_options:
+        name.decode('ascii').encode('utf-8') # just to make sure we can
         if defaults.has_key(name):
-            p.set(section, name, defaults[name])
+            value = defaults[name]
+            if isinstance(value, str):
+                value = value.decode('ascii').encode('utf-8')
+            elif isinstance(value, unicode):
+                value = value.encode('utf-8')
+            p.set(section, name, value)
         else:
             err_str = _("Configuration option mismatch: '%s'") % name
             if is_frozen_exe:
@@ -238,7 +254,7 @@ def read_torrent_config(global_config, path, infohash, error_callback):
                         c[name] = type(global_config[name])(value)
                     except ValueError, e:
                         error_callback('ValueError %s (name:%s value:%s type:%s global:%s)' %
-                                       (str(e), name, repr(value),
+                                       (unicode(e.args[0]), name, repr(value),
                                         type(global_config[name]), global_config[name]))
                         # is this reasonable?
                         c[name] = global_config[name]
@@ -329,9 +345,15 @@ def parse_configuration_and_args(defaults, uiname, arglist=[], minargs=None,
         presets = {}
         temp_dir = get_temp_subdir()
         #set_config_dir(temp_dir)  # is already set in platform.py.
-        presets["save_in"] = os.path.join(temp_dir,"save_in")
-        presets["data_dir"] = os.path.join(temp_dir,"data")
-        presets["save_incomplete_in"] = os.path.join(temp_dir,"incomplete")
+        save_in = encode_for_filesystem( u"save_in" )[0]
+        presets["save_in"] = \
+            decode_from_filesystem(os.path.join(temp_dir,save_in))
+        data = encode_for_filesystem( u"data" )[0]
+        presets["data_dir"] = \
+            decode_from_filesystem(os.path.join(temp_dir,data))
+        incomplete = encode_for_filesystem( u"incomplete" )[0]
+        presets["save_incomplete_in"] = \
+            decode_from_filesystem(os.path.join(temp_dir,incomplete))
         presets["one_connection_per_ip"] = False
 
     config = args = None
@@ -344,15 +366,24 @@ def parse_configuration_and_args(defaults, uiname, arglist=[], minargs=None,
         sys.exit(0)
 
     datadir = config.get('data_dir')
-
     found_4x_config = False
 
     if datadir:
+        datadir,bad = encode_for_filesystem(datadir)
+        if bad:
+            raise BTFailure(_("Invalid path encoding."))
         if not os.path.exists(datadir):
             os.mkdir(datadir)
         if uiname in ('bittorrent', 'maketorrent'):
             values = {}
+
             p = _read_config(os.path.join(datadir, MAIN_CONFIG_FILE))
+
+            if p.has_section('format'):
+                encoding = p.get('format', 'encoding')
+            else:
+                encoding = old_broken_config_subencoding
+
             if not p.has_section(uiname) and p.has_section(alt_uiname[uiname]):
                 uiname = alt_uiname[uiname]
             if p.has_section(uiname):
@@ -370,7 +401,7 @@ def parse_configuration_and_args(defaults, uiname, arglist=[], minargs=None,
                                     'last_torrent_ratio',
                                     ):
                             found_4x_config = True
-            parseargs.parse_options(defconfig, values)
+            parseargs.parse_options(defconfig, values, encoding)
             presets.update(values)
             config, args = parseargs.parseargs(arglist, defaults, minargs,
                                                maxargs, presets)
@@ -401,22 +432,24 @@ def parse_configuration_and_args(defaults, uiname, arglist=[], minargs=None,
         enforce_association()
 
     if config.has_key('save_in') and config['save_in'] == '' and \
-       uiname != 'bittorrent':
-        config['save_in'] = get_save_dir()
+       (not config.has_key("save_as") or config['save_as'] == '' ) \
+       and uiname != 'bittorrent':
+        config['save_in'] = decode_from_filesystem(get_save_dir())
 
-    incomplete = get_incomplete_data_dir()
+    incomplete = decode_from_filesystem(get_incomplete_data_dir())
     if config.get('save_incomplete_in') == '':
         config['save_incomplete_in'] = incomplete
     if config.get('save_incomplete_in') == get_old_incomplete_data_dir():
         config['save_incomplete_in'] = incomplete
 
-    if uiname == "test-client" or ( uiname.startswith( "bittorrent") \
-       and uiname != 'bittorrent-tracker' ):
+    if uiname == "test-client" or (uiname.startswith("bittorrent")
+                                   and uiname != 'bittorrent-tracker'):
         if not config.has_key('ask_for_save') or not config['ask_for_save']:
             for k in ('save_in', 'save_incomplete_in'):
                 if config[k]:
-                    # Make sure these puppies exist
-                    if not os.access(config[k], os.F_OK):
+                    try:
                         os.makedirs(config[k])
-
+                    except OSError, e:
+                        if e.errno != 17: # path already exists
+                            raise
     return config, args

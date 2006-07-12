@@ -10,6 +10,7 @@
 
 # Written by Bram Cohen, Uoti Urpala
 
+import sys
 import random
 import struct
 import socket
@@ -27,14 +28,6 @@ from BitTorrent.defer import ThreadedDeferred
 from BitTorrent.yielddefer import _wrap_task
 from BitTorrent import BTFailure
 from BitTorrent.prefs import Preferences
-
-
-def announce_list_gen(announce_list):
-    for orig_tier in announce_list:
-        tier = list(orig_tier)
-        random.shuffle(tier)
-        for url in tier:
-            yield url
 
 # TEMP
 import thread
@@ -105,17 +98,23 @@ class Rerequester(object):
         self.rawserver = rawserver
         self.dead = False
         self.baseurl = url
-        self.announce_list = announce_list
-        if self.announce_list:
-            self.announce_list_gen = announce_list_gen(self.announce_list)
-            # start at the stop of the generator
-            # instead of using the default annouce
-            try:
-                self.baseurl = self.announce_list_gen.next()
-            except StopIteration:
-                # hm, empty but present announce-list
-                self.announce_list = None
-        self.infohash = infohash
+        self.announce_list = None
+        if announce_list:
+            # shuffle a new copy of the whole set only once
+            shuffled_announce_list = []
+            for tier in announce_list:
+                if not tier:
+                    # strip blank lists
+                    continue
+                shuffled_tier = list(tier)
+                random.shuffle(shuffled_tier)
+                shuffled_announce_list.append(shuffled_tier)
+            if shuffled_announce_list:
+                self.announce_list = shuffled_announce_list
+                self.tier = 0
+                self.announce_i = 0
+                self.baseurl = self.announce_list_next()
+        self.announce_infohash = infohash
         self.peerid = None
         self.wanted_peerid = myid
         self.port = port
@@ -150,7 +149,7 @@ class Rerequester(object):
 
     def _makeurl(self, peerid, port):
         return ('%s?info_hash=%s&peer_id=%s&port=%s&key=%s' %
-                (self.baseurl, quote(self.infohash), quote(peerid), str(port),
+                (self.baseurl, quote(self.announce_infohash), quote(peerid), str(port),
                  b2a_hex(''.join([chr(random.randrange(256)) for i in xrange(4)]))))
 
     def change_port(self, peerid, port):
@@ -166,6 +165,26 @@ class Rerequester(object):
         if self.sched:
             self.sched(10, self.begin)
             self._check()
+
+    def announce_list_success(self):
+        tmp = self.announce_list[self.tier].pop(self.announce_i)
+        self.announce_list[self.tier].insert(0, tmp)
+        self.tier = 0
+        self.announce_i = 0
+
+    def announce_list_fail(self):
+        """returns True if the announce-list was restarted"""
+        self.announce_i += 1
+        if self.announce_i == len(self.announce_list[self.tier]):
+            self.announce_i = 0
+            self.tier += 1
+            if self.tier == len(self.announce_list):
+                self.tier = 0
+                return True
+        return False
+
+    def announce_list_next(self):
+        return self.announce_list[self.tier][self.announce_i]
 
     def announce_finish(self):
         if self.dead:
@@ -287,9 +306,10 @@ class Rerequester(object):
         if self.config['ip']:
             try:
                 url += '&ip=' + socket.gethostbyname(self.config['ip'])
-            except Exception, e:
+            except:
                 self.errorfunc(logging.WARNING,
-                               _("Problem resolving config ip (%s), gethostbyname failed - %s") % (self.config['ip'], str(e)))
+                               _("Problem resolving config ip (%s), gethostbyname failed") % self.config['ip'],
+                               exc_info=sys.exc_info())
         request = Request(url)
         request.add_header('User-Agent', 'BitTorrent/' + version)
         if self.config['tracker_proxy']:
@@ -302,7 +322,7 @@ class Rerequester(object):
         # exception class especially when proxies are used, at least
         # ValueError and stuff from httplib
         except Exception, e:
-            r = _("Problem connecting to tracker - ") + str(e)
+            r = _("Problem connecting to tracker - ") + unicode(e.args[0])
             def f():
                 self._postrequest(errormsg=r, exc=e, peerid=peerid)
         else:
@@ -314,9 +334,8 @@ class Rerequester(object):
         assert thread.get_ident() == self.rawserver.ident
 
         if self.announce_list:
-            try:
-                self.baseurl = self.announce_list_gen.next()
-            except StopIteration:
+            restarted = self.announce_list_fail()
+            if restarted:
                 self.fail_wait = None
 
                 if self.howmany() > 0:
@@ -327,12 +346,9 @@ class Rerequester(object):
                                        "connect to the tracker while not "
                                        "connected to any peers. "))
                     self.sched(0, die)
-
-                # restart the generator
-                self.announce_list_gen = announce_list_gen(self.announce_list)
-                # start from the top next _check
-                self.baseurl = self.announce_list_gen.next()
-            else:
+            else:            
+                self.baseurl = self.announce_list_next()
+            
                 self.peerid = None
                 # If it was a socket error, try the new url right away. it's
                 # probably not abusive since there was no one there to abuse.
@@ -366,7 +382,9 @@ class Rerequester(object):
             check_peers(r)
         except BTFailure, e:
             if data != '':
-                self.errorfunc(logging.ERROR, _("bad data from tracker (%s) - %s") % (repr(data), str(e)))
+                self.errorfunc(logging.ERROR,
+                               _("bad data from tracker (%s)") % repr(data),
+                               exc_info=sys.exc_info())
             self._fail()
             return
         if type(r.get('complete')) in (int, long) and \
@@ -379,39 +397,45 @@ class Rerequester(object):
             self.errorfunc(logging.ERROR, _("rejected by tracker - ") +
                            r['failure reason'])
             self._fail()
+            return
+
+        self.fail_wait = None
+        if r.has_key('warning message'):
+            self.errorfunc(logging.ERROR, _("warning from tracker - ") +
+                           r['warning message'])
+        self.announce_interval = r.get('interval', self.announce_interval)
+        self.config['rerequest_interval'] = r.get('min interval',
+                                        self.config['rerequest_interval'])
+        self.trackerid = r.get('tracker id', self.trackerid)
+        self.last = r.get('last')
+        p = r['peers']
+        peers = {}
+        if type(p) == str:
+            for x in xrange(0, len(p), 6):
+                ip = socket.inet_ntoa(p[x:x+4])
+                port = struct.unpack('>H', p[x+4:x+6])[0]
+                peers[(ip, port)] = None
         else:
-            self.fail_wait = None
-            if r.has_key('warning message'):
-                self.errorfunc(logging.ERROR, _("warning from tracker - ") +
-                               r['warning message'])
-            self.announce_interval = r.get('interval', self.announce_interval)
-            self.config['rerequest_interval'] = r.get('min interval',
-                                            self.config['rerequest_interval'])
-            self.trackerid = r.get('tracker id', self.trackerid)
-            self.last = r.get('last')
-            p = r['peers']
-            peers = {}
-            if type(p) == str:
-                for x in xrange(0, len(p), 6):
-                    ip = socket.inet_ntoa(p[x:x+4])
-                    port = struct.unpack('>H', p[x+4:x+6])[0]
-                    peers[(ip, port)] = None
+            for x in p:
+                peers[(x['ip'], x['port'])] = x.get('peer id')
+        ps = len(peers) + self.howmany()
+        if ps < self.config['max_initiate']:
+            if self.doneflag.isSet():
+                if r.get('num peers', 1000) - r.get('done peers', 0) > ps * 1.2:
+                    self.last = None
             else:
-                for x in p:
-                    peers[(x['ip'], x['port'])] = x.get('peer id')
-            ps = len(peers) + self.howmany()
-            if ps < self.config['max_initiate']:
-                if self.doneflag.isSet():
-                    if r.get('num peers', 1000) - r.get('done peers', 0) > ps * 1.2:
-                        self.last = None
-                else:
-                    if r.get('num peers', 1000) > ps * 1.2:
-                        self.last = None
-            for addr, id in peers.iteritems():
-                self.connect(addr, id)
-            if peerid == self.wanted_peerid:
-                self.successfunc()
-            self._check()
+                if r.get('num peers', 1000) > ps * 1.2:
+                    self.last = None
+        for addr, id in peers.iteritems():
+            self.connect(addr, id)
+        if peerid == self.wanted_peerid:
+            self.successfunc()
+
+        if self.announce_list:
+            self.announce_list_success()
+            
+        self._check()
+
 
 class DHTRerequester(Rerequester):
     def __init__(self, config, sched, howmany, connect, externalsched, rawserver,
@@ -430,9 +454,10 @@ class DHTRerequester(Rerequester):
     def _rerequest(self, url, peerid):
         self.peers = ""
         try:
-            self.dht.getPeersAndAnnounce(str(self.infohash), self.port, self._got_peers)
+            self.dht.getPeersAndAnnounce(str(self.announce_infohash), self.port, self._got_peers)
         except Exception, e:
-            self._postrequest(errormsg=_("Trackerless lookup failed: ") + str(e), peerid=self.wanted_peerid)
+            self._postrequest(errormsg=_("Trackerless lookup failed: ") + unicode(e.args[0]),
+                              peerid=self.wanted_peerid)
 
     def _got_peers(self, peers):
         if not self.howmany:

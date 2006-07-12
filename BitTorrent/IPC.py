@@ -33,6 +33,7 @@ from BitTorrent.translation import _
 
 from BitTorrent.RawServer_twisted import RawServer, Handler
 from BitTorrent.platform import get_home_dir, get_dot_dir
+from BitTorrent.platform import encode_for_filesystem
 from BitTorrent import BTFailure, app_name
 
 
@@ -175,7 +176,10 @@ class IPCUnixSocket(IPCSocketBase):
 
     def __init__(self, *args):
         IPCSocketBase.__init__(self, *args)
-        self.socket_filename = os.path.join(self.config['data_dir'], self.name)
+        data_dir,bad = encode_for_filesystem(self.config['data_dir'])
+        if bad:
+            raise BTFailure(_("Invalid path encoding."))
+        self.socket_filename = os.path.join(data_dir, self.name)
         
     def create(self):
         filename = self.socket_filename
@@ -191,11 +195,11 @@ class IPCUnixSocket(IPCSocketBase):
                 os.unlink(filename)
             except OSError, e:
                 raise BTFailure(_("Could not remove old control socket filename:")
-                                + str(e))
+                                + unicode(e.args[0]))
         try:
             controlsocket = self.rawserver.create_unixserversocket(filename)
         except socket.error, e:
-            raise BTFailure(_("Could not create control socket: ")+str(e))
+            raise BTFailure(_("Could not create control socket: ")+unicode(e.args[0]))
 
         self.controlsocket = controlsocket
 
@@ -213,7 +217,7 @@ class IPCUnixSocket(IPCSocketBase):
             s.close()
         except socket.error, e:
             s.close()
-            raise BTFailure(_("Could not send command: ") + str(e))
+            raise BTFailure(_("Could not send command: ") + unicode(e.args[0]))
 
 
 class IPCWin32Socket(IPCSocketBase):
@@ -347,7 +351,7 @@ class IPCWin32Socket(IPCSocketBase):
                 s.close()
             except:
                 pass
-            raise BTFailure(_("Could not send command: ") + str(e))
+            raise BTFailure(_("Could not send command: ") + unicode(e.args[0]))
 
    
     def stop(self):

@@ -153,7 +153,7 @@ class Updater(object):
         try:
             self.torrentfile = GetTorrent.get_url(self.installer_url)
         except GetTorrent.GetTorrentException, e:
-            terrors = [str(e)]
+            terrors = [unicode(e.args[0])]
 
         signature = None
         try:

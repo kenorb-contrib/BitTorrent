@@ -90,12 +90,12 @@ def add_unsafe_thread():
 
 class BindingHTTPConnection(HTTPConnection):
     def connect(self):
+        """Connect to the host and port specified in __init__."""
 
         ident = thread.get_ident()
         # never, ever, ever call urlopen from any of these threads        
         assert ident not in unsafe_threads, "You may not use urllib from this thread!"
 
-        """Connect to the host and port specified in __init__."""
         msg = "getaddrinfo returns an empty list"
         for res in socket.getaddrinfo(self.host, self.port, 0,
                                       socket.SOCK_STREAM):

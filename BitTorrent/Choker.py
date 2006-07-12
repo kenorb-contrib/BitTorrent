@@ -8,140 +8,177 @@
 # for the specific language governing rights and limitations under the
 # License.
 
-# Written by Bram Cohen
+# Written by Greg Hazel
+# based on code by Bram Cohen
 
-from random import randrange
-from math import sqrt
+from __future__ import division
+
+import math
+import random
+from pprint import pprint
 from BitTorrent.obsoletepythonsupport import set
 
 class Choker(object):
 
-    def __init__(self, config, schedule, done = lambda: False):
+    def __init__(self, config, schedule):
         self.config = config
         self.schedule = schedule
         self.connections = []
         self.count = 0
-        self.done = done
         self.unchokes_since_last = 0
         self.interval = 5
-        self.magic_number = 6 # magic 6 : (30 / self.interval)
+        self.shutting_down = False
+        #self.magic_number = 6 # magic 6 : (30 / self.interval)
+        self.magic_number = (30 / self.interval)
         schedule(self.interval, self._round_robin)
 
     def _round_robin(self):
         self.schedule(self.interval, self._round_robin)
         self.count += 1
         # don't do more work than you have to
-        if len(self.connections) == 0:
+        if not self.connections:
             return
-        if self.done():
-            self._rechoke_seed(True)
-            return
+        # rotation for round-robin
         if self.count % self.magic_number == 0:
-            for i in xrange(len(self.connections)):
-                u = self.connections[i].upload
+            for i, c in enumerate(self.connections):
+                u = c.upload
                 if u.choked and u.interested:
                     self.connections = self.connections[i:] + self.connections[:i]
                     break
         self._rechoke()
 
+    ## new
+    ############################################################################
     def _rechoke(self):
-        if self.done():
-            self._rechoke_seed()
-            return
-        preferred = []
-        for i in xrange(len(self.connections)):
-            c = self.connections[i]
-            if c.upload.interested and not c.download.is_snubbed() and c.download.have.numfalse:
-                preferred.append((-c.download.get_rate(), i))
-        preferred.sort()
-        prefcount = min(len(preferred), self._max_uploads() -1)
-        mask = [0] * len(self.connections)
-        for _, i in preferred[:prefcount]:
-            mask[i] = 1
-        count = max(1, self.config['min_uploads'] - prefcount)
-        for i in xrange(len(self.connections)):
-            c = self.connections[i]
+        # step 1:
+        # get sorted in order of preference lists of peers
+        # one for downloading torrents, and one for seeding torrents
+        down_pref = []
+        seed_pref = []
+        for i, c in enumerate(self.connections):
             u = c.upload
-            if mask[i]:
+            if c.download.have.numfalse == 0 or not u.interested:
+                continue
+            # I cry.
+            if c.download.multidownload.storage.have.numfalse != 0:
+                ## heuristic for downloading torrents
+                if not c.download.is_snubbed():
+
+                    ## simple download rate based
+                    down_pref.append((-c.download.get_rate(), i))
+
+                    ## ratio based
+                    #dr = c.download.get_rate()
+                    #ur = max(1, u.get_rate())
+                    #ratio = dr / ur
+                    #down_pref.append((-ratio, i))
+            else:
+                ## heuristic for seeding torrents
+
+                ## Uoti special               
+##                if c._decrypt is not None:
+##                    seed_pref.append((self.count, u.get_rate(), i))
+##                elif (u.unchoke_time > self.count - self.magic_number or
+##                      u.buffer and c.connection.is_flushed()):
+##                    seed_pref.append((u.unchoke_time, u.get_rate(), i))
+##                else:
+##                    seed_pref.append((1, u.get_rate(), i))
+
+                ## sliding, first pass (see below)
+                r = u.get_rate()
+                if c._decrypt is not None:
+                    seed_pref.append((2, r, i))
+                else:
+                    seed_pref.append((1, r, i))
+
+        down_pref.sort()
+        seed_pref.sort()
+        #pprint(down_pref)
+        #pprint(seed_pref)
+        down_pref = [ self.connections[i] for junk, i in down_pref ]
+        seed_pref = [ self.connections[i] for junk, junk, i in seed_pref ]
+
+        max_uploads = self._max_uploads()
+
+        ## sliding, second pass
+##        # up-side-down sum for an idea of capacity
+##        uprate_sum = sum(rates[-max_uploads:])
+##        if max_uploads == 0:
+##            avg_uprate = 0
+##        else:
+##            avg_uprate = uprate_sum / max_uploads
+##        #print 'avg_uprate', avg_uprate, 'of', max_uploads
+##        self.extra_slots = max(self.extra_slots - 1, 0)
+##        if avg_uprate > self.arbitrary_min:
+##            for r in rates:
+##                if r < (avg_uprate * 0.80): # magic 80%
+##                    self.extra_slots += 2
+##                    break
+##        self.extra_slots = min(len(seed_pref), self.extra_slots)
+##        max_uploads += self.extra_slots
+##        #print 'plus', self.extra_slots
+
+        # step 2:
+        # split the peer lists by a ratio to fill the available upload slots
+        d_uploads = max(1, int(round(max_uploads * 0.70)))
+        s_uploads = max(1, int(round(max_uploads * 0.30)))
+        #print 'original', 'ds', d_uploads, 'us', s_uploads
+        extra = max(0, d_uploads - len(down_pref))
+        if extra > 0:
+            s_uploads += extra
+            d_uploads -= extra
+        extra = max(0, s_uploads - len(seed_pref))
+        if extra > 0:
+            s_uploads -= extra
+            d_uploads = min(d_uploads + extra, len(down_pref))
+        #print 'ds', d_uploads, 'us', s_uploads        
+        down_pref = down_pref[:d_uploads]
+        seed_pref = seed_pref[:s_uploads]
+        preferred = set(down_pref)
+        preferred.update(seed_pref)
+
+        # step 3:
+        # enforce unchoke states
+        count = 0
+        to_choke = []
+        for i, c in enumerate(self.connections):
+            u = c.upload
+            if c in preferred:
                 u.unchoke(self.count)
-            elif count > 0 and c.download.have.numfalse:
+                count += 1
+            else:
+                to_choke.append(c)
+
+        # step 4:
+        # enforce choke states and handle optimistics
+        optimistics = max(self.config['min_uploads'],
+                          max_uploads - len(preferred))
+        #print 'optimistics', optimistics
+        for c in to_choke:
+            u = c.upload
+            if c.download.have.numfalse == 0:
+                # keep seeds choked, out of superstition
+                u.unchoke(self.count)
+            elif count >= optimistics:
+                u.choke()
+            else:
+                # this one's optimistic
                 u.unchoke(self.count)
                 if u.interested:
-                    count -= 1
-            else:
-                u.choke()
+                    count += 1
+    ############################################################################
 
-    def _rechoke_seed(self, force_new_unchokes = False):
-        if force_new_unchokes:
-            # number of unchokes per 30 second period
-            i = (self._max_uploads() + 2) // self.magic_number
-            # this is called self.magic_number times in 30 seconds,
-            # if i==(self.magic_number+1) then unchoke 1+1+2
-            # and so on; substract unchokes recently triggered by disconnects
-            num_force_unchokes = max(0,
-                                     (i + self.count % self.magic_number) //
-                                     self.magic_number - 
-                                     self.unchokes_since_last)
-        else:
-            num_force_unchokes = 0
-        preferred = []
-        new_limit = self.count - self.magic_number
-        for i in xrange(len(self.connections)):
-            c = self.connections[i]
-            u = c.upload
-            # Bram says c.download.have.numfalse is not needed, and I agree. -Greg
-            if not u.choked and u.interested and c.download.have.numfalse:
-                if c._decrypt is not None:
-                    preferred.append((2, -u.get_rate(), i))
-                elif u.unchoke_time > new_limit or (
-                        u.buffer and c.connection.is_flushed()):
-                    preferred.append((-u.unchoke_time, -u.get_rate(), i))
-                else:
-                    preferred.append((1, -u.get_rate(), i))
-        num_kept = self._max_uploads() - num_force_unchokes
-        assert num_kept >= 0
-        
-        preferred.sort()
-        preferred = preferred[:num_kept]
-
-        num_nonpref = self._max_uploads() - len(preferred)
-        if force_new_unchokes:
-            self.unchokes_since_last = 0
-        else:
-            self.unchokes_since_last += num_nonpref
-        last_unchoked = None
-
-        cons = set(self.connections)
-        cons -= set([ c for junk, junk, c in preferred ])
-        for c in cons:
-            u = c.upload
-            if not u.interested:
-                u.choke()
-            elif u.choked:
-                if num_nonpref > 0 and c.connection.is_flushed() and c.download.have.numfalse:
-                    u.unchoke(self.count)
-                    num_nonpref -= 1
-                    if num_nonpref == 0:
-                        last_unchoked = i
-            else:
-                if num_nonpref == 0 or not c.download.have.numfalse:
-                    u.choke()
-                else:
-                    num_nonpref -= 1
-                    if num_nonpref == 0:
-                        last_unchoked = i
-                        
-        if last_unchoked is not None:
-            self.connections = self.connections[last_unchoked + 1:] + \
-                               self.connections[:last_unchoked + 1]
+    def shutdown(self):
+        self.shutting_down = True
 
     def connection_made(self, connection):
-        p = randrange(len(self.connections) + 1)
+        p = random.randrange(len(self.connections) + 1)
         self.connections.insert(p, connection)
 
     def connection_lost(self, connection):
         self.connections.remove(connection)
-        if connection.upload.interested and not connection.upload.choked:
+        if (not self.shutting_down and
+            connection.upload.interested and not connection.upload.choked):
             self._rechoke()
 
     def interested(self, connection):
@@ -166,5 +203,7 @@ class Choker(object):
         elif rate < 42:
             uploads = 4
         else:
-            uploads = int(sqrt(rate * .6))
+            uploads = int(math.sqrt(rate * .6))
         return uploads
+
+

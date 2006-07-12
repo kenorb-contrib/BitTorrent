@@ -594,7 +594,7 @@ class ProgressDialog(BTDialog):
                 self.vbox.Layout()
         except (OSError, IOError), e:
             self.SetTitle(_("Error!"))
-            self.label.SetLabel(_("Error building torrents: ") + str(e))
+            self.label.SetLabel(_("Error building torrents: ") + unicode(e.args[0]))
 
 
 

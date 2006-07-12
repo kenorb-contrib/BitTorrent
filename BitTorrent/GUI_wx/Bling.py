@@ -248,9 +248,11 @@ class BandwidthGraphPanel(CustomWidgets.DoubleBufferedMixin, BTPanel):
         self.draw_graph(dc, self.history.max_len, self.history.download_data,
                         max_data, i_rect)
 
-        #pen = wx.Pen(wx.NamedColor("yellow"), 1, wx.SHORT_DASH)
-        #dc.SetPen(pen)
-        #self.draw_max_line(dc, self.history.variance, self.history.max_variance, i_rect)
+        ## variance line
+        if False:
+            pen = wx.Pen(wx.NamedColor("yellow"), 1, wx.SHORT_DASH)
+            dc.SetPen(pen)
+            self.draw_max_line(dc, self.history.variance, self.history.max_variance, i_rect)
         
 
 class StatisticsPanel(wx.Panel):

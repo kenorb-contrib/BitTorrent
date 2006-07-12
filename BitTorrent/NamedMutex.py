@@ -16,10 +16,7 @@ if __name__ == "__main__":
 else:
     from BitTorrent.translation import _
 
-#import pdb
 import os
-class DoNotOwnMutex( Exception ):
-    pass
 
 if os.name == 'nt':
     import win32file, win32event, win32api, winerror

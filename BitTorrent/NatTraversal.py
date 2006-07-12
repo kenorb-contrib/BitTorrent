@@ -108,7 +108,7 @@ class NatTraverser(object):
                 service(self)
                 break
             except Exception, e:
-                nat_logger.warning(str(e))
+                nat_logger.warning(unicode(e.args[0]))
         else:
             e = "Unable to detect any UPnP services"
             UnsupportedWarning(e)
@@ -560,7 +560,7 @@ class ManualUPnP(NATBase, Handler):
             response = urlopen_custom(request, self.rawserver)
             response = VerifySOAPResponse(request, response)
             mapping.d.callback(mapping.external_port)
-            nat_logger("registered: " + str(mapping))
+            nat_logger.info("registered: " + str(mapping))
         except Exception, e: #HTTPError, URLError, BadStatusLine, you name it.
             error = SOAPErrorToString(e)
             mapping.d.errback(error)
@@ -583,7 +583,7 @@ class ManualUPnP(NATBase, Handler):
         try:
             statusline, response = datagram.split('\r\n', 1)
         except ValueError, e:
-            nat_logger.error(str(e) + ": " + str(datagram))
+            nat_logger.error(unicode(e.args[0]) + ": " + str(datagram))
             # resume init services, because the data is unknown
             self.traverser.resume_init_services()
             return
@@ -622,7 +622,12 @@ class ManualUPnP(NATBase, Handler):
         else:
             nat_logger.warning("urlopen_custom error. giving up.")
             return
-        bs = BeautifulSupe(data)
+        try:
+            bs = BeautifulSupe(data)
+        except: # xml.parsers.expat.ExpatError, maybe others
+            #open("wtf.xml", 'wb').write(data)
+            nat_logger.warning("XML parse error", exc_info=sys.exc_info())
+            return
 
         URLBase_tag = bs.first('URLBase')
         if URLBase_tag and URLBase_tag.contents:

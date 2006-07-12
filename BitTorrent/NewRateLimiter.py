@@ -6,9 +6,10 @@
 #
 # by Greg Hazel
 
+import time
 import traceback
 from BitTorrent.platform import bttime
-from BitTorrent.DictWithLists import OrderedDictWithLists
+from BitTorrent.DictWithLists import DictWithLists, OrderedDictWithLists
 
 
 # these are for logging and such
@@ -28,7 +29,7 @@ class GlobalRate(object):
         self.last_time = this_time
 
 
-gr = GlobalRate()
+global_rate = GlobalRate()
 
 
 # very simple.
@@ -70,9 +71,9 @@ class DeltaTokens(object):
 
 class Classifer(object):
     def __init__(self):
-        self.channels = OrderedDictWithLists()
+        self.channels = DictWithLists()
 
-    def add_data(self, keyable, func, *args):
+    def add_data(self, keyable, func):
         # hmm, this should rotate every 10 seconds or so, but moving over the
         # old data is hard (can't write out-of-order)
         #key = sha.sha(id(o)).hexdigest()[0]
@@ -80,7 +81,7 @@ class Classifer(object):
         # this is technically round-robin
         key = keyable
 
-        self.channels.push_to_row(key, (func, args))
+        self.channels.push_to_row(key, func)
 
     def rem_data(self, key):
         try:
@@ -89,7 +90,7 @@ class Classifer(object):
         except KeyError:
             pass
 
-    def pop_data(self):
+    def rotate_data(self):
         # the removes the top-most row from the ordereddict
         k = self.channels.iterkeys().next()
         l = self.channels.poprow(k)
@@ -117,11 +118,12 @@ class Scheduler(object):
 
         self.children = {}
 
-    def set_rate(self, rate):
+    def set_rate(self, rate, cascade=True):
         self.delta_tokens.set_rate(rate)
-        
-        for child, scale in self.children.iteritems():
-            child.set_rate(rate * scale)
+
+        if cascade:        
+            for child, scale in self.children.iteritems():
+                child.set_rate(rate * scale)
 
         # the rate changed, so it's possible the loop is
         # running slower than it needs to
@@ -134,30 +136,62 @@ class Scheduler(object):
     def remove_child(self, child):
         del self.children[child]
 
-    def add_data(self, keyable, func, *args):
-        self.classifier.add_data(keyable, func, *args)
+    def add_data(self, keyable, func):
+        self.classifier.add_data(keyable, func)
         # kick off a loop since we have data now
         self.restart_loop(0)
 
     def restart_loop(self, t):
-        # check for pending loop events
+        # check for pending loop event
         if self.task and not self.task.called:
-            # look at when it's scheduled to occur
-            s = self.task.getTime() - bttime()
-            if s <= t:
+            ## look at when it's scheduled to occur
+            # we can special case events which have a delta of 0, since they
+            # should occur asap. no need to check the time.
+            if self.task.delta == 0:
                 return
-            # if it would occur after the time we want, cancel it
-            self.task.cancel()
-            
-        self.task = self.add_task(t, self.run)
+            # use time.time since twisted does anyway
+            s = self.task.getTime() - time.time()
+            if s > t:
+                # if it would occur after the time we want, reset it
+                self.task.reset(t)
+                self.task.delta = t
+        else:
+            if t == 0:
+                # don't spin the event loop needlessly
+                self.run()
+            else:
+                self.task = self.add_task(t, self.run)
+                self.task.delta = t
 
     def _write(self, to_write):
         amount = 0
         each = min(self.delta_tokens.rate, self.unitsize)
-        
+
+        if self.children:
+            for child, scale in self.children.iteritems():
+                child.set_rate(self.delta_tokens.rate * scale, cascade=False)
+
+            i = 0                
+            while amount < to_write and len(self.classifier) > 0:
+
+                (func, args) = self.classifier.rotate_data()
+                # ERROR: func can fill buffers, so use the on_flush technique
+                try:
+                    amount += func(each)
+                except:
+                    # don't stop the loop if we hit an error
+                    traceback.print_exc()
+                i += 1
+                if i == len(self.children):
+                    break
+                
+            for child, scale in self.children.iteritems():
+                # really max, but we happen to know it can't exceed amount
+                child.set_rate(amount, cascade=False)
+
         while amount < to_write and len(self.classifier) > 0:
 
-            (func, args) = self.classifier.pop_data()
+            func = self.classifier.rotate_data()
             # ERROR: func can fill buffers, so use the on_flush technique
             try:
                 amount += func(each)
@@ -177,7 +211,7 @@ class Scheduler(object):
 
             # for debugging
             #print "Ideal:", self.delta_tokens.rate, f_to_write
-            #gr.print_rate(written)
+            #global_rate.print_rate(written)
 
         self.delta_tokens.remove_tokens(written - f_to_write)
 
@@ -242,35 +276,67 @@ class FakeConnection(object):
  
 if __name__ == '__main__':
 
+    profile = True
+    try:
+        import hotshot
+        import hotshot.stats
+        prof_file_name = 'NewRateLimiter.prof'
+    except ImportError, e:
+        print "profiling not available:", e
+        profile = False
+
     import random
-    import time
-    
-    def add_taskish(t, f):
-        time.sleep(t)
 
-        # test mid-run rate changes
-        if random.randint(0, 10) == 0:
-            rate = random.randint(1, 100) * 1000
-            print "new rate", rate
-            s.set_rate(rate)
+    from BitTorrent.RawServer_twisted import RawServer
+    from twisted.internet import task
+    from BitTorrent.defer import DeferredEvent
 
-        f()
+    config = {}
+    rawserver = RawServer(config)
 
-    s = Scheduler(4096, add_task = add_taskish)
+    doneflag = DeferredEvent()
+     
+    s = Scheduler(4096, add_task = rawserver.add_task)
     s.unitsize = 17000
 
     a = []
-    for i in xrange(50):
-        keyable = FakeConnection(gr)
+    for i in xrange(500):
+        keyable = FakeConnection(global_rate)
         a.append(keyable)
 
-    try:
-        while True:
-            for c in a:    
-                s.add_data(c, c._use_length_, 17000)
+    freq = 0.01
 
-            # hm
-            s.run()
-    except KeyboardInterrupt:
-        pass
+    def push():
+        if random.randint(0, 5 / freq) == 0:
+            rate = random.randint(1, 100) * 1000
+            print "new rate", rate
+            s.set_rate(rate)
+        for c in a:    
+            s.add_data(c, c._use_length_)
     
+    t = task.LoopingCall(push)
+    t.start(freq)
+    
+    rawserver.install_sigint_handler()
+
+    ##############################################################
+    if profile:
+        try:
+            os.unlink(prof_file_name)
+        except:
+            pass
+        prof = hotshot.Profile(prof_file_name)
+
+        prof.start()
+        rawserver.listen_forever(doneflag)
+        prof.stop()
+    
+        prof.close()
+        stats = hotshot.stats.load(prof_file_name)
+        stats.strip_dirs()
+        stats.sort_stats('time', 'calls')
+        print "NewRateLimiter Profile:"
+        stats.print_stats(20)
+    else:
+    ##############################################################
+        rawserver.listen_forever(doneflag)

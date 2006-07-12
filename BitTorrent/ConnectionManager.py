@@ -35,9 +35,10 @@ import logging
 # header, reserved, download id, my id, [length, message]
 
 class GaurdedInitialConnection(Handler):
-    def __init__(self, parent, id, encrypt=False, log_prefix=""):
+    def __init__(self, parent, id, encrypt=False, log_prefix="", lan=False):
         self.parent = parent
         self.id = id
+        self.lan = lan
         self.log_prefix = log_prefix
         self.encrypt = encrypt
         self.connector = None
@@ -45,7 +46,8 @@ class GaurdedInitialConnection(Handler):
     def _make_connection(self, s):
         return Connection(self.parent, s, self.id, True,
                           obfuscate_outgoing=self.encrypt,
-                          log_prefix=self.log_prefix)
+                          log_prefix=self.log_prefix,
+                          lan=self.lan)
         
     def connection_made(self, s):
         del self.parent.pending_connections[(s.ip, s.port)]
@@ -185,13 +187,13 @@ class ConnectionManager(InternetSubscriber):
 
     # returns False if the connection info has been pushed on to self.spares
     # other filters and a successful connection return True
-    def start_connection(self, dns, id, encrypt=False):
+    def start_connection(self, dns, id=None, encrypt=False, lan=False):
         """@param dns: domain name/ip address and port pair.
            @param id: peer id.
            """
         return self._start_connection(dns, id, GaurdedInitialConnection,
                                       encrypt=encrypt,
-                                      log_prefix=self.log_prefix)
+                                      lan=lan)
     
     def start_http_connection(self, dns, id):
         return self._start_connection(dns, id, HTTPInitialConnection)
@@ -210,7 +212,7 @@ class ConnectionManager(InternetSubscriber):
         # store the first instance only
         if dns not in self.cached_peers:
             # obey the cache size limit
-            if len(self.cached_peers) > self.cache_limit:
+            if len(self.cached_peers) >= self.cache_limit:
                 olddns = self.cached_peers.keys()[0]
                 self.remove_dns_from_cache(olddns)
             self.cached_peers[dns] = (id, handler, a, kw)
@@ -243,6 +245,7 @@ class ConnectionManager(InternetSubscriber):
         if dns in self.pending_connections:
             return True
 
+        kw['log_prefix'] = self.log_prefix
         h = handler(self, id, *a, **kw)
         self.pending_connections[dns] = h
         connector = self.rawserver.start_connection(dns, h, self.context)

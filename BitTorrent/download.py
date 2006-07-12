@@ -295,7 +295,7 @@ class Download(object):
                    and self.multidownload.storage.want_requests(piece):
                     break
             else:
-                return  # no unrequested pieces among allowed fast.
+                break # no unrequested pieces among allowed fast.
 
             # request chunks until no more chunks or no more room in backlog.
             while len(self.active_requests) < b:
@@ -308,7 +308,13 @@ class Download(object):
                     lost_interests.append(piece)
                     break
         self._check_lost_interests(lost_interests)
-
+        if self.multidownload.storage.endgame:
+            self.multidownload.all_requests = set()
+            for d in self.multidownload.downloads:
+                self.multidownload.all_requests.update(d.active_requests)
+            for d in self.multidownload.downloads:
+                d.fix_download_endgame()
+                
     def fix_download_endgame(self):
         want = []
         for a in self.multidownload.all_requests:

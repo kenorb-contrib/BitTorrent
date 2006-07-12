@@ -64,6 +64,7 @@ except ImportError:
 
 console = True
 ERROR_MESSAGE_TIMEOUT = 5000 # millisecons to show status message in status bar
+MAX_TEXTCTRL_LENGTH = 2**20 # 1MB
 
 UP_ID           = wx.NewId()
 DOWN_ID         = wx.NewId()
@@ -624,7 +625,10 @@ class PeerListView(HashableListView):
         self.cc_index = {}
         image_library = wx.the_app.image_library
         for f in flag_images:
-            f = f.rsplit('.')[0]
+            try:
+                f = f[:f.rindex('.')] # grab everything before the last '.'
+            except:
+                pass # unless there is no last '.'
             if len(f) == 2 or f in ('unknown', 'noimage'):
                 name = ('flags', f)
                 i = self.add_image(image_library.get(name))
@@ -1183,9 +1187,8 @@ class LogPanel(BTPanel):
     def __init__(self, parent, torrent, *a, **k):
         BTPanel.__init__(self, parent, *a, **k)
 
-        self.log = wx.TextCtrl(self, id=wx.ID_ANY,
-                                   value='',
-                                   style=wx.TE_MULTILINE|wx.TE_READONLY|wx.TE_RICH2)
+        self.log = wx.TextCtrl(self, style=wx.TE_MULTILINE|wx.TE_READONLY|wx.TE_RICH2)
+        self.log.Bind(wx.EVT_TEXT, self.OnText)
         self.Add(self.log, flag=wx.GROW, proportion=1)
 
         class MyTorrentLogger(logging.Handler):
@@ -1201,6 +1204,10 @@ class LogPanel(BTPanel):
         torrent.handler.setTarget(l)
         torrent.handler.flush()
 
+    def OnText(self, event):
+        e = self.log.GetLastPosition()
+        if e > MAX_TEXTCTRL_LENGTH:
+            self.log.Remove(0, e - MAX_TEXTCTRL_LENGTH)
 
     def BindChildren(self, evt_id, func):
         self.log.Bind(evt_id, func)
@@ -1525,7 +1532,7 @@ class TorrentPanel(BTPanel):
         self.tab_height = self.notebook.GetBestFittingSize().y
 
         metainfo = self.torrent.metainfo
-        if metainfo.comment not in (None, ''):
+        if metainfo.comment:
             self.comment_panel = BTPanel(self.notebook)
             self.notebook.AddPage(self.comment_panel, _("Comments"))
             self.comment = wx.TextCtrl(self.comment_panel, id=wx.ID_ANY,
@@ -1873,6 +1880,19 @@ class LogWindow(wx.LogWindow, MagicShow):
         # YUCK. Why is the log window not really a window?
         # Because it's a wxLog.
         self.magic_window = self.GetFrame()
+        for child in self.magic_window.GetChildren():
+            if isinstance(child, wx.TextCtrl):
+                self.textctrl = child
+                break
+        # if this line crashes, we didn't find the textctrl. that means if we
+        # continued anyway, we'd have a memory leak
+        self.textctrl.Bind(wx.EVT_TEXT, self.OnText)
+
+    def OnText(self, event):
+        e = self.textctrl.GetLastPosition()
+        if e > MAX_TEXTCTRL_LENGTH:
+            self.textctrl.Remove(0, e - MAX_TEXTCTRL_LENGTH)
+        
 
 
 
@@ -2881,6 +2901,7 @@ class MainLoop(BasicApp, BTApp):
         self.open_dialog_history = []
         self._stderr_buffer = ''
         self.torrent_logger = TorrentLogger()
+        # HEREDAVE: not relevant to the pop-up window "BitTorrent Error"
         logging.getLogger('core.MultiTorrent').addHandler(self.torrent_logger)
         BTApp.__init__(self, 0)
 
@@ -2915,6 +2936,9 @@ class MainLoop(BasicApp, BTApp):
                                        ascending=ascending)
 
         # Logging
+        # HEREDAVE: If commented, dialog does not apear when
+        # BTFailure is raised in response to double
+        # downloading.
         wx.Log_SetActiveTarget(wx.LogGui())
 
         self.log = LogWindow(self.main_window, _("%s Log")%app_name, False)
@@ -3146,11 +3170,11 @@ class MainLoop(BasicApp, BTApp):
         assert not self.torrents.has_key(metainfo.infohash)
 
         ask_for_save = self.config['ask_for_save'] or not self.config['save_in']
-        save_in = self.config['save_in'].decode('utf-8')
+        save_in = self.config['save_in']
         if not save_in:
             save_in = get_save_dir()
 
-        save_incomplete_in = self.config['save_incomplete_in'].decode('utf-8')
+        save_incomplete_in = self.config['save_incomplete_in']
 
         # wx expects paths sent to the gui to be unicode
         save_as = os.path.join(save_in,
@@ -3159,7 +3183,7 @@ class MainLoop(BasicApp, BTApp):
 
         # Choose an incomplete filename which is likely to be both short and
         # unique.  Just for kicks, also foil multi-user birthday attacks.
-        foil = sha.sha(save_incomplete_in)
+        foil = sha.sha(save_incomplete_in.encode('utf-8'))
         foil.update(metainfo.infohash)
         incomplete_name = metainfo.infohash.encode('hex')[:8]
         incomplete_name += '-'
@@ -3422,7 +3446,7 @@ class MainLoop(BasicApp, BTApp):
         for infohash in infohashes:
             t = self.torrents[infohash]
             fs_save_incomplete_in, junk = encode_for_filesystem(
-                self.config['save_incomplete_in'].decode('utf-8')
+                self.config['save_incomplete_in']
                 )
             inco = ((not t.completed) and
                     (t.working_path != t.destination_path) and
@@ -3466,7 +3490,7 @@ class MainLoop(BasicApp, BTApp):
         t = self.torrents[infohash]
         name = t.metainfo.name
         fs_save_incomplete_in, junk = encode_for_filesystem(
-            self.config['save_incomplete_in'].decode('utf-8')
+            self.config['save_incomplete_in']
             )
         inco = ((not t.completed) and
                 (t.working_path != t.destination_path) and
@@ -3647,9 +3671,10 @@ class MainLoop(BasicApp, BTApp):
         df = launch_coroutine(gui_wrap, BasicApp.update_status, self)
         yield df
         # wx specific code
-        average_completion, global_stats = df.getResult()
+        average_completion, all_completed, global_stats = df.getResult()
         if len(self.torrents) > 0:
             self.set_title(average_completion,
+                           all_completed,
                            global_stats['total_downrate'],
                            global_stats['total_uprate'])
         else:
@@ -3664,7 +3689,8 @@ class MainLoop(BasicApp, BTApp):
         # task to be re-entrant (prevent double-queueing)
         if self.update_handle is not None:
             self.update_handle.Stop()
-        self.update_handle = wx.FutureCall(self.config['display_interval'] * 1000, self.make_statusrequest)
+        self.update_handle = wx.FutureCall(self.config['display_interval'] * 1000,
+                                           self.make_statusrequest)
 
         self.main_window.bling_panel.statistics.update_values(global_stats)
 
@@ -3697,13 +3723,18 @@ class MainLoop(BasicApp, BTApp):
         self.main_window.send_status_message(msg)
 
 
-    def set_title(self, completion=0, downrate=0, uprate=0):
+    def set_title(self,
+                  avg_completion=0,
+                  all_completed=False,
+                  downrate=0,
+                  uprate=0):
         if len(self.torrents) > 0:
             if len(self.torrents) > 1:
                 name = _("(%d torrents)") % len(self.torrents)
             else:
                 name = self.torrents[self.torrents.keys()[0]].metainfo.name
-            title = "%s: %.1f%%: %s" % (app_name, completion*100, name)
+            percent = percentify(avg_completion, all_completed)
+            title = "%s: %.1f%%: %s" % (app_name, percent, name)
         elif self.multitorrent:
             title = app_name
         else:

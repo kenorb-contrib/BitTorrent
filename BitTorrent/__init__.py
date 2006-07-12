@@ -11,7 +11,7 @@
 
 
 app_name = 'BitTorrent'
-version = '4.20.2'
+version = '4.20.4'
 
 URL = 'http://www.bittorrent.com/'
 DONATE_URL = URL + 'donate.html?client=%(client)s'
@@ -37,6 +37,11 @@ from StringIO import StringIO
 from BitTorrent import atexit_threads
 
 class BTFailure(Exception):
+    pass
+
+# failure due to user error.  Should output differently (e.g., not outputting
+# a backtrace).
+class UserFailure(BTFailure):
     pass
 
 class InfoHashType(str):

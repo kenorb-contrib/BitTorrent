@@ -15,7 +15,7 @@
 
 import os
 import re
-import zurllib
+from BitTorrent import zurllib
 from BitTorrent.translation import _
 
 from bencode import bdecode, bencode
@@ -55,7 +55,7 @@ def get_quietly(arg):
         data = get(arg)
     except FileException, e:
         cache = get_cache_dir() 
-        if (cache is not None) and (cache in str(e)):
+        if (cache is not None) and (cache in unicode(e.args[0])):
             data = None
         else:
             raise
@@ -164,6 +164,6 @@ def get_file(filename):
     except Exception, e:
         if f is not None:
             f.close()
-        raise FileException((_("Could not read %s") % filename) + (': %s' % str(e)))
+        raise FileException((_("Could not read %s") % filename) + (': %s' % unicode(e.args[0])))
 
     return data

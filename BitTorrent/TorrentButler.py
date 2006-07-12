@@ -39,6 +39,7 @@ class EverythingOneTimeTorrentButler(TorrentButler):
 
 
 class DownloadTorrentButler(TorrentButler):
+    # TODO: this one should probably be configurable, once the new choker works
     SIMULTANEOUS = 3
     GOOD_RATE_THRESHOLD = 0.25  # minimal fraction of the average rate
     PURGATORY_TIME = 60  # seconds before we declare an underperformer "bad"

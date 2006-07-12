@@ -134,7 +134,7 @@ class Connection(Handler):
        semantics."""
 
     def __init__(self, parent, connection, id, is_local,
-                 obfuscate_outgoing=False, log_prefix = ""):
+                 obfuscate_outgoing=False, log_prefix = "", lan=False):
         self.parent = parent
         self.connection = connection
         self.id = id
@@ -142,6 +142,7 @@ class Connection(Handler):
         self.ip = connection.ip
         self.locally_initiated = is_local
         self.complete = False
+        self.lan = lan
         self.closed = False
         self.got_anything = False
         self.next_upload = None
@@ -566,6 +567,12 @@ class Connection(Handler):
                      (i,self.parent.numpieces), self.connection )
                 self.close()
                 return
+            if self.download.have[i]:
+                self.protocol_violation(
+                     "Requested piece index %d which the peer already has" %
+                     (i,), self.connection )
+                self.close()
+                return
             self.upload.got_request(i, a, b)
         elif t == CANCEL:
             if len(message) != 13:
@@ -736,6 +743,10 @@ class Connection(Handler):
     def connection_flushed(self, connection):
         if self.complete and self.next_upload is None and (self._partial_message is not None
                                              or (self.upload and self.upload.buffer)):
-            self.parent.ratelimiter.queue(self)
+            if self.lan:
+                # bypass upload rate limiter
+                self.send_partial(self.parent.ratelimiter.unitsize)
+            else:
+                self.parent.ratelimiter.queue(self)
 
 

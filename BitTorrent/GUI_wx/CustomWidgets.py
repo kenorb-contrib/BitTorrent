@@ -38,7 +38,17 @@ def _ScaleBlit(bmp, dc, dst_rect):
         except:
             pass
 
-    dc.DrawBitmap(bmp, dst_rect.x/sX, dst_rect.y/sY, True)
+    if sX == 0:
+        w = 0
+    else:
+        w = dst_rect.x/sX
+
+    if sY == 0:
+        h = 0
+    else:
+        h = dst_rect.y/sY    
+        
+    dc.DrawBitmap(bmp, w, h, True)
 
     if os.name == 'nt':
         try:

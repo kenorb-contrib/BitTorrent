@@ -26,7 +26,7 @@ from BitTorrent.bencode import bencode, bdecode
 from BitTorrent.btformats import check_info
 from BitTorrent.parseargs import parseargs, printHelp
 from BitTorrent.obsoletepythonsupport import *
-from BitTorrent.platform import decode_from_filesystem, get_filesystem_encoding
+from BitTorrent.platform import decode_from_filesystem, get_filesystem_encoding, read_language_file
 from BitTorrent import BTFailure
 
 from khashmir.node import Node
@@ -106,7 +106,7 @@ def make_meta_files(url,
 
 def make_meta_file(path, url, piece_len_exp, flag=Event(), progress=dummy,
                    title=None, comment=None, target=None):
-    data = {'announce': url.strip(),'creation date': int(time())}
+    data = {'announce': url.strip(), 'creation date': int(time())}
     piece_length = 2 ** piece_len_exp
     a, b = os.path.split(path)
     if not target:
@@ -123,6 +123,10 @@ def make_meta_file(path, url, piece_len_exp, flag=Event(), progress=dummy,
     h = file(f, 'wb')
 
     data['info'] = info
+    # TODO: encoding
+    lang = read_language_file()
+    if lang:
+        data['locale'] = lang
     if title:
         data['title'] = title
     if comment:
@@ -190,7 +194,7 @@ def makeinfo(path, piece_length, flag, progress):
                 raise BTFailure(_('Could not convert file/directory name "%s" to '
                                   'Unicode (%s). Either the assumed filesystem '
                                   'encoding "%s" is wrong or the filename contains '
-                                  'illegal bytes.') % (name, str(e), get_filesystem_encoding()))
+                                  'illegal bytes.') % (name, unicode(e.args[0]), get_filesystem_encoding()))
 
         if u.translate(noncharacter_translate) != u:
             raise BTFailure(_('File/directory name "%s" contains reserved '

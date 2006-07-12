@@ -58,5 +58,5 @@ if __name__ == '__main__':
                         use_tracker=config['use_tracker'],
                         data_dir=config['data_dir'])
     except BTFailure, e:
-        print str(e)
+        print unicode(e.args[0])
         sys.exit(1)

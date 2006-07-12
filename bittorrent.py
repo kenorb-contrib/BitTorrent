@@ -108,7 +108,7 @@ if __name__ == '__main__':
         config, args = configfile.parse_configuration_and_args(defaults,
                                         'bittorrent', sys.argv[1:], 0, None)
     except BTFailure, e:
-        print str(e)
+        print unicode(e.args[0])
         sys.exit(1)
 
     config = Preferences().initWithDict(config)
@@ -189,11 +189,11 @@ if __name__ == '__main__':
         logging.getLogger('').addHandler(UILogger())
 
         data_dir = config['data_dir']
+        assert isinstance( data_dir, unicode )
 
         rawserver_doneflag = DeferredEvent()
         try:
-            multitorrent = MultiTorrent(config, core_doneflag, rawserver,
-                                        data_dir, listen_fail_ok=True,
+            multitorrent = MultiTorrent(config, rawserver, data_dir, listen_fail_ok=True,
                                         init_torrents=False)
             multitorrent.add_policy(DownloadTorrentButler(multitorrent))
             multitorrent.add_policy(SeedTorrentButler(multitorrent))

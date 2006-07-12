@@ -98,7 +98,7 @@ class StorageWrapper(object):
     def __init__(self, storage, config, hashes, piece_size,
                  statusfunc, doneflag, data_flunked,
                  infohash, # needed for partials
-                 errorfunc, resumefile,
+                 errorfunc, working_path, destination_path, resumefile,
                  add_task, external_add_task):
         assert len(hashes) > 0
         assert piece_size > 0
@@ -116,16 +116,16 @@ class StorageWrapper(object):
         self.errorfunc = errorfunc
         self.statusfunc = statusfunc
         self.total_length = storage.get_total_length()
-        # a brief explination about the mildly confusing amount_ variables:
+        # a brief explanation about the mildly confusing amount_ variables:
         #   amount_left: total_length - fully_written_pieces
         #   amount_inactive: amount_left - requests_pending_on_network
         #   amount_left_with_partials (only correct during startup): amount_left + blocks_written
         self.amount_left = self.total_length
         self.amount_inactive = self.total_length
         if self.total_length <= piece_size * (self.numpieces - 1):
-            raise BTFailure, _("bad data in responsefile - total too small")
+            raise BTFailure(_("bad data in responsefile - total too small"))
         if self.total_length > piece_size * self.numpieces:
-            raise BTFailure, _("bad data in responsefile - total too big")
+            raise BTFailure(_("bad data in responsefile - total too big"))
 
         # If chunks have been requested then inactive_requests has a list
         # of the unrequested chunks. Otherwise the piece is not in the dict.
@@ -172,10 +172,19 @@ class StorageWrapper(object):
             self._initialized(True)
         else:
             try:
-                self.read_fastresume(resumefile)
-            except Exception, e:
+                result = self.read_fastresume(resumefile, working_path,
+                                              destination_path)
+                # if resume file doesn't apply to this destination or
+                # working path then start over.
+                if not result:
+                    self.rplaces = array(self.typecode, [UNALLOCATED] * self.numpieces)
+                    # full hashcheck
+                    df = self.hashcheck_pieces()
+                    df.addCallback(self._initialized)
+            except:
                 if resumefile is not None:
-                    global_logger.warning("Failed to read fastresume: " + str(e))
+                    global_logger.warning("Failed to read fastresume",
+                                          exc_info=sys.exc_info())
                 self.rplaces = array(self.typecode, [UNALLOCATED] * self.numpieces)
                 # full hashcheck
                 df = self.hashcheck_pieces()
@@ -190,7 +199,7 @@ class StorageWrapper(object):
                 
     ## fastresume
     ############################################################################
-    def read_fastresume(self, f):
+    def read_fastresume(self, f, working_path, destination_path):
         version_line = f.readline().strip()
         try:
             resume_version = version_line.split(resume_prefix)[1]
@@ -200,14 +209,14 @@ class StorageWrapper(object):
                             (e, repr(version_line)))
         global_logger.debug('Reading fastresume v' + resume_version)
         if resume_version == '1':
-            self._read_fastresume_v1(f)
+            return self._read_fastresume_v1(f, working_path, destination_path)
         elif resume_version == '2':
-            self._read_fastresume_v2(f)
+            return self._read_fastresume_v2(f, working_path, destination_path)
         else:
             raise BTFailure(_("Unsupported fastresume file format, "
                               "maybe from another client version?"))
         
-    def _read_fastresume_v1(self, f):
+    def _read_fastresume_v1(self, f ): #, working_path, destination_path):
         # skip a bunch of lines
         amount_done = int(f.readline())
         for b, e, filename in self.storage.ranges:
@@ -272,26 +281,63 @@ class StorageWrapper(object):
         self._realize_partials(partials)            
         yield True
 
-    def _read_fastresume_v2(self, f):
+    def _read_fastresume_v2(self, f, working_path, destination_path):
+        # The working and destination paths are "save_as" paths meaning
+        # that they refer to the entire path for a single-file torrent and the
+        # name of the directory containing the files for a batch torrent.
+
+        # Path read from resume should either reside in/at the
+        # working_path or the destination_path.
+
         d = cPickle.loads(f.read())        
 
         try:
             snapshot = d['snapshot']
+            work_or_dest = 0
             for filename, s in snapshot.iteritems():
-                # this could be a lot smarter, like punching holes in the ranges on
-                # failed files in a batch torrent.
-                assert os.path.exists(filename), "%s does not exist" % filename
-                assert os.path.getsize(filename) >= s['size'], "File sizes do not match."
-                assert os.path.getmtime(filename) >= (s['mtime'] - 5), "File modification times do not match."
+                # all files should reside in either the working path or the
+                # destination path.  For batch torrents, the file may have a
+                # relative path so compare common path.
+                if len(snapshot) > 1:  # batch torrent.
+                    commonw = os.path.commonprefix([filename,working_path])
+                    commond = os.path.commonprefix([filename,destination_path])
+                else:
+                    commonw = commond = filename
 
+                # first file determines whether all are in work or dest path.
+                if work_or_dest == 0:
+                    if commonw == working_path:
+                        work_or_dest = -1
+                    elif commond == destination_path:
+                        work_or_dest = 1
+                    else:
+                        return False
+                elif work_or_dest == -1 and commonw != working_path:
+                    return False
+                elif work_or_dest == 1 and commond != dest_path:
+                    return False
+                    
+                # this could be a lot smarter, like punching holes in the
+                # ranges on failed files in a batch torrent.
+                if not os.path.exists(filename):
+                    raise ValueError("No such file or directory: %s" % filename)
+                if os.path.getsize(filename) < s['size']:
+                    raise ValueError("File sizes do not match.")
+                if os.path.getmtime(filename) < (s['mtime'] - 5):
+                    raise ValueError("File modification times do not match.")
+                
             self.places = array(self.typecode)
             self.places.fromstring(d['places'])
             self.rplaces = array(self.typecode)
             self.rplaces.fromstring(d['rplaces'])
             self.have = d['have']
             self.have_set = d['have_set']
+            # We are reading the undownloaded section from the fast resume.
+            # We should check whether the file exists.  If it doesn't then
+            # we should not read from fastresume.
             self.storage.undownloaded = d['undownloaded']
             self.amount_left = d['amount_left']
+            
             self.amount_inactive = self.amount_left
             # all unwritten partials are now inactive
             self.inactive_requests = d['unwritten_partials']
@@ -303,9 +349,11 @@ class StorageWrapper(object):
                 if s:
                     self._make_pending(k, s)
                 self.active_requests.setdefault(k, [])
-            
-            assert self.amount_left_with_partials >= 0, "Amount left < 0: %d" % self.amount_left_with_partials
-            assert self.amount_left_with_partials <= self.total_length, "Amount left > total length: %d > %d" % (self.amount_left_with_partials, self.total_length)
+
+            if self.amount_left_with_partials < 0:
+                raise ValueError("Amount left < 0: %d" % self.amount_left_with_partials)
+            if self.amount_left_with_partials > self.total_length:
+                raise ValueError("Amount left > total length: %d > %d" % (self.amount_left_with_partials, self.total_length))
 
             self._initialized(True)
         except:
@@ -316,6 +364,9 @@ class StorageWrapper(object):
             self.places = array(self.typecode, [NO_PLACE] * self.numpieces)
             self.rplaces = array(self.typecode, range(self.numpieces))
             raise
+        
+        return True
+    
 
     def write_fastresume(self, resumefile):
         try:
@@ -647,6 +698,8 @@ class StorageWrapper(object):
             if passed:
                 self.have[index] = True
                 self.have_set.add(index)
+                # In this function we perform a lookup undownloaded[filename]
+                # which results in a KeyError.  --Dave HEREDAVE
                 self.storage.downloaded(index * self.piece_size, length)
                 self.amount_left -= length
 

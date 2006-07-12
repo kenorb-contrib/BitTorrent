@@ -24,7 +24,7 @@ rm -fr build dist
 
 build_pkg() {
     PKG=$1
-    for PYV in "2.3"; do
+    for PYV in "2.3" "2.4"; do
         PYTHON="python$PYV"
 	if [ `which $PYTHON` ]; then
             PYTHONVERSION=`$PYTHON -c 'import sys; print sys.version[:3]'`
@@ -40,7 +40,7 @@ _build_rpm() {
     echo "
 Building rpm for Python $PYTHONVERSION..."
     $PYTHON setup.py bdist_rpm --python $PYTHON --group "Applications/Internet"
-    #rename s/$PACKAGEVERSION-1\.noarch\.rpm/$PACKAGEVERSION-1-Python$PYTHONVERSION.noarch.rpm/ dist/*rpm
+    rename s/$PACKAGEVERSION-1\.noarch\.rpm/$PACKAGEVERSION-1-Python$PYTHONVERSION.noarch.rpm/ dist/*rpm
     rm dist/*src.rpm dist/*tar.gz
     echo "Done with rpm for Python $PYV.
 "
@@ -53,8 +53,7 @@ Building deb for Python $PYV..."
     $PYTHON setup.py bdist_dumb
     cd dist/
 
-    #PACKAGENAME="bittorrent_${PACKAGEVERSION}_python${PYTHONVERSION}"
-    PACKAGENAME="bittorrent_${PACKAGEVERSION}"
+    PACKAGENAME="bittorrent_${PACKAGEVERSION}_python${PYTHONVERSION}"
     mkdir $PACKAGENAME
     DUMBDIST=`ls BitTorrent-$PACKAGEVERSION*.tar.gz`
     mv $DUMBDIST $PACKAGENAME

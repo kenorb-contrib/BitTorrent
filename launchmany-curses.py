@@ -23,6 +23,8 @@ from threading import Event
 from time import time, localtime, strftime
 
 from BitTorrent.obsoletepythonsupport import *
+from BitTorrent import platform
+from BitTorrent.platform import encode_for_filesystem, decode_from_filesystem
 from BitTorrent.launchmanycore import LaunchMany
 from BitTorrent.defaultargs import get_defaults
 from BitTorrent.parseargs import parseargs, printHelp
@@ -285,14 +287,36 @@ if __name__ == '__main__':
         if len(sys.argv) < 2:
             printHelp(uiname, defaults)
             sys.exit(1)
+            
+        # Modifying default values from get_defaults is annoying...
+        # Implementing specific default values for each uiname in
+        # defaultargs.py is even more annoying.  --Dave
+        data_dir = [[name, value,doc] for (name, value, doc) in defaults
+                        if name == "data_dir"][0]
+        defaults = [(name, value,doc) for (name, value, doc) in defaults
+                        if not name == "data_dir"]        
+        ddir = os.path.join( platform.get_dot_dir(), "launchmany-curses" )
+        data_dir[1] = decode_from_filesystem(ddir)
+        defaults.append( tuple(data_dir) )
         config, args = configfile.parse_configuration_and_args(defaults,
                                       uiname, sys.argv[1:], 0, 1)
         if args:
-            config['torrent_dir'] = args[0]
-        if not os.path.isdir(config['torrent_dir']):
-            raise BTFailure(_("Warning: ")+args[0]+_(" is not a directory"))
+            torrent_dir = args[0]
+            config['torrent_dir'] = \
+                platform.decode_from_filesystem(torrent_dir)
+        else:
+            torrent_dir = config['torrent_dir']
+            torrent_dir,bad = platform.encode_from_filesystem(torrent_dir)
+            if bad:
+              raise BTFailure(_("Warning: ")+config['torrent_dir']+
+                              _(" is not a directory"))
+            
+        if not os.path.isdir(torrent_dir):
+            raise BTFailure(_("Warning: ")+torrent_dir+
+                            _(" is not a directory"))
     except BTFailure, e:
-        print _("error: ") + str(e) + _("\nrun with no args for parameter explanations")
+        print _("error: ") + unicode(e.args[0]) + \
+              _("\nrun with no args for parameter explanations")
         sys.exit(1)
 
     curses_wrapper(LaunchManyWrapper, config)

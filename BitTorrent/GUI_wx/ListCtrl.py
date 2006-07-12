@@ -11,6 +11,7 @@
 # written by Matt Chisholm, Steven Hazel, and Greg Hazel
 
 import locale
+import traceback
 import wx
 from UserDict import IterableUserDict
 from BitTorrent.obsoletepythonsupport import set
@@ -22,7 +23,14 @@ if os.name == 'nt':
     LVM_SETSELECTEDCOLUMN = (LVM_FIRST + 140)
     import win32api
 
-from traceback import print_exc
+
+def highlight_color(c):
+    if c > 240:
+        c *= 0.97
+    else:
+        c = min(c * 1.10, 255)
+    return int(c)
+
 
 SEL_FOC = wx.LIST_STATE_SELECTED | wx.LIST_STATE_FOCUSED
 def selectBeforePopup(ctrl, pos):
@@ -177,7 +185,12 @@ class BTListCtrl(wx.ListCtrl, ColumnSorterMixin, ContextMenuMixin):
             r.SubtractRect(x)
             dc.SetClippingRegionAsRegion(r)
             dc.SetPen(wx.TRANSPARENT_PEN)
-            dc.SetBrush(wx.Brush(wx.Colour(247, 247, 247)))
+            hc = wx.SystemSettings_GetColour(wx.SYS_COLOUR_WINDOW)
+            r = highlight_color(hc.Red())
+            g = highlight_color(hc.Green())
+            b = highlight_color(hc.Blue())
+            hc.Set(r, g, b)
+            dc.SetBrush(wx.Brush(hc))
             dc.DrawRectangle(c.x, c.y, c.width, c.height)
 
     def update_enabled_columns(self):
@@ -329,7 +342,7 @@ class BTListCtrl(wx.ListCtrl, ColumnSorterMixin, ContextMenuMixin):
             except:
                 text = '?'
                 # BUG: for debugging only
-                print_exc()
+                traceback.print_exc()
         else:
             text = unicode(value)
         return text

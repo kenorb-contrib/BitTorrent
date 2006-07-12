@@ -20,6 +20,7 @@ from BitTorrent.Connector import Connection
 import BitTorrent.Torrent
 import BitTorrent.Connector
 from BitTorrent.hash import sha
+import struct
 import logging
 logger = logging.getLogger("BitTorrent.Upload")
 log = logger.debug
@@ -41,8 +42,9 @@ def _compute_allowed_fast_list(infohash, ip, num_fast, num_pieces):
         h = sha(h).digest() # rehash hash to generate new random string.
         for i in xrange(5):
             j = i*4
-            y = [ord(x) for x in h[j:j+4]]
-            z = (y[0] << 24) + (y[1]<<16) + (y[2]<<8) + y[3]
+            #y = [ord(x) for x in h[j:j+4]]
+            #z = (y[0] << 24) + (y[1]<<16) + (y[2]<<8) + y[3]
+            z = struct.unpack("!L", h[j:j+4])[0]
             index = int(z % num_pieces)
             if index not in fastlist:
                 fastlist.append(index)

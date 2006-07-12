@@ -13,7 +13,6 @@
 # This module is strictly for cross platform compatibility items and
 # should not import anything from other BitTorrent modules.
 
-#import pdb #DEBUG
 import os
 import re
 import sys
@@ -54,6 +53,42 @@ else:
 
 # NOTE: intentionally appears in the file before importing anything
 # from BitTorrent because it is called when setting --use_factory_defaults.
+def get_filesystem_encoding(errorfunc=None):
+    def dummy_log(e):
+        print e
+        pass
+    if not errorfunc:
+        errorfunc = dummy_log
+
+
+    default_encoding = 'utf8'
+
+    if os.path.supports_unicode_filenames:
+        encoding = None
+    else:
+        try:
+            encoding = sys.getfilesystemencoding()
+        except AttributeError:
+            errorfunc("This version of Python cannot detect filesystem encoding.")
+
+
+        if encoding is None:
+            encoding = default_encoding
+            errorfunc("Python failed to detect filesystem encoding. "
+                      "Assuming '%s' instead." % default_encoding)
+        else:
+            try:
+                'a1'.decode(encoding)
+            except:
+                errorfunc("Filesystem encoding '%s' is not supported. Using '%s' instead." %
+                          (encoding, default_encoding))
+                encoding = default_encoding
+
+    return encoding
+
+
+# NOTE: intentionally appears in the file before importing anything
+# from BitTorrent because it is called when setting --use_factory_defaults.
 def get_dir_root(shellvars, default_to_home=True):
     def check_sysvars(x):
         y = os.path.expandvars(x)
@@ -71,6 +106,17 @@ def get_dir_root(shellvars, default_to_home=True):
             dir_root = os.path.expanduser('~')
             if dir_root == '~' or not os.path.isdir(dir_root):
                 dir_root = None
+
+    if get_filesystem_encoding() == None:
+        try:
+            dir_root = dir_root.decode(sys.getfilesystemencoding())
+        except:
+            try:
+                dir_root = dir_root.decode('utf8')
+            except:
+                pass
+
+
     return dir_root
 
 
@@ -104,6 +150,42 @@ _tmp_subdir = None
 
 # NOTE: intentionally appears in the file before importing anything
 # from BitTorrent because it is called when setting --use_factory_defaults.
+def encode_for_filesystem(path):
+    assert isinstance(path, unicode)
+
+    bad = False
+    encoding = get_filesystem_encoding()
+    if encoding == None:
+        encoded_path = path
+    else:
+        try:
+            encoded_path = path.encode(encoding)
+        except:
+            bad = True
+            path.replace(u"%", urllib.quote(u"%"))
+            encoded_path = path.encode(encoding, 'urlquote')
+
+    return (encoded_path, bad)
+
+def decode_from_filesystem(path):
+    encoding = get_filesystem_encoding()
+    if encoding == None:
+        assert isinstance(path, unicode)
+        decoded_path = path
+    else:
+        assert isinstance(path, str)
+        decoded_path = path.decode(encoding)
+
+    return decoded_path
+
+def path_wrap(path):
+    return decode_from_filesystem(path)
+
+def efs(path):  # wraps encode for filesystem.
+    return encode_for_filesystem(path)
+
+# NOTE: intentionally appears in the file before importing anything
+# from BitTorrent because it is called when setting --use_factory_defaults.
 def get_temp_subdir():
     """Creates a unique subdirectory of the platform temp directory.
        This revolves between MAX_DIR directory names deleting the oldest
@@ -119,17 +201,17 @@ def get_temp_subdir():
     tmp = get_temp_dir()
     target = None   # holds the name of the directory that will be made.
     for i in xrange(MAX_DIR):
-        subdir = ("BitTorrentTemp%d" % i)
+        subdir = efs(u"BitTorrentTemp%d" % i)[0]
         path = os.path.join(tmp, subdir)
         if not os.path.exists(path):
             target = path
             break
 
     # subdir should not in normal behavior be None.  It can occur if something
-    # prevented a directory from being removed on a previous call or if
-    # MAX_DIR is changed.
+    # prevented a directory from being removed on a previous call or if MAX_DIR
+    # is changed.
     if target is None:
-       subdir = "BitTorrentTemp0"
+       subdir = efs(u"BitTorrentTemp0")[0]
        path = os.path.join(tmp, subdir)
        shutil.rmtree( path, ignore_errors = True )
        target = path
@@ -140,7 +222,7 @@ def get_temp_subdir():
 
     # delete the oldest directory.
     oldest_i = ( i + 1 ) % MAX_DIR
-    oldest_subdir = ("BitTorrentTemp%d" % oldest_i)
+    oldest_subdir = efs(u"BitTorrentTemp%d" % oldest_i)[0]
     oldest_path = os.path.join(tmp, oldest_subdir)
     if os.path.exists( oldest_path ):
         shutil.rmtree( oldest_path, ignore_errors = True )
@@ -160,8 +242,7 @@ def set_config_dir(dir):
     # that the system acts like a fresh install.
     _config_dir = dir
 
-# Check for a set the configuration directory before importing
-# any other BitTorrent modules.
+# Set configuration directory before importing any other BitTorrent modules.
 if "--use_factory_defaults" in sys.argv or "-u" in sys.argv:
     temp_dir = get_temp_subdir()
     set_config_dir(temp_dir)
@@ -170,6 +251,13 @@ from BitTorrent import app_name, version, LOCALE_URL
 from BitTorrent import language
 from BitTorrent.sparse_set import SparseSet
 from BitTorrent.defer import ThreadedDeferred
+
+
+old_broken_config_subencoding = 'utf8'
+try:
+    old_broken_config_subencoding = sys.getfilesystemencoding()
+except:
+    pass
 
 
 if sys.platform.startswith('win'):
@@ -247,9 +335,9 @@ elif os_name == 'posix':
 
 def calc_unix_dirs():
     appdir = '%s-%s'%(app_name, version)
-    ip = os.path.join('share', 'pixmaps', appdir)
-    dp = os.path.join('share', 'doc'    , appdir)
-    lp = os.path.join('share', 'locale')
+    ip = os.path.join(efs(u'share')[0], efs(u'pixmaps')[0], appdir)
+    dp = os.path.join(efs(u'share')[0], efs(u'doc')[0], appdir)
+    lp = os.path.join(efs(u'share')[0], efs(u'locale')[0])
     return ip, dp, lp
 
 if is_frozen_exe:
@@ -264,8 +352,12 @@ if os.name == 'posix':
         if has_pyobjc:
             doc_root = NSBundle.mainBundle().resourcePath()
             osx = True
-image_root  = os.path.join(app_root, 'images')
-locale_root = os.path.join(app_root, 'locale')
+
+# For string literal subdirectories, starting with unicode and then 
+# converting to filesystem encoding may not always be necessary, but it seems 
+# safer to do so.  --Dave
+image_root  = os.path.join(app_root, efs(u'images')[0])
+locale_root = os.path.join(app_root, efs(u'locale')[0])
 if not os.path.exists(locale_root):
     try:
         os.makedirs(locale_root)
@@ -273,7 +365,8 @@ if not os.path.exists(locale_root):
         pass
 
 plugin_path = []
-internal_plugin = os.path.join(app_root, 'BitTorrent', 'Plugins')
+internal_plugin = os.path.join(app_root, efs(u'BitTorrent')[0], 
+                                         efs(u'Plugins')[0])
 if os.access(internal_plugin, os.F_OK):
     plugin_path.append(internal_plugin)
 
@@ -286,9 +379,25 @@ if not os.access(image_root, os.F_OK) or not os.access(locale_root, os.F_OK):
         image_root, doc_root, locale_root = map(
             lambda p: os.path.join(installed_prefix, p), calc_unix_dirs()
             )
-        systemwide_plugin = os.path.join(installed_prefix, 'lib', 'BitTorrent')
+        systemwide_plugin = os.path.join(installed_prefix, efs(u'lib')[0], 
+                                         efs(u'BitTorrent')[0])
         if os.access(systemwide_plugin, os.F_OK):
             plugin_path.append(systemwide_plugin)
+
+if os.name == 'nt':
+    def GetDiskFreeSpaceEx(s):
+        if isinstance(s, unicode):
+            GDFS = ctypes.windll.kernel32.GetDiskFreeSpaceExW
+        else:
+            GDFS = ctypes.windll.kernel32.GetDiskFreeSpaceExA
+        FreeBytesAvailable = ctypes.c_ulonglong(0)
+        TotalNumberOfBytes = ctypes.c_ulonglong(0)
+        TotalNumberOfFreeBytes = ctypes.c_ulonglong(0)
+        r = GDFS(s,
+                 ctypes.pointer(FreeBytesAvailable),
+                 ctypes.pointer(TotalNumberOfBytes),
+                 ctypes.pointer(TotalNumberOfFreeBytes))
+        return FreeBytesAvailable.value, TotalNumberOfBytes.value, TotalNumberOfFreeBytes.value
 
 def get_free_space(path):
     # optimistic if we can't tell
@@ -298,7 +407,7 @@ def get_free_space(path):
     if os.name == 'nt':
         while not os.path.exists(path):
             path, top = os.path.split(path)
-        free_to_user, total, total_free = win32api.GetDiskFreeSpaceEx(path)
+        free_to_user, total, total_free = GetDiskFreeSpaceEx(path)
     elif hasattr(os, "statvfs"):
         s = os.statvfs(path)
         free_to_user = s[statvfs.F_BAVAIL] * long(s[statvfs.F_BSIZE])
@@ -415,7 +524,7 @@ def get_config_dir():
     return dir_root
 
 def get_old_dot_dir():
-    return os.path.join(get_config_dir(), '.bittorrent')
+    return os.path.join(get_config_dir(), efs(u'.bittorrent')[0])
 
 def get_dot_dir():
     """So called because on Unix platforms this returns ~/.bittorrent."""
@@ -471,14 +580,17 @@ def get_local_data_dir():
         return get_dot_dir()
 
 def get_old_incomplete_data_dir():
-    return os.path.join(get_old_dot_dir(), 'incomplete')
+    incomplete = efs(u'incomplete')[0]
+    return os.path.join(get_old_dot_dir(), incomplete)
 
 def get_incomplete_data_dir():
     # 'incomplete' is a directory name and should not be localized
-    return os.path.join(get_local_data_dir(), 'incomplete')
+    incomplete = efs(u'incomplete')[0]
+    return os.path.join(get_local_data_dir(), incomplete)
 
 def get_save_dir():
     dirname = u'%s Downloads' % unicode(app_name)
+    dirname = efs(dirname)[0]
     if os.name == 'nt':
         d = get_shell_dir(shellcon.CSIDL_PERSONAL)
         if d is None:
@@ -505,7 +617,7 @@ def get_startup_dir():
     return dir
 
 
-local_plugin = os.path.join(get_dot_dir(), 'Plugins')
+local_plugin = os.path.join(get_dot_dir(), efs(u'Plugins')[0])
 if os.access(local_plugin, os.F_OK):
     plugin_path.append(local_plugin)
 
@@ -653,9 +765,7 @@ def _enforce_association():
 
     WriteRegStr(HKCR, r"torrent\shell\open\command", "", r'"$INSTDIR\${EXENAME}" "%1"')
 
-
-def path_wrap(path):
-    return decode_from_filesystem(path)
+    
 
 def btspawn(cmd, *args):
     ext = ''
@@ -751,13 +861,13 @@ def blocking_smart_gettext_and_install(domain, localedir, languages,
                 if nelang not in nelangs:
                     nelangs.append(nelang)
         languages = nelangs
-                
+
         for lang in languages:
             try:
                 get_language(lang)
             except: #urllib.HTTPError:
                 pass
-                
+
         t = gettext.translation(domain, localedir,
                                 languages=languages,
                                 fallback=True)
@@ -856,8 +966,9 @@ def _gettext_install(domain, localedir=None, languages=None, unicode=False):
 
 
 def language_path():
-    dot_dir = get_dot_dir()  
-    lang_file_name = os.path.join(dot_dir, 'data', 'language')
+    dot_dir = get_dot_dir()
+    lang_file_name = os.path.join(dot_dir, efs(u'data')[0], 
+                                           efs(u'language')[0])
     return lang_file_name
 
 
@@ -938,70 +1049,6 @@ def install_translation(unicode=False):
         traceback.print_exc()
     _gettext_install('bittorrent', locale_root, languages=languages, unicode=unicode)
 
-
-def encode_for_filesystem(path):
-    assert isinstance(path, unicode)
-
-    bad = False
-    encoding = get_filesystem_encoding()
-    if encoding == None:
-        encoded_path = path
-    else:
-        try:
-            encoded_path = path.encode(encoding)
-        except:
-            bad = True
-            path.replace(u"%", urllib.quote(u"%"))
-            encoded_path = path.encode(encoding, 'urlquote')
-
-    return (encoded_path, bad)
-
-
-def decode_from_filesystem(path):
-    encoding = get_filesystem_encoding()
-    if encoding == None:
-        assert isinstance(path, unicode)
-        decoded_path = path
-    else:
-        assert isinstance(path, str)
-        decoded_path = path.decode(encoding)
-
-    return decoded_path
-
-
-def get_filesystem_encoding(errorfunc=None):
-    def dummy_log(e):
-        print e
-        pass
-    if not errorfunc:
-        errorfunc = dummy_log
-
-
-    default_encoding = 'utf8'
-
-    if os.path.supports_unicode_filenames:
-        encoding = None
-    else:
-        try:
-            encoding = sys.getfilesystemencoding()
-        except AttributeError:
-            errorfunc("This version of Python cannot detect filesystem encoding.")
-
-
-        if encoding is None:
-            encoding = default_encoding
-            errorfunc("Python failed to detect filesystem encoding. "
-                      "Assuming '%s' instead." % default_encoding)
-        else:
-            try:
-                'a1'.decode(encoding)
-            except:
-                errorfunc("Filesystem encoding '%s' is not supported. Using '%s' instead." %
-                          (encoding, default_encoding))
-                encoding = default_encoding
-
-    return encoding
-
 def write_pid_file(fname, errorfunc = None):
     """Creates a pid file on platforms that typically create such files;
        otherwise, this returns without doing anything.  The fname should
@@ -1014,11 +1061,11 @@ def write_pid_file(fname, errorfunc = None):
     if os.name == 'nt': return
 
     try:
-        pid_fname = os.path.join('/var/run',fname)
+        pid_fname = os.path.join(efs(u'/var/run')[0],fname)
         file(pid_fname, 'w').write(str(os.getpid()))
     except:
         try:
-            pid_fname = os.path.join('/etc/tmp',fname)
+            pid_fname = os.path.join(efs(u'/etc/tmp')[0],fname)
         except:
             if errorfunc:
                 errorfunc(_("Couldn't open pid file. Continuing without one."))
@@ -1036,8 +1083,9 @@ else:
     else:
         desktop = homedir
         if os.name in ('mac', 'posix'):
-            tmp_desktop = os.path.join(homedir, 'Desktop')
+            tmp_desktop = os.path.join(homedir, efs(u'Desktop')[0])
             if os.access(tmp_desktop, os.R_OK|os.W_OK):
                 desktop = tmp_desktop + os.sep
 
 
+ 

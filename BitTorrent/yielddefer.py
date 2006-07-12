@@ -37,6 +37,7 @@ from stackthreading import _print_traceback, _print
 from twisted.internet import defer
 
 debug = False
+name_debug = False
 
 class GenWithDeferred(object):
     if debug:
@@ -65,10 +66,62 @@ class GenWithDeferred(object):
         if debug:
             del self.stack
 
-def _queue_task_chain(v, g):
-    g.queue_task(_recall, g)
-    return v
+    if name_debug:
+        def __getattr__(self, attr):
+            if '_recall' not in attr:
+                raise AttributeError(attr)
+            return self._recall
 
+        def _queue_task_chain(self, v):
+            recall = getattr(self, "_recall_%s" % self.gen.gi_frame.f_code.co_name)
+            self.queue_task(recall)
+            return v
+    else:
+        def _queue_task_chain(self, v):
+            self.queue_task(self._recall)
+            return v
+
+    def _recall(self):
+        try:
+            t = self.gen.next()
+        except StopIteration:
+            self.deferred.callback(None)
+            self.cleanup()
+        except Exception, e:
+
+            exc_type, value, tb = sys.exc_info()
+
+            ## Magic Traceback Hacking
+            if debug:
+                # interpreter shutdown
+                if not sys:
+                    return
+                stream = sys.stderr
+                # HERE.  This should really be logged or else bittorrent-
+                # curses will never be able to properly output. --Dave
+                _print_traceback(stream, self.stack,
+                                 "generator %s" % self.gen.gi_frame.f_code.co_name, 0,
+                                 exc_type, value, tb)
+            else:
+                #if (tb.tb_lineno != self.gen.gi_frame.f_lineno or
+                #    tb.f_code.co_filename != self.gen.gi_frame.f_code.co_filename):
+                #    tb = FakeTb(self.gen.gi_frame, tb)
+                pass
+            ## Magic Traceback Hacking
+                
+            self.deferred.errback((exc_type, value, tb))
+            self.cleanup()
+        else:
+            # (half) CRUFT - remove when bittorrent uses twisted deferreds
+            if not isinstance(t, Deferred) and not isinstance(t, defer.Deferred):
+                self.deferred.callback(t)
+                self.cleanup()
+                return
+
+            t.addCallback(self._queue_task_chain)
+            t.addErrback(self._queue_task_chain)
+            del t
+        
 class FakeTb(object):
     __slots__ = ['tb_frame', 'tb_lineno', 'tb_orig', 'tb_next']
     def __init__(self, frame, tb):
@@ -76,56 +129,15 @@ class FakeTb(object):
         self.tb_lineno = frame.f_lineno
         self.tb_orig = tb
         self.tb_next = tb.tb_next
-        
-def _recall(g):
-    try:
-        t = g.gen.next()
-    except StopIteration:
-        g.deferred.callback(None)
-        g.cleanup()
-    except Exception, e:
-
-        exc_type, value, tb = sys.exc_info()
-
-        ## Magic Traceback Hacking
-        if debug:
-            # interpreter shutdown
-            if not sys:
-                return
-            stream = sys.stderr
-            # HERE.  This should really be logged or else bittorrent-
-            # curses will never be able to properly output. --Dave
-            _print_traceback(stream, g.stack,
-                             "generator %s" % g.gen.gi_frame.f_code.co_name, 0,
-                             exc_type, value, tb)
-        else:
-            #if (tb.tb_lineno != g.gen.gi_frame.f_lineno or
-            #    tb.f_code.co_filename != g.gen.gi_frame.f_code.co_filename):
-            #    tb = FakeTb(g.gen.gi_frame, tb)
-            pass
-        ## Magic Traceback Hacking
-            
-        g.deferred.errback((exc_type, value, tb))
-        g.cleanup()
-    else:
-        # (half) CRUFT - remove when bittorrent uses twisted deferreds
-        if not isinstance(t, Deferred) and not isinstance(t, defer.Deferred):
-            g.deferred.callback(t)
-            g.cleanup()
-            return
-
-        t.addCallback(_queue_task_chain, g)
-        t.addErrback(_queue_task_chain, g)
-        del t
 
 def _launch_generator(queue_task, g, main_df):
-    g2 = GenWithDeferred(g, main_df, queue_task)
+    gwd = GenWithDeferred(g, main_df, queue_task)
     ## the first one is fired for you
-    ##_recall(queue_task, g2)
+    ##gwd._recall()
     # the first one is not fired for you, because if it errors the sys.exc_info
-    # causes an unresolvable circular reference that makes the g2.deferred never
+    # causes an unresolvable circular reference that makes the gwd.deferred never
     # be deleted.
-    queue_task(_recall, g2)
+    gwd._queue_task_chain(None)
 
 def launch_coroutine(queue_task, f, *args, **kwargs):
     main_df = Deferred()
@@ -143,6 +155,6 @@ def launch_coroutine(queue_task, f, *args, **kwargs):
             main_df.callback(g)
     return main_df
 
-def _wrap_task(add_task):
+def wrap_task(add_task):
     return lambda _f, *args, **kwargs : add_task(0, _f, *args, **kwargs)
-    
+_wrap_task = wrap_task   

@@ -42,6 +42,9 @@ class Deferred(object):
             # iterpreter shutdown
             if sys is None:
                 return
+            # so this checks to see if -any- errback has been called, not -all-.
+            # See twisted deferreds for a better (although still broken!)
+            # implementation of the correct metric.
             if failures and not called_errbacks[0]:
                 sys.stderr.write("Unhandled error in BT Deferred:\n")
                 if stack:
@@ -58,8 +61,6 @@ class Deferred(object):
         #    sys.stderr.write("getResult from the wrong thread!\n")
         #    sys.stderr.writelines(self.stack)
         #assert self.ident == thread.get_ident()
-        self.erredBack = True
-        self.calledBack = True
         self.called_errbacks[0] = True
         if self.failures:
             # what should I do with multiple failures?

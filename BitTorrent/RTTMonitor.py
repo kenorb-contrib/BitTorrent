@@ -275,7 +275,7 @@ class RTTMonitorWin32(RTTMonitorBase):
             except Exception, e:
                 report('*')
                 if debug:
-                    print "Hop", ttl, "failed:", str(e)
+                    print "Hop", ttl, "failed:", unicode(e.args[0])
             if self.abort_traceroute.isSet():
                 break
 
@@ -312,7 +312,7 @@ class RTTMonitorWin32(RTTMonitorBase):
                     print "Ping failed", status
         except Exception, e:
             if debug:
-                print "Ping failed:", str(e)
+                print "Ping failed:", unicode(e.args[0])
 
         win32icmp.IcmpCloseHandle(i)
 

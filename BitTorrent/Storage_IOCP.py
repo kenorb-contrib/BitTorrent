@@ -51,10 +51,15 @@ class ReadFileOp(OverlappedOp):
             df.callback(buffer[:bytes])
 
     def initiateOp(self, handle, seekpos, buffer):
-        self.df = Deferred()
-        self.reactor.issueReadFile(handle, seekpos, buffer,
-                                   self.ovDone, (handle, buffer))
-        return self.df
+        df = Deferred()
+        try:
+            self.reactor.issueReadFile(handle, seekpos, buffer,
+                                       self.ovDone, (handle, buffer))
+        except:
+            df.errback(sys.exc_info())
+        else:
+            self.df = df
+        return df
 
 class WriteFileOp(OverlappedOp):
 
@@ -67,10 +72,17 @@ class WriteFileOp(OverlappedOp):
             df.callback(bytes)
 
     def initiateOp(self, handle, seekpos, buffer):
-        self.df = Deferred()
-        self.reactor.issueWriteFile(handle, seekpos, buffer,
-                                    self.ovDone, (handle, buffer))
-        return self.df
+        assert len(buffer) > 0
+        assert seekpos >= 0
+        df = Deferred()
+        try:
+            self.reactor.issueWriteFile(handle, seekpos, buffer,
+                                        self.ovDone, (handle, buffer))
+        except:
+            df.errback(sys.exc_info())
+        else:
+            self.df = df
+        return df
 
 
 class IOCPFile(object):
@@ -352,7 +364,7 @@ class Storage(object):
     def _intervals(self, pos, amount):
         r = []
         stop = pos + amount
-        p = max(bisect_right(self.ranges, (pos, )) - 1, 0)
+        p = max(bisect_right(self.ranges, (pos, 2 ** 500)) - 1, 0)
         for begin, end, filename in self.ranges[p:]:
             if begin >= stop:
                 break
@@ -434,6 +446,7 @@ class Storage(object):
         # queue all the writes
         for filename, begin, end in self._intervals(pos, amount):
             length = end - begin
+            assert length > 0, '%s %s' % (pos, amount)
             d = buffer(s, total, length)
             total += length
             df = self._write(filename, begin, d)

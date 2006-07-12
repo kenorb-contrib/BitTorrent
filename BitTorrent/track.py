@@ -677,7 +677,7 @@ class Tracker(object):
 
         except ValueError, e:
             return (400, 'Bad Request', {'Content-Type': 'text/plain'},
-                'you sent me garbage - ' + str(e))
+                'you sent me garbage - ' + unicode(e.args[0]))
 
         if params('compact'):
             return_type = 2
@@ -796,11 +796,11 @@ def track(args):
         config, files = parse_configuration_and_args(defaults, 
            'bittorrent-tracker', args )
     except ValueError, e:
-        print _("error: ") + str(e)
+        print _("error: ") + unicode(e.args[0])
         print _("run with -? for parameter explanations")
         return
     except BTFailure, e:
-        print _("error: ") + str(e)
+        print _("error: ") + unicode(e.args[0])
         print _("run with -? for parameter explanations")
         return
  

@@ -199,7 +199,8 @@ class FilePool(object):
 
 class Storage(object):
 
-    def __init__(self, config, filepool, save_path, files, add_task,
+    def __init__(self, config, filepool, save_path,
+                 files, add_task,
                  external_add_task, doneflag):
         self.filepool = filepool
         self.config = config
@@ -286,7 +287,7 @@ class Storage(object):
     def _intervals(self, pos, amount):
         r = []
         stop = pos + amount
-        p = max(bisect_right(self.ranges, (pos, )) - 1, 0)
+        p = max(bisect_right(self.ranges, (pos, 2 ** 500)) - 1, 0)
         for begin, end, filename in self.ranges[p:]:
             if begin >= stop:
                 break

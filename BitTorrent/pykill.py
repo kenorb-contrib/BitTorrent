@@ -40,9 +40,9 @@ def kill_process(name):
         h = hl[0]
         pname = win32process.GetModuleFileNameEx(p, h)
         root, pname = os.path.split(pname)
-        print name, pname
+        #print name, pname
         if compare(name, pname):
-            print "KILL", pname
+            #print "KILL", pname
             win32api.TerminateProcess(p, 0)
             win32api.CloseHandle(p)
             return True

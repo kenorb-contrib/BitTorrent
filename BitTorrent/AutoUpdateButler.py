@@ -124,7 +124,7 @@ class AutoUpdateButler(TorrentButler):
             try:
                 t = self.multitorrent.get_torrent(i)
                 if t.state == 'initialized':
-                    self.multitorrent.start_torrent(t)
+                    self.multitorrent.start_torrent(t.infohash)
                 torrent, status = self.multitorrent.torrent_status(i)
                 if torrent.completed:
                     self.finished(t)
@@ -230,7 +230,7 @@ class AutoUpdateButler(TorrentButler):
             torrentfile = GetTorrent.get_url(installer_url)
         except GetTorrent.GetTorrentException, e:
             self.debug('_get_torrent() run#%d: failed to download torrent file %s: %s' %
-                       (self.runs, installer_url, str(e)))
+                       (self.runs, installer_url, unicode(e.args[0])))
             pass
         return torrentfile
 

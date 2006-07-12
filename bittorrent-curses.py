@@ -18,7 +18,6 @@ from __future__ import division
 from BitTorrent.translation import _
 SPEW_SCROLL_RATE = 1
 
-import pdb #DEBUG
 import sys
 import os
 import logging
@@ -27,6 +26,7 @@ from time import time, strftime, sleep
 import traceback
 
 from BitTorrent import platform
+from BitTorrent.platform import encode_for_filesystem, decode_from_filesystem
 import BitTorrent.stackthreading as threading
 from BitTorrent.defer import DeferredEvent
 from BitTorrent.MultiTorrent import MultiTorrent, TorrentAlreadyRunning
@@ -37,7 +37,7 @@ from BitTorrent.zurllib import urlopen
 from BitTorrent.prefs import Preferences
 from BitTorrent.obsoletepythonsupport import import_curses
 from BitTorrent import configfile
-from BitTorrent import BTFailure
+from BitTorrent import BTFailure, UserFailure
 from BitTorrent import version
 from BitTorrent import GetTorrent
 from BitTorrent.RawServer_twisted import RawServer, task
@@ -392,12 +392,12 @@ class CursesTorrentApp(object):
         
     def __init__(self, metainfo, config, errlist):
         assert isinstance(metainfo, ConvertedMetainfo )
-        self.doneflag = DeferredEvent()
         self.metainfo = metainfo
         self.config = Preferences().initWithDict(config)
         self.errlist = errlist
         self.torrent = None
         self.multitorrent = None
+        self.d = None    # displayer (i.e., curses UI)
         self.logger = logging.getLogger("bittorrent-curses")
         log_handler = CursesTorrentApp.LogHandler(self)
         log_handler.setLevel(WARNING)
@@ -411,19 +411,19 @@ class CursesTorrentApp(object):
         if stderr_console is not None:
           logging.getLogger().removeHandler(stderr_console)
                                            
-        # We log everything.  If we want to except certain errors then
+        # We log everything.  If we want to omit certain errors then
         # either raise the level or install a logging.Filter:
         log_handler.addFilter(CursesTorrentApp.LogFilter())
-        logging.getLogger().setLevel(0)
+        logging.getLogger().setLevel(WARNING)
 
-    def start_torrent(self,metainfo,save_incomplete_in,save_in):
+    def start_torrent(self,metainfo,save_incomplete_as,save_as):
         """Tells the MultiTorrent to begin downloading."""
         try:
             self.d.display({'activity':_("initializing"), 
                                'fractionDone':0})
             multitorrent = self.multitorrent
-            df = multitorrent.create_torrent(metainfo, save_incomplete_in,
-                                             save_in)
+            df = multitorrent.create_torrent(metainfo, save_incomplete_as,
+                                             save_as)
             df.addErrback( wrap_log('Failed to start torrent', self.logger))
             def create_finished(*args, **argv):
                 self.torrent = multitorrent.get_torrent(metainfo.infohash)
@@ -436,89 +436,114 @@ class CursesTorrentApp(object):
             df.addCallback( create_finished )
         except KeyboardInterrupt:
             raise
+        except UserFailure, e:
+            self.logger.error( "Failed to create torrent: " + unicode(e.args[0]) )
         except Exception, e:
             self.logger.error( "Failed to create torrent", exc_info = e )
-            return
         
     def run(self, scrwin):
         self.core_doneflag = DeferredEvent()
         rawserver_doneflag = DeferredEvent()
         rawserver = RawServer(self.config)
-        rawserver.install_sigint_handler(self.core_doneflag)
 
+        # set up shut-down procedure before we begin doing things that
+        # can throw exceptions.
+        def shutdown():
+            if self.d:
+                self.d.display({'activity':_("shutting down"), 
+                            'fractionDone':0})
+            if self.multitorrent:
+                df = self.multitorrent.shutdown()
+                set_flag = lambda *a : rawserver_doneflag.set()
+                df.addCallbacks(set_flag, set_flag)
+            else:
+                rawserver_doneflag.set()
+                        
+        # It is safe to addCallback here, because there is only one thread,
+        # but even if the code were multi-threaded, core_doneflag has not
+        # been passed to anyone.  There is no chance of a race condition
+        # between the DeferredEvent'scallback and addCallback.
+        self.core_doneflag.addCallback(
+            lambda r: rawserver.external_add_task(0, shutdown))
+        
         def reread():
             if self.multitorrent is not None:
-                self.multitorrent.rawserver.external_add_task(
-                    0,self.reread_config)
+                rawserver.external_add_task(0,self.reread_config)
         def ulrate(value):
             if self.multitorrent is not None:
                 self.multitorrent.set_option('max_upload_rate', value)
             if self.torrent != None:
                 self.torrent.set_option('max_upload_rate', value)
-      
-        self.d = CursesDisplayer(scrwin, self.errlist, self.doneflag, 
+
+        self.d = CursesDisplayer(scrwin, self.errlist, self.core_doneflag, 
                                  reread, ulrate)
+        rawserver.install_sigint_handler(self.core_doneflag)
+
+        # semantics for --save_in vs --save_as:
+        #   save_in specifies the directory in which torrent is written.
+        #      If the torrent is a batch torrent then the files in the batch
+        #      go in save_in/metainfo.name_fs/.
+        #   save_as specifies the filename for the torrent in the case of
+        #      a non-batch torrent, and specifies the directory name
+        #      in the case of a batch torrent.  Thus the files in a batch
+        #      torrent go in save_as/.
+        metainfo = self.metainfo
+        torrent_name = metainfo.name_fs  # if batch then this contains
+                                         # directory name.
+        if config['save_as']:
+            if config['save_in']:
+                raise BTFailure(_("You cannot specify both --save_as and "
+                                  "--save_in."))
+            saveas,bad = platform.encode_for_filesystem(config['save_as'])
+            if bad:
+                raise BTFailure(_("Invalid path encoding."))
+            savein = os.path.dirname(os.path.abspath(saveas))
+        elif config['save_in']:
+            savein,bad = platform.encode_for_filesystem(config['save_in'])
+            if bad:
+                raise BTFailure(_("Invalid path encoding."))
+            saveas = os.path.join(savein,torrent_name)
+        else:
+            saveas = torrent_name
+        if config['save_incomplete_in']:
+            save_incomplete_in,bad = \
+                platform.encode_for_filesystem(config['save_incomplete_in'])
+            if bad:
+                raise BTFailure(_("Invalid path encoding."))
+            save_incomplete_as = os.path.join(save_incomplete_in,torrent_name)
+        else:
+            save_incomplete_as = os.path.join(savein,torrent_name)
+    
+        data_dir,bad = platform.encode_for_filesystem(config['data_dir'])
+        if bad:
+            raise BTFailure(_("Invalid path encoding."))
+
         try:
-          try:
-             # raises BTFailure if bad
-            metainfo = self.metainfo
-            torrent_name = metainfo.name_fs
-            if config['save_as']:
-                if config['save_in']:
-                    raise BTFailure(_("You cannot specify both --save_as and "
-                                      "--save_in"))
-                saveas = config['save_as']
-                savein = os.path.dirname(os.path.abspath(saveas))
-            elif config['save_in']:
-                savein = config['save_in']
-                saveas = os.path.join(savein,torrent_name)
-            else:
-                saveas = torrent_name
-            if config['save_incomplete_in']:
-                save_incomplete_in= config['save_incomplete_in']
-                save_incomplete_as = os.path.join(
-                    save_incomplete_in,torrent_name)
-            else:
-                save_incomplete_as = os.path.join(savein,torrent_name)
-        
-            data_dir = config['data_dir']
             self.multitorrent = \
-                MultiTorrent(self.config, self.core_doneflag, rawserver,
+                MultiTorrent(self.config, rawserver, 
                              data_dir, is_single_torrent = True )
                 
             self.d.set_torrent_values(metainfo.name, os.path.abspath(saveas),
                                 metainfo.total_bytes, len(metainfo.hashes))
             self.start_torrent(self.metainfo, save_incomplete_as, saveas)
+        
             self.get_status()
-          except Exception, e:
+        except UserFailure, e:
+            self.logger.error( unicode(e.args[0]) )
+            rawserver.add_task(0,core_doneflag.set())
+        except Exception, e:
             self.logger.error( "", exc_info = e )
-            self.core_doneflag.set()
-
-        finally:
-            l = None
-            def shutdown():
-                self.d.display({'activity':_("shutting down"),
-                                'fractionDone':0})
-                if self.multitorrent:
-                    df = self.multitorrent.shutdown()
-                    set_flag = lambda *a : rawserver_doneflag.set()
-                    df.addCallbacks(set_flag, set_flag)
-                else:
-                    rawserver_doneflag.set()
-                       
-            rawserver.add_task(0, self.core_doneflag.addCallback,
-                lambda r: rawserver.external_add_task(0, shutdown))
-
-            self.logger.debug( "listen_forever" )
-
-            rawserver.listen_forever(rawserver_doneflag)
-         
+            rawserver.add_task(0,core_doneflag.set())
+        
+        # always make sure events get processed even if only for
+        # shutting down.
+        rawserver.listen_forever(rawserver_doneflag)
 
     def reread_config(self):
         try:
             newvalues = configfile.get_config(self.config, 'bittorrent-curses')
         except Exception, e:
-            self.d.error(_("Error reading config: ") + str(e))
+            self.d.error(_("Error reading config: ") + unicode(e.args[0]))
             return
         self.config.update(newvalues)
         # The set_option call can potentially trigger something that kills
@@ -561,7 +586,8 @@ if __name__ == '__main__':
                         if name == "data_dir"][0]
         defaults = [(name, value,doc) for (name, value, doc) in defaults
                         if not name == "data_dir"]        
-        data_dir[1] = os.path.join( platform.get_dot_dir(), "curses" )
+        ddir = os.path.join( platform.get_dot_dir(), "curses" )
+        data_dir[1] = decode_from_filesystem(ddir)
         defaults.append( tuple(data_dir) )
         config, args = configfile.parse_configuration_and_args(defaults,
                                        uiname, sys.argv[1:], 0, 1)
@@ -572,12 +598,12 @@ if __name__ == '__main__':
             try:
                 metainfo = GetTorrent.get(torrentfile)
             except GetTorrent.GetTorrentException, e:
-                raise BTFailure(_("Error reading .torrent file: ") + '\n' + \
-                                str(e))
+                raise UserFailure(_("Error reading .torrent file: ") + '\n' + \
+                                unicode(e.args[0]))
         else:
-            raise BTFailure(_("you must specify a .torrent file"))
+            raise UserFailure(_("you must specify a .torrent file"))
     except BTFailure, e:
-        print str(e)
+        print unicode(e.args[0])
         sys.exit(1)
 
     errlist = []

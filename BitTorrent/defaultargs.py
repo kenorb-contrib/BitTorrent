@@ -42,7 +42,7 @@ if os.name == 'nt':
 from BitTorrent import languages, app_name
 
 basic_options = [
-    ('data_dir', '',
+    ('data_dir', u'',
      _("directory under which variable data such as fastresume information "
        "and GUI state is saved. Defaults to subdirectory 'data' of the "
        "bittorrent config directory.")),
@@ -195,7 +195,7 @@ tracker_options = [
     ('min_time_between_cache_refreshes', 600.0,
      _("minimum time in seconds before a cache is considered stale "
        "and is flushed")),
-    ('allowed_dir', '',
+    ('allowed_dir', u'',
      _("only allow downloads for .torrents in this dir (and recursively in "
        "subdirectories of directories that have no .torrent files "
        "themselves). If set, torrents in this directory show up on "
@@ -270,7 +270,7 @@ def get_defaults(ui):
              _("provide debugging tools in user interface")),
             ('pause', False,
              _("start downloader in paused state")),
-            ('open_from', '',
+            ('open_from', u'',
              'local directory to look in for .torrent files to open'),
             ('start_minimized', False,
              _("Start %s minimized")%app_name),
@@ -353,12 +353,12 @@ def get_defaults(ui):
                "(hopefully) reasonable number based on --max_upload_rate. "
                "The automatic values are only sensible when running one "
                "torrent at a time.")),
-            ('save_in', '',
+            ('save_in', u'',
              _("local directory where the torrent contents will be saved. The "
                "file (single-file torrents) or directory (batch torrents) will "
                "be created under this directory using the default name "
                "specified in the .torrent file. See also --save_as.")),
-            ('save_incomplete_in', '',
+            ('save_incomplete_in', u'',
              _("local directory where the incomplete torrent downloads will be "
                "stored until completion.  Upon completion, downloads will be "
                "moved to the directory specified by --save_in.")),
@@ -371,7 +371,7 @@ def get_defaults(ui):
                "(hopefully) reasonable number based on --max_upload_rate. The "
                "automatic values are only sensible when running one torrent at "
                "a time.")),
-            ('save_in', '',
+            ('save_in', u'',
              _("local directory where the torrents will be saved, using a "
                "name determined by --saveas_style. If this is left empty "
                "each torrent will be saved under the directory of the "
@@ -402,24 +402,29 @@ def get_defaults(ui):
 
     if ui.startswith('launchmany') or ui == 'maketorrent':
         r.append(
-            ('torrent_dir', '',
+            ('torrent_dir', u'',
              _("directory to look for .torrent files (semi-recursive)")),)
 
     if ui in ('bittorrent-curses', 'bittorrent-console'):
         r.extend([
-            ('save_as', '',
+            ('save_as', u'',
              _("file name (for single-file torrents) or directory name (for "
                "batch torrents) to save the torrent as, overriding the "
                "default name in the torrent. See also --save_in")),
             ('spew', False,
              _("whether to display diagnostic info to stdout")),])
 
-    if ui == 'bittorrent-console':
+    if ui == 'bittorrent-console' :
         r.extend([
             ('display_interval', 5,
             _("seconds between updates of displayed information")),
             ] )
-
+    elif ui.startswith('launchmany'):
+        r.extend([
+            ('display_interval', 60,
+            _("seconds between updates of displayed information")),
+            ] )
+        
     if ui.startswith('maketorrent'):
         r.extend([
             ('title', '',

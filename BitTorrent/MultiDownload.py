@@ -46,6 +46,7 @@ class MultiDownload(object):
         self.storage = storage
         self.urlage = urlage
         self.picker = picker
+        self.rerequester = None
         self.connection_manager = None
         self.chunksize = config['download_slice_size']
         self.total_downmeasure = total_downmeasure
@@ -93,8 +94,12 @@ class MultiDownload(object):
     def get_adjusted_distributed_copies(self):
         # compensate for the fact that piece picker does not contain all the pieces
         num = self.picker.get_distributed_copies()
-        return num + (float(len(self.storage.have_set)) /
-                      float(self.numpieces))
+        percent_have = (float(len(self.storage.have_set)) /
+                        float(self.numpieces))
+        num += percent_have
+        if self.rerequester and self.rerequester.tracker_num_seeds:
+            num += self.rerequester.tracker_num_seeds
+        return num
 
     def active_requests_add(self, r):
         self.last_update += 1

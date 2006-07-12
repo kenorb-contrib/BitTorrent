@@ -16,13 +16,16 @@ class TorrentStats(object):
 
     def __init__(self, logger, choker, upfunc, downfunc, uptotal, downtotal,
                  remainingfunc, pcfunc, piece_states, finflag,
-                 downloader, file_priorities, files, ever_got_incoming, rerequester):
+                 connection_manager, multidownload, file_priorities,
+                 files, ever_got_incoming, rerequester):
         self.logger = logger
-        self.downloader = downloader
+        self.multidownload = multidownload
+        self.connection_manager = connection_manager
         self.file_priorities = file_priorities
-        self.picker = downloader.picker
-        self.storage = downloader.storage
+        self.picker = multidownload.picker
+        self.storage = multidownload.storage
         self.choker = choker
+        self.connection_manager = connection_manager
         self.upfunc = upfunc
         self.downfunc = downfunc
         self.uptotal = uptotal
@@ -36,8 +39,8 @@ class TorrentStats(object):
         self.rerequester = rerequester
 
     def collect_spew(self):
-        l = [ ]
-        for c in self.choker.connections:
+        l = []
+        for c in self.connection_manager.complete_connections:
             rec = {}
             rec['id'] = c.id
             rec["ip"] = c.ip
@@ -66,7 +69,7 @@ class TorrentStats(object):
 
     def get_swarm_speed(self):
         speeds = []
-        for c in self.choker.connections:
+        for c in self.connection_manager.complete_connections:
             d = c.download
             speeds.append(d.connection.download.peermeasure.get_rate())
         speed = sum(speeds)
@@ -77,7 +80,7 @@ class TorrentStats(object):
 
         numSeeds = 0
         numPeers = 0
-        for d in self.downloader.downloads:
+        for d in self.multidownload.downloads:
             numPeers += 1
             if d.have.numfalse == 0:
                 numSeeds += 1
@@ -102,9 +105,10 @@ class TorrentStats(object):
         status['upTotal'] = self.uptotal()
         status['ever_got_incoming'] = self.ever_got_incoming()
 
-        status['distributed_copies'] = self.downloader.get_adjusted_distributed_copies()
+        status['distributed_copies'] = self.multidownload.get_adjusted_distributed_copies()
 
-        status['discarded'] = self.downloader.discarded_bytes
+        status['discarded'] = self.multidownload.discarded_bytes
+
 
         status['swarm_speed'] = self.get_swarm_speed()
 
@@ -112,7 +116,7 @@ class TorrentStats(object):
 
         if spewflag:
             status['spew'] = self.collect_spew()
-            status['bad_peers'] = self.downloader.bad_peers
+            status['bad_peers'] = self.multidownload.bad_peers
         if fileflag:
             undl = self.storage.storage.undownloaded
             status['files_left'] = [undl[fname] for fname in self.files]

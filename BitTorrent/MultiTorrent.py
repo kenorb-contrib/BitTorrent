@@ -19,9 +19,9 @@ import logging
 import traceback
 from copy import copy
 from BitTorrent.translation import _
-
 from BitTorrent import GetTorrent
-from BitTorrent.platform import bttime, encode_for_filesystem
+from BitTorrent.Choker import Choker
+from BitTorrent.platform import bttime, encode_for_filesystem, old_broken_config_subencoding, get_filesystem_encoding
 from BitTorrent.Torrent import Feedback, Torrent
 from BitTorrent.bencode import bencode, bdecode
 from BitTorrent.ConvertedMetainfo import ConvertedMetainfo
@@ -76,12 +76,11 @@ class MultiTorrent(Feedback):
 
        """
 
-    def __init__(self, config, doneflag, rawserver,
+    def __init__(self, config, rawserver,
                  data_dir, listen_fail_ok=False, init_torrents=True,
                  is_single_torrent=False):
-        """TooManyRunning
+        """
          @param config: program-wide configuration object.
-         @param doneflag: when flag is set, all threads clean up and exit.
          @param rawserver: object that manages main event loop and event
            scheduling.
          @param data_dir:  where variable data such as fastresume information
@@ -99,7 +98,7 @@ class MultiTorrent(Feedback):
         # curses and console will act as a client to the MultiTorrent daemon.
         #   --Dave
         assert isinstance(config, Preferences)
-        assert isinstance(data_dir, str)
+        #assert isinstance(data_dir, unicode)  # temporarily commented -Dave
         assert isinstance(listen_fail_ok, bool)
 
         self.config = config
@@ -119,8 +118,9 @@ class MultiTorrent(Feedback):
         nattraverser = NatTraverser(self.rawserver)
         self.internet_watcher = InternetWatcher(self.rawserver)
         self.singleport_listener = SingleportListener(self.rawserver,
-                                                     nattraverser,
+                                                      nattraverser,
                                                       self.log_root)
+        self.choker = Choker(self.config, self.rawserver.add_task)
         self.ratelimiter = RateLimiter(self.rawserver.add_task)
         self.ratelimiter.set_parameters(config['max_upload_rate'],
                                         config['upload_unit_size'])
@@ -132,7 +132,7 @@ class MultiTorrent(Feedback):
         self.filepool = FilePool(self.filepool_doneflag,
                                  self.rawserver.add_task,
                                  self.rawserver.external_add_task,
-                                 config['max_files_open'], 
+                                 config['max_files_open'],
                                  config['num_disk_threads'])
 
         if not is_single_torrent:
@@ -151,6 +151,7 @@ class MultiTorrent(Feedback):
             get_rates=self.get_total_rates )
 
         self.rawserver.add_task(0, self.butle)
+        #raise Exception("blah")
 
 
     def butle(self):
@@ -197,7 +198,7 @@ class MultiTorrent(Feedback):
         else:
             if not listen_fail_ok:
                 raise BTFailure, (_("Could not open a listening port: %s.") %
-                                  str(e) )
+                                  unicode(e.args[0]) )
             self.global_error(logging.CRITICAL,
                               (_("Could not open a listening port: %s. ") % e) +
                               (_("Check your port range settings (%s:%s-%s).") %
@@ -212,7 +213,8 @@ class MultiTorrent(Feedback):
         return df
 
     def _shutdown(self):
-        self.close_listening_socket()
+        self.choker.shutdown()
+        self.singleport_listener.close_sockets()
         for t in self.torrents.itervalues():
             try:
                 df = t.shutdown()
@@ -233,9 +235,6 @@ class MultiTorrent(Feedback):
         # hmm
         self._dump_torrents()
 
-
-    def close_listening_socket(self):
-        self.singleport_listener.close_sockets()
 
     def set_option(self, option, value, infohash=None, dump=True):
         if infohash is not None:
@@ -270,15 +269,15 @@ class MultiTorrent(Feedback):
     def global_error(self, severity, message, exc_info=None):
         self.logger.log(severity, message, exc_info=exc_info)
 
-    def create_torrent(self, metainfo, save_incomplete_in, save_in,
+    def create_torrent(self, metainfo, save_incomplete_as, save_as,
                        hidden=False, is_auto_update=False):
         if self.is_single_torrent and len(self.torrents) > 0:
             print "create_torrent: len(self.torrents)=", len(self.torrents)
             raise TooManyTorrents(_("MultiTorrent is set to download only "
                  "a single torrent, but tried to create more than one."))
 
-        #save_in, junk = encode_for_filesystem(save_in)
-        #save_incomplete_in, junk = encode_for_filesystem(save_incomplete_in)
+        #save_as, junk = encode_for_filesystem(save_as)
+        #save_incomplete_as, junk = encode_for_filesystem(save_incomplete_as)
         infohash = metainfo.infohash
         if self.torrent_known(infohash):
             if self.torrent_running(infohash):
@@ -296,11 +295,11 @@ class MultiTorrent(Feedback):
                                                 infohash,
                                                 lambda s : self.global_error(logging.ERROR, s))
 
-        t = Torrent(metainfo, save_incomplete_in, save_in, self.config,
-                    self.data_dir, self.rawserver, self.singleport_listener,
-                    self.ratelimiter, self.total_downmeasure,
-                    self.filepool, self.dht, self, self.log_root,
-                    hidden=hidden, is_auto_update=is_auto_update)
+        t = Torrent(metainfo, save_incomplete_as, save_as, self.config,
+                    self.data_dir, self.rawserver, self.choker,
+                    self.singleport_listener, self.ratelimiter,
+                    self.total_downmeasure, self.filepool, self.dht, self,
+                    self.log_root, hidden=hidden, is_auto_update=is_auto_update)
         retdf = Deferred()
 
         def torrent_started(*args):
@@ -329,7 +328,7 @@ class MultiTorrent(Feedback):
 
         # super carefully determine whether these are really incomplete files
         fs_save_incomplete_in, junk = encode_for_filesystem(
-            self.config['save_incomplete_in'].decode('utf-8')
+            self.config['save_incomplete_in']
             )
         inco = ((not t.completed) and
                 (t.working_path != t.destination_path) and
@@ -408,7 +407,7 @@ class MultiTorrent(Feedback):
         return t
 
     def get_torrents(self):
-        return copy(self.torrents.values())
+        return self.torrents.values()
 
     def get_running(self):
         return self.running.keys()
@@ -580,6 +579,27 @@ class MultiTorrent(Feedback):
             raise BTFailure( _("Invalid torrent config file"))
         if not torrent_config.get('working_path'):
             raise BTFailure( _("Invalid torrent config file"))
+
+        if get_filesystem_encoding() == None:
+            # These paths should both be unicode.  If they aren't, they are the
+            # broken product of some old version, and probably are in the
+            # encoding we used to use in config files.  Attempt to recover.
+            dp = torrent_config['destination_path']
+            if isinstance(dp, str):
+                try:
+                    dp = dp.decode(old_broken_config_subencoding)
+                    torrent_config['destination_path'] = dp
+                except:
+                    raise BTFailure( _("Invalid torrent config file"))
+
+            wp = torrent_config['working_path']
+            if isinstance(wp, str):
+                try:
+                    wp = wp.decode(old_broken_config_subencoding)
+                    torrent_config['working_path'] = wp
+                except:
+                    raise BTFailure( _("Invalid torrent config file"))
+
         return torrent_config
 
     def _dump_global_config(self):
@@ -607,7 +627,7 @@ class MultiTorrent(Feedback):
             f.close()
             shutil.move(path+'.new', path)
         except Exception, e:
-            self.logger.error(_("Could not save UI state: ") + str(e))
+            self.logger.error(_("Could not save UI state: ") + unicode(e.args[0]))
             if f is not None:
                 f.close()
 
@@ -658,16 +678,16 @@ class MultiTorrent(Feedback):
                 except:
                     pass
                 self.logger.error((_("Error reading metainfo file \"%s\".") %
-                                  hashtext) + " (" + str(e)+ "), " +
+                                  hashtext) + " (" + unicode(e.args[0])+ "), " +
                                   _("cannot restore state completely"))
                 return None
             except Exception, e:
                 self.logger.error((_("Corrupt data in metainfo \"%s\", cannot restore torrent.") % hashtext) +
-                                  '('+str(e)+')')
+                                  '('+unicode(e.args[0])+')')
                 return None
 
             t = Torrent(metainfo, "",  "", self.config, self.data_dir,
-                        self.rawserver,
+                        self.rawserver, self.choker,
                         self.singleport_listener, self.ratelimiter,
                         self.total_downmeasure, self.filepool, self.dht, self,
                         self.log_root)
@@ -731,7 +751,7 @@ class MultiTorrent(Feedback):
         except Exception, e:
             if f is not None:
                 f.close()
-            raise BTFailure(str(e))
+            raise BTFailure(unicode(e.args[0]))
         i = iter(lines)
         try:
             txt = 'BitTorrent UI state file, version '

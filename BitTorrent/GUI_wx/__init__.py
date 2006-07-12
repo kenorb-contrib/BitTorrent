@@ -766,11 +766,15 @@ class BTFrameWithSizer(BTFrame):
 
     def __init__(self, *a, **k):
         BTFrame.__init__(self, *a, **k)
-        self.SetIcon(wx.the_app.icon)
-        self.panel = self.panel_class(self)
-        self.sizer = self.sizer_class(*self.sizer_args)
-        self.Add(self.panel, flag=wx.GROW, proportion=1)
-        self.SetSizer(self.sizer)
+        try:
+            self.SetIcon(wx.the_app.icon)
+            self.panel = self.panel_class(self)
+            self.sizer = self.sizer_class(*self.sizer_args)
+            self.Add(self.panel, flag=wx.GROW, proportion=1)
+            self.SetSizer(self.sizer)
+        except:
+            self.Destroy()
+            raise
 
     def Add(self, widget, *a, **k):
         self.sizer.Add(widget, *a, **k)

@@ -163,7 +163,9 @@ class ConnectionWrapper(object):
         return s
 
     def pause_reading(self):
-        if not interfaces.IProducer.providedBy(self.transport):
+        # interfaces are the stupedist crap ever
+        if (hasattr(interfaces.IProducer, "providedBy") and
+            not interfaces.IProducer.providedBy(self.transport)):
             print "No producer", self.ip, self.port, self.transport
             return
         # not explicitly needed, but iocpreactor has a bug where the author is a moron
@@ -173,7 +175,8 @@ class ConnectionWrapper(object):
         self.paused = True
 
     def resume_reading(self):
-        if not interfaces.IProducer.providedBy(self.transport):
+        if (hasattr(interfaces.IProducer, "providedBy") and
+            not interfaces.IProducer.providedBy(self.transport)):
             print "No producer", self.ip, self.port, self.transport
             return
         # not explicitly needed, but iocpreactor has a bug where the author is a moron
@@ -222,7 +225,7 @@ class ConnectionWrapper(object):
         try:
             ret = self.transport.write(packet, addr)
         except Exception, e:
-            rawserver_logger.warning("UDP sendto failed: %s" % str(e))
+            rawserver_logger.warning("UDP sendto failed: %s" % unicode(e.args[0]))
 
         return ret
 
@@ -520,9 +523,11 @@ class SocketRequestProxy(object):
 
 class RawServerMixin(object):
 
-    def __init__(self, config, noisy=True, tos=0):
+    def __init__(self, config=None, noisy=True, tos=0):
         self.noisy = noisy
         self.config = config
+        if not self.config:
+            self.config = {}
         self.tos = tos
         self.sigint_flag = None
 
@@ -611,7 +616,7 @@ class RawServer(RawServerMixin):
          """
 
 
-    def __init__(self, config, noisy=True, tos=0):
+    def __init__(self, config=None, noisy=True, tos=0):
         """config is a dict that contains option-value pairs.
 
            'tos' is passed to setsockopt to set the IP Type of Service (i.e.,
@@ -647,7 +652,7 @@ class RawServer(RawServerMixin):
             reactor.callFromThread = _profile_call2
         ##############################################################
 
-        connectionRateLimitReactor(reactor, self.config['max_incomplete'])
+        connectionRateLimitReactor(reactor, self.config.get('max_incomplete', 10))
         # bleh
         self.add_pending_connection = reactor.add_pending_connection
         self.remove_pending_connection = reactor.remove_pending_connection
@@ -854,12 +859,13 @@ class RawServer(RawServerMixin):
         self.ident = thread.get_ident()
         self.associated = True
 
-    def listen_forever(self, doneflag):
+    def listen_forever(self, doneflag=None):
         """Main event processing loop for RawServer.
            RawServer listens until the doneFlag is set by some other
            thread.  The doneFlag tells all threads to clean-up and then
            exit."""
-
+        if not doneflag:
+            doneflag = DeferredEvent()
         assert isinstance(doneflag, DeferredEvent)
         self.doneflag = doneflag
         if not self.associated:

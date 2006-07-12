@@ -17,9 +17,8 @@
 
 from BitTorrent.Lists import QList
 from BitTorrent.obsoletepythonsupport import set
-from UserDict import IterableUserDict
 
-class ReallyIterableUserDict(IterableUserDict):
+class ReallyIterableDict(dict):
     
     # third level takes advantage of second level definitions
     def iteritems(self):
@@ -37,12 +36,15 @@ class ReallyIterableUserDict(IterableUserDict):
     def items(self):
         return list(self.iteritems())
     
+class DictWithLists(ReallyIterableDict):
 
-class DictWithLists(ReallyIterableUserDict):
-
-    def __init__(self, dict = None, parent = ReallyIterableUserDict):
+    def __init__(self, d = None, parent = ReallyIterableDict):
         self.parent = parent
-        self.parent.__init__(self, dict)
+        # python dict() can't take None
+        if d:
+            self.parent.__init__(self, d)
+        else:
+            self.parent.__init__(self)            
 
     def popitem(self):
         try:
@@ -55,7 +57,7 @@ class DictWithLists(ReallyIterableUserDict):
         if key not in self and len(args) > 0:
             return args[0]
 
-        l = self.parent.__getitem__(self, key)
+        l = self[key]
         data = l.popleft()
 
         # so we don't leak blank lists
@@ -65,31 +67,28 @@ class DictWithLists(ReallyIterableUserDict):
         return data
     pop_from_row = pop
 
-    def __delitem__(self, key):
-        self.pop(key)
-
     def get_from_row(self, key):
-        return self.parent.__getitem__(self, key)[0]
+        return self[key][0]
             
     def getrow(self, key):
-        return self.parent.__getitem__(self, key)
+        return self[key]
 
     def poprow(self, key):
-        l = self.parent.__getitem__(self, key)
-        self.parent.__delitem__(self, key)
-        return l
+        return self.parent.pop(self, key)
 
     def setrow(self, key, l):
         if len(l) == 0:
             return
         self.parent.__setitem__(self, key, l)
         
-    def __setitem__(self, key, value):
+    def push(self, key, value):
+        # a little footwork because the QList constructor is slow
         if key not in self:
-            self.parent.__setitem__(self, key, QList())
-        self.parent.__getitem__(self, key).append(value)
-    push = __setitem__
-    push_to_row = __setitem__
+            v = QList([value])
+            self.parent.__setitem__(self, key, v)
+        else:
+            self[key].append(value)
+    push_to_row = push
 
     def keys(self):
         return self.parent.keys(self)
@@ -100,13 +99,14 @@ class DictWithLists(ReallyIterableUserDict):
             t += len(self.getrow(k))
         return t
 
+
 class DictWithSets(DictWithLists):
 
     def pop(self, key, *args):
         if key not in self and len(args) > 0:
             return args[0]
 
-        l = self.parent.__getitem__(self, key)
+        l = self[key]
         data = l.pop()
 
         # so we don't leak blank sets
@@ -116,21 +116,16 @@ class DictWithSets(DictWithLists):
         return data
     pop_from_row = pop
                 
-    def __getitem__(self, key):
-        s = self.parent.__getitem__(self, key)
-        # ow
-        i = s.pop()
-        s.add(i)
-        return i
-
     def push(self, key, value):
         if key not in self:
-            self.parent.__setitem__(self, key, set())
-        self.parent.__getitem__(self, key).add(value)
+            v = set([value])
+            self.parent.__setitem__(self, key, v)
+        else:
+            self[key].add(value)
     push_to_row = push
 
     def remove_fom_row(self, key, value):
-        l = self.parent.__getitem__(self, key)
+        l = self[key]
         l.remove(value)
 
         # so we don't leak blank sets
@@ -139,22 +134,26 @@ class DictWithSets(DictWithLists):
         
 
 # from http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/107747
-class OrderedDict(ReallyIterableUserDict):
-    def __init__(self, dict = None):
+class OrderedDict(ReallyIterableDict):
+    def __init__(self, d = None):
         self._keys = []
-        ReallyIterableUserDict.__init__(self, dict)
+        # python dict() can't take None
+        if d:
+            ReallyIterableDict.__init__(self, dict)
+        else:
+            ReallyIterableDict.__init__(self)
 
     def __delitem__(self, key):
-        ReallyIterableUserDict.__delitem__(self, key)
+        ReallyIterableDict.__delitem__(self, key)
         self._keys.remove(key)
 
     def __setitem__(self, key, item):
-        ReallyIterableUserDict.__setitem__(self, key, item)
+        ReallyIterableDict.__setitem__(self, key, item)
         if key not in self._keys:
             self._keys.append(key)
 
     def clear(self):
-        ReallyIterableUserDict.clear(self)
+        ReallyIterableDict.clear(self)
         self._keys = []
 
     def copy(self):
@@ -178,14 +177,14 @@ class OrderedDict(ReallyIterableUserDict):
             raise KeyError('dictionary is empty')
 
         val = self[key]
-        del self[key]
+        self.parent.__delitem__(self, key)
 
         return (key, val)
 
     def setdefault(self, key, failobj = None):
         if key not in self._keys:
             self._keys.append(key)
-        return ReallyIterableUserDict.setdefault(self, key, failobj)
+        return ReallyIterableDict.setdefault(self, key, failobj)
 
     def update(self, dict):
         for (key,val) in dict.items():
@@ -267,3 +266,10 @@ if __name__=='__main__':
     for k in odl.iterkeys():
         r.append(k)
     assert r == ['2', '1', '3']
+
+    d = DictWithLists()
+    d.push(4, 3)
+    d.push(4, 4)
+    d.push(4, 2)
+    d.push(4, 1)    
+    assert d.poprow(4) == QList([3,4,2,1])
