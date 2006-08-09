@@ -1305,8 +1305,8 @@ class TorrentDetailsPanel(wx.Panel):
 
 
     def GetBestFittingSize(self):
-        ssbs = self.swarm_static_box_sizer.GetBetFittingSize()
-        tsbs = self.torrent_static_box_sizer.GetBestFittingSize()
+        ssbs = self.swarm_static_box.GetBestFittingSize()
+        tsbs = self.torrent_static_box.GetBestFittingSize()
         return wx.Size(max(ssbs.x, tsbs.x) + SPACING*4,
                        ssbs.y + tsbs.y + SPACING*2)
 
@@ -1486,6 +1486,7 @@ class TorrentPanel(BTPanel):
         self.details_shown = False
         self.parent = parent
         self.completed = False
+        metainfo = self.torrent.metainfo
 
         self.sizer.AddGrowableRow(0)
         self.sizer.AddGrowableRow(2)
@@ -1531,14 +1532,8 @@ class TorrentPanel(BTPanel):
         self.notebook.Bind(wx.EVT_NOTEBOOK_PAGE_CHANGED, self.OnPageChanged)
         self.tab_height = self.notebook.GetBestFittingSize().y
 
-        metainfo = self.torrent.metainfo
-        if metainfo.comment:
-            self.comment_panel = BTPanel(self.notebook)
-            self.notebook.AddPage(self.comment_panel, _("Comments"))
-            self.comment = wx.TextCtrl(self.comment_panel, id=wx.ID_ANY,
-                                       value=metainfo.comment,
-                                       style=wx.TE_MULTILINE|wx.TE_READONLY)
-            self.comment_panel.Add(self.comment, flag=wx.GROW, proportion=1)
+        self.torrent_panel = TorrentDetailsPanel(self.notebook, self.torrent)
+        self.notebook.AddPage(self.torrent_panel, _("Torrent"))
 
         if metainfo.is_batch:
             self.file_tab_index = self.notebook.GetPageCount()
@@ -1558,11 +1553,16 @@ class TorrentPanel(BTPanel):
         self.speed_tab_index = self.notebook.GetPageCount()
         self.notebook.AddPage(self.bandwidth_panel, _("Speed"))
 
+        if metainfo.comment:
+            self.comment_panel = BTPanel(self.notebook)
+            self.notebook.AddPage(self.comment_panel, _("Comments"))
+            self.comment = wx.TextCtrl(self.comment_panel, id=wx.ID_ANY,
+                                       value=metainfo.comment,
+                                       style=wx.TE_MULTILINE|wx.TE_READONLY)
+            self.comment_panel.Add(self.comment, flag=wx.GROW, proportion=1)
+
         self.log_panel = LogPanel(self.notebook, self.torrent)
         self.notebook.AddPage(self.log_panel, _("Log"))
-
-        self.torrent_panel = TorrentDetailsPanel(self.notebook, self.torrent)
-        self.notebook.AddPage(self.torrent_panel, _("Torrent"))
 
         self.notebook.SetPageSize(wx.Size(300, 200))
         self.notebook.Hide()
@@ -1892,7 +1892,7 @@ class LogWindow(wx.LogWindow, MagicShow):
         e = self.textctrl.GetLastPosition()
         if e > MAX_TEXTCTRL_LENGTH:
             self.textctrl.Remove(0, e - MAX_TEXTCTRL_LENGTH)
-        
+
 
 
 

@@ -67,7 +67,14 @@ class RateSlider(wx.Slider):
 
     def bytes_to_slider(self, value):
         value /= self.backend_conversion
-        r = math.log(value/self.multiplier, self.base)
+        try:
+            r = math.log(value/self.multiplier, self.base)
+        except OverflowError, e:
+            wx.the_app.logger.error(u'%s (%s, %s, %s)' % (unicode(e.args[0]),
+                                                          value,
+                                                          self.multiplier,
+                                                          self.base),
+                                    exc_info=sys.exc_info())
         return r * self.slider_scale
 
     def slider_to_bytes(self, value):
@@ -103,7 +110,7 @@ class RateSliderBox(wx.StaticBox):
 
         self.setfunc = lambda v : self.settings_window.setfunc(key, v)
         self.slider = RateSlider(parent, self.settings_window.config[key], speed_classes)
-        self.slider.Bind(wx.EVT_SLIDER, self.OnSlider)  # bind event to handler.
+        self.slider.Bind(wx.EVT_SLIDER, self.OnSlider)
         self.LoadValue()
 
         self.sizer.Add(self.text, proportion=1, flag=wx.GROW|wx.TOP|wx.LEFT|wx.RIGHT, border=SPACING)
@@ -111,6 +118,10 @@ class RateSliderBox(wx.StaticBox):
 
     def LoadValue(self):
         bytes = self.settings_window.config[self.key]
+        if bytes <= 0:
+            wx.the_app.logger.warning(_("Impractically low rate (%s), fixing") % bytes)
+            self.settings_window.config[self.key] = 4 * 1024
+            bytes = self.settings_window.config[self.key]
         self.slider.SetValue(self.slider.bytes_to_slider(bytes))
         self.text.SetLabel(self.slider.slider_to_label(self.slider.GetValue()))
 
@@ -397,7 +408,7 @@ class AppearanceSettingsPanel(SettingsPanel):
         if text_wrappable: self.fancy_text.Wrap(250)
 
         # generate random sample data
-        r = set(range(200))
+        r = set(xrange(200)) 
         self.sample_data = {}
 
         for key, count in (('h',80), ('t',20)) + tuple([(i,5) for i in range(19)]):

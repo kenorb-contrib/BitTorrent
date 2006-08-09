@@ -28,6 +28,10 @@ from BitTorrent.Storage_base import open_sparse_file as open_sparse_file_base
 
 # not needed, but it raises errors for platforms that don't support iocp
 from twisted.internet.iocpreactor import _iocp
+from twisted.internet.iocpreactor.proactor import Proactor
+from twisted.internet import reactor
+assert isinstance(reactor, Proactor), "You imported twisted.internet.reactor before RawServer_twisted!"
+
 
 class OverlappedOp:
     def __init__(self):
@@ -371,25 +375,31 @@ class Storage(object):
             r.append((filename, max(pos, begin) - begin, min(end, stop) - begin))
         return r
 
-    def _read(self, filename, pos, amount):
+    def _file_op(self, filename, pos, param, write):
         begin, end = self.get_byte_range_for_filename(filename)
         length = end - begin
         final = Deferred()
-        hdf = self.filepool.acquire_handle(filename, for_write=False, length=length)
+        hdf = self.filepool.acquire_handle(filename, for_write=write, length=length)
+        def handle_error(f=None):
+            final.callback(0)
+        # error acquiring handle
         if hdf is None:
-            # error acquiring handle
-            final.callback('')
+            handle_error()
             return final
         def op(h):
             h.seek(pos)
-            odf = h.read(amount)
+            if write:
+                odf = h.write(param)
+            else:
+                odf = h.read(param)
             def complete(r):
                 self.filepool.release_handle(filename, h)
                 final.callback(r)
             odf.addCallback(complete)
+            odf.addErrback(final.errback)
         hdf.addCallback(op)
+        hdf.addErrback(handle_error)
         return final
-    
 
     def _batch_read(self, pos, amount):
         dfs = []
@@ -397,7 +407,7 @@ class Storage(object):
 
         # queue all the reads
         for filename, pos, end in self._intervals(pos, amount):
-            df = self._read(filename, pos, end - pos)
+            df = self._file_op(filename, pos, end - pos, write=False)
             dfs.append(df)
 
         # yield on all the reads in order - they complete in any order
@@ -418,25 +428,6 @@ class Storage(object):
                               self._batch_read, pos, amount)
         return df
 
-    def _write(self, filename, pos, s):
-        begin, end = self.get_byte_range_for_filename(filename)
-        length = end - begin
-        final = Deferred()
-        hdf = self.filepool.acquire_handle(filename, for_write=True, length=length)
-        if hdf is None:
-            # error acquiring handle
-            final.callback(0)
-            return final
-        def op(h):
-            h.seek(pos)
-            odf = h.write(s)
-            def complete(r):
-                self.filepool.release_handle(filename, h)
-                final.callback(r)
-            odf.addCallback(complete)
-        hdf.addCallback(op)
-        return final
-
     def _batch_write(self, pos, s):
         dfs = []
 
@@ -449,7 +440,7 @@ class Storage(object):
             assert length > 0, '%s %s' % (pos, amount)
             d = buffer(s, total, length)
             total += length
-            df = self._write(filename, begin, d)
+            df = self._file_op(filename, begin, d, write=True)
             dfs.append(df)
         assert total == amount, '%s and %s' % (total, amount)
 

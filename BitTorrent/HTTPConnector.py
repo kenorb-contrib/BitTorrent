@@ -11,6 +11,7 @@ from BitTorrent.obsoletepythonsupport import *
 from BitTorrent.DictWithLists import OrderedDict
 from BitTorrent.Connector import Connection
 from bisect import bisect_right
+from urlparse import urlparse
 
 # package management sucks!
 # it encourages code duplication because it can't keep up
@@ -122,22 +123,25 @@ class URLage(object):
             r.append((filename, max(pos, begin) - begin, min(end, stop) - begin))
         return r
 
-    def _request(self, host, filename, pos, amount):
+    def _request(self, host, filename, pos, amount, prefix, append):
         b = pos
         e = b + amount - 1
+        f = prefix
+        if append:
+            f += filename
         s = '\r\n'.join([
-            "GET /%s HTTP/1.1" % (urllib.quote(filename)),
+            "GET /%s HTTP/1.1" % (urllib.quote(f)),
             "Host: %s" % host,
             "Connection: Keep-Alive",
             "Range: bytes=%s-%s" % (b, e),
             "", ""])
         return s    
 
-    def build_requests(self, brs, host, pos, amount):
+    def build_requests(self, brs, host, pos, amount, prefix, append):
         r = []
         br = BatchRequest(brs, pos)
         for filename, pos, end in self._intervals(pos, amount):
-            s = self._request(host, filename, pos, end - pos)
+            s = self._request(host, filename, pos, end - pos, prefix, append)
             br.add_request(filename, pos, end - pos)
             r.append((filename, s))
         return r
@@ -150,7 +154,7 @@ class HTTPConnection(Connection):
 
     MAX_LINE_LENGTH = 16384
 
-    def __init__(self, parent, piece_size, urlage, *a, **kw):
+    def __init__(self, parent, piece_size, urlage, connection, id, outgoing):
         self.piece_size = piece_size
         self._header_lines = []
         self.manual_close = False
@@ -158,7 +162,13 @@ class HTTPConnection(Connection):
         self.batch_requests = BatchRequests()
         # pipeline tracker
         self.request_paths = []
-        Connection.__init__(self, parent, *a, **kw)
+        scheme, host, path, params, query, fragment = urlparse(id)
+        if path and path[0] == '/':
+            path = path[1:]
+        self.host = host
+        self.prefix = path
+        self.append = not(len(self.urlage.ranges) == 1 and path and path[-1] != '/')
+        Connection.__init__(self, parent, connection, id, outgoing)
 
     def close(self):
         self.manual_close = True
@@ -171,7 +181,7 @@ class HTTPConnection(Connection):
         if noisy:
             log( "SEND %s %d %d %d" % ('GET', index, begin, length) )
         b = (index * self.piece_size) + begin
-        r = self.urlage.build_requests(self.batch_requests, self.id, b, length)
+        r = self.urlage.build_requests(self.batch_requests, self.host, b, length, self.prefix, self.append)
         for filename, s in r:
             self.request_paths.append(filename)
             if self._partial_message is not None:
@@ -212,7 +222,7 @@ class HTTPConnection(Connection):
             self._header_lines = []
 
             yield None
-            if not self._message.startswith('http/1.1 206'):
+            if not self._message.upper().startswith('HTTP/1.1 206'):
                 protocol_violation('Bad status message: %s' % self._message,
                                    self.connection)
                 return
@@ -248,8 +258,7 @@ class HTTPConnection(Connection):
             if completing:
                 self.complete = True
                 completing = False
-                print 'Completed', self
-                self.parent.connection_completed(self)
+                self.parent.connection_handshake_completed(self)
                 # prefer full pieces to reduce http overhead
                 self.download.prefer_full = True
                 self.download._got_have_all()

@@ -150,7 +150,7 @@ class Duration(float):
         if self.empty or self > 365 * 24 * 60 * 60:
             return ''
         elif self >= 172800:
-            return _("%d days") % (self//86400) # 2 days or longer
+            return _("%d days") % round(self/86400) # 2 days or longer
         elif self >= 86400:
             return _("1 day %d hours") % ((self-86400)//3600) # 1-2 days
         elif self >= 3600:

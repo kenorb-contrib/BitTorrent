@@ -19,6 +19,7 @@ import os
 import sys
 import gettext
 import locale
+import traceback
 
 from BitTorrent.translation import _
 from ConfigParser import RawConfigParser
@@ -444,12 +445,29 @@ def parse_configuration_and_args(defaults, uiname, arglist=[], minargs=None,
 
     if uiname == "test-client" or (uiname.startswith("bittorrent")
                                    and uiname != 'bittorrent-tracker'):
-        if not config.has_key('ask_for_save') or not config['ask_for_save']:
-            for k in ('save_in', 'save_incomplete_in'):
-                if config[k]:
-                    try:
-                        os.makedirs(config[k])
-                    except OSError, e:
-                        if e.errno != 17: # path already exists
-                            raise
+        if not config.get('ask_for_save'):
+            # we check for existance, so things like "D:\" don't trip us up.
+            if (config['save_in'] and
+                not os.path.exists(config['save_in'])):
+                try:
+                    os.makedirs(config['save_in'])
+                except OSError, e:
+                    if (e.errno == 2 or # no such file or directory
+                        e.errno == 13): # permission denied
+                        traceback.print_exc()
+                        print >> sys.stderr, "save_in could not be created. Falling back to prompting."
+                        config['ask_for_save'] = True
+                    elif e.errno != 17: # path already exists
+                        raise
+            if (config['save_incomplete_in'] and
+                not os.path.exists(config['save_incomplete_in'])):
+                try:
+                    os.makedirs(config['save_incomplete_in'])
+                except OSError, e:
+                    if e.errno != 17: # path already exists
+                        traceback.print_exc()
+                        print >> sys.stderr, "save_incomplete_in could not be created. Falling back to default incomplete path."
+                        config['save_incomplete_in'] = incomplete
+                        raise
+                
     return config, args

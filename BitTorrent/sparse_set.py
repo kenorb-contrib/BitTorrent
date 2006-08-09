@@ -231,7 +231,7 @@ class SparseSet(object):
         return n
 
     def __repr__(self):
-        return repr(zip(self._begins, self._ends))
+        return 'SparseSet(%s)' % str(zip(self._begins, self._ends))
 
     def __str__(self):
         return str(zip(self._begins, self._ends))

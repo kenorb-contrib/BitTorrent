@@ -98,7 +98,8 @@ class AutoUpdateButler(TorrentButler):
             self.version_site += 'win32/'
 
         self.installer_dir = self._calc_installer_dir()
-
+        # kick it off
+        self.rawserver.add_task(0, self.check_version)
 
     def get_auto_update_status(self):
         r = None, None

@@ -7,9 +7,8 @@ import socket
 import itertools
 from BitTorrent.obsoletepythonsupport import set
 from BitTorrent.RTTMonitor import RTTMonitor
-from BitTorrent.defer import ThreadedDeferred
 from BitTorrent.yielddefer import _wrap_task
-from BitTorrent.HostIP import get_host_ips
+from BitTorrent.HostIP import get_deferred_host_ips#get_host_ips
 from BitTorrent.platform import bttime
 from BitTorrent.Lists import SizedList
 
@@ -22,7 +21,7 @@ class NodeFeeder(object):
         self.external_add_task(3, self._start)
 
     def _start(self):
-        df = ThreadedDeferred(_wrap_task(self.external_add_task), get_host_ips, daemon=True)
+        df = get_deferred_host_ips()
         df.addCallback(self._collect_nodes)
 
     def _collect_nodes(self, local_ips):

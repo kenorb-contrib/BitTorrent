@@ -14,7 +14,9 @@ import sys
 import os
 import signal
 import re
+import cPickle
 import logging
+import datetime
 from urlparse import urlparse
 from traceback import print_exc
 from time import time, gmtime, strftime, localtime
@@ -28,11 +30,12 @@ from BitTorrent.translation import _
 from BitTorrent.obsoletepythonsupport import *
 
 from BitTorrent import platform, BTFailure
-from BitTorrent.defer import DeferredEvent
+from BitTorrent.platform import decode_from_filesystem, efs2
+from BitTorrent.defer import DeferredEvent, ThreadedDeferred
+from BitTorrent.yielddefer import wrap_task
 from BitTorrent.configfile import parse_configuration_and_args
-#from BitTorrent.parseargs import parseargs, printHelp
 from BitTorrent.RawServer_twisted import RawServer
-from BitTorrent.HTTPHandler import HTTPHandler, months, weekdays
+from BitTorrent.HTTPHandler import HTTPHandler
 from BitTorrent.parsedir import parsedir
 from BitTorrent.NatCheck import NatCheck
 from BitTorrent.bencode import bencode, bdecode, Bencached
@@ -40,8 +43,13 @@ from BitTorrent.zurllib import quote, unquote
 from BitTorrent import version
 from BitTorrent.prefs import Preferences
 from BitTorrent.defaultargs import get_defaults
-import socket
+from BitTorrent.UI import Size
 
+import socket
+import threading
+import traceback
+
+NOISY = False
 
 # code duplication because ow.
 MAX_INCOMPLETE = 100
@@ -54,12 +62,12 @@ if os.name == 'nt':
 def statefiletemplate(x):
     if type(x) != DictType:
         raise ValueError
-    for cname, cinfo in x.items():
+    for cname, cinfo in x.iteritems():
         if cname == 'peers':
-            for y in cinfo.values():      # The 'peers' key is a dictionary of SHA hashes (torrent ids)
+            for y in cinfo.itervalues():      # The 'peers' key is a dictionary of SHA hashes (torrent ids)
                  if type(y) != DictType:   # ... for the active torrents, and each is a dictionary
                      raise ValueError
-                 for peerid, info in y.items(): # ... of client ids interested in that torrent
+                 for peerid, info in y.iteritems(): # ... of client ids interested in that torrent
                      if (len(peerid) != 20):
                          raise ValueError
                      if type(info) != DictType:  # ... each of which is also a dictionary
@@ -75,22 +83,22 @@ def statefiletemplate(x):
         elif cname == 'completed':
             if (type(cinfo) != DictType): # The 'completed' key is a dictionary of SHA hashes (torrent ids)
                 raise ValueError          # ... for keeping track of the total completions per torrent
-            for y in cinfo.values():      # ... each torrent has an integer value
+            for y in cinfo.itervalues():      # ... each torrent has an integer value
                 if type(y) not in (IntType,LongType):
                     raise ValueError      # ... for the number of reported completions for that torrent
         elif cname == 'allowed':
             if (type(cinfo) != DictType): # a list of info_hashes and included data
                 raise ValueError
             if x.has_key('allowed_dir_files'):
-                adlist = [z[1] for z in x['allowed_dir_files'].values()]
-                for y in cinfo.keys():        # and each should have a corresponding key here
+                adlist = [z[1] for z in x['allowed_dir_files'].itervalues()]
+                for y in cinfo.iterkeys():        # and each should have a corresponding key here
                     if not y in adlist:
                         raise ValueError
         elif cname == 'allowed_dir_files':
             if (type(cinfo) != DictType): # a list of files, their attributes and info hashes
                 raise ValueError
             dirkeys = {}
-            for y in cinfo.values():      # each entry should have a corresponding info_hash
+            for y in cinfo.itervalues():      # each entry should have a corresponding info_hash
                 if not y[1]:
                     continue
                 if not x['allowed'].has_key(y[1]):
@@ -102,10 +110,9 @@ def statefiletemplate(x):
 
 alas = _("your file may exist elsewhere in the universe\nbut alas, not here\n")
 
-def isotime(secs = None):
-    if secs == None:
-        secs = time()
-    return strftime('%Y-%m-%d %H:%M UTC', gmtime(secs))
+def isotime():
+    #return strftime('%Y-%m-%d %H:%M UTC', gmtime(secs))
+    return datetime.datetime.utcnow().isoformat()
 
 http_via_filter = re.compile(' for ([0-9.]+)\Z')
 
@@ -168,6 +175,7 @@ def is_local_ip(ip):
     except ValueError:
         return 0
 
+default_headers = {'Content-Type': 'text/plain', 'Pragma': 'no-cache'}
 
 class Tracker(object):
 
@@ -175,7 +183,7 @@ class Tracker(object):
         self.config = config
         self.response_size = config['response_size']
         self.max_give = config['max_give']
-        self.dfile = config['dfile']
+        self.dfile = efs2(config['dfile'])
         self.natcheck = config['nat_check']
         favicon = config['favicon']
         self.favicon = None
@@ -185,13 +193,16 @@ class Tracker(object):
                 self.favicon = h.read()
                 h.close()
             except:
-                errorfunc(WARNING,_("specified favicon file -- %s -- does not exist.") % favicon)
+                errorfunc(WARNING, _("specified favicon file -- %s -- does not "
+                                     "exist.") % favicon)
         self.rawserver = rawserver
         self.cached = {}    # format: infohash: [[time1, l1, s1], [time2, l2, s2], [time3, l3, s3]]
         self.cached_t = {}  # format: infohash: [time, cache]
         self.times = {}
         self.state = {}
         self.seedcount = {}
+        self.save_pending = False
+        self.parse_pending = False
 
         self.only_local_override_ip = config['only_local_override_ip']
         if self.only_local_override_ip == 2:
@@ -202,7 +213,10 @@ class Tracker(object):
                 h = open(self.dfile, 'rb')
                 ds = h.read()
                 h.close()
-                tempstate = bdecode(ds)
+                try: 
+                    tempstate = cPickle.loads(ds)
+                except:
+                    tempstate = bdecode(ds)  # backwards-compatibility.
                 if not tempstate.has_key('peers'):
                     tempstate = {'peers': tempstate}
                 statefiletemplate(tempstate)
@@ -210,18 +224,19 @@ class Tracker(object):
             except:
                 errorfunc(WARNING, _("statefile %s corrupt; resetting") % \
                       self.dfile)
-        self.downloads    = self.state.setdefault('peers', {})
-        self.completed    = self.state.setdefault('completed', {})
+
+        self.downloads = self.state.setdefault('peers', {})
+        self.completed = self.state.setdefault('completed', {})
 
         self.becache = {}   # format: infohash: [[l1, s1], [l2, s2], [l3, s3]]
-        for infohash, ds in self.downloads.items():
+        for infohash, ds in self.downloads.iteritems():
             self.seedcount[infohash] = 0
-            for x,y in ds.items():
-                if not y.get('nat',-1):
+            for x, y in ds.iteritems():
+                if not y.get('nat', -1):
                     ip = y.get('given_ip')
                     if not (ip and self.allow_local_override(y['ip'], ip)):
                         ip = y['ip']
-                    self.natcheckOK(infohash,x,ip,y['port'],y['left'])
+                    self.natcheckOK(infohash, x, ip, y['port'], y['left'])
                 if not y['left']:
                     self.seedcount[infohash] += 1
 
@@ -242,7 +257,7 @@ class Tracker(object):
         if (config['logfile'] != '') and (config['logfile'] != '-'):
             try:
                 self.logfile = config['logfile']
-                self.log = open(self.logfile,'a')
+                self.log = open(self.logfile, 'a')
                 sys.stdout = self.log
                 print _("# Log Started: "), isotime()
             except:
@@ -252,7 +267,7 @@ class Tracker(object):
             def huphandler(signum, frame, self = self):
                 try:
                     self.log.close ()
-                    self.log = open(self.logfile,'a')
+                    self.log = open(self.logfile, 'a')
                     sys.stdout = self.log
                     print _("# Log reopened: "), isotime()
                 except:
@@ -265,8 +280,8 @@ class Tracker(object):
         if config['allowed_dir'] != '':
             self.allowed_dir = config['allowed_dir']
             self.parse_dir_interval = config['parse_dir_interval']
-            self.allowed = self.state.setdefault('allowed',{})
-            self.allowed_dir_files = self.state.setdefault('allowed_dir_files',{})
+            self.allowed = self.state.setdefault('allowed', {})
+            self.allowed_dir_files = self.state.setdefault('allowed_dir_files', {})
             self.allowed_dir_blocked = {}
             self.parse_allowed()
         else:
@@ -290,7 +305,7 @@ class Tracker(object):
     def get_infopage(self):
         try:
             if not self.config['show_infopage']:
-                return (404, 'Not Found', {'Content-Type': 'text/plain', 'Pragma': 'no-cache'}, alas)
+                return (404, 'Not Found', default_headers, alas)
             red = self.config['infopage_redirect']
             if red != '':
                 return (302, 'Found', {'Content-Type': 'text/html', 'Location': red},
@@ -356,7 +371,7 @@ class Tracker(object):
                         s.write('<tr><td><code>%s</code></td><td align="right"><code>%i</code></td><td align="right"><code>%i</code></td><td align="right"><code>%i</code></td></tr>\n' \
                             % (b2a_hex(infohash), c, d, n))
                 ttn = 0
-                for i in self.completed.values():
+                for i in self.completed.itervalues():
                     ttn = ttn + i
                 if self.allowed is not None and self.show_names:
                     s.write('<tr><td align="right" colspan="2">%i files</td><td align="right">%s</td><td align="right">%i</td><td align="right">%i</td><td align="right">%i/%i</td><td align="right">%s</td></tr>\n'
@@ -375,10 +390,14 @@ class Tracker(object):
 
             s.write('</body>\n' \
                 '</html>\n')
-            return (200, 'OK', {'Content-Type': 'text/html; charset=iso-8859-1'}, s.getvalue())
+            return (200, 'OK',
+                    {'Content-Type': 'text/html; charset=iso-8859-1'},
+                    s.getvalue())
         except:
             print_exc()
-            return (500, 'Internal Server Error', {'Content-Type': 'text/html; charset=iso-8859-1'}, 'Server Error')
+            return (500, 'Internal Server Error',
+                    {'Content-Type': 'text/html; charset=iso-8859-1'},
+                    'Server Error')
 
     def scrapedata(self, infohash, return_name = True):
         l = self.downloads[infohash]
@@ -392,11 +411,12 @@ class Tracker(object):
 
     def get_scrape(self, paramslist):
         fs = {}
+        
         if paramslist.has_key('info_hash'):
             if self.config['scrape_allowed'] not in ['specific', 'full']:
-                return (400, 'Not Authorized', {'Content-Type': 'text/plain', 'Pragma': 'no-cache'},
-                    bencode({'failure reason':
-                    _("specific scrape function is not available with this tracker.")}))
+                return (400, 'Not Authorized', default_headers,
+                    bencode({'failure_reason':
+                    "specific scrape function is not available with this tracker."}))
             for infohash in paramslist['info_hash']:
                 if self.allowed is not None and infohash not in self.allowed:
                     continue
@@ -404,9 +424,11 @@ class Tracker(object):
                     fs[infohash] = self.scrapedata(infohash)
         else:
             if self.config['scrape_allowed'] != 'full':
-                return (400, 'Not Authorized', {'Content-Type': 'text/plain', 'Pragma': 'no-cache'},
+                return (400, 'Not Authorized', default_headers,
                     bencode({'failure reason':
-                    _("full scrape function is not available with this tracker.")}))
+                    "full scrape function is not available with this tracker."}))
+                    #bencode({'failure reason':
+                    #_("full scrape function is not available with this tracker.")}))
             if self.allowed is not None:
                 hashes = self.allowed
             else:
@@ -418,10 +440,11 @@ class Tracker(object):
 
     def get_file(self, infohash):
          if not self.allow_get:
-             return (400, 'Not Authorized', {'Content-Type': 'text/plain', 'Pragma': 'no-cache'},
+             return (400, 'Not Authorized',
+                     default_headers,
                  _("get function is not available with this tracker."))
          if not self.allowed.has_key(infohash):
-             return (404, 'Not Found', {'Content-Type': 'text/plain', 'Pragma': 'no-cache'}, alas)
+             return (404, 'Not Found', default_headers, alas)
          fname = self.allowed[infohash]['file']
          fpath = self.allowed[infohash]['path']
          return (200, 'OK', {'Content-Type': 'application/x-bittorrent',
@@ -431,12 +454,13 @@ class Tracker(object):
     def check_allowed(self, infohash, paramslist):
         if self.allowed is not None:
             if not self.allowed.has_key(infohash):
-                return (200, 'Not Authorized', {'Content-Type': 'text/plain', 'Pragma': 'no-cache'},
+                return (200, 'Not Authorized', default_headers,
                     bencode({'failure reason':
-                    _("Requested download is not authorized for use with this tracker.")}))
+                    "Requested download is not authorized for use with this tracker."}))
+                    #_("Requested download is not authorized for use with this tracker.")}))
             if self.config['allowed_controls']:
                 if self.allowed[infohash].has_key('failure reason'):
-                    return (200, 'Not Authorized', {'Content-Type': 'text/plain', 'Pragma': 'no-cache'},
+                    return (200, 'Not Authorized', default_headers,
                         bencode({'failure reason': self.allowed[infohash]['failure reason']}))
 
         return None
@@ -623,9 +647,6 @@ class Tracker(object):
         return data
 
     def get(self, connection, path, headers):
-        # DEBUG
-        print "track.py: get '%s'" % path
-        # END
         ip = connection.get_ip()
 
         nip = get_forwarded_ip(headers)
@@ -660,7 +681,7 @@ class Tracker(object):
             if path == 'favicon.ico' and self.favicon is not None:
                 return (200, 'OK', {'Content-Type' : 'image/x-icon'}, self.favicon)
             if path != 'announce':
-                return (404, 'Not Found', {'Content-Type': 'text/plain', 'Pragma': 'no-cache'}, alas)
+                return (404, 'Not Found', default_headers, alas)
 
             # main tracker function
             infohash = params('info_hash')
@@ -669,6 +690,9 @@ class Tracker(object):
 
             notallowed = self.check_allowed(infohash, paramslist)
             if notallowed:
+                if NOISY:
+                    self._print_event( "get: NOT ALLOWED: info_hash=%s, %s" %
+                                       (infohash.encode('hex'). str(notallowed)) )
                 return notallowed
 
             event = params('event')
@@ -676,8 +700,12 @@ class Tracker(object):
             rsize = self.add_data(infohash, event, ip, paramslist)
 
         except ValueError, e:
-            return (400, 'Bad Request', {'Content-Type': 'text/plain'},
-                'you sent me garbage - ' + unicode(e.args[0]))
+            print e
+            if NOISY:
+                self._print_exc( "get: ",e )
+            return (400, 'Bad Request',
+                    {'Content-Type': 'text/plain'},
+                    'you sent me garbage - ' + unicode(e.args[0]))
 
         if params('compact'):
             return_type = 2
@@ -692,7 +720,7 @@ class Tracker(object):
         if paramslist.has_key('scrape'):
             data['scrape'] = self.scrapedata(infohash, False)
 
-        return (200, 'OK', {'Content-Type': 'text/plain', 'Pragma': 'no-cache'}, bencode(data))
+        return (200, 'OK', default_headers, bencode(data))
 
     def natcheckOK(self, infohash, peerid, ip, port, not_seed):
         bc = self.becache.setdefault(infohash,[[{}, {}], [{}, {}], [{}, {}]])
@@ -702,10 +730,8 @@ class Tracker(object):
         bc[2][not not_seed][peerid] = compact_peer_info(ip, port)
 
     def natchecklog(self, peerid, ip, port, result):
-        year, month, day, hour, minute, second, a, b, c = localtime(time())
-        print '%s - %s [%02d/%3s/%04d:%02d:%02d:%02d] "!natcheck-%s:%i" %i 0 - -' % (
-            ip, quote(peerid), day, months[month], year, hour, minute, second,
-            ip, port, result)
+        print isotime(), '"!natcheck-%s:%i" %s %i 0 - -' % (
+            ip, quote(peerid), port, result)
 
     def connectback_result(self, result, downloadid, peerid, ip, port):
         record = self.downloads.get(downloadid, {}).get(peerid)
@@ -732,22 +758,76 @@ class Tracker(object):
             record['nat'] += 1
 
     def save_dfile(self):
-        self.rawserver.add_task(self.save_dfile_interval, self.save_dfile)
-        h = open(self.dfile, 'wb')
-        h.write(bencode(self.state))
-        h.close()
+        if self.save_pending:
+            return
+        self.save_pending = True        
+        
+        # if this is taking all the time, threading it won't help anyway because
+        # of the GIL
+        #state = bencode(self.state)
+        state = cPickle.dumps(self.state) # pickle handles Unicode.
+
+        df = ThreadedDeferred(wrap_task(self.rawserver.external_add_task),
+                              self._save_dfile, state)
+        def cb(r):
+            self.save_pending = False
+            if NOISY:
+                self._print_event( "save_dfile: Completed" )
+        def eb(etup):
+            self.save_pending = False
+            self._print_exc( "save_dfile: ", etup )
+        df.addCallbacks(cb, eb)
+
+    def _save_dfile(self, state):
+        exc_info = None
+        try:
+            h = open(self.dfile, 'wb')
+            h.write(state)
+            h.close()
+        except:
+            exc_info = sys.exc_info()
+        self.rawserver.external_add_task(self.save_dfile_interval, self.save_dfile)
+        if exc_info:
+            raise exc_info[0], exc_info[1], exc_info[2]
 
     def parse_allowed(self):
-        self.rawserver.add_task(self.parse_dir_interval, self.parse_allowed)
+        if self.parse_pending:
+            return        
+        self.parse_pending = True
+        
+        df = ThreadedDeferred(wrap_task(self.rawserver.external_add_task),
+                              self._parse_allowed, daemon=True)
+        def eb(etup):
+            self.parse_pending = False
+            self._print_exc("parse_dir: ", etup)
+        df.addCallbacks(self._parse_allowed_finished, eb)
 
-        # logging broken .torrent files would be useful but could confuse
-        # programs parsing log files, so errors are just ignored for now
-        def ignore(message):
+    def _parse_allowed(self):                              
+        def errfunc(message, exc_info=None):
+            # logging broken .torrent files would be useful but could confuse
+            # programs parsing log files
+            m = "parse_dir: %s" % message
+            if exc_info:
+                self._print_exc(m, exc_info)
+            else:
+                self._print_event(m)
             pass
         r = parsedir(self.allowed_dir, self.allowed, self.allowed_dir_files,
-                     self.allowed_dir_blocked, ignore,include_metainfo = False)
+                     self.allowed_dir_blocked, errfunc, include_metainfo = False)
+
+        # register the call to parse a dir.
+        self.rawserver.external_add_task(self.parse_dir_interval,
+                                         self.parse_allowed)
+
+        return r
+
+    def _parse_allowed_finished(self, r):
+        self.parse_pending = False
         ( self.allowed, self.allowed_dir_files, self.allowed_dir_blocked,
-          added, garbage2 ) = r
+          added, removed ) = r
+        if NOISY:
+            self._print_event("_parse_allowed_finished: removals: %s" %
+                              str(removed))
 
         for infohash in added:
             self.downloads.setdefault(infohash, {})
@@ -762,7 +842,7 @@ class Tracker(object):
         peer = dls[peerid]
         if not peer['left']:
             self.seedcount[infohash] -= 1
-        if not peer.get('nat',-1):
+        if not peer.get('nat', -1):
             l = self.becache[infohash]
             y = not peer['left']
             for x in l:
@@ -771,13 +851,15 @@ class Tracker(object):
         del dls[peerid]
 
     def expire_downloaders(self):
-        for infohash, peertimes in self.times.items():
-            for myid, t in peertimes.items():
+        for infohash, peertimes in self.times.iteritems():
+            items = peertimes.items()
+            for myid, t in items:
                 if t < self.prevtime:
                     self.delete_peer(infohash, myid)
         self.prevtime = time()
-        if (self.keep_dead != 1):
-            for key, peers in self.downloads.items():
+        if self.keep_dead != 1:
+            items = self.downloads.items()
+            for key, peers in items:
                 if len(peers) == 0 and (self.allowed is None or
                                         key not in self.allowed):
                     del self.times[key]
@@ -785,6 +867,13 @@ class Tracker(object):
                     del self.seedcount[key]
         self.rawserver.add_task(self.timeout_downloaders_interval,
                                 self.expire_downloaders)
+
+    def _print_event(self, message):
+        print datetime.datetime.utcnow().isoformat(), message
+
+    def _print_exc(self, note, etup):
+        print datetime.datetime.utcnow().isoformat(), note, ':'
+        traceback.print_exception(*etup)
 
 def track(args):
     assert type(args) == list and \
@@ -794,7 +883,7 @@ def track(args):
     defaults = get_defaults('bittorrent-tracker')   # hard-coded defaults.
     try:
         config, files = parse_configuration_and_args(defaults, 
-           'bittorrent-tracker', args )
+           'bittorrent-tracker', args, 0, 0 ) 
     except ValueError, e:
         print _("error: ") + unicode(e.args[0])
         print _("run with -? for parameter explanations")
@@ -805,8 +894,9 @@ def track(args):
         return
  
     if config['dfile']=="":
-        config['dfile'] = os.path.join(platform.get_temp_dir(), "dfile" +
-           str(os.getpid()))
+        config['dfile'] = decode_from_filesystem(
+            os.path.join(platform.get_temp_dir(), efs2(u"dfile") +
+            str(os.getpid())))
 
     config = Preferences().initWithDict(config)
     ef = lambda e: errorfunc(WARNING, e)
@@ -815,37 +905,27 @@ def track(args):
     t = None
     try:
         r = RawServer(config)
-        r.install_sigint_handler()
         t = Tracker(config, r)
         try:
             #DEBUG
             print "track: create_serversocket, port=", config['port']
             #END
             s = r.create_serversocket(config['port'], config['bind'], True)
-            r.start_listening(s, HTTPHandler(t.get,
-                config['min_time_between_log_flushes']))
+            handler = HTTPHandler(t.get, config['min_time_between_log_flushes'])
+            r.start_listening(s, handler)
         except socket.error, e:
-            print "Unable to open port %d.  Use a different port?" % \
-                  config['port']
+            print ("Unable to open port %d.  Use a different port?" %
+                   config['port'])
             return
 
-        r.listen_forever(DeferredEvent())
+        r.listen_forever()
     finally:
         if t: t.save_dfile()
         print _("# Shutting down: ") + isotime()
 
+
 def size_format(s):
-    if (s < 1024):
-        r = str(s) + 'B'
-    elif (s < 1048576):
-        r = str(int(s/1024)) + 'KiB'
-    elif (s < 1073741824):
-        r = str(int(s/1048576)) + 'MiB'
-    elif (s < 1099511627776):
-        r = str(int((s/1073741824.0)*100.0)/100.0) + 'GiB'
-    else:
-        r = str(int((s/1099511627776.0)*100.0)/100.0) + 'TiB'
-    return(r)
+    return str(Size(s))
 
 def errorfunc( level, text ):
     print "%s: %s" % (logging.getLevelName(level), text)

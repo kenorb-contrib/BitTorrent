@@ -129,8 +129,9 @@ class LanguageSettings(wx.Panel):
 
 
     def set_language_failed(self, e, l):
-        # BUG: this really should be logged
-        errstr = 'Could not find translation for language "%s"\n%s' % (l, str(e))
+        errstr = 'Could not find translation for language "%s"' % l
+        wx.the_app.logger.error(errstr, exc_info=e)
+        errstr = errstr + '\n%s: %s' % (str(e[0]), unicode(e[1].args[0]))
         self.set_error(errstr)
 
 

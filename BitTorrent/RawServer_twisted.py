@@ -21,13 +21,11 @@ import logging
 import threading
 import traceback
 
-from DictWithLists import DictWithLists
-
-from BitTorrent.defer import DeferredEvent, Deferred, run_deferred
 from BitTorrent.translation import _
 from BitTorrent import BTFailure
 from BitTorrent.obsoletepythonsupport import set
-
+from BitTorrent.DictWithLists import DictWithLists
+from BitTorrent.defer import DeferredEvent, Deferred, run_deferred
 
 ##############################################################
 #profile = True
@@ -43,6 +41,13 @@ if profile:
         profile = False
 ##############################################################
 
+if 'twisted.internet.reactor' in sys.modules:
+    print ("twisted.internet.reactor was imported before BitTorrent.RawServer_twisted!\n"
+           "I'll clean it up for you, but don't do that!\n"
+           "Existing reference may be for the wrong reactor!\n"
+           "!")
+    del sys.modules['twisted.internet.reactor']
+
 from twisted.python import threadable
 # needed for twisted 1.3
 # otherwise the 'thread safety' functions are not 'thread safe'
@@ -50,13 +55,17 @@ threadable.init(1)
 
 letters = set(string.letters)
 
+main_thread = thread.get_ident()
+
 noSignals = True
+iocpreactor = False
 
 if os.name == 'nt':
     try:
         from twisted.internet import iocpreactor
         iocpreactor.proactor.install()
         noSignals = False
+        iocpreactor = True
     except:
         # just as limited (if not more) as select, and also buggy
         #try:
@@ -123,7 +132,7 @@ class Handler(object):
     # called when a connection dies (lost or requested to close)
     def connection_lost(self, s):
         pass
-
+        
 
 class ConnectionWrapper(object):
 
@@ -196,7 +205,9 @@ class ConnectionWrapper(object):
 
         if hasattr(transport, 'addBufferCallback'):
             self.buffer = PassBuffer(self.transport, self._flushed, self.buffer)
-        else:
+        elif hasattr(transport, 'registerProducer'):
+            # Multicast uses sendto, which does not buffer.
+            # It has no producer api
             self.buffer.attachConsumer(self.transport)
 
         try:
@@ -343,7 +354,9 @@ class OutputBuffer(object):
 
     def attachConsumer(self, consumer):
         self.consumer = consumer
-
+        if not self.registered:
+            self.beginWriting()
+            
     def add(self, b):
         self._buffer_list.append(b)
 
@@ -530,6 +543,7 @@ class RawServerMixin(object):
             self.config = {}
         self.tos = tos
         self.sigint_flag = None
+        self.sigint_installed = False        
 
     # going away soon. call _context_wrap on the context.
     def _make_wrapped_call(self, _f, *args, **kwargs):
@@ -558,6 +572,7 @@ class RawServerMixin(object):
         if flag is not None:
             self.sigint_flag = flag
         signal.signal(signal.SIGINT, self._handler)
+        self.sigint_installed = True
 
     def _handler(self, signum, frame):
         if self.sigint_flag:
@@ -595,10 +610,9 @@ class RawServer(RawServerMixin):
                 HTTPHandler(t.get, config['min_time_between_log_flushes']))
 
         4. tells the raw_server to listen for I/O or scheduled tasks
-           until the done_flag is set.
+           until stop is called.
 
-            done_flag = DeferredEvent()
-            r.listen_forever(done_flag)
+            r.listen_forever()
 
            When a remote client opens a connection, a new socket is
            returned from the server socket's accept method and the
@@ -857,6 +871,7 @@ class RawServer(RawServerMixin):
         assert not self.associated, \
                "RawServer has already been associated with a thread"
         self.ident = thread.get_ident()
+        reactor.ident = self.ident
         self.associated = True
 
     def listen_forever(self, doneflag=None):
@@ -864,18 +879,30 @@ class RawServer(RawServerMixin):
            RawServer listens until the doneFlag is set by some other
            thread.  The doneFlag tells all threads to clean-up and then
            exit."""
+
         if not doneflag:
             doneflag = DeferredEvent()
         assert isinstance(doneflag, DeferredEvent)
         self.doneflag = doneflag
+
         if not self.associated:
             self.associate_thread()
+
         if self.listened:
             Exception(_("listen_forever() should only be called once per reactor."))
+
+        if main_thread == thread.get_ident() and not self.sigint_installed:
+            self.install_sigint_handler()
+
+        if iocpreactor and main_thread == thread.get_ident():
+            def pulse():
+                self.add_task(1, pulse)
+            pulse()
+
         reactor.callLater(0, self.doneflag.addCallback, self._safestop)
         self.listened = True
 
-        reactor.suggestThreadPoolSize(1)
+        reactor.suggestThreadPoolSize(3)
         if noSignals:
             reactor.run(installSignalHandlers=False)
         else:
@@ -894,7 +921,8 @@ class RawServer(RawServerMixin):
         reactor.iterate(period)
 
     def stop(self):
-        self.doneflag.set()
+        if not self.doneflag.isSet():
+            self.doneflag.set()
 
     def _safestop(self, r=None):
         if not threadable.isInIOThread():

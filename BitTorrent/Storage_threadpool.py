@@ -251,12 +251,12 @@ class Storage(object):
                                       "regular file") % filename)
                 l = os.path.getsize(filename)
                 if l > length:
-                    h = file(filename, 'rb+')
-                    make_file_sparse(filename, h, length)
                     # This is the truncation Bram was talking about that no one
                     # else thinks is a good idea.
+                    #h = file(filename, 'rb+')
+                    #make_file_sparse(filename, h, length)
                     #h.truncate(length)
-                    h.close()
+                    #h.close()
                     l = length
 
                 a = get_allocated_regions(filename, begin=0, length=l)

@@ -13,8 +13,20 @@ import weakref
 import traceback
 #import thread
 import BitTorrent.stackthreading as threading
+from twisted.internet import defer
+from twisted.python import failure
 
 debug = False
+
+# backport
+def getResult(self):
+    if isinstance(self.result, failure.Failure):
+        r = self.result
+        self.addErrback(lambda fuckoff: None)
+        r.raiseException()
+    return self.result
+defer.Deferred.getResult = getResult
+
 
 class Deferred(object):
     __slots__ = ['callbacks', 'errbacks',
@@ -80,16 +92,19 @@ class Deferred(object):
 
     def addCallback(self, cb, *args, **kwargs):
         assert callable(cb)
-        self.callbacks.append((cb, args, kwargs))
+        t = (cb, args, kwargs)
+        self.callbacks.append(t)
         if self.calledBack:
-            self.doCallbacks(self.results, [(cb, args, kwargs)])
+            self.doCallbacks(self.results, [t])
         return self
 
     def addErrback(self, cb, *args, **kwargs):
         assert callable(cb)
-        self.errbacks.append((cb, args, kwargs))
+        t = (cb, args, kwargs)
+        self.errbacks.append(t)
         if self.erredBack:
-            self.doCallbacks(self.failures, [(cb, args, kwargs)])
+            self.called_errbacks[0] = True
+            self.doCallbacks(self.failures, [t])
         return self
 
     def addCallbacks(self, cb, eb, args=(), kwargs={},

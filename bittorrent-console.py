@@ -12,14 +12,10 @@
 
 # Written by Bram Cohen, Uoti Urpala, John Hoffman, and David Harrison
 
-# Dave:
-# 4. Use separate configuration.
-
 from __future__ import division
 
 from BitTorrent.translation import _
 
-import pdb
 import sys
 import os
 from cStringIO import StringIO
@@ -42,6 +38,7 @@ from BitTorrent import configfile
 from BitTorrent import BTFailure, UserFailure
 from BitTorrent import version
 from BitTorrent import GetTorrent
+from BitTorrent.UI import Size, Duration
 from BitTorrent.RawServer_twisted import RawServer, task
 from BitTorrent.ConvertedMetainfo import ConvertedMetainfo
 from BitTorrent.MultiTorrent import TorrentNotInitialized
@@ -62,14 +59,7 @@ def wrap_log(context_string, logger):
 def fmttime(n):
     if n == 0:
         return _("download complete!")
-    try:
-        n = int(n)
-        assert n >= 0 and n < 5184000  # 60 days
-    except:
-        return _("<unknown>")
-    m, s = divmod(n, 60)
-    h, m = divmod(m, 60)
-    return _("finishing in %d:%02d:%02d") % (h, m, s)
+    return _("finishing in %s") % (str(Duration(n)))
 
 def fmtsize(n):
     s = str(n)
@@ -77,14 +67,7 @@ def fmtsize(n):
     while len(s) > 3:
         s = s[:-3]
         size = '%s,%s' % (s[-3:], size)
-    if n > 999:
-        unit = ['B', 'KiB', 'MiB', 'GiB', 'TiB', 'PiB', 'EiB', 'ZiB', 'YiB']
-        i = 1
-        while i + 1 < len(unit) and (n >> 10) >= 999:
-            i += 1
-            n >>= 10
-        n /= (1 << 10)
-        size = '%s (%.0f %s)' % (size, n, unit[i])
+    size = '%s (%s)' % (size, str(Size(n)))
     return size
 
 
@@ -302,7 +285,6 @@ class TorrentApp(object):
         
     def run(self):
         self.core_doneflag = DeferredEvent()
-        rawserver_doneflag = DeferredEvent()
         rawserver = RawServer(self.config)
         self.d = HeadlessDisplayer()
 
@@ -314,10 +296,10 @@ class TorrentApp(object):
                             'fractionDone':0})
             if self.multitorrent:
                 df = self.multitorrent.shutdown()
-                set_flag = lambda *a : rawserver_doneflag.set()
-                df.addCallbacks(set_flag, set_flag)
+                stop_rawserver = lambda *a : rawserver.stop()
+                df.addCallbacks(stop_rawserver, stop_rawserver)
             else:
-                rawserver_doneflag.set()
+                rawserver.stop()
 
         # It is safe to addCallback here, because there is only one thread,
         # but even if the code were multi-threaded, core_doneflag has not
@@ -371,8 +353,9 @@ class TorrentApp(object):
 
         try: 
             self.multitorrent = \
-                MultiTorrent(self.config, rawserver, 
-                             data_dir, is_single_torrent = True )
+                MultiTorrent(self.config, rawserver, data_dir,
+                             is_single_torrent = True,
+                             resume_from_torrent_config = False)
                 
             self.d.set_torrent_values(metainfo.name, os.path.abspath(saveas),
                                 metainfo.total_bytes, len(metainfo.hashes))
@@ -381,15 +364,14 @@ class TorrentApp(object):
             self.get_status()
         except UserFailure, e:
             self.logger.error( unicode(e.args[0]) )
-            rawserver.add_task(0,self.core_doneflag.set)
+            rawserver.add_task(0, self.core_doneflag.set)
         except Exception, e:
-            print "Handling Exception"
             self.logger.error( "", exc_info = e )
-            rawserver.add_task(0,self.core_doneflag.set)
+            rawserver.add_task(0, self.core_doneflag.set)
             
         # always make sure events get processed even if only for
         # shutting down.
-        rawserver.listen_forever(rawserver_doneflag)
+        rawserver.listen_forever()
 
     def get_status(self):
         self.multitorrent.rawserver.add_task(self.config['display_interval'],
@@ -463,3 +445,4 @@ if __name__ == '__main__':
            print "non-daemon threads not shutting down:"
            for th in nondaemons:
                print " ", th
+

@@ -178,11 +178,17 @@ def decode_from_filesystem(path):
 
     return decoded_path
 
-def path_wrap(path):
-    return decode_from_filesystem(path)
+path_wrap = decode_from_filesystem
+efs = encode_for_filesystem        # abbreviate encode_for_filesystem.
 
-def efs(path):  # wraps encode for filesystem.
-    return encode_for_filesystem(path)
+def efs2(path):
+    # same as encode_for_filesystem except it raise a UnicodeError when
+    # a path cannot be encoded.
+    p,bad = encode_for_filesystem(path)
+    if bad:
+        raise UnicodeError(_("Cannot encode path."))
+    return p
+    
 
 # NOTE: intentionally appears in the file before importing anything
 # from BitTorrent because it is called when setting --use_factory_defaults.
@@ -201,7 +207,7 @@ def get_temp_subdir():
     tmp = get_temp_dir()
     target = None   # holds the name of the directory that will be made.
     for i in xrange(MAX_DIR):
-        subdir = efs(u"BitTorrentTemp%d" % i)[0]
+        subdir = efs2(u"BitTorrentTemp%d" % i)
         path = os.path.join(tmp, subdir)
         if not os.path.exists(path):
             target = path
@@ -211,7 +217,7 @@ def get_temp_subdir():
     # prevented a directory from being removed on a previous call or if MAX_DIR
     # is changed.
     if target is None:
-       subdir = efs(u"BitTorrentTemp0")[0]
+       subdir = efs2(u"BitTorrentTemp0")
        path = os.path.join(tmp, subdir)
        shutil.rmtree( path, ignore_errors = True )
        target = path
@@ -222,7 +228,7 @@ def get_temp_subdir():
 
     # delete the oldest directory.
     oldest_i = ( i + 1 ) % MAX_DIR
-    oldest_subdir = efs(u"BitTorrentTemp%d" % oldest_i)[0]
+    oldest_subdir = efs2(u"BitTorrentTemp%d" % oldest_i)
     oldest_path = os.path.join(tmp, oldest_subdir)
     if os.path.exists( oldest_path ):
         shutil.rmtree( oldest_path, ignore_errors = True )
@@ -335,9 +341,9 @@ elif os_name == 'posix':
 
 def calc_unix_dirs():
     appdir = '%s-%s'%(app_name, version)
-    ip = os.path.join(efs(u'share')[0], efs(u'pixmaps')[0], appdir)
-    dp = os.path.join(efs(u'share')[0], efs(u'doc')[0], appdir)
-    lp = os.path.join(efs(u'share')[0], efs(u'locale')[0])
+    ip = os.path.join(efs2(u'share'), efs2(u'pixmaps'), appdir)
+    dp = os.path.join(efs2(u'share'), efs2(u'doc'), appdir)
+    lp = os.path.join(efs2(u'share'), efs2(u'locale'))
     return ip, dp, lp
 
 if is_frozen_exe:
@@ -353,20 +359,27 @@ if os.name == 'posix':
             doc_root = NSBundle.mainBundle().resourcePath()
             osx = True
 
+def no_really_makedirs(path):
+    # the deal here is, directories like "C:\" exist but can not be created
+    # (access denied). We check for the exception anyway because of the race
+    # condition.
+    if not os.path.exists(path):
+        try:
+            os.makedirs(path)
+        except OSError, e:
+            if e.errno != 17: # already exists
+                raise
+
 # For string literal subdirectories, starting with unicode and then 
 # converting to filesystem encoding may not always be necessary, but it seems 
 # safer to do so.  --Dave
-image_root  = os.path.join(app_root, efs(u'images')[0])
-locale_root = os.path.join(app_root, efs(u'locale')[0])
-if not os.path.exists(locale_root):
-    try:
-        os.makedirs(locale_root)
-    except (IOError, OSError):
-        pass
+image_root  = os.path.join(app_root, efs2(u'images'))
+locale_root = os.path.join(app_root, efs2(u'locale'))
+no_really_makedirs(locale_root)
 
 plugin_path = []
-internal_plugin = os.path.join(app_root, efs(u'BitTorrent')[0], 
-                                         efs(u'Plugins')[0])
+internal_plugin = os.path.join(app_root, efs2(u'BitTorrent'), 
+                                         efs2(u'Plugins'))
 if os.access(internal_plugin, os.F_OK):
     plugin_path.append(internal_plugin)
 
@@ -379,8 +392,8 @@ if not os.access(image_root, os.F_OK) or not os.access(locale_root, os.F_OK):
         image_root, doc_root, locale_root = map(
             lambda p: os.path.join(installed_prefix, p), calc_unix_dirs()
             )
-        systemwide_plugin = os.path.join(installed_prefix, efs(u'lib')[0], 
-                                         efs(u'BitTorrent')[0])
+        systemwide_plugin = os.path.join(installed_prefix, efs2(u'lib'), 
+                                         efs2(u'BitTorrent'))
         if os.access(systemwide_plugin, os.F_OK):
             plugin_path.append(systemwide_plugin)
 
@@ -462,8 +475,13 @@ def get_allocated_regions(path, f=None, begin=0, length=None):
         end = begin + length
         while i < end:
             d = struct.pack("<QQ", i, interval)
-            r = win32file.DeviceIoControl(handle, FSCTL_QUERY_ALLOCATED_RANGES,
-                                          d, interval, None)
+            try:
+                r = win32file.DeviceIoControl(handle, FSCTL_QUERY_ALLOCATED_RANGES,
+                                              d, interval, None)
+            except pywintypes.error, e:
+                # I've seen:
+                # error: (1784, 'DeviceIoControl', 'The supplied user buffer is not valid for the requested operation.')
+                return
             for c in xrange(0, len(r), 16):
                 qq = struct.unpack("<QQ", buffer(r, c, 16))
                 b = qq[0]
@@ -524,7 +542,7 @@ def get_config_dir():
     return dir_root
 
 def get_old_dot_dir():
-    return os.path.join(get_config_dir(), efs(u'.bittorrent')[0])
+    return os.path.join(get_config_dir(), efs2(u'.bittorrent'))
 
 def get_dot_dir():
     """So called because on Unix platforms this returns ~/.bittorrent."""
@@ -580,17 +598,17 @@ def get_local_data_dir():
         return get_dot_dir()
 
 def get_old_incomplete_data_dir():
-    incomplete = efs(u'incomplete')[0]
+    incomplete = efs2(u'incomplete')
     return os.path.join(get_old_dot_dir(), incomplete)
 
 def get_incomplete_data_dir():
     # 'incomplete' is a directory name and should not be localized
-    incomplete = efs(u'incomplete')[0]
+    incomplete = efs2(u'incomplete')
     return os.path.join(get_local_data_dir(), incomplete)
 
 def get_save_dir():
     dirname = u'%s Downloads' % unicode(app_name)
-    dirname = efs(dirname)[0]
+    dirname = efs2(dirname)
     if os.name == 'nt':
         d = get_shell_dir(shellcon.CSIDL_PERSONAL)
         if d is None:
@@ -617,7 +635,7 @@ def get_startup_dir():
     return dir
 
 
-local_plugin = os.path.join(get_dot_dir(), efs(u'Plugins')[0])
+local_plugin = os.path.join(get_dot_dir(), efs2(u'Plugins'))
 if os.access(local_plugin, os.F_OK):
     plugin_path.append(local_plugin)
 
@@ -967,8 +985,8 @@ def _gettext_install(domain, localedir=None, languages=None, unicode=False):
 
 def language_path():
     dot_dir = get_dot_dir()
-    lang_file_name = os.path.join(dot_dir, efs(u'data')[0], 
-                                           efs(u'language')[0])
+    lang_file_name = os.path.join(dot_dir, efs2(u'data'), 
+                                           efs2(u'language'))
     return lang_file_name
 
 
@@ -1061,11 +1079,11 @@ def write_pid_file(fname, errorfunc = None):
     if os.name == 'nt': return
 
     try:
-        pid_fname = os.path.join(efs(u'/var/run')[0],fname)
+        pid_fname = os.path.join(efs2(u'/var/run'),fname)
         file(pid_fname, 'w').write(str(os.getpid()))
     except:
         try:
-            pid_fname = os.path.join(efs(u'/etc/tmp')[0],fname)
+            pid_fname = os.path.join(efs2(u'/etc/tmp'),fname)
         except:
             if errorfunc:
                 errorfunc(_("Couldn't open pid file. Continuing without one."))
@@ -1083,9 +1101,7 @@ else:
     else:
         desktop = homedir
         if os.name in ('mac', 'posix'):
-            tmp_desktop = os.path.join(homedir, efs(u'Desktop')[0])
+            tmp_desktop = os.path.join(homedir, efs2(u'Desktop'))
             if os.access(tmp_desktop, os.R_OK|os.W_OK):
                 desktop = tmp_desktop + os.sep
 
-
- 

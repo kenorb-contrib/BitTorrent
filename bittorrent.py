@@ -93,12 +93,21 @@ rawserver = None
 
 if __name__ == '__main__':
 
+    psyco = None
     try:
         # 95, 98, and ME seem to have problems with psyco
         # so only import it on NT and up
         if os.name == 'nt' and win_version_num >= (2, 4, 0):
             import psyco
-            psyco.profile()
+            import traceback
+            psyco.cannotcompile(traceback.print_stack)
+            psyco.cannotcompile(traceback.format_stack)
+            psyco.cannotcompile(traceback.extract_stack)
+            psyco.full(memory=10)
+            psyco.bind(RawServer.listen_forever)
+            psyco.profile(memorymax=50000) # that's 50MB for the whole process
+            #psyco.log()
+            # see below for more
     except ImportError:
         pass
 
@@ -155,68 +164,61 @@ if __name__ == '__main__':
 
 
 from BitTorrent.MultiTorrent import MultiTorrent
-from BitTorrent import ThreadProxy
+from BitTorrent.ThreadProxy import ThreadProxy
 from BitTorrent.TorrentButler import DownloadTorrentButler, SeedTorrentButler
 from BitTorrent.AutoUpdateButler import AutoUpdateButler
 from BitTorrent.GUI_wx.DownloadManager import MainLoop
 from BitTorrent.GUI_wx import gui_wrap
 from BitTorrent import platform
-#from BitTorrent.GUI_gtk import MainLoop, gui_wrap
-#from BitTorrent.FeedManager import FeedManager
 
 if __name__ == '__main__':
 
     #import memleak_detection
     #memleak_detection.begin_sampling('memleak_sample.log')
 
-    core_doneflag = DeferredEvent()
+    if psyco:
+        psyco.bind(MainLoop.run)
 
     mainloop = MainLoop(config)
 
     def init_core(mainloop):
-        # BUG figure out feed config situation
-        #feedmanager = FeedManager({}, gui_wrap)
+
+        core_doneflag = DeferredEvent()
 
         class UILogger(logging.Handler):
             def emit(self, record):
-                # prevent feedback. this can go away when the UI logs directly
-                # to the logging system, and the wx calls are just used to
-                # display all the message this handler receives.
-                msg = "[%s] " % record.name
-                msg += self.format(record)
+                msg = "[%s] %s" % (record.name, self.format(record))
                 gui_wrap(mainloop.do_log, record.levelno, msg)
 
         logging.getLogger('').addHandler(UILogger())
 
-        data_dir = config['data_dir']
-        assert isinstance( data_dir, unicode )
-
-        rawserver_doneflag = DeferredEvent()
         try:
-            multitorrent = MultiTorrent(config, rawserver, data_dir, listen_fail_ok=True,
+            multitorrent = MultiTorrent(config, rawserver, config['data_dir'],
+                                        listen_fail_ok=True,
                                         init_torrents=False)
+
+            # Butlers            
             multitorrent.add_policy(DownloadTorrentButler(multitorrent))
             multitorrent.add_policy(SeedTorrentButler(multitorrent))
-
             auto_update_butler = AutoUpdateButler(multitorrent, rawserver,
                                                   test_new_version=config['new_version'],
                                                   test_current_version=config['current_version'])
             multitorrent.add_auto_update_policy(auto_update_butler)
-            rawserver.add_task(0, auto_update_butler.check_version)
-            mainloop.attach_multitorrent(ThreadProxy.ThreadProxy(multitorrent,
-                                                                 gui_wrap),
+
+            # attach to the UI            
+            mainloop.attach_multitorrent(ThreadProxy(multitorrent, gui_wrap),
                                          core_doneflag)
-
             ipc.start(mainloop.external_command)
-            rawserver.associate_thread()
 
+            # register shutdown action
             def shutdown():
                 df = multitorrent.shutdown()
-                set_flag = lambda *a : rawserver_doneflag.set()
-                df.addCallbacks(set_flag, set_flag)
-                    
-            rawserver.add_task(0, core_doneflag.addCallback, lambda r: rawserver.external_add_task(0, shutdown))
-            rawserver.listen_forever(rawserver_doneflag)
+                stop_rawserver = lambda r : rawserver.stop()
+                df.addCallbacks(stop_rawserver, stop_rawserver)
+            rawserver.add_task(0, core_doneflag.addCallback,
+                               lambda r: rawserver.external_add_task(0, shutdown))
+
+            rawserver.listen_forever()
         except:
             # oops, we failed.
             # one message for the log w/ exception info
@@ -225,7 +227,7 @@ if __name__ == '__main__':
             global_logger.critical("BitTorrent core initialization failed!")
 
             core_doneflag.set()
-            rawserver_doneflag.set()
+            rawserver.stop()
             try:
                 gui_wrap(mainloop.ExitMainLoop)
             except:
@@ -237,13 +239,23 @@ if __name__ == '__main__':
             raise
 
 
-    corethread = threading.Thread(target=init_core, args=(mainloop,))
-
-    corethread.setDaemon(False)
-    corethread.start()
-
+    threading.Thread(target=init_core, args=(mainloop,)).start()
+    
     mainloop.append_external_torrents(*args)
 
+##    # cause memleak stuff to be imported
+##    import code
+##    import sizer
+##    
+##    from sizer import annotate
+##    from sizer import formatting
+##    from sizer import operations
+##    from sizer import rules
+##    from sizer import scanner
+##    from sizer import set
+##    from sizer import sizes
+##    from sizer import wrapper
+    
     try:
         mainloop.run()
     except KeyboardInterrupt:

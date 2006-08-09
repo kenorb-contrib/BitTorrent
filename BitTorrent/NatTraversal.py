@@ -18,7 +18,7 @@ from BitTorrent.sparse_set import SparseSet
 from BitTorrent.RawServer_twisted import RawServer, Handler
 from BitTorrent.BeautifulSupe import BeautifulSupe, Tag
 from BitTorrent.yielddefer import launch_coroutine, _wrap_task
-from BitTorrent.HostIP import get_host_ip
+from BitTorrent.HostIP import get_host_ip, get_deferred_host_ip
 from BitTorrent.obsoletepythonsupport import has_set, set
 from twisted import internet
 import twisted.copyright
@@ -385,6 +385,7 @@ def urlopen_custom(req, rawserver):
         resp.msg = r.reason
                    
         return resp
+
     return _urlopener.open(req)
 
 
@@ -498,10 +499,14 @@ class ManualUPnP(NATBase, Handler):
         # is down?  The appropriate behavior should be to report the
         # failure to the user rather than sucking up resources.  --Dave
         #for p in xrange(self.upnp_addr[1], self.upnp_addr[1]+5000):
+        df = get_deferred_host_ip()
+        yield df
+        hostip = df.getResult()
+        
         for p in xrange(self.upnp_addr[1], self.upnp_addr[1]+50):
             try:
                 # Original RawServer cannot do this!
-                s = self.rawserver.create_multicastsocket(p, get_host_ip())
+                s = self.rawserver.create_multicastsocket(p, hostip)
                 self.transport = s
                 self.rawserver.start_listening_multicast(s, self)
                 df = s.listening_port.joinGroup(self.upnp_addr[0],
@@ -622,6 +627,7 @@ class ManualUPnP(NATBase, Handler):
         else:
             nat_logger.warning("urlopen_custom error. giving up.")
             return
+
         try:
             bs = BeautifulSupe(data)
         except: # xml.parsers.expat.ExpatError, maybe others

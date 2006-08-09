@@ -14,18 +14,11 @@ from RawServer_twisted import Handler
 from cStringIO import StringIO
 from sys import stdout
 import time
+import datetime
 from gzip import GzipFile
 from BitTorrent.translation import _
 
-
-
-DEBUG = True
-
-weekdays = [_("Mon"), _("Tue"), _("Wed"), _("Thu"), _("Fri"), _("Sat"), _("Sun")]
-
-months = [None, _("Jan"), _("Feb"), _("Mar"), _("Apr"), _("May"), _("Jun"),
-    _("Jul"), _("Aug"), _("Sep"), _("Oct"), _("Nov"), _("Dec")]
-
+DEBUG = False
 
 class HTTPConnection(object):
 
@@ -138,10 +131,11 @@ class HTTPConnection(object):
         username = '-'
         referer = self.headers.get('referer','-')
         useragent = self.headers.get('user-agent','-')
-        year, month, day, hour, minute, second, a, b, c = time.localtime(time.time())
-        print '%s %s %s [%02d/%3s/%04d:%02d:%02d:%02d] "%s" %i %i "%s" "%s"' % (
-            self.connection.ip, ident, username, day, months[month], year, hour,
-            minute, second, self.header, responsecode, len(data), referer, useragent)
+        timestamp = datetime.datetime.utcnow().isoformat()
+        if DEBUG:
+            print '%s %s %s [%s] "%s" %i %i "%s" "%s"' % (
+                self.connection.ip, ident, username, timestamp, self.header,
+                responsecode, len(data), referer, useragent)
         t = time.time()
         if t - self.handler.lastflush > self.handler.minflush:
             self.handler.lastflush = t
@@ -172,7 +166,8 @@ class HTTPHandler(Handler):
         self.lastflush = time.time()
 
     def connection_made(self, connection):
-        print "HTTPHandler.connection_made"
+        if DEBUG:
+            print "HTTPHandler.connection_made"
         self.connections[connection] = HTTPConnection(self, connection)
 
     def connection_flushed(self, connection):
@@ -187,7 +182,8 @@ class HTTPHandler(Handler):
         del self.connections[connection]
 
     def data_came_in(self, connection, data):
-        print "HTTPHandler.data_came_in: '%s'" % data
+        if DEBUG:
+            print "HTTPHandler.data_came_in: '%s'" % data
         c = self.connections[connection]
         if not c.data_came_in(data) and not c.closed:
             c.connection.shutdown(1)

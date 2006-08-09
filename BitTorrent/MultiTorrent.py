@@ -73,33 +73,58 @@ class MultiTorrent(Feedback):
 
        If you wish to instantiate MultiTorrent to download only a single
        torrent then pass is_single_torrent=True.
+       
+       If you want to avoid resuming from prior torrent config state then
+       pass resume_from_torrent_config = False.
+       It will still use fast resume if available.
 
        """
 
     def __init__(self, config, rawserver,
                  data_dir, listen_fail_ok=False, init_torrents=True,
-                 is_single_torrent=False):
+                 is_single_torrent=False, resume_from_torrent_config=True):
         """
          @param config: program-wide configuration object.
          @param rawserver: object that manages main event loop and event
            scheduling.
-         @param data_dir:  where variable data such as fastresume information
+         @param data_dir: where variable data such as fastresume information
            and GUI state is saved.
          @param listen_fail_ok: if false, a BTFailure is raised if
            a server socket cannot be opened to accept incoming peer
            connections.
-         @param init_torrents: restore state from prior instantiations of
-           MultiTorrent.
+         @param init_torrents: restore fast resume state from prior
+           instantiations of MultiTorrent.
          @param is_single_torrent: if true then allow only one torrent
-           at a time in this MultiTorrent.
+           at a time in this MultiTorrent. 
+         @param resume_from_torrent_config: resume from ui_state files.
         """
         # is_single_torrent will go away when we move MultiTorrent into
         # a separate process, in which case, single torrent applications like
         # curses and console will act as a client to the MultiTorrent daemon.
         #   --Dave
+
+        # init_torrents refers to fast resume rather than torrent config.
+        # If init_torrents is set to False, the UI state file is still
+        # read and the paths to existing downloads still used. This is
+        # not what we want for launchmany.
+        #
+        # resume_from_torrent_config is separate from
+        # is_single_torrent because launchmany must be able to have
+        # multiple torrents while not resuming from torrent config
+        # state.  If launchmany resumes from torrent config then it
+        # saves or seeds from the path in the torrent config even if
+        # the file has moved in the directory tree.  Because
+        # launchmany has no mechanism for removing torrents other than
+        # to change the directory tree, the only way for the user to
+        # eliminate the old state is to wipe out the files in the
+        # .bittorrent/launchmany-*/ui_state directory.  This is highly
+        # counterintuitive.  Best to simply ignore the ui_state
+        # directory altogether.  --Dave
+        
         assert isinstance(config, Preferences)
         #assert isinstance(data_dir, unicode)  # temporarily commented -Dave
         assert isinstance(listen_fail_ok, bool)
+        assert not (is_single_torrent and resume_from_torrent_config)
 
         self.config = config
         self.data_dir = data_dir
@@ -110,9 +135,8 @@ class MultiTorrent(Feedback):
         self.log_root = "core.MultiTorrent"
         self.logger = logging.getLogger(self.log_root)
         self.is_single_torrent = is_single_torrent
-
+        self.resume_from_torrent_config = resume_from_torrent_config
         self.auto_update_policy_index = None
-
         self.dht = None
         self.rawserver = rawserver
         nattraverser = NatTraverser(self.rawserver)
@@ -135,7 +159,7 @@ class MultiTorrent(Feedback):
                                  config['max_files_open'],
                                  config['num_disk_threads'])
 
-        if not is_single_torrent:
+        if self.resume_from_torrent_config:
             try:
                 self._restore_state(init_torrents)
             except BTFailure:
@@ -232,8 +256,8 @@ class MultiTorrent(Feedback):
         # or pending ops could never complete
         self.filepool_doneflag.set()
 
-        # hmm
-        self._dump_torrents()
+        if self.resume_from_torrent_config:
+            self._dump_torrents()
 
 
     def set_option(self, option, value, infohash=None, dump=True):
@@ -270,9 +294,8 @@ class MultiTorrent(Feedback):
         self.logger.log(severity, message, exc_info=exc_info)
 
     def create_torrent(self, metainfo, save_incomplete_as, save_as,
-                       hidden=False, is_auto_update=False):
+                       hidden=False, is_auto_update=False, feedback=None):
         if self.is_single_torrent and len(self.torrents) > 0:
-            print "create_torrent: len(self.torrents)=", len(self.torrents)
             raise TooManyTorrents(_("MultiTorrent is set to download only "
                  "a single torrent, but tried to create more than one."))
 
@@ -285,7 +308,8 @@ class MultiTorrent(Feedback):
                         "already running.")
                 raise TorrentAlreadyRunning(msg)
             else:
-                raise TorrentAlreadyInQueue(_("This torrent (or one with the same contents) is "
+                raise TorrentAlreadyInQueue(_("This torrent (or one with "
+                                              "the same contents) is "
                                               "already waiting to run."))
         self._dump_metainfo(metainfo)
 
@@ -300,6 +324,9 @@ class MultiTorrent(Feedback):
                     self.singleport_listener, self.ratelimiter,
                     self.total_downmeasure, self.filepool, self.dht, self,
                     self.log_root, hidden=hidden, is_auto_update=is_auto_update)
+        if feedback:
+            t.add_feedback(feedback)
+            
         retdf = Deferred()
 
         def torrent_started(*args):
@@ -307,7 +334,8 @@ class MultiTorrent(Feedback):
                 t.update_config(config)
 
             t._dump_torrent_config()
-            self._dump_torrents()
+            if self.resume_from_torrent_config:
+                self._dump_torrents()
             t.metainfo.show_encoding_errors(self.logger.log)
 
             retdf.callback(t)
@@ -316,7 +344,6 @@ class MultiTorrent(Feedback):
         df.addCallback(torrent_started)
 
         return retdf
-
 
     def remove_torrent(self, ihash, del_files=False):
         # this feels redundant. the torrent will stop the download itself,
@@ -338,15 +365,16 @@ class MultiTorrent(Feedback):
         df = t.shutdown()
 
         df.addCallback(lambda *args: t.remove_state_files(del_files=del_files))
-        try:
+
+        if ihash in self.running:
             del self.running[ihash]
-        except:
-            pass
+
         # give the torrent a blank feedback, so post-mortem errors don't
         # confuse multitorrent
         t.feedback = Feedback()
         del self.torrents[ihash]
-        self._dump_torrents()
+        if self.resume_from_torrent_config:
+            self._dump_torrents()
 
         return df
 
@@ -541,7 +569,6 @@ class MultiTorrent(Feedback):
         infohash = metainfo.infohash
         path = os.path.join(self.data_dir, 'metainfo',
                             infohash.encode('hex'))
-
         f = file(path+'.new', 'wb')
         f.write(metainfo.to_data())
         f.close()
@@ -609,6 +636,8 @@ class MultiTorrent(Feedback):
                                       lambda *e : self.logger.error(*e))
 
     def _dump_torrents(self):
+        assert self.resume_from_torrent_config 
+
         self.last_save_time = bttime()
         r = []
         def write_entry(infohash, t):
@@ -739,7 +768,7 @@ class MultiTorrent(Feedback):
 
             return infohash, t
         # BEGIN _restore_state
-        assert not self.is_single_torrent
+        assert self.resume_from_torrent_config
         filename = os.path.join(self.data_dir, 'ui_state')
         if not os.path.exists(filename):
             return

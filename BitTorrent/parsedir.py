@@ -11,9 +11,12 @@
 # Written by John Hoffman and Uoti Urpala
 
 import os
+import sys #DEBUG
 from BitTorrent.hash import sha
+from BitTorrent import GetTorrent
 
-_ = _ # put _ into the module namespace so the console doesn't override it
+from BitTorrent.translation import _
+from BitTorrent.obsoletepythonsupport import set
 
 from BitTorrent.bencode import bencode, bdecode
 from BitTorrent.btformats import check_message
@@ -31,18 +34,12 @@ def parsedir(directory, parsed, files, blocked, errfunc,
        from the previous iteration of parsedir.
 
        @param directory: root of the breadth-first search for .torrent files.
-       @param parsed: dict mapping infohash on to a dict containing
-          torrent-specific info.
-          
-          Ex: consider movie 'Sea' referenced by metainfo file c.torrent.
-          infohash -> 
-          { path:'/a/b/c.torrent', file:'c.torrent', length:90911, name:'Sea',
-            metainfo:<metainfo>} 
+       @param parsed: dict mapping infohash to ConvertedMetainfo.
        @param files: dict mapping path -> [(modification time, size), infohash]
        @param blocked: dict used as set.  keys are list of paths of files
           that were not parsed on a prior call to parsedir for some reason.
           Valid reasons are that the .torrent file is unparseable or that a
-          torrent with a matching infohash is alread in the parsed set.
+          torrent with a matching infohash is already in the parsed set.
        @param errfunc: error-reporting callback.
        @param include_metainfo:
        @return: The tuple (new parsed, new files, new blocked, added, removed)
@@ -58,7 +55,7 @@ def parsedir(directory, parsed, files, blocked, errfunc,
         errfunc('checking dir')
     dirs_to_check = [directory]
     new_files = {}          # maps path -> [(modification time, size),infohash]
-    new_blocked = {}        # used as a set.
+    new_blocked = set()
     while dirs_to_check:    # first, recurse directories and gather torrents
         directory = dirs_to_check.pop()
         newtorrents = False
@@ -72,7 +69,7 @@ def parsedir(directory, parsed, files, blocked, errfunc,
                 newtorrents = True
                 p = os.path.join(directory, f)
                 try:
-                    new_files[p] = [(os.path.getmtime(p),os.path.getsize(p)),0]
+                    new_files[p] = [(os.path.getmtime(p), os.path.getsize(p)), 0]
                 except (IOError, OSError), e:
                     errfunc(_("Could not stat ") + p + " : " + unicode(e.args[0]))
         if not newtorrents:
@@ -87,7 +84,7 @@ def parsedir(directory, parsed, files, blocked, errfunc,
     removed = {}
     # files[path] = [(modification_time, size),infohash], hash is 0 if the file
     # has not been successfully parsed
-    for p,v in new_files.items():   # re-add old items and check for changes
+    for p, v in new_files.iteritems():   # re-add old items and check for changes
         oldval = files.get(p)
         if oldval is None:     # new file
             to_add.append(p)
@@ -101,7 +98,7 @@ def parsedir(directory, parsed, files, blocked, errfunc,
                     new_parsed[h] = parsed[h]
                 new_files[p] = oldval
             else:
-                new_blocked[p] = None  # same broken unparseable file
+                new_blocked.add(p)  # same broken unparseable file
             continue
         if p not in blocked and h in parsed:  # modified; remove+add
             if NOISY:
@@ -113,18 +110,27 @@ def parsedir(directory, parsed, files, blocked, errfunc,
     for p in to_add:                # then, parse new and changed torrents
         new_file = new_files[p]
         v = new_file[0]             # new_file[0] is the file's (mod time,sz).
-        if new_file[1] in new_parsed:  # duplicate, i.e., have same infohash.
+        infohash = new_file[1]
+        if infohash in new_parsed:  # duplicate, i.e., have same infohash.
             if p not in blocked or files[p][0] != v:
                 errfunc(_("**warning** %s is a duplicate torrent for %s") %
-                        (p, new_parsed[new_file[1]]['path']))
-            new_blocked[p] = None
+                        (p, new_parsed[infohash]['path']))
+            new_blocked.add(p)
             continue
 
         if NOISY:
             errfunc('adding '+p)
+
         try:
             ff = open(p, 'rb')
-            d = bdecode(ff.read())
+            try:
+                d = bdecode(ff.read())
+            finally:                
+                try:
+                    ff.close()
+                except:
+                    pass
+
             check_message(d)
             h = sha(bencode(d['info'])).digest()
             new_file[1] = h
@@ -161,19 +167,16 @@ def parsedir(directory, parsed, files, blocked, errfunc,
             if include_metainfo:
                 a['metainfo'] = d
         except:
-            errfunc(_("**warning** %s has errors") % p)
-            new_blocked[p] = None
+            errfunc(_("**warning** %s has errors") % p, exc_info=sys.exc_info())
+            new_blocked.add(p)
             continue
-        try:
-            ff.close()
-        except:
-            pass
+
         if NOISY:
             errfunc(_("... successful"))
         new_parsed[h] = a
         added[h] = a
 
-    for p,v in files.iteritems():       # and finally, mark removed torrents
+    for p, v in files.iteritems():       # and finally, mark removed torrents
         if p not in new_files and p not in blocked:
             if NOISY:
                 errfunc(_("removing %s") % p)

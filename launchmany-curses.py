@@ -24,13 +24,21 @@ from time import time, localtime, strftime
 
 from BitTorrent.obsoletepythonsupport import *
 from BitTorrent import platform
-from BitTorrent.platform import encode_for_filesystem, decode_from_filesystem
 from BitTorrent.launchmanycore import LaunchMany
 from BitTorrent.defaultargs import get_defaults
 from BitTorrent.parseargs import parseargs, printHelp
+from BitTorrent.prefs import Preferences
 from BitTorrent import configfile
 from BitTorrent import version
+from BitTorrent.platform import encode_for_filesystem, decode_from_filesystem
 from BitTorrent import BTFailure
+from BitTorrent import bt_log_fmt
+import logging
+import traceback
+from logging import ERROR, WARNING, INFO
+from BitTorrent import console, STDERR #, inject_main_logfile
+
+
 
 try:
     curses = import_curses()
@@ -200,7 +208,7 @@ class CursesDisplayer(object):
                 self._display_line('')
                 if self._display_line(''):
                     break
-            ( name, status, progress, peers, seeds, seedsmsg, dist,
+            ( name, status, progress, peers, seeds, seedsmsg, #dist,
               uprate, dnrate, upamt, dnamt, size, t, msg ) = data[ii]
             t = fmttime(t)
             if t:
@@ -212,8 +220,8 @@ class CursesDisplayer(object):
             line = "%3d %s%s%s%s" % (ii+1, name, size, dnrate, uprate)
             self._display_line(line, True)
             if peers + seeds:
-                datastr = _("    (%s) %s - %s peers %s seeds %s dist copies - %s dn %s up") % (
-                    progress, status, peers, seeds, dist,
+                datastr = _("    (%s) %s - %s peers %s seeds - %s dn %s up") % (
+                    progress, status, peers, seeds, #dist,
                     fmtsize(dnamt), fmtsize(upamt) )
             else:
                 datastr = '    '+status+' ('+progress+')'
@@ -222,6 +230,7 @@ class CursesDisplayer(object):
             i += 1
 
     def display(self, data):
+      try:
         if self.changeflag.isSet():
             return
 
@@ -237,7 +246,7 @@ class CursesDisplayer(object):
                                   _("no torrents"), 12, curses.A_BOLD )
         totalup = 0
         totaldn = 0
-        for ( name, status, progress, peers, seeds, seedsmsg, dist,
+        for ( name, status, progress, peers, seeds, seedsmsg, #dist,
               uprate, dnrate, upamt, dnamt, size, t, msg ) in data:
             totalup += uprate
             totaldn += dnrate
@@ -255,11 +264,16 @@ class CursesDisplayer(object):
         curses.panel.update_panels()
         curses.doupdate()
 
-        return inchar in (ord('q'),ord('Q'))
+      except:
+          pass
+      return inchar in (ord('q'),ord('Q'))
 
     def message(self, s):
+      try:
         self.messages.append(strftime('%x %X - ',localtime(time()))+s)
         self._display_messages()
+      except:
+        pass
 
     def _display_messages(self):
         self.statuswin.erase()
@@ -274,10 +288,12 @@ class CursesDisplayer(object):
         exceptions.append(s)
         self.message(_("SYSTEM ERROR - EXCEPTION GENERATED"))
 
-
-
-def LaunchManyWrapper(scrwin, config):
-    LaunchMany(config, CursesDisplayer(scrwin), 'launchmany-curses')
+def modify_default( defaults_tuplelist, key, newvalue ):
+    name,value,doc = [(n,v,d) for (n,v,d) in defaults_tuplelist if n == key][0]
+    defaults_tuplelist = [(n,v,d) for (n,v,d) in defaults_tuplelist
+                    if not n == key]
+    defaults_tuplelist.append( (key,newvalue,doc) )
+    return defaults_tuplelist
 
 
 if __name__ == '__main__':
@@ -287,26 +303,23 @@ if __name__ == '__main__':
         if len(sys.argv) < 2:
             printHelp(uiname, defaults)
             sys.exit(1)
-            
+
         # Modifying default values from get_defaults is annoying...
         # Implementing specific default values for each uiname in
         # defaultargs.py is even more annoying.  --Dave
-        data_dir = [[name, value,doc] for (name, value, doc) in defaults
-                        if name == "data_dir"][0]
-        defaults = [(name, value,doc) for (name, value, doc) in defaults
-                        if not name == "data_dir"]        
         ddir = os.path.join( platform.get_dot_dir(), "launchmany-curses" )
-        data_dir[1] = decode_from_filesystem(ddir)
-        defaults.append( tuple(data_dir) )
+        ddir = decode_from_filesystem(ddir)
+        modify_default(defaults, 'data_dir', ddir)
         config, args = configfile.parse_configuration_and_args(defaults,
                                       uiname, sys.argv[1:], 0, 1)
+        
         if args:
             torrent_dir = args[0]
             config['torrent_dir'] = \
-                platform.decode_from_filesystem(torrent_dir)
+                platform.decode_from_filesystem(torrent_dir)    
         else:
             torrent_dir = config['torrent_dir']
-            torrent_dir,bad = platform.encode_from_filesystem(torrent_dir)
+            torrent_dir,bad = platform.encode_for_filesystem(torrent_dir)
             if bad:
               raise BTFailure(_("Warning: ")+config['torrent_dir']+
                               _(" is not a directory"))
@@ -314,12 +327,65 @@ if __name__ == '__main__':
         if not os.path.isdir(torrent_dir):
             raise BTFailure(_("Warning: ")+torrent_dir+
                             _(" is not a directory"))
+
+        # the default behavior is to save_in files to the platform
+        # get_save_dir.  For launchmany, if no command-line argument 
+        # changed the save directory then use the torrent directory.
+        if config['save_in'] == platform.get_save_dir():
+            config['save_in'] = config['torrent_dir']
+        
     except BTFailure, e:
         print _("error: ") + unicode(e.args[0]) + \
               _("\nrun with no args for parameter explanations")
         sys.exit(1)
+    except KeyboardInterrupt:
+        sys.exit(1)
 
-    curses_wrapper(LaunchManyWrapper, config)
+    #inject_main_logfile()
+
+    class LaunchManyApp(object):
+        class LogHandler(logging.Handler):
+            def __init__(self, level, displayer):
+                logging.Handler.__init__(self,level)
+                self.displayer = displayer
+            def emit(self, record):
+                if len(record.getMessage()) > 0:
+                    self.displayer.message(record.getMessage() ) 
+                if record.exc_info is not None:
+                    self.displayer.message(
+                        "Traceback (most recent call last):" )
+                    tb = record.exc_info[2]
+                    stack = traceback.extract_tb(tb)
+                    l = traceback.format_list(stack)
+                    for s in l:
+                        self.displayer.message( " %s" % s )
+                    self.displayer.message( " %s: %s" %
+                        ( str(record.exc_info[0]),str(record.exc_info[1])))
+
+        def __init__(self):
+            pass
+        
+        def run(self,scrwin, config):
+            self.displayer = CursesDisplayer(scrwin)
+            
+            log_handler = LaunchManyApp.LogHandler(STDERR, self.displayer)
+            log_handler.setFormatter(bt_log_fmt)
+            logging.getLogger('').addHandler(log_handler)
+            logging.getLogger().setLevel(STDERR)
+            logging.getLogger('').removeHandler(console)
+            
+            # more liberal with logging launchmany-curses specific output.
+            lmany_logger = logging.getLogger('launchmany-curses')
+            lmany_handler = LaunchManyApp.LogHandler(INFO, self.displayer)
+            lmany_handler.setFormatter(bt_log_fmt)
+            lmany_logger.setLevel(INFO)
+            lmany_logger.addHandler(lmany_handler)
+
+            config = Preferences().initWithDict(config)
+            LaunchMany(config, self.displayer.display, 'launchmany-curses')
+
+    app = LaunchManyApp()
+    curses_wrapper(app.run, config)
     if exceptions:
         print _("\nEXCEPTION:")
         print exceptions[0]

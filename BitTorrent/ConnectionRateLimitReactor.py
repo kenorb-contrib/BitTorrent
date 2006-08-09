@@ -41,7 +41,12 @@ class HookedFactory(object):
 
 class IRobotConnector(object):
     if zope:
-        implements(interfaces.IConnector)
+        try:
+            implements(interfaces.IConnector)
+        except:
+            # stupid zope verisons!
+            pass
+
     def __init__(self, reactor, host, port, factory, timeout, bindAddress):
         self.reactor = reactor
         self.host = host

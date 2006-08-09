@@ -11,22 +11,7 @@
 # Written by Bill Bumgarner and Bram Cohen
 
 # Dave's comments:
-# makeHelp has no less than 4 elif's based on uiname.  If we are
-# going to add an elif for each ui then why not put the code
-# in the UI file.  If we put it all here then the modification
-# of code that should affect one UI can cause unintended
-# side effects causing other UI's to break.  Furthermore to
-# add ui requires searching through defaultargs and parseargs
-# to modify if-statements.  Default behavior could be provided
-# with a UI class.  GUI-specific deviations could be written
-# in a subclass.
-#
-# printHelp reaches into GUI to create a HelpWindow based on
-# uiname as an antecedent.
-#
-# If you don't like the idea of creating a class then we could at
-# least pass in arg descriptions like [OPTIONS] [TORRENTDIRECTORY]
-# rather than defining them directly in makeHelp.
+# makeHelp has no less than 4 elif's based on uiname. Doh.
 #
 # I like the function parseargs.  It makes no UI-specific assumptions.
 

@@ -18,37 +18,44 @@ if __name__ == '__main__':
 import sys
 import os
 
+from BitTorrent import platform
 from BitTorrent.launchmanycore import LaunchMany
 from BitTorrent.defaultargs import get_defaults
 from BitTorrent.parseargs import parseargs, printHelp
 from BitTorrent.prefs import Preferences
 from BitTorrent import configfile
 from BitTorrent import version
-from BitTorrent import platform
 from BitTorrent.platform import encode_for_filesystem, decode_from_filesystem
 from BitTorrent import BTFailure
 from BitTorrent import bt_log_fmt
 import logging
 from logging import ERROR, WARNING, INFO
-from BitTorrent import console, old_stderr
+from BitTorrent import console, old_stderr, STDERR
 
 exceptions = []
 
 class HeadlessDisplayer:
     def display(self, data):
         # formats the data and dumps it to the root logger.
-        print ''
+        #print ''
         if not data:
-            print _("no torrents")
+            logging.getLogger('launchmany-console').info( _("no torrents"))
         for x in data:
-            ( name, status, progress, peers, seeds, seedsmsg, dist,
+            ( name, status, progress, peers, seeds, seedsmsg, 
               uprate, dnrate, upamt, dnamt, size, t, msg ) = x
-            logging.getLogger('').info(
-                '"%s": "%s" (%s) - %sP%s%s%.3fD u%0.1fK/s-d%0.1fK/s u%dK-d%dK "%s"' % (
-                name, status, progress, peers, seeds, seedsmsg, dist,
+            logging.getLogger('launchmany-console').info(
+                '"%s": "%s" (%s) - %sP%s%s u%0.1fK/s-d%0.1fK/s u%dK-d%dK "%s"' % (
+                name, status, progress, peers, seeds, seedsmsg,
                 uprate/1000, dnrate/1000, upamt/1024, dnamt/1024, msg))
         return False
 
+def modify_default( defaults_tuplelist, key, newvalue ):
+    name,value,doc = [(n,v,d) for (n,v,d) in defaults_tuplelist if n == key][0]
+    defaults_tuplelist = [(n,v,d) for (n,v,d) in defaults_tuplelist
+                    if not n == key]
+    defaults_tuplelist.append( (key,newvalue,doc) )
+    return defaults_tuplelist
+    
 
 if __name__ == '__main__':
     uiname = 'launchmany-console'
@@ -61,22 +68,20 @@ if __name__ == '__main__':
         # Modifying default values from get_defaults is annoying...
         # Implementing specific default values for each uiname in
         # defaultargs.py is even more annoying.  --Dave
-        data_dir = [[name, value,doc] for (name, value, doc) in defaults
-                        if name == "data_dir"][0]
-        defaults = [(name, value,doc) for (name, value, doc) in defaults
-                        if not name == "data_dir"]        
         ddir = os.path.join( platform.get_dot_dir(), "launchmany-console" )
-        data_dir[1] = decode_from_filesystem(ddir)
-        defaults.append( tuple(data_dir) )
+        ddir = decode_from_filesystem(ddir)
+        modify_default(defaults, 'data_dir', ddir)
         config, args = configfile.parse_configuration_and_args(defaults,
                                       uiname, sys.argv[1:], 0, 1)
+
+        # returned from here config['save_in'] is /home/dave/Desktop/...
         if args:
             torrent_dir = args[0]
             config['torrent_dir'] = \
                 platform.decode_from_filesystem(torrent_dir)
         else:
             torrent_dir = config['torrent_dir']
-            torrent_dir,bad = platform.encode_from_filesystem(torrent_dir)
+            torrent_dir,bad = platform.encode_for_filesystem(torrent_dir)
             if bad:
               raise BTFailure(_("Warning: ")+config['torrent_dir']+
                               _(" is not a directory"))
@@ -84,6 +89,12 @@ if __name__ == '__main__':
         if not os.path.isdir(torrent_dir):
             raise BTFailure(_("Warning: ")+torrent_dir+
                             _(" is not a directory"))
+
+        # the default behavior is to save_in files to the platform
+        # get_save_dir.  For launchmany, if no command-line argument 
+        # changed the save directory then use the torrent directory.
+        if config['save_in'] == platform.get_save_dir():
+            config['save_in'] = config['torrent_dir']
     except BTFailure, e:
         print _("error: ") + unicode(e.args[0]) + \
               _("\nrun with no args for parameter explanations")
@@ -93,50 +104,23 @@ if __name__ == '__main__':
 
     d = HeadlessDisplayer()
     
-    # install logger.
-    #class LogHandler(logging.Handler):
-    #    def __init__(self, level=logging.NOTSET):
-    #        logging.Handler.__init__(self,level)
-    #  
-    #    def emit(self, record):
-    #        print "LogHandler.emit ", record.getMessage()
-    #        global d
-    #        if record.exc_info is not None:
-    #            print "LogHandler.emit: record.exc_info is not None."
-    #            #d.exception( " %s: %s" % 
-    #            #    ( str(record.exc_info[0]), str(record.exc_info[1])))
-    #            tb = record.exc_info[2]
-    #            stack = traceback.extract_tb(tb)
-    #            l = traceback.format_list(stack)
-    #            for s in l:
-    #                d.exception(s)
-    #        d.exception( record.getMessage() )
-
-    #class LogFilter(logging.Filter):
-    #    def filter( self, record):
-    #        if record.name == "NatTraversal":
-    #            return 0
-    #        return 1  # allow.
-    #
-    #root_logger = logging.getLogger('')
-    ##log_handler = LogHandler(0)
-    #log_handler = logging.StreamHandler()
-    #log_handler.setFormatter(bt_log_fmt)
-    #log_handler.addFilter(LogFilter())
-    #root_logger.addHandler(log_handler)
-
     # BitTorrent.__init__ installs a StderrProxy that replaces sys.stderr
     # and outputs all stderr output to the logger.  Output error log to
     # original stderr to avoid infinite loop.
     stderr_console = logging.StreamHandler(old_stderr)
-    #stderr_console.setLevel(STDERR)
-    stderr_console.setLevel(0)
+    stderr_console.setLevel(STDERR)
     stderr_console.setFormatter(bt_log_fmt)
     logging.getLogger('').addHandler(stderr_console)
-    config = Preferences().initWithDict(config)
-    print "LaunchMany"
+    logging.getLogger().setLevel(STDERR)
+    logging.getLogger().removeHandler(console)
 
-    #logging.getLogger().setLevel(INFO)
-    logging.getLogger('').setLevel(0)
+    # more liberal with logging launchmany-console specific output.
+    lmany_logger = logging.getLogger('launchmany-console')
+    lmany_handler = logging.StreamHandler(old_stderr)
+    lmany_handler.setFormatter(bt_log_fmt)
+    lmany_handler.setLevel(INFO)
+    lmany_logger.setLevel(INFO)
+    lmany_logger.addHandler(lmany_handler)
     
+    config = Preferences().initWithDict(config)
     LaunchMany(config, d.display, 'launchmany-console')

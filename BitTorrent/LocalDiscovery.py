@@ -7,11 +7,18 @@ import random
 import socket
 import logging
 import Zeroconf
-from BitTorrent.HostIP import get_host_ip
+from BitTorrent.HostIP import get_deferred_host_ip, get_host_ip
 
 discovery_logger = logging.getLogger('LocalDiscovery')
 discovery_logger.setLevel(logging.DEBUG)
 #discovery_logger.addHandler(logging.StreamHandler(sys.stdout))
+
+server = None
+def _get_server():
+    global server
+    if not server:
+        server = Zeroconf.Zeroconf()
+    return server
 
 class LocalDiscovery(object):
 
@@ -19,7 +26,8 @@ class LocalDiscovery(object):
         self.rawserver = rawserver
         self.port = port
         self.got_peer = got_peer
-        self.server = Zeroconf.Zeroconf()
+        self.server = _get_server()
+        self.services = []
 
     def announce(self, infohash, peerid):
         discovery_logger.info("announcing: %s", infohash)
@@ -28,15 +36,21 @@ class LocalDiscovery(object):
         # do I need to keep the browser around?
         browser = Zeroconf.ServiceBrowser(self.server, service_name, self)
 
-        addr = socket.inet_aton(get_host_ip())
+        df = get_deferred_host_ip()
+        df.addCallback(self._announce2, peerid, service_name)
+        return df
+
+    def _announce2(self, ip, peerid, service_name):
+        addr = socket.inet_aton(ip)
         service = Zeroconf.ServiceInfo(service_name,
-                                       peerid + "." + service_name,
+                                       '%s.%s' % (peerid, service_name),
                                        address = addr,
                                        port = self.port,
-                                       weight = 0, priority=0,
+                                       weight = 0, priority = 0,
                                        properties = {}
                                       )
         self.server.registerService(service)
+        self.services.append(service)
 
     def addService(self, server, type, name):
         discovery_logger.info("Service %s added", repr(name))
@@ -47,11 +61,14 @@ class LocalDiscovery(object):
             try:
                 port = int(info.port)
             except:
-                discovery_logger.exception("Invalid Service (port not an int): %s" + repr(info.__dict__))
+                discovery_logger.exception("Invalid Service (port not an int): "
+                                           "%r" % info.__dict__)
                 return
-                
+
             addr = (host, port)
-            if addr == (get_host_ip(), self.port):
+            ip = get_host_ip()
+
+            if addr == (ip, self.port):
                 # talking to self
                 return
 
@@ -74,29 +91,26 @@ class LocalDiscovery(object):
     def stop(self):
         self.port = None
         self.got_peer = None
-        self.server.close()
+        for service in self.services:
+            self.server.unregisterService(service)
+        del self.services[:]
 
+        
 if __name__ == '__main__':
     import string
     import threading
     from BitTorrent.RawServer_twisted import RawServer
 
-    config = {'max_incomplete': 10,
-              'max_upload_rate': 350000,
-              'bind': '',
-              'close_with_rst': False,
-              'socket_timeout': 3000}
-
-    event = threading.Event()
-    rawserver = RawServer(config=config, noisy=True)
-
-    rawserver.install_sigint_handler()    
+    rawserver = RawServer()
 
     def run_task_and_exit():
-        l = LocalDiscovery(rawserver, 6881, lambda *a:sys.stdout.write("GOT: %s\n" % str(a)))
-        l.announce("63f27f5023d7e49840ce89fc1ff988336c514b64", ''.join(random.sample(string.letters, 5)))
+        l = LocalDiscovery(rawserver, 6881,
+                           lambda *a:sys.stdout.write("GOT: %s\n" % str(a)))
+        l.announce("63f27f5023d7e49840ce89fc1ff988336c514b64",
+                   ''.join(random.sample(string.letters, 5)))
     
     rawserver.add_task(0, run_task_and_exit)
 
-    rawserver.listen_forever(event)    
+    rawserver.listen_forever()
+         
     

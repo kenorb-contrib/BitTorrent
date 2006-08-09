@@ -457,7 +457,7 @@ class Connection(Handler):
                 if noisy: log( "Implements FAST_EXTENSION")
                 self.uses_fast_extension = True
         
-        yield 20 # download id
+        yield 20 # download id (i.e., infohash)
         if self.parent.download_id is None:  # incoming connection
             # modifies self.parent if successful
             self.parent.select_torrent(self, self._message)

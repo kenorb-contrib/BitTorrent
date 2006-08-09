@@ -216,7 +216,7 @@ class StorageWrapper(object):
             raise BTFailure(_("Unsupported fastresume file format, "
                               "maybe from another client version?"))
         
-    def _read_fastresume_v1(self, f ): #, working_path, destination_path):
+    def _read_fastresume_v1(self, f, working_path, destination_path):
         # skip a bunch of lines
         amount_done = int(f.readline())
         for b, e, filename in self.storage.ranges:
@@ -516,7 +516,7 @@ class StorageWrapper(object):
                 yield False                
 
             piece_len = self._piecelen(i)
-            #global_logger.debug( "i=%d, piece_len=%d" % (i,piece_len) )
+            global_logger.debug( "i=%d, piece_len=%d" % (i,piece_len) )
 
             if not self._waspre(i, piece_len):
                 # hole in the file
@@ -535,8 +535,12 @@ class StorageWrapper(object):
             s = sh.digest()
             # handle out-of-order pieces
             if s in targets and piece_len == self._piecelen(targets[s]):
-                self.checked_pieces.add(targets[s])
-                self._markgot(targets[s], i)
+                # handle one or more pieces with identical hashes properly
+                piece_found = i
+                if s != self.hashes[i]:
+                    piece_found = targets[s]
+                self.checked_pieces.add(piece_found)
+                self._markgot(piece_found, i)
             # last piece junk. I'm not even sure this is right.
             elif (not self.have[self.numpieces - 1] and
                   sp == self.hashes[-1] and

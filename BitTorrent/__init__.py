@@ -11,7 +11,7 @@
 
 
 app_name = 'BitTorrent'
-version = '4.20.4'
+version = '4.20.8'
 
 URL = 'http://www.bittorrent.com/'
 DONATE_URL = URL + 'donate.html?client=%(client)s'
@@ -63,7 +63,7 @@ def urlquote_error(error):
      s = s.encode('utf8')
      s = urllib.quote(s)
      s = s.decode('ascii')
-     return (s, s.end)
+     return (s, error.end)
 
 codecs.register_error('urlquote', urlquote_error)
 

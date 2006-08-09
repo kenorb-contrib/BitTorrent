@@ -419,9 +419,14 @@ def get_defaults(ui):
             ('display_interval', 5,
             _("seconds between updates of displayed information")),
             ] )
-    elif ui.startswith('launchmany'):
+    elif ui.startswith('launchmany-console'):
         r.extend([
             ('display_interval', 60,
+            _("seconds between updates of displayed information")),
+            ] )
+    elif ui.startswith('launchmany-curses'):
+        r.extend([
+            ('display_interval', 3,
             _("seconds between updates of displayed information")),
             ] )
         

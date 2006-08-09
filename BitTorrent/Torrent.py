@@ -80,6 +80,22 @@ class Feedback(object):
         pass
 
 
+class FeedbackMultiplier(object):
+    def __init__(self, *a):
+        self.chain = list(a)
+    def __getattr__(self, attr):
+        def multiply_calls(*a, **kw):
+            exc_info = None
+            for x in self.chain:
+                try:
+                    getattr(x, attr)(*a, **kw)
+                except:
+                    exc_info = sys.exc_info()
+            if exc_info:
+                raise exc_info[0], exc_info[1], exc_info[2]
+        return multiply_calls
+
+
 class Torrent(object):
     """Represents a single file transfer or transfer for a batch of files
        in the case of a batch torrent.  During the course of a single
@@ -105,7 +121,7 @@ class Torrent(object):
 
         self.state = "created"
         self.data_dir = data_dir
-        self.feedback = feedback
+        self.feedback = FeedbackMultiplier(feedback)
         self.finished_this_session = False
         self._rawserver = rawserver
         self._singleport_listener = singleport_listener
@@ -503,18 +519,6 @@ class Torrent(object):
             self.get_file_priorities, self._myfiles,
             self._connection_manager.ever_got_incoming, None)
 
-        for url_prefix in self.metainfo.url_list:
-            r = urlparse.urlparse(url_prefix)
-            host = r[1]
-            if ':' in host:
-                host, port = host.split(':')
-                port = int(port)
-            else:
-                port = 80
-            # TODO: async hostname resolution
-            ip = socket.gethostbyname(host)
-            self._connection_manager.start_http_connection((ip, port), url_prefix)
-
         self.state = "initialized"
 
     def start_download(self):
@@ -576,6 +580,18 @@ class Torrent(object):
         if self._dht and len(self._dht.table.findNodes(self.infohash)) == 0:
             self.add_task(5, self._dht.findCloseNodes)
         self._rerequest.begin()
+
+        for url_prefix in self.metainfo.url_list:
+            r = urlparse.urlparse(url_prefix)
+            host = r[1]
+            if ':' in host:
+                host, port = host.split(':')
+                port = int(port)
+            else:
+                port = 80
+            # TODO: async hostname resolution
+            ip = socket.gethostbyname(host)
+            self._connection_manager.start_http_connection((ip, port), url_prefix)
 
         self.state = "running"
         if not self.finflag.isSet():
@@ -684,6 +700,12 @@ class Torrent(object):
     def get_file_priority(self, filename):
         fp = self.get_file_priorities()
         return fp.get(filename, 0)
+
+    def add_feedback(self, feedback):
+        self.feedback.chain.append(feedback)
+
+    def remove_feedback(self, feedback):
+        self.feedback.chain.remove(feedback)        
 
     def got_exception(self, type, e, stack, cannot_shutdown=False):
         severity = logging.CRITICAL

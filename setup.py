@@ -39,27 +39,36 @@ os.rmdir('FOO')
 
 extra_docs = []
 
-symlinks = ["bittorrent" , "bittorrent-curses", "bittorrent-console",
-           "maketorrent",                      "maketorrent-console",
-                          "launchmany-curses", "launchmany-console",
-                                               "changetracker-console",
-                                               "torrentinfo-console",
-           "bittorrent-tracker",
-           ]
+symlinks = ["bittorrent" ,
+            "bittorrent-curses",
+            "bittorrent-console",
+            "maketorrent",
+            "maketorrent-console",
+            "launchmany-curses",
+            "launchmany-console",
+            "changetracker-console",
+            "torrentinfo-console",
+            "bittorrent-tracker",
+            ]
 
-scripts = []
-
-for s in symlinks:
-    script = s+'.py'
-    if not os.access(s, os.F_OK):
-        os.symlink(script, s)
-    scripts.append(script)
+scripts = [s + '.py' for s in symlinks]
+for script in scripts:
     os.chmod(script, 0755)
 
-use_scripts = symlinks
 if sys.argv[1:2] == ['sdist'] or not case_sensitive_filesystem:
     use_scripts = scripts
+else:
+    for s in symlinks:
+        script = s + '.py'
+        if not os.access(s, os.F_OK):
+            os.symlink(script, s)
+        scripts.append(script)
+    use_scripts = symlinks
+
+
+if os.name == 'nt':
     extra_docs.append('BUILD.windows.txt')
+
 
 img_root, doc_root, locale_root = calc_unix_dirs()
 
@@ -85,7 +94,7 @@ if not os.path.exists('locale'):
 for l in languages:
     path = os.path.join('locale', l, 'LC_MESSAGES', 'bittorrent.mo')
     if os.access(path, os.F_OK):
-        data_files.append((os.path.join(locale_root, l, 'LC_MESSAGES'), 
+        data_files.append((os.path.join(locale_root, l, 'LC_MESSAGES'),
                              [path,]))
 
 attrs = {

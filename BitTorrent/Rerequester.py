@@ -21,7 +21,7 @@ from BitTorrent.translation import _
 import BitTorrent.stackthreading as threading
 from BitTorrent import version
 from BitTorrent.platform import bttime
-from BitTorrent.zurllib import urlopen, quote, Request
+from BitTorrent.zurllib import urlopen, quote, Request, URLError
 from BitTorrent.btformats import check_peers
 from BitTorrent.bencode import bencode, bdecode
 from BitTorrent.defer import ThreadedDeferred
@@ -322,7 +322,11 @@ class Rerequester(object):
         # exception class especially when proxies are used, at least
         # ValueError and stuff from httplib
         except Exception, e:
-            r = _("Problem connecting to tracker - ") + unicode(e.args[0])
+            try:
+                s = unicode(e.args[0])
+            except:
+                s = unicode(e)
+            r = _("Problem connecting to tracker - %s") % s
             def f():
                 self._postrequest(errormsg=r, exc=e, peerid=peerid)
         else:
@@ -330,22 +334,25 @@ class Rerequester(object):
                 self._postrequest(data=data, peerid=peerid)
         self.externalsched(0, f)
 
-    def _fail(self, exc=None):
+    def _give_up(self):
+        if self.howmany() == 0 and self.amount_left() > 0:
+            # sched shouldn't be strictly necessary
+            def die():
+                self.diefunc(logging.CRITICAL,
+                             _("Aborting the torrent as it could not "
+                               "connect to the tracker while not "
+                               "connected to any peers. "))
+            self.sched(0, die)        
+
+    def _fail(self, exc=None, rejected=False):
         assert thread.get_ident() == self.rawserver.ident
 
         if self.announce_list:
             restarted = self.announce_list_fail()
             if restarted:
                 self.fail_wait = None
-
-                if self.howmany() > 0:
-                    # sched shouldn't be strictly necessary
-                    def die():
-                        self.diefunc(logging.CRITICAL,
-                                     _("Aborting the torrent as it could not "
-                                       "connect to the tracker while not "
-                                       "connected to any peers. "))
-                    self.sched(0, die)
+                if rejected:
+                    self._give_up()
             else:            
                 self.baseurl = self.announce_list_next()
             
@@ -354,10 +361,14 @@ class Rerequester(object):
                 # probably not abusive since there was no one there to abuse.
                 # In the timeout case, our socket timeout is high enough that
                 # we simulate fail_wait anyway.
-                if isinstance(exc, socket.error):
+                # URLError is here because of timeouts.
+                if isinstance(exc, socket.error) or isinstance(exc, URLError):
                     self._check()
                     return
-
+        else:
+            if rejected:
+                self._give_up()
+                    
         if self.fail_wait is None:
             self.fail_wait = 50
         else:
@@ -396,7 +407,7 @@ class Rerequester(object):
         if r.has_key('failure reason'):
             self.errorfunc(logging.ERROR, _("rejected by tracker - ") +
                            r['failure reason'])
-            self._fail()
+            self._fail(rejected=True)
             return
 
         self.fail_wait = None

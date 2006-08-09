@@ -17,12 +17,17 @@ class ThreadProxy(object):
                 except:
                     # hm, the exc_info holds a reference to the deferred, I think
                     self.queue_task(df.errback, sys.exc_info())
+                    #del df
                 else:
                     if isinstance(v, Deferred):
-                        # v is owned by the proxied thread, so add the callback
-                        # now, but the task itself should queue for the caller
-                        # thread
-                        v.addCallback(lambda r : self.queue_task(df.callback, r))
+                        # v is owned by the caller, so add the callback
+                        # now, but the task itself should queue.
+                        # lamdba over df here would break 'del df' above
+                        # so do it with a local function.
+                        def make_queueback(func):
+                            return lambda r : self.queue_task(func, r)
+                        v.addCallback(make_queueback(df.callback))
+                        v.addErrback(make_queueback(df.errback))
                     else:
                         self.queue_task(df.callback, v)
             reactor.callFromThread(inner, *args, **kwargs)

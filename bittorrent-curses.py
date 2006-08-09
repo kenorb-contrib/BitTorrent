@@ -415,6 +415,7 @@ class CursesTorrentApp(object):
         # either raise the level or install a logging.Filter:
         log_handler.addFilter(CursesTorrentApp.LogFilter())
         logging.getLogger().setLevel(WARNING)
+        #logging.getLogger().setLevel(0)
 
     def start_torrent(self,metainfo,save_incomplete_as,save_as):
         """Tells the MultiTorrent to begin downloading."""
@@ -443,7 +444,6 @@ class CursesTorrentApp(object):
         
     def run(self, scrwin):
         self.core_doneflag = DeferredEvent()
-        rawserver_doneflag = DeferredEvent()
         rawserver = RawServer(self.config)
 
         # set up shut-down procedure before we begin doing things that
@@ -454,10 +454,10 @@ class CursesTorrentApp(object):
                             'fractionDone':0})
             if self.multitorrent:
                 df = self.multitorrent.shutdown()
-                set_flag = lambda *a : rawserver_doneflag.set()
+                set_flag = lambda *a : rawserver.stop()
                 df.addCallbacks(set_flag, set_flag)
             else:
-                rawserver_doneflag.set()
+                rawserver.stop()
                         
         # It is safe to addCallback here, because there is only one thread,
         # but even if the code were multi-threaded, core_doneflag has not
@@ -520,9 +520,10 @@ class CursesTorrentApp(object):
 
         try:
             self.multitorrent = \
-                MultiTorrent(self.config, rawserver, 
-                             data_dir, is_single_torrent = True )
-                
+                MultiTorrent(self.config, rawserver, data_dir,
+                             is_single_torrent = True,
+                             resume_from_torrent_config = False)
+               
             self.d.set_torrent_values(metainfo.name, os.path.abspath(saveas),
                                 metainfo.total_bytes, len(metainfo.hashes))
             self.start_torrent(self.metainfo, save_incomplete_as, saveas)
@@ -537,7 +538,7 @@ class CursesTorrentApp(object):
         
         # always make sure events get processed even if only for
         # shutting down.
-        rawserver.listen_forever(rawserver_doneflag)
+        rawserver.listen_forever()
 
     def reread_config(self):
         try:
