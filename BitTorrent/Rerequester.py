@@ -326,7 +326,7 @@ class Rerequester(object):
                 s = unicode(e.args[0])
             except:
                 s = unicode(e)
-            r = _("Problem connecting to tracker - %s") % s
+            r = _("Problem connecting to tracker - %s: %s") % (e.__class__, s)
             def f():
                 self._postrequest(errormsg=r, exc=e, peerid=peerid)
         else:

@@ -275,7 +275,8 @@ class ConnectionWrapper(object):
             self.close()
 
     def close(self):
-        self.buffer.stopWriting()
+        if self.buffer:
+            self.buffer.stopWriting()
 
         if self.rawserver.config['close_with_rst']:
             try:
@@ -921,7 +922,7 @@ class RawServer(RawServerMixin):
         reactor.iterate(period)
 
     def stop(self):
-        if not self.doneflag.isSet():
+        if self.doneflag and not self.doneflag.isSet():
             self.doneflag.set()
 
     def _safestop(self, r=None):

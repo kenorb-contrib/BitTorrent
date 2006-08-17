@@ -343,6 +343,7 @@ class IPCWin32Socket(IPCSocketBase):
             s.send(tobinary(len(command)))
             s.send(command)
             for data in datas:
+                data = data.encode('utf-8')
                 s.send(tobinary(len(data)))
                 s.send(data)
             s.close()
@@ -461,6 +462,7 @@ class IPCWin32DDE(IPC):
         if s.count("\0") > 0:
             ipc_logger.warinig("IPC: String with null byte(s):" + s)
             s = s.replace("\0", "\\**0")
+        s = s.encode('utf-8')
         result = self.conversation.Request(s)
 
     def stop(self):

@@ -1570,6 +1570,8 @@ class TorrentPanel(BTPanel):
         if self.torrent.completion >= 1:
             self.change_to_completed()
 
+        self.toggle_details()
+
         self.sizer.Layout()
 
 
@@ -1872,6 +1874,7 @@ class LogWindow(wx.LogWindow, MagicShow):
         wx.LogWindow.__init__(self, *a, **k)
         frame = self.GetFrame()
         frame.SetIcon(wx.the_app.icon)
+        frame.SetSize((900, 300))
         frame.GetStatusBar().Destroy()
         # don't give all log messages to their previous handlers
         # we'll enable this as we need it.

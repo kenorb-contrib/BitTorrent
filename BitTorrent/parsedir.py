@@ -122,59 +122,57 @@ def parsedir(directory, parsed, files, blocked, errfunc,
             errfunc('adding '+p)
 
         try:
-            ff = open(p, 'rb')
-            try:
-                d = bdecode(ff.read())
-            finally:                
-                try:
-                    ff.close()
-                except:
-                    pass
+            metainfo = GetTorrent.get(p)
+            new_file[1] = metainfo.infohash
 
-            check_message(d)
-            h = sha(bencode(d['info'])).digest()
-            new_file[1] = h
-            if new_parsed.has_key(h):
+            #ff = open(p, 'rb')
+            #d = bdecode(ff.read())
+            #check_message(d)
+            #h = sha(bencode(d['info'])).digest()
+            #new_file[1] = h
+            if new_parsed.has_key(metainfo.infohash):
                 errfunc(_("**warning** %s is a duplicate torrent for %s") %
-                        (p, new_parsed[h]['path']))
-                new_blocked[p] = None
+                        (p, new_parsed[metainfo.infohash][0]))
+                new_blocked.add(p)
                 continue
-
-            a = {}
-            a['path'] = p
-            f = os.path.basename(p)
-            a['file'] = f
-            i = d['info']
-            l = 0
-            nf = 0
-            if i.has_key('length'):
-                l = i.get('length',0)
-                nf = 1
-            elif i.has_key('files'):
-                for li in i['files']:
-                    nf += 1
-                    if li.has_key('length'):
-                        l += li['length']
-            a['numfiles'] = nf
-            a['length'] = l
-            a['name'] = i.get('name', f)
-            def setkey(k, d = d, a = a):
-                if d.has_key(k):
-                    a[k] = d[k]
-            setkey('failure reason')
-            setkey('warning message')
-            setkey('announce-list')
-            if include_metainfo:
-                a['metainfo'] = d
-        except:
+            
+            #a = {}
+            #a['path'] = p
+            #f = os.path.basename(p)
+            #a['file'] = f
+            #i = d['info']
+            #l = 0
+            #nf = 0
+            #if i.has_key('length'):
+            #    l = i.get('length',0)
+            #    nf = 1
+            #elif i.has_key('files'):
+            #    for li in i['files']:
+            #        nf += 1
+            #        if li.has_key('length'):
+            #            l += li['length']
+            #a['numfiles'] = nf
+            #a['length'] = l
+            #a['name'] = i.get('name', f)
+            #def setkey(k, d = d, a = a):
+            #    if d.has_key(k):
+            #        a[k] = d[k]
+            #setkey('failure reason')
+            #setkey('warning message')
+            #setkey('announce-list')
+            #if include_metainfo:
+            #    a['metainfo'] = d
+        except Exception ,e:
             errfunc(_("**warning** %s has errors") % p, exc_info=sys.exc_info())
             new_blocked.add(p)
             continue
 
         if NOISY:
             errfunc(_("... successful"))
-        new_parsed[h] = a
-        added[h] = a
+        #new_parsed[h] = a
+        #added[h] = a
+        new_parsed[metainfo.infohash] = (p,metainfo)
+        added[metainfo.infohash] = (p,metainfo)
 
     for p, v in files.iteritems():       # and finally, mark removed torrents
         if p not in new_files and p not in blocked:

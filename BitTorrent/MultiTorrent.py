@@ -515,6 +515,7 @@ class MultiTorrent(Feedback):
     def remove_auto_updates_except(self, infohash):
         for t in self.torrents.values():
             if t.is_auto_update and t.metainfo.infohash != infohash:
+                self.logger.warning(_("Cleaning up old autoupdate %s") % t.metainfo.name)
                 self.remove_torrent(t.metainfo.infohash, del_files=True)
 
 
@@ -762,7 +763,8 @@ class MultiTorrent(Feedback):
                     torrent_config = self._read_torrent_config(infohash)
                 t.update_config(torrent_config)
             except BTFailure, e:
-                self.logger.error(e)
+                self.logger.error("Read torrent config failed",
+                                  exc_info=sys.exc_info())
                 # if read_torrent_config fails then ignore the torrent...
                 return None
 

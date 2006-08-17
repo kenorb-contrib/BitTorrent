@@ -182,13 +182,9 @@ path_wrap = decode_from_filesystem
 efs = encode_for_filesystem        # abbreviate encode_for_filesystem.
 
 def efs2(path):
-    # same as encode_for_filesystem except it raise a UnicodeError when
-    # a path cannot be encoded.
-    p,bad = encode_for_filesystem(path)
-    if bad:
-        raise UnicodeError(_("Cannot encode path."))
-    return p
-    
+    # same as encode_for_filesystem, but doesn't bother returning "bad"
+    return encode_for_filesystem(path)[0]
+
 
 # NOTE: intentionally appears in the file before importing anything
 # from BitTorrent because it is called when setting --use_factory_defaults.
@@ -370,15 +366,15 @@ def no_really_makedirs(path):
             if e.errno != 17: # already exists
                 raise
 
-# For string literal subdirectories, starting with unicode and then 
-# converting to filesystem encoding may not always be necessary, but it seems 
+# For string literal subdirectories, starting with unicode and then
+# converting to filesystem encoding may not always be necessary, but it seems
 # safer to do so.  --Dave
 image_root  = os.path.join(app_root, efs2(u'images'))
 locale_root = os.path.join(app_root, efs2(u'locale'))
 no_really_makedirs(locale_root)
 
 plugin_path = []
-internal_plugin = os.path.join(app_root, efs2(u'BitTorrent'), 
+internal_plugin = os.path.join(app_root, efs2(u'BitTorrent'),
                                          efs2(u'Plugins'))
 if os.access(internal_plugin, os.F_OK):
     plugin_path.append(internal_plugin)
@@ -392,7 +388,7 @@ if not os.access(image_root, os.F_OK) or not os.access(locale_root, os.F_OK):
         image_root, doc_root, locale_root = map(
             lambda p: os.path.join(installed_prefix, p), calc_unix_dirs()
             )
-        systemwide_plugin = os.path.join(installed_prefix, efs2(u'lib'), 
+        systemwide_plugin = os.path.join(installed_prefix, efs2(u'lib'),
                                          efs2(u'BitTorrent'))
         if os.access(systemwide_plugin, os.F_OK):
             plugin_path.append(systemwide_plugin)
@@ -665,7 +661,13 @@ def remove_shortcut(dest):
 def enforce_shortcut(config, log_func):
     if os.name != 'nt':
         return
+    try:
+        return _enforce_shortcut(config, log_func)
+    except WindowsError:
+        # access denied. not much we can do.
+        traceback.print_exc()
 
+def _enforce_shortcut(config, log_func):
     path = win32api.GetModuleFileName(0)
 
     if 'python' in path.lower():
@@ -688,7 +690,6 @@ def enforce_shortcut(config, log_func):
 def enforce_association():
     if os.name != 'nt':
         return
-
     try:
         _enforce_association()
     except WindowsError:
@@ -783,7 +784,7 @@ def _enforce_association():
 
     WriteRegStr(HKCR, r"torrent\shell\open\command", "", r'"$INSTDIR\${EXENAME}" "%1"')
 
-    
+
 
 def btspawn(cmd, *args):
     ext = ''
@@ -985,7 +986,7 @@ def _gettext_install(domain, localedir=None, languages=None, unicode=False):
 
 def language_path():
     dot_dir = get_dot_dir()
-    lang_file_name = os.path.join(dot_dir, efs2(u'data'), 
+    lang_file_name = os.path.join(dot_dir, efs2(u'data'),
                                            efs2(u'language'))
     return lang_file_name
 

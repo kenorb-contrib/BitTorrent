@@ -25,7 +25,7 @@ from BitTorrent.bencode import bdecode, bencode
 from BitTorrent.platform import osx, get_temp_dir, doc_root, os_version
 from BitTorrent.yielddefer import launch_coroutine
 from BitTorrent.defer import Deferred, ThreadedDeferred
-from BitTorrent.platform import osx, get_temp_dir, doc_root
+from BitTorrent.platform import osx, get_temp_dir, doc_root, encode_for_filesystem
 from BitTorrent.yielddefer import launch_coroutine, _wrap_task
 from BitTorrent.MultiTorrent import TorrentAlreadyRunning, TorrentAlreadyInQueue, UnknownInfohash
 from BitTorrent.obsoletepythonsupport import set
@@ -33,11 +33,35 @@ from BitTorrent.obsoletepythonsupport import set
 from TorrentButler import TorrentButler
 from NewVersion import Version
 
-
 version_host = 'http://version.bittorrent.com/'
-download_url = 'http://bittorrent.com/download.html'
+download_url = 'http://www.bittorrent.com/download.html'
 
 DEBUG = False
+
+known_autoupdates = [
+    (u'BitTorrent-4.2.2.exe', '66c45a77dc29aadca5f0c2d0cd6209ab6d562125'),
+    (u'BitTorrent-4.20.0.exe', 'ad859d8ee38ba8590b09ab3cc1faef5e156ca6eb'),
+    (u'BitTorrent-4.20.1.exe', 'd6aaf41faa0e2c8253672f3159f4cc5d8c5f850f'),
+    (u'BitTorrent-4.20.2.exe', '4f726499ea54cec9c68838e950e2feebbf8dd06c'),
+    (u'BitTorrent-4.20.3.1.exe', '233ca503d5d1f1d2aeb40f1ad45f03b8e962dffb'),
+    (u'BitTorrent-4.20.3.2.exe', 'ee1e3ea19ded24ead480f81b7b8abbd376988b59'),
+    (u'BitTorrent-4.20.3.exe', 'fa20f9e611b3b9c9cafe8c270dfc95f74d7ff385'),
+    (u'BitTorrent-4.20.4.exe', 'a6c56171a44ba4273ffe3ffe868f97329f6ccbb9'),
+    (u'BitTorrent-4.20.5.exe', '87a8291f7ac19dec57f8ea28c9785bdf5b4e517e'),
+    (u'BitTorrent-4.20.6.exe', '697e24ba619bf4ef7d5147323c4659afdff15a20'),
+    (u'BitTorrent-4.20.7.exe', 'ed25fb825c18d5555172e1b8e51c5142523f8478'),
+    (u'BitTorrent-4.20.8.exe', '61d6be5f1c8a70672b6e607df7f8d0049381efc5'),
+    (u'BitTorrent-4.3.6-Beta.exe', '66c45a77dc29aadca5f0c2d0cd6209ab6d562125'),
+    (u'BitTorrent-4.4.0.exe', '66c45a77dc29aadca5f0c2d0cd6209ab6d562125'),
+    (u'BitTorrent-4.4.1.exe', '66c45a77dc29aadca5f0c2d0cd6209ab6d562125'),
+    (u'BitTorrent-4.9.3-Beta.exe', 'e04c381ced55270f012981098c9cb48819022f33'),
+    (u'BitTorrent-4.9.4-Beta.exe', '082f961bc6dfffeb19eca056d99745d9fa3f3420'),
+    (u'BitTorrent-4.9.5-Beta.exe', '3713e6760255cb454877e6d3cfea7b5aada45798'),
+    (u'BitTorrent-4.9.6-Beta.exe', '841c8057e9ff135333eddcd42147dbe997ee4092'),
+    (u'BitTorrent-4.9.7-Beta.exe', 'e7a17e56805644ced82a5c5cd9584401953b5bff'),
+    (u'BitTorrent-4.9.8-Beta.exe', '885335197d45963d9616492ddff90609dc7ba979'),
+    (u'BitTorrent-4.9.9-Beta.exe', '4289c4c5976c07af2058b8f97d6f48bde9be3184'),
+]
 
 class AutoUpdateButler(TorrentButler):
 
@@ -49,6 +73,7 @@ class AutoUpdateButler(TorrentButler):
 
         self.rawserver = rawserver
         self.estate = set()
+        self.old_updates = set()
 
         self.log_root = "core.AutoUpdateButler"
         self.logger = logging.getLogger(self.log_root)
@@ -130,15 +155,24 @@ class AutoUpdateButler(TorrentButler):
                 if torrent.completed:
                     self.finished(t)
             except UnknownInfohash:
-                self.debug('butle() removing' + i.short())
+                self.debug('butle() removing ' + i.short())
                 self.estate.remove(i)
                 self.installable_version = None
                 self.available_version = None
-
+        for v, i in list(self.old_updates):
+            self.old_updates.discard((v, i))
+            self.logger.warning(_("Cleaning up old autoupdate %s") % v)
+            try:
+                self.multitorrent.remove_torrent(i, del_files=True)
+            except UnknownInfohash:
+                pass
 
     def butles(self, torrent):
+        id = (torrent.metainfo.name, torrent.infohash.encode('hex'))
+        if (torrent.hidden or torrent.is_auto_update) and id in known_autoupdates:
+            self.old_updates.add((torrent.metainfo.name, torrent.infohash))
+            return True
         return torrent.infohash in self.estate and torrent.is_initialized()
-
 
     def started(self, torrent):
         """Only run the most recently added torrent"""
@@ -146,8 +180,7 @@ class AutoUpdateButler(TorrentButler):
             removable = self.estate - set([torrent.infohash])
             for i in removable:
                 self.estate.discard(i)
-                self.multitorrent.remove_torrent(i)
-                # BUG: remove unfinished download of obsolete auto-update from disk
+                self.multitorrent.remove_torrent(i, del_files=True)
 
 
     def finished(self, torrent):
@@ -216,7 +249,9 @@ class AutoUpdateButler(TorrentButler):
         except:
             raise BTFailure(_("Could not get latest version from %s")%url)
         try:
-            assert len(s) == 5
+            # we're luck asserts are turned off in production.
+            # this assert is false for 4.20.X
+            #assert len(s) == 5
             available_version = Version.from_str(s)
         except:
             raise BTFailure(_("Could not parse new version string from %s")%url)
@@ -349,7 +384,9 @@ class AutoUpdateButler(TorrentButler):
 
         installer_name = self._calc_installer_name(available_version)
         installer_url  = self.version_site + installer_name + '.torrent'
-        installer_path = unicode(os.path.join(self.installer_dir, installer_name))
+
+        fs_name = encode_for_filesystem(installer_name.decode('ascii'))[0]
+        installer_path = os.path.join(self.installer_dir, fs_name)
 
         df = ThreadedDeferred(_wrap_task(self.rawserver.external_add_task),
                               self._get_torrent, installer_url)
@@ -376,7 +413,9 @@ class AutoUpdateButler(TorrentButler):
                 self.multitorrent.remove_auto_updates_except(infohash)
 
                 try:
-                    df = self.multitorrent.create_torrent(metainfo, installer_path, installer_path, hidden=True, is_auto_update=True)
+                    df = self.multitorrent.create_torrent(metainfo, installer_path,
+                                                          installer_path, hidden=True,
+                                                          is_auto_update=True)
                     yield df
                     df.getResult()
                 except TorrentAlreadyRunning:
@@ -395,7 +434,8 @@ class AutoUpdateButler(TorrentButler):
 
 
         else:
-            self.debug(debug_prefix + 'couldn\'t get both torrentfile %s and signature %s' %
+            self.debug(debug_prefix +
+                       'couldn\'t get both torrentfile %s and signature %s' %
                        (str(type(torrentfile)), str(type(signature))))
 
         self._restart()

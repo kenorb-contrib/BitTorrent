@@ -165,7 +165,7 @@ rare_options = [
 tracker_options = [
     ('port', 80,
      _("Port to listen on.")),
-    ('dfile', "",
+    ('dfile', u'',
      _("file to store recent downloader info in")),
     ('bind', '',
      _("ip to bind to locally")),
@@ -333,7 +333,7 @@ def get_defaults(ui):
                  _("Launch %s when Windows starts") % app_name),
                 ('minimize_to_tray', True,
                  _("Minimize to the system tray")),
-                ('close_to_tray', False,
+                ('close_to_tray', True,
                  _("Close to the system tray")),
                 ('enforce_association', True,
                  _("Enforce .torrent file associations on startup")),
@@ -429,7 +429,7 @@ def get_defaults(ui):
             ('display_interval', 3,
             _("seconds between updates of displayed information")),
             ] )
-        
+
     if ui.startswith('maketorrent'):
         r.extend([
             ('title', '',

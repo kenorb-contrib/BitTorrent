@@ -36,7 +36,7 @@ if is_frozen_exe or DEBUG:
     from Crypto.PublicKey import DSA
 
 version_host = 'http://version.bittorrent.com/'
-download_url = 'http://bittorrent.com/download.html'
+download_url = 'http://www.bittorrent.com/download.html'
 
 # based on Version() class from ShellTools package by Matt Chisholm,
 # used with permission

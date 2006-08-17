@@ -193,8 +193,9 @@ class Tracker(object):
                 self.favicon = h.read()
                 h.close()
             except:
-                errorfunc(WARNING, _("specified favicon file -- %s -- does not "
-                                     "exist.") % favicon)
+                errorfunc(logging.WARNING,
+                          _("specified favicon file -- %s -- does not exist.") %
+                          favicon)
         self.rawserver = rawserver
         self.cached = {}    # format: infohash: [[time1, l1, s1], [time2, l2, s2], [time3, l3, s3]]
         self.cached_t = {}  # format: infohash: [time, cache]
@@ -213,7 +214,7 @@ class Tracker(object):
                 h = open(self.dfile, 'rb')
                 ds = h.read()
                 h.close()
-                try: 
+                try:
                     tempstate = cPickle.loads(ds)
                 except:
                     tempstate = bdecode(ds)  # backwards-compatibility.
@@ -222,8 +223,8 @@ class Tracker(object):
                 statefiletemplate(tempstate)
                 self.state = tempstate
             except:
-                errorfunc(WARNING, _("statefile %s corrupt; resetting") % \
-                      self.dfile)
+                errorfunc(logging.WARNING,
+                          _("statefile %s corrupt; resetting") % self.dfile)
 
         self.downloads = self.state.setdefault('peers', {})
         self.completed = self.state.setdefault('completed', {})
@@ -411,7 +412,7 @@ class Tracker(object):
 
     def get_scrape(self, paramslist):
         fs = {}
-        
+
         if paramslist.has_key('info_hash'):
             if self.config['scrape_allowed'] not in ['specific', 'full']:
                 return (400, 'Not Authorized', default_headers,
@@ -760,8 +761,8 @@ class Tracker(object):
     def save_dfile(self):
         if self.save_pending:
             return
-        self.save_pending = True        
-        
+        self.save_pending = True
+
         # if this is taking all the time, threading it won't help anyway because
         # of the GIL
         #state = bencode(self.state)
@@ -792,9 +793,9 @@ class Tracker(object):
 
     def parse_allowed(self):
         if self.parse_pending:
-            return        
+            return
         self.parse_pending = True
-        
+
         df = ThreadedDeferred(wrap_task(self.rawserver.external_add_task),
                               self._parse_allowed, daemon=True)
         def eb(etup):
@@ -802,7 +803,7 @@ class Tracker(object):
             self._print_exc("parse_dir: ", etup)
         df.addCallbacks(self._parse_allowed_finished, eb)
 
-    def _parse_allowed(self):                              
+    def _parse_allowed(self):
         def errfunc(message, exc_info=None):
             # logging broken .torrent files would be useful but could confuse
             # programs parsing log files
@@ -878,12 +879,12 @@ class Tracker(object):
 def track(args):
     assert type(args) == list and \
            len([x for x in args if type(x)==str])==len(args)
-    
+
     config = {}
     defaults = get_defaults('bittorrent-tracker')   # hard-coded defaults.
     try:
-        config, files = parse_configuration_and_args(defaults, 
-           'bittorrent-tracker', args, 0, 0 ) 
+        config, files = parse_configuration_and_args(defaults,
+           'bittorrent-tracker', args, 0, 0 )
     except ValueError, e:
         print _("error: ") + unicode(e.args[0])
         print _("run with -? for parameter explanations")
@@ -892,15 +893,15 @@ def track(args):
         print _("error: ") + unicode(e.args[0])
         print _("run with -? for parameter explanations")
         return
- 
+
     if config['dfile']=="":
         config['dfile'] = decode_from_filesystem(
             os.path.join(platform.get_temp_dir(), efs2(u"dfile") +
             str(os.getpid())))
 
     config = Preferences().initWithDict(config)
-    ef = lambda e: errorfunc(WARNING, e)
-    platform.write_pid_file(config['pid'],ef)
+    ef = lambda e: errorfunc(logging.WARNING, e)
+    platform.write_pid_file(config['pid'], ef)
 
     t = None
     try:

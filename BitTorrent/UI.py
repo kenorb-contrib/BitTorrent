@@ -567,7 +567,13 @@ class BasicApp(object):
             else:
                 if self.installer_to_launch_at_exit is None:
                     atexit.register(self.launch_installer_at_exit)
-                torrent = au_torrents[installable_version]
+                if installable_version not in au_torrents:
+                    df = self.multitorrent.get_torrent(installable_version)
+                    yield df
+                    torrent = df.getResult()
+                    torrent = ThreadProxy(torrent, self.gui_wrap)
+                else:
+                    torrent = au_torrents[installable_version]
                 self.installer_to_launch_at_exit = torrent.working_path
                 if bttime() > self.next_autoupdate_nag:
                     self.prompt_for_quit_for_new_version(available_version)
@@ -738,6 +744,7 @@ class BasicApp(object):
 
     def external_command(self, action, *datas):
         """For communication via IPC"""
+        datas = [ d.decode('utf-8') for d in datas ]
         if action == 'start_torrent':
             assert len(datas) == 1
             self.append_external_torrents(*datas)

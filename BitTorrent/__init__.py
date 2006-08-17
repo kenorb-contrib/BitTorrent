@@ -11,7 +11,7 @@
 
 
 app_name = 'BitTorrent'
-version = '4.20.8'
+version = '4.20.9'
 
 URL = 'http://www.bittorrent.com/'
 DONATE_URL = URL + 'donate.html?client=%(client)s'

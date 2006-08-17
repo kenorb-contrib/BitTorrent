@@ -206,7 +206,7 @@ class StorageWrapper(object):
         except Exception, e:
             raise BTFailure(_("Unsupported fastresume file format, "
                               "probably corrupted: %s on (%s)") %
-                            (e, repr(version_line)))
+                            (unicode(e.args[0]), repr(version_line)))
         global_logger.debug('Reading fastresume v' + resume_version)
         if resume_version == '1':
             return self._read_fastresume_v1(f, working_path, destination_path)
