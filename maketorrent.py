@@ -14,7 +14,8 @@
 
 from __future__ import division
 
-from BitTorrent.translation import _
+app_name = "BitTorrent"
+from BTL.translation import _
 
 import os
 import sys
@@ -23,7 +24,7 @@ assert sys.version_info >= (2, 3), _("Install Python %s or greater") % '2.3'
 
 from threading import Event
 
-from BitTorrent import version, app_name
+from BitTorrent import version
 from BitTorrent import configfile
 from BitTorrent.GUI_wx import SPACING, BTApp, BTFrameWithSizer, BTDialog, BTPanel, Grid, VSizer, HSizer, ChooseFileOrDirectorySizer
 from BitTorrent.UI import Size

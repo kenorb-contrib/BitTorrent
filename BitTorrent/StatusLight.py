@@ -10,8 +10,8 @@
 
 # Written by Matt Chisholm
 
-from BitTorrent.platform import bttime
-from BitTorrent.translation import _
+from BTL.platform import bttime
+from BTL.translation import _
 
 
 class StatusLight(object):
@@ -27,11 +27,11 @@ class StatusLight(object):
                        _("No torrents"),
                        _("No torrents")),
         'starting'  : ('starting',
-                       _("Starting up..."),
+                       _("Checking for firewall..."),#_("Starting up..."),
                        _("Starting download")),
         'pre-natted': ('pre-natted',
-                       _("Checking connection..."),
-                       _("Online, checking connection")),
+                       _("Checking for firewall..."),
+                       _("Online, checking for firewall")),
         'running'   : ('running',
                        _("Online"),
                        _("Online, running normally")),

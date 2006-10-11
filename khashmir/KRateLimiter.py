@@ -8,7 +8,7 @@
 # for the specific language governing rights and limitations under the
 # License.
 
-from BitTorrent.platform import bttime as time
+from BTL.platform import bttime as time
 from BitTorrent.CurrentRateMeasure import Measure
 from const import *
 from random import randrange, shuffle

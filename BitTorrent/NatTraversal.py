@@ -12,14 +12,15 @@ if os.name == 'nt':
     import pywintypes
     import win32com.client
 
-from BitTorrent import app_name, defer
+from BTL.platform import app_name
+from BTL import defer
 from BitTorrent.platform import os_version
-from BitTorrent.sparse_set import SparseSet
-from BitTorrent.RawServer_twisted import RawServer, Handler
-from BitTorrent.BeautifulSupe import BeautifulSupe, Tag
-from BitTorrent.yielddefer import launch_coroutine, _wrap_task
-from BitTorrent.HostIP import get_host_ip, get_deferred_host_ip
-from BitTorrent.obsoletepythonsupport import has_set, set
+from BTL.sparse_set import SparseSet
+from BTL.exceptions import str_exc
+from BitTorrent.RawServer_twisted import Handler
+from BitTorrent.BeautifulSupe import BeautifulSupe
+from BTL.yielddefer import launch_coroutine, _wrap_task
+from BTL.HostIP import get_host_ip, get_deferred_host_ip
 from twisted import internet
 import twisted.copyright
 
@@ -27,10 +28,10 @@ from urllib2 import URLError, HTTPError, Request
 from httplib import BadStatusLine
 
 #bleh
-from urllib import urlopen, FancyURLopener, addinfourl
+from urllib import FancyURLopener, addinfourl
 from httplib import HTTPResponse
 
-import BitTorrent.stackthreading as threading
+import BTL.stackthreading as threading
 
 nat_logger = logging.getLogger('NatTraversal')
 nat_logger.setLevel(logging.WARNING)
@@ -108,7 +109,7 @@ class NatTraverser(object):
                 service(self)
                 break
             except Exception, e:
-                nat_logger.warning(unicode(e.args[0]))
+                nat_logger.warning(str_exc(e))
         else:
             e = "Unable to detect any UPnP services"
             UnsupportedWarning(e)
@@ -146,14 +147,14 @@ class NatTraverser(object):
 
     def _cancel_queue(self, e):
         for mapping in self.register_requests:
-            mapping.d.errback(e)
+            mapping.d.errback(Exception(e))
         self.register_requests = []
 
         # can't run or cancel blocking removes    
         self.unregister_requests = []
 
         for request in self.list_requests:
-            request.errback(e)
+            request.errback(Exception(e))
         self.list_requests = []
 
     def _gen_deferred(self):
@@ -512,8 +513,7 @@ class ManualUPnP(NATBase, Handler):
                 df = s.listening_port.joinGroup(self.upnp_addr[0],
                                                 socket.INADDR_ANY)
                 yield df
-                # hm, failures.
-                result = df.result
+                result = df.getResult()
                 # blargh
                 if twisted.copyright.version >= '2.4.0':
                     success = None
@@ -537,9 +537,11 @@ class ManualUPnP(NATBase, Handler):
                     self.transport = None
                     x = s.listening_port.stopListening()
                     if isinstance(x, internet.defer.Deferred):
-                        yield df
+                        yield x
+                        x.getResult()
             except socket.error, e:
-                pass
+                # may look weird, but spin the event loop once on failure
+                yield defer.succeed(True)
             
 
         if not self.transport:
@@ -568,7 +570,7 @@ class ManualUPnP(NATBase, Handler):
             nat_logger.info("registered: " + str(mapping))
         except Exception, e: #HTTPError, URLError, BadStatusLine, you name it.
             error = SOAPErrorToString(e)
-            mapping.d.errback(error)
+            mapping.d.errback(Exception(error))
 
 
     def unregister_port(self, external_port, protocol):
@@ -588,7 +590,7 @@ class ManualUPnP(NATBase, Handler):
         try:
             statusline, response = datagram.split('\r\n', 1)
         except ValueError, e:
-            nat_logger.error(unicode(e.args[0]) + ": " + str(datagram))
+            nat_logger.error(str_exc(e) + ": " + str(datagram))
             # resume init services, because the data is unknown
             self.traverser.resume_init_services()
             return

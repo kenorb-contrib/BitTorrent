@@ -8,22 +8,14 @@
 # for the specific language governing rights and limitations under the
 # License.
 
-# Written by Matt Chisholm
+# Written by Greg Hazel
+# based on code by Matt Chisholm
 
 import os
-from BitTorrent.hash import sha
-from time import time
-try:
-    getpid = os.getpid
-except AttributeError:
-    def getpid():
-        return 1
-
 from BitTorrent import version
 
 def make_id():
     myid = 'M' + version.split()[0].replace('.', '-')
-    padded = myid[:8] + '-' * (8-len(myid))
-    myid = padded + sha(repr(time()) + ' ' +
-                        str(getpid())).digest()[-6:].encode('hex')
+    padded = myid[:8] + '-' * (8 - len(myid))
+    myid = padded + os.urandom(6).encode('hex')
     return myid

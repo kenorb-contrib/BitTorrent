@@ -12,8 +12,9 @@
 
 import wx
 
-from BitTorrent.defer import ThreadedDeferred
-from BitTorrent import app_name, languages, language_names
+from BTL.defer import ThreadedDeferred
+from BTL.language import languages, language_names
+from BTL.platform import app_name
 from BitTorrent.platform import read_language_file, write_language_file
 
 from BitTorrent.GUI_wx import SPACING, VSizer, gui_wrap, text_wrappable

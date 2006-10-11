@@ -8,13 +8,12 @@
 # for the specific language governing rights and limitations under the
 # License.
 
-_ = _ # put _ into the module namespace so the console doesn't override it
-
-from BitTorrent.defer import Deferred
-from BitTorrent.bencode import bencode, bdecode
+from defer import Deferred
+from BTL.bencode import bencode, bdecode
 import socket
 from BitTorrent.RawServer_twisted import Handler
-from BitTorrent.platform import bttime
+from BTL.platform import bttime
+from BTL.translation import _
 import time
 from math import log10
 
@@ -22,7 +21,7 @@ import sys
 from traceback import print_exc
 
 from khash import distance
-from cache import Cache
+from BTL.cache import Cache
 from KRateLimiter import KRateLimiter
 from hammerlock import Hammerlock
 

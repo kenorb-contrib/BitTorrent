@@ -18,27 +18,27 @@ import cPickle
 import logging
 import traceback
 from copy import copy
-from BitTorrent.translation import _
-from BitTorrent import GetTorrent
+from BTL.translation import _
 from BitTorrent.Choker import Choker
-from BitTorrent.platform import bttime, encode_for_filesystem, old_broken_config_subencoding, get_filesystem_encoding
+from BTL.platform import bttime, encode_for_filesystem, get_filesystem_encoding
+from BitTorrent.platform import old_broken_config_subencoding
 from BitTorrent.Torrent import Feedback, Torrent
-from BitTorrent.bencode import bencode, bdecode
-from BitTorrent.ConvertedMetainfo import ConvertedMetainfo
+from BTL.bencode import bdecode
+from BTL.ConvertedMetainfo import ConvertedMetainfo
+from BTL.exceptions import str_exc
 from BitTorrent.prefs import Preferences
 from BitTorrent.NatTraversal import NatTraverser
 from BitTorrent.BandwidthManager import BandwidthManager
 from BitTorrent.InternetWatcher import InternetWatcher
-from BitTorrent.Rerequester import Rerequester, DHTRerequester
 from BitTorrent.NewRateLimiter import MultiRateLimiter as RateLimiter
+from BitTorrent.DownloadRateLimiter import DownloadRateLimiter
 from BitTorrent.ConnectionManager import SingleportListener
 from BitTorrent.CurrentRateMeasure import Measure
 from BitTorrent.Storage import FilePool
-from BitTorrent.yielddefer import launch_coroutine, _wrap_task
-from BitTorrent.defer import Deferred, DeferredEvent
+from BTL.yielddefer import launch_coroutine, _wrap_task
+from BTL.defer import Deferred, DeferredEvent
 from BitTorrent import BTFailure, InfoHashType
 from BitTorrent import configfile
-import BitTorrent
 from khashmir.utkhashmir import UTKhashmir
 
 class TorrentException(BTFailure):
@@ -145,9 +145,12 @@ class MultiTorrent(Feedback):
                                                       nattraverser,
                                                       self.log_root)
         self.choker = Choker(self.config, self.rawserver.add_task)
-        self.ratelimiter = RateLimiter(self.rawserver.add_task)
-        self.ratelimiter.set_parameters(config['max_upload_rate'],
-                                        config['upload_unit_size'])
+        self.up_ratelimiter = RateLimiter(self.rawserver.add_task)
+        self.up_ratelimiter.set_parameters(config['max_upload_rate'],
+                                           config['upload_unit_size'])
+        self.down_ratelimiter = DownloadRateLimiter(
+                                           config['download_rate_limiter_interval'],
+                                           self.config['max_download_rate'])
         self.total_downmeasure = Measure(config['max_rate_period'])
 
         self._find_port(listen_fail_ok)
@@ -214,7 +217,7 @@ class MultiTorrent(Feedback):
                                    self.singleport_listener.get_port(),
                                    self.data_dir, self.rawserver,
                                    int(self.config['max_upload_rate'] * 0.01),
-                                   rlcount=self.ratelimiter.increase_offset,
+                                   rlcount=self.up_ratelimiter.increase_offset,
                                    config=self.config)
                 break
             except socket.error, e:
@@ -222,7 +225,7 @@ class MultiTorrent(Feedback):
         else:
             if not listen_fail_ok:
                 raise BTFailure, (_("Could not open a listening port: %s.") %
-                                  unicode(e.args[0]) )
+                                  str_exc(e) )
             self.global_error(logging.CRITICAL,
                               (_("Could not open a listening port: %s. ") % e) +
                               (_("Check your port range settings (%s:%s-%s).") %
@@ -232,8 +235,8 @@ class MultiTorrent(Feedback):
 
     def shutdown(self):
         df = launch_coroutine(_wrap_task(self.rawserver.add_task), self._shutdown)
-        df.addErrback(lambda e : self.logger.error('shutdown failed!',
-                                                   exc_info=e))
+        df.addErrback(lambda f : self.logger.error('shutdown failed!',
+                                                   exc_info=f.exc_info()))
         return df
 
     def _shutdown(self):
@@ -272,10 +275,12 @@ class MultiTorrent(Feedback):
                 self._dump_global_config()
 
         if option in ['max_upload_rate', 'upload_unit_size']:
-            self.ratelimiter.set_parameters(self.config['max_upload_rate'],
+            self.up_ratelimiter.set_parameters(self.config['max_upload_rate'],
                                             self.config['upload_unit_size'])
         elif option == 'max_download_rate':
-            pass # polled from the config automatically by MultiDownload
+            self.down_ratelimiter.set_parameters(
+                self.config['max_download_rate'])
+            #pass # polled from the config automatically by MultiDownload
         elif option == 'max_files_open':
             self.filepool.set_max_files_open(value)
         elif option == 'maxport':
@@ -321,8 +326,9 @@ class MultiTorrent(Feedback):
 
         t = Torrent(metainfo, save_incomplete_as, save_as, self.config,
                     self.data_dir, self.rawserver, self.choker,
-                    self.singleport_listener, self.ratelimiter,
-                    self.total_downmeasure, self.filepool, self.dht, self,
+                    self.singleport_listener, self.up_ratelimiter,
+                    self.down_ratelimiter, self.total_downmeasure,
+                    self.filepool, self.dht, self, 
                     self.log_root, hidden=hidden, is_auto_update=is_auto_update)
         if feedback:
             t.add_feedback(feedback)
@@ -657,7 +663,7 @@ class MultiTorrent(Feedback):
             f.close()
             shutil.move(path+'.new', path)
         except Exception, e:
-            self.logger.error(_("Could not save UI state: ") + unicode(e.args[0]))
+            self.logger.error(_("Could not save UI state: ") + str_exc(e))
             if f is not None:
                 f.close()
 
@@ -674,8 +680,8 @@ class MultiTorrent(Feedback):
 
     def initialize_torrents(self):
         df = launch_coroutine(_wrap_task(self.rawserver.add_task), self._initialize_torrents)
-        df.addErrback(lambda e : self.logger.error('initialize_torrents failed!',
-                                                   exc_info=e))
+        df.addErrback(lambda f : self.logger.error('initialize_torrents failed!',
+                                                   exc_info=f.exc_info()))
         return df
 
     def _initialize_torrents(self):
@@ -708,17 +714,18 @@ class MultiTorrent(Feedback):
                 except:
                     pass
                 self.logger.error((_("Error reading metainfo file \"%s\".") %
-                                  hashtext) + " (" + unicode(e.args[0])+ "), " +
+                                  hashtext) + " (" + str_exc(e)+ "), " +
                                   _("cannot restore state completely"))
                 return None
             except Exception, e:
                 self.logger.error((_("Corrupt data in metainfo \"%s\", cannot restore torrent.") % hashtext) +
-                                  '('+unicode(e.args[0])+')')
+                                  '('+str_exc(e)+')')
                 return None
 
             t = Torrent(metainfo, "",  "", self.config, self.data_dir,
                         self.rawserver, self.choker,
-                        self.singleport_listener, self.ratelimiter,
+                        self.singleport_listener, self.up_ratelimiter,
+                        self.down_ratelimiter,
                         self.total_downmeasure, self.filepool, self.dht, self,
                         self.log_root)
             t.metainfo.reported_errors = True # suppress redisplay on restart
@@ -782,7 +789,7 @@ class MultiTorrent(Feedback):
         except Exception, e:
             if f is not None:
                 f.close()
-            raise BTFailure(unicode(e.args[0]))
+            raise BTFailure(str_exc(e))
         i = iter(lines)
         try:
             txt = 'BitTorrent UI state file, version '

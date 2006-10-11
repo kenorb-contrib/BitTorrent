@@ -8,11 +8,7 @@
 @rem for the specific language governing rights and limitations under the
 @rem License.
 
-@rem For Python 2.3:
-@rem set PYTHON=python23
-@rem For Python 2.4:
 set PYTHON=Python24
-
 
 @rem copy the important files to the root, so we don't have to hardcode paths
 @rem all over the place
@@ -27,6 +23,7 @@ copy winsetup.py ..
 copy installer.directory.ini ..
 copy installer.upgrade.ini ..
 copy installer.warning.rtf ..
+copy winprepnsi.py ..
 
 cd ..
 
@@ -34,7 +31,7 @@ del /F /S /Q build dist
 c:\%PYTHON%\python.exe -OO winsetup.py py2exe
 @if errorlevel 1 goto error
 
-c:\%PYTHON%\python.exe windows_installer\winprepnsi.py windows_installer\installer.nsi installer.temp.nsi
+c:\%PYTHON%\python.exe winprepnsi.py windows_installer\installer.nsi installer.temp.nsi
 @if errorlevel 1 goto error
 copy c:\%PYTHON%\python.exe.manifest dist\bittorrent.exe.manifest
 @if errorlevel 1 goto error
@@ -52,6 +49,7 @@ del winsetup.py
 del installer.directory.ini
 del installer.upgrade.ini
 del installer.warning.rtf
+del winprepnsi.py
 
 
 @goto done

@@ -9,11 +9,10 @@
 # License.
 
 
-# Needs redesign.  Too many modifications to add a ui.  Adding a UI
-# can easily break existing UIs unintentionally. --Dave
+# Needs redesign.  Many if's on uiname.  Blech. --Dave
 
 import os
-from BitTorrent.translation import _
+from BTL.translation import _
 
 ### add your favorite here
 BAD_LIBC_WORKAROUND_DEFAULT = False
@@ -39,7 +38,9 @@ if os.name == 'nt':
     # -15 for a buffer
     MAX_FILES_OPEN = ctypes.cdll.msvcrt._getmaxstdio() - 3 - 15
 
-from BitTorrent import languages, app_name
+from BTL.language import languages
+from BTL.platform import app_name
+
 
 basic_options = [
     ('data_dir', u'',
@@ -73,9 +74,9 @@ common_options = [
      _("seconds between updates of displayed information")),
     ('rerequest_interval', 5 * 60,
      _("minutes to wait between requesting more peers")),
-    ('min_peers', 20,
+    ('min_peers', 40,
      _("minimum number of peers to not do rerequesting")),
-    ('max_initiate', 60,
+    ('max_initiate', 200,
      _("number of peers at which to stop initiating new connections")),
     ('max_incomplete', MAX_INCOMPLETE,
      _("max number of outgoing incomplete connections")),
@@ -88,6 +89,8 @@ common_options = [
      _("maximum B/s to upload at")),
     ('max_download_rate', 125000000, # 1 GBit local net = 125MB/s
      _("average maximum B/s to download at")),
+    ("download_rate_limiter_interval", 0.5, 
+    _("download rate limiter's leaky bucket update interval.")),
     ('bandwidth_management', os.name == 'nt',
      _("automatic bandwidth management (Windows only)")),
     ('min_uploads', 2,
@@ -99,17 +102,56 @@ common_options = [
      _("Initialize a trackerless client.  This must be enabled in order to download trackerless torrents.")),
     ('upnp', True,
      _("Enable automatic port mapping")+' (UPnP)'),
+    ('resolve_hostnames', True,
+     _("Resolve hostnames in peer list")),
     ('xmlrpc_port', -1,
     _("Start the XMLRPC interface on the specified port. This "
       "XML-RPC-based RPC allows a remote program to control the client "
       "to enable automated hosting, conformance testing, and benchmarking.")),
     ]
 
+# In anticipation of running a large number of tests for tuning, I thought it
+# worthwhile to make these values settable.  We will probably
+# remove these options later, because we won't want users
+# messing with them.  --Dave
+bandwidth_management_options = [
+    ('xicmp_port', 19669, _("port number upon which xicmp should sit.")),
+    ('congestion_estimator', 'variance', #'chebyshev',
+     "method for estimating congestion levels."),
+    ('control_law', 'aimd', # allowed values = [aimd, aiad]
+     "method for adjusting rates." ),
+    #('propagation_estimator', 'median_of_window',
+    # "method for estimating the round-trip propagation delay."),
+    #('delay_on_full_estimator', 'median_of_window',
+    # "method for estimating the round-trip time when the bottleneck "
+    # "buffer is full (for bandwidth management)."),
+    #('rtt_estimator', 'average_of_window',
+    # # allowed values = [average_of_window, median_of_window, ewma]
+    # 'method for estimating ping round-trip time'),
+    ('increase_delta', 1000, "additive increase in bytes per second."),
+    ('decrease_delta', 1000,
+     "additive decrease in bytes per second (for aiad only)."),
+    ('decrease_factor', 0.8, "multiplicative decrease (for aimd only)."),
+    ('window_size', 10, "window used in averaging round-trip times"),
+    ('ewma', 0.1, "averaging weight, smaller is slower convention."),
+    ('cheby_max_consecutive', 10,
+     ("maximum number of consecutive samples above the threshold before "
+      "signalling congestion.")),
+    ('cheby_max_threshold', 0.9,
+     ("maximum delay threshold expressed as fraction of the distance between "
+      "propagation delay and buffer-full delay.")),
+    ('cheby_false_positive_probability', 0.05,
+     "target upper bound on the probability of a false positive."),
+    ('min_upload_rate_limit', 10000,
+     "minimum upload rate limit to prevent starvation of BitTorrent traffic."),
+    ]
 
 rare_options = [
     ('keepalive_interval', 120.0,
      _("number of seconds to pause between sending keepalives")),
-    ('download_slice_size', 2 ** 14,
+    ('pex_interval', 60.0,
+     _("number of seconds to pause between sending peer exchange messages")),
+    ('download_chunk_size', 2 ** 14,
      _("how many bytes to query for per request.")),
     ('max_message_length', 2 ** 23,
      _("maximum length prefix encoding you'll accept over the wire - larger "
@@ -117,10 +159,8 @@ rare_options = [
     ('socket_timeout', 300.0,
      _("seconds to wait between closing sockets which nothing has been "
        "received on")),
-    ('timeout_check_interval', 60.0,
-     _("seconds to wait between checking if any connections have timed out")),
-    ('max_slice_length', 32768,
-     _("maximum length slice to send to peers, close connection if a larger "
+    ('max_chunk_length', 32768,
+     _("maximum length chunk to send to peers, close connection if a larger "
        "request is received")),
     ('max_rate_period', 20.0,
      _("maximum time interval over which to estimate the current upload and download rates")),
@@ -156,6 +196,8 @@ rare_options = [
      _("Use Twisted network libraries for network connections. 1 means use twisted, 0 means do not use twisted, -1 means autodetect, and prefer twisted")),
     ('num_fast', 10,
      _("Number of pieces allowed fast.")),
+    ('show_hidden_torrents', False,
+     _("Show hidden torrents in the UI.")),
     # Future.
     #('stream_priority', 2,
     # _("Priority for pieces that are needed soon.")),
@@ -182,8 +224,6 @@ tracker_options = [
     ('response_size', 50,
      _("default number of peers to send an info message to if the "
        "client does not specify a number")),
-    ('timeout_check_interval', 5,
-     _("time to wait between checking if any connections have timed out")),
     ('nat_check', 3,
      _("how many times to check if a downloader is behind a NAT "
        "(0 = don't check)")),
@@ -248,12 +288,8 @@ def get_defaults(ui):
                   "maketorrent",                      "maketorrent-console",
                                  "launchmany-curses", "launchmany-console" ,
                                                       "bittorrent-tracker" ,
-                  "test-client"
                   )
     r = []
-
-    if ui == 'test-client':
-        ui = 'bittorrent-test-client'
 
     if ui == "bittorrent-tracker":
         r.extend(tracker_options)
@@ -363,6 +399,7 @@ def get_defaults(ui):
                "stored until completion.  Upon completion, downloads will be "
                "moved to the directory specified by --save_in.")),
             ])
+        r.extend(bandwidth_management_options)
 
     if ui.startswith('launchmany'):
         r.extend([
@@ -404,6 +441,10 @@ def get_defaults(ui):
         r.append(
             ('torrent_dir', u'',
              _("directory to look for .torrent files (semi-recursive)")),)
+    if ui.startswith('maketorrent'):
+        r.append(
+            ('content_type', '',_("file's default mime type.")))
+            # HEREDAVE batch torrents must be handled differently.
 
     if ui in ('bittorrent-curses', 'bittorrent-console'):
         r.extend([

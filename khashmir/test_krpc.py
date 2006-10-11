@@ -11,7 +11,8 @@
 from unittest import *
 from krpc import *
 from BitTorrent.defaultargs import common_options, rare_options
-from BitTorrent.stackthreading import Event
+from BTL.stackthreading import Event
+from BitTorrent.RawServer_twisted import RawServer
 from node import Node
 
 KRPC.noisy = 0
@@ -41,7 +42,7 @@ class KRPCTests(TestCase):
     def setUp(self):
         self.noisy = 0
         d = dict([(x[0],x[1]) for x in common_options + rare_options])
-        self.r = RawServer(Event(), d)
+        self.r = RawServer(d)
 
         addr = ('127.0.0.1', 1180)
         self.as = self.r.create_udpsocket(addr[1], addr[0], True)

@@ -13,18 +13,15 @@
 import array
 import random
 
-from BitTorrent.sparse_set import SparseSet
-from BitTorrent.obsoletepythonsupport import set
-from BitTorrent.CurrentRateMeasure import Measure
-from BitTorrent.bitfield import Bitfield
-from BitTorrent.defer import Deferred
+from BTL.sparse_set import SparseSet
+from BTL.obsoletepythonsupport import set
 from BitTorrent.Download import Download
-from BitTorrent.PieceSetBuckets import PieceSetBuckets
 
-def resolve_typecode(n):
-    if n < 32768:
-        return 'h'
-    return 'l'
+SPARSE_SET = True
+if SPARSE_SET:
+    from BitTorrent.PieceSetBuckets import PieceSetBuckets
+else:
+    from BitTorrent.PieceSetBuckets import SortedPieceBuckets, resolve_typecode
 
 RENDER = False
 
@@ -40,40 +37,45 @@ class PerIPStats(object):
 class MultiDownload(object):
 
     def __init__(self, config, storage, urlage, picker, numpieces,
-                 finished, total_downmeasure, downmeasure, measurefunc,
-                 kickfunc, banfunc):
+                 finished, kickfunc, banfunc):
         self.config = config
         self.storage = storage
         self.urlage = urlage
         self.picker = picker
         self.rerequester = None
         self.connection_manager = None
-        self.chunksize = config['download_slice_size']
-        self.total_downmeasure = total_downmeasure
-        self.downmeasure = downmeasure
+        self.chunksize = config['download_chunk_size']
         self.numpieces = numpieces
         self.finished = finished
         self.snub_time = config['snub_time']
-        self.measurefunc = measurefunc
         self.kickfunc = kickfunc
         self.banfunc = banfunc
         self.downloads = []
         self.perip = {}
         self.bad_peers = {}
         self.discarded_bytes = 0
-        self.burst_avg = 0
+        self.useful_received_listeners = set()
+        
+        if SPARSE_SET:
+            self.piece_states = PieceSetBuckets()
+            nothing = SparseSet(xrange(self.numpieces))
+            self.piece_states.buckets.append(nothing)
 
-        self.piece_states = PieceSetBuckets()
-        nothing = SparseSet(xrange(self.numpieces))
-        self.piece_states.buckets.append(nothing)
-        # I hate this
-        nowhere = [(i, 0) for i in xrange(self.numpieces)]
-        self.piece_states.place_in_buckets = dict(nowhere)
+            # I hate this
+            nowhere = [(i, 0) for i in xrange(self.numpieces)]
+            self.piece_states.place_in_buckets = dict(nowhere)
+        else:
+            typecode = resolve_typecode(self.numpieces)
+            self.piece_states = SortedPieceBuckets(typecode)
+            nothing = array.array(typecode, range(self.numpieces))
+            self.piece_states.buckets.append(nothing)
+
+            # I hate this
+            nowhere = [(i, (0, i)) for i in xrange(self.numpieces)]
+            self.piece_states.place_in_buckets = dict(nowhere)
         
         self.last_update = 0
-        indexes = self.storage.inactive_requests.keys()
-        indexes.sort()
-        self.active_requests = SparseSet(indexes)
+        self.active_requests = set(self.storage.inactive_requests.iterkeys())
         self.all_requests = set()
 
 
@@ -92,7 +94,8 @@ class MultiDownload(object):
         return r
 
     def get_adjusted_distributed_copies(self):
-        # compensate for the fact that piece picker does not contain all the pieces
+        # compensate for the fact that piece picker does no
+        # contain all the pieces
         num = self.picker.get_distributed_copies()
         percent_have = (float(len(self.storage.have_set)) /
                         float(self.numpieces))
@@ -104,10 +107,11 @@ class MultiDownload(object):
     def active_requests_add(self, r):
         self.last_update += 1
         self.active_requests.add(r)
-
+        
     def active_requests_remove(self, r):
         self.last_update += 1
-        self.active_requests.remove(r)
+        # wtf! this is so ridiculous. is it active or not?
+        self.active_requests.discard(r)
 
     def got_have(self, piece):
         self.picker.got_have(piece)
@@ -203,11 +207,26 @@ class MultiDownload(object):
         perip = self.perip.setdefault(ip, PerIPStats())
         perip.numconnections += 1
         d = Download(self, connection)
+        d.add_useful_received_listener(self.fire_useful_received_listeners) 
         perip.lastdownload = d
         perip.peerid = connection.id
         self.downloads.append(d)
         return d
 
+    def add_useful_received_listener(self,listener):
+        """Listeners are called for useful arrivals to any of the downloaders
+           managed by this MultiDownload object.
+           (see Download.add_useful_received_listener for which listeners are
+           called for bytes received by that particular Download."""
+        self.useful_received_listeners.add(listener)
+
+    def remove_useful_received_listener(self,listener):
+        self.useful_received_listeners.remove(listener)
+
+    def fire_useful_received_listeners(self,bytes):
+        for f in self.useful_received_listeners:
+            f(bytes)
+            
     def lost_peer(self, download):
         self.downloads.remove(download)
         ip = download.connection.ip

@@ -35,7 +35,7 @@ class MultiTest(TestCase):
         self.l = []
         self.startport = 10088
         d = dict([(x[0],x[1]) for x in common_options + rare_options])
-        self.r = RawServer(Event(), d)
+        self.r = RawServer(d)
         for i in range(self.num):
             self.l.append(Khashmir('127.0.0.1', self.startport + i, '/tmp/%s.test' % (self.startport + i), self.r))
         self.r.listen_once(1)
@@ -106,7 +106,7 @@ class MultiTest(TestCase):
 class AASimpleTests(TestCase):
     def setUp(self):
         d = dict([(x[0],x[1]) for x in common_options + rare_options])
-        self.r = RawServer(Event(), d)
+        self.r = RawServer(d)
         self.a = Khashmir('127.0.0.1', 4044, '/tmp/a.test', self.r)
         self.b = Khashmir('127.0.0.1', 4045, '/tmp/b.test', self.r)
         

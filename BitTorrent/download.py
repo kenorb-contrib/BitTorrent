@@ -13,11 +13,10 @@
 import random
 import logging
 
-from BitTorrent.obsoletepythonsupport import *
-from BitTorrent.platform import bttime
+from BTL.obsoletepythonsupport import *
+from BTL.platform import bttime
 from BitTorrent.CurrentRateMeasure import Measure
-from BitTorrent.bitfield import Bitfield
-from BitTorrent.defer import Deferred
+from BTL.bitfield import Bitfield
 
 logger = logging.getLogger("BitTorrent.Download")
 log = logger.debug
@@ -39,8 +38,8 @@ class BadDataGuard(object):
         if self.download is not None:
             self.multidownload.kick(self.download)
             self.download = None
-        elif len(self.stats.bad) > 1 and self.stats.numconnections == 1 and \
-             self.stats.lastdownload is not None:
+        elif (len(self.stats.bad) > 1 and self.stats.numconnections == 1 and
+              self.stats.lastdownload is not None):
             # kick new connection from same IP if previous one sent bad data,
             # mainly to give the algorithm time to find other bad pieces
             # in case the peer is sending a lot of bad data
@@ -49,7 +48,7 @@ class BadDataGuard(object):
            self.stats.numgood // 30:
             self.multidownload.ban(self.ip)
         elif bump:
-            self.multidownload.active_requests.remove(index)
+            self.multidownload.active_requests_remove(index)
             self.multidownload.picker.bump(index)
 
     def good(self, index):
@@ -63,8 +62,7 @@ class BadDataGuard(object):
 class Download(object):
     """Implements BitTorrent protocol semantics for downloading over a single
        connection.  See Upload for the protocol semantics in the upload
-       direction.  See Connector.Connection for the protocol syntax
-       implementation."""
+       direction.  See Connector for the protocol syntax implementation."""
 
     def __init__(self, multidownload, connection):
         self.multidownload = multidownload
@@ -73,6 +71,7 @@ class Download(object):
         self.interested = False
         self.prefer_full = False
         self.active_requests = set()
+        self.intro_size = self.multidownload.chunksize * 4 # just a guess
         self.measure = Measure(multidownload.config['max_rate_period'])
         self.peermeasure = Measure(
             max(multidownload.storage.piece_size / 10000, 20))
@@ -82,12 +81,44 @@ class Download(object):
         self.guard = BadDataGuard(self)
         self.suggested_pieces = []
         self.allowed_fast_pieces = []
-        
+        self._received_listeners = set()
+        self.add_useful_received_listener(self.measure.update_rate)
+        self.total_bytes = 0
+        def lambda_sucks(x): self.total_bytes += x
+        self.add_useful_received_listener(lambda_sucks)
+
+    def add_useful_received_listener(self, listener):
+        # "useful received bytes are used in measuring goodput.
+        self._received_listeners.add(listener)
+
+    def remove_useful_received_listener(self, listener):
+        self._received_listeners.remove(listener)
+
+    def fire_useful_received_listeners(self, bytes):
+        for f in self._received_listeners:
+            f(bytes)
+       
     def _backlog(self):
+        # Dave's suggestion:
+        # backlog = 2 + thruput delay product in chunks.
+        # Assume one-way download propagation delay is always less than 200ms.
+        # backlog = 2 + int(0.2 * self.measure.get_rate() / 
+        #                 self.multidownload.chunksize
+        # Then eliminate the cap of 50 and the 0.075*backlog. 
+
         backlog = 2 + int(4 * self.measure.get_rate() /
                           self.multidownload.chunksize)
+        if self.total_bytes < self.intro_size:
+            # optimistic backlog to get things started
+            backlog = max(10, backlog)
         if backlog > 50:
             backlog = max(50, int(.075 * backlog))
+
+        if self.multidownload.storage.endgame:
+            # OPTIONAL: zero pipelining during engame
+            #b = 1
+            pass
+
         return backlog
 
     def disconnected(self):
@@ -116,7 +147,7 @@ class Download(object):
         lost = []
         for index, begin, length in self.active_requests:
             self.multidownload.storage.request_lost(index, begin, length)
-            self.multidownload.active_requests.remove(index)
+            self.multidownload.active_requests_remove(index)
             if index not in lost:
                 lost.append(index)
         self.active_requests.clear()
@@ -127,8 +158,7 @@ class Download(object):
         for d in self.multidownload.downloads:
             if d.choked and not d.interested:
                 for l in lost:
-                    if d.have[l] and \
-                      self.multidownload.storage.want_requests(l):
+                    if d._want(l):
                         d.interested = True
                         d.connection.send_interested()
                         break
@@ -153,9 +183,13 @@ class Download(object):
             if self.connection.uses_fast_extension:
                 self.connection.close()
             return
-        
+
         self.active_requests.remove(req)
         
+        # we still give the peer credit in endgame, since we did request
+        # the piece (it was in active_requests)
+        self.fire_useful_received_listeners(len(piece))
+
         if self.multidownload.storage.endgame:
             if req not in self.multidownload.all_requests:
                 self.multidownload.discarded_bytes += len(piece)
@@ -165,17 +199,15 @@ class Download(object):
 
             for d in self.multidownload.downloads:
                 if d.interested:
-                    if not d.choked:
-                        if req in d.active_requests:
-                            d.connection.send_cancel(*req)
-                            if not self.connection.uses_fast_extension:
-                                d.active_requests.remove(req)
+                    if not d.choked and req in d.active_requests:
+                        d.connection.send_cancel(*req)
+                        if not self.connection.uses_fast_extension:
+                            d.active_requests.remove(req)
                     d.fix_download_endgame()
         else:
             self._request_more()
             
         self.last = bttime()
-        self.update_rate(len(piece))
         df = self.multidownload.storage.write(index, begin, piece, self.guard)
         df.addCallback(self._got_piece, index)
 
@@ -184,8 +216,18 @@ class Download(object):
             self.multidownload.hashchecked(index)
         
     def _want(self, index):
-        return self.have[index] and \
-               self.multidownload.storage.want_requests(index)
+        return (self.have[index] and 
+                self.multidownload.storage.want_requests(index))
+
+    def send_request(self, index, begin, length):
+        piece_size = self.multidownload.storage.piece_size
+        if begin + length > piece_size:
+            raise ValueError("Issuing request that exceeds piece size: "
+                             "(%d + %d == %d) > %d" %
+                             (begin, length, begin + length, piece_size))
+        self.multidownload.active_requests_add(index)
+        self.active_requests.add((index, begin, length))
+        self.connection.send_request(index, begin, length)
 
     def _request_more(self, indices = []):
         
@@ -212,8 +254,7 @@ class Download(object):
             else:
                 interest = None
                 for i in indices:
-                    if self.have[i] and \
-                            self.multidownload.storage.want_requests(i):
+                    if self._want(i):
                         interest = i
                         break
             if interest is None:
@@ -229,9 +270,8 @@ class Download(object):
             while len(self.active_requests) < b:
                 begin, length = self.multidownload.storage.new_request(interest,
                                                                        self.prefer_full)
-                self.multidownload.active_requests_add(interest)
-                self.active_requests.add((interest, begin, length))
-                self.connection.send_request(interest, begin, length)
+                self.send_request(interest, begin, length)
+
                 if not self.multidownload.storage.want_requests(interest):
                     lost_interests.append(interest)
                     break
@@ -258,9 +298,8 @@ class Download(object):
         for d in self.multidownload.downloads:
             if d.active_requests or not d.interested:
                 continue
-            if d.example_interest is not None and not \
-                    self.multidownload.storage.have[d.example_interest] and \
-                    self.multidownload.storage.want_requests(d.example_interest):
+            if (d.example_interest is not None and 
+                self.multidownload.storage.want_requests(d.example_interest)):
                 continue
             # any() does not exist until python 2.5
             #if not any([d.have[lost] for lost in lost_interests]):
@@ -270,7 +309,7 @@ class Download(object):
                     break
             else:
                 continue
-            interest = self.multidownload.picker.from_behind(self.have,
+            interest = self.multidownload.picker.from_behind(d.have,
                             self.multidownload.storage.full_pieces)
             if interest is None:
                 d.interested = False
@@ -291,8 +330,7 @@ class Download(object):
 
             while fast:
                 piece = fast.pop()
-                if self.have[piece] \
-                   and self.multidownload.storage.want_requests(piece):
+                if self._want(piece):
                     break
             else:
                 break # no unrequested pieces among allowed fast.
@@ -301,9 +339,7 @@ class Download(object):
             while len(self.active_requests) < b:
                 begin, length = self.multidownload.storage.new_request(piece,
                                                                        self.prefer_full)
-                self.multidownload.active_requests_add(piece)
-                self.active_requests.add((piece, begin, length))
-                self.connection.send_request(piece, begin, length)
+                self.send_request(piece, begin, length)
                 if not self.multidownload.storage.want_requests(piece):
                     lost_interests.append(piece)
                     break
@@ -335,8 +371,7 @@ class Download(object):
             return
         random.shuffle(want)
         for req in want[:self._backlog() - len(self.active_requests)]:
-            self.active_requests.add(req)
-            self.connection.send_request(*req)
+            self.send_request(*req)
         
     def got_have(self, index):
         if self.have[index]:
@@ -355,10 +390,9 @@ class Download(object):
             self.fix_download_endgame()
         elif self.multidownload.storage.want_requests(index):
             self._request_more([index]) # call _request_more whether choked.
-            if self.choked:
-                if not self.interested:
-                    self.interested = True
-                    self.connection.send_interested()
+            if self.choked and not self.interested:
+                self.interested = True
+                self.connection.send_interested()
         
     def got_have_bitfield(self, have):
         if have.numfalse == 0:
@@ -412,9 +446,6 @@ class Download(object):
             self.connection.send_interested()
             return
         
-    def update_rate(self, amount):
-        self.measure.update_rate(amount)
-        self.multidownload.update_rate(amount)
 
     def get_rate(self):
         return self.measure.get_rate()
@@ -451,9 +482,7 @@ class Download(object):
                               # whether neighbor has "allowed fast" piece.
 
     def got_reject_request(self, piece, begin, length):
-        if not self.connection.uses_fast_extension:
-            self.connection.close()
-            return
+        assert self.connection.uses_fast_extension
         req = (piece, begin, length) 
 
         if req not in self.active_requests:
@@ -474,8 +503,7 @@ class Download(object):
             
         for d in self.multidownload.downloads:
             if d.choked and not d.interested:
-                if d.have[piece] and \
-                  self.multidownload.storage.want_requests(piece):
+                if d._want(piece):
                     d.interested = True
                     d.connection.send_interested()
                     break

@@ -22,18 +22,20 @@ from copy import copy
 import logging
 import logging.handlers
 
-from BitTorrent.translation import _
+from BTL.translation import _
 
-import BitTorrent.stackthreading as threading
-from BitTorrent import GetTorrent
+import BTL.stackthreading as threading
+from BTL import GetTorrent
+from BTL.platform import bttime
 from BitTorrent import LaunchPath
 from BitTorrent.MultiTorrent import UnknownInfohash, TorrentAlreadyInQueue, TorrentAlreadyRunning, TorrentNotRunning
-from BitTorrent.obsoletepythonsupport import set
-from BitTorrent.yielddefer import launch_coroutine
-from BitTorrent.defer import ThreadedDeferred
-from BitTorrent.platform import desktop, bttime
+from BTL.obsoletepythonsupport import set
+from BTL.yielddefer import launch_coroutine, _wrap_task
+from BTL.defer import ThreadedDeferred
+from BitTorrent.platform import desktop
 from BitTorrent.Torrent import *
-from BitTorrent.ThreadProxy import ThreadProxy
+from BTL.ThreadProxy import ThreadProxy
+from BTL.exceptions import str_exc
 
 
 state_dict = {("created", "stop", False): _("Paused"),
@@ -278,6 +280,7 @@ class BasicApp(object):
         self.external_torrents = []
         self.installer_to_launch_at_exit = None
         self.logger = logging.getLogger('UI')
+        self.logger.setLevel(logging.INFO)
 
         self.next_autoupdate_nag = bttime()
 
@@ -328,12 +331,13 @@ class BasicApp(object):
     def open_torrent_arg_with_callbacks(self, path):
         """Open a torrent from path (URL, file) non-blockingly, and
         call the appropriate GUI callback when necessary."""
-        def errback(e):
-            exc_type, value, tb = e
+        def errback(f):
+            exc_type, value, tb = f.exc_info()
             if issubclass(exc_type, GetTorrent.GetTorrentException):
-                self.logger.critical(unicode(value.args[0]))
+                self.logger.critical(str_exc(value))
             else:
-                self.logger.error("open_torrent_arg_with_callbacks failed", exc_info=e)
+                self.logger.error("open_torrent_arg_with_callbacks failed",
+                                  exc_info=f.exc_info())
         def callback(metainfo):
             def open(metainfo):
                 df = self.multitorrent.torrent_known(metainfo.infohash)
@@ -411,9 +415,10 @@ class BasicApp(object):
             self.open_external_torrents_deferred = launch_coroutine(self.gui_wrap, self._open_external_torrents)
             def callback(*a):
                 self.open_external_torrents_deferred = None
-            def errback(e):
+            def errback(f):
                 callback()
-                self.logger.error("open_external_torrents failed:", exc_info=e)
+                self.logger.error("open_external_torrents failed:",
+                                  exc_info=f.exc_info())
 
             self.open_external_torrents_deferred.addCallback(callback)
             self.open_external_torrents_deferred.addErrback(errback)
@@ -458,6 +463,13 @@ class BasicApp(object):
     def do_log(self, severity, text):
         raise NotImplementedError('BasicApp.do_log() not implemented')
 
+
+    def attach_multitorrent(self, multitorrent, doneflag):
+        self.multitorrent = multitorrent
+        self.multitorrent_doneflag = doneflag
+        self.rawserver = multitorrent.obj.rawserver
+        self.multitorrent.initialize_torrents()
+
     def init_updates(self):
         """Make status request at regular intervals."""
         raise NotImplementedError('BasicApp.init_updates() not implemented')
@@ -466,11 +478,16 @@ class BasicApp(object):
     def make_statusrequest(self, event = None):
         """Make status request."""
         df = launch_coroutine(self.gui_wrap, self.update_status)
-        def errback(e):
-            self.logger.error("update_status failed", exc_info=e)
+        def errback(f):
+            self.logger.error("update_status failed",
+                              exc_info=f.exc_info())
         df.addErrback(errback)
         return True
 
+    def _thread_proxy(self, obj):
+        return ThreadProxy(obj,
+                           self.gui_wrap,
+                           _wrap_task(self.rawserver.external_add_task))
 
     def update_single_torrent(self, infohash):
         torrent = self.torrents[infohash]
@@ -490,7 +507,7 @@ class BasicApp(object):
             # the infohash might have been removed from torrents
             # while we were yielding above, so we need to check
             if infohash in self.torrents:
-                core_torrent = ThreadProxy(core_torrent, self.gui_wrap)
+                core_torrent = self._thread_proxy(core_torrent)
                 torrent.update(core_torrent, statistics)
                 self.update_torrent(torrent)
 
@@ -506,12 +523,12 @@ class BasicApp(object):
         au_torrents = {}
 
         for torrent in torrents:
-            torrent = ThreadProxy(torrent, self.gui_wrap)
+            torrent = self._thread_proxy(torrent)
             infohashes.add(torrent.metainfo.infohash)
-            if (not torrent.hidden and
-                torrent.metainfo.infohash not in self.torrents):
-                # create new torrent widget
-                to = self.new_displayed_torrent(torrent)
+            if torrent.metainfo.infohash not in self.torrents:
+                if self.config.get('skip_hidden_flag') or not torrent.hidden:
+                    # create new torrent widget
+                    to = self.new_displayed_torrent(torrent)
 
             if torrent.is_auto_update:
                 au_torrents[torrent.metainfo.infohash] = torrent
@@ -543,7 +560,7 @@ class BasicApp(object):
                 # the infohash might have been removed from torrents
                 # while we were yielding above, so we need to check
                 if infohash in self.torrents:
-                    core_torrent = ThreadProxy(core_torrent, self.gui_wrap)
+                    core_torrent = self._thread_proxy(core_torrent)
                     torrent.update(core_torrent, statistics)
                     self.update_torrent(torrent)
                     if statistics['fractionDone'] is not None:
@@ -679,13 +696,12 @@ class BasicApp(object):
         if (torrent and torrent.pending == None):
             torrent.pending = "stop"
 
-            if not pause:
-                df = self.multitorrent.set_torrent_policy(infohash, "stop")
-                yield df
-                try:
-                    df.getResult()
-                except TorrentNotRunning:
-                    pass
+            df = self.multitorrent.set_torrent_policy(infohash, "stop")
+            yield df
+            try:
+                df.getResult()
+            except TorrentNotRunning:
+                pass
 
             if torrent.state == "running":
                 df = self.multitorrent.stop_torrent(infohash, pause=pause)
@@ -711,7 +727,7 @@ class BasicApp(object):
             df = self.multitorrent.set_torrent_policy(infohash, "auto")
             yield df
             df.getResult()
-                
+
             torrent.pending = None
             yield True
 
@@ -741,6 +757,8 @@ class BasicApp(object):
             torrent.pending = None
             yield True
 
+    def no_op(self):
+        pass
 
     def external_command(self, action, *datas):
         """For communication via IPC"""
@@ -758,6 +776,7 @@ class BasicApp(object):
             assert len(datas) == 1
             self.logger.error(datas[0])
         elif action == 'no-op':
+            self.no_op()
             self.logger.info('got external_command: no-op')
         else:
             self.logger.warning('got unknown external_command: %s' % str(action))

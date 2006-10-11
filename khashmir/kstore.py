@@ -20,7 +20,7 @@ except ImportError:
             d[choice(l)] = 1
         return d.keys()
     
-from BitTorrent.platform import bttime as time
+from BTL.platform import bttime as time
 
 class KItem:
     def __init__(self, key, value):

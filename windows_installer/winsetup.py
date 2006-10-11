@@ -15,7 +15,7 @@ import sys
 from distutils.core import setup
 import py2exe
 import glob
-from BitTorrent import languages
+from BTL.language import languages
 
 if os.name != 'nt':
     print "This script is only for use on Win32. Use setup.py to install on a Unix OS."
@@ -26,6 +26,9 @@ from BitTorrent.platform import get_shell_dir, shellcon
 excludes = ["curses",
             "email",
             "statvfs",
+            "cProfile",
+            "lsprofcalltree",
+            "lsprof",
             "hotshot",
             "hotshot.log",
             "hotshot.stats",
@@ -63,13 +66,17 @@ for e in old_excludes:
     excludes.append(e)
     excludes.append(e + ".*")
 
+# wtf
+includes = ["encodings", "encodings.*", "twisted.web.resource",
+            "BitTorrent.sparse_set", "BitTorrent.bitfield",]
+
 opts = {
     "py2exe": {
         # this compression makes the installed size smaller, but the installer size larger
         #"compressed": 1,
         "optimize": 2,
         "excludes": excludes,
-        "includes": ["encodings", "encodings.*"]
+        "includes": includes,
 #                    ",cjkcodecs,cjkcodecs.*"
 #                    ",dns,dns.rdtypes.ANY.*,dns.rdtypes.IN.*"
     }
@@ -111,7 +118,8 @@ setup(windows=[{'script': 'bittorrent.py' ,
       options=opts,
       data_files=[('',["credits.txt", "LICENSE.txt",
                        "README.txt", "redirdonate.html",
-                       "TRACKERLESS.txt","public.key",
+                       "TRACKERLESS.txt", "public.key",
+                       "addrmap.dat",
                        ]),
                   ("images", ["images\\bittorrent.ico"]),
                   ("images\\themes\\default", glob.glob("images\\themes\\default\\*png")),
@@ -123,3 +131,4 @@ setup(windows=[{'script': 'bittorrent.py' ,
                   ("images\\logo", glob.glob("images\\logo\\*png")),
                   ] + ms,
                 )
+

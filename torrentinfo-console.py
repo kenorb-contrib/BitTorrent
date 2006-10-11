@@ -12,13 +12,14 @@
 
 # Written by Henry 'Pi' James, Loring Holden and Matt Chisholm
 
-from BitTorrent.translation import _
+app_name = "BitTorrent"
+from BTL.translation import _
 
 from sys import *
 from os.path import *
 from sha import *
-from BitTorrent.bencode import *
-from BitTorrent import version, app_name
+from BTL.bencode import *
+from BitTorrent import version
 
 NAME, EXT = splitext(basename(argv[0]))
 
@@ -35,12 +36,14 @@ labels = {'metafile'   : _("metainfo file: %s"       ),
           'filename'   : _("file name: %s"           ),
           'filesize'   : _("file size:"              ),
           'files'      : _("files:"                  ),
+          'title'      : _("title: %s"               ),
           'dirname'    : _("directory name: %s"      ),
           'archive'    : _("archive size:"           ),
           'announce'   : _("tracker announce url: %s"),
           'announce-list'   : _("tracker announce list: %s"),
           'nodes'      : _("trackerless nodes:"      ),
           'comment'    : _("comment:"                ),
+          'content_type' : _("content_type: %s"      ),
           }
 
 maxlength = max( [len(v[:v.find(':')]) for v in labels.values()] )
@@ -58,6 +61,8 @@ for metainfo_name in argv[1:]:
     info = metainfo['info']
     info_hash = sha(bencode(info))
 
+    if metainfo.has_key('title'):
+        print labels['title'] % metainfo['title']
     print labels['metafile'] % basename(metainfo_name)
     print labels['infohash']  % info_hash.hexdigest()
     piece_length = info['piece length']
@@ -66,6 +71,8 @@ for metainfo_name in argv[1:]:
         print labels['filename'] % info['name']
         file_length = info['length']
         name = labels['filesize']
+        if info.has_key('content_type'):
+            print labels['content_type'] % info['content_type']
     else:
         # let's assume we have a directory structure
         print labels['dirname'] % info['name']
@@ -77,7 +84,11 @@ for metainfo_name in argv[1:]:
                 if (path != ''):
                    path = path + "/"
                 path = path + item
-            print '   %s (%d)' % (path, file['length'])
+            if file.has_key('content_type'):
+                print '   %s (%d,%s)' % (path, file['length'],
+                                         file['content_type'])
+            else:
+                print '   %s (%d)' % (path, file['length'])
             file_length += file['length']
         name = labels['archive']
     piece_number, last_piece_length = divmod(file_length, piece_length)
@@ -94,7 +105,7 @@ for metainfo_name in argv[1:]:
         for n in metainfo['nodes']:
             print '\t%s\t:%d' % (n[0], n[1])
         
-    print labels['comment']
+    stdout.write(labels['comment'] + " ")
     if metainfo.has_key('comment'):
         print metainfo['comment']
     print

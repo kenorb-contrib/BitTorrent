@@ -12,20 +12,19 @@
 
 import os
 import Queue
-from array import array
 from bisect import bisect_right
-from BitTorrent.translation import _
+from BTL.translation import _
 
-from BitTorrent.obsoletepythonsupport import *
+from BTL.obsoletepythonsupport import set
 
-from BitTorrent import BTFailure, app_name
-from BitTorrent.defer import Deferred, ThreadedDeferred
-from BitTorrent.yielddefer import launch_coroutine, _wrap_task
+from BitTorrent import BTFailure
+from BTL.defer import Deferred, ThreadedDeferred
+from BTL.yielddefer import launch_coroutine, _wrap_task
 from BitTorrent.platform import get_allocated_regions
-from BitTorrent.sparse_set import SparseSet
-from BitTorrent.DictWithLists import DictWithLists, DictWithSets
+from BTL.sparse_set import SparseSet
+from BTL.DictWithLists import DictWithLists, DictWithSets
+import BTL.stackthreading as threading
 from BitTorrent.Storage_base import open_sparse_file, make_file_sparse, bad_libc_workaround, is_open_for_write
-import BitTorrent.stackthreading as threading
 
 
 class FilePool(object):

@@ -1,5 +1,5 @@
 import wx
-from BitTorrent.translation import _
+from BTL.translation import _
 from BitTorrent.GUI_wx import BTDialog, text_wrappable, ElectroStaticBitmap
 
 ID_COMBOBOX = wx.NewId()
@@ -87,4 +87,6 @@ class OpenDialog(BTDialog):
         return self.choicebox.GetValue()
 
     def browse(self, event):
-        self.EndModal(wx.ID_CANCEL)        self.browse_func()
+        self.EndModal(wx.ID_CANCEL)
+        self.browse_func()
+

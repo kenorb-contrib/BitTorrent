@@ -17,17 +17,20 @@ from __future__ import division
 import os
 import sys
 import math
-from BitTorrent.hash import sha
+from BTL.hash import sha
 from time import time
 from threading import Event
 from BitTorrent.translation import _
 
-from BitTorrent.bencode import bencode, bdecode
-from BitTorrent.btformats import check_info
+from BTL.bencode import bencode, bdecode
+from BTL.btformats import check_info
+from BTL.exceptions import str_exc
 from BitTorrent.parseargs import parseargs, printHelp
-from BitTorrent.obsoletepythonsupport import *
-from BitTorrent.platform import decode_from_filesystem, get_filesystem_encoding, read_language_file
+from BTL.obsoletepythonsupport import *
+from BTL.exceptions import str_exc
 from BitTorrent import BTFailure
+from BTL.platform import decode_from_filesystem, get_filesystem_encoding
+from BitTorrent.platform import read_language_file
 
 from khashmir.node import Node
 from khashmir.ktable import KTable
@@ -35,7 +38,7 @@ from khashmir.util import packPeers, compact_peer_info
 
 ignore = ['core', 'CVS', 'Thumbs.db', 'desktop.ini']
 
-from ConvertedMetainfo import noncharacter_translate
+from BTL.ConvertedMetainfo import noncharacter_translate
 
 def dummy(v):
     pass
@@ -55,8 +58,11 @@ def make_meta_files(url,
                     target=None,
                     title=None,
                     comment=None,
+                    safe=None,
+                    content_type=None,  # <---what to do for batch torrents?
                     use_tracker=True,
-                    data_dir = None):
+                    data_dir = None,
+                    url_list = None):
     if len(files) > 1 and target:
         raise BTFailure(_("You can't specify the name of the .torrent file "
                           "when generating multiple torrents at once"))
@@ -96,16 +102,20 @@ def make_meta_files(url,
         if use_tracker:
             make_meta_file(f, url, flag=flag, progress=callback,
                            piece_len_exp=my_piece_len_pow2, target=target,
-                           title=title, comment=comment)
+                           title=title, comment=comment, safe=safe,
+                           content_type=content_type,
+                           url_list=url_list)
         else:
             make_meta_file_dht(f, url, flag=flag, progress=callback,
-                           piece_len_exp=my_piece_len_pow2, target=target,
-                           title=title, comment=comment,
-                           data_dir=data_dir)
+                               piece_len_exp=my_piece_len_pow2, target=target,
+                               title=title, comment=comment, safe=safe,
+                               content_type = content_type,
+                               data_dir=data_dir)
 
 
 def make_meta_file(path, url, piece_len_exp, flag=Event(), progress=dummy,
-                   title=None, comment=None, target=None):
+                   title=None, comment=None, safe=None, content_type=None,
+                   target=None, url_list=None, name=None):
     data = {'announce': url.strip(), 'creation date': int(time())}
     piece_length = 2 ** piece_len_exp
     a, b = os.path.split(path)
@@ -116,27 +126,30 @@ def make_meta_file(path, url, piece_len_exp, flag=Event(), progress=dummy,
             f = os.path.join(a, b + '.torrent')
     else:
         f = target
-    info = makeinfo(path, piece_length, flag, progress)
+    info = makeinfo(path, piece_length, flag, progress, name, content_type)
     if flag.isSet():
         return
     check_info(info)
     h = file(f, 'wb')
 
     data['info'] = info
-    # TODO: encoding
-    lang = read_language_file()
+    lang = read_language_file() or 'en'
     if lang:
         data['locale'] = lang
     if title:
         data['title'] = title
     if comment:
         data['comment'] = comment
+    if safe:
+        data['safe'] = safe
+    if url_list:
+        data['url-list'] = url_list
     h.write(bencode(data))
     h.close()
 
-def make_meta_file_dht(path, nodes, piece_len_exp, flag=Event(), progress=dummy,
-                   title=None, comment=None, target=None,
-                   data_dir=None):
+def make_meta_file_dht(path, nodes, piece_len_exp, flag=Event(),
+                       progress=dummy, title=None, comment=None, safe=None,
+                       content_type=None, target=None, data_dir=None):
     # if nodes is empty, then get them out of the routing table in data_dir
     # else, expect nodes to be a string of comma seperated <ip>:<port> pairs
     # this has a lot of duplicated code from make_meta_file
@@ -149,7 +162,7 @@ def make_meta_file_dht(path, nodes, piece_len_exp, flag=Event(), progress=dummy,
             f = os.path.join(a, b + '.torrent')
     else:
         f = target
-    info = makeinfo(path, piece_length, flag, progress)
+    info = makeinfo(path, piece_length, flag, progress, content_type)
     if flag.isSet():
         return
     check_info(info)
@@ -173,6 +186,8 @@ def make_meta_file_dht(path, nodes, piece_len_exp, flag=Event(), progress=dummy,
         data['title'] = title
     if comment:
         data['comment'] = comment
+    if safe:
+        data['safe'] = safe
     h.write(bencode(data))
     h.close()
 
@@ -183,7 +198,9 @@ def calcsize(path):
         total += os.path.getsize(s[1])
     return total
 
-def makeinfo(path, piece_length, flag, progress):
+def makeinfo(path, piece_length, flag, progress, name = None,
+             content_type = None):  # HEREDAVE. If path is directory,
+                                    # how do we assign content type?
     def to_utf8(name):
         if isinstance(name, unicode):
             u = name
@@ -191,10 +208,11 @@ def makeinfo(path, piece_length, flag, progress):
             try:
                 u = decode_from_filesystem(name)
             except Exception, e:
-                raise BTFailure(_('Could not convert file/directory name "%s" to '
+                s = str_exc(e)
+                raise BTFailure(_('Could not convert file/directory name %r to '
                                   'Unicode (%s). Either the assumed filesystem '
                                   'encoding "%s" is wrong or the filename contains '
-                                  'illegal bytes.') % (name, unicode(e.args[0]), get_filesystem_encoding()))
+                                  'illegal bytes.') % (name, s, get_filesystem_encoding()))
 
         if u.translate(noncharacter_translate) != u:
             raise BTFailure(_('File/directory name "%s" contains reserved '
@@ -217,8 +235,12 @@ def makeinfo(path, piece_length, flag, progress):
         for p, f in subs:
             pos = 0
             size = os.path.getsize(f)
-            p2 = [to_utf8(name) for name in p]
-            fs.append({'length': size, 'path': p2})
+            p2 = [to_utf8(n) for n in p]
+            if content_type:
+                fs.append({'length': size, 'path': p2,
+                           'content_type' : content_type}) # HEREDAVE. bad for batch!
+            else:
+                fs.append({'length': size, 'path': p2})
             h = file(f, 'rb')
             while pos < size:
                 a = min(size - pos, piece_length - done)
@@ -237,9 +259,16 @@ def makeinfo(path, piece_length, flag, progress):
             h.close()
         if done > 0:
             pieces.append(sh.digest())
+
+        if name is not None:
+            assert isinstance(name, unicode)
+            name = to_utf8(name)
+        else:
+            name = to_utf8(os.path.split(path)[1])
+
         return {'pieces': ''.join(pieces),
             'piece length': piece_length, 'files': fs,
-            'name': to_utf8(os.path.split(path)[1])}
+            'name': name}
     else:
         size = os.path.getsize(path)
         pieces = []
@@ -255,6 +284,11 @@ def makeinfo(path, piece_length, flag, progress):
                 p = size
             progress(min(piece_length, size - p))
         h.close()
+        if content_type is not None:
+            return {'pieces': ''.join(pieces),
+                'piece length': piece_length, 'length': size,
+                'name': to_utf8(os.path.split(path)[1]),
+                'content_type' : content_type }
         return {'pieces': ''.join(pieces),
             'piece length': piece_length, 'length': size,
             'name': to_utf8(os.path.split(path)[1])}

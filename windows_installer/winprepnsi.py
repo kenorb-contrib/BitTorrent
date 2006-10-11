@@ -1,8 +1,9 @@
 import sys
 import os
-from BitTorrent import version, app_name, languages, language_names
+app_name = "BitTorrent"
+from BitTorrent import version
+from BTL.language import languages, language_names, locale_sucks
 from BitTorrent.NewVersion import Version
-from BitTorrent.language import locale_sucks
 
 NSIS_DIR = "C:\\Program Files\\NSIS"
 

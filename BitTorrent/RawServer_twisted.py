@@ -18,88 +18,46 @@ import string
 import struct
 import thread
 import logging
-import threading
-import traceback
 
-from BitTorrent.translation import _
-from BitTorrent import BTFailure
-from BitTorrent.obsoletepythonsupport import set
-from BitTorrent.DictWithLists import DictWithLists
-from BitTorrent.defer import DeferredEvent, Deferred, run_deferred
+from BTL.translation import _
+from BTL.obsoletepythonsupport import set
+from BTL.defer import DeferredEvent, Failure
+from BTL.SaneThreadedResolver import SaneThreadedResolver
 
 ##############################################################
-#profile = True
 profile = False
 
 if profile:
     try:
-        import hotshot
-        import hotshot.stats
+        from BTL.profile import Profiler, Stats
         prof_file_name = 'rawserver.prof'
     except ImportError, e:
         print "profiling not available:", e
         profile = False
 ##############################################################
 
-if 'twisted.internet.reactor' in sys.modules:
-    print ("twisted.internet.reactor was imported before BitTorrent.RawServer_twisted!\n"
-           "I'll clean it up for you, but don't do that!\n"
-           "Existing reference may be for the wrong reactor!\n"
-           "!")
-    del sys.modules['twisted.internet.reactor']
-
 from twisted.python import threadable
 # needed for twisted 1.3
 # otherwise the 'thread safety' functions are not 'thread safe'
 threadable.init(1)
 
-letters = set(string.letters)
-
-main_thread = thread.get_ident()
-
-noSignals = True
-iocpreactor = False
-
-if os.name == 'nt':
-    try:
-        from twisted.internet import iocpreactor
-        iocpreactor.proactor.install()
-        noSignals = False
-        iocpreactor = True
-    except:
-        # just as limited (if not more) as select, and also buggy
-        #try:
-        #    from twisted.internet import win32eventreactor
-        #    win32eventreactor.install()
-        #except:
-        #    pass
-        pass
-else:
-    try:
-        from twisted.internet import kqreactor
-        kqreactor.install()
-    except:
-        try:
-            from twisted.internet import pollreactor
-            pollreactor.install()
-        except:
-            pass
-
-rawserver_logger = logging.getLogger('RawServer')
-
-#the default reactor is select-based, and will be install()ed if another has not
-from twisted.internet import reactor, task, error
+from BTL.reactor_magic import noSignals, reactor, is_iocpreactor
 
 # as far as I know, we work with twisted 1.3 and >= 2.0
 #import twisted.copyright
 #if twisted.copyright.version.split('.') < 2:
 #    raise ImportError(_("RawServer_twisted requires twisted 2.0.0 or greater"))
 
-from twisted.internet.protocol import DatagramProtocol, Protocol, ClientFactory
 from twisted.protocols.policies import TimeoutMixin
-from twisted.internet import interfaces, address
+from twisted.internet.protocol import DatagramProtocol, Protocol, ClientFactory
+from twisted.internet.threads import deferToThread
+from twisted.internet import error, interfaces
 
-from BitTorrent.ConnectionRateLimitReactor import connectionRateLimitReactor
+from BTL.ConnectionRateLimitReactor import connectionRateLimitReactor
+
+letters = set(string.letters)
+main_thread = thread.get_ident()
+rawserver_logger = logging.getLogger('RawServer')
 
 NOLINGER = struct.pack('ii', 1, 0)
 
@@ -110,16 +68,16 @@ SHUT_WR = getattr(socket, 'SHUT_WR', 1)
 # this is a base class for all the callbacks the server could use
 class Handler(object):
 
-    # there is no connection_started.
-    # a connection request can result in either connection_failed or
-    # connection_made
+    # called when the connection is being attempted
+    def connection_starting(self, addr):
+        pass
 
     # called when the connection is ready for writiing
     def connection_made(self, s):
         pass
 
-    # called when a connection request failed (failed, refused, or requested to close)
-    def connection_failed(self, addr, exception):
+    # called when a connection attempt failed (failed, refused, or requested)
+    def connection_failed(self, s, exception):
         pass
 
     def data_came_in(self, addr, data):
@@ -129,16 +87,15 @@ class Handler(object):
     def connection_flushed(self, s):
         pass
 
-    # called when a connection dies (lost or requested to close)
+    # called when a connection dies (lost or requested)
     def connection_lost(self, s):
         pass
         
 
 class ConnectionWrapper(object):
 
-    def __init__(self, rawserver, handler, context, tos=0):
+    def __init__(self, rawserver, handler, context):
         self.ip = None             # peer ip
-        self.tos = tos
         self.port = None           # peer port
         self.dying = False
         self.paused = False
@@ -159,16 +116,20 @@ class ConnectionWrapper(object):
         if self.rawserver:
             self.rawserver.single_sockets.add(self)
 
+    def attach_connector(self, connector):
+        self.connector = connector
+        addr = connector.getDestination()
+        try:
+            self.ip = addr.host
+            self.port = addr.port
+        except:
+            # unix sockets, for example
+            pass
+
     def get_socket(self):
         s = None
-        try:
+        if interfaces.ISystemHandle.providedBy(self.transport):
             s = self.transport.getHandle()
-        except:
-            try:
-                # iocpreactor doesn't implement ISystemHandle like it should
-                s = self.transport.socket
-            except:
-                pass
         return s
 
     def pause_reading(self):
@@ -211,23 +172,24 @@ class ConnectionWrapper(object):
             self.buffer.attachConsumer(self.transport)
 
         try:
-            address = self.transport.getPeer()
+            addr = self.transport.getPeer()
         except:
             # udp, for example
-            address = self.transport.getHost()
+            addr = self.transport.getHost()
 
         try:
-            self.ip = address.host
-            self.port = address.port
+            self.ip = addr.host
+            self.port = addr.port
         except:
             # unix sockets, for example
             pass
 
-        if self.tos != 0:
+        tos = self.rawserver.config.get('peer_socket_tos', 0)
+        if tos != 0:
             s = self.get_socket()
 
             try:
-                s.setsockopt(socket.IPPROTO_IP, socket.IP_TOS, self.tos)
+                s.setsockopt(socket.IPPROTO_IP, socket.IP_TOS, tos)
             except socket.error:
                 pass
 
@@ -235,8 +197,8 @@ class ConnectionWrapper(object):
         ret = None
         try:
             ret = self.transport.write(packet, addr)
-        except Exception, e:
-            rawserver_logger.warning("UDP sendto failed: %s" % unicode(e.args[0]))
+        except:
+            rawserver_logger.warning("UDP sendto failed", exc_info=sys.exc_info())
 
         return ret
 
@@ -274,11 +236,14 @@ class ConnectionWrapper(object):
         else:
             self.close()
 
+    def stopConnecting(self):
+        return self.connector.stopConnecting()
+
     def close(self):
         if self.buffer:
             self.buffer.stopWriting()
 
-        if self.rawserver.config['close_with_rst']:
+        if self.rawserver.config.get('close_with_rst', True):
             try:
                 s = self.get_socket()
                 s.setsockopt(socket.SOL_SOCKET, socket.SO_LINGER, NOLINGER)
@@ -286,14 +251,14 @@ class ConnectionWrapper(object):
                 pass
 
         if self.transport:
-            if self in self.rawserver.udp_sockets:
+            if (hasattr(self.transport, 'protocol') and
+                isinstance(self.transport.protocol, CallbackDatagramProtocol)):
                 # udp connections should only call stopListening
                 self.transport.stopListening()
             else:
                 self.transport.loseConnection()
-        else:
-            if self.connector:
-                self.connector.disconnect()
+        elif self.connector:
+            self.connector.disconnect()
 
     def _cleanup(self):
 
@@ -310,6 +275,7 @@ class ConnectionWrapper(object):
                 self.callback_connection.setTimeout(None)
             self.callback_connection.connection = None
             del self.callback_connection
+
 
 # hint: not actually a buffer
 class PassBuffer(object):
@@ -357,7 +323,7 @@ class OutputBuffer(object):
         self.consumer = consumer
         if not self.registered:
             self.beginWriting()
-            
+
     def add(self, b):
         self._buffer_list.append(b)
 
@@ -402,11 +368,11 @@ class OutputBuffer(object):
         pass
 
 
-
 class CallbackConnection(object):
 
     def attachTransport(self, transport, s):
-        s.attach_transport(self, transport=transport, reset_timeout=self.optionalResetTimeout)
+        s.attach_transport(self, transport=transport,
+                           reset_timeout=self.optionalResetTimeout)
         self.connection = s
 
     def connectionMade(self):
@@ -424,7 +390,7 @@ class CallbackConnection(object):
     def post_connectionLost(self, reason):
         s = self.connection
         #print s.ip, s.port, reason.getErrorMessage()
-        self.factory.rawserver._remove_socket(self.connection, was_connected=True)
+        self.factory.rawserver._remove_socket(s, was_connected=True)
 
     def dataReceived(self, data):
         self.optionalResetTimeout()
@@ -446,35 +412,12 @@ class CallbackConnection(object):
 class CallbackProtocol(CallbackConnection, TimeoutMixin, Protocol):
 
     def makeConnection(self, transport):
+        self.attachTransport(transport, self.wrapper)
+
         self.can_timeout = True
-        self.setTimeout(self.factory.rawserver.config['socket_timeout'])
-
-        outgoing = False
-
-        key = None
-        host = transport.getHost()
-        if isinstance(host, address.UNIXAddress):
-            key = host.name
-        else:
-            key = host.port
-
-        try:
-            addr = (transport.getPeer().host, transport.getPeer().port)
-            c = self.factory.pop_connection_data(addr)
-            outgoing = True
-        except KeyError:
-            # happens when this was an incoming connection
-            pass
-        except AttributeError:
-            # happens when the peer is a unix socket
-            pass
-
-        if not outgoing:
-            args = self.factory.get_connection_data(key)
-            c = ConnectionWrapper(*args)
-
-        self.attachTransport(transport, c)
-        Protocol.makeConnection(self, transport)
+        self.setTimeout(self.factory.rawserver.config.get('socket_timeout', 30))
+        
+        return Protocol.makeConnection(self, transport)
 
 
 class CallbackDatagramProtocol(CallbackConnection, DatagramProtocol):
@@ -482,51 +425,65 @@ class CallbackDatagramProtocol(CallbackConnection, DatagramProtocol):
     def startProtocol(self):
         self.can_timeout = False
         self.attachTransport(self.transport, self.connection)
-        DatagramProtocol.startProtocol(self)
+        return DatagramProtocol.startProtocol(self)
 
 
 class ConnectionFactory(ClientFactory):
 
-    def __init__(self):
-        self.connection_data = DictWithLists()
+    protocol = CallbackProtocol
+    
+    def __init__(self, rawserver, outgoing):
+        self.rawserver = rawserver
+        self.outgoing = outgoing
 
-    def add_connection_data(self, key, data):
-        self.connection_data.push_to_row(key, data)
+    def add_connection_data(self, data):
+        self.data = data
 
-    def get_connection_data(self, key):
-        return self.connection_data.get_from_row(key)
-
-    def pop_connection_data(self, key):
-        return self.connection_data.pop_from_row(key)
-
-    def clientConnectionFailed(self, connector, reason):
+    def get_connection_data(self):
+        return self.data
+    
+    def get_wrapper(self):
+        if self.outgoing:
+            wrapper = self.get_connection_data()
+        else:
+            args = self.get_connection_data()
+            wrapper = ConnectionWrapper(*args)
+        return wrapper
+            
+    def startedConnecting(self, connector):
         peer = connector.getDestination()
         addr = (peer.host, peer.port)
-        s = self.pop_connection_data(addr)
+        wrapper = self.get_wrapper()
+        wrapper.handler.connection_starting(addr)
 
+    def buildProtocol(self, addr):
+        protocol = ClientFactory.buildProtocol(self, addr)
+        protocol.wrapper = self.get_wrapper()
+        return protocol
+        
+    def clientConnectionFailed(self, connector, reason):
+        wrapper = self.get_wrapper()
+    
         # opt-out
-        if not s.dying:
+        if not wrapper.dying:
             # this might not work - reason is not an exception
-            s.handler.connection_failed(addr, reason)
-            s.dying = True
+            wrapper.handler.connection_failed(wrapper, reason)
+            wrapper.dying = True
 
-        self.rawserver._remove_socket(s)
+        self.rawserver._remove_socket(wrapper)
 
 
 # storage for socket creation requestions, and proxy once the connection is made
 class SocketRequestProxy(object):
-    def __init__(self, port, bind, tos, protocol):
+    
+    def __init__(self, port, bind, protocol):
         self.port = port
         self.bind = bind
-        self.tos = tos
         self.protocol = protocol
         self.connection = None
 
     def __getattr__(self, name):
-        try:
-            return getattr(self.connection, name)
-        except:
-            raise AttributeError, name
+        return getattr(self.connection, name)
 
     def close(self):
         # closing the proxy doesn't mean anything.
@@ -535,14 +492,14 @@ class SocketRequestProxy(object):
         if self.connection:
             self.connection.close()
 
+
 class RawServerMixin(object):
 
-    def __init__(self, config=None, noisy=True, tos=0):
+    def __init__(self, config=None, noisy=True):
         self.noisy = noisy
         self.config = config
         if not self.config:
             self.config = {}
-        self.tos = tos
         self.sigint_flag = None
         self.sigint_installed = False        
 
@@ -562,11 +519,10 @@ class RawServerMixin(object):
             if wrapper is not None:
                 context = wrapper.context
             if context is not None:
-                context.got_exception(*sys.exc_info())
+                context.got_exception(Failure())
             elif self.noisy:
                 rawserver_logger.exception("Error in _make_wrapped_call for %s",
                                            _f.__name__)
-
    
     # must be called from the main thread
     def install_sigint_handler(self, flag = None):
@@ -602,7 +558,7 @@ class RawServer(RawServerMixin):
 
         2. creates a socket by a call to create_serversocket.
 
-            s = r.create_serversocket(config['port'], config['bind'], True)
+            s = r.create_serversocket(config['port'], config['bind'])
 
         3. tells the raw server to listen to the socket and associate
            a protocol handler with the socket.
@@ -611,7 +567,7 @@ class RawServer(RawServerMixin):
                 HTTPHandler(t.get, config['min_time_between_log_flushes']))
 
         4. tells the raw_server to listen for I/O or scheduled tasks
-           until stop is called.
+           until the r.stop() is called.
 
             r.listen_forever()
 
@@ -624,19 +580,17 @@ class RawServer(RawServerMixin):
            member function is called.  It is up to the handler to
            interpret the data and/or pass it on to other objects.
            In the tracker, the HTTP protocol handler passes the arriving data
-           to an HTTPConnection object which maintains state specific
+           to an HTTPConnector object which maintains state specific
            to a given connection.
 
          For outgoing connections, the call start_connection() is used.
          """
 
 
-    def __init__(self, config=None, noisy=True, tos=0):
+    def __init__(self, config=None, noisy=True):
         """config is a dict that contains option-value pairs.
-
-           'tos' is passed to setsockopt to set the IP Type of Service (i.e.,
-           DiffServ byte), in IPv4 headers."""
-        RawServerMixin.__init__(self, config, noisy, tos)
+        """
+        RawServerMixin.__init__(self, config, noisy)
 
         self.doneflag = None
 
@@ -645,6 +599,7 @@ class RawServer(RawServerMixin):
         self.associated = False
 
         self.single_sockets = set()
+        self.unix_sockets = set()
         self.udp_sockets = set()
         self.listened = False
         self.connections = 0
@@ -655,16 +610,7 @@ class RawServer(RawServerMixin):
                 os.unlink(prof_file_name)
             except:
                 pass
-            self.prof = hotshot.Profile(prof_file_name)
-
-            callLater = reactor.callLater
-            def _profile_call(delay, _f, *a, **kw):
-                return callLater(delay, self.prof.runcall, _f, *a, **kw)
-            reactor.callLater = _profile_call
-            o = reactor.callFromThread
-            def _profile_call2(_f, *a, **kw):
-                return o(self.prof.runcall, _f, *a, **kw)
-            reactor.callFromThread = _profile_call2
+            self.prof = Profiler()
         ##############################################################
 
         connectionRateLimitReactor(reactor, self.config.get('max_incomplete', 10))
@@ -673,11 +619,9 @@ class RawServer(RawServerMixin):
         self.remove_pending_connection = reactor.remove_pending_connection
         self.reactor = reactor
 
-        self.factory = ConnectionFactory()
-        self.factory.rawserver = self
+        self.reactor.resolver = SaneThreadedResolver(self.reactor)
 
-        self.factory.protocol = CallbackProtocol
-
+        #from twisted.internet import task
         #l2 = task.LoopingCall(self._print_connection_count)
         #l2.start(1)
 
@@ -744,34 +688,38 @@ class RawServer(RawServerMixin):
                                           _f, *args, **kwargs)
 
     def create_unixserversocket(self, filename):
-        s = SocketRequestProxy(0, filename, 0, 'unix')
+        s = SocketRequestProxy(0, filename, 'unix')
 
-        s.listening_port = reactor.listenUNIX(s.bind, self.factory)
+        factory = ConnectionFactory(self, outgoing=False)
+        s.listening_port = reactor.listenUNIX(s.bind, factory)
+        s.factory = factory
         s.listening_port.listening = True
 
         return s
 
-    def create_serversocket(self, port, bind='', tos=0):
-        s = SocketRequestProxy(port, bind, tos, 'tcp')
-
+    def create_serversocket(self, port, bind=''):
+        s = SocketRequestProxy(port, bind, 'tcp')
+    
+        factory = ConnectionFactory(self, outgoing=False)
         try:
-            s.listening_port = reactor.listenTCP(s.port, self.factory,
+            s.listening_port = reactor.listenTCP(s.port, factory,
                                                  interface=s.bind)
         except error.CannotListenError, e:
             if e[0] != 0:
                 raise e.socketError
             else:
                 raise
+        s.factory = factory
         s.listening_port.listening = True
 
         return s
 
-    def _create_udpsocket(self, port, bind, tos, create_func):
-        s = SocketRequestProxy(port, bind, tos, 'udp')
+    def _create_udpsocket(self, port, bind, create_func):
+        s = SocketRequestProxy(port, bind, 'udp')
 
         protocol = CallbackDatagramProtocol()
 
-        c = ConnectionWrapper(None, None, None, tos)
+        c = ConnectionWrapper(self, None, None)
         s.connection = c
         protocol.connection = c
 
@@ -783,12 +731,12 @@ class RawServer(RawServerMixin):
 
         return s
 
-    def create_udpsocket(self, port, bind='', tos=0):
-        return self._create_udpsocket(port, bind, tos,
+    def create_udpsocket(self, port, bind=''):
+        return self._create_udpsocket(port, bind,
                                       create_func = reactor.listenUDP)
 
-    def create_multicastsocket(self, port, bind='', tos=0):
-        return self._create_udpsocket(port, bind, tos,
+    def create_multicastsocket(self, port, bind=''):
+        return self._create_udpsocket(port, bind,
                                       create_func = reactor.listenMulticast)
 
     def _start_listening(self, s):
@@ -796,18 +744,9 @@ class RawServer(RawServerMixin):
             s.listening_port.startListening()
             s.listening_port.listening = True
 
-    def _get_data_key(self, serversocket):
-        if serversocket.protocol == 'tcp':
-            key = serversocket.port
-        elif serversocket.protocol == 'unix':
-            key = serversocket.bind
-        else:
-            raise TypeError("Unknown protocol: " + str(serversocket.protocol))
-        return key        
-
     def start_listening(self, serversocket, handler, context=None):
-        self.factory.add_connection_data(self._get_data_key(serversocket),
-                                         (self, handler, context, serversocket.tos))
+        data = (self, handler, context)
+        serversocket.factory.add_connection_data(data)
 
         self._start_listening(serversocket)
 
@@ -830,8 +769,6 @@ class RawServer(RawServerMixin):
             # sigh.
             pass
         listening_port.listening = False
-        if serversocket.protocol != 'udp':
-            self.factory.pop_connection_data(self._get_data_key(serversocket))
 
     def stop_listening_udp(self, serversocket):
         self.stop_listening(serversocket)
@@ -841,7 +778,11 @@ class RawServer(RawServerMixin):
 
     stop_listening_multicast = stop_listening_udp
 
-    def start_connection(self, dns, handler, context=None, do_bind=True):
+    def start_connection(self, dns, handler, context=None, do_bind=True,
+                         timeout=30, urgent=False):
+        """creates the client-side of a connection and associates it with
+           the passed handler.  Data received on this conneciton are passed
+           to the handler's data_came_in method."""
         addr = dns[0]
         port = int(dns[1])
 
@@ -852,18 +793,21 @@ class RawServer(RawServerMixin):
 
         bindaddr = None
         if do_bind:
-            bindaddr = self.config['bind']
+            bindaddr = self.config.get('bind', '')
             if isinstance(bindaddr, str) and len(bindaddr) >= 0:
                 bindaddr = (bindaddr, 0)
             else:
                 bindaddr = None
 
-        c = ConnectionWrapper(self, handler, context, self.tos)
+        c = ConnectionWrapper(self, handler, context)
 
-        self.factory.add_connection_data((addr, port), c)
+        factory = ConnectionFactory(self, outgoing=True)
+        factory.add_connection_data(c)
 
-        connector = reactor.connectTCP(addr, port, self.factory, bindAddress=bindaddr)
-        c.connector = connector
+        connector = reactor.connectTCP(addr, port, factory,
+                                       bindAddress=bindaddr, timeout=timeout,
+                                       urgent=urgent)
+        c.attach_connector(connector)
 
         self.single_sockets.add(c)
         return c
@@ -895,7 +839,7 @@ class RawServer(RawServerMixin):
         if main_thread == thread.get_ident() and not self.sigint_installed:
             self.install_sigint_handler()
 
-        if iocpreactor and main_thread == thread.get_ident():
+        if is_iocpreactor and main_thread == thread.get_ident():
             def pulse():
                 self.add_task(1, pulse)
             pulse()
@@ -904,21 +848,26 @@ class RawServer(RawServerMixin):
         self.listened = True
 
         reactor.suggestThreadPoolSize(3)
+
+        if profile:
+            self.prof.enable()
+        
         if noSignals:
             reactor.run(installSignalHandlers=False)
         else:
             reactor.run()
 
         if profile:
-            self.prof.close()
-            stats = hotshot.stats.load(prof_file_name)
-            stats.strip_dirs()
-            stats.sort_stats('time', 'calls')
-            print "Rawserver MainLoop Profile:"
-            stats.print_stats(20)
+            self.prof.disable()
+            st = Stats(self.prof.getstats())
+            st.sort()
+            f = open(prof_file_name, 'wb')
+            st.dump(file=f)
 
     def listen_once(self, period=1e9):
-        rawserver_logger.warning(_("listen_once() might not return until there is activity, and might not process the event you want. Use listen_forever()."))
+        rawserver_logger.warning(_("listen_once() might not return until there "
+                                   "is activity, and might not process the "
+                                   "event you want. Use listen_forever()."))
         reactor.iterate(period)
 
     def stop(self):
@@ -963,3 +912,8 @@ class RawServer(RawServerMixin):
     def connectionMade(self, s):
         self.connections += 1
         
+    def gethostbyname(self, name):
+        return self.reactor.resolve(name)
+
+    def gethostbyaddr(self, addr):
+        return deferToThread(socket.gethostbyaddr, addr)

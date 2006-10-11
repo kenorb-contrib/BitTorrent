@@ -10,7 +10,7 @@
 
 # Written by Uoti Urpala and Andrew Loewenstern
 
-from BitTorrent.platform import bttime
+from BTL.platform import bttime
 
 def minctx(a,b):
     A = B = 0

@@ -14,11 +14,12 @@
 
 from __future__ import division
 
+app_name = "BitTorrent"
 import os
 import sys
 try:
     from BitTorrent.translation import _
-except ImportError:
+except ImportError, e:
     if os.name == 'posix':
         # Ugly Idiot-proofing -- this should stop ALL bug reports from
         # people unable to run BitTorrent after installation on Debian
@@ -34,7 +35,7 @@ There is more than one BitTorrent package installed on this system,
 at least one under Python 2.3 and at least one under Python 2.4."""
         else:
             print """
-A BitTorrent package for the wrong version of Python is installed on this 
+A BitTorrent package for the wrong version of Python is installed on this
 system.  The default version of Python on this system is %s.  However, the
 BitTorrent package is installed under Python %s.""" % (pythonversion, (py24 and '2.4' or '2.3'))
         print """
@@ -57,27 +58,26 @@ BitTorrent package is installed under Python %s.""" % (pythonversion, (py24 and 
 
 
 import time
-import BitTorrent.stackthreading as threading
-import random
-from BitTorrent import atexit_threads
+import BTL.stackthreading as threading
 import logging
+debug=False
+#debug=True
+from BTL import atexit_threads
 
 assert sys.version_info >= (2, 3), _("Install Python %s or greater") % '2.3'
 
-from BitTorrent import BTFailure, app_name, inject_main_logfile, old_stderr
-
+from BitTorrent import BTFailure, inject_main_logfile
 from BitTorrent import configfile
 
-from BitTorrent.defer import DeferredEvent
+from BTL.defer import DeferredEvent
 from BitTorrent.defaultargs import get_defaults
 from BitTorrent.IPC import ipc_interface
 from BitTorrent.prefs import Preferences
-from BitTorrent.platform import os_version, is_frozen_exe
+from BTL.yielddefer import _wrap_task
+from BitTorrent.RawServer_twisted import RawServer
 if os.name == 'nt':
     from BitTorrent.platform import win_version_num
-from BitTorrent.RawServer_twisted import RawServer
-from BitTorrent import zurllib
-from BitTorrent import GetTorrent
+from BTL import zurllib
 
 defaults = get_defaults('bittorrent')
 defaults.extend((('donated' , '', ''), # the version that the user last donated for
@@ -97,15 +97,25 @@ if __name__ == '__main__':
     try:
         # 95, 98, and ME seem to have problems with psyco
         # so only import it on NT and up
-        if os.name == 'nt' and win_version_num >= (2, 4, 0):
-            import psyco
+        # and only if we're not using python 2.5, becuase it's broken
+        if (os.name == 'nt' and win_version_num >= (2, 4, 0) and
+            sys.version_info < (2, 5)):
+            import psyco_BROKEN
             import traceback
             psyco.cannotcompile(traceback.print_stack)
             psyco.cannotcompile(traceback.format_stack)
             psyco.cannotcompile(traceback.extract_stack)
-            psyco.full(memory=10)
+            #psyco.full(memory=10)
             psyco.bind(RawServer.listen_forever)
-            psyco.profile(memorymax=50000) # that's 50MB for the whole process
+            from BTL import sparse_set
+            psyco.bind(sparse_set.SparseSet)
+            from BitTorrent import PiecePicker
+            psyco.bind(PiecePicker.PieceBuckets)
+            psyco.bind(PiecePicker.PiecePicker)
+            from BitTorrent import PieceSetBuckets
+            psyco.bind(PieceSetBuckets.PieceSetBuckets)
+            psyco.bind(PieceSetBuckets.SortedPieceBuckets)
+            psyco.profile(memorymax=30000) # that's 30MB for the whole process
             #psyco.log()
             # see below for more
     except ImportError:
@@ -116,6 +126,10 @@ if __name__ == '__main__':
     try:
         config, args = configfile.parse_configuration_and_args(defaults,
                                         'bittorrent', sys.argv[1:], 0, None)
+        if debug:
+            config['upnp'] = False
+            config['one_connection_per_ip'] = False
+
     except BTFailure, e:
         print unicode(e.args[0])
         sys.exit(1)
@@ -123,9 +137,7 @@ if __name__ == '__main__':
     config = Preferences().initWithDict(config)
     # bug set in DownloadInfoFrame
 
-    from BitTorrent import platform
-
-    rawserver = RawServer(config, tos=config['peer_socket_tos'])
+    rawserver = RawServer(config)
     zurllib.set_zurllib_rawserver(rawserver)
     rawserver.install_sigint_handler()
 
@@ -137,7 +149,8 @@ if __name__ == '__main__':
     # this could be on the ipc object
     ipc_master = True
     try:
-        ipc.create()
+        if not config['use_factory_defaults']:
+            ipc.create()
     except BTFailure, e:
         ipc_master = False
         try:
@@ -146,7 +159,7 @@ if __name__ == '__main__':
                 assert len(args) == 1
                 ipc.send_command('publish_torrent', args[0], config['publish'])
                 sys.exit(0)
-                
+
             elif args:
                 for arg in args:
                     ipc.send_command('start_torrent', arg)
@@ -164,12 +177,11 @@ if __name__ == '__main__':
 
 
 from BitTorrent.MultiTorrent import MultiTorrent
-from BitTorrent.ThreadProxy import ThreadProxy
+from BTL.ThreadProxy import ThreadProxy
 from BitTorrent.TorrentButler import DownloadTorrentButler, SeedTorrentButler
 from BitTorrent.AutoUpdateButler import AutoUpdateButler
 from BitTorrent.GUI_wx.DownloadManager import MainLoop
 from BitTorrent.GUI_wx import gui_wrap
-from BitTorrent import platform
 
 if __name__ == '__main__':
 
@@ -179,6 +191,7 @@ if __name__ == '__main__':
     if psyco:
         psyco.bind(MainLoop.run)
 
+    config['start_time'] = time.time()
     mainloop = MainLoop(config)
 
     def init_core(mainloop):
@@ -206,9 +219,12 @@ if __name__ == '__main__':
             multitorrent.add_auto_update_policy(auto_update_butler)
 
             # attach to the UI            
-            mainloop.attach_multitorrent(ThreadProxy(multitorrent, gui_wrap),
+            mainloop.attach_multitorrent(ThreadProxy(multitorrent,
+                                                     gui_wrap,
+                                                     _wrap_task(rawserver.external_add_task)),
                                          core_doneflag)
             ipc.start(mainloop.external_command)
+            #rawserver.associate_thread()
 
             # register shutdown action
             def shutdown():
@@ -219,6 +235,7 @@ if __name__ == '__main__':
                                lambda r: rawserver.external_add_task(0, shutdown))
 
             rawserver.listen_forever()
+
         except:
             # oops, we failed.
             # one message for the log w/ exception info

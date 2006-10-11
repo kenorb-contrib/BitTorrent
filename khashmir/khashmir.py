@@ -11,7 +11,7 @@
 import const
 from socket import gethostbyname
 
-from BitTorrent.platform import bttime as time
+from BTL.platform import bttime as time
 
 from sha import sha
 import re
@@ -31,13 +31,13 @@ import sys
 import os
 import traceback
 
-from BitTorrent.bencode import bencode, bdecode
+from BTL.bencode import bencode, bdecode
 
-from BitTorrent.defer import Deferred
+from defer import Deferred
 from random import randrange
 from kstore import sample
 
-from BitTorrent.stackthreading import Event, Thread
+from BTL.stackthreading import Event, Thread
 
 ip_pat = re.compile('[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}')
 
@@ -68,7 +68,7 @@ class KhashmirBase:
         self.ddir = data_dir
         self.store = KStore()
         self.pingcache = {}
-        self.socket = self.rawserver.create_udpsocket(self.port, self.host, False)
+        self.socket = self.rawserver.create_udpsocket(self.port, self.host)
         self.udp = krpc.hostbroker(self, (self.host, self.port), self.socket, self.rawserver.add_task, self.max_ul_rate, self.config, rlcount)
         self._load()
         self.rawserver.start_listening_udp(self.socket, self.udp)

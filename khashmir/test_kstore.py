@@ -9,7 +9,7 @@
 # License.
 
 import unittest
-from BitTorrent.platform import bttime
+from BTLR.platform import bttime
 from time import sleep
 
 from kstore import KStore

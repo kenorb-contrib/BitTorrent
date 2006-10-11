@@ -9,47 +9,34 @@
 # for the specific language governing rights and limitations under the
 # License.
 
-
-app_name = 'BitTorrent'
-version = '4.20.9'
+version = '4.26.0'
 
 URL = 'http://www.bittorrent.com/'
 DONATE_URL = URL + 'donate.html?client=%(client)s'
 FAQ_URL = URL + 'FAQ.html?client=%(client)s'
 SEARCH_URL = 'http://www.bittorrent.com/search_result.html?client=%(client)s&search=%(search)s'
 #LOCALE_URL = URL + 'translations/'
-LOCALE_URL = 'http://translations.bittorrent.com/'
+
+# Moved to BTL.  Needed for get_language <- BTL.write_language_file
+#LOCALE_URL = 'http://translations.bittorrent.com/'
 
 NAG_FREQUENCY = 3
 PORT_RANGE = 5
 
 import sys
-assert sys.version_info >= (2, 3, 0), _("Python %s or newer required") % '2.3.0'
+assert sys.version_info >= (2, 3, 0), "Python %s or newer required" % '2.3.0'
 import os
-import time
-import shutil
-import urllib
-import codecs
 import logging
 import logging.handlers
 from StringIO import StringIO
 
-from BitTorrent import atexit_threads
-
-class BTFailure(Exception):
-    pass
+from BTL import BTFailure, InfoHashType
+from BTL import atexit_threads
 
 # failure due to user error.  Should output differently (e.g., not outputting
 # a backtrace).
 class UserFailure(BTFailure):
     pass
-
-class InfoHashType(str):
-    def __repr__(self):
-        return self.encode('hex')
-    def short(self):
-        return repr(self)[:8]
-
 
 branch = None
 p = os.path.realpath(os.path.split(sys.argv[0])[0])
@@ -58,23 +45,12 @@ if os.path.exists(os.path.join(p, '.cdv')):
 del p
 
 
-def urlquote_error(error):
-     s = error.object[error.start:error.end]
-     s = s.encode('utf8')
-     s = urllib.quote(s)
-     s = s.decode('ascii')
-     return (s, error.end)
-
-codecs.register_error('urlquote', urlquote_error)
-
-
-from BitTorrent.language import languages, language_names
-from BitTorrent.platform import get_temp_subdir, get_home_dir, get_dot_dir, is_frozen_exe
+from BitTorrent.platform import get_temp_subdir, get_dot_dir, is_frozen_exe
 
 
 if os.name == 'posix':
     if os.uname()[0] == "Darwin":
-        from BitTorrent.translation import _
+        from BTL.translation import _
 
 if "-u" in sys.argv or "--use_factory_defaults" in sys.argv:
     logroot = get_temp_subdir()
@@ -151,11 +127,14 @@ class StderrProxy(StringIO):
         for t in lines[:-1]:
             if len(t) > 0:
                 StringIO.write(self, t)
-            # the docs don't say it, but logging.log is new in 2.4
-            #logging.log(STDERR, self.getvalue())
-            root_logger.log(STDERR, self.getvalue())
-            self.seek(0)
-            self.truncate()
+            try:
+                # the docs don't say it, but logging.log is new in 2.4
+                #logging.log(STDERR, self.getvalue())
+                root_logger.log(STDERR, self.getvalue())
+            except:
+                # logging failed. throwing a traceback would recurse
+                pass
+            self.truncate(0)
         if len(lines[-1]) > 0:
             StringIO.write(self, lines[-1])
 

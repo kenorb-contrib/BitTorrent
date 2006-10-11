@@ -11,9 +11,11 @@
 # License.
 
 # Written by John Hoffman
+# Updated to 4.20 by David Harrison
 
+app_name = "BitTorrent"
 if __name__ == '__main__':
-    from BitTorrent.translation import _
+    from BTL.translation import _
 
 import sys
 import os
@@ -25,7 +27,7 @@ from BitTorrent.parseargs import parseargs, printHelp
 from BitTorrent.prefs import Preferences
 from BitTorrent import configfile
 from BitTorrent import version
-from BitTorrent.platform import encode_for_filesystem, decode_from_filesystem
+from BTL.platform import encode_for_filesystem, decode_from_filesystem
 from BitTorrent import BTFailure
 from BitTorrent import bt_log_fmt
 import logging

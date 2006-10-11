@@ -10,17 +10,17 @@
 
 # Written by Bram Cohen
 
+import datetime
 from RawServer_twisted import Handler
 from cStringIO import StringIO
 from sys import stdout
 import time
-import datetime
 from gzip import GzipFile
-from BitTorrent.translation import _
+from BTL.translation import _
 
 DEBUG = False
 
-class HTTPConnection(object):
+class HTTPConnector(object):
 
     def __init__(self, handler, connection):
         self.handler = handler
@@ -168,7 +168,7 @@ class HTTPHandler(Handler):
     def connection_made(self, connection):
         if DEBUG:
             print "HTTPHandler.connection_made"
-        self.connections[connection] = HTTPConnection(self, connection)
+        self.connections[connection] = HTTPConnector(self, connection)
 
     def connection_flushed(self, connection):
         if self.connections[connection].done:

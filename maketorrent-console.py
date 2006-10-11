@@ -12,8 +12,8 @@
 
 # Written by Bram Cohen
 
-if __name__ == '__main__':
-    from BitTorrent.translation import _
+app_name = "BitTorrent"
+from BTL.translation import _
 
 import sys
 import locale
@@ -54,6 +54,8 @@ if __name__ == '__main__':
                         piece_len_pow2=config['piece_size_pow2'],
                         title=config['title'],
                         comment=config['comment'],
+                        content_type=config['content_type'], # what to do in
+                                                             # multifile case?
                         target=config['target'],
                         use_tracker=config['use_tracker'],
                         data_dir=config['data_dir'])

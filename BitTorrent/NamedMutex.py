@@ -14,7 +14,7 @@ if __name__ == "__main__":
     def _(s):
         return s
 else:
-    from BitTorrent.translation import _
+    from BTL.translation import _
 
 import os
 
@@ -51,10 +51,6 @@ class NamedMutex(object):
         self._name = name
         self._mutex = None 
         if os.name in ('posix','max'):
-            # We don't use config["data_dir"] to keep mutex separate from 
-            # other configuration data since bittorrent.py will have a 
-            # separate config directory from bittorrent console and curses 
-            # apps.
             ddir = platform.get_dot_dir()
             self._path = os.path.join( ddir, "mutex", name )
             if not os.path.exists(ddir):
@@ -187,11 +183,6 @@ class NamedMutex(object):
                 except:
                     pass
 
-                # Strange to unlock the file after it has been deleted.
-                # Works on all UNIX platforms?  If I release before
-                # deleting then I introduce a race condition where the
-                # another process acquires the lock then
-                # this process deletes the file.
                 flock( self._mutex.fileno(), fcntl.LOCK_UN )
                 self._mutex.close()
 
@@ -204,13 +195,6 @@ if __name__ == "__main__":
         n_tests_passed += 1
     else:
         print "FAIL! Failed to acquire mutex on a new NamedMutex."
-
-    # attempt to acquire again.  Since already acquired, it should fail.
-    #n_tests += 1
-    #if not mutex.acquire():
-    #    n_tests_passed += 1
-    #else:
-    #    print "FAIL! Second acquire should return false but returned true."
 
     n_tests += 1
     mutex.release()

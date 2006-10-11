@@ -12,10 +12,10 @@ import khashmir, knode
 from actions import *
 from khash import newID
 from krpc import KRPCProtocolError, KRPCFailSilently
-from cache import Cache
+from BTL.cache import Cache
 from sha import sha
 from util import *
-from BitTorrent.stackthreading import Thread
+from BTL.stackthreading import Thread
 from socket import gethostbyname
 from const import *
 from kstore import sample

@@ -10,7 +10,7 @@
 
 # Written by Bram Cohen
 
-from BitTorrent.platform import bttime
+from BTL.platform import bttime
 
 
 class RateMeasure(object):

@@ -17,7 +17,9 @@ v64p = '[\da-zA-Z.-]{3}'
 
 matches = (
            ('-AZ(?P<version>\d+)-+.+$'       , "Azureus"              ),
-           ('M(?P<version>\d-\d-\d)--.+$'    , "BitTorrent"           ),
+           ('-PC(?P<version>\d+)-+.+$'       , "CacheLogic"           ),
+           ('M(?P<version>\d-\d+-\d+)-+.+$'  , "BitTorrent"           ),
+           ('BI(?P<version>\d-\d+-\d+)-+.+$' , "BitTorrent Seeder"    ),
            ('T(?P<version>%s)0?-+.+$'%v64p   , "BitTornado"           ),
            ('-UT(?P<version>[\dA-F]+)-+.+$'  , u"\xb5Torrent"         ),
            ('-TS(?P<version>\d+)-+.+$'       , "TorrentStorm"         ),
@@ -31,7 +33,8 @@ matches = (
            (chr(0)*12 + 'aa.+$'              , "Experimental 3.2.1b2" ),
            (chr(0)*12 + '.+$'                , "BitTorrent (obsolete)"),
            ('-G3.+$'                         , "G3Torrent"            ),
-           ('-[Ll][Tt](?P<version>\d+)-+.+$' , "libtorrent"           ),
+           ('-LT(?P<version>[A-Za-z0-9]+)-+.+$' , "libtorrent"        ),
+           ('-lt(?P<version>[A-Za-z0-9]+)-+.+$' , "libtorrent rakshasa"),
            ('Mbrst(?P<version>\d-\d-\d).+$'  , "burst!"               ),
            ('eX.+$'                          , "eXeem"                ),
            ('\x00\x02BS.+(?P<strver>UDP0|HTTPBT)$', "BitSpirit v2"    ),
@@ -90,7 +93,12 @@ matches = [(re.compile(pattern, re.DOTALL), name) for pattern, name in matches]
 unknown_clients = {}
 
 def identify_client(peerid, log=None):
-    client = 'unknown'
+    #client = 'unknown'
+    client = repr(peerid)
+    client_str = str(peerid)
+    if client_str == client[1:-1]:
+        client = client_str
+    
     version = ''
     for pat, name in matches:
         m = pat.match(peerid)
@@ -101,7 +109,8 @@ def identify_client(peerid, log=None):
                 version = d['version']
                 version = version.replace('-','.')
                 if version.find('.') >= 0:
-                    version = ''.join(version.split('.'))
+                    #version = ''.join(version.split('.'))
+                    version = version.split('.')
 
                 version = list(version)
                 for i,c in enumerate(version):
@@ -155,3 +164,8 @@ def identify_client(peerid, log=None):
             log.write('%s\n'%peerid)
             log.write('------------------------------\n')
     return client, version
+
+if __name__ == '__main__':
+    import sys
+    for v in sys.argv[1:]:
+        print identify_client(v)

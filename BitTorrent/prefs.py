@@ -45,9 +45,9 @@ class Preferences(object):
             # solution is to associate allowed type(s) for each option, and 
             # then have the Preferences object enforce those types.  --Dave.
             assert not isinstance(self._options[option], unicode) or \
-                isinstance(value, unicode)
+                isinstance(value, unicode), "'%s' is not unicode" % option
             assert not isinstance(self._options[option], str) or \
-                isinstance(value, str)
+                isinstance(value, str), "'%s' is not str" % option
         self._options.__setitem__(option, value)
         if self._persist_callback:
             self._persist_callback()

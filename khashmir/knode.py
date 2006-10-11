@@ -9,7 +9,7 @@
 # License.
 
 from node import Node
-from BitTorrent.defer import Deferred
+from defer import Deferred
 from const import NULL_ID
 from krpc import KRPCProtocolError
 

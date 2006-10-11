@@ -14,7 +14,6 @@ import locale
 import traceback
 import wx
 from UserDict import IterableUserDict
-from BitTorrent.obsoletepythonsupport import set
 from wx.lib.mixins.listctrl import ColumnSorterMixin
 from wx.lib.mixins.listctrl import getListCtrlSelection
 import os
@@ -268,12 +267,21 @@ class BTListCtrl(wx.ListCtrl, ColumnSorterMixin, ContextMenuMixin):
 
     def add_image(self, image):
         b = wx.BitmapFromImage(image)
-        assert b.Ok(), "The image (%s) is not valid." % str(image)
-        if '__WXMSW__' in wx.PlatformInfo:
-            # hack for 16-bit color mode
-            if b.GetDepth() > 24: # I mean, has alpha
-                b.SetMask(wx.Mask(b, wx.Colour(0, 0, 0)))
-        return self.il.Add(b)
+        if not b.Ok():
+            raise Exception("The image (%s) is not valid." % image)
+
+        b2 = wx.EmptyBitmap(self.icon_size, self.icon_size)
+        dc = wx.MemoryDC()
+        dc.SelectObject(b2)
+        dc.SetBackgroundMode(wx.TRANSPARENT)
+        dc.Clear()
+        x = (b2.GetWidth() - b.GetWidth()) / 2
+        y = (b2.GetHeight() - b.GetHeight()) / 2
+        dc.DrawBitmap(b, x, y)
+        dc.SelectObject(wx.NullBitmap)
+        b2.SetMask(wx.Mask(b2, (255, 255, 255)))
+
+        return self.il.Add(b2)
 
     # Arrow drawing
     def draw_blank(self):
@@ -596,6 +604,9 @@ class BTListCtrl(wx.ListCtrl, ColumnSorterMixin, ContextMenuMixin):
     def GetRow(self, index):
         itemData = self.index_to_itemData[index]
         return self.itemData_to_row[itemData]
+
+    def HasRow(self, itemData):
+        return itemData in self.itemData_to_row
 
     # Persistence methods
     def get_column_widths(self):

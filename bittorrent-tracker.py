@@ -12,6 +12,7 @@
 
 # Written by Bram Cohen
 
+app_name = "BitTorrent"
 if __name__ == '__main__':
     from BitTorrent.translation import _
     

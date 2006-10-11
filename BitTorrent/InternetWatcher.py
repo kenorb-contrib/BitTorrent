@@ -2,7 +2,7 @@
 
 import random
 from twisted.internet import task
-from BitTorrent.obsoletepythonsupport import set
+from BTL.obsoletepythonsupport import set
 
 class InternetSubscriber(object):
 

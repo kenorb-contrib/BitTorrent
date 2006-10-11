@@ -38,11 +38,12 @@ class TorrentStats(object):
         self.ever_got_incoming = ever_got_incoming
         self.rerequester = rerequester
 
-    def collect_spew(self):
+    def collect_spew(self, numpieces):
         l = []
-        for c in self.connection_manager.complete_connections:
+        for c in self.connection_manager.complete_connectors:
             rec = {}
             rec['id'] = c.id
+            rec['hostname'] = c.hostname
             rec["ip"] = c.ip
             rec["is_optimistic_unchoke"] = (c is self.choker.connections[0])
 
@@ -54,13 +55,16 @@ class TorrentStats(object):
                 rec["initiation"] += '+'
 
             u = c.upload
-            rec["upload"] = (u.measure.get_total(), int(u.measure.get_rate()),
+            rec['upload'] = (u.measure.get_total(), int(u.measure.get_rate()),
                              u.interested, u.choked)
 
             d = c.download
-            rec["download"] = (d.measure.get_total(),int(d.measure.get_rate()),
+            rec['download'] = (d.measure.get_total(), int(d.measure.get_rate()),
                                d.interested, d.choked, d.is_snubbed())
-            rec['completed'] = 1 - d.have.numfalse / len(d.have)
+            rec['max_backlog'] = d._backlog()
+            rec['current_backlog'] = len(d.active_requests)
+            rec['total_downloaded'] = d.total_bytes
+            rec['completed'] = 1 - d.have.numfalse / numpieces
             rec['speed'] = d.connection.download.peermeasure.get_rate()
             if d.have.numfalse > 0:
                 rec['total_eta'] = self.storage.total_length / max(1, d.connection.download.peermeasure.get_rate())
@@ -68,11 +72,9 @@ class TorrentStats(object):
         return l
 
     def get_swarm_speed(self):
-        speeds = []
-        for c in self.connection_manager.complete_connections:
-            d = c.download
-            speeds.append(d.connection.download.peermeasure.get_rate())
-        speed = sum(speeds)
+        speed = 0
+        for c in self.connection_manager.complete_connectors:
+            speed += c.download.connection.download.peermeasure.get_rate()
         return speed
 
     def get_statistics(self, spewflag=False, fileflag=False):
@@ -115,7 +117,7 @@ class TorrentStats(object):
         status['pieceStates'] = self.piece_states()
 
         if spewflag:
-            status['spew'] = self.collect_spew()
+            status['spew'] = self.collect_spew(self.multidownload.numpieces)
             status['bad_peers'] = self.multidownload.bad_peers
         if fileflag:
             undl = self.storage.storage.undownloaded
@@ -136,3 +138,4 @@ class TorrentStats(object):
             "downTotal" : self.downtotal()
             })
         return status
+

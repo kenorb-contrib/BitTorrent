@@ -14,111 +14,15 @@
 # should not import anything from other BitTorrent modules.
 
 import os
-import re
 import sys
-import time
-import tarfile
-import gettext
 import locale
-import zurllib as urllib
 import shutil
+import socket
+import gettext
+import tarfile
 import traceback
 
-if os.name == 'nt':
-    import pywintypes
-    import _winreg
-    import win32api
-    import win32file
-    from win32com.shell import shellcon, shell
-    import win32con
-    import win32com.client
-    import ctypes
-    import struct
-    FILE_ATTRIBUTE_SPARSE_FILE = 0x00000200
-    FILE_SUPPORTS_SPARSE_FILES = 0x00000040
-    FSCTL_QUERY_ALLOCATED_RANGES = 0x000940CF
-elif os.name == 'posix' and os.uname()[0] == 'Darwin':
-    has_pyobjc = False
-    try:
-        from Foundation import NSBundle
-        has_pyobjc = True
-    except ImportError:
-        pass
-else:
-    try:
-        import statvfs
-    except ImportError:
-        pass
-
-
-# NOTE: intentionally appears in the file before importing anything
-# from BitTorrent because it is called when setting --use_factory_defaults.
-def get_filesystem_encoding(errorfunc=None):
-    def dummy_log(e):
-        print e
-        pass
-    if not errorfunc:
-        errorfunc = dummy_log
-
-
-    default_encoding = 'utf8'
-
-    if os.path.supports_unicode_filenames:
-        encoding = None
-    else:
-        try:
-            encoding = sys.getfilesystemencoding()
-        except AttributeError:
-            errorfunc("This version of Python cannot detect filesystem encoding.")
-
-
-        if encoding is None:
-            encoding = default_encoding
-            errorfunc("Python failed to detect filesystem encoding. "
-                      "Assuming '%s' instead." % default_encoding)
-        else:
-            try:
-                'a1'.decode(encoding)
-            except:
-                errorfunc("Filesystem encoding '%s' is not supported. Using '%s' instead." %
-                          (encoding, default_encoding))
-                encoding = default_encoding
-
-    return encoding
-
-
-# NOTE: intentionally appears in the file before importing anything
-# from BitTorrent because it is called when setting --use_factory_defaults.
-def get_dir_root(shellvars, default_to_home=True):
-    def check_sysvars(x):
-        y = os.path.expandvars(x)
-        if y != x and os.path.isdir(y):
-            return y
-        return None
-
-    dir_root = None
-    for d in shellvars:
-        dir_root = check_sysvars(d)
-        if dir_root is not None:
-            break
-    else:
-        if default_to_home:
-            dir_root = os.path.expanduser('~')
-            if dir_root == '~' or not os.path.isdir(dir_root):
-                dir_root = None
-
-    if get_filesystem_encoding() == None:
-        try:
-            dir_root = dir_root.decode(sys.getfilesystemencoding())
-        except:
-            try:
-                dir_root = dir_root.decode('utf8')
-            except:
-                pass
-
-
-    return dir_root
-
+from BTL.platform import efs, efs2, get_filesystem_encoding
 
 # NOTE: intentionally appears in the file before importing anything
 # from BitTorrent because it is called when setting --use_factory_defaults.
@@ -147,44 +51,6 @@ def get_temp_dir():
 
 MAX_DIR = 5
 _tmp_subdir = None
-
-# NOTE: intentionally appears in the file before importing anything
-# from BitTorrent because it is called when setting --use_factory_defaults.
-def encode_for_filesystem(path):
-    assert isinstance(path, unicode)
-
-    bad = False
-    encoding = get_filesystem_encoding()
-    if encoding == None:
-        encoded_path = path
-    else:
-        try:
-            encoded_path = path.encode(encoding)
-        except:
-            bad = True
-            path.replace(u"%", urllib.quote(u"%"))
-            encoded_path = path.encode(encoding, 'urlquote')
-
-    return (encoded_path, bad)
-
-def decode_from_filesystem(path):
-    encoding = get_filesystem_encoding()
-    if encoding == None:
-        assert isinstance(path, unicode)
-        decoded_path = path
-    else:
-        assert isinstance(path, str)
-        decoded_path = path.decode(encoding)
-
-    return decoded_path
-
-path_wrap = decode_from_filesystem
-efs = encode_for_filesystem        # abbreviate encode_for_filesystem.
-
-def efs2(path):
-    # same as encode_for_filesystem, but doesn't bother returning "bad"
-    return encode_for_filesystem(path)[0]
-
 
 # NOTE: intentionally appears in the file before importing anything
 # from BitTorrent because it is called when setting --use_factory_defaults.
@@ -232,8 +98,7 @@ def get_temp_subdir():
     _tmp_subdir = target
     return target
 
-# NOTE: intentionally appears in the file before importing anything
-# from BitTorrent because it is called when setting --use_factory_defaults.
+
 _config_dir = None
 def set_config_dir(dir):
     """Set the root directory for configuration information."""
@@ -249,25 +114,96 @@ if "--use_factory_defaults" in sys.argv or "-u" in sys.argv:
     temp_dir = get_temp_subdir()
     set_config_dir(temp_dir)
 
-from BitTorrent import app_name, version, LOCALE_URL
-from BitTorrent import language
-from BitTorrent.sparse_set import SparseSet
-from BitTorrent.defer import ThreadedDeferred
+import BTL.zurllib as urllib
+from BTL import language
+from BTL.sparse_set import SparseSet
+from BTL.defer import ThreadedDeferred
+from BTL.platform import app_name, get_module_filename, is_frozen_exe, get_shell_dir
+from BitTorrent import version
 
+if os.name == 'nt':
+    import pywintypes
+    import _winreg
+    import win32api
+    import win32file
+    from win32com.shell import shellcon, shell
+    import win32con
+    import win32com.client
+    import ctypes
+    import struct
+    FILE_ATTRIBUTE_SPARSE_FILE = 0x00000200
+    FILE_SUPPORTS_SPARSE_FILES = 0x00000040
+    FSCTL_QUERY_ALLOCATED_RANGES = 0x000940CF
+elif os.name == 'posix' and os.uname()[0] == 'Darwin':
+    has_pyobjc = False
+    try:
+        from Foundation import NSBundle
+        has_pyobjc = True
+    except ImportError:
+        pass
+else:
+    try:
+        import statvfs
+    except ImportError:
+        pass
+
+def get_dir_root(shellvars, default_to_home=True):
+    def check_sysvars(x):
+        y = os.path.expandvars(x)
+        if y != x and os.path.isdir(y):
+            return y
+        return None
+
+    dir_root = None
+    for d in shellvars:
+        dir_root = check_sysvars(d)
+        if dir_root is not None:
+            break
+    else:
+        if default_to_home:
+            dir_root = os.path.expanduser('~')
+            if dir_root == '~' or not os.path.isdir(dir_root):
+                dir_root = None
+
+    if get_filesystem_encoding() == None:
+        try:
+            dir_root = dir_root.decode(sys.getfilesystemencoding())
+        except:
+            try:
+                dir_root = dir_root.decode('utf8')
+            except:
+                pass
+
+
+    return dir_root
+
+def get_old_dot_dir():
+    return os.path.join(get_config_dir(), efs2(u'.bittorrent'))
+
+def get_dot_dir():
+    """So called because on Unix platforms this returns ~/.bittorrent."""
+    dot_dir = get_old_dot_dir()
+    if os.name == 'nt':
+        new_dot_dir = os.path.join(get_config_dir(), app_name)
+        if os.path.exists(dot_dir):
+            if os.path.exists(new_dot_dir):
+                count = 0
+                for root, dirs, files in os.walk(new_dot_dir):
+                    count = len(dirs) + len(files)
+                    break
+                if count == 0:
+                    shutil.rmtree(new_dot_dir)
+                    shutil.move(dot_dir, new_dot_dir)
+            else:
+                shutil.move(dot_dir, new_dot_dir)
+        dot_dir = new_dot_dir
+    return dot_dir
 
 old_broken_config_subencoding = 'utf8'
 try:
     old_broken_config_subencoding = sys.getfilesystemencoding()
 except:
     pass
-
-
-if sys.platform.startswith('win'):
-    bttime = time.clock
-else:
-    bttime = time.time
-
-is_frozen_exe = (os.name == 'nt') and hasattr(sys, 'frozen') and (sys.frozen == 'windows_exe')
 
 os_name = os.name
 os_version = None
@@ -334,18 +270,7 @@ if os_name == 'nt':
 elif os_name == 'posix':
     os_version = os.uname()[0]
 
-
-def calc_unix_dirs():
-    appdir = '%s-%s'%(app_name, version)
-    ip = os.path.join(efs2(u'share'), efs2(u'pixmaps'), appdir)
-    dp = os.path.join(efs2(u'share'), efs2(u'doc'), appdir)
-    lp = os.path.join(efs2(u'share'), efs2(u'locale'))
-    return ip, dp, lp
-
-if is_frozen_exe:
-    app_root = os.path.split(os.path.abspath(win32api.GetModuleFileName(0)))[0]
-else:
-    app_root = os.path.split(os.path.abspath(sys.argv[0]))[0]
+app_root = os.path.split(get_module_filename())[0]
 doc_root = app_root
 osx = False
 if os.name == 'posix':
@@ -354,6 +279,13 @@ if os.name == 'posix':
         if has_pyobjc:
             doc_root = NSBundle.mainBundle().resourcePath()
             osx = True
+
+def calc_unix_dirs():
+    appdir = '%s-%s' % (app_name, version)
+    ip = os.path.join(efs2(u'share'), efs2(u'pixmaps'), appdir)
+    dp = os.path.join(efs2(u'share'), efs2(u'doc'), appdir)
+    lp = os.path.join(efs2(u'share'), efs2(u'locale'))
+    return ip, dp, lp
 
 def no_really_makedirs(path):
     # the deal here is, directories like "C:\" exist but can not be created
@@ -366,16 +298,44 @@ def no_really_makedirs(path):
             if e.errno != 17: # already exists
                 raise
 
+def get_config_dir():
+    """a cross-platform way to get user's config directory.
+    """
+    if _config_dir is not None:
+        return _config_dir
+
+    shellvars = ['${APPDATA}', '${HOME}', '${USERPROFILE}']
+    dir_root = get_dir_root(shellvars)
+
+    if dir_root is None and os.name == 'nt':
+        app_dir = get_shell_dir(shellcon.CSIDL_APPDATA)
+        if app_dir is not None:
+            dir_root = app_dir
+
+    if dir_root is None and os.name == 'nt':
+        tmp_dir_root = os.path.split(sys.executable)[0]
+        if os.access(tmp_dir_root, os.R_OK|os.W_OK):
+            dir_root = tmp_dir_root
+
+    return dir_root
+
+
+
 # For string literal subdirectories, starting with unicode and then
 # converting to filesystem encoding may not always be necessary, but it seems
 # safer to do so.  --Dave
 image_root  = os.path.join(app_root, efs2(u'images'))
-locale_root = os.path.join(app_root, efs2(u'locale'))
+locale_root = os.path.join(get_dot_dir(), efs2(u'locale'))
 no_really_makedirs(locale_root)
 
 plugin_path = []
 internal_plugin = os.path.join(app_root, efs2(u'BitTorrent'),
                                          efs2(u'Plugins'))
+
+local_plugin = os.path.join(get_dot_dir(), efs2(u'Plugins'))
+if os.access(local_plugin, os.F_OK):
+    plugin_path.append(local_plugin)
+
 if os.access(internal_plugin, os.F_OK):
     plugin_path.append(internal_plugin)
 
@@ -479,7 +439,7 @@ def get_allocated_regions(path, f=None, begin=0, length=None):
                 # error: (1784, 'DeviceIoControl', 'The supplied user buffer is not valid for the requested operation.')
                 return
             for c in xrange(0, len(r), 16):
-                qq = struct.unpack("<QQ", buffer(r, c, 16))
+                qq = struct.unpack("<QQ", r[c:c+16])
                 b = qq[0]
                 e = b + qq[1]
                 a.add(b, e)
@@ -516,54 +476,11 @@ def get_max_filesize(path):
 
     return fs_name, max_filesize
 
-def get_config_dir():
-    """a cross-platform way to get user's config directory.
-    """
-    if _config_dir is not None:
-        return _config_dir
+def get_torrents_dir():
+    return os.path.join(get_dot_dir(), efs2(u'torrents'))
 
-    shellvars = ['${APPDATA}', '${HOME}', '${USERPROFILE}']
-    dir_root = get_dir_root(shellvars)
-
-    if dir_root is None and os.name == 'nt':
-        app_dir = get_shell_dir(shellcon.CSIDL_APPDATA)
-        if app_dir is not None:
-            dir_root = app_dir
-
-    if dir_root is None and os.name == 'nt':
-        tmp_dir_root = os.path.split(sys.executable)[0]
-        if os.access(tmp_dir_root, os.R_OK|os.W_OK):
-            dir_root = tmp_dir_root
-
-    return dir_root
-
-def get_old_dot_dir():
-    return os.path.join(get_config_dir(), efs2(u'.bittorrent'))
-
-def get_dot_dir():
-    """So called because on Unix platforms this returns ~/.bittorrent."""
-    dot_dir = get_old_dot_dir()
-    if os.name == 'nt':
-        new_dot_dir = os.path.join(get_config_dir(), app_name)
-        if os.path.exists(dot_dir):
-            if os.path.exists(new_dot_dir):
-                count = 0
-                for root, dirs, files in os.walk(new_dot_dir):
-                    count = len(dirs) + len(files)
-                    break
-                if count == 0:
-                    shutil.rmtree(new_dot_dir)
-                    shutil.move(dot_dir, new_dot_dir)
-            else:
-                shutil.move(dot_dir, new_dot_dir)
-        dot_dir = new_dot_dir
-    return dot_dir
-
-def get_cache_dir():
-    dir = None
-    if os.name == 'nt':
-        dir = get_shell_dir(shellcon.CSIDL_INTERNET_CACHE)
-    return dir
+def get_nebula_file():
+    return os.path.join(get_dot_dir(), efs2(u'nebula'))
 
 def get_home_dir():
     shellvars = ['${HOME}', '${USERPROFILE}']
@@ -613,28 +530,12 @@ def get_save_dir():
         d = desktop
     return os.path.join(d, dirname)
 
-# this function is the preferred way to get windows' paths
-def get_shell_dir(value):
-    dir = None
-    if os.name == 'nt':
-        try:
-            dir = shell.SHGetFolderPath(0, value, 0, 0)
-        except:
-            pass
-    return dir
-
 def get_startup_dir():
     """get directory where symlinks/shortcuts to be run at startup belong"""
     dir = None
     if os.name == 'nt':
         dir = get_shell_dir(shellcon.CSIDL_STARTUP)
     return dir
-
-
-local_plugin = os.path.join(get_dot_dir(), efs2(u'Plugins'))
-if os.access(local_plugin, os.F_OK):
-    plugin_path.append(local_plugin)
-
 
 def create_shortcut(source, dest, *args):
     if os.name == 'nt':
@@ -661,13 +562,7 @@ def remove_shortcut(dest):
 def enforce_shortcut(config, log_func):
     if os.name != 'nt':
         return
-    try:
-        return _enforce_shortcut(config, log_func)
-    except WindowsError:
-        # access denied. not much we can do.
-        traceback.print_exc()
 
-def _enforce_shortcut(config, log_func):
     path = win32api.GetModuleFileName(0)
 
     if 'python' in path.lower():
@@ -690,6 +585,7 @@ def _enforce_shortcut(config, log_func):
 def enforce_association():
     if os.name != 'nt':
         return
+
     try:
         _enforce_association()
     except WindowsError:
@@ -817,24 +713,33 @@ def spawn(*args):
             forkback = os.fork()
             if forkback == 0:
                 # BUG: stop IPC!
+                print "execl ", args[0], args
                 os.execl(args[0], *args)
         else:
             #BUG: what should we do here?
             pass
 
 
+def language_path():
+    dot_dir = get_dot_dir()
+    lang_file_name = os.path.join(dot_dir, efs(u'data')[0],
+                                           efs(u'language')[0])
+    return lang_file_name
+
 def get_language(name):
-    url = LOCALE_URL + name + ".tar.gz"
-    r = urllib.urlopen(url)
-    # urllib seems to ungzip for us
-    tarname = os.path.join(locale_root, name + ".tar")
-    f = file(tarname, 'wb')
-    f.write(r.read())
-    f.close()
-    tar = tarfile.open(tarname, "r")
-    for tarinfo in tar:
-        tar.extract(tarinfo, path=locale_root)
-    tar.close()
+  from BTL import LOCALE_URL
+  url = LOCALE_URL + name + ".tar.gz"
+  socket.setdefaulttimeout(5)
+  r = urllib.urlopen(url)
+  # urllib seems to ungzip for us
+  tarname = os.path.join(locale_root, name + ".tar")
+  f = file(tarname, 'wb')
+  f.write(r.read())
+  f.close()
+  tar = tarfile.open(tarname, "r")
+  for tarinfo in tar:
+      tar.extract(tarinfo, path=locale_root)
+  tar.close()
 
 
 ##def smart_gettext_translation(domain, localedir, languages, fallback=False):
@@ -882,6 +787,9 @@ def blocking_smart_gettext_and_install(domain, localedir, languages,
         languages = nelangs
 
         for lang in languages:
+            # HACK
+            if lang.startswith('en'):
+                continue
             try:
                 get_language(lang)
             except: #urllib.HTTPError:
@@ -984,13 +892,6 @@ def _gettext_install(domain, localedir=None, languages=None, unicode=False):
                                        unicode=unicode)
 
 
-def language_path():
-    dot_dir = get_dot_dir()
-    lang_file_name = os.path.join(dot_dir, efs2(u'data'),
-                                           efs2(u'language'))
-    return lang_file_name
-
-
 def read_language_file():
     """Reads the language file.  The language file contains the
        name of the selected language, not any translations."""
@@ -1025,7 +926,6 @@ def read_language_file():
 
     return lang
 
-
 def write_language_file(lang):
     """Writes the language file.  The language file contains the
        name of the selected language, not any translations."""
@@ -1056,7 +956,6 @@ def write_language_file(lang):
         lang_file.write(lang)
         lang_file.close()
 
-
 def install_translation(unicode=False):
     languages = None
     try:
@@ -1067,6 +966,7 @@ def install_translation(unicode=False):
         #pass
         traceback.print_exc()
     _gettext_install('bittorrent', locale_root, languages=languages, unicode=unicode)
+
 
 def write_pid_file(fname, errorfunc = None):
     """Creates a pid file on platforms that typically create such files;
@@ -1087,7 +987,7 @@ def write_pid_file(fname, errorfunc = None):
             pid_fname = os.path.join(efs2(u'/etc/tmp'),fname)
         except:
             if errorfunc:
-                errorfunc(_("Couldn't open pid file. Continuing without one."))
+                errorfunc("Couldn't open pid file. Continuing without one.")
             else:
                 pass  # just continue without reporting warning.
 
@@ -1105,4 +1005,6 @@ else:
             tmp_desktop = os.path.join(homedir, efs2(u'Desktop'))
             if os.access(tmp_desktop, os.R_OK|os.W_OK):
                 desktop = tmp_desktop + os.sep
+
+
 

@@ -10,7 +10,6 @@
 
 # Written by Matt Chisholm
 
-import os
 import wx
 
 from BitTorrent.StatusLight import StatusLight as _StatusLight

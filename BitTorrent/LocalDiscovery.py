@@ -7,7 +7,7 @@ import random
 import socket
 import logging
 import Zeroconf
-from BitTorrent.HostIP import get_deferred_host_ip, get_host_ip
+from BTL.HostIP import get_deferred_host_ip, get_host_ip
 
 discovery_logger = logging.getLogger('LocalDiscovery')
 discovery_logger.setLevel(logging.DEBUG)
@@ -33,25 +33,39 @@ class LocalDiscovery(object):
         discovery_logger.info("announcing: %s", infohash)
         service_name = "_BitTorrent-%s._tcp.local." % infohash
         
-        # do I need to keep the browser around?
         browser = Zeroconf.ServiceBrowser(self.server, service_name, self)
 
-        df = get_deferred_host_ip()
-        df.addCallback(self._announce2, peerid, service_name)
-        return df
-
-    def _announce2(self, ip, peerid, service_name):
-        addr = socket.inet_aton(ip)
         service = Zeroconf.ServiceInfo(service_name,
                                        '%s.%s' % (peerid, service_name),
-                                       address = addr,
+                                       address = None, # to be filled in later
                                        port = self.port,
                                        weight = 0, priority = 0,
                                        properties = {}
                                       )
-        self.server.registerService(service)
+        service.browser = browser
+        service.registered = False
         self.services.append(service)
+        
+        df = get_deferred_host_ip()
+        df.addCallback(self._announce2, service)
+        return service
 
+    def _announce2(self, ip, service):
+        if service not in self.services:
+            # already removed
+            return 
+        service.registered = True
+        service.address = socket.inet_aton(ip)
+        self.server.registerService(service)
+
+    def unannounce(self, service):
+        assert isinstance(service, Zeroconf.ServiceInfo)
+        if service.registered:
+            service.registered = False
+            service.browser.cancel()
+            self.server.unregisterService(service)
+        self.services.remove(service)
+            
     def addService(self, server, type, name):
         discovery_logger.info("Service %s added", repr(name))
         # Request more information about the service
@@ -92,13 +106,11 @@ class LocalDiscovery(object):
         self.port = None
         self.got_peer = None
         for service in self.services:
-            self.server.unregisterService(service)
-        del self.services[:]
+            self.unannounce(service)
 
         
 if __name__ == '__main__':
     import string
-    import threading
     from BitTorrent.RawServer_twisted import RawServer
 
     rawserver = RawServer()

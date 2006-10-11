@@ -17,18 +17,24 @@
 
 import os
 import sys
-import gettext
-import locale
 import traceback
 
 from BitTorrent.translation import _
+
 from ConfigParser import RawConfigParser
 from ConfigParser import MissingSectionHeaderError, ParsingError
-from BitTorrent import parseargs
-from BitTorrent import app_name, version, BTFailure
-from BitTorrent.platform import get_dot_dir, get_save_dir, locale_root, is_frozen_exe, get_incomplete_data_dir, enforce_shortcut, enforce_association, smart_gettext_and_install, desktop, set_config_dir, get_old_incomplete_data_dir, decode_from_filesystem, encode_for_filesystem
-from BitTorrent.zurllib import bind_tracker_connection, set_zurllib_rawserver
-from BitTorrent.platform import get_temp_dir, get_temp_subdir, old_broken_config_subencoding
+from BitTorrent import parseargs, version, BTFailure
+from BTL.platform import app_name
+from BTL.platform import encode_for_filesystem, decode_from_filesystem
+from BitTorrent.platform import get_save_dir, locale_root, is_frozen_exe
+from BitTorrent.platform import get_dot_dir, get_incomplete_data_dir
+from BitTorrent.platform import enforce_shortcut, enforce_association
+from BitTorrent.platform import smart_gettext_and_install
+from BitTorrent.platform import get_old_incomplete_data_dir
+from BitTorrent.platform import get_temp_subdir
+from BitTorrent.platform import old_broken_config_subencoding
+from BTL.zurllib import bind_tracker_connection
+from BTL.exceptions import str_exc
 from BitTorrent.shortargs import convert_from_shortforms
 
 downloader_save_options = [
@@ -54,6 +60,7 @@ downloader_save_options = [
     'maxport'               ,
     'upnp'                  ,
     'ip'                    ,
+    'resolve_hostnames'     ,
 
     # Misc
     'open_from'             ,
@@ -91,6 +98,7 @@ TORRENT_CONFIG_FILE = 'torrent_config'
 
 alt_uiname = {'bittorrent':'btdownloadgui',
               'maketorrent':'btmaketorrentgui',}
+
 
 def _read_config(filename):
     """Returns a RawConfigParser that has parsed the config file specified by
@@ -134,7 +142,7 @@ def _write_config(error_callback, filename, p):
             f.close()
         except:
             pass
-        error_callback(_("Could not permanently save options: ")+unicode(e.args[0]))
+        error_callback(_("Could not permanently save options: ")+str_exc(e))
 
 
 def bad_config(filename):
@@ -157,6 +165,8 @@ def get_config(defaults, section):
        @type defaults: dict
        @param defaults: dict of name-value pairs derived from the
           defaults list for this application (see defaultargs.py).
+          Only the names in the name-value pairs are used.  get_config
+          only reads variables from the config file with matching names.
        @type section: str
        @param section: in the configuration from which to read options.
           So far, the sections have been named after applications, e.g.,
@@ -254,8 +264,8 @@ def read_torrent_config(global_config, path, infohash, error_callback):
                     try:
                         c[name] = type(global_config[name])(value)
                     except ValueError, e:
-                        error_callback('ValueError %s (name:%s value:%s type:%s global:%s)' %
-                                       (unicode(e.args[0]), name, repr(value),
+                        error_callback('%s (name:%s value:%s type:%s global:%s)' %
+                                       (str_exc(e), name, repr(value),
                                         type(global_config[name]), global_config[name]))
                         # is this reasonable?
                         c[name] = global_config[name]
@@ -334,12 +344,12 @@ def parse_configuration_and_args(defaults, uiname, arglist=[], minargs=None,
         print version
         sys.exit(0)
 
-    if arglist[0:] in (['--help'], ['-h'], ['--usage'], ['-?']):
+    if arglist[0:] == '--help':
         parseargs.printHelp(uiname, defaults)
         sys.exit(0)
 
     if "--use_factory_defaults" not in arglist:
-        presets = get_config(defconfig, uiname)
+        presets = get_config(defconfig, uiname)  # read from .bittorrent dir.
 
     # run as if fresh install using temporary directories.
     else:
@@ -359,7 +369,8 @@ def parse_configuration_and_args(defaults, uiname, arglist=[], minargs=None,
 
     config = args = None
     try:
-        config, args = parseargs.parseargs(arglist, defaults, minargs, maxargs,
+        d = defaults + [('skip_hidden_flag', False, '')]
+        config, args = parseargs.parseargs(arglist, d, minargs, maxargs,
                                            presets)
     except parseargs.UsageException, e:
         print e
@@ -404,7 +415,8 @@ def parse_configuration_and_args(defaults, uiname, arglist=[], minargs=None,
                             found_4x_config = True
             parseargs.parse_options(defconfig, values, encoding)
             presets.update(values)
-            config, args = parseargs.parseargs(arglist, defaults, minargs,
+            d = defaults + [('skip_hidden_flag', False, '')]
+            config, args = parseargs.parseargs(arglist, d, minargs,
                                                maxargs, presets)
 
         for d in ('', 'resume', 'metainfo', 'torrents'):
@@ -468,6 +480,5 @@ def parse_configuration_and_args(defaults, uiname, arglist=[], minargs=None,
                         traceback.print_exc()
                         print >> sys.stderr, "save_incomplete_in could not be created. Falling back to default incomplete path."
                         config['save_incomplete_in'] = incomplete
-                        raise
                 
     return config, args

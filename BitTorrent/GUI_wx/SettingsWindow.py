@@ -13,18 +13,23 @@
 from __future__ import division
 
 import os
+import sys
 import math
 import random
-import wx
-from BitTorrent.translation import _
-from BitTorrent import app_name
-from BitTorrent.obsoletepythonsupport import set
-from BitTorrent.sparse_set import SparseSet
-from BitTorrent.GUI_wx import VSizer, HSizer, BTDialog, CheckButton, ChooseDirectorySizer, SPACING, ElectroStaticText, IPValidator, PortValidator, text_wrappable, gui_wrap
-from BitTorrent.GUI_wx.CustomWidgets import NullGauge, FancyDownloadGauge, SimpleDownloadGauge, ModerateDownloadGauge
+from BTL.translation import _
+from BTL.platform import app_name
+from BitTorrent.platform import image_root
+from BTL.sparse_set import SparseSet
+from BTL.obsoletepythonsupport import set
+from BitTorrent.GUI_wx import VSizer, HSizer, BTDialog, CheckButton
+from BitTorrent.GUI_wx import ChooseDirectorySizer, SPACING, ElectroStaticText
+from BitTorrent.GUI_wx import IPValidator, PortValidator, text_wrappable, gui_wrap
+from BitTorrent.GUI_wx import list_themes
+from BitTorrent.GUI_wx.CustomWidgets import FancyDownloadGauge, SimpleDownloadGauge, ModerateDownloadGauge
 from BitTorrent.UI import Rate
 from BitTorrent.GUI_wx.LanguageSettings import LanguageSettings
 
+import wx
 
 upload_speed_classes = {
         (    4,    5):_("dialup"            ),
@@ -650,5 +655,4 @@ class SettingsWindow(BTDialog):
 
     def close(self, *e):
         self.Hide()
-
 

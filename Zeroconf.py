@@ -662,26 +662,26 @@ class DNSOutgoing(object):
     def insertShort(self, index, value):
         """Inserts an unsigned short in a certain position in the packet"""
         format = '!H'
-        self.data.insert(index, struct.pack(format, value))
-        self.size += 2
+        self.data.insert(index, struct.pack(format, int(value)))
+        self.size += struct.calcsize(format)
         
     def writeShort(self, value):
         """Writes an unsigned short to the packet"""
         format = '!H'
-        self.data.append(struct.pack(format, value))
-        self.size += 2
+        self.data.append(struct.pack(format, int(value)))
+        self.size += struct.calcsize(format)
 
     def writeInt(self, value):
         """Writes an unsigned integer to the packet"""
         format = '!I'
-        self.data.append(struct.pack(format, value))
-        self.size += 4
+        self.data.append(struct.pack(format, int(value)))
+        self.size += struct.calcsize(format)
 
     def writeString(self, value, length):
         """Writes a string to the packet"""
         format = '!' + str(length) + 's'
         self.data.append(struct.pack(format, value))
-        self.size += length
+        self.size += struct.calcsize(format)
 
     def writeUTF(self, s):
         """Writes a UTF-8 string of a given length to the packet"""

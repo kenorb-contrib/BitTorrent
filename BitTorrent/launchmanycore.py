@@ -15,21 +15,21 @@
 # ported to new MultiTorrent (circa 4.20) by David Harrison.
 
 from __future__ import division
-from BitTorrent.translation import _
+from BTL.translation import _
 
 import os
 from cStringIO import StringIO
 from traceback import print_exc
 import logging
 from BitTorrent import configfile
-from BitTorrent.parsedir import parsedir
+from BTL.parsedir import parsedir
 from BitTorrent.MultiTorrent import MultiTorrent, Feedback
-from BitTorrent.ConvertedMetainfo import ConvertedMetainfo
 from BitTorrent import BTFailure, UserFailure
 from BitTorrent.RawServer_twisted import RawServer
-from BitTorrent.yielddefer import launch_coroutine, _wrap_task
-from BitTorrent.ConvertedMetainfo import ConvertedMetainfo
-from BitTorrent.defer import DeferredEvent
+from BTL.yielddefer import launch_coroutine, _wrap_task
+from BTL.ConvertedMetainfo import ConvertedMetainfo
+from BTL.defer import DeferredEvent
+from BTL.exceptions import str_exc
 from BitTorrent.platform import efs2
 from time import time
 
@@ -122,11 +122,11 @@ class LaunchMany(object):
                 signal.signal(signal.SIGHUP, handler)
             except Exception, e:
                 self.logger.error(_("Could not set signal handler: ") +
-                                    unicode(e.args[0]))
+                                    str_exc(e))
                 self.rawserver.add_task(0,self.core_doneflag.set())
   
         except UserFailure, e:
-            self.logger.error(unicode(e.args[0]))
+            self.logger.error(str_exc(e))
             self.rawserver.add_task(0,self.core_doneflag.set())
         except:
             data = StringIO()
@@ -328,7 +328,7 @@ class LaunchMany(object):
         try:
             newvalues = configfile.get_config(self.config, self.configfile_key)
         except Exception, e:
-            self.logger.error(_("Error reading config: ") + unicode(e.args[0]) )
+            self.logger.error(_("Error reading config: ") + str_exc(e) )
             return
         self.logger.info(_("Rereading config file"))
         self.config.update(newvalues)

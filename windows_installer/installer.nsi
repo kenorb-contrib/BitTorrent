@@ -394,12 +394,16 @@ FunctionEnd
 Function ${UN}CloseBitTorrent
   Push $0
 
-  IntFmt $R1 "%u" 0
+  IntFmt $R4 "%u" 0
 
   goto skip
+  killloop:
+    DetailPrint "Killing BitTorrent"
+    KillProcDLL::KillProc "bittorrent.exe"
   loop:     
-    IntOp $R1 $R1 + 1
-    IntCmp $R1 5 done
+    Sleep 1000
+    IntOp $R4 $R4 + 1
+    IntCmp $R4 5 done
   skip:
     DetailPrint "Looking for running copies of BitTorrent"
 
@@ -414,13 +418,12 @@ Function ${UN}CloseBitTorrent
     StrCmp $0 "0" done
     DetailPrint "Stopping BitTorrent"
     SendMessage $0 16 0 0 # WM_CLOSE == 16
-    Sleep 1000
     Goto loop
   done:
 
-  IntFmt $R1 "%u" 0
+  IntFmt $R4 "%u" 0
   Processes::FindProcess "bittorrent.exe"
-  StrCmp $R0 "1" loop reallydone
+  StrCmp $R0 "1" killloop reallydone
 
   reallydone:
   Pop $0
@@ -603,6 +606,37 @@ Function .onInit
   done:
 FunctionEnd
 
+!macro MozillaPluginDir
+ 
+  Push $R0
+  Push $R1
+  Push $R2
+ 
+  !define Index 'Line${__LINE__}'
+  StrCpy $R1 "0"
+  StrCpy $R2 "no mozilla"
+ 
+  "${Index}-Loop:"
+ 
+  ; Check for Key
+  EnumRegKey $R0 HKLM "SOFTWARE\Mozilla" "$R1"
+  StrCmp $R0 "" "${Index}-End"
+  IntOp $R1 $R1 + 1
+  ReadRegStr $R2 HKLM "SOFTWARE\Mozilla\$R0\Extensions" "Plugins"
+  StrCmp $R2 "" "${Index}-Loop" "${Index}-End"
+ 
+  "${Index}-End:"
+ 
+  !undef Index
+ 
+  Push $R2
+  Exch 3
+  Pop $R2
+  Pop $R1
+  Pop $R0
+ 
+!macroend
+
 Section "Install" SecInstall
   SectionIn 1 2
 
@@ -630,6 +664,13 @@ Section "Install" SecInstall
   Sleep 1000
  skip:
 
+  File plugins\IE\plugin.inf
+  IfErrors files
+
+  ; this one could fail. who cares.
+  File plugins\BitTorrentIE.1.dll
+  ClearErrors
+
   File dist\*.exe
   IfErrors files
   File dist\*.manifest
@@ -655,6 +696,8 @@ Section "Install" SecInstall
   File TRACKERLESS.txt
   IfErrors files
   File public.key
+  IfErrors files
+  File addrmap.dat
   IfErrors files
 
   goto success
@@ -757,6 +800,47 @@ continue:
   ExecShell open "$INSTDIR\${EXENAME}"
   not_silent:
 
+
+  !insertmacro MozillaPluginDir
+  Pop $R0
+  StrCmp $R0 "no mozilla" no_mozilla
+  StrCpy $R1 $R0
+
+  SetOutPath $R0
+  File plugins\npbittorrent.dll
+
+  Processes::FindProcess "firefox.exe"
+  StrCmp $R0 "1" firefox check_for_mozilla
+
+  firefox:
+  ClearErrors
+  Exec '"$R1..\firefox.exe" "about:plugins"'
+  IfErrors warn_ff
+  Goto check_for_mozilla
+  warn_ff:
+  MessageBox  MB_OK "You will need to restart FireFox for the changes to take effect."
+  BringToFront
+
+  check_for_mozilla:
+  Processes::FindProcess "mozilla.exe"
+  StrCmp $R0 "1" mozilla didntfindit  
+
+  mozilla:
+  ClearErrors
+  Exec '"$R1..\mozilla.exe" "about:plugins"'
+  IfErrors warn_moz
+  Goto didntfindit
+  warn_moz:
+  MessageBox  MB_OK "You will need to restart Mozilla for the changes to take effect."
+  BringToFront
+      
+  didntfindit:
+  no_mozilla:
+
+  RegDLL "$INSTDIR\BitTorrentIE.1.dll"
+  ExecWait '$SYSDIR\rundll32.exe setupapi,InstallHinfSection DefaultInstall 132 $INSTDIR\plugin.inf'
+  
+  SetOutPath $INSTDIR
   BringToFront
   endofinstall:
 SectionEnd

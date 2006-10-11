@@ -13,22 +13,28 @@
 import os
 import pickle
 import logging
-from BitTorrent.translation import _
+from BTL.translation import _
 
-from BitTorrent import zurllib
-from BitTorrent import GetTorrent
-from BitTorrent import app_name, version, BTFailure
+from BTL import infohash_short
+from BTL import zurllib
+from BTL import GetTorrent
+from BTL.platform import app_name
+from BTL.exceptions import str_exc
+from BitTorrent import version, BTFailure
 
-from BitTorrent.hash import sha
-from BitTorrent.ConvertedMetainfo import ConvertedMetainfo
-from BitTorrent.bencode import bdecode, bencode
+
+from BTL.ConvertedMetainfo import ConvertedMetainfo
+from BTL.bencode import bdecode
 from BitTorrent.platform import osx, get_temp_dir, doc_root, os_version
-from BitTorrent.yielddefer import launch_coroutine
-from BitTorrent.defer import Deferred, ThreadedDeferred
-from BitTorrent.platform import osx, get_temp_dir, doc_root, encode_for_filesystem
-from BitTorrent.yielddefer import launch_coroutine, _wrap_task
-from BitTorrent.MultiTorrent import TorrentAlreadyRunning, TorrentAlreadyInQueue, UnknownInfohash
-from BitTorrent.obsoletepythonsupport import set
+from BTL.platform import encode_for_filesystem
+from BTL.defer import ThreadedDeferred
+from BTL.yielddefer import launch_coroutine, _wrap_task
+from BitTorrent.MultiTorrent import TorrentAlreadyRunning
+from BitTorrent.MultiTorrent import TorrentAlreadyInQueue, UnknownInfohash
+from BTL.obsoletepythonsupport import set
+from BTL.hash import sha
+# needed for py2exe to pick up the import that pickle relies on
+import Crypto.PublicKey.DSA
 
 from TorrentButler import TorrentButler
 from NewVersion import Version
@@ -155,7 +161,7 @@ class AutoUpdateButler(TorrentButler):
                 if torrent.completed:
                     self.finished(t)
             except UnknownInfohash:
-                self.debug('butle() removing ' + i.short())
+                self.debug('butle() removing ' + infohash_short(i))
                 self.estate.remove(i)
                 self.installable_version = None
                 self.available_version = None
@@ -185,9 +191,9 @@ class AutoUpdateButler(TorrentButler):
 
     def finished(self, torrent):
         """Launch the auto-updater"""
-        self.debug('finished() called for '+torrent.infohash.short())
+        self.debug('finished() called for ' + infohash_short(torrent.infohash))
         if self.butles(torrent):
-            self.debug('finished() setting installable version to '+ torrent.infohash.short())
+            self.debug('finished() setting installable version to ' + infohash_short(torrent.infohash))
             self.installable_version = torrent.infohash
 
 
@@ -266,7 +272,7 @@ class AutoUpdateButler(TorrentButler):
             torrentfile = GetTorrent.get_url(installer_url)
         except GetTorrent.GetTorrentException, e:
             self.debug('_get_torrent() run#%d: failed to download torrent file %s: %s' %
-                       (self.runs, installer_url, unicode(e.args[0])))
+                       (self.runs, installer_url, str_exc(e)))
             pass
         return torrentfile
 
@@ -309,8 +315,8 @@ class AutoUpdateButler(TorrentButler):
         df = launch_coroutine(_wrap_task(self.rawserver.external_add_task),
                               self._check_version)
         def errback(e):
-            from traceback import format_exc
-            self.debug('check_version() run #%d: '%self.runs + format_exc(e))
+            self.logger.error('check_version() run #%d: ' % self.runs,
+                              exc_info=e.exc_info())
         df.addErrback(errback)
 
 
@@ -425,7 +431,7 @@ class AutoUpdateButler(TorrentButler):
                 else:
                     self.debug(debug_prefix + 'starting auto-update download')
 
-                self.debug(debug_prefix + 'adding to estate '+infohash.short())
+                self.debug(debug_prefix + 'adding to estate ' + infohash_short(infohash))
                 self.estate.add(infohash)
 
             else:

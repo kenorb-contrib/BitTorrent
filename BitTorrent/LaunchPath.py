@@ -25,6 +25,7 @@ def launchpath_nt(path):
     os.startfile(path)
 
 def launchfile_nt(path):
+    do_launchdir = True
     if can_launch_files and not os.path.isdir(path):
         f, ext = os.path.splitext(path)
         ext = ext.upper()
@@ -33,11 +34,14 @@ def launchfile_nt(path):
         if path_ext:
             blacklist = path_ext.split(';')
         if ext not in blacklist:
-            launchpath_nt(path)
-        else:
-            p, f = os.path.split(path)
-            launchdir(p)
-    else:
+            try:
+                launchpath_nt(path)
+            except: # WindowsError
+                pass
+            else:
+                do_launchdir = False
+                
+    if do_launchdir:
         p, f = os.path.split(path)
         launchdir(p)
 

@@ -11,13 +11,14 @@
 # Written by Greg Hazel, ModerateDownloadGauge written by Matt Chisholm
 
 import os
-from BitTorrent.translation import _
+
+from BTL.platform import bttime
+from BTL.DictWithLists import DictWithLists
+from BTL.obsoletepythonsupport import set
+from BTL.sparse_set import SparseSet
+from BTL.Lists import collapse
 
 import wx
-from BitTorrent.platform import bttime
-from BitTorrent.DictWithLists import DictWithLists
-from BitTorrent.obsoletepythonsupport import set
-from BitTorrent.sparse_set import SparseSet
 
 if os.name == 'nt':
     import win32gui
@@ -449,7 +450,7 @@ class FancyDownloadGauge(SimpleDownloadGauge):
             dc.SetPen(wx.TRANSPARENT_PEN)
             dc.SetBrush(wx.Brush(c))
 
-            for (b, e) in v.iterrange():
+            def draw(b, e):
                 b = float(b)
                 e = float(e)
                 r = float(self.resolution)
@@ -461,7 +462,25 @@ class FancyDownloadGauge(SimpleDownloadGauge):
                 dc.DrawRectangle(x1, y1,
                                  x2 - x1, h)
 
-
+            if isinstance(v, SparseSet):
+                for (b, e) in v.iterrange():
+                    draw(b, e)
+            elif isinstance(v, dict):
+                for b in v.iterkeys():
+                    draw(b, b + 1)
+            elif isinstance(v, set):
+                #for b in v:
+                #   draw(b, b + 1)
+                # maybe this is better? (fewer rectangles)
+                l = list(v)
+                l.sort()
+                for (b, e) in collapse(l):
+                    draw(b, e)
+            else:
+                # assumes sorted!
+                for (b, e) in collapse(v):
+                    draw(b, e)
+                    
 
 class ModerateDownloadGauge(FancyDownloadGauge):
 
@@ -486,8 +505,8 @@ class ModerateDownloadGauge(FancyDownloadGauge):
     def sort(a,b):
         if   isinstance(a, str) and isinstance(b, str) : return cmp(a,b)
         elif isinstance(a, int) and isinstance(b, int) : return cmp(b,a)
-        elif type(a) == type(''): return -1
-        elif type(b) == type(''): return  1
+        elif isinstance(a, str): return -1
+        elif isinstance(b, str): return  1
 
     sort = staticmethod(sort)
 
@@ -499,14 +518,21 @@ class ModerateDownloadGauge(FancyDownloadGauge):
             keys = piece_states.keys()
             keys.sort(self.sort)
             pos = 0
-            have_trans_sparse_set = piece_states.get('h', SparseSet()) + \
-                                    piece_states.get('t', SparseSet())
+            h = piece_states.get('h', SparseSet())
+            t = piece_states.get('t', set())
+            t = list(t)
+            t.sort()
+            have_trans_sparse_set = h + t
             for k in keys:
                 p = piece_states[k]
-                if k in ('h','t'):
+                if k in ('h', 't'):
                     count = len(p)
                 else:
-                    count = len(p - have_trans_sparse_set)
+                    count = 0
+                    # OW
+                    for i in p:
+                        if i not in have_trans_sparse_set:
+                            count += 1
                 if not count:
                     continue
                 newpos = pos+count

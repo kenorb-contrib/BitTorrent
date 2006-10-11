@@ -13,58 +13,75 @@
 from __future__ import division
 
 import os
-import sys
-import math
 import time
-import random
 import inspect
 import itertools
 import sha
-import re
-from BitTorrent.translation import _
+from BTL.translation import _
 
 import wx
-from wx import py
+import wx.py
 from wx.gizmos import TreeListCtrl
 
 import logging
 from logging import INFO, WARNING, ERROR, CRITICAL, DEBUG
 import logging.handlers
+from cStringIO import StringIO
 
-from BitTorrent import app_name, version, branch, URL, SEARCH_URL, FAQ_URL, bt_log_fmt
+from BitTorrent import version, branch, URL, SEARCH_URL, FAQ_URL, bt_log_fmt
+from BTL.platform import app_name
 from BitTorrent import ClientIdentifier
-from BitTorrent import zurllib
+from BTL import zurllib
+
+from BTL.obsoletepythonsupport import set
+from BitTorrent.platform import doc_root, image_root, btspawn
+from BitTorrent.platform import get_max_filesize, get_free_space
+from BitTorrent.platform import desktop, create_shortcut, get_save_dir
+from BitTorrent.platform import is_path_too_long
+from BTL.platform import encode_for_filesystem, decode_from_filesystem
+from BitTorrent.PeerID import make_id
+path_wrap = decode_from_filesystem
+
 from BitTorrent import LaunchPath
 
-from BitTorrent.obsoletepythonsupport import set
-from BitTorrent.yielddefer import launch_coroutine
-from BitTorrent.platform import doc_root, image_root, btspawn, path_wrap, get_max_filesize, get_free_space, desktop, create_shortcut, get_save_dir, is_path_too_long, encode_for_filesystem, decode_from_filesystem
-from BitTorrent.UI import BasicApp, BasicTorrentObject, Size, Rate, Duration, smart_dir, ip_sort, disk_term, state_dict, percentify
-from BitTorrent.PeerID import make_id
+from BTL.yielddefer import launch_coroutine
 
-from BitTorrent.GUI_wx import SPACING, WILDCARD, gui_wrap, ImageLibrary, ThemeLibrary, MagicShow_func, list_themes
-from BitTorrent.GUI_wx import BTDialog, BTFrame, BTFrameWithSizer, BTApp, BTPanel, BTMenu, HSizer, VSizer, CheckButton, ChooseFileSizer, ChooseDirectorySizer, MagicShow, LabelValueFlexGridSizer, ElectroStaticText, ElectroStaticBitmap
+from BitTorrent.UI import BasicApp, BasicTorrentObject, Size, Rate, Duration
+from BitTorrent.UI import smart_dir, ip_sort, disk_term, state_dict, percentify
+
+from BitTorrent.GUI_wx import gui_wrap
+from BitTorrent.GUI_wx import SPACING, WILDCARD, ImageLibrary, ThemeLibrary
+from BitTorrent.GUI_wx import TaskSingleton
+from BitTorrent.GUI_wx import BTDialog, BTFrame, BTFrameWithSizer, BTApp
+from BitTorrent.GUI_wx import BTPanel, BTMenu, HSizer, VSizer
+from BitTorrent.GUI_wx import ChooseFileSizer, ChooseDirectorySizer
+from BitTorrent.GUI_wx import LabelValueFlexGridSizer
+from BitTorrent.GUI_wx import MagicShow, MagicShow_func
+from BitTorrent.GUI_wx import ElectroStaticText, ElectroStaticBitmap
 
 from BitTorrent.GUI_wx.SettingsWindow import SettingsWindow
 
-from BitTorrent.GUI_wx.ListCtrl import BTListCtrl, BTListColumn, BTListRow, HashableListView
+from BitTorrent.GUI_wx.CheckBoxDialog import LaunchCheckBoxDialog, CheckBoxDialog
+
+from BitTorrent.GUI_wx.ListCtrl import BTListColumn, BTListRow, HashableListView
 from BitTorrent.GUI_wx.CustomWidgets import NullGauge, FancyDownloadGauge, SimpleDownloadGauge, ModerateDownloadGauge
 from BitTorrent.GUI_wx.OpenDialog import OpenDialog
+from BitTorrent.GUI_wx.DropTarget import FileDropTarget
 if os.name == 'nt':
     from BitTorrent.GUI_wx.ToolTip import SetBalloonTip
 
-from BitTorrent.GUI_wx.Bling import BlingWindow, BlingPanel, BandwidthGraphPanel, HistoryCollector
-from BitTorrent.GUI_wx.StatusLight import StatusLight, StatusLabel
+from BitTorrent.GUI_wx.Bling import BlingPanel, BandwidthGraphPanel, HistoryCollector
+from BitTorrent.GUI_wx.StatusLight import StatusLabel
 
 try:
-    from BitTorrent.ipfree import lookup
+    from BTL.ipfreemmap import lookup
 except ImportError:
     def lookup(ip):
         return '--'
 
 console = True
 ERROR_MESSAGE_TIMEOUT = 5000 # millisecons to show status message in status bar
-MAX_TEXTCTRL_LENGTH = 2**20 # 1MB
+MAX_TEXTCTRL_LENGTH = 2**16 # 65 KB
 
 UP_ID           = wx.NewId()
 DOWN_ID         = wx.NewId()
@@ -147,13 +164,13 @@ class DownloadManagerTaskBarIcon(wx.TaskBarIcon):
     def __init__(self, frame):
         wx.TaskBarIcon.__init__(self)
         self.frame = frame
-        self.update_task = None
+        self._update_task = TaskSingleton()
         self.tooltip = None
         self.set_tooltip(app_name)
 
         self.Bind(wx.EVT_TASKBAR_LEFT_DCLICK, self.OnTaskBarActivate)
         self.Bind(wx.EVT_MENU, self.Toggle, id=self.TBMENU_TOGGLE)
-        self.Bind(wx.EVT_MENU, wx.the_app.quit, id=self.TBMENU_CLOSE )
+        self.Bind(wx.EVT_MENU, wx.the_app.quit, id=self.TBMENU_CLOSE)
 
     def set_balloon_tip(self, title, msg):
         if os.name == 'nt':
@@ -162,13 +179,10 @@ class DownloadManagerTaskBarIcon(wx.TaskBarIcon):
     def set_tooltip(self, tooltip):
         if tooltip == self.tooltip:
             return
-        if self.update_task:
-            self.update_task.Stop()
-        self.update_task = wx.FutureCall(self.UPDATE_INTERVAL,
-                                         self._set_tooltip, tooltip)
+        self._update_task.start(self.UPDATE_INTERVAL,
+                                self._set_tooltip, tooltip)
 
     def _set_tooltip(self, tooltip):
-        self.update_task = None
         self.SetIcon(wx.the_app.icon, tooltip)
         self.tooltip = tooltip
 
@@ -220,6 +234,7 @@ class SearchField(wx.TextCtrl):
         self.default_text = default_text
         self.visit_url_func = visit_url_func
         self.reset_text(force=True)
+        self._task = TaskSingleton()
 
         event = wx.SizeEvent((150, -1), self.GetId())
         wx.PostEvent(self, event)
@@ -258,10 +273,7 @@ class SearchField(wx.TextCtrl):
             search_url = SEARCH_URL % {'search' :zurllib.quote(search_term),
                                        'client':make_id(),
                                        }
-
-            self.timeout_id = wx.Timer(self)
-            self.Bind(wx.EVT_TIMER, self.resensitize)
-            self.timeout_id.Start(2000, wx.TIMER_ONE_SHOT)
+            self._task.start(2000, self.resensitize)
             self.Enable(False)
             self.visit_url_func(search_url, callback=self.resensitize)
         else:
@@ -284,9 +296,6 @@ class SearchField(wx.TextCtrl):
     def resensitize(self, event=None):
         self.Enable(True)
         self.reset_text()
-        if self.timeout_id is not None:
-            self.timeout_id = None
-
 
 
 class CreditsScroll(wx.TextCtrl):
@@ -536,11 +545,6 @@ class TorrentListView(HashableListView):
         if not self.columns['progress'].enabled:
             return
 
-        try:
-            completion = float(completion)
-        except:
-            completion = 0.0
-
         # FIXME -- holy crap, re-factor so we don't have to repaint gauges here
         if row.index >= len(self.gauges):
             self._gauge_paint()
@@ -568,9 +572,12 @@ VERBOSE = False
 class PeerListView(HashableListView):
 
     def __init__(self, torrent, *a, **k):
-        self.columns = {'ip': BTListColumn(_('IP address'),
+        self.columns = {'address': BTListColumn(_('Address'),
+                                                'someplace.somedomain.com'),
+                        'ip': BTListColumn(_('IP address'),
                                            '255.255.255.255',
-                                           comparator=ip_sort),
+                                           comparator=ip_sort,
+                                           enabled=VERBOSE),
                         'client': BTListColumn(_('Client'),
                                                # extra .0 needed to make it just a little wider
                                                'BitTorrent 5.0.0.0',
@@ -581,13 +588,19 @@ class PeerListView(HashableListView):
                                            enabled=VERBOSE),
                         'initiation': BTListColumn(_('Initiation'),
                                                    'remote'),
+                        'current_backlog': BTListColumn(_('req.'),
+                                                  1000,
+                                                  enabled=VERBOSE),
+                        'max_backlog': BTListColumn(_('max req.'),
+                                                  1000,
+                                                  enabled=VERBOSE),
                         'down_rate': BTListColumn(_('KB/s down'),
                                                   Rate(1024**2 - 1)),
                         'up_rate': BTListColumn(_('KB/s up'),
                                                 Rate(1024**2 - 1)),
-                        'down_size': BTListColumn(_('MB downloaded'),
+                        'down_size': BTListColumn(_('Downloaded'),
                                                   Size(1024**3 - 1)),
-                        'up_size': BTListColumn(_('MB uploaded'),
+                        'up_size': BTListColumn(_('Uploaded'),
                                                 Size(1024**3 - 1)),
                         'completed': BTListColumn(_('% complete'),
                                                   1.0,
@@ -599,7 +612,8 @@ class PeerListView(HashableListView):
                                                   enabled=VERBOSE),
                         }
 
-        self.column_order = ['ip', 'id', 'client', 'completed',
+        self.column_order = ['address', 'ip', 'id', 'client', 'completed',
+                             'current_backlog', 'max_backlog',
                              'down_rate', 'up_rate', 'down_size', 'up_size',
                              'speed', 'initiation', 'total_eta']
 
@@ -629,10 +643,32 @@ class PeerListView(HashableListView):
                 f = f[:f.rindex('.')] # grab everything before the last '.'
             except:
                 pass # unless there is no last '.'
-            if len(f) == 2 or f in ('unknown', 'noimage'):
+                
+            if len(f) == 2 or f in ('unknown',):
                 name = ('flags', f)
                 i = self.add_image(image_library.get(name))
                 self.cc_index[f] = i
+            elif f in ('noimage',):
+                try:
+                    # I found this by hand.
+                    path = r'%SystemRoot%\system32\netshell.dll'
+                    loc = wx.IconLocation(wx.ExpandEnvVars(path), 59)
+                    i = wx.IconFromLocation(loc)
+                    if not i.Ok():
+                        raise Exception("broken icon")
+                    b = wx.BitmapFromIcon(i)
+                    if not b.Ok():
+                        raise Exception("broken bitmap")
+                    i = wx.ImageFromBitmap(b)
+                    if not i.Ok():
+                        raise Exception("broken image")
+                    i.Rescale(16, 16)
+                    i = self.add_image(i)
+                except:
+                    name = ('flags', f)
+                    i = self.add_image(image_library.get(name))
+                self.cc_index[f] = i
+                
         self.set_default_widths()
 
         self.Bind(wx.EVT_CONTEXT_MENU, self.OnContextMenu)
@@ -642,10 +678,29 @@ class PeerListView(HashableListView):
         id = wx.NewId()
         m.Append(id, _("Add Peer"))
         self.Bind(wx.EVT_MENU, self.AddPeer, id=id)
+        if wx.GetKeyState(wx.WXK_CONTROL):
+            id = wx.NewId()
+            m.Append(id, _("Disconnect Peer"))
+            self.Bind(wx.EVT_MENU, self.DisconnectPeer, id=id)
+        id = wx.NewId()
+        m.AppendCheckItem(id, _("Resolve hostnames"))
+        self.Bind(wx.EVT_MENU, self.ToggleAddress, id=id)
+        m.Check(id, wx.the_app.config['resolve_hostnames'])
         self.PopupMenu(m)
 
+    def DisconnectPeer(self, event):
+        selection = self.GetSelection()
+        for s in selection:
+            row = self.GetRow(s)
+            id = row['id']
+            wx.the_app.rawserver.external_add_task(0,
+                                                   self.torrent.torrent.
+                                                   _connection_manager.
+                                                   close_connection,
+                                                   id)
+
     def AddPeer(self, event):
-        text = wx.GetTextFromUser(_("Enter new peer in IP:port format"), _("Add Peer"))
+        text = wx.GetTextFromUser(_("Enter new peer in IP:port format"), _("Add Peer"), parent=self)
         try:
             ip, port = text.split(':')
             ip = str(ip)
@@ -653,8 +708,14 @@ class PeerListView(HashableListView):
         except:
             return
 
-        self.torrent.torrent._connection_manager.start_connection((ip, port), None)
+        wx.the_app.rawserver.external_add_task(0,
+                                               self.torrent.torrent.
+                                               _connection_manager.
+                                               start_connection,
+                                               (ip, port), None)
 
+    def ToggleAddress(self, event):
+        wx.the_app.config['resolve_hostnames'] = not wx.the_app.config['resolve_hostnames']
 
     def update_peers(self, peers, bad_peers):
 
@@ -663,8 +724,13 @@ class PeerListView(HashableListView):
         for peer in peers:
             peerid = peer['id']
             data = {}
-            for k in ('ip', 'completed', 'id',):
-                data[k] = peer[k]
+            data.update(peer)
+            if wx.the_app.config['resolve_hostnames']:
+                data['address'] = data['hostname'] or data['ip']
+            else:
+                data['address'] = data['ip']
+            #for k in ('ip', 'completed', 'id',):
+            #    data[k] = peer[k]
 
             client, version = ClientIdentifier.identify_client(peerid)
             data['client'] = client + ' ' + version
@@ -680,8 +746,8 @@ class PeerListView(HashableListView):
             ul = peer['upload']
             data['down_rate'] = Rate(dl[1], precision=1024)
             data['up_rate'  ] = Rate(ul[1], precision=1024)
-            data['down_size'] = Size(dl[0], precision=1024**2)
-            data['up_size'  ] = Size(ul[0], precision=1024**2)
+            data['down_size'] = Size(dl[0])
+            data['up_size'  ] = Size(ul[0])
 
             data['speed'] = Rate(peer['speed'])
             if 'total_eta' in peer:
@@ -726,8 +792,10 @@ class PeerListView(HashableListView):
         if ip_address.startswith('38.114.167.') and \
            63 < int(ip_address[11:]) < 128:
             return self.image_list_offset - 1
+        elif ip_address.startswith('38.99.5'):
+            return self.image_list_offset - 1            
 
-        cc, country = lookup(ip_address)
+        cc = lookup(ip_address)
         if cc == '--':
             cc = 'unknown'
 
@@ -769,7 +837,7 @@ class BTToolBar(wx.ToolBar):
                 elif type(e.image) is tuple:
                     i = wx.the_app.theme_library.get(e.image, self.size)
                     bmp = wx.BitmapFromImage(i)
-                    assert bmp.Ok(), "The image (%s) is not valid." % image
+                    assert bmp.Ok(), "The image (%s) is not valid." % i
                 self.AddLabelTool(e.id, e.label, bmp, shortHelp=e.shorthelp)
 
             if len(ops):
@@ -1126,10 +1194,11 @@ class FileListPanel(BTPanel):
         if self.event_table.has_key(id):
             e = self.event_table[id]
             df = launch_coroutine(gui_wrap, e.func)
-            def error(exc_info):
+            def error(f):
                 ns = 'core.MultiTorrent.' + repr(self.torrent.infohash)
                 l = logging.getLogger(ns)
-                l.error(e.func.__name__ + " failed", exc_info=exc_info)
+                l.error(e.func.__name__ + " failed",
+                        exc_info=f.exc_info())
             df.addErrback(error)
         else:
             print 'Not implemented!'
@@ -1207,7 +1276,8 @@ class LogPanel(BTPanel):
     def OnText(self, event):
         e = self.log.GetLastPosition()
         if e > MAX_TEXTCTRL_LENGTH:
-            self.log.Remove(0, e - MAX_TEXTCTRL_LENGTH)
+            to_remove = (e - MAX_TEXTCTRL_LENGTH) + (MAX_TEXTCTRL_LENGTH/ 2)
+            self.log.Remove(0, to_remove)
 
     def BindChildren(self, evt_id, func):
         self.log.Bind(evt_id, func)
@@ -1564,13 +1634,18 @@ class TorrentPanel(BTPanel):
         self.log_panel = LogPanel(self.notebook, self.torrent)
         self.notebook.AddPage(self.log_panel, _("Log"))
 
-        self.notebook.SetPageSize(wx.Size(300, 200))
+        # SetPageSize causes assertion wxAssertFailure in Linux. --Dave
+        # I have the following installed:
+        #   wxPython-common-gtk2-unicode-2.6.3.3-fc4_py2.4
+        #   wxPython2.6-gtk2-unicode-2.6.3.3-fc4_py2.4
+        #   wxGTK-2.6.3-2.6.3.2.1.fc5
+        #   gtk2-2.8.20-1.i386
+        if os.name == "nt":
+            self.notebook.SetPageSize(wx.Size(300, 200))
         self.notebook.Hide()
 
         if self.torrent.completion >= 1:
             self.change_to_completed()
-
-        self.toggle_details()
 
         self.sizer.Layout()
 
@@ -1692,8 +1767,9 @@ class TorrentWindow(BTFrameWithSizer):
 
     def GetBestFittingSize(self):
         sbs = self.GetSize()
-        pbs = BTFrameWithSizer.GetBestFittingSize(self)
-        return wx.Size(sbs.x, pbs.y)
+        # wtf
+        #pbs = BTFrameWithSizer.GetBestFittingSize(self)
+        return wx.Size(sbs.x, sbs.y)
 
 
     def SortListItems(self, col=-1, ascending=1):
@@ -1894,7 +1970,8 @@ class LogWindow(wx.LogWindow, MagicShow):
     def OnText(self, event):
         e = self.textctrl.GetLastPosition()
         if e > MAX_TEXTCTRL_LENGTH:
-            self.textctrl.Remove(0, e - MAX_TEXTCTRL_LENGTH)
+            to_remove = (e - MAX_TEXTCTRL_LENGTH) + (MAX_TEXTCTRL_LENGTH/ 2)
+            self.textctrl.Remove(0, to_remove)
 
 
 
@@ -1924,7 +2001,7 @@ class TorrentObject(BasicTorrentObject):
                                                  None,
                                                  id=wx.ID_ANY,
                                                  title=_('%s')%self.metainfo.name)
-            if self.torrent.config.get('details_shown', False):
+            if self.torrent.config.get('details_shown', True):
                 self._torrent_window.toggle_details()
             g = self.torrent.config.get('window_geometry', '')
             size = self._torrent_window.GetBestFittingSize()
@@ -2089,22 +2166,6 @@ class TorrentMenu(BTMenu):
 
 
 
-class FileDropTarget(wx.FileDropTarget):
-    def __init__(self, window, callback):
-        wx.FileDropTarget.__init__(self)
-        self.window = window
-        self.callback = callback
-
-    def OnDragOver(self, a, b, c):
-        self.window.SetCursor(wx.StockCursor(wx.CURSOR_COPY_ARROW))
-        return wx.DragCopy
-
-    def OnDropFiles(self, x, y, filenames):
-        self.window.SetCursor(wx.StockCursor(wx.CURSOR_ARROW))
-        for file in filenames:
-            self.callback(file)
-
-
 class EventProperties(object):
     __slots__ = ['id', 'image', 'func', 'label', 'shorthelp', 'in_toolbar']
     def __init__(self, id, image, func, label, shorthelp, in_toolbar=True):
@@ -2172,8 +2233,9 @@ class MainWindow(BTFrame):
         for o in self.extra_ops:
             def run(e, o=o):
                 df = launch_coroutine(gui_wrap, o.func, e)
-                def error(exc_info):
-                    wx.the_app.logger.error(o.func.__name__ + " failed", exc_info=exc_info)
+                def error(f):
+                    wx.the_app.logger.error(o.func.__name__ + " failed",
+                                            exc_info=f.exc_info())
                 df.addErrback(error)
 
             self.Bind(wx.EVT_MENU, run, id=o.id)
@@ -2339,15 +2401,15 @@ class MainWindow(BTFrame):
         if config['start_maximized']:
             gui_wrap(self.Maximize, True)
 
-
     def torrent_double_clicked(self, event):
         infohashes = self.torrentlist.get_selected_infohashes()
         app = wx.the_app
         for infohash in infohashes:
             torrent = app.torrents[infohash]
             df = launch_coroutine(gui_wrap, app.show_torrent, infohash)
-            def error(exc_info):
-                wx.the_app.logger.error(app.show_torrent.__name__ + " failed", exc_info=exc_info)
+            def error(f):
+                wx.the_app.logger.error(app.show_torrent.__name__ + " failed",
+                                        exc_info=f.exc_info())
             df.addErrback(error)
 
 
@@ -2365,7 +2427,7 @@ class MainWindow(BTFrame):
 
         i = wx.the_app.theme_library.get(('search',), size)
         bmp = wx.BitmapFromImage(i)
-        assert bmp.Ok(), "The image (%s) is not valid." % image
+        assert bmp.Ok(), "The image (%s) is not valid." % i
         tid = wx.NewId()
         self.search_bar.AddLabelTool(tid, _("Search"), bmp, shortHelp=_("Search"))
         self.search_field = SearchField(self.search_bar, _("Search for torrents"),
@@ -2422,7 +2484,8 @@ class MainWindow(BTFrame):
         try:
             return self._bling_panel
         except AttributeError:
-            self._bling_panel = BlingPanel(self.splitter, wx.the_app.bling_history, size=(0,0))
+            self._bling_panel = BlingPanel(self.splitter,
+                                           wx.the_app.bling_history, size=(0,0))
             gui_wrap(self._bling_panel.notebook.SetSelection,
                      wx.the_app.config['details_tab'])
             return self._bling_panel
@@ -2452,14 +2515,16 @@ class MainWindow(BTFrame):
             # moo. I am a cow.
             if tid == REMOVE_ID:
                 df = launch_coroutine(gui_wrap, e.func, infohashes)
-                def error(exc_info):
-                    wx.the_app.logger.error(e.func.__name__ + " failed", exc_info=exc_info)
+                def error(f):
+                    wx.the_app.logger.error(e.func.__name__ + " failed",
+                                            exc_info=f.exc_info())
                 df.addErrback(error)
             else:
                 for infohash in infohashes:
                     df = launch_coroutine(gui_wrap, e.func, infohash)
-                    def error(exc_info):
-                        wx.the_app.logger.error(e.func.__name__ + " failed", exc_info=exc_info)
+                    def error(f):
+                        wx.the_app.logger.error(e.func.__name__ + " failed",
+                                                exc_info=f.exc_info())
                     df.addErrback(error)
         elif tid in (PRIORITY_LOW_ID, PRIORITY_NORMAL_ID, PRIORITY_HIGH_ID):
             infohashes = self.torrentlist.get_selected_infohashes()
@@ -2568,6 +2633,14 @@ class MainWindow(BTFrame):
         if function is not None:
             self.Bind(wx.EVT_MENU, function, id=index)
         return index
+
+    #def do_log(self, level, text):
+    #    wx.GetApp().do_log(level, text)
+    #
+    #
+    #def do_log_torrent(self, infohash, level, text):
+    #    wx.GetApp().do_log_torrent(infohash, level, text)
+
 
     def clear_status(self):
         self.SetStatusText('')
@@ -2707,112 +2780,41 @@ class SaveLocationDialog(BTDialog):
         return os.name == 'nt' and self.shortcut_checkbox.IsChecked()
 
 
-
-class CheckBoxDialog(BTDialog):
-
-    def __init__(self, parent, title='', label='', checkbox_label='',
-                 affirmative_button='', negative_button='',
-                 checkbox_key='', checkbox_value=False):
-        BTDialog.__init__(self, parent=parent, id=wx.ID_ANY,
-                          title=title,
-                          style=wx.DEFAULT_DIALOG_STYLE)
-        self.text = ElectroStaticText(self, label=label)
-        self.config = {checkbox_key: checkbox_value}
-
-        self.checkbox = CheckButton(
-            self, checkbox_label, self, checkbox_key,
-            checkbox_value)
-
-        bmp = wx.StaticBitmap(self, wx.ID_ANY,
-                              wx.ArtProvider.GetBitmap(wx.ART_QUESTION,
-                                                       wx.ART_MESSAGE_BOX, (32, 32)))
-
-        # sizers
-        self.button_sizer = self.CreateStdDialogButtonSizer(flags=wx.OK|wx.CANCEL)
-
-        self.vsizer = wx.BoxSizer(wx.VERTICAL)
-        self.hsizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.sizer = wx.BoxSizer(wx.VERTICAL)
-
-        if '__WXMSW__' in wx.PlatformInfo:
-            self.vsizer.Add(self.text, flag=wx.LEFT|wx.RIGHT|wx.BOTTOM|wx.ALIGN_CENTER, border=5)
-            self.vsizer.Add(self.checkbox, flag=wx.LEFT|wx.RIGHT|wx.TOP|wx.ALIGN_CENTER_VERTICAL|wx.ALIGN_LEFT, border=5)
-            self.hsizer.Add(bmp)
-            self.hsizer.Add(self.vsizer, flag=wx.LEFT|wx.TOP, border=12)
-            self.sizer.Add(self.hsizer, flag=wx.ALL, border=11)
-            self.sizer.Add(self.button_sizer, flag=wx.ALIGN_CENTER_HORIZONTAL|wx.LEFT|wx.RIGHT|wx.BOTTOM, border=8)
-        else:
-            self.vsizer.Add(self.text, flag=wx.ALIGN_CENTER|wx.BOTTOM, border=SPACING)
-            self.vsizer.Add(self.checkbox, flag=wx.ALIGN_LEFT, border=SPACING)
-            self.hsizer.Add(bmp)
-            self.hsizer.Add(self.vsizer, flag=wx.LEFT, border=SPACING)
-            self.sizer.Add(self.hsizer, flag=wx.TOP|wx.LEFT|wx.RIGHT, border=SPACING)
-            self.sizer.Add(self.button_sizer, flag=wx.ALIGN_RIGHT|wx.ALL, border=SPACING)
-
-        self.SetSizer(self.sizer)
-        self.Fit()
+def ConfirmQuitDialog(parent):
+    dialog = CheckBoxDialog(parent=parent,
+                            title=_("Really quit %s?")%app_name,
+                            label = _("Are you sure you want to quit %s?")%app_name,
+                            checkbox_label=_("&Don't ask again"),
+                            checkbox_value=not wx.the_app.config['confirm_quit'])
+    if dialog.ShowModal() == wx.ID_CANCEL:
+        return wx.ID_CANCEL
+    value = not dialog.checkbox.GetValue()
+    wx.the_app.send_config('confirm_quit', value)
+    return value
 
 
-    def setfunc(self, key, value):
-        wx.the_app.send_config(key, value)
+def ConfirmRemoveDialog(parent, title, label, checkbox_label):
+    return LaunchCheckBoxDialog(parent, title, label, checkbox_label,
+                                checkbox_value=True)
 
 
-class ConfirmQuitDialog(CheckBoxDialog):
-
-    def __init__(self, parent):
-        CheckBoxDialog.__init__(self, parent=parent,
-                                title=_("Really quit %s?")%app_name,
-                                label=_("Are you sure you want to quit %s?")%app_name,
-                                checkbox_label=_("&Don't ask again"),
-                                checkbox_key='confirm_quit',
-                                checkbox_value=not wx.the_app.config['confirm_quit'],
-                                )
-
-    def setfunc(self, key, value):
-        CheckBoxDialog.setfunc(self, key, not value)
-
-
-
-class ConfirmRemoveDialog(CheckBoxDialog):
-
-    def __init__(self, parent, title='', label='', checkbox_label=''):
-        self.del_files = True
-        CheckBoxDialog.__init__(self, parent=parent,
-                                title=title,
-                                label=label,
-                                checkbox_label=checkbox_label,
-                                checkbox_key='jesus christ no key',
-                                checkbox_value=self.del_files,
-                                )
-
-    def setfunc(self, key, value):
-        self.del_files = value
-
-
-
-class NotifyNewVersionDialog(CheckBoxDialog):
-
-    def __init__(self, parent, new_version):
-        CheckBoxDialog.__init__(self, parent=parent,
-                                title=_("New %s version available")%app_name,
-                                label=(
+def NotifyNewVersionDialog(parent, new_version):
+    value = LaunchCheckBoxDialog(parent,
+                                 title=_("New %s version available")%app_name,
+                                 label=(
             (_("A newer version of %s is available.\n") % app_name) +
             (_("You are using %s, and the new version is %s.\n") % (version, new_version)) +
             (_("You can always get the latest version from \n%s") % URL) ),
-                                checkbox_label=_("&Remind me later"),
-                                affirmative_button=_("Download &Now"),
-                                negative_button=_("Download &Later"),
-                                checkbox_key='notified',
-                                checkbox_value=True,
-                                )
-        self.new_version = new_version
+                                 checkbox_label=_("&Remind me later"),
+                                 checkbox_value=True)
+    if not value:
+        wx.the_app.send_config('notified', new_version)
+        if value == None:
+            return wx.ID_CANCEL
+    else:
+        wx.the_app.send_config('notified', '')
+    return value
 
-
-    def setfunc(self, key, value):
-        if not value:
-            CheckBoxDialog.setfunc(self, key, self.new_version)
-        else:
-            CheckBoxDialog.setfunc(self, key, '')
 
 # logs to wx targets and python. we could do in the other direction too
 class LogProxy(wx.PyLog):
@@ -2867,7 +2869,10 @@ class TorrentLogger(logging.Handler):
             return
         l = len(self.base)
         infohash_hex = record.name[l:l+40]
-        infohash = infohash_hex.decode('hex')
+        try:
+            infohash = infohash_hex.decode('hex')
+        except TypeError: #Non-hexadecimal digit found
+            return
         if infohash not in self.blacklist:
             self.torrents.setdefault(infohash, []).append(record)
 
@@ -2897,12 +2902,13 @@ class MainLoop(BasicApp, BTApp):
         self.gui_wrap = self.CallAfter
         self.main_window = None
         self.task_bar_icon = None
-        self.update_handle = None
+        self._update_task = TaskSingleton()
+        self._update_bwg_task = TaskSingleton()
+        self._clear_status_task = TaskSingleton()
         self.bling_history = None
-        self.update_bwg_handle = None
         self.multitorrent_doneflag = None
         self.open_dialog_history = []
-        self._stderr_buffer = ''
+        self._stderr_buffer = StringIO()
         self.torrent_logger = TorrentLogger()
         # HEREDAVE: not relevant to the pop-up window "BitTorrent Error"
         logging.getLogger('core.MultiTorrent').addHandler(self.torrent_logger)
@@ -2945,13 +2951,15 @@ class MainLoop(BasicApp, BTApp):
         wx.Log_SetActiveTarget(wx.LogGui())
 
         self.log = LogWindow(self.main_window, _("%s Log")%app_name, False)
-
+        s = wx.Display().GetGeometry()        
+        self.log.GetFrame().SetSize((s.width * 0.80, s.height * 0.40))
+        
         wx.Log_SetActiveTarget(LogProxy(self.log))
         wx.Log_SetVerbose(True) # otherwise INFOs are not logged
 
 
         if console:
-            spec = inspect.getargspec(py.shell.ShellFrame.__init__)
+            spec = inspect.getargspec(wx.py.shell.ShellFrame.__init__)
             args = spec[0]
             kw = {}
             # handle out-of-date wx installs
@@ -2980,11 +2988,11 @@ class MainLoop(BasicApp, BTApp):
                         self.console.shell.OnHistoryReplace(step=-1)
                     else:
                         o(self.console.shell, event)
-                o = py.shell.Shell.OnKeyDown
-                py.shell.Shell.OnKeyDown = OnKeyDown
+                o = wx.py.shell.Shell.OnKeyDown
+                wx.py.shell.Shell.OnKeyDown = OnKeyDown
             except:
                 pass
-            self.console = py.shell.ShellFrame(self.main_window, **kw)
+            self.console = wx.py.shell.ShellFrame(self.main_window, **kw)
             self.console.Bind(wx.EVT_CLOSE, lambda e:self.console.Show(False))
 
         # Task bar icon
@@ -3008,36 +3016,25 @@ class MainLoop(BasicApp, BTApp):
         wx.CallAfter(self._attach_multitorrent, multitorrent, doneflag)
 
     def _attach_multitorrent(self, multitorrent, doneflag):
-        self.multitorrent = multitorrent
-        self.multitorrent_doneflag = doneflag
+        BasicApp.attach_multitorrent(self, multitorrent, doneflag)
 
-        self.multitorrent.initialize_torrents()
-
-        if self.config['publish']:
-            publish_torrent_path = self.external_torrents.pop(0)
-            # BUG: does not handle errors! -Greg
-            gui_wrap(launch_coroutine,
-                     gui_wrap,
-                     self.publish_torrent,
-                     publish_torrent_path,
-                     self.config['publish'])
-        else:
-            gui_wrap(self.open_external_torrents)
+        gui_wrap(self.open_external_torrents)
 
         if self.config['show_details']:
             gui_wrap(self.main_window.toggle_bling_panel)
 
         self.init_updates()
 
+    def no_op(self):
+        if not self.main_window.IsShown():
+            self.systray_open()
+
     def OnExit(self):
         if self.multitorrent_doneflag:
             self.multitorrent_doneflag.set()
-        if self.update_handle is not None:
-            self.update_handle.Stop()
-            self.update_handle = None
-        if self.update_bwg_handle is not None:
-            self.update_bwg_handle.Stop()
-            self.update_bwg_handle = None
+        self._update_task.stop()
+        self._update_bwg_task.stop()
+        self._clear_status_task.stop()
         BTApp.OnExit(self)
 
     def systray_open(self):
@@ -3065,8 +3062,7 @@ class MainLoop(BasicApp, BTApp):
     def quit(self, confirm_quit=True):
         if self.main_window:
             if confirm_quit and self.config['confirm_quit']:
-                d = ConfirmQuitDialog(self.main_window)
-                if d.ShowModal() == wx.ID_CANCEL:
+                if ConfirmQuitDialog(self.main_window) == wx.ID_CANCEL:
                     return
 
             for t in self.torrents.values():
@@ -3080,6 +3076,10 @@ class MainLoop(BasicApp, BTApp):
 
         if self.task_bar_icon:
             self.task_bar_icon.Destroy()
+
+        sw = getattr(self, '_settings_window', None)
+        if sw:
+            sw.Destroy()
 
         BasicApp.quit(self)
 
@@ -3408,7 +3408,7 @@ class MainLoop(BasicApp, BTApp):
             return self._settings_window
         except AttributeError:
             self._settings_window = SettingsWindow(self.main_window,
-                                                  self.config, self.send_config)
+                                                   self.config, self.send_config)
             return self._settings_window
 
     settings_window = property(_get_settings_window)
@@ -3426,10 +3426,11 @@ class MainLoop(BasicApp, BTApp):
 
     def _remove_infohash(self, infohash, del_files):
         df = launch_coroutine(gui_wrap, self.remove_infohash, infohash, del_files=del_files)
-        def error(exc_info):
+        def error(f):
             ns = 'core.MultiTorrent.' + repr(infohash)
             l = logging.getLogger(ns)
-            l.error(self.remove_infohash.__name__ + " failed", exc_info=exc_info)
+            l.error(self.remove_infohash.__name__ + " failed",
+                    exc_info=f.exc_info())
         df.addErrback(error)
         return df
 
@@ -3464,14 +3465,14 @@ class MainLoop(BasicApp, BTApp):
             checkbox_label = _("&Delete incomplete downloaded file(s)")
 
             if del_files:
-                d = ConfirmRemoveDialog(self.main_window,
-                                        title=title,
-                                        label=label,
-                                        checkbox_label=checkbox_label)
-                if d.ShowModal() == wx.ID_CANCEL:
+                value = ConfirmRemoveDialog(self.main_window,
+                                            title=title,
+                                            label=label,
+                                            checkbox_label=checkbox_label)
+                if value == wx.ID_CANCEL:
                     return
 
-                del_files = d.del_files
+                del_files = value
             else:
                 r = wx.MessageBox(
                     message=label,
@@ -3498,6 +3499,7 @@ class MainLoop(BasicApp, BTApp):
         inco = ((not t.completed) and
                 (t.working_path != t.destination_path) and
                 t.working_path.startswith(fs_save_incomplete_in))
+        
         del_files = inco
         if not wx.GetKeyState(wx.WXK_SHIFT):
             title=_("Really remove torrent?")
@@ -3505,14 +3507,14 @@ class MainLoop(BasicApp, BTApp):
             checkbox_label=_("&Delete incomplete downloaded file(s)")
 
             if del_files:
-                d = ConfirmRemoveDialog(self.main_window,
-                                        title=title,
-                                        label=label,
-                                        checkbox_label=checkbox_label)
-                if d.ShowModal() == wx.ID_CANCEL:
+                value = ConfirmRemoveDialog(self.main_window,
+                                            title=title,
+                                            label=label,
+                                            checkbox_label=checkbox_label)
+                if value == wx.ID_CANCEL:
                     return
 
-                del_files = d.del_files
+                del_files = value
             else:
                 r = wx.MessageBox(
                     message=label,
@@ -3535,8 +3537,8 @@ class MainLoop(BasicApp, BTApp):
 
 
     def notify_of_new_version(self, new_version):
-        d = NotifyNewVersionDialog(self.main_window, new_version)
-        if d.ShowModal() == wx.ID_OK:
+        value = NotifyNewVersionDialog(self.main_window, new_version)
+        if value != wx.ID_CANCEL:
             self.visit_url(URL)
 
 
@@ -3559,11 +3561,11 @@ class MainLoop(BasicApp, BTApp):
 
         if severity == 'stderr':
             # stderr likes to spit partial lines, buffer them until we get a \n
-            self._stderr_buffer += text
+            self._stderr_buffer.write(text)
             if text[-1] != '\n':
                 return
-            text = self._stderr_buffer
-            self._stderr_buffer = ''
+            text = self._stderr_buffer.getvalue()
+            self._stderr_buffer.truncate(0)
             severity = ERROR
 
         # We don't make use of wxLogMessage or wxLogError, because only
@@ -3579,7 +3581,8 @@ class MainLoop(BasicApp, BTApp):
             self.log.PassMessages(True)
             wx.LogStatus(text)
             self.log.PassMessages(False)
-            wx.FutureCall(ERROR_MESSAGE_TIMEOUT, self.main_window.clear_status)
+            self._clear_status_task.start(ERROR_MESSAGE_TIMEOUT,
+                                          self.main_window.clear_status)
         elif severity == CRITICAL:
             # pop up a dialog
             self.log.PassMessages(True)
@@ -3591,19 +3594,16 @@ class MainLoop(BasicApp, BTApp):
         self.bling_history = HistoryCollector(self.GRAPH_TIME_SPAN,
                                               self.GRAPH_UPDATE_INTERVAL)
 
-        if self.update_handle is None:
-            self.make_statusrequest()
-
-        if self.update_bwg_handle is None:
-            self.update_bandwidth_graphs()
+        self.make_statusrequest()
+        self.update_bandwidth_graphs()
 
         self.main_window.HistoryReady()
 
     def update_bandwidth_graphs(self):
         df = launch_coroutine(gui_wrap, self._update_bandwidth_graphs)
-        def error(exc_info):
+        def error(f):
             wx.the_app.logger.error(self._update_bandwidth_graphs.__name__ + " failed",
-                                    exc_info=exc_info)
+                                    exc_info=f.exc_info())
         df.addErrback(error)
 
 
@@ -3634,8 +3634,8 @@ class MainLoop(BasicApp, BTApp):
                                   max_download_rate=self.config['max_download_rate'],
                                   variance=variance, max_variance=max_variance)
 
-        self.update_bwg_handle = wx.FutureCall(self.GRAPH_UPDATE_INTERVAL,
-                                               self.update_bandwidth_graphs)
+        self._update_bwg_task.start(self.GRAPH_UPDATE_INTERVAL,
+                                    self.update_bandwidth_graphs)
 
     def start_torrent(self, infohash):
         df = launch_coroutine(gui_wrap, BasicApp.start_torrent, self, infohash)
@@ -3649,7 +3649,7 @@ class MainLoop(BasicApp, BTApp):
         self.main_window.check_torrent_start_stop(infohash)
 
     def stop_torrent(self, infohash):
-        df = launch_coroutine(gui_wrap, BasicApp.stop_torrent, self, infohash)
+        df = launch_coroutine(gui_wrap, BasicApp.stop_torrent, self, infohash, pause=True)
         yield df
         if not df.getResult():
             return
@@ -3688,12 +3688,8 @@ class MainLoop(BasicApp, BTApp):
 
         self.main_window.check_torrent_selection()
 
-        # anyone can call this function to initiate an update, so allow this
-        # task to be re-entrant (prevent double-queueing)
-        if self.update_handle is not None:
-            self.update_handle.Stop()
-        self.update_handle = wx.FutureCall(self.config['display_interval'] * 1000,
-                                           self.make_statusrequest)
+        self._update_task.start(self.config['display_interval'] * 1000,
+                                self.make_statusrequest)
 
         self.main_window.bling_panel.statistics.update_values(global_stats)
 

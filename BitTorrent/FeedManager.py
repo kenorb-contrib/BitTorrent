@@ -11,7 +11,7 @@
 # Written by Matt Chisholm
 
 import libxml2
-import BitTorrent.stackthreading as threading
+import BTL.stackthreading as threading
 #import gobject
 from PluginSupport import PluginManager, BasePlugin
 

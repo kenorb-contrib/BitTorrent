@@ -13,16 +13,14 @@
 import os
 import win32file
 from bisect import bisect_right
-from BitTorrent.translation import _
+from BTL.translation import _
 
-from BitTorrent.obsoletepythonsupport import *
-
-from BitTorrent import BTFailure, app_name
-from BitTorrent.defer import Deferred, ThreadedDeferred
-from BitTorrent.yielddefer import launch_coroutine, _wrap_task
+from BTL import BTFailure
+from BTL.defer import Deferred, ThreadedDeferred, Failure
+from BTL.yielddefer import launch_coroutine, _wrap_task
 from BitTorrent.platform import get_allocated_regions
-from BitTorrent.sparse_set import SparseSet
-from BitTorrent.DictWithLists import DictWithLists, DictWithSets
+from BTL.sparse_set import SparseSet
+from BTL.DictWithLists import DictWithLists, DictWithSets
 from BitTorrent.Storage_base import make_file_sparse, bad_libc_workaround, is_open_for_write
 from BitTorrent.Storage_base import open_sparse_file as open_sparse_file_base
 
@@ -60,7 +58,7 @@ class ReadFileOp(OverlappedOp):
             self.reactor.issueReadFile(handle, seekpos, buffer,
                                        self.ovDone, (handle, buffer))
         except:
-            df.errback(sys.exc_info())
+            df.errback(Failure())
         else:
             self.df = df
         return df
@@ -83,7 +81,7 @@ class WriteFileOp(OverlappedOp):
             self.reactor.issueWriteFile(handle, seekpos, buffer,
                                         self.ovDone, (handle, buffer))
         except:
-            df.errback(sys.exc_info())
+            df.errback(Failure())
         else:
             self.df = df
         return df
@@ -91,6 +89,7 @@ class WriteFileOp(OverlappedOp):
 
 class IOCPFile(object):
 
+    # standard block size by default
     buffer_size = 16384    
     
     def __init__(self, handle):
@@ -104,7 +103,6 @@ class IOCPFile(object):
         self.fileno = self.handle.fileno
         self.read_op = ReadFileOp()
         self.write_op = WriteFileOp()
-        # standard block size by default
         self.readbuf = self.reactor.AllocateReadBuffer(self.buffer_size)
 
     def seek(self, offset):
@@ -152,10 +150,10 @@ class FilePool(object):
             try:
                 handle.close()
             except:
-                failures[self.file_to_torrent[filename]] = sys.exc_info()
+                failures[self.file_to_torrent[filename]] = Failure()
 
-        for torrent, e in failures.iteritems():
-            torrent.got_exception(e)
+        for torrent, failure in failures.iteritems():
+            torrent.got_exception(failure)
 
         if self.get_open_file_count() > 0:
             # it would be nice to wait on the deferred for the outstanding ops
@@ -169,7 +167,7 @@ class FilePool(object):
         return df
 
     def _close_files(self, df, file_set):
-        exc_info = None
+        failure = None
         done = False
 
         filenames = self.open_file_to_handles.keys()
@@ -181,7 +179,7 @@ class FilePool(object):
                 try:
                     handle.close()
                 except:
-                    exc_info = sys.exc_info()
+                    failure = Failure()
 
         done = True
         for filename in file_set.iterkeys():
@@ -189,8 +187,8 @@ class FilePool(object):
                 done = False
                 break
 
-        if exc_info is not None:
-            df.errback(exc_info)
+        if failure is not None:
+            df.errback(failure)
 
         if not done:
             # it would be nice to wait on the deferred for the outstanding ops
@@ -372,33 +370,29 @@ class Storage(object):
         for begin, end, filename in self.ranges[p:]:
             if begin >= stop:
                 break
-            r.append((filename, max(pos, begin) - begin, min(end, stop) - begin))
+            r.append((filename,
+                      max(pos, begin) - begin, min(end, stop) - begin))
         return r
 
     def _file_op(self, filename, pos, param, write):
         begin, end = self.get_byte_range_for_filename(filename)
         length = end - begin
         final = Deferred()
-        hdf = self.filepool.acquire_handle(filename, for_write=write, length=length)
-        def handle_error(f=None):
-            final.callback(0)
-        # error acquiring handle
-        if hdf is None:
-            handle_error()
-            return final
+        hdf = self.filepool.acquire_handle(filename, for_write=write,
+                                           length=length)
         def op(h):
             h.seek(pos)
             if write:
                 odf = h.write(param)
             else:
                 odf = h.read(param)
-            def complete(r):
+            def like_finally(r):
                 self.filepool.release_handle(filename, h)
-                final.callback(r)
-            odf.addCallback(complete)
-            odf.addErrback(final.errback)
+                return r
+            odf.addBoth(like_finally)
+            odf.chainDeferred(final)
         hdf.addCallback(op)
-        hdf.addErrback(handle_error)
+        hdf.addErrback(final.errback)
         return final
 
     def _batch_read(self, pos, amount):
@@ -411,14 +405,21 @@ class Storage(object):
             dfs.append(df)
 
         # yield on all the reads in order - they complete in any order
+        exc = None
         for df in dfs:
             yield df
-            r.append(df.getResult())
+            try:
+                r.append(df.getResult())
+            except:
+                exc = exc or sys.exc_info()
+        if exc:
+            raise exc[0], exc[1], exc[2]
 
         r = ''.join(r)
 
         if len(r) != amount:
-            raise BTFailure(_("Short read (%d of %d) - something truncated files?") %
+            raise BTFailure(_("Short read (%d of %d) - "
+                              "something truncated files?") %
                             (len(r), amount))
 
         yield r
@@ -446,9 +447,15 @@ class Storage(object):
 
         written = 0            
         # yield on all the writes - they complete in any order
+        exc = None
         for df in dfs:
             yield df
-            written += df.getResult()            
+            try:
+                written += df.getResult()            
+            except:
+                exc = exc or sys.exc_info()
+        if exc:
+            raise exc[0], exc[1], exc[2]
         assert total == written, '%s and %s' % (total, written)
         
         yield total

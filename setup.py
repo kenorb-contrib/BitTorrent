@@ -19,8 +19,9 @@ install_translation()
 
 import sys
 from distutils.core import setup, Extension
-from BitTorrent import version, languages
+from BitTorrent import version
 from BitTorrent.platform import calc_unix_dirs
+from BTL.language import languages
 
 import glob
 
@@ -77,7 +78,7 @@ data_files = [
     (img_root, ['images/bittorrent.ico',]),
     (doc_root, ['credits.txt', 'credits-l10n.txt', 'LICENSE.txt', 'README.txt',
                 'TRACKERLESS.txt', 'redirdonate.html', 'public.key',
-                'INSTALL.unix.txt'] + extra_docs),
+                'INSTALL.unix.txt', ] + extra_docs),
     ]
 
 for d in ('flags', 'logo', 'themes/default',
@@ -105,7 +106,9 @@ attrs = {
     'url' : "http://bittorrent.com/",
     'license' : "BitTorrent Open Source License",
     'scripts' : use_scripts,
-    'packages' : ["BitTorrent", "khashmir", "BitTorrent.GUI_wx",],
+    'packages' : ["BTL", "BitTorrent", "khashmir", "BitTorrent.GUI_wx",],
+    'package_dir' : {"BTL": "BTL"},
+    'package_data' : {"BTL": ["*.dat"]},
     'py_modules' : ["Zeroconf",],
     'data_files' : data_files,
     'description' : "Scatter-gather network file transfer",

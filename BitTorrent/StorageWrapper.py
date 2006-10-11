@@ -19,15 +19,17 @@ import struct
 import cPickle
 import logging
 from array import array
-from BitTorrent.translation import _
+from BTL.translation import _
 
-from BitTorrent.hash import sha
-from BitTorrent.obsoletepythonsupport import set
-from BitTorrent.sparse_set import SparseSet
-from BitTorrent.bitfield import Bitfield
-from BitTorrent.defer import Deferred
-from BitTorrent.yielddefer import launch_coroutine, _wrap_task
+from BTL.obsoletepythonsupport import set
+from BTL.sparse_set import SparseSet
+from BTL.bitfield import Bitfield
+from BTL.defer import Deferred
+from BTL.yielddefer import launch_coroutine, _wrap_task
 from BitTorrent import BTFailure
+from BTL.exceptions import str_exc
+
+from BTL.hash import sha
 
 NO_PLACE = -1
 
@@ -98,13 +100,14 @@ class StorageWrapper(object):
     def __init__(self, storage, config, hashes, piece_size,
                  statusfunc, doneflag, data_flunked,
                  infohash, # needed for partials
-                 errorfunc, working_path, destination_path, resumefile,
+                 is_batch, errorfunc, working_path, destination_path, resumefile,
                  add_task, external_add_task):
         assert len(hashes) > 0
         assert piece_size > 0
         self.initialized = False
         self.numpieces = len(hashes)
         self.infohash = infohash
+        self.is_batch = is_batch
         self.add_task = add_task
         self.external_add_task = external_add_task
         self.storage = storage
@@ -135,12 +138,13 @@ class StorageWrapper(object):
         # of the unrequested chunks which are pending on the network.
         # Otherwise the piece is not in the dict.
         self.active_requests = {}
+        self.have_callbacks = {}
         
         read = lambda index, length, offset : self._storage_read(self.places[index],
                                                                  length, offset=offset)
         self.datapig = DataPig(read, self.add_task)
         
-        self.full_pieces = SparseSet()
+        self.full_pieces = set()
         # a index => df dict for locking pieces
         self.blocking_pieces = {}
         self.endgame = False
@@ -206,7 +210,7 @@ class StorageWrapper(object):
         except Exception, e:
             raise BTFailure(_("Unsupported fastresume file format, "
                               "probably corrupted: %s on (%s)") %
-                            (unicode(e.args[0]), repr(version_line)))
+                            (str_exc(e), repr(version_line)))
         global_logger.debug('Reading fastresume v' + resume_version)
         if resume_version == '1':
             return self._read_fastresume_v1(f, working_path, destination_path)
@@ -298,9 +302,9 @@ class StorageWrapper(object):
                 # all files should reside in either the working path or the
                 # destination path.  For batch torrents, the file may have a
                 # relative path so compare common path.
-                if len(snapshot) > 1:  # batch torrent.
-                    commonw = os.path.commonprefix([filename,working_path])
-                    commond = os.path.commonprefix([filename,destination_path])
+                if self.is_batch:
+                    commonw = os.path.commonprefix((filename, working_path))
+                    commond = os.path.commonprefix((filename, destination_path))
                 else:
                     commonw = commond = filename
 
@@ -314,7 +318,7 @@ class StorageWrapper(object):
                         return False
                 elif work_or_dest == -1 and commonw != working_path:
                     return False
-                elif work_or_dest == 1 and commond != dest_path:
+                elif work_or_dest == 1 and commond != destination_path:
                     return False
                     
                 # this could be a lot smarter, like punching holes in the
@@ -338,10 +342,10 @@ class StorageWrapper(object):
             self.storage.undownloaded = d['undownloaded']
             self.amount_left = d['amount_left']
             
-            self.amount_inactive = self.amount_left
             # all unwritten partials are now inactive
             self.inactive_requests = d['unwritten_partials']
 
+            # start with amount left, and then add partials
             self.amount_left_with_partials = self.amount_left
 
             for k, v in self.inactive_requests.iteritems():
@@ -351,9 +355,14 @@ class StorageWrapper(object):
                 self.active_requests.setdefault(k, [])
 
             if self.amount_left_with_partials < 0:
-                raise ValueError("Amount left < 0: %d" % self.amount_left_with_partials)
+                raise ValueError("Amount left < 0: %d" %
+                                 self.amount_left_with_partials)
             if self.amount_left_with_partials > self.total_length:
-                raise ValueError("Amount left > total length: %d > %d" % (self.amount_left_with_partials, self.total_length))
+                raise ValueError("Amount left > total length: %d > %d" %
+                                 (self.amount_left_with_partials, self.total_length))
+
+            # these are equal at startup, because nothing has been requested
+            self.amount_inactive = self.amount_left_with_partials
 
             self._initialized(True)
         except:
@@ -461,6 +470,9 @@ class StorageWrapper(object):
         self.storage.downloaded(self.piece_size * piece, plen)
         self.amount_left -= plen
         self.amount_inactive -= plen
+        if piece in self.have_callbacks:
+            for c in self.have_callbacks.pop(piece):
+                c.callback(None)
         assert piece not in self.inactive_requests
 
     ## hashcheck    
@@ -575,7 +587,6 @@ class StorageWrapper(object):
         self.checked_pieces.add(index)
         yield True
     ############################################################################
-    
     ## out of order compatability
     ############################################################################
     def _initalloc(self, pos, piece):
@@ -585,6 +596,11 @@ class StorageWrapper(object):
         length = self._piecelen(pos)
         self.places[piece] = pos
         self.rplaces[pos] = piece
+        ## "if self.rplaces[pos] != ALLOCATED:" to skip extra mark writes
+        #mark = self.partial_mark + struct.pack('>i', piece)
+        #mark += chr(0xff) * (self.config['download_chunk_size'] - len(mark))
+        #mark *= (length - 1) // len(mark) + 1
+        #return self._storage_write(pos, buffer(mark, 0, length))
 
     def _move_piece(self, oldpos, newpos):
         assert self.rplaces[newpos] < 0
@@ -606,8 +622,6 @@ class StorageWrapper(object):
             raise BTFailure(_("data corrupted on disk - "
                               "maybe you have two copies running?"))
     ############################################################################
-
-
 
     def get_piece_range_for_filename(self, filename):
         begin, end = self.storage.get_byte_range_for_filename(filename)
@@ -708,6 +722,9 @@ class StorageWrapper(object):
                 self.amount_left -= length
 
                 self.datapig.finished_piece(index)
+                if index in self.have_callbacks:
+                    for c in self.have_callbacks.pop(index):
+                        c.callback(None)
             else: # hashcheck fail
                 self.data_flunked(length, index)
                 self.amount_inactive += length
@@ -716,6 +733,18 @@ class StorageWrapper(object):
         self.fastresume_dirty = True
         yield hashcheck
 
+    def get_piece(self, index):
+        if not self.have[index]:
+            df = Deferred()
+            self.have_callbacks.setdefault(index, []).append(df)
+            yield df
+            df.getResult()
+            assert self.have[index]
+        df = self.read(index, 0, self._piecelen(index))
+        yield df
+        r = df.getResult()
+        yield r
+
     def read(self, index, begin, length):
         df = launch_coroutine(_wrap_task(self.add_task),
                               self._read, index, begin, length)
@@ -723,7 +752,8 @@ class StorageWrapper(object):
 
     def _read(self, index, begin, length):
         if not self.have[index]:
-            yield None
+            #yield None
+            raise IndexError("do not have piece %d" % index)
 
         if index in self.blocking_pieces:
             df = self.blocking_pieces[index]
@@ -739,7 +769,10 @@ class StorageWrapper(object):
                 # reconnect when done.
                 raise BTFailure, _("told file complete on start-up, but piece failed hash check")
         if begin + length > self._piecelen(index):
-            yield None
+            #yield None
+            raise ValueError("incorrect size: (%d + %d ==) %d >= %d" %
+                             (begin, length,
+                              begin + length, self._piecelen(index)))
         df = self._storage_read(self.places[index], length, offset=begin)
         yield df
         data = df.getResult()
@@ -759,10 +792,10 @@ class StorageWrapper(object):
         if self.partial_mark is None:
             self.partial_mark = ("BitTorrent - this part has not been downloaded " +
                                  "yet." + self.infohash +
-                                 struct.pack('>i', self.config['download_slice_size']))
+                                 struct.pack('>i', self.config['download_chunk_size']))
         marklen = len(self.partial_mark)+4
         for i in xrange(0, len(data) - marklen,
-                        self.config['download_slice_size']):
+                        self.config['download_chunk_size']):
             if data[i:i+marklen-4] == self.partial_mark:
                 ind = struct.unpack('>i', data[i+marklen-4:i+marklen])[0]
                 if index is None:
@@ -774,7 +807,7 @@ class StorageWrapper(object):
             else:
                 missing = True
         if index is not None and missing:
-            i += self.config['download_slice_size']
+            i += self.config['download_chunk_size']
             if i < len(data):
                 parts.append(i)
             partials[index] = (pos, parts)
@@ -782,7 +815,7 @@ class StorageWrapper(object):
     def _make_pending(self, index, parts):
         length = self._piecelen(index)
         x = 0
-        request_size = self.config['download_slice_size']
+        request_size = self.config['download_chunk_size']
         for x in xrange(0, length, request_size):
             partlen = min(request_size, length - x)
             if x not in parts:
@@ -820,11 +853,11 @@ class StorageWrapper(object):
             while rs:
                 r = rs.pop()
                 s.add(r[0], r[0] + r[1])
-            r = s.largest_range()
-            s.remove(*r)
+            b, e = s.largest_range()
+            s.remove(b, e)
+            r = (b, e - b)
             for b, e in s.iterrange():
-                l = e - b
-                rs.extend(self._break_up(b, l))
+                rs.extend(self._break_up(b, e - b))
         else:
             # why min? do we want all the blocks in order?
             r = min(rs)
@@ -841,7 +874,7 @@ class StorageWrapper(object):
     def _break_up(self, begin, length):
         l = []
         x = 0
-        request_size = self.config['download_slice_size']
+        request_size = self.config['download_chunk_size']
         while x + request_size < length:
             l.append((begin + x, request_size))
             x += request_size

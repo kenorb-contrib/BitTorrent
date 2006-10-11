@@ -17,14 +17,16 @@
 
 
 from types import *
+from cStringIO import StringIO
 
-from BitTorrent.translation import _
+from BTL.translation import _
 
-from BitTorrent.obsoletepythonsupport import *
+from BTL.obsoletepythonsupport import *
 
 from BitTorrent import BTFailure
-from BitTorrent.bencode import bdecode
+from BTL.bencode import bdecode
 from BitTorrent.platform import is_frozen_exe
+from BTL.exceptions import str_exc
 
 
 class UsageException(BTFailure):
@@ -97,7 +99,8 @@ def format_key(key):
     else:
         return '--%s'%key
 
-def parseargs(argv, defaults, minargs=None, maxargs=None, presets=None):
+          
+def parseargs(argv, defaults, minargs=None, maxargs=None, presets=None ):
     """This function parses command-line arguments and uses them to override
        the presets which in turn override the defaults (see defaultargs.py).
        As currently used, the presets come from a config file (see
@@ -125,8 +128,8 @@ def parseargs(argv, defaults, minargs=None, maxargs=None, presets=None):
     assert type(defaults)==list
     assert minargs is None or type(minargs) in (int,long) and minargs>=0
     assert maxargs is None or type(maxargs) in (int,long) and maxargs>=minargs
-    assert type(presets)==dict
-
+    assert presets is None or type(presets)==dict
+        
     config = {}
     for option in defaults:
         longname, default, doc = option
@@ -247,5 +250,5 @@ def parse_options(defaults, newvalues, encoding):
                 raise TypeError, str(t)
 
         except ValueError, e:
-            raise UsageException(_("wrong format of %s - %s") % (format_key(key), unicode(e.args[0])))
+            raise UsageException(_("wrong format of %s - %s") % (format_key(key), str_exc(e)))
 

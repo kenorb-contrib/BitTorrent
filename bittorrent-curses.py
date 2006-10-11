@@ -15,7 +15,9 @@
 
 from __future__ import division
 
+app_name = "BitTorrent"
 from BitTorrent.translation import _
+
 SPEW_SCROLL_RATE = 1
 
 import sys
@@ -26,24 +28,26 @@ from time import time, strftime, sleep
 import traceback
 
 from BitTorrent import platform
-from BitTorrent.platform import encode_for_filesystem, decode_from_filesystem
-import BitTorrent.stackthreading as threading
-from BitTorrent.defer import DeferredEvent
+from BTL.platform import encode_for_filesystem, decode_from_filesystem
+import BTL.stackthreading as threading
+from BTL.defer import DeferredEvent
 from BitTorrent.MultiTorrent import MultiTorrent, TorrentAlreadyRunning
 from BitTorrent.Torrent import Feedback
 from BitTorrent.defaultargs import get_defaults
 from BitTorrent.parseargs import printHelp
-from BitTorrent.zurllib import urlopen
+from BTL.zurllib import urlopen
 from BitTorrent.prefs import Preferences
-from BitTorrent.obsoletepythonsupport import import_curses
+from BTL.obsoletepythonsupport import import_curses
 from BitTorrent import configfile
 from BitTorrent import BTFailure, UserFailure
 from BitTorrent import version
-from BitTorrent import GetTorrent
+from BTL import GetTorrent
 from BitTorrent.RawServer_twisted import RawServer, task
-from BitTorrent.ConvertedMetainfo import ConvertedMetainfo
-from BitTorrent.yielddefer import launch_coroutine, _wrap_task
+from BTL.ConvertedMetainfo import ConvertedMetainfo
+from BTL.yielddefer import launch_coroutine, _wrap_task
 from BitTorrent import inject_main_logfile
+debug = False
+#debug = True
 inject_main_logfile()
 from BitTorrent import console
 from BitTorrent import stderr_console  # must import after inject_main_logfile
@@ -441,7 +445,7 @@ class CursesTorrentApp(object):
             self.logger.error( "Failed to create torrent: " + unicode(e.args[0]) )
         except Exception, e:
             self.logger.error( "Failed to create torrent", exc_info = e )
-        
+
     def run(self, scrwin):
         self.core_doneflag = DeferredEvent()
         rawserver = RawServer(self.config)
@@ -568,8 +572,6 @@ class CursesTorrentApp(object):
         """Called by the logger via LogHandler to display error messages in the
            curses window."""
         self.d.error(text)
-
-
 
 if __name__ == '__main__':
     uiname = 'bittorrent-curses'

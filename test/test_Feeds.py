@@ -2,7 +2,7 @@ import sys
 sys.path = ['.',] + sys.path #HACK
 
 import os
-from BitTorrent.platform import plugin_path, app_root
+from BTL.platform import plugin_path, app_root
 plugin_path.append(os.path.join(app_root[:-5], 'BitTorrent', 'Plugins')) #HACK
 
 from BitTorrent.FeedManager import FeedManager

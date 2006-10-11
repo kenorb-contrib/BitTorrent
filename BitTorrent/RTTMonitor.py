@@ -1,7 +1,16 @@
+# The contents of this file are subject to the BitTorrent Open Source License
+# Version 1.1 (the License).  You may not copy or use this file, in either
+# source code or executable form, except in compliance with the License.  You
+# may obtain a copy of the License at http://www.bittorrent.com/license/.
+#
+# Software distributed under the License is distributed on an AS IS basis,
+# WITHOUT WARRANTY OF ANY KIND, either express or implied.  See the License
+# for the specific language governing rights and limitations under the
+# License.
+
 # By Greg Hazel and a smigden by Dave Harrison
 
 debug = False
-#debug = True
 
 import os
 import Queue
@@ -9,16 +18,14 @@ import socket
 import itertools
 import random
 from pprint import pprint
-from BitTorrent.platform import bttime
-import BitTorrent.stackthreading as threading
-from BitTorrent.HostIP import get_host_ip, get_host_ips
-
+from BTL.platform import bttime
+import BTL.stackthreading as threading
+from BTL.HostIP import get_host_ip, get_host_ips
+from BTL.exceptions import str_exc
 
 if os.name == 'nt':
     import win32icmp
-    IP_TTL_EXPIRED_TRANSIT = 11013
-    IP_SUCCESS = 0
-
+    
 def daemon_thread(target, args=()):
     t = threading.Thread(target=target, args=args)
     t.setDaemon(True)
@@ -75,8 +82,6 @@ class RTTMonitorUnix(RTTMonitorBase):
     # I assume this will have a unix implementation some day
     pass
 
-class Options(object):
-    pass
 
 def _set_min(x, y):
     if x is None:
@@ -86,9 +91,10 @@ def _set_min(x, y):
     return min(x, y)
 _set_max = max
 
+
 class RTTMonitorWin32(RTTMonitorBase):
+
     def __init__(self, new_rtt, interval = 0.5, timeout = 6.0):
-        self.nodes = []
         self.timeout = int(1000 * timeout)
         self.interval = interval
         self.stop_event = threading.Event()
@@ -100,22 +106,20 @@ class RTTMonitorWin32(RTTMonitorBase):
         RTTMonitorBase.__init__(self, new_rtt)
 
     def set_nodes_restart(self, nodes):
-        self.nodes = []
-        for node in nodes:
-            self.add_node(node)
-        t = threading.Thread(target=self.run, args=(list(self.nodes),))
+        if len(nodes) > 60:
+            nodes = random.sample(nodes, 60)
+        else:
+            nodes = list(nodes)
+        t = threading.Thread(target=self.run, args=(nodes,))
         t.setDaemon(True)
         t.start()
-
-    def add_node(self, node):
-        self.nodes.append(node)
 
     def get_route(self, q, dst):
         try:
             dst = socket.gethostbyname(dst)
             self.traceroute(dst, self.timeout, lambda n : q.put((dst, n)))
         except socket.gaierror:
-            # if hostbyname lookup fails, it's not a node we can use
+            # if hostbyname lookup fails, it's not a node we can use.
             # maybe this should be a warning or something, but a downed
             # internet connection will cause a lot of these
             pass
@@ -138,7 +142,7 @@ class RTTMonitorWin32(RTTMonitorBase):
             def waiter(threads, waiter_done_event):
                 try:
                     for thread in threads:
-                        thread.join()
+                        thread.join()   # blocks until thread terminates.
                 except Exception, e:
                     print "waiter hiccupped", e
                 waiter_done_event.set()
@@ -157,13 +161,8 @@ class RTTMonitorWin32(RTTMonitorBase):
                     dst = msg[0]
                     # nodes appear in the queue in 
                     # increasing order of TTL.
-                    new_node = msg[1]  
-                    if dst not in routes:
-                        l = []
-                        routes[dst] = l
-                    else:
-                        l = routes[dst]
-                    l.append(new_node)
+                    new_node = msg[1]
+                    routes.setdefault(dst, []).append(new_node)
                     branch, common = in_common(routes.values())
                     if branch:
                         break
@@ -211,10 +210,10 @@ class RTTMonitorWin32(RTTMonitorBase):
         # common path so that the farthest common hop responds with
         # ICMP time exceeded.  (Some routers will send time exceeded 
         # messages, but they won't respond to ICMP pings directly)  
-        representative = nodes[random.randrange(0, len(nodes))]
+        representative = random.sample(nodes, 1)
         if debug: 
-            print "pinging representative %s ttl=%d" % (
-                representative,len(common))
+            print ("pinging representative %s ttl=%d" %
+                   (representative, len(common)))
         try:            
             while not self.stop_event.isSet():
                 start = bttime()
@@ -246,7 +245,7 @@ class RTTMonitorWin32(RTTMonitorBase):
 
         i = win32icmp.IcmpCreateFile()
 
-        o = Options()
+        o = win32icmp.Options()
 
         route = None
         if report == None:
@@ -268,14 +267,14 @@ class RTTMonitorWin32(RTTMonitorBase):
                 if debug:
                     print "ttl", ttl, "\t", rtt, "ms\t", addr
                 report(addr)
-                if status == IP_SUCCESS:
+                if status == win32icmp.IP_SUCCESS:
                     if debug:
                         print "Traceroute complete in", ttl, "hops"
                     break
             except Exception, e:
                 report('*')
                 if debug:
-                    print "Hop", ttl, "failed:", unicode(e.args[0])
+                    print "Hop", ttl, "failed:", str_exc(e)
             if self.abort_traceroute.isSet():
                 break
 
@@ -298,21 +297,21 @@ class RTTMonitorWin32(RTTMonitorBase):
         try:
             o = None
             if ttl is not None:
-                o = Options()
+                o = win32icmp.Options()
                 o.Ttl = ttl
 
             addr, status, rtt = win32icmp.IcmpSendEcho(i, dst, None, o, timeout)
             if debug:
-                if status == IP_SUCCESS:
+                if status == win32icmp.IP_SUCCESS:
                     print "Reply from", addr + ":", "time=" + str(rtt)
-                elif status == IP_TTL_EXPIRED_TRANSIT:
+                elif status == win32icmp.IP_TTL_EXPIRED_TRANSIT:
                     print "Ping ttl expired %d: from %s time=%s" %(
                           status, str(addr), str(rtt))
                 else:
                     print "Ping failed", status
         except Exception, e:
             if debug:
-                print "Ping failed:", unicode(e.args[0])
+                print "Ping failed:", str_exc(e)
 
         win32icmp.IcmpCloseHandle(i)
 

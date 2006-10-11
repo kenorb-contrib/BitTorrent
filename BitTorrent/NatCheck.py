@@ -38,7 +38,7 @@ class NatCheck(object):
         self.connection.write(chr(len(protocol_name)) + protocol_name +
                               (chr(0) * 8) + self.downloadid)
 
-    def connection_failed(self, addr, exception):
+    def connection_failed(self, s, exception):
         self.answer(False)
 
     def answer(self, result):

@@ -40,16 +40,16 @@ class PieceBuckets(object):
         assert not self.place_in_buckets.has_key(piece)
         while len(self.buckets) <= bucketindex:
             self.buckets.append(array.array(self.typecode))
-        mylist = self.buckets[bucketindex]
+        bucket = self.buckets[bucketindex]
         # randomly swap piece with piece already in bucket...
-        newspot = random.randrange(len(mylist) + 1)
-        if newspot == len(mylist):
-            mylist.append(piece)
+        newspot = random.randrange(len(bucket) + 1)
+        if newspot == len(bucket):
+            bucket.append(piece)
         else:
-            tomove = mylist[newspot]
-            self.place_in_buckets[tomove] = (bucketindex, len(mylist))
-            mylist.append(tomove)
-            mylist[newspot] = piece
+            tomove = bucket[newspot]
+            self.place_in_buckets[tomove] = (bucketindex, len(bucket))
+            bucket.append(tomove)
+            bucket[newspot] = piece
         self.place_in_buckets[piece] = (bucketindex, newspot)
 
     def remove(self, piece):
@@ -197,7 +197,7 @@ class PiecePicker(object):
 
             # Of the same priority, a suggestion is taken first.
             for s in suggests:
-                if s not in bans and have(s) and s in piece_buckets:
+                if s not in bans and haves[s] and s in piece_buckets:
                      return s
 
             bestnum = None

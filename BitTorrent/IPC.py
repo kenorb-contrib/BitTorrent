@@ -13,7 +13,6 @@
 from __future__ import generators
 
 import os
-import sys
 import time
 import Queue
 import socket
@@ -24,17 +23,18 @@ if os.name == 'nt':
     import win32api
     import win32event
     import winerror
-    import win32ui
+    import win32ui # needed for dde
     import dde
     import pywin.mfc.object
 
 from binascii import b2a_hex
-from BitTorrent.translation import _
+from BTL.translation import _
 
-from BitTorrent.RawServer_twisted import RawServer, Handler
-from BitTorrent.platform import get_home_dir, get_dot_dir
-from BitTorrent.platform import encode_for_filesystem
-from BitTorrent import BTFailure, app_name
+from BitTorrent.RawServer_twisted import Handler
+from BitTorrent.platform import get_dot_dir
+from BitTorrent import BTFailure
+from BTL.platform import app_name, encode_for_filesystem
+from BTL.exceptions import str_exc
 
 
 ipc_logger = logging.getLogger('IPC')
@@ -195,11 +195,11 @@ class IPCUnixSocket(IPCSocketBase):
                 os.unlink(filename)
             except OSError, e:
                 raise BTFailure(_("Could not remove old control socket filename:")
-                                + unicode(e.args[0]))
+                                + str_exc(e))
         try:
             controlsocket = self.rawserver.create_unixserversocket(filename)
         except socket.error, e:
-            raise BTFailure(_("Could not create control socket: ")+unicode(e.args[0]))
+            raise BTFailure(_("Could not create control socket: ") + str_exc(e))
 
         self.controlsocket = controlsocket
 
@@ -217,7 +217,7 @@ class IPCUnixSocket(IPCSocketBase):
             s.close()
         except socket.error, e:
             s.close()
-            raise BTFailure(_("Could not send command: ") + unicode(e.args[0]))
+            raise BTFailure(_("Could not send command: ") + str_exc(e))
 
 
 class IPCWin32Socket(IPCSocketBase):
@@ -352,7 +352,7 @@ class IPCWin32Socket(IPCSocketBase):
                 s.close()
             except:
                 pass
-            raise BTFailure(_("Could not send command: ") + unicode(e.args[0]))
+            raise BTFailure(_("Could not send command: ") + str_exc(e))
 
    
     def stop(self):

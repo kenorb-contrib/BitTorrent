@@ -15,8 +15,7 @@ from __future__ import division
 
 import math
 import random
-from pprint import pprint
-from BitTorrent.obsoletepythonsupport import set
+from BTL.obsoletepythonsupport import set
 
 class Choker(object):
 

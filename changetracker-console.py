@@ -12,11 +12,12 @@
 
 # Written by Henry 'Pi' James and Bram Cohen
 
+app_name = "BitTorrent"
 from BitTorrent.translation import _
 
 from os.path import basename
 from sys import argv, exit
-from BitTorrent.bencode import bencode, bdecode
+from BTL.bencode import bencode, bdecode
 
 if len(argv) < 3:
     print _("Usage: %s TRACKER_URL [TORRENTFILE [TORRENTFILE ... ] ]") % basename(argv[0])

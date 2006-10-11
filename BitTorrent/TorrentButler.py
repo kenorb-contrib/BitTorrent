@@ -1,9 +1,6 @@
-import shutil
-
-from BitTorrent.obsoletepythonsupport import set
+from BTL.obsoletepythonsupport import set
 from BitTorrent.TorrentPolicy import Policy
 from BitTorrent.Torrent import *
-
 
 class TorrentButler(Policy):
 
@@ -85,38 +82,38 @@ class DownloadTorrentButler(TorrentButler):
                         if t not in starting
                         and t.get_downrate() > 0.0
                         and t.get_num_connections() > 0]
+
+        num_good = 0
+        num_virtual_good = 0
+
         if (len(transferring) > 0):
             total_rate = sum([t.get_downrate() for t in transferring])
             good_rate = (total_rate / len(transferring)) * self.GOOD_RATE_THRESHOLD
-
-            bad = []
-            for t in transferring:
-                if t.get_downrate() >= good_rate:
-                    if self.suspects.has_key(t.metainfo.infohash):
-                        #print t.working_path + " is good now, popping"
-                        self.suspects.pop(t.metainfo.infohash)
-                else:
-                    if self.suspects.has_key(t.metainfo.infohash):
-                        #print t.working_path, bttime() - self.suspects[t.metainfo.infohash]
-                        if (bttime() - self.suspects[t.metainfo.infohash] >=
-                            self.PURGATORY_TIME):
-                            bad.append(t)
+            if good_rate > 0:
+                bad = []
+                for t in transferring:
+                    if t.get_downrate() >= good_rate:
+                        if self.suspects.has_key(t.metainfo.infohash):
+                            #print t.working_path + " is good now, popping"
+                            self.suspects.pop(t.metainfo.infohash)
                     else:
-                        #print t.working_path + " is bad now, inserting"
-                        self.suspects[t.metainfo.infohash] = bttime()
+                        if self.suspects.has_key(t.metainfo.infohash):
+                            #print t.working_path, bttime() - self.suspects[t.metainfo.infohash]
+                            if (bttime() - self.suspects[t.metainfo.infohash] >=
+                                self.PURGATORY_TIME):
+                                bad.append(t)
+                        else:
+                            #print t.working_path + " is bad now, inserting"
+                            self.suspects[t.metainfo.infohash] = bttime()
 
-            total_bad_rate = sum([t.get_downrate() for t in bad])
-            num_virtual_good = total_bad_rate / good_rate
-            num_good = len(transferring) - len(bad)
-        else:
-            num_good = 0
-            num_virtual_good = 0
+                total_bad_rate = sum([t.get_downrate() for t in bad])
+                num_virtual_good = total_bad_rate / good_rate
+                num_good = len(transferring) - len(bad)
 
         uprate, downrate = self.multitorrent.get_total_rates()
         downrate_limit = self.multitorrent.config['max_download_rate']
         #print num_initializing, num_good, num_virtual_good, len(starting)
         #print downrate, '/', downrate_limit
-
         if (downrate >= downrate_limit * self.LIMIT_MARGIN):
             self.time_last_pushed_limit = bttime()
             #print "pushing limit"

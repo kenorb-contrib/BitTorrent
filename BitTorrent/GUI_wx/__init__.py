@@ -28,16 +28,12 @@ else:
 import wx
 import wx.grid
 import wxPython
-import traceback
+from BTL.translation import _
+
+from BitTorrent.platform import image_root
+import BTL.stackthreading as threading
+from BTL.defer import ThreadedDeferred
 import bisect
-from BitTorrent.translation import _
-
-from UserDict import UserDict
-from BitTorrent import zurllib
-
-from BitTorrent.platform import image_root, desktop, bttime
-import BitTorrent.stackthreading as threading
-from BitTorrent.defer import ThreadedDeferred
 
 vs = wxPython.__version__
 min_wxpython = "2.6"
@@ -46,16 +42,9 @@ assert 'unicode' in wx.PlatformInfo, _("The Unicode versions of wx and wxPython 
 
 text_wrappable = wx.__version__[4] >= '2'
 
-# used in BTApp
 profile = False
-class Amaturefile(object):
-    def start(self):
-        pass
-    def stop(self):
-        pass
 if profile:
-    import hotshot
-    import hotshot.stats
+    from BTL.profile import Profiler, Stats
     prof_file_name = 'ui.mainloop.prof'
 
 def gui_wrap(_f, *args, **kwargs):
@@ -67,6 +56,11 @@ PORT_RANGE = 5 # how many ports to try
 WILDCARD = "Torrent files (*.torrent)|*.torrent|"\
            "All files (*.*)|*.*"
 
+def get_theme_root(theme_name):
+    for t in (theme_name, 'default'):
+        td = os.path.join(image_root, 'themes', t)
+        if os.path.exists(td):
+            return td
 
 
 def list_themes():
@@ -89,67 +83,12 @@ class ImageLibrary(object):
         self.image_root = image_root
         self._data = {}
 
-    def get(self, key, size=None, base=None):
+    def resolve_filename(self, key, size=None, base=None, ext='.png'):
         if base is None:
             base = self.image_root
 
-        if self._data.has_key((key, size)):
-            return self._data[(key, size)]
-
-##        utorrent_toolbar = os.path.join(base, "toolbar.bmp")
-##        if os.path.exists(utorrent_toolbar):
-##            try:
-##                assert False, "Use wx.Bitmap instead"
-##                i = wx.Image(utorrent_toolbar, wx.BITMAP_TYPE_BMP)
-##                i.SetMaskFromImage(i, 0, 0, 0)
-##                iw = 24
-##                ih = i.GetHeight()
-
-##                self._data["search"] = i.GetSubImage(wx.Rect(9 * iw, 0, iw, ih))
-##                self._data["stop"] = i.GetSubImage(wx.Rect(5 * iw, 0, iw, ih))
-##                self._data["start"] = i.GetSubImage(wx.Rect(4 * iw, 0, iw, ih))
-##                self._data["info"] = i.GetSubImage(wx.Rect(11 * iw, 0, iw, ih))
-##                self._data["launch"] = i.GetSubImage(wx.Rect(0 * iw, 0, iw, ih))
-##                self._data["remove"] = i.GetSubImage(wx.Rect(3 * iw, 0, iw, ih))
-##            except:
-##                pass
-
-
-##        utorrent_tstatus = os.path.join(base, "tstatus.bmp")
-##        if os.path.exists(utorrent_tstatus):
-##            try:
-##                assert False, "Use wx.Bitmap instead"
-##                i = wx.Image(utorrent_tstatus, wx.BITMAP_TYPE_BMP)
-##                i.SetMaskFromImage(i, 0, 0, 0)
-##                iw = 16
-##                ih = i.GetHeight()
-
-##                self._data[os.path.join("torrentstate", "created")] = i.GetSubImage(
-##                    wx.Rect(12 * iw, 0, iw, ih))
-##                self._data[os.path.join("torrentstate", "starting")] = i.GetSubImage(
-##                    wx.Rect(12 * iw, 0, iw, ih))
-##                self._data[os.path.join("torrentstate", "paused")] = i.GetSubImage(
-##                    wx.Rect(3 * iw, 0, iw, ih))
-##                self._data[os.path.join("torrentstate", "downloading")] = i.GetSubImage(
-##                    wx.Rect(0 * iw, 0, iw, ih))
-##                self._data[os.path.join("torrentstate", "finishing")] = i.GetSubImage(
-##                    wx.Rect(7 * iw, 0, iw, ih))
-##                self._data[os.path.join("torrentstate", "seeding")] = i.GetSubImage(
-##                    wx.Rect(1 * iw, 0, iw, ih))
-##                self._data[os.path.join("torrentstate", "stopped")] = i.GetSubImage(
-##                    wx.Rect(2 * iw, 0, iw, ih))
-##                self._data[os.path.join("torrentstate", "complete")] = i.GetSubImage(
-##                    wx.Rect(7 * iw, 0, iw, ih))
-##                self._data[os.path.join("torrentstate", "error")] = i.GetSubImage(
-##                    wx.Rect(6 * iw, 0, iw, ih))
-##                self._data[os.path.join("torrentstate", "unknown")] = i.GetSubImage(
-##                    wx.Rect(6 * iw, 0, iw, ih))
-##            except:
-##                pass
-
         name = os.path.join(base, *key)
-
-        ext = '.png'
+        name = os.path.abspath(name)
 
         if size is not None:
             sized_name = name + '_%d' % size + ext
@@ -159,12 +98,23 @@ class ImageLibrary(object):
                 name += ext
         else:
             name += ext
+        name = os.path.abspath(name)
 
         if not os.path.exists(name):
-            assert False, "No such image file: %s" % name
+            raise IOError(2, "No such file or directory: %r" % name)
+
+        return name        
+        
+
+    def get(self, key, size=None, base=None, ext='.png'):
+        if self._data.has_key((key, size)):
+            return self._data[(key, size)]
+
+        name = self.resolve_filename(key, size, base, ext)
 
         i = wx.Image(name, wx.BITMAP_TYPE_PNG)
-        assert i.Ok(), "The image (%s) is not valid." % name
+        if not i.Ok():
+            raise Exception("The image is not valid: %r" % name)
 
         self._data[(key, size)] = i
 
@@ -182,18 +132,16 @@ class ThemeLibrary(ImageLibrary):
                 self.theme_name = t
                 ImageLibrary.__init__(self, image_root)
                 return
-        assert False, 'default theme path "%s" must exist' % image_root
+        raise IOError("default theme path must exist: %r" % image_root)
 
-
-    def get(self, key, size=None):
+    def resolve_filename(self, key, size=None, base=None, ext='.png'):
         try:
-            return ImageLibrary.get(self, key, size=size)
-        except AssertionError, e:
-            # Fall back to default theme.
-            # Should probably log this to make theme developers happy.
-            return ImageLibrary.get(self, key, size=size,
-                                    base=os.path.join(self.themes_root, 'themes', 'default'))
-
+            return ImageLibrary.resolve_filename(self, key, size, base, ext)
+        except Exception, e:
+            default_base = os.path.join(self.themes_root, 'themes', 'default')
+            return ImageLibrary.resolve_filename(self, key, size,
+                                                 base=default_base,
+                                                 ext=ext)            
 
 
 class XSizer(wx.BoxSizer):
@@ -780,23 +728,39 @@ class BTFrameWithSizer(BTFrame):
         self.sizer.Add(widget, *a, **k)
 
 
+
+class TaskSingleton(object):
+
+    def __init__(self):
+        self.handle = None
+
+    def start(self, t, _f, *a, **kw):
+        if self.handle:
+            self.handle.Stop()
+        self.handle = wx.the_app.FutureCall(t, _f, *a, **kw)
+
+    def stop(self):
+        if self.handle:
+            self.handle.Stop()
+            self.handle = None
+
+        
 class BTApp(wx.App):
     """Base class for all wx-based BitTorrent applications"""
 
     def __init__(self, *a, **k):
+        self.doneflag = threading.Event()
         wx.App.__init__(self, *a, **k)
 
     def OnInit(self):
-        self.prof = Amaturefile()
         if profile:
-            def start_profile():
-                self.prof = hotshot.Profile(prof_file_name)
-                try:
-                    os.unlink(prof_file_name)
-                except:
-                    pass
-            wx.FutureCall(6, start_profile)
-
+            try:
+                os.unlink(prof_file_name)
+            except:
+                pass
+            self.prof = Profiler()
+            self.prof.enable()
+        
         wx.the_app = self
         self._DoIterationId = wx.NewEventType()
         self.Connect(-1, -1, self._DoIterationId, self._doIteration)
@@ -810,18 +774,15 @@ class BTApp(wx.App):
         wx.SystemOptions_SetOptionInt("msw.remap", 0)
         icon_path = os.path.join(image_root, 'bittorrent.ico')
         self.icon = wx.Icon(icon_path, wx.BITMAP_TYPE_ICO)
-        self.doneflag = threading.Event()
         return True
 
     def OnExit(self):
         if profile:
-            self.prof.close()
-            stats = hotshot.stats.load(prof_file_name)
-            stats.strip_dirs()
-            stats.sort_stats('time', 'calls')
-            print "UI MainLoop Profile:"
-            stats.print_stats(20)
-        pass
+            self.prof.disable()
+            st = Stats(self.prof.getstats())
+            st.sort()
+            f = open(prof_file_name, 'wb')
+            st.dump(file=f)
 
     def who(self, _f, a):
         if _f.__name__ == "_recall":
@@ -832,24 +793,15 @@ class BTApp(wx.App):
 
     def _doIteration(self, event):
 
-        _f, a, kw = self.event_queue.pop(0)
-
-        try:
-            if self.doneflag.isSet():
-                #print "dropping", _f
-                return
-        except:
-            # assume any kind of error means the app is dying
+        if self.doneflag.isSet():
+            # the app is dying
             return
+
+        _f, a, kw = self.event_queue.pop(0)
 
 ##        t = bttime()
 ##        print self.who(_f, a)
-        if profile:
-            self.prof.start()
-            _f(*a, **kw)
-            self.prof.stop()
-        else:
-            _f(*a, **kw)
+        _f(*a, **kw)
 ##        print self.who(_f, a), 'done in', bttime() - t
 ##        if bttime() - t > 1.0:
 ##            print 'TOO SLOW!'
@@ -866,3 +818,6 @@ class BTApp(wx.App):
         # append (right) and pop (left) are atomic
         self.event_queue.append((callable, args, kw))
         wx.PostEvent(self, self.evt)
+
+    def FutureCall(self, _delay_time, callable, *a, **kw):
+        return wx.FutureCall(_delay_time, self.CallAfter, callable, *a, **kw)

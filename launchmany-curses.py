@@ -13,8 +13,8 @@
 # Written by John Hoffman
 
 from __future__ import division
-
-from BitTorrent.translation import _
+app_name = "BitTorrent"
+from BTL.translation import _
 
 DOWNLOAD_SCROLL_RATE = 1
 
@@ -22,7 +22,8 @@ import sys, os
 from threading import Event
 from time import time, localtime, strftime
 
-from BitTorrent.obsoletepythonsupport import *
+from BTL.obsoletepythonsupport import *
+from BTL.platform import encode_for_filesystem, decode_from_filesystem
 from BitTorrent import platform
 from BitTorrent.launchmanycore import LaunchMany
 from BitTorrent.defaultargs import get_defaults
@@ -30,7 +31,6 @@ from BitTorrent.parseargs import parseargs, printHelp
 from BitTorrent.prefs import Preferences
 from BitTorrent import configfile
 from BitTorrent import version
-from BitTorrent.platform import encode_for_filesystem, decode_from_filesystem
 from BitTorrent import BTFailure
 from BitTorrent import bt_log_fmt
 import logging

@@ -9,7 +9,7 @@
 # License.
 
 import khash
-from BitTorrent.platform import bttime as time
+from BTL.platform import bttime as time
 from types import *
 
 class Node(object):

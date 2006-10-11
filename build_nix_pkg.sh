@@ -24,7 +24,7 @@ rm -fr build dist
 
 build_pkg() {
     PKG=$1
-    for PYV in "2.3" "2.4"; do
+    for PYV in "2.4"; do
         PYTHON="python$PYV"
 	if [ `which $PYTHON` ]; then
             PYTHONVERSION=`$PYTHON -c 'import sys; print sys.version[:3]'`
@@ -79,7 +79,7 @@ Building deb for Python $PYV..."
 build_src() {
     echo "
 Building source..."
-    python setup.py sdist
+    $PYTHON setup.py sdist
     echo "Done with source.
 "
 }

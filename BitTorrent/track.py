@@ -25,21 +25,24 @@ from types import StringType, IntType, LongType, ListType, DictType
 from binascii import b2a_hex
 from cStringIO import StringIO
 
-from BitTorrent.translation import _
+from BTL.translation import _
 
-from BitTorrent.obsoletepythonsupport import *
+from BTL.obsoletepythonsupport import *
 
-from BitTorrent import platform, BTFailure
-from BitTorrent.platform import decode_from_filesystem, efs2
-from BitTorrent.defer import DeferredEvent, ThreadedDeferred
-from BitTorrent.yielddefer import wrap_task
+from BitTorrent import platform
+from BTL import BTFailure
+from BTL.platform import decode_from_filesystem, efs2
+from BTL.defer import DeferredEvent, ThreadedDeferred
+from BTL.yielddefer import wrap_task
 from BitTorrent.configfile import parse_configuration_and_args
+#from BitTorrent.parseargs import parseargs, printHelp
 from BitTorrent.RawServer_twisted import RawServer
 from BitTorrent.HTTPHandler import HTTPHandler
-from BitTorrent.parsedir import parsedir
+from BTL.parsedir import parsedir
 from BitTorrent.NatCheck import NatCheck
-from BitTorrent.bencode import bencode, bdecode, Bencached
-from BitTorrent.zurllib import quote, unquote
+from BTL.bencode import bencode, bdecode, Bencached
+from BTL.zurllib import quote, unquote
+from BTL.exceptions import str_exc
 from BitTorrent import version
 from BitTorrent.prefs import Preferences
 from BitTorrent.defaultargs import get_defaults
@@ -706,7 +709,7 @@ class Tracker(object):
                 self._print_exc( "get: ",e )
             return (400, 'Bad Request',
                     {'Content-Type': 'text/plain'},
-                    'you sent me garbage - ' + unicode(e.args[0]))
+                    'you sent me garbage - ' + str_exc(e))
 
         if params('compact'):
             return_type = 2
@@ -886,11 +889,11 @@ def track(args):
         config, files = parse_configuration_and_args(defaults,
            'bittorrent-tracker', args, 0, 0 )
     except ValueError, e:
-        print _("error: ") + unicode(e.args[0])
+        print _("error: ") + str_exc(e)
         print _("run with -? for parameter explanations")
         return
     except BTFailure, e:
-        print _("error: ") + unicode(e.args[0])
+        print _("error: ") + str_exc(e)
         print _("run with -? for parameter explanations")
         return
 
@@ -911,7 +914,7 @@ def track(args):
             #DEBUG
             print "track: create_serversocket, port=", config['port']
             #END
-            s = r.create_serversocket(config['port'], config['bind'], True)
+            s = r.create_serversocket(config['port'], config['bind'])
             handler = HTTPHandler(t.get, config['min_time_between_log_flushes'])
             r.start_listening(s, handler)
         except socket.error, e:

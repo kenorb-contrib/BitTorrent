@@ -14,8 +14,8 @@
 
 from __future__ import division
 
+app_name = "BitTorrent"
 from BitTorrent.translation import _
-
 import sys
 import os
 from cStringIO import StringIO
@@ -23,25 +23,24 @@ import logging
 from logging import ERROR, WARNING
 from time import strftime, sleep
 import traceback
-
 from BitTorrent import platform
-from BitTorrent.platform import decode_from_filesystem, encode_for_filesystem
-import BitTorrent.stackthreading as threading
-from BitTorrent.defer import DeferredEvent
+import BTL.stackthreading as threading
+from BTL.platform import decode_from_filesystem, encode_for_filesystem
+from BTL.defer import DeferredEvent
 from BitTorrent import inject_main_logfile
 from BitTorrent.MultiTorrent import Feedback, MultiTorrent
 from BitTorrent.defaultargs import get_defaults
 from BitTorrent.parseargs import printHelp
-from BitTorrent.zurllib import urlopen
+from BTL.zurllib import urlopen
 from BitTorrent.prefs import Preferences
 from BitTorrent import configfile
 from BitTorrent import BTFailure, UserFailure
 from BitTorrent import version
-from BitTorrent import GetTorrent
-from BitTorrent.UI import Size, Duration
-from BitTorrent.RawServer_twisted import RawServer, task
-from BitTorrent.ConvertedMetainfo import ConvertedMetainfo
+from BTL import GetTorrent
+from BTL.ConvertedMetainfo import ConvertedMetainfo
 from BitTorrent.MultiTorrent import TorrentNotInitialized
+from BitTorrent.RawServer_twisted import RawServer, task
+from BitTorrent.UI import Size, Duration
 inject_main_logfile()
 from BitTorrent import console
 from BitTorrent import stderr_console  # must import after inject_main_logfile

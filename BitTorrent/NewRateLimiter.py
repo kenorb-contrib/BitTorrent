@@ -8,8 +8,8 @@
 
 import time
 import traceback
-from BitTorrent.platform import bttime
-from BitTorrent.DictWithLists import DictWithLists, OrderedDictWithLists
+from BTL.platform import bttime
+from BTL.DictWithLists import DictWithLists
 
 
 # these are for logging and such
@@ -218,12 +218,14 @@ class Scheduler(object):
         return written        
 
     def run(self):
-        if len(self.classifier) == 0:
-            return
+        t = 0
+        while t == 0:
+            if len(self.classifier) == 0:
+                return
 
-        self._run_once()
+            self._run_once()
 
-        t = self.delta_tokens.get_remaining_time()
+            t = self.delta_tokens.get_remaining_time()
         self.restart_loop(t)
 
     
@@ -278,18 +280,18 @@ if __name__ == '__main__':
 
     profile = True
     try:
-        import hotshot
-        import hotshot.stats
+        from BTL.profile import Profiler, Stats
         prof_file_name = 'NewRateLimiter.prof'
     except ImportError, e:
         print "profiling not available:", e
         profile = False
 
+    import os
     import random
 
-    from BitTorrent.RawServer_twisted import RawServer
+    from RawServer_twisted import RawServer
     from twisted.internet import task
-    from BitTorrent.defer import DeferredEvent
+    from BTL.defer import DeferredEvent
 
     config = {}
     rawserver = RawServer(config)
@@ -319,24 +321,20 @@ if __name__ == '__main__':
     
     rawserver.install_sigint_handler()
 
-    ##############################################################
     if profile:
         try:
             os.unlink(prof_file_name)
         except:
             pass
-        prof = hotshot.Profile(prof_file_name)
+        prof = Profiler()
+        prof.enable()
 
-        prof.start()
-        rawserver.listen_forever(doneflag)
-        prof.stop()
-    
-        prof.close()
-        stats = hotshot.stats.load(prof_file_name)
-        stats.strip_dirs()
-        stats.sort_stats('time', 'calls')
-        print "NewRateLimiter Profile:"
-        stats.print_stats(20)
-    else:
-    ##############################################################
-        rawserver.listen_forever(doneflag)
+    rawserver.listen_forever(doneflag)
+
+    if profile:
+        prof.disable()
+        st = Stats(prof.getstats())
+        st.sort()
+        f = open(prof_file_name, 'wb')
+        st.dump(file=f)
+

@@ -12,14 +12,12 @@
 
 from __future__ import division
 
-import random
 import wx
 
-from BitTorrent.translation import _
+from BTL.translation import _
 from BitTorrent.UI import Rate
-from BitTorrent.GUI_wx import SPACING, BTDialog, BTFrame, BTApp, BTPanel, HSizer, VSizer, gui_wrap, CustomWidgets
-from BitTorrent.yielddefer import launch_coroutine
-from BitTorrent.Lists import SizedList
+from BitTorrent.GUI_wx import SPACING, BTFrame, BTPanel, CustomWidgets
+from BTL.Lists import SizedList
 
 
 class HistoryCollector(object):
@@ -249,7 +247,7 @@ class BandwidthGraphPanel(CustomWidgets.DoubleBufferedMixin, BTPanel):
                         max_data, i_rect)
 
         ## variance line
-        if False:
+        if wx.the_app.config['show_variance_line']:
             pen = wx.Pen(wx.NamedColor("yellow"), 1, wx.SHORT_DASH)
             dc.SetPen(pen)
             self.draw_max_line(dc, self.history.variance, self.history.max_variance, i_rect)

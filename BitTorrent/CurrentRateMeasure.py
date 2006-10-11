@@ -10,7 +10,7 @@
 
 # Written by Bram Cohen
 
-from BitTorrent.platform import bttime
+from BTL.platform import bttime
 
 
 class Measure(object):
@@ -45,6 +45,8 @@ class Measure(object):
         if self.rate <= newrate:
             return 0
         t = bttime() - self.ratesince
+        # as long as the newrate is lower than rate, we wait
+        # longer before throttling.
         return ((self.rate * t) / newrate) - t
 
     def get_total(self):

@@ -2,40 +2,16 @@
 
 from __future__ import generators
 
-from struct import pack, unpack
-
 import urllib
 import logging
 
-from BitTorrent.obsoletepythonsupport import *
-from BitTorrent.DictWithLists import OrderedDict
-from BitTorrent.Connector import Connection
+from BTL.DictWithLists import OrderedDict
+from BitTorrent.Connector import Connector
 from bisect import bisect_right
 from urlparse import urlparse
-
-# package management sucks!
-# it encourages code duplication because it can't keep up
-# with packages that have been out for over a year.
-# as a result, this is copy'n'pasted twisted 2.0 code
-#from twisted.web.http import parseContentRange
-def parseContentRange(header):
-    """Parse a content-range header into (start, end, realLength).
-
-    realLength might be None if real length is not known ('*').
-    """
-    kind, other = header.strip().split()
-    if kind.lower() != "bytes":
-        raise ValueError, "a range of type %r is not supported"
-    startend, realLength = other.split("/")
-    start, end = map(int, startend.split("-"))
-    if realLength == "*":
-        realLength = None
-    else:
-        realLength = int(realLength)
-    return (start, end, realLength)
-
+from BitTorrent.HTTPDownloader import parseContentRange
   
-noisy = True
+noisy = False
 if noisy:
     connection_logger = logging.getLogger("BitTorrent.HTTPConnector")
     def log(s):
@@ -147,8 +123,8 @@ class URLage(object):
         return r
         
 
-class HTTPConnection(Connection):
-    """Implements the HTTP syntax with a BitTorrent Connection interface. 
+class HTTPConnector(Connector):
+    """Implements the HTTP syntax with a BitTorrent Connector interface. 
        Connection-level semantics are as normal, but the download is always
        unchoked after it's connected."""
 
@@ -168,13 +144,18 @@ class HTTPConnection(Connection):
         self.host = host
         self.prefix = path
         self.append = not(len(self.urlage.ranges) == 1 and path and path[-1] != '/')
-        Connection.__init__(self, parent, connection, id, outgoing)
+        Connector.__init__(self, parent, connection, id, outgoing)
+        # blarg
+        self._buffer = []
+        self._buffer_len = 0
 
     def close(self):
         self.manual_close = True
-        Connection.close(self)
+        Connector.close(self)
 
     def send_handshake(self):
+        # this could be entirely removed. it ensures the connection supports
+        # ranges, but we can tell that from the http response code anyway.
         self.send_request(0, 0, 1)
 
     def send_request(self, index, begin, length):

@@ -1,18 +1,37 @@
+# The contents of this file are subject to the BitTorrent Open Source License
+# Version 1.1 (the License).  You may not copy or use this file, in either
+# source code or executable form, except in compliance with the License.  You
+# may obtain a copy of the License at http://www.bittorrent.com/license/.
+#
+# Software distributed under the License is distributed on an AS IS basis,
+# WITHOUT WARRANTY OF ANY KIND, either express or implied.  See the License
+# for the specific language governing rights and limitations under the
+# License.
+
 # By Greg Hazel
 
 debug = False
-
+stats = False    # collect statistics and dump to files.
+import os        # for stats
+from BitTorrent import platform  # for stats
+import time      # for stats
 import math
-import socket
 import itertools
-from BitTorrent.obsoletepythonsupport import set
+from BTL.obsoletepythonsupport import set
 from BitTorrent.RTTMonitor import RTTMonitor
-from BitTorrent.yielddefer import _wrap_task
-from BitTorrent.HostIP import get_deferred_host_ips#get_host_ips
-from BitTorrent.platform import bttime
-from BitTorrent.Lists import SizedList
+#from BitTorrent.RTTMonitor2 import RTTMonitor, Win32Icmp, UnixIcmp
+from BTL.HostIP import get_deferred_host_ips
+from BTL.platform import bttime
+from BTL.Lists import SizedList
 
+def fp(flt):
+    return "%.2f" % flt
+        
 class NodeFeeder(object):
+    """Every few minutes, this will obtain the set of known peers from
+       the running torrents and then tell the RTTMonitor to retraceroute
+       to these peers to reidentify the common path."""
+
     def __init__(self, external_add_task,
                  get_remote_endpoints, rttmonitor):
         self.external_add_task = external_add_task
@@ -81,12 +100,23 @@ class BandwidthManager(object):
     
     def __init__(self, external_add_task, config, set_option,
                        get_remote_endpoints, get_rates):
+        if debug:
+            if config['bandwidth_management']:
+                print "bandwidth management is up."
+            else:
+                print "!@#!@#!@#!@#!@# bandwidth management is down."
         self.external_add_task = external_add_task
         self.config = config
         self.set_option = set_option
         self.get_rates = get_rates
+        # Next few lines were added by David Harrison to use RTTMonitor2
+        #if os.name == 'nt':
+        #    icmp_impl = Win32Icmp()
+        #elif os.name == 'posix':
+        #    icmp_impl = UnixIcmp(external_add_task, config['xicmp_port'])
         def got_new_rtt(rtt):
             self.external_add_task(0, self._inspect_rates, rtt)
+        #self.rttmonitor = RTTMonitor(got_new_rtt, icmp_impl)
         self.rttmonitor = RTTMonitor(got_new_rtt)
         self.nodefeeder = NodeFeeder(external_add_task=external_add_task,
                                      get_remote_endpoints=get_remote_endpoints,
@@ -112,7 +142,22 @@ class BandwidthManager(object):
         self.mid_p = ((self.max_p - self.min_p) / 2.0) + self.min_p
         self.old_p = None
 
-    # I pulled these numbers out of my ass.
+        # I pulled these numbers out of my ass.
+
+        if stats:
+            tmp_dir = platform.get_temp_dir()
+            timestr = "%d_%d_%d_%d_%d" % time.localtime()[1:6]
+            stats_dir = os.path.join( tmp_dir, "bittorrent%s_%d" %
+                (timestr, os.getpid()) )
+            os.mkdir(stats_dir)
+            if debug: print "BandwidthManager: stats_dir = %s" % stats_dir
+            rate_vs_time = os.path.join( stats_dir, "rate_vs_time.plotdata" )
+            self.rfp = open( rate_vs_time, "w" )
+            delay_vs_time = os.path.join( stats_dir, "delay_vs_time.plotdata" )
+            self.dfp = open( delay_vs_time, "w" )
+            sdev_vs_time = os.path.join( stats_dir, 
+                "stddev_vs_time.plotdata" )
+            self.sdevfp = open( sdev_vs_time, "w" )
 
     def _method_1(self, type, t, c, old_c, rate):
         # This concept is:
@@ -214,6 +259,11 @@ class BandwidthManager(object):
     
         set(int(rate))
 
+        if stats:
+            print "BandwidthManager._affect_rate(%f)" % rate
+            self.rfp.write( "%d %d" % (bttime(),int(rate)) )
+            self.sdevfp.write( "%d %f" % (bttime(), std ) )
+
         return rock_bottom
         
 
@@ -229,14 +279,23 @@ class BandwidthManager(object):
 
         if self.start_time == None:
             self.start_time = bttime()
+
+        if debug:
+            print "BandwidthManager._inspect_rates rtt: %d" % t
+        if stats:
+            self.dfp.write( "%d %d" % (bttime(),t) )
+
         def set_if_enabled(option, value):
             if not self.config['bandwidth_management']:
                 return
-            #print "Setting rate to ", value
+            if debug:
+                print "Setting %s to: %s" % (option, value)
             self.set_option(option, value)
 
         # TODO: slow start should be smarter than this
         if self.start_time + 20 > bttime():
+            if debug:
+                print 'SLOW START', fp(self.start_time + 20), fp(bttime())
             set_if_enabled('max_upload_rate', 10000000)
             set_if_enabled('max_download_rate', 10000000)
 
@@ -281,8 +340,9 @@ class BandwidthManager(object):
         self.max_rates["download"] = max(max(self.d), self.max_rates["download"])
 
         if debug:
-            print "STDDEV", u, self.config['max_upload_rate'], \
-                  self.max_std, self.current_std, pu, pd
+            print 'urate:', fp(u), 'umax:', self.config['max_upload_rate'], \
+                  'maxstd:', fp(self.max_std), 'std:', fp(self.current_std), \
+                  'pu:', fp(pu), 'pd:', fp(pd)
         
         rb = self._affect_rate("upload", self.current_std, self.max_std,
                                self.config['max_upload_rate'],
