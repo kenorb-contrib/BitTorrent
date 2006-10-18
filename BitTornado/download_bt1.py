@@ -637,6 +637,10 @@ class BT1Download:
                 self.fileselector.set_priorities_now(self.priority)
             self.appdataobj.deleteTorrentData(self.infohash)
                                 # erase old data once you've started modifying it
+
+        if self.config['super_seeder']:
+            self.set_super_seed()
+
         self.started = True
         return True
 

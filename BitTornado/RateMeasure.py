@@ -20,6 +20,7 @@ class RateMeasure:
         self.got_anything = False
         self.last_checked = None
         self.rate = 0
+        self.lastten = False
 
     def data_came_in(self, amount):
         if not self.got_anything:
@@ -39,6 +40,10 @@ class RateMeasure:
             self.update(0)
         try:
             remaining = left/self.rate
+            if not self.lastten and remaining <= 10:
+                self.lastten = True
+            if self.lastten:
+                return remaining
             delta = max(remaining/20,2)
             if self.remaining is None:
                 self.remaining = remaining
