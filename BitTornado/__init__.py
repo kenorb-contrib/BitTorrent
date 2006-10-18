@@ -1,5 +1,5 @@
 product_name = 'BitTornado'
-version_short = 'T-0.3.15'
+version_short = 'T-0.3.16'
 
 version = version_short+' ('+product_name+')'
 report_email = version_short+'@degreez.net'

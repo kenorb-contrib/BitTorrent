@@ -122,7 +122,8 @@ class PiecePicker:
         self.numhaves = [i-1 for i in self.numhaves]
         if self.superseed or not self.done:
             self.level_in_interests = [i-1 for i in self.level_in_interests]
-            del self.interests[0]
+            if self.interests:
+                del self.interests[0]
         del self.crosscount[0]
         if not self.done:
             del self.crosscount2[0]
@@ -278,7 +279,7 @@ class PiecePicker:
         if not connection.upload.super_seeding:
             return None
         olddl = self.seed_connections.get(connection)
-        if olddl is not None:
+        if olddl is None:
             ip = connection.get_ip()
             olddl = self.past_ips.get(ip)
             if olddl is not None:                               # peer reconnected

@@ -498,10 +498,10 @@ class Storage:
                 continue
             if self.disabled[i]:
                 for file, start, end in self._get_disabled_ranges(i)[2]:
-                    pfiles.extend([basename(file),getsize(file),getmtime(file)])
+                    pfiles.extend([basename(file),getsize(file),int(getmtime(file))])
                 continue
             file = self.files[i][0]
-            files.extend([i,getsize(file),getmtime(file)])
+            files.extend([i,getsize(file),int(getmtime(file))])
         return {'files': files, 'partial files': pfiles}
 
 

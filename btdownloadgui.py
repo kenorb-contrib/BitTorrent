@@ -2123,16 +2123,6 @@ class DownloadInfoFrame:
 
         self.frame.Destroy()
 
-        wxver = wxVERSION_STRING.split(' ')[0].split('.')
-        if int(wxver[0]) >= 2 and int(wxver[1]) >= 6:
-            try:
-                self.icon.Destroy()
-            except:
-                pass
-            try:
-                self.finicon.Destroy()
-            except:
-                pass
 
     def exception(self):
         data = StringIO()
