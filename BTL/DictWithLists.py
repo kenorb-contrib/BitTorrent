@@ -100,6 +100,19 @@ class DictWithLists(ReallyIterableDict):
         return t
 
 
+class DictWithInts(dict):
+
+    def add(self, value):
+        self.setdefault(value, 0)
+        self[value] += 1
+
+    def remove(self, value):
+        if self[value] == 1:
+            del self[value]
+        else:
+            self[value] -= 1
+
+
 class DictWithSets(DictWithLists):
 
     def pop(self, key, *args):

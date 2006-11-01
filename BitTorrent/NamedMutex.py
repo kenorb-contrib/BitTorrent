@@ -19,8 +19,10 @@ else:
 import os
 
 if os.name == 'nt':
-    import win32file, win32event, win32api, winerror
-    from win32file import CreateFile, CreateFileW
+    import win32file
+    import win32event
+    import BTL.likewin32api as win32api
+    import winerror
     import pywintypes
 
 elif os.name == 'posix':
@@ -163,7 +165,7 @@ class NamedMutex(object):
 
                 # windows will destroy the mutex when the last handle to that
                 # mutex is closed.
-                win32api.CloseHandle(self._mutex)
+                win32file.CloseHandle(self._mutex)
                 del self._mutex
    
         elif os.name == 'posix':

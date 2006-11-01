@@ -50,13 +50,13 @@ class OpenDialog(BTDialog):
         itemBoxSizer10 = wx.BoxSizer(wx.HORIZONTAL)
         itemFlexGridSizer9.Add(itemBoxSizer10, 0, wx.ALIGN_CENTER_HORIZONTAL|wx.ALIGN_CENTER_VERTICAL|wx.ALL, 2)
 
-        self.okbutton = wx.Button( itemDialog1, wx.ID_OK, _("&OK"), wx.DefaultPosition, wx.DefaultSize, 0 )
+        self.okbutton = wx.Button(itemDialog1, wx.ID_OK)
         itemBoxSizer10.Add(self.okbutton, 0, wx.GROW|wx.ALL|wx.SHAPED, 0)
 
         itemBoxSizer12 = wx.BoxSizer(wx.HORIZONTAL)
         itemFlexGridSizer9.Add(itemBoxSizer12, 0, wx.ALIGN_CENTER_HORIZONTAL|wx.ALIGN_CENTER_VERTICAL|wx.ALL, 2)
 
-        itemButton13 = wx.Button( itemDialog1, wx.ID_CANCEL, _("&Cancel"), wx.DefaultPosition, wx.DefaultSize, 0 )
+        itemButton13 = wx.Button(itemDialog1, wx.ID_CANCEL)
         itemBoxSizer12.Add(itemButton13, 0, wx.GROW|wx.ALL|wx.SHAPED, 0)
 
         itemBoxSizer14 = wx.BoxSizer(wx.HORIZONTAL)

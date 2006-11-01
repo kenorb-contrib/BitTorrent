@@ -1,7 +1,7 @@
 import os
 import win32process
 import win32con
-import win32api
+import BTL.likewin32api as win32api
 
 def compare(x, y):
     """ tries to fuzzy match process names """

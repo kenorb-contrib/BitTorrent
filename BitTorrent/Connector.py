@@ -85,8 +85,9 @@ message_dict = BTMessages({
 # index
 12:'SUSPECT_PIECE',
 
-# no args
+# index
 13:'SUGGEST_PIECE', # FAST_EXTENSION
+# no args
 14:'HAVE_ALL', # FAST_EXTENSION
 15:'HAVE_NONE', # FAST_EXTENSION
 
@@ -398,7 +399,7 @@ class Connector(Handler):
                            index, begin)
                 buf.write(msg)
                 buf.write(piece)
-                if noisy: log("SEND PIECE %d %d" % (index,begin))
+                if noisy: log("SEND PIECE %d %d" % (index, begin))
             self._partial_message = buf.getvalue()
         if bytes < len(self._partial_message):
             self.fire_sent_listeners(bytes)
@@ -416,7 +417,9 @@ class Connector(Handler):
                 self._outqueue.write(pack("!ic", 1, UNCHOKE))
             self.choke_sent = self.upload.choked
         buf.write(self._outqueue.getvalue())
-        self._outqueue.truncate(0)
+        #self._outqueue.truncate(0)
+        self._outqueue.close()
+        self._outqueue = StringIO()
         queue = buf.getvalue()        
         self.fire_sent_listeners(len(queue))
         self.connection.write(queue)
@@ -427,8 +430,8 @@ class Connector(Handler):
 
         # be compatible with encrypted clients. Thanks Uoti        
         yield 1 + len(protocol_name)
-        if self._privkey is not None or \
-           self._message != chr(len(protocol_name)) + protocol_name:
+        if (self._privkey is not None or 
+            self._message != chr(len(protocol_name)) + protocol_name):
             if self.locally_initiated:
                 if self._privkey is None:
                     return
@@ -964,7 +967,8 @@ class Connector(Handler):
                 return
 
     def _optional_restart(self):
-        if self.locally_initiated and not self.received_data and not self.obfuscate_outgoing:
+        if (self.locally_initiated and not self.received_data and
+            not self.obfuscate_outgoing):
             self.parent.start_connection(self.addr, id=None, encrypt=True)
 
     def connection_lost(self, conn):

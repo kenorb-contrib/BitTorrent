@@ -9,7 +9,7 @@
 # for the specific language governing rights and limitations under the
 # License.
 
-version = '4.26.0'
+version = '5.0.0'
 
 URL = 'http://www.bittorrent.com/'
 DONATE_URL = URL + 'donate.html?client=%(client)s'

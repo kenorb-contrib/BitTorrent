@@ -764,7 +764,7 @@ class BasicApp(object):
         """For communication via IPC"""
         datas = [ d.decode('utf-8') for d in datas ]
         if action == 'start_torrent':
-            assert len(datas) == 1
+            assert len(datas) == 1, 'incorrect data length'
             self.append_external_torrents(*datas)
             self.logger.info('got external_command:start_torrent: "%s"' % datas[0])
             # this call does Ye Olde Threadede Deferrede:
@@ -773,7 +773,7 @@ class BasicApp(object):
             self.logger.info('got external_command:publish_torrent: "%s" as "%s"' % datas)
             launch_coroutine(self.gui_wrap, self.publish_torrent, datas[0], datas[1])
         elif action == 'show_error':
-            assert len(datas) == 1
+            assert len(datas) == 1, 'incorrect data length'
             self.logger.error(datas[0])
         elif action == 'no-op':
             self.no_op()

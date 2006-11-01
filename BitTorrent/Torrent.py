@@ -22,12 +22,11 @@ import random
 import socket
 import cPickle
 import logging
-import urlparse
 import itertools
 from BTL.translation import _
 from BitTorrent.NamedMutex import NamedMutex
 import BTL.stackthreading as threading
-from BitTorrent.platform import is_path_too_long
+from BitTorrent.platform import is_path_too_long, no_really_makedirs
 from BTL.platform import bttime, get_filesystem_encoding
 
 from BitTorrent.ConnectionManager import ConnectionManager
@@ -43,6 +42,7 @@ from BitTorrent.CurrentRateMeasure import Measure
 from BitTorrent.Storage import Storage
 from BitTorrent.HTTPConnector import URLage
 from BitTorrent.StorageWrapper import StorageWrapper
+from BitTorrent.RequestManager import RequestManager
 from BitTorrent.Upload import Upload
 from BitTorrent.MultiDownload import MultiDownload
 from BitTorrent import BTFailure, UserFailure
@@ -106,9 +106,9 @@ class Torrent(object):
         # encoded or should be unicode if the filesystem supports unicode.
         fs_encoding = get_filesystem_encoding()
         assert fs_encoding == None and isinstance(working_path,unicode) \
-               or isinstance(working_path,str)
+               or isinstance(working_path,str), "working path encoding problem"
         assert fs_encoding == None and isinstance(destination_path,unicode) \
-               or isinstance(destination_path,str)
+               or isinstance(destination_path,str), "dest path encoding problem"
 
         self.state = "created"
         self.data_dir = data_dir
@@ -191,21 +191,24 @@ class Torrent(object):
             self.priority = "normal"
 
     def _set_state(self, value):
-        assert value in self.STATES
+        assert value in self.STATES, ("value %s not in STATES %s" %
+                                      (value, self.STATES))
         self._state = value
     def _get_state(self):
         return self._state
     state = property(_get_state, _set_state)
 
     def _set_policy(self, value):
-        assert value in self.POLICIES
+        assert value in self.POLICIES, ("value %s not in POLICIES %s" %
+                                        (value, self.POLICIES))
         self.config['policy'] = value
     def _get_policy(self):
         return self.config['policy']
     policy = property(_get_policy, _set_policy)
 
     def _set_priority(self, value):
-        assert value in self.PRIORITIES
+        assert value in self.PRIORITIES, ("value %s not in PRIORITIES %s" %
+                                          (value, self.PRIORITIES))
         self.config['priority'] = value
     def _get_priority(self):
         return self.config['priority']
@@ -344,7 +347,7 @@ class Torrent(object):
 
     def initialize(self):
         self.context_valid = True
-        assert self.state in ["created", "failed", "finishing"]
+        assert self.state in ["created", "failed", "finishing"], "state not in set"
         self.state = "initializing"
         df = launch_coroutine(_wrap_task(self.add_task), self._initialize)
         df.addErrback(self.got_exception)
@@ -434,7 +437,14 @@ class Torrent(object):
                 activity = self._activity[0]
             self._activity = (activity, fractionDone)
 
-        self._storagewrapper = StorageWrapper(self._storage, self.config,
+        numpieces = len(self.metainfo.hashes)
+
+        self._rm = RequestManager(self.config['download_chunk_size'],
+                                  self.metainfo.piece_length, numpieces,
+                                  self._storage.get_total_length())
+
+        self._storagewrapper = StorageWrapper(self._storage, self._rm,
+                                              self.config,
                                               self.metainfo.hashes,
                                               self.metainfo.piece_length,
                                               statusfunc, self._doneflag,
@@ -446,6 +456,8 @@ class Torrent(object):
                                               self.add_task,
                                               self.external_add_task)
 
+        self._rm.set_storage(self._storagewrapper)
+
         df = self._storagewrapper.done_checking_df
         yield df
         if df.getResult() != True:
@@ -454,8 +466,6 @@ class Torrent(object):
 
         if resumefile is not None:
             resumefile.close()
-
-        numpieces = len(self.metainfo.hashes)
 
         self._upmeasure = Measure(self.config['max_rate_period'])
         self._downmeasure = Measure(self.config['max_rate_period'])
@@ -474,9 +484,10 @@ class Torrent(object):
             self.add_task(0, kick)
         def banpeer(ip):
             self._connection_manager.ban(ip)
-        md = MultiDownload(self.config, self._storagewrapper,
-                                           self._urlage, self._picker, numpieces,
-                                           self.finished, kickpeer, banpeer)
+        md = MultiDownload(self.config, self._storagewrapper, self._rm,
+                           self._urlage, self._picker, numpieces,
+                           self.finished, self.got_exception, kickpeer, banpeer,
+                           self._downmeasure.get_rate)
         md.add_useful_received_listener(self._total_downmeasure.update_rate)
         md.add_useful_received_listener(self._downmeasure.update_rate)
         md.add_useful_received_listener(self._ratemeasure.data_came_in)
@@ -534,7 +545,7 @@ class Torrent(object):
         return Caller()
 
     def start_download(self):
-        assert self.state == "initialized"
+        assert self.state == "initialized", "state not initialized"
 
         self.time_started = bttime()
 
@@ -602,19 +613,7 @@ class Torrent(object):
         self._rerequest_op().begin()
 
         for url_prefix in self.metainfo.url_list:
-            r = urlparse.urlparse(url_prefix)
-            host = r[1]
-            if ':' in host:
-                host, port = host.split(':')
-                port = int(port)
-            else:
-                port = 80
-            df = self._rawserver.gethostbyname(host)
-            def _connect_http(ip):
-                self._connection_manager.start_http_connection((ip, port),
-                                                               url_prefix)   
-            df.addCallback(_connect_http)
-            df.addLogback(self.logger.warning, "Resolve failed")
+            self._connection_manager.start_http_connection(url_prefix)   
 
         self.state = "running"
         if not self.finflag.isSet():
@@ -631,7 +630,7 @@ class Torrent(object):
             self.finished(policy=self.policy, finished_this_session=False)
 
     def stop_download(self, pause=False):
-        assert self.state == "running"
+        assert self.state == "running", "state not running"
 
         self.state = "initialized"
 
@@ -764,17 +763,21 @@ class Torrent(object):
     def failed(self, cannot_shutdown=False):
         if cannot_shutdown:
             self.state = "failed"
-        else:
-            try:
-                # this could complete later. sorry that's just the way it is.
-                df = self.shutdown()
-                def cb(*a):
-                    self.state = "failed"
-                df.addCallbacks(cb, cb)
-            except:
-                self.logger.exception(_("Additional error when closing down due to "
-                                        "error: "))
-        self.feedback.failed(self)
+            self.feedback.failed(self)
+            return 
+
+        try:
+            # this could complete later. sorry that's just the way it is.
+            df = self.shutdown()
+            def cb(r):
+                self.state = "failed"
+                self.feedback.failed(self)
+            df.addBoth(cb)
+        except:
+            self.logger.exception(_("Additional error when closing down due"
+                                    " to error: "))
+            self.feedback.failed(self)
+        
 
     def _error(self, level, text, exception=False, exc_info=None):
         if level > logging.WARNING:
@@ -787,7 +790,7 @@ class Torrent(object):
             self.feedback.error(self, level, text)
 
     def finished(self, policy="auto", finished_this_session=True):
-        assert self.state == "running"
+        assert self.state == "running", "state not running"
         # because _finished() calls shutdown(), which invalidates the torrent
         # context, we need to use _rawserver.add_task directly here
         df = launch_coroutine(_wrap_task(self._rawserver.add_task), self._finished, policy=policy, finished_this_session=finished_this_session)
@@ -849,6 +852,9 @@ class Torrent(object):
                 if os.path.exists(destination_path):
                     self.logger.debug(str_exc(e))
 
+            self.logger.debug("ensuring destination exists")
+            path, name = os.path.split(destination_path)
+            no_really_makedirs(path)
             self.logger.debug("actually moving file")
             shutil.move(working_path, destination_path)
             self.logger.debug("returned from move")
@@ -873,7 +879,7 @@ class Torrent(object):
 
             self.logger.debug("moved file, restarting")
 
-            assert self.state == "finishing"
+            assert self.state == "finishing", "state not finishing"
             self.working_path = self.destination_path
 ##            self.state = "created"
 ##            df = self.initialize()
@@ -957,7 +963,7 @@ class Torrent(object):
         shutil.move(path+'.new', path)
 
     def remove_state_files(self, del_files=False):
-        assert self.state == "created"
+        assert self.state == "created", "state not created"
 
         try:
             os.remove(self.config_file_path())

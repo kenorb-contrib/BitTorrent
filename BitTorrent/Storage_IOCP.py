@@ -11,6 +11,8 @@
 # Written by Greg Hazel
 
 import os
+import sys
+import ctypes
 import win32file
 from bisect import bisect_right
 from BTL.translation import _
@@ -32,59 +34,52 @@ assert isinstance(reactor, Proactor), "You imported twisted.internet.reactor bef
 
 
 class OverlappedOp:
-    def __init__(self):
-        from twisted.internet import reactor
-        self.reactor = reactor
-
-    def ovDone(self, ret, bytes, (handle, buffer)):
-        raise NotImplementedError
-        
-    def initiateOp(self):
-        raise NotImplementedError
-
-class ReadFileOp(OverlappedOp):
-
-    def ovDone(self, ret, bytes, (handle, buffer)):
-        df = self.df
-        del self.df 
-        if ret or not bytes:
-            df.errback(ret, bytes)
-        else:
-            df.callback(buffer[:bytes])
-
-    def initiateOp(self, handle, seekpos, buffer):
-        df = Deferred()
-        try:
-            self.reactor.issueReadFile(handle, seekpos, buffer,
-                                       self.ovDone, (handle, buffer))
-        except:
-            df.errback(Failure())
-        else:
-            self.df = df
-        return df
-
-class WriteFileOp(OverlappedOp):
-
-    def ovDone(self, ret, bytes, (handle, buffer)):
-        df = self.df
-        del self.df 
-        if ret or not bytes:
-            df.errback(ret, bytes)
-        else:
-            df.callback(bytes)
 
     def initiateOp(self, handle, seekpos, buffer):
         assert len(buffer) > 0
         assert seekpos >= 0
         df = Deferred()
         try:
-            self.reactor.issueWriteFile(handle, seekpos, buffer,
-                                        self.ovDone, (handle, buffer))
+            self.op(handle, seekpos, buffer,
+                    self.ovDone, (handle, buffer))
         except:
             df.errback(Failure())
         else:
             self.df = df
         return df
+
+    def op(self, *a, **kw):
+        raise NotImplementedError
+
+    def ovDone(self, ret, bytes, (handle, buffer)):
+        df = self.df
+        del self.df 
+        if ret or not bytes:
+            try:
+                raise ctypes.WinError()
+            except:
+                df.errback(Failure())                
+        else:
+            self.opComplete(df, bytes, buffer)
+
+    def opComplete(self, df, bytes, buffer):    
+        raise NotImplementedError
+
+
+class ReadFileOp(OverlappedOp):
+
+    op = reactor.issueReadFile
+
+    def opComplete(self, df, bytes, buffer):    
+        df.callback(buffer[:bytes])
+
+
+class WriteFileOp(OverlappedOp):
+
+    op = reactor.issueWriteFile
+
+    def opComplete(self, df, bytes, buffer):    
+        df.callback(bytes)
 
 
 class IOCPFile(object):
@@ -377,7 +372,6 @@ class Storage(object):
     def _file_op(self, filename, pos, param, write):
         begin, end = self.get_byte_range_for_filename(filename)
         length = end - begin
-        final = Deferred()
         hdf = self.filepool.acquire_handle(filename, for_write=write,
                                            length=length)
         def op(h):
@@ -390,10 +384,9 @@ class Storage(object):
                 self.filepool.release_handle(filename, h)
                 return r
             odf.addBoth(like_finally)
-            odf.chainDeferred(final)
+            return odf
         hdf.addCallback(op)
-        hdf.addErrback(final.errback)
-        return final
+        return hdf
 
     def _batch_read(self, pos, amount):
         dfs = []
@@ -467,12 +460,10 @@ class Storage(object):
 
     def close(self):
         if not self.initialized:
-            end = Deferred()
             def post_init(r):
-                df = self.filepool.close_files(self.range_by_name)
-                df.addCallback(end.callback)
+                return self.filepool.close_files(self.range_by_name)
             self.startup_df.addCallback(post_init)
-            return end
+            return self.startup_df
         df = self.filepool.close_files(self.range_by_name)
         return df
 

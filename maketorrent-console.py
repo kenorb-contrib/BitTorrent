@@ -42,7 +42,7 @@ if __name__ == '__main__':
 
     config, args = configfile.parse_configuration_and_args(defaults,
                                                     'maketorrent-console',
-                                                    sys.argv[1:], minargs=1)
+                                                    sys.argv[1:], minargs=2)
 
     le = locale.getpreferredencoding()
 

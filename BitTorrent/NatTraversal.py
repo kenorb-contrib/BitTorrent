@@ -12,29 +12,25 @@ if os.name == 'nt':
     import pywintypes
     import win32com.client
 
-from BTL.platform import app_name
 from BTL import defer
 from BitTorrent.platform import os_version
 from BTL.sparse_set import SparseSet
 from BTL.exceptions import str_exc
 from BitTorrent.RawServer_twisted import Handler
 from BitTorrent.BeautifulSupe import BeautifulSupe
-from BTL.yielddefer import launch_coroutine, _wrap_task
+from BTL.yielddefer import launch_coroutine, wrap_task
 from BTL.HostIP import get_host_ip, get_deferred_host_ip
-from twisted import internet
 import twisted.copyright
+from twisted.internet import reactor
 
-from urllib2 import URLError, HTTPError, Request
-from httplib import BadStatusLine
-
-#bleh
 from urllib import FancyURLopener, addinfourl
-from httplib import HTTPResponse
+from urllib2 import URLError, HTTPError, Request
+from httplib import BadStatusLine, HTTPResponse
 
 import BTL.stackthreading as threading
 
 nat_logger = logging.getLogger('NatTraversal')
-nat_logger.setLevel(logging.WARNING)
+nat_logger.setLevel(logging.DEBUG)
 
 def UnsupportedWarning(s):
     nat_logger.warning("NAT Traversal warning " + ("(%s: %s)."  % (os_version, s)))
@@ -42,10 +38,13 @@ def UnsupportedWarning(s):
 def UPNPError(s):
     nat_logger.error("UPnP ERROR: " + ("(%s: %s)."  % (os_version, s)))
 
+
 class UPnPException(Exception):
     pass
 
+
 class NATEventLoop(threading.Thread):
+
     def __init__(self):
         threading.Thread.__init__(self)
         self.queue = Queue.Queue()
@@ -73,6 +72,7 @@ class NATEventLoop(threading.Thread):
 
 
 class NatTraverser(object):
+
     def __init__(self, rawserver):
         self.rawserver = rawserver
         
@@ -158,7 +158,7 @@ class NatTraverser(object):
         self.list_requests = []
 
     def _gen_deferred(self):
-        return defer.ThreadableDeferred(_wrap_task(self.rawserver.external_add_task))
+        return defer.ThreadableDeferred(reactor.callFromThread)
 
     def register_port(self, external_port, internal_port, protocol,
                       host = None, service_name = None, remote_host=''):
@@ -186,9 +186,7 @@ class NatTraverser(object):
         self.list_requests.append(d)
         self.add_task(self._flush_queue)
         return d
-        
 
-        
 
 class NATBase(object):
 
@@ -229,12 +227,16 @@ class NATBase(object):
         
     def register_port(self, port):
         pass
+
     def unregister_port(self, external_port, protocol):
         pass
+
     def _list_ports(self):
         pass
 
+
 class UPnPPortMapping(object):
+
     def __init__(self, external_port, internal_port, protocol,
                  host = None, service_name = None, remote_host=''):
         self.external_port = int(external_port)
@@ -244,10 +246,7 @@ class UPnPPortMapping(object):
         self.host = host
         self.remote_host = ''
 
-        if service_name:
-            self.service_name = service_name
-        else:
-            self.service_name = app_name
+        self.service_name = service_name
 
         self.d = defer.Deferred()
 
@@ -265,6 +264,7 @@ class UPnPPortMapping(object):
                                       self.remote_host,
                                       self.external_port,
                                       self.host, self.internal_port)
+
 
 def VerifySOAPResponse(request, response):
     if response.code != 200:
@@ -487,11 +487,11 @@ class ManualUPnP(NATBase, Handler):
 
         # this service can only be provided if rawserver supports multicast
         if not hasattr(self.rawserver, "create_multicastsocket"):
-            raise AttributeError, "RawServer does not support create_multicastsocket!"
+            raise AttributeError("RawServer does not support create_multicastsocket!")
                
-        self.rawserver.external_add_task(0, launch_coroutine,
-                                         _wrap_task(self.rawserver.add_task),
-                                         self.begin_discovery)
+        reactor.callFromThread(launch_coroutine,
+                               wrap_task(reactor.callLater),
+                               self.begin_discovery)
 
     def begin_discovery(self):
         # bind to an available port, and join the multicast group
@@ -536,7 +536,7 @@ class ManualUPnP(NATBase, Handler):
                     # joinGroup fail?
                     self.transport = None
                     x = s.listening_port.stopListening()
-                    if isinstance(x, internet.defer.Deferred):
+                    if isinstance(x, defer.Deferred):
                         yield x
                         x.getResult()
             except socket.error, e:
@@ -550,7 +550,7 @@ class ManualUPnP(NATBase, Handler):
         else:
             self.transport.sendto(self.search_string, 0, self.upnp_addr)
             self.transport.sendto(self.search_string, 0, self.upnp_addr)
-            self.rawserver.add_task(6, self._discovery_timedout)
+            reactor.callLater(6, self._discovery_timedout)
 
     def _discovery_timedout(self):
         if self.transport:
@@ -692,11 +692,13 @@ class ManualUPnP(NATBase, Handler):
                 break 
         return mappings
 
+
 class WindowsUPnPException(UPnPException):
     def __init__(self, msg, *args):
         msg += " (%s)" % os_version
         a = [msg] + list(args)
         UPnPException.__init__(self, *a)
+
 
 class WindowsUPnP(NATBase):
     def __init__(self, traverser):

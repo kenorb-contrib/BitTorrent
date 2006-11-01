@@ -17,10 +17,11 @@ from UserDict import IterableUserDict
 from wx.lib.mixins.listctrl import ColumnSorterMixin
 from wx.lib.mixins.listctrl import getListCtrlSelection
 import os
+import sys
 if os.name == 'nt':
     LVM_FIRST = 0x1000
     LVM_SETSELECTEDCOLUMN = (LVM_FIRST + 140)
-    import win32api
+    import win32gui
 
 
 def highlight_color(c):
@@ -151,7 +152,8 @@ class BTListCtrl(wx.ListCtrl, ColumnSorterMixin, ContextMenuMixin):
 
         ColumnSorterMixin.__init__(self, len(self.enabled_columns))
         self._last_scrollpos = 0
-        self.Bind(wx.EVT_ERASE_BACKGROUND, self.OnEraseBackground)
+        if sys.platform != "darwin":
+            self.Bind(wx.EVT_ERASE_BACKGROUND, self.OnEraseBackground)
 
         self.default_rect = wx.Rect(0,0)
 
@@ -270,6 +272,10 @@ class BTListCtrl(wx.ListCtrl, ColumnSorterMixin, ContextMenuMixin):
         if not b.Ok():
             raise Exception("The image (%s) is not valid." % image)
 
+        if (sys.platform == "darwin" and
+            (b.GetWidth(), b.GetHeight()) == (self.icon_size, self.icon_size)):
+            return self.il.Add(b)
+        
         b2 = wx.EmptyBitmap(self.icon_size, self.icon_size)
         dc = wx.MemoryDC()
         dc.SelectObject(b2)
@@ -277,7 +283,7 @@ class BTListCtrl(wx.ListCtrl, ColumnSorterMixin, ContextMenuMixin):
         dc.Clear()
         x = (b2.GetWidth() - b.GetWidth()) / 2
         y = (b2.GetHeight() - b.GetHeight()) / 2
-        dc.DrawBitmap(b, x, y)
+        dc.DrawBitmap(b, x, y, True)
         dc.SelectObject(wx.NullBitmap)
         b2.SetMask(wx.Mask(b2, (255, 255, 255)))
 
@@ -330,7 +336,7 @@ class BTListCtrl(wx.ListCtrl, ColumnSorterMixin, ContextMenuMixin):
             return
         col_num = self.enabled_columns.index(col)
         if os.name == 'nt':
-            win32api.PostMessage(self.GetHandle(),
+            win32gui.PostMessage(self.GetHandle(),
                                  LVM_SETSELECTEDCOLUMN, col_num, 0)
 
             if self.selected_column is not None:

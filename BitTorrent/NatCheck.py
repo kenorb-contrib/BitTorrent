@@ -12,13 +12,14 @@
 
 from cStringIO import StringIO
 from socket import error as socketerror
+from BitTorrent.RawServer_twisted import Handler
 
 protocol_name = 'BitTorrent protocol'
 
 # header, reserved, download id, my id, [length, message]
 
 
-class NatCheck(object):
+class NatCheck(Handler):
 
     def __init__(self, resultfunc, downloadid, peerid, ip, port, rawserver):
         self.resultfunc = resultfunc
@@ -31,7 +32,6 @@ class NatCheck(object):
         self.next_len = 1
         self.next_func = self.read_header_len
         rawserver.start_connection((ip, port), self)
-        
 
     def connection_made(self, s):
         self.connection = s

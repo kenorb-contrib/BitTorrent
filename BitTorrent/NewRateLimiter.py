@@ -293,11 +293,8 @@ if __name__ == '__main__':
     from twisted.internet import task
     from BTL.defer import DeferredEvent
 
-    config = {}
-    rawserver = RawServer(config)
+    rawserver = RawServer()
 
-    doneflag = DeferredEvent()
-     
     s = Scheduler(4096, add_task = rawserver.add_task)
     s.unitsize = 17000
 
@@ -319,7 +316,15 @@ if __name__ == '__main__':
     t = task.LoopingCall(push)
     t.start(freq)
     
-    rawserver.install_sigint_handler()
+##    m = MultiRateLimiter(sched=rawserver.add_task)
+##    m.set_parameters(120000000)
+##    class C(object):
+##        def send_partial(self, size):
+##            global_rate.print_rate(size)
+##            rawserver.add_task(0, m.queue, self)
+##            return size
+##            
+##    m.queue(C())
 
     if profile:
         try:
@@ -329,7 +334,7 @@ if __name__ == '__main__':
         prof = Profiler()
         prof.enable()
 
-    rawserver.listen_forever(doneflag)
+    rawserver.listen_forever()
 
     if profile:
         prof.disable()

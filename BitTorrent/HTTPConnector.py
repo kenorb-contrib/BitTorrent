@@ -10,21 +10,12 @@ from BitTorrent.Connector import Connector
 from bisect import bisect_right
 from urlparse import urlparse
 from BitTorrent.HTTPDownloader import parseContentRange
-  
+
+
+def log(s):
+    print repr(s)
 noisy = False
-if noisy:
-    connection_logger = logging.getLogger("BitTorrent.HTTPConnector")
-    def log(s):
-        print s
-    #log = connection_logger.debug
 
-
-def protocol_violation(s, c=None):
-    a = ''
-    if noisy:
-        if c is not None:
-            a = (c.ip, c.port)
-        log( "FAUX PAS: %s %s" % ( s, a ))
 
 class BatchRequests(object):
 
@@ -111,6 +102,7 @@ class URLage(object):
             "Connection: Keep-Alive",
             "Range: bytes=%s-%s" % (b, e),
             "", ""])
+        if noisy: log(s)
         return s    
 
     def build_requests(self, brs, host, pos, amount, prefix, append):
@@ -129,6 +121,8 @@ class HTTPConnector(Connector):
        unchoked after it's connected."""
 
     MAX_LINE_LENGTH = 16384
+    UNCHOKED_SEED_COUNT = 5
+    RATE_PERCENTAGE = 10
 
     def __init__(self, parent, piece_size, urlage, connection, id, outgoing):
         self.piece_size = piece_size
@@ -138,6 +132,8 @@ class HTTPConnector(Connector):
         self.batch_requests = BatchRequests()
         # pipeline tracker
         self.request_paths = []
+        # range request glue
+        self.request_blocks = {}
         scheme, host, path, params, query, fragment = urlparse(id)
         if path and path[0] == '/':
             path = path[1:]
@@ -154,15 +150,37 @@ class HTTPConnector(Connector):
         Connector.close(self)
 
     def send_handshake(self):
-        # this could be entirely removed. it ensures the connection supports
-        # ranges, but we can tell that from the http response code anyway.
-        self.send_request(0, 0, 1)
+        if noisy: log('connection made: %s' % self.id)
+        self.complete = True
+        self.parent.connection_handshake_completed(self)
+
+        # ARGH. -G
+        def _download_send_request(index, begin, length):
+            piece_size = self.download.multidownload.storage.piece_size
+            if begin + length > piece_size:
+                raise ValueError("Issuing request that exceeds piece size: "
+                                 "(%d + %d == %d) > %d" %
+                                 (begin, length, begin + length, piece_size))
+            self.download.multidownload.active_requests_add(index)
+            a = self.download.multidownload.rm._break_up(begin, length)
+            for b, l in a:
+                self.download.active_requests.add((index, b, l))
+            self.request_blocks[(index, begin, length)] = a
+            assert self == self.download.connection
+            self.send_request(index, begin, length)
+        self.download.send_request = _download_send_request
+
+        # prefer full pieces to reduce http overhead
+        self.download.prefer_full = True
+        self.download._got_have_all()
+        self.download.got_unchoke()
 
     def send_request(self, index, begin, length):
         if noisy:
             log( "SEND %s %d %d %d" % ('GET', index, begin, length) )
         b = (index * self.piece_size) + begin
-        r = self.urlage.build_requests(self.batch_requests, self.host, b, length, self.prefix, self.append)
+        r = self.urlage.build_requests(self.batch_requests, self.host, b,
+                                       length, self.prefix, self.append)
         for filename, s in r:
             self.request_paths.append(filename)
             if self._partial_message is not None:
@@ -203,13 +221,26 @@ class HTTPConnector(Connector):
             self._header_lines = []
 
             yield None
-            if not self._message.upper().startswith('HTTP/1.1 206'):
-                protocol_violation('Bad status message: %s' % self._message,
-                                   self.connection)
-                return
 
-            if not self.complete:
-                completing = True
+            line = self._message.upper()
+            if noisy: log(line)
+            l = line.split(None, 2)
+            version = l[0]
+            status = l[1]
+            try:
+                message = l[2]
+            except IndexError:
+                # sometimes there is no message
+                message = ""
+
+            if not version == "HTTP/1.1":
+                self.protocol_violation('Not HTTP/1.1: %s' % self._message)
+                return
+                
+            if status not in ('301', '302', '303', '206'):
+                self.protocol_violation('Bad status message: %s' %
+                                        self._message)
+                return
 
             headers = {}
             while True:
@@ -217,13 +248,23 @@ class HTTPConnector(Connector):
                 if len(self._message) == 0:
                     break
                 if ':' not in self._message:
-                    protocol_violation('Bad header: %s' % self._message,
-                                       self.connection)
+                    self.protocol_violation('Bad header: %s' % self._message)
                     return
                 header, value = self._message.split(':', 1)
+                header = header.lower()
                 headers[header] = value.strip()
+            if noisy: log(headers)
             # reset the header buffer so we can loop
             self._header_lines = []
+
+            if status in ('301', '302', '303'):
+                url = headers.get('location')
+                if not url:
+                    self.protocol_violation('No location: %s' % self._message)
+                    return
+                self.logger.warning("Redirect: %s" % url)
+                self.parent.start_http_connection(url)
+                return
 
             filename = self.request_paths.pop(0)
             
@@ -234,29 +275,36 @@ class HTTPConnector(Connector):
                     'Got c-l:%d bytes instead of l:%d' % (cl, length))
             yield length
             assert (len(self._message) == length,
-                    'Got m:%d bytes instead of l:%d' % (len(self._message), length))
+                    'Got m:%d bytes instead of l:%d' % (len(self._message),
+                                                        length))
             
-            if completing:
-                self.complete = True
-                completing = False
-                self.parent.connection_handshake_completed(self)
-                # prefer full pieces to reduce http overhead
-                self.download.prefer_full = True
-                self.download._got_have_all()
-                self.download.got_unchoke()
-            elif self.complete:
-                self.got_anything = True
-                br = self.batch_requests.got_request(filename, start, self._message)
-                data = br.get_result()
-                if data:
-                    index = br.start // self.piece_size
-                    if index >= self.parent.numpieces:
-                        return
-                    begin = br.start - (index * self.piece_size)
-                    self.download.got_piece(index, begin, data)
+            if noisy:
+                log( "GOT %s %d %d" % ('GET', start, len(self._message)) )
+            self.got_anything = True
+            br = self.batch_requests.got_request(filename, start, self._message)
+            data = br.get_result()
+            if data:
+                index = br.start // self.piece_size
+                if index >= self.parent.numpieces:
+                    return
+                begin = br.start - (index * self.piece_size)
+            
+                if noisy:
+                    log( "GOT %s %d %d %d" % ('GET', index, begin, length) )
+
+                r = (index, begin, length)
+                a = self.request_blocks.pop(r)
+                for b, l in a:
+                    d = buffer(data, b - begin, l)
+                    self.download.got_piece(index, b, d)
+
+            if noisy:
+                log( "REMAINING: %d" % len(self.request_blocks))
+
 
     def data_came_in(self, conn, s):
         self.received_data = True
+        
         if not self.download:
             # this is really annoying.
             self.sloppy_pre_connection_counter += len(s)
@@ -275,25 +323,23 @@ class HTTPConnector(Connector):
             if self._next_len == None:
                 if self._header_lines:
                     d = ''.join(self._buffer)
-                    m = self._header_lines.pop(0).lower()
+                    m = self._header_lines.pop(0)
                 else:
-                    if '\r\n' not in s:
-                        return
+                    if '\n' not in s:
+                        break
                     d = ''.join(self._buffer)
-                    headers = d.split('\r\n')
-                    # the last one is always trash
-                    headers.pop(-1)
-                    self._header_lines.extend(headers)
-                    m = self._header_lines.pop(0).lower()
+                    header = d.split('\n', 1)[0]
+                    self._header_lines.append(header)
+                    m = self._header_lines.pop(0)
                 if len(m) > self.MAX_LINE_LENGTH:
-                    protocol_violation('Line length exceeded.',
-                                       self.connection)
+                    self.protocol_violation('Line length exceeded.')
                     self.close()
                     return
-                self._next_len = len(m) + len('\r\n')
+                self._next_len = len(m) + len('\n')
+                m = m.rstrip('\r')
             else:
                 if self._next_len > self._buffer_len:
-                    return
+                    break
                 d = ''.join(self._buffer)
                 m = d[:self._next_len]
             s = d[self._next_len:]
@@ -305,13 +351,26 @@ class HTTPConnector(Connector):
             except StopIteration:
                 self.close()
                 return
-
     def _optional_restart(self):            
-        if self.complete and not self.manual_close:
-            # http keep-alive has a per-connection limit on the number of requests
-            # also, it times out. both result it a dropped connection, so re-make it.
-            # idealistically, the connection would hang around even if dropped, and
-            # reconnect if we needed to make a new request (that way we don't thrash
-            # the piece picker everytime we reconnect)
-            dns = (self.connection.ip, self.connection.port)
-            self.parent.start_http_connection(dns, id=self.id)
+        if self.got_anything and not self.manual_close:
+
+            # we disconnect from the http seed in cases where we're getting
+            # plenty of bandwidth elsewhere. the first measure is the number
+            # of unchoked seeds we're connected to. the second is the
+            # percentage of the total rate that the seed makes up.
+            md = self.download.multidownload
+            seed_count = md.get_unchoked_seed_count()
+            # -1 because this http seed it counted still
+            seed_count -= 1
+            if seed_count > self.UNCHOKED_SEED_COUNT:
+                torrent_rate = md.get_downrate()
+                scale = (self.RATE_PERCENTAGE / 100.0)
+                if self.download.get_rate() < (torrent_rate * scale):
+                    return
+            
+            # http keep-alive has a per-connection limit on the number of
+            # requests also, it times out. both result it a dropped connection,
+            # so re-make it. idealistically, the connection would hang around
+            # even if dropped, and reconnect if we needed to make a new request
+            # (that way we don't thrash the piece picker everytime we reconnect)
+            self.parent.start_http_connection(self.id)

@@ -33,8 +33,8 @@ from BitTorrent.MultiTorrent import TorrentAlreadyRunning
 from BitTorrent.MultiTorrent import TorrentAlreadyInQueue, UnknownInfohash
 from BTL.obsoletepythonsupport import set
 from BTL.hash import sha
-# needed for py2exe to pick up the import that pickle relies on
-import Crypto.PublicKey.DSA
+# needed for py2exe to include the public key lib
+from Crypto.PublicKey import DSA
 
 from TorrentButler import TorrentButler
 from NewVersion import Version

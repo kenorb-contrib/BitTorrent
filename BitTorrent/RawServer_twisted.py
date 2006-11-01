@@ -23,6 +23,7 @@ from BTL.translation import _
 from BTL.obsoletepythonsupport import set
 from BTL.defer import DeferredEvent, Failure
 from BTL.SaneThreadedResolver import SaneThreadedResolver
+from BTL.FlushEvent import FlushEventBuffer
 
 ##############################################################
 profile = False
@@ -105,7 +106,7 @@ class ConnectionWrapper(object):
         self.reset_timeout = None
         self.callback_connection = None
 
-        self.buffer = OutputBuffer(self._flushed)
+        self.buffer = FlushEventBuffer(self._flushed)
 
         self.post_init(rawserver, handler, context)
 
@@ -164,12 +165,7 @@ class ConnectionWrapper(object):
         self.callback_connection = callback_connection
         self.reset_timeout = reset_timeout
 
-        if hasattr(transport, 'addBufferCallback'):
-            self.buffer = PassBuffer(self.transport, self._flushed, self.buffer)
-        elif hasattr(transport, 'registerProducer'):
-            # Multicast uses sendto, which does not buffer.
-            # It has no producer api
-            self.buffer.attachConsumer(self.transport)
+        self.buffer.attachConsumer(self.transport)
 
         try:
             addr = self.transport.getPeer()
@@ -208,7 +204,7 @@ class ConnectionWrapper(object):
         # bleh
         if isinstance(b, buffer):
             b = str(b)
-        self.buffer.add(b)
+        self.buffer.write(b)
 
     def _flushed(self):
         s = self
@@ -218,7 +214,7 @@ class ConnectionWrapper(object):
             self.rawserver.add_task(0, s.handler.connection_flushed, s)
 
     def is_flushed(self):
-        return self.buffer.is_flushed()
+        return self.buffer.isFlushed()
 
     def shutdown(self, how):
         if how == SHUT_WR:
@@ -263,7 +259,7 @@ class ConnectionWrapper(object):
     def _cleanup(self):
 
         if self.buffer:
-            self.buffer.consumer = None
+            self.buffer.cleanup()
             del self.buffer
 
         self.handler = None
@@ -275,97 +271,6 @@ class ConnectionWrapper(object):
                 self.callback_connection.setTimeout(None)
             self.callback_connection.connection = None
             del self.callback_connection
-
-
-# hint: not actually a buffer
-class PassBuffer(object):
-
-    def __init__(self, consumer, callback_onflushed, old_buffer):
-        self.consumer = consumer
-        self.callback_onflushed = callback_onflushed
-        self._is_flushed = False
-        self.consumer.addBufferCallback(self._flushed, "buffer empty")
-        # swallow the data written to the old buffer
-        if old_buffer._buffer_list:
-            self.consumer.writeSequence(old_buffer._buffer_list)
-            old_buffer._buffer_list[:] = []
-
-    def add(self, b):
-        self._is_flushed = False
-        self.consumer.write(b)
-
-    def stopWriting(self):
-        pass
-    
-    def is_flushed(self):
-        return self._is_flushed
-    
-    def _flushed(self):
-        self._is_flushed = True
-        self.callback_onflushed()
-
-        
-class OutputBuffer(object):
-
-    # This is an IPullProducer which has an unlimited buffer size,
-    # and calls a callback when the buffer is completely flushed
-
-    def __init__(self, callback_onflushed):
-        self.consumer = None
-        self.registered = False
-        self.callback_onflushed = callback_onflushed
-        self._buffer_list = []
-
-    def is_flushed(self):
-        return (len(self._buffer_list) == 0)
-
-    def attachConsumer(self, consumer):
-        self.consumer = consumer
-        if not self.registered:
-            self.beginWriting()
-
-    def add(self, b):
-        self._buffer_list.append(b)
-
-        if self.consumer and not self.registered:
-            self.beginWriting()
-
-    def beginWriting(self):
-        self.stopWriting()
-        assert self.consumer, "You must attachConsumer before you beginWriting"
-        self.registered = True
-        self.consumer.registerProducer(self, False)
-
-    def stopWriting(self):
-        if not self.registered:
-            return
-
-        self.registered = False
-        if self.consumer:
-            try:
-                self.consumer.unregisterProducer()
-            except KeyError:
-                # bug in iocpreactor: http://twistedmatrix.com/trac/ticket/1657
-                pass
-
-    def resumeProducing(self):
-        if not self.registered:
-            return
-        assert self.consumer, "You must attachConsumer before you resumeProducing"
-
-        to_write = len(self._buffer_list)
-        if to_write > 0:
-            self.consumer.writeSequence(self._buffer_list)
-            del self._buffer_list[:]
-            self.callback_onflushed()
-        else:
-            self.stopWriting()
-
-    def pauseProducing(self):
-        pass
-
-    def stopProducing(self):
-        pass
 
 
 class CallbackConnection(object):

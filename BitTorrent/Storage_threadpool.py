@@ -11,6 +11,7 @@
 # Written by Bram Cohen and Greg Hazel
 
 import os
+import sys
 import Queue
 from bisect import bisect_right
 from BTL.translation import _
@@ -18,7 +19,7 @@ from BTL.translation import _
 from BTL.obsoletepythonsupport import set
 
 from BitTorrent import BTFailure
-from BTL.defer import Deferred, ThreadedDeferred
+from BTL.defer import Deferred, ThreadedDeferred, Failure
 from BTL.yielddefer import launch_coroutine, _wrap_task
 from BitTorrent.platform import get_allocated_regions
 from BTL.sparse_set import SparseSet
@@ -188,10 +189,8 @@ class FilePool(object):
             df, func, args, kwargs = self.diskq.get(True)
             try:
                 v = func(*args, **kwargs)
-            except Exception, e:
-                print "DISK ERROR", e
-                import traceback
-                traceback.print_exc()
+            except:
+                self.external_add_task(0, df.errback, Failure())
             else:
                 self.external_add_task(0, df.callback, v)
 
@@ -316,9 +315,15 @@ class Storage(object):
             dfs.append(df)
 
         # yield on all the reads in order - they complete in any order
+        exc = None
         for df in dfs:
             yield df
-            r.append(df.getResult())
+            try:
+                r.append(df.getResult())
+            except:
+                exc = exc or sys.exc_info()
+        if exc:
+            raise exc[0], exc[1], exc[2]
 
         r = ''.join(r)
 
@@ -361,9 +366,15 @@ class Storage(object):
             dfs.append(df)
 
         # yield on all the writes - they complete in any order
+        exc = None
         for df in dfs:
             yield df
-            df.getResult()
+            try:
+                df.getResult()
+            except:
+                exc = exc or sys.exc_info()
+        if exc:
+            raise exc[0], exc[1], exc[2]
 
         yield total
 

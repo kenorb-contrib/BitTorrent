@@ -97,7 +97,7 @@ class StorageWrapper(object):
 
     READ_AHEAD_BUFFER_SIZE = 2**22 # 4mB
 
-    def __init__(self, storage, config, hashes, piece_size,
+    def __init__(self, storage, rm, config, hashes, piece_size,
                  statusfunc, doneflag, data_flunked,
                  infohash, # needed for partials
                  is_batch, errorfunc, working_path, destination_path, resumefile,
@@ -121,33 +121,18 @@ class StorageWrapper(object):
         self.total_length = storage.get_total_length()
         # a brief explanation about the mildly confusing amount_ variables:
         #   amount_left: total_length - fully_written_pieces
-        #   amount_inactive: amount_left - requests_pending_on_network
+        #   amount_inactive: amount_left - blocks_written - requests_pending_on_network
         #   amount_left_with_partials (only correct during startup): amount_left + blocks_written
         self.amount_left = self.total_length
-        self.amount_inactive = self.total_length
         if self.total_length <= piece_size * (self.numpieces - 1):
-            raise BTFailure(_("bad data in responsefile - total too small"))
+            raise BTFailure(_("bad data in torrent file - total too small"))
         if self.total_length > piece_size * self.numpieces:
-            raise BTFailure(_("bad data in responsefile - total too big"))
+            raise BTFailure(_("bad data in torrent file - total too big"))
 
-        # If chunks have been requested then inactive_requests has a list
-        # of the unrequested chunks. Otherwise the piece is not in the dict.
-        self.inactive_requests = {}
-
-        # If chunks have been requested then active_requests has a list
-        # of the unrequested chunks which are pending on the network.
-        # Otherwise the piece is not in the dict.
-        self.active_requests = {}
         self.have_callbacks = {}
         
-        read = lambda index, length, offset : self._storage_read(self.places[index],
-                                                                 length, offset=offset)
-        self.datapig = DataPig(read, self.add_task)
-        
-        self.full_pieces = set()
         # a index => df dict for locking pieces
         self.blocking_pieces = {}
-        self.endgame = False
         self.have = Bitfield(self.numpieces)
         self.have_set = SparseSet()
         self.checked_pieces = SparseSet()
@@ -163,7 +148,14 @@ class StorageWrapper(object):
             self.typecode = 'h'
         else:
             self.typecode = 'l'
+                
+        self.rm = rm
+        self.rm.amount_inactive = self.total_length
 
+        read = lambda i, l, offset : self._storage_read(self.places[i], l,
+                                                        offset=offset)
+        self.datapig = DataPig(read, self.add_task)
+        
         self.places = array(self.typecode, [NO_PLACE] * self.numpieces)
         check_hashes = self.config['check_hashes']
 
@@ -259,7 +251,8 @@ class StorageWrapper(object):
                 try:
                     data = df.getResult()
                 except:
-                    global_logger.error(_("Bad fastresume info (truncation at piece %d)") % i)
+                    global_logger.error(_("Bad fastresume info "
+                                          "(truncation at piece %d)") % i)
                     needs_full_hashcheck = True
                     i -= 1
                     break                    
@@ -270,7 +263,8 @@ class StorageWrapper(object):
                 if self.doneflag.isSet():
                     yield False
             else:
-                global_logger.error(_("Bad fastresume info (illegal value at piece %d)") % i)
+                global_logger.error(_("Bad fastresume info (illegal value at "
+                                      "piece %d)") % i)
                 needs_full_hashcheck = True
                 i -= 1
                 break
@@ -341,18 +335,16 @@ class StorageWrapper(object):
             # we should not read from fastresume.
             self.storage.undownloaded = d['undownloaded']
             self.amount_left = d['amount_left']
+            assert self.amount_left >= 0
+
+            self.rm.amount_inactive = self.amount_left
             
             # all unwritten partials are now inactive
-            self.inactive_requests = d['unwritten_partials']
+            for k, v in d['unwritten_partials'].iteritems():
+                self.rm.add_inactive(k, v)
 
-            # start with amount left, and then add partials
-            self.amount_left_with_partials = self.amount_left
-
-            for k, v in self.inactive_requests.iteritems():
-                s = [b for b, e in v]
-                if s:
-                    self._make_pending(k, s)
-                self.active_requests.setdefault(k, [])
+            # these are equal at startup, because nothing has been requested
+            self.amount_left_with_partials = self.rm.amount_inactive
 
             if self.amount_left_with_partials < 0:
                 raise ValueError("Amount left < 0: %d" %
@@ -361,15 +353,13 @@ class StorageWrapper(object):
                 raise ValueError("Amount left > total length: %d > %d" %
                                  (self.amount_left_with_partials, self.total_length))
 
-            # these are equal at startup, because nothing has been requested
-            self.amount_inactive = self.amount_left_with_partials
-
             self._initialized(True)
         except:
+            self.amount_left = self.total_length
             self.have = Bitfield(self.numpieces)
             self.have_set = SparseSet()
-            self.inactive_requests = {}
-            self.active_requests = {}
+            self.rm.inactive_requests = {}
+            self.rm.active_requests = {}
             self.places = array(self.typecode, [NO_PLACE] * self.numpieces)
             self.rplaces = array(self.typecode, range(self.numpieces))
             raise
@@ -381,31 +371,8 @@ class StorageWrapper(object):
         try:
             self._write_fastresume_v2(resumefile)
         except:
-            import traceback
-            traceback.print_exc()
+            global_logger.exception("write_fastresume failed")
             
-
-    def _write_fastresume_v1(self, resumefile):
-        if not self.initialized:
-            return
-
-        global_logger.debug('Writing fast resume: %s' % version_string)
-        resumefile.write(version_string + '\n')
-        # write fake junk
-        resumefile.write(str(0) + '\n')
-        for b, e, filename in self.storage.ranges:
-            resumefile.write(str(0) + ' ' +
-                             str(0) + '\n')
-        
-        # copy the array so as not to screw the current state of things
-        rplaces = array(self.rplaces.typecode, list(self.rplaces))
-        # Ow. -G
-        for i in xrange(self.numpieces):
-            if rplaces[i] >= 0 and not self.have[rplaces[i]]:
-                rplaces[i] = FASTRESUME_PARTIAL
-        rplaces.tofile(resumefile)
-        self.fastresume_dirty = False
-
     def _write_fastresume_v2(self, resumefile):
         if not self.initialized:
             return
@@ -431,29 +398,12 @@ class StorageWrapper(object):
         d['have_set'] = self.have_set
         d['undownloaded'] = self.storage.undownloaded
         d['amount_left'] = self.amount_left
-        # collapse inactive and active requests into unwritten partials
-        unwritten_partials = {}
-        for k, v in self.inactive_requests.iteritems():
-            if v:
-                unwritten_partials.setdefault(k, []).extend(v)
-        for k, v in self.active_requests.iteritems():
-            if v:
-                unwritten_partials.setdefault(k, []).extend(v)
-        d['unwritten_partials'] = unwritten_partials
-
+        d['unwritten_partials'] = self.rm.get_unwritten_requests()
+        
         resumefile.write(cPickle.dumps(d))
 
         self.fastresume_dirty = False
-
     ############################################################################
-
-    def _realize_partials(self, partials):
-        self.amount_left_with_partials = self.amount_left
-        for piece in partials:
-            if self.places[piece] < 0:
-                pos = partials[piece][0]
-                self.places[piece] = pos
-                self.rplaces[pos] = piece
 
     def _markgot(self, piece, pos):
         if self.have[piece]:
@@ -469,11 +419,12 @@ class StorageWrapper(object):
         plen = self._piecelen(piece)
         self.storage.downloaded(self.piece_size * piece, plen)
         self.amount_left -= plen
-        self.amount_inactive -= plen
+        assert self.amount_left >= 0
+        self.rm.amount_inactive -= plen
         if piece in self.have_callbacks:
             for c in self.have_callbacks.pop(piece):
                 c.callback(None)
-        assert piece not in self.inactive_requests
+        assert piece not in self.rm.inactive_requests
 
     ## hashcheck    
     ############################################################################
@@ -587,6 +538,7 @@ class StorageWrapper(object):
         self.checked_pieces.add(index)
         yield True
     ############################################################################
+
     ## out of order compatability
     ############################################################################
     def _initalloc(self, pos, piece):
@@ -596,11 +548,6 @@ class StorageWrapper(object):
         length = self._piecelen(pos)
         self.places[piece] = pos
         self.rplaces[pos] = piece
-        ## "if self.rplaces[pos] != ALLOCATED:" to skip extra mark writes
-        #mark = self.partial_mark + struct.pack('>i', piece)
-        #mark += chr(0xff) * (self.config['download_chunk_size'] - len(mark))
-        #mark *= (length - 1) // len(mark) + 1
-        #return self._storage_write(pos, buffer(mark, 0, length))
 
     def _move_piece(self, oldpos, newpos):
         assert self.rplaces[newpos] < 0
@@ -700,34 +647,30 @@ class StorageWrapper(object):
         df = self._storage_write(self.places[index], piece, offset=begin)
         yield df
         df.getResult()
-        r = (begin, len(piece))
-        self.active_requests[index].remove(r)
+        self.rm.request_received(index, begin, len(piece))
 
         hashcheck = False
-        if not self.want_requests(index) and len(self.active_requests[index]) == 0:
+        if self.rm.is_piece_received(index):
             hashcheck = True
             df = self.hashcheck_piece(self.places[index])
             yield df
             passed = df.getResult()
+            self.rm.piece_finished(index)
             length = self._piecelen(index)
-            del self.inactive_requests[index]
-            del self.active_requests[index]
-            self.full_pieces.remove(index)
             if passed:
                 self.have[index] = True
                 self.have_set.add(index)
-                # In this function we perform a lookup undownloaded[filename]
-                # which results in a KeyError.  --Dave HEREDAVE
                 self.storage.downloaded(index * self.piece_size, length)
                 self.amount_left -= length
+                assert self.amount_left >= 0
 
                 self.datapig.finished_piece(index)
                 if index in self.have_callbacks:
                     for c in self.have_callbacks.pop(index):
                         c.callback(None)
-            else: # hashcheck fail
+            else:
                 self.data_flunked(length, index)
-                self.amount_inactive += length
+                self.rm.amount_inactive += length
 
                 self.datapig.failed_piece(index)
         self.fastresume_dirty = True
@@ -767,7 +710,8 @@ class StorageWrapper(object):
             if not passed:
                 # TODO: this case should cause a total file hash check and
                 # reconnect when done.
-                raise BTFailure, _("told file complete on start-up, but piece failed hash check")
+                raise BTFailure, _("told file complete on start-up, but piece "
+                                   "failed hash check")
         if begin + length > self._piecelen(index):
             #yield None
             raise ValueError("incorrect size: (%d + %d ==) %d >= %d" %
@@ -786,16 +730,24 @@ class StorageWrapper(object):
 
     ## partials
     ############################################################################
+    def _realize_partials(self, partials):
+        self.amount_left_with_partials = self.amount_left
+        for piece in partials:
+            if self.places[piece] < 0:
+                pos = partials[piece][0]
+                self.places[piece] = pos
+                self.rplaces[pos] = piece
+
     def _check_partial(self, pos, partials, data):
         index = None
         missing = False
+        request_size = self.config['download_chunk_size']
         if self.partial_mark is None:
-            self.partial_mark = ("BitTorrent - this part has not been downloaded " +
-                                 "yet." + self.infohash +
-                                 struct.pack('>i', self.config['download_chunk_size']))
-        marklen = len(self.partial_mark)+4
-        for i in xrange(0, len(data) - marklen,
-                        self.config['download_chunk_size']):
+            i = struct.pack('>i', request_size)
+            self.partial_mark = ("BitTorrent - this part has not been " +
+                                 "downloaded yet." + self.infohash + i)
+        marklen = len(self.partial_mark) + 4
+        for i in xrange(0, len(data) - marklen, request_size):
             if data[i:i+marklen-4] == self.partial_mark:
                 ind = struct.unpack('>i', data[i+marklen-4:i+marklen])[0]
                 if index is None:
@@ -807,7 +759,7 @@ class StorageWrapper(object):
             else:
                 missing = True
         if index is not None and missing:
-            i += self.config['download_chunk_size']
+            i += request_size
             if i < len(data):
                 parts.append(i)
             partials[index] = (pos, parts)
@@ -817,82 +769,8 @@ class StorageWrapper(object):
         x = 0
         request_size = self.config['download_chunk_size']
         for x in xrange(0, length, request_size):
-            partlen = min(request_size, length - x)
             if x not in parts:
+                partlen = min(request_size, length - x)
                 self.amount_left_with_partials -= partlen
     ############################################################################
 
-
-    ## request manager stuff
-    ############################################################################
-    def want_requests(self, index):
-        # blah, this is dumb.
-        if self.have[index]:
-            return False
-        # if all requests are pending, we'll have a blank list
-        if (index in self.inactive_requests and
-            len(self.inactive_requests[index]) == 0):
-            return False
-        return True
-
-    def iter_want(self):
-        for index in self.have_set.iterneg(0, self.numpieces):
-            # if all requests are pending, we'll have a blank list
-            if (index in self.inactive_requests and
-                len(self.inactive_requests[index]) == 0):
-                continue
-            yield index
-
-    def new_request(self, index, full=False):
-        # returns (begin, length)
-        if index not in self.inactive_requests:
-            self._make_inactive(index)
-        rs = self.inactive_requests[index]
-        if full:
-            s = SparseSet()
-            while rs:
-                r = rs.pop()
-                s.add(r[0], r[0] + r[1])
-            b, e = s.largest_range()
-            s.remove(b, e)
-            r = (b, e - b)
-            for b, e in s.iterrange():
-                rs.extend(self._break_up(b, e - b))
-        else:
-            # why min? do we want all the blocks in order?
-            r = min(rs)
-            rs.remove(r)
-        if len(rs) == 0:
-            self.full_pieces.add(index)
-        self.amount_inactive -= r[1]
-        assert self.amount_inactive >= 0, 'Amount inactive: %d' % self.amount_inactive
-        if self.amount_inactive == 0:
-            self.endgame = True
-        self.active_requests[index].append(r)
-        return r
-
-    def _break_up(self, begin, length):
-        l = []
-        x = 0
-        request_size = self.config['download_chunk_size']
-        while x + request_size < length:
-            l.append((begin + x, request_size))
-            x += request_size
-        l.append((begin + x, length - x))
-        return l
-
-    def _make_inactive(self, index):
-        length = self._piecelen(index)
-        self.inactive_requests[index] = self._break_up(0, length)
-        self.active_requests[index] = []
-
-    def request_lost(self, index, begin, length):
-        if len(self.inactive_requests[index]) == 0:
-            self.full_pieces.remove(index)
-        self.amount_inactive += length
-        r = (begin, length)
-        self.active_requests[index].remove(r)
-        l = self._break_up(begin, length)
-        for r in l:
-            self.inactive_requests[index].append(r)
-    ############################################################################

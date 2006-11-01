@@ -14,6 +14,7 @@
 # written by Matt Chisholm
 
 import os
+import sys
 
 can_launch_dirs  = False
 can_launch_files = False
@@ -25,7 +26,6 @@ def launchpath_nt(path):
     os.startfile(path)
 
 def launchfile_nt(path):
-    do_launchdir = True
     if can_launch_files and not os.path.isdir(path):
         f, ext = os.path.splitext(path)
         ext = ext.upper()
@@ -72,7 +72,7 @@ if os.name == 'nt':
     can_launch_files = True
     launchpath = launchpath_nt
     launchfile = launchfile_nt
-elif os.name == 'mac':
+elif sys.platform == "darwin":
     can_launch_dirs  = True
     can_launch_files = True
     launchpath = launchpath_mac

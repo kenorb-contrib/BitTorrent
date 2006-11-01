@@ -39,7 +39,7 @@ def makeHelp(uiname, defaults):
         ret += _("[OPTIONS] [TORRENTDIRECTORY]\n\n")
         ret += _("If a non-option argument is present it's taken as the value\n"
                  "of the torrent_dir option.\n")
-    elif uiname == 'bittorrent-tracker' or 'test-client':
+    elif uiname == 'bittorrent-tracker' or uiname == 'test-client':
         ret += _("OPTIONS")
     elif uiname == 'bittorrent':
         ret += _("[OPTIONS] [TORRENTFILES]\n")

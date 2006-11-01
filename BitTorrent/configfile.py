@@ -91,6 +91,7 @@ if os.name == 'nt':
 
         # Bandwidth
         'bandwidth_management',
+        'show_variance_line'  ,
         ])
 
 MAIN_CONFIG_FILE = 'ui_config'

@@ -242,8 +242,8 @@ class Rerequester(object):
     def _announce(self, event=None):
         assert not self.dead
         self.current_started = bttime()
-        self.errorfunc(logging.INFO, 'announce: ' +
-                       str(bttime() - self.current_started))
+        #self.errorfunc(logging.INFO, 'announce: ' +
+        #               str(bttime() - self.current_started))
         s = ('%s&uploaded=%s&downloaded=%s&left=%s' %
              (self.url, str(self.up()*self.config.get('lie',1) - self.previous_up),
               str(self.down() - self.previous_down), str(self.amount_left())))
@@ -372,7 +372,7 @@ class Rerequester(object):
         try:
             r = bdecode(data)
             if LOG_RESPONSE:
-                self.errorfunc(logging.INFO, 'tracker said: %r' + r)
+                self.errorfunc(logging.INFO, 'tracker said: %r' % r)
             check_peers(r)
         except BTFailure, e:
             if data:

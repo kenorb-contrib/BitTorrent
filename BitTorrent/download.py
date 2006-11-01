@@ -114,8 +114,8 @@ class Download(object):
         if backlog > 50:
             backlog = max(50, int(.075 * backlog))
 
-        if self.multidownload.storage.endgame:
-            # OPTIONAL: zero pipelining during engame
+        if self.multidownload.rm.endgame:
+            # OPTIONAL: zero pipelining during endgame
             #b = 1
             pass
 
@@ -141,12 +141,12 @@ class Download(object):
     def _letgo(self):
         if not self.active_requests:
             return
-        if self.multidownload.storage.endgame:
+        if self.multidownload.rm.endgame:
             self.active_requests.clear()
             return
         lost = []
         for index, begin, length in self.active_requests:
-            self.multidownload.storage.request_lost(index, begin, length)
+            self.multidownload.rm.request_lost(index, begin, length)
             self.multidownload.active_requests_remove(index)
             if index not in lost:
                 lost.append(index)
@@ -190,7 +190,7 @@ class Download(object):
         # the piece (it was in active_requests)
         self.fire_useful_received_listeners(len(piece))
 
-        if self.multidownload.storage.endgame:
+        if self.multidownload.rm.endgame:
             if req not in self.multidownload.all_requests:
                 self.multidownload.discarded_bytes += len(piece)
                 return
@@ -210,6 +210,7 @@ class Download(object):
         self.last = bttime()
         df = self.multidownload.storage.write(index, begin, piece, self.guard)
         df.addCallback(self._got_piece, index)
+        df.addErrback(self.multidownload.errorfunc)
 
     def _got_piece(self, hashchecked, index):
         if hashchecked:
@@ -217,7 +218,7 @@ class Download(object):
         
     def _want(self, index):
         return (self.have[index] and 
-                self.multidownload.storage.want_requests(index))
+                self.multidownload.rm.want_requests(index))
 
     def send_request(self, index, begin, length):
         piece_size = self.multidownload.storage.piece_size
@@ -238,7 +239,7 @@ class Download(object):
         b = self._backlog()
         if len(self.active_requests) >= b:
             return
-        if self.multidownload.storage.endgame:
+        if self.multidownload.rm.endgame:
             self.fix_download_endgame()
             return
 
@@ -248,8 +249,8 @@ class Download(object):
         while len(self.active_requests) < b:
             if not indices:
                 interest = self.multidownload.picker.next(self.have,
-                                    self.multidownload.active_requests,
-                                    self.multidownload.storage.full_pieces,
+                                    self.multidownload.rm.active_requests,
+                                    self.multidownload.rm.fully_active,
                                     self.suggested_pieces)
             else:
                 interest = None
@@ -268,18 +269,18 @@ class Download(object):
 
             # request as many chunks of interesting piece as fit in backlog.
             while len(self.active_requests) < b:
-                begin, length = self.multidownload.storage.new_request(interest,
-                                                                       self.prefer_full)
+                begin, length = self.multidownload.rm.new_request(interest,
+                                                                  self.prefer_full)
                 self.send_request(interest, begin, length)
 
-                if not self.multidownload.storage.want_requests(interest):
+                if not self.multidownload.rm.want_requests(interest):
                     lost_interests.append(interest)
                     break
         if not self.active_requests and self.interested:
             self.interested = False
             self.connection.send_not_interested()
         self._check_lost_interests(lost_interests)
-        if self.multidownload.storage.endgame:
+        if self.multidownload.rm.endgame:
             self.multidownload.all_requests = set()
             for d in self.multidownload.downloads:
                 self.multidownload.all_requests.update(d.active_requests)
@@ -299,7 +300,7 @@ class Download(object):
             if d.active_requests or not d.interested:
                 continue
             if (d.example_interest is not None and 
-                self.multidownload.storage.want_requests(d.example_interest)):
+                self.multidownload.rm.want_requests(d.example_interest)):
                 continue
             # any() does not exist until python 2.5
             #if not any([d.have[lost] for lost in lost_interests]):
@@ -310,7 +311,7 @@ class Download(object):
             else:
                 continue
             interest = self.multidownload.picker.from_behind(d.have,
-                            self.multidownload.storage.full_pieces)
+                            self.multidownload.rm.fully_active)
             if interest is None:
                 d.interested = False
                 d.connection.send_not_interested()
@@ -337,14 +338,14 @@ class Download(object):
 
             # request chunks until no more chunks or no more room in backlog.
             while len(self.active_requests) < b:
-                begin, length = self.multidownload.storage.new_request(piece,
-                                                                       self.prefer_full)
+                begin, length = self.multidownload.rm.new_request(piece,
+                                                                  self.prefer_full)
                 self.send_request(piece, begin, length)
-                if not self.multidownload.storage.want_requests(piece):
+                if not self.multidownload.rm.want_requests(piece):
                     lost_interests.append(piece)
                     break
         self._check_lost_interests(lost_interests)
-        if self.multidownload.storage.endgame:
+        if self.multidownload.rm.endgame:
             self.multidownload.all_requests = set()
             for d in self.multidownload.downloads:
                 self.multidownload.all_requests.update(d.active_requests)
@@ -383,12 +384,13 @@ class Download(object):
             self.peermeasure.update_rate(self.multidownload.storage.piece_size)
         self.have[index] = True
         self.multidownload.got_have(index)
-        if self.multidownload.storage.get_amount_left() == 0 and self.have.numfalse == 0:
+        if (self.multidownload.storage.get_amount_left() == 0 and
+            self.have.numfalse == 0):
             self.connection.close()
             return
-        if self.multidownload.storage.endgame:
+        if self.multidownload.rm.endgame:
             self.fix_download_endgame()
-        elif self.multidownload.storage.want_requests(index):
+        elif self.multidownload.rm.want_requests(index):
             self._request_more([index]) # call _request_more whether choked.
             if self.choked and not self.interested:
                 self.interested = True
@@ -408,13 +410,13 @@ class Download(object):
             if self.have[i]:
                 self.multidownload.got_have(i)
                 count += 1
-        if self.multidownload.storage.endgame:
+        if self.multidownload.rm.endgame:
             for piece, begin, length in self.multidownload.all_requests:
                 if self.have[piece]:
                     self.interested = True
                     self.connection.send_interested()
                     return
-        for piece in self.multidownload.storage.iter_want():
+        for piece in self.multidownload.rm.iter_want():
             if self.have[piece]:
                 self.interested = True
                 self.connection.send_interested()
@@ -436,12 +438,12 @@ class Download(object):
             have = Bitfield(n, s)
         self.have = have
         self.multidownload.got_have_all()
-        if self.multidownload.storage.endgame:
+        if self.multidownload.rm.endgame:
             for piece, begin, length in self.multidownload.all_requests:
                 self.interested = True
                 self.connection.send_interested()
                 return
-        for i in self.multidownload.storage.iter_want():
+        for i in self.multidownload.rm.iter_want():
             self.interested = True
             self.connection.send_interested()
             return
@@ -490,10 +492,10 @@ class Download(object):
             return
         self.active_requests.remove(req)
 
-        if self.multidownload.storage.endgame:
+        if self.multidownload.rm.endgame:
             return
 
-        self.multidownload.storage.request_lost(*req)
+        self.multidownload.rm.request_lost(*req)
         if not self.choked:
             self._request_more()
         ds = [d for d in self.multidownload.downloads if not d.choked]

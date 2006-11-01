@@ -24,8 +24,8 @@ from BTL.HostIP import get_host_ip, get_host_ips
 from BTL.exceptions import str_exc
 
 if os.name == 'nt':
-    import win32icmp
-    
+    from BTL import win32icmp
+
 def daemon_thread(target, args=()):
     t = threading.Thread(target=target, args=args)
     t.setDaemon(True)

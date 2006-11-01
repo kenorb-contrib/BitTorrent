@@ -10,7 +10,7 @@ def metainfo_from_file(f):
     return metainfo
 
 def infohash_from_path(path):
-    return metainfo_from_file(file_from_path(path)).infohash
+    return str(metainfo_from_file(file_from_path(path)).infohash)
 
 def parse_infohash(ihash):
     try:

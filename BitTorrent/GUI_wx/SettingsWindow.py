@@ -545,7 +545,7 @@ class AppearanceSettingsPanel(SettingsPanel):
 
 
     def new_sample(self, sample_class, value):
-        sample = sample_class(self, size=wx.Size(-1, -1), style=wx.SUNKEN_BORDER)
+        sample = sample_class(self, size=wx.Size(-1, 20), style=wx.SUNKEN_BORDER)
         # I happen to know 200 is the right number because I looked.
         sample.SetValue(self.sample_value, 'running', (200, 0, self.sample_data))
         sample.Bind(wx.EVT_LEFT_DOWN, self.sample)
@@ -584,8 +584,6 @@ class LanguageSettingsPanel(LanguageSettings):
 
 class SettingsWindow(BTDialog):
 
-    use_listbook = False
-
     def __init__(self, main_window, config, setfunc):
         BTDialog.__init__(self, main_window, style=wx.DEFAULT_DIALOG_STYLE|wx.CLIP_CHILDREN|wx.WANTS_CHARS)
         self.Bind(wx.EVT_CLOSE, self.close)
@@ -595,19 +593,7 @@ class SettingsWindow(BTDialog):
         self.setfunc = setfunc
         self.config = config
 
-        if self.use_listbook:
-            self.notebook = wx.Listbook(self)
-            # BUG use real icons
-            imagelist = wx.ImageList(32, 32)
-            p = os.path.join(image_root, 'logo', 'bittorrent_icon_32.png')
-            assert os.access(p, os.F_OK)
-            bitmap = wx.Bitmap(p, type=wx.BITMAP_TYPE_ANY)
-            assert bitmap.Ok()
-            imagelist.Add(bitmap)
-            # end bug
-            self.notebook.AssignImageList(imagelist)
-        else:
-            self.notebook = wx.Notebook(self)
+        self.notebook = wx.Notebook(self)
 
         self.notebook.Bind(wx.EVT_CHAR, self.key)
 
@@ -616,11 +602,6 @@ class SettingsWindow(BTDialog):
         self.network_panel    =    NetworkSettingsPanel(self.notebook)
         self.appearance_panel = AppearanceSettingsPanel(self.notebook)
         self.language_panel   =   LanguageSettingsPanel(self.notebook)
-
-        if self.use_listbook:
-            for i in range(self.notebook.GetPageCount()):
-                # BUG use real icons
-                self.notebook.SetPageImage(i, 0)
 
         self.vbox = VSizer()
         self.vbox.AddFirst(self.notebook, proportion=1, flag=wx.GROW)

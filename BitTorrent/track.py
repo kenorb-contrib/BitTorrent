@@ -328,7 +328,7 @@ class Tracker(object):
                 '</ul>\n' % (version, isotime()))
             if self.allowed is not None:
                 if self.show_names:
-                    names = [ (value['name'], infohash)
+                    names = [ (value[1].name, infohash)
                               for infohash, value in self.allowed.iteritems()]
                 else:
                     names = [(None, infohash) for infohash in self.allowed]

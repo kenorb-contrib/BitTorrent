@@ -12,6 +12,7 @@
 
 from __future__ import division
 
+import sys
 import wx
 
 from BTL.translation import _
@@ -111,7 +112,10 @@ class BandwidthGraphPanel(CustomWidgets.DoubleBufferedMixin, BTPanel):
         dr_color = wx.NamedColor("green")
         ur_color = wx.NamedColor("slate blue")
 
-        dc.SetFont(wx.Font(8, wx.DEFAULT, wx.NORMAL, wx.NORMAL))
+        size = 8
+        if sys.platform == "darwin":
+            size = 10
+        dc.SetFont(wx.Font(size, wx.DEFAULT, wx.NORMAL, wx.NORMAL))
         dc.SetBackground(wx.Brush(self.GetBackgroundColour()))
         dc.Clear()
 

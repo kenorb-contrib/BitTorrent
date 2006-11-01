@@ -15,6 +15,7 @@
 app_name = "BitTorrent"
 from BTL.translation import _
 
+import time
 from sys import *
 from os.path import *
 from sha import *
@@ -38,12 +39,14 @@ labels = {'metafile'   : _("metainfo file: %s"       ),
           'files'      : _("files:"                  ),
           'title'      : _("title: %s"               ),
           'dirname'    : _("directory name: %s"      ),
+          'creation date' : _("creation date: %s"    ),
           'archive'    : _("archive size:"           ),
           'announce'   : _("tracker announce url: %s"),
           'announce-list'   : _("tracker announce list: %s"),
           'nodes'      : _("trackerless nodes:"      ),
           'comment'    : _("comment:"                ),
           'content_type' : _("content_type: %s"      ),
+          'url-list' : _("url sources: %s"      ),
           }
 
 maxlength = max( [len(v[:v.find(':')]) for v in labels.values()] )
@@ -105,8 +108,22 @@ for metainfo_name in argv[1:]:
         for n in metainfo['nodes']:
             print '\t%s\t:%d' % (n[0], n[1])
         
-    stdout.write(labels['comment'] + " ")
     if metainfo.has_key('comment'):
-        print metainfo['comment']
-    print
+        print labels['comment'], metainfo['comment']
+    else:
+        print labels['comment']
+        
+    if metainfo.has_key('url-list'):
+        print labels['url-list'] % '\n'.join(metainfo['url-list'])
 
+    if metainfo.has_key('creation date'):
+        fmt = "%a, %d %b %Y %H:%M:%S"
+        gm = time.gmtime(metainfo['creation date'])
+        s = time.strftime(fmt, gm)
+        print labels['creation date'] % s
+        
+    # DANGER: modifies torrent file
+    if False:
+        metainfo_file = open(metainfo_name, 'wb')
+        metainfo_file.write(bencode(metainfo))
+        metainfo_file.close()

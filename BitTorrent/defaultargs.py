@@ -12,6 +12,7 @@
 # Needs redesign.  Many if's on uiname.  Blech. --Dave
 
 import os
+import sys
 from BTL.translation import _
 
 ### add your favorite here
@@ -188,16 +189,16 @@ rare_options = [
      _("address of HTTP proxy to use for tracker connections")),
     ('close_with_rst', 0,
      _("close connections with RST and avoid the TCP TIME_WAIT state")),
-    ('num_disk_threads', 10,
+    ('num_disk_threads', 3,
      _("number of read threads to use in the storage object")),
     ('num_piece_checks', 2,
      _("number of simultaneous piece checks to run per torrent, set to a low number like 2 or 3")),
-    ('twisted', -1,
-     _("Use Twisted network libraries for network connections. 1 means use twisted, 0 means do not use twisted, -1 means autodetect, and prefer twisted")),
     ('num_fast', 10,
      _("Number of pieces allowed fast.")),
     ('show_hidden_torrents', False,
      _("Show hidden torrents in the UI.")),
+    ('show_variance_line', False,
+     _("Show variance line in bandwidth graph.")),
     # Future.
     #('stream_priority', 2,
     # _("Priority for pieces that are needed soon.")),
@@ -322,13 +323,6 @@ def get_defaults(ui):
                "and enable version check debugging mode")),
 
             # remember GUI state
-            ('progressbar_style', 3,
-             _("The style of progressbar to show.  0 means no progress "
-               "bar.  1 is an ordinary progress bar.  2 is a progress "
-               "bar that shows transferring, available and missing "
-               "percentages as well.  3 is a piece bar which "
-               "color-codes each piece in the torrent based on its "
-               "availability.")),
             ('geometry', '',
              _("specify window size and position, in the format: "
                "WIDTHxHEIGHT+XOFFSET+YOFFSET")),
@@ -374,6 +368,21 @@ def get_defaults(ui):
                 ('enforce_association', True,
                  _("Enforce .torrent file associations on startup")),
             ])
+
+	progress_bar = ['progressbar_style', 3,
+			_("The style of progressbar to show.  0 means no progress "
+			  "bar.  1 is an ordinary progress bar.  2 is a progress "
+			  "bar that shows transferring, available and missing "
+			  "percentages as well.  3 is a piece bar which "
+			  "color-codes each piece in the torrent based on its "
+			  "availability.")]
+
+	if sys.platform == "darwin":
+	    # listctrl placement of the progress bars does not work on Carbon
+	    progress_bar[1] = 0
+	    
+	r.extend([ progress_bar,		    
+		   ])
 
 
     if ui in ('bittorrent', 'maketorrent'):

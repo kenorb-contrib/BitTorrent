@@ -11,6 +11,7 @@
 # Written by Greg Hazel, ModerateDownloadGauge written by Matt Chisholm
 
 import os
+import sys
 
 from BTL.platform import bttime
 from BTL.DictWithLists import DictWithLists
@@ -40,16 +41,24 @@ def _ScaleBlit(bmp, dc, dst_rect):
             pass
 
     if sX == 0:
-        w = 0
+        x = 0
     else:
-        w = dst_rect.x/sX
+        x = dst_rect.x/sX
 
     if sY == 0:
-        h = 0
+        y = 0
     else:
-        h = dst_rect.y/sY    
-        
-    dc.DrawBitmap(bmp, w, h, True)
+        y = dst_rect.y/sY
+
+    if sys.platform == "darwin":
+        # magic!
+        y = round(y)
+        x += 0.2
+        dc.SetDeviceOrigin(x, y)
+        dc.DrawBitmap(bmp, 0, 0, True)
+        dc.SetDeviceOrigin(0, 0)
+    else:
+        dc.DrawBitmap(bmp, x, y, True)
 
     if os.name == 'nt':
         try:
@@ -117,7 +126,7 @@ class ScaledBufferMixin(DoubleBufferedMixin):
         self.h_step = h_step
         # don't go crazy
         self.w_max = 1000
-        self.h_max = 1000
+        self.h_max = 100
         DoubleBufferedMixin.__init__(self)
 
     def _round(self, d, step):

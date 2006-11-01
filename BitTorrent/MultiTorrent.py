@@ -388,9 +388,9 @@ class MultiTorrent(Feedback):
     def reinitialize_torrent(self, infohash):
         t = self.get_torrent(infohash)
         if self.torrent_running(infohash):
-            assert t.is_running()
+            assert t.is_running(), "torrent not running, but in running set"
             raise TorrentAlreadyRunning(infohash.encode("hex"))
-        assert t.state == "failed"
+        assert t.state == "failed", "state not failed"
 
         df = self._init_torrent(t, use_policy=False)
         return df

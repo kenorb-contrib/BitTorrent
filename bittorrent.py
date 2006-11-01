@@ -218,11 +218,11 @@ if __name__ == '__main__':
                                                   test_current_version=config['current_version'])
             multitorrent.add_auto_update_policy(auto_update_butler)
 
-            # attach to the UI            
-            mainloop.attach_multitorrent(ThreadProxy(multitorrent,
-                                                     gui_wrap,
-                                                     _wrap_task(rawserver.external_add_task)),
-                                         core_doneflag)
+            # attach to the UI
+            tpm = ThreadProxy(multitorrent,
+                              gui_wrap,
+                              _wrap_task(rawserver.external_add_task))
+            mainloop.attach_multitorrent(tpm, core_doneflag)
             ipc.start(mainloop.external_command)
             #rawserver.associate_thread()
 

@@ -18,7 +18,7 @@ import os
 import sys
 import math
 from BTL.hash import sha
-from time import time
+import time
 from threading import Event
 from BitTorrent.translation import _
 
@@ -39,6 +39,9 @@ from khashmir.util import packPeers, compact_peer_info
 ignore = ['core', 'CVS', 'Thumbs.db', 'desktop.ini']
 
 from BTL.ConvertedMetainfo import noncharacter_translate
+
+def gmtime():
+    return time.mktime(time.gmtime())
 
 def dummy(v):
     pass
@@ -116,7 +119,7 @@ def make_meta_files(url,
 def make_meta_file(path, url, piece_len_exp, flag=Event(), progress=dummy,
                    title=None, comment=None, safe=None, content_type=None,
                    target=None, url_list=None, name=None):
-    data = {'announce': url.strip(), 'creation date': int(time())}
+    data = {'announce': url.strip(), 'creation date': int(gmtime())}
     piece_length = 2 ** piece_len_exp
     a, b = os.path.split(path)
     if not target:
@@ -178,7 +181,7 @@ def make_meta_file_dht(path, nodes, piece_len_exp, flag=Event(),
         nodes = [(node.host, node.port) for node in t.findNodes(info_hash) if node.host != '127.0.0.1']
     else:
         nodes = [(a[0], int(a[1])) for a in [node.strip().split(":") for node in nodes.split(",")]]
-    data = {'nodes': nodes, 'creation date': int(time())}
+    data = {'nodes': nodes, 'creation date': int(gmtime())}
     h = file(f, 'wb')
 
     data['info'] = info

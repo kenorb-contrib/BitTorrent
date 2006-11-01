@@ -13,6 +13,7 @@
 from __future__ import division
 
 import sys
+from BTL.platform import app_name
 from BTL.translation import _
 from BitTorrent import BTFailure
 from BTL.obsoletepythonsupport import *
@@ -22,10 +23,11 @@ from BitTorrent.Connector import Connector
 from BitTorrent.HTTPConnector import HTTPConnector
 from BitTorrent.LocalDiscovery import LocalDiscovery
 from BitTorrent.InternetWatcher import InternetSubscriber
-from BTL.DictWithLists import OrderedDict
+from BTL.DictWithLists import DictWithInts, OrderedDict
 from BTL.platform import bttime
 import random
 import logging
+import urlparse
 
 ONLY_LOCAL = False
 
@@ -144,6 +146,7 @@ class ConnectionManager(InternetSubscriber):
         self.everinc = False
         self.tracker_ips = tracker_ips
         self.log_prefix = log_prefix
+        self.logger = logging.getLogger(self.log_prefix)
         self.closed = False        
 
         # submitted
@@ -161,8 +164,8 @@ class ConnectionManager(InternetSubscriber):
         self.cached_peers = OrderedDict()
         self.cache_limit = 300
 
-        self.connector_ips = {} # { ip: count }
-        self.connector_ids = set()
+        self.connector_ips = DictWithInts()
+        self.connector_ids = DictWithInts()
 
         self.reopen(reported_port)        
         self.banned = set()
@@ -236,8 +239,19 @@ class ConnectionManager(InternetSubscriber):
                                       encrypt=encrypt,
                                       lan=lan)
     
-    def start_http_connection(self, addr, id):
-        return self._start_connection(addr, id, HTTPInitialConnection)
+    def start_http_connection(self, url):
+        r = urlparse.urlparse(url)
+        host = r[1]
+        if ':' in host:
+            host, port = host.split(':')
+            port = int(port)
+        else:
+            port = 80
+        df = self.rawserver.gethostbyname(host)
+        def _connect_http(ip):
+            self._start_connection((ip, port), url, HTTPInitialConnection)
+        df.addCallback(_connect_http)
+        df.addLogback(self.logger.warning, "Resolve failed")
 
     def _start_connection(self, addr, id, handler, *a, **kw):
         """@param addr: domain name/ip address and port pair.
@@ -264,7 +278,6 @@ class ConnectionManager(InternetSubscriber):
                 return True
             if self.config['one_connection_per_ip'] and v.ip == addr[0]:
                 return True
-
 
         total_outstanding = len(self.connectors)
         # it's possible the pending connections could eventually complete,
@@ -336,16 +349,13 @@ class ConnectionManager(InternetSubscriber):
         # close does the same thing, but disconnects in the case where the
         # connection was made. Not sure how that occurs without add being in
         # self.pending_connections
+        # Maybe this was fixed recently in CRLR.
         #h.connector.stopConnecting()
         h.connector.close()
-        
 
     def connection_handshake_completed(self, connector):
-        """BitTorrent-protocol handshake is complete."""
 
-        self.connector_ips.setdefault(connector.ip, 0)
-        self.connector_ips[connector.ip] += 1        
-
+        self.connector_ips.add(connector.ip)
         self.connector_ids.add(connector.id)
 
         self.complete_connectors.append(connector)
@@ -423,7 +433,6 @@ class ConnectionManager(InternetSubscriber):
                 c.connection.close()
                 c.closed = True
 
-
     def singleport_connection(self, connector):
         """hand-off from SingleportListener once the infohash is known and
            thus we can map a connection on to a particular Torrent."""
@@ -458,10 +467,7 @@ class ConnectionManager(InternetSubscriber):
             self.ratelimiter.dequeue(connector)
 
         if connector.complete:
-            self.connector_ips[connector.ip] -= 1
-            if self.connector_ips[connector.ip] == 0:
-                del self.connector_ips[connector.ip]
-
+            self.connector_ips.remove(connector.ip)
             self.connector_ids.remove(connector.id)
             
             self.complete_connectors.remove(connector)
@@ -536,7 +542,8 @@ class SingleportListener(Handler):
         if self.nattraverser:
             try:
                 d = self.nattraverser.register_port(port, port, "TCP", 
-                    config['bind'])
+                                                    config['bind'],
+                                                    app_name)
                 def change(*a):
                     self.rawserver.external_add_task(0, self._change_port, *a)
                 d.addCallback(change)

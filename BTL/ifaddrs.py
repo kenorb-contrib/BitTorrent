@@ -4,7 +4,7 @@
 """
 routines for getting network interface addresses
 """
-# by Ben Wiley Sittler
+# by Benjamin C. Wiley Sittler
 __all__ = [
     'getifaddrs',
     'getaddrs',
@@ -581,11 +581,12 @@ def flagset(flagbits):
                        IFF_DORMANT,
                        ))
 
-def getifaddrs():
+def getifaddrs(name = None):
     """
-   Create a list of ifaddrs, one for each
-   network interface on the host machine.  If successful,
-   return the list.  On errors, raises an exception.
+   Create a list of ifaddrs, one for each network interface on the
+   host machine.  If successful, return the list.  On errors, raises
+   an exception.  If the optional name is not None, only entries for
+   that interface name are returned.
     """
     ifa = POINTER(ifaddrs)()
     ret = _getifaddrs(byref(ifa))
@@ -636,13 +637,13 @@ def getifaddrs():
                         }
             iflist.append(dict([ (k, v) for k, v in d.items() if v is not None ]))
             ifa = ifa[0].ifa_next
-        return iflist
+        return [ iface for iface in iflist if name is None or iface.get('name') == name ]
     finally:
         _freeifaddrs(ifa0)
 
-def getaddrs(family = None, flags = OrSet([IFF_UP, IFF_RUNNING])):
+def getaddrs(family = None, flags = OrSet([IFF_UP, IFF_RUNNING]), name = None):
     flags = flagset(flags)
-    for a in getifaddrs():
+    for a in getifaddrs(name = name):
         if family is not None and a.get('addr', {}).get('family') != family:
             continue
         if flags:
@@ -652,9 +653,9 @@ def getaddrs(family = None, flags = OrSet([IFF_UP, IFF_RUNNING])):
         if 'addr' in a and 'addr' in a['addr']:
             yield a['addr']['addr']
 
-def getnetaddrs(family = None, flags = OrSet([IFF_UP, IFF_RUNNING])):
+def getnetaddrs(family = None, flags = OrSet([IFF_UP, IFF_RUNNING]), name = None):
     flags = flagset(flags)
-    for a in getifaddrs():
+    for a in getifaddrs(name = name):
         if family is not None and a.get('addr', {}).get('family') != family:
             continue
         if 'netmask' in a and a.get('netmask', {}).get('family') != a.get('addr', {}).get('family') != family:
@@ -666,9 +667,9 @@ def getnetaddrs(family = None, flags = OrSet([IFF_UP, IFF_RUNNING])):
         if 'addr' in a and 'addr' in a['addr']:
             yield str(a['addr']['addr']) + (('netmask' in a and 'addr' in a['netmask'] and a['netmask'].get('family') == a['addr']['family']) and '/' + str(a['netmask']['addr']) or '')
 
-def getbroadaddrs(family = None, flags = OrSet([IFF_UP, IFF_RUNNING, IFF_BROADCAST])):
+def getbroadaddrs(family = None, flags = OrSet([IFF_UP, IFF_RUNNING, IFF_BROADCAST]), name = None):
     flags = flagset(flags)
-    for a in getifaddrs():
+    for a in getifaddrs(name = name):
         if family is not None and a.get('broadaddr', {}).get('family') != family:
             continue
         if flags:
@@ -678,9 +679,9 @@ def getbroadaddrs(family = None, flags = OrSet([IFF_UP, IFF_RUNNING, IFF_BROADCA
         if 'broadaddr' in a and 'addr' in a['broadaddr']:
             yield str(a['broadaddr']['addr']) + (('netmask' in a and 'addr' in a['netmask'] and a['netmask'].get('family') == a['broadaddr']['family']) and '/' + str(a['netmask']['addr']) or '')
 
-def getdstaddrs(family = None, flags = OrSet([IFF_UP, IFF_RUNNING, IFF_POINTOPOINT])):
+def getdstaddrs(family = None, flags = OrSet([IFF_UP, IFF_RUNNING, IFF_POINTOPOINT]), name = None):
     flags = flagset(flags)
-    for a in getifaddrs():
+    for a in getifaddrs(name = None):
         if family is not None and a.get('dstaddr', {}).get('family') != family:
             continue
         if flags:

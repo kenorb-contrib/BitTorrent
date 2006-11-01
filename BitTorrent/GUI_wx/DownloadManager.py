@@ -13,6 +13,7 @@
 from __future__ import division
 
 import os
+import sys
 import time
 import inspect
 import itertools
@@ -394,7 +395,8 @@ class TorrentListView(HashableListView):
 
         self.set_default_widths()
 
-        self.SetColumnWidth(self.columns['progress'].GetColumn(), 200)
+	if pbstyle != 0:
+	    self.SetColumnWidth(self.columns['progress'].GetColumn(), 200)
 
 
     def SortItems(self, sorter=None):
@@ -623,9 +625,6 @@ class PeerListView(HashableListView):
         self.torrent = torrent
 
         # add BT logo
-        # wx.Image under wx 2.6.2 doesn't like to load ICO files this way:
-        ##i = wx.Image(os.path.join(image_root, 'bittorrent.ico'),
-        ##             type=wx.BITMAP_TYPE_ICO, index=4)
         i = wx.Image(os.path.join(image_root, 'logo', 'bittorrent_icon_16.png'),
                      type=wx.BITMAP_TYPE_PNG)
         b = wx.BitmapFromImage(i)
@@ -650,6 +649,8 @@ class PeerListView(HashableListView):
                 self.cc_index[f] = i
             elif f in ('noimage',):
                 try:
+                    if os.name != 'nt':
+                        raise OSError("Only works on Windows")
                     # I found this by hand.
                     path = r'%SystemRoot%\system32\netshell.dll'
                     loc = wx.IconLocation(wx.ExpandEnvVars(path), 59)
@@ -678,7 +679,7 @@ class PeerListView(HashableListView):
         id = wx.NewId()
         m.Append(id, _("Add Peer"))
         self.Bind(wx.EVT_MENU, self.AddPeer, id=id)
-        if wx.GetKeyState(wx.WXK_CONTROL):
+        if wx.GetKeyState(wx.WXK_SHIFT):
             id = wx.NewId()
             m.Append(id, _("Disconnect Peer"))
             self.Bind(wx.EVT_MENU, self.DisconnectPeer, id=id)
@@ -1435,9 +1436,11 @@ class TorrentInfoPanel(BTPanel):
         self.title_sizer.AddGrowableCol(1)
 
         if metainfo.title is not None:
-            self.title_sizer.add_pair(_("Torrent title:"), metainfo.title.replace('&', '&&'))
+            self.title_sizer.add_pair(_("Torrent title:"), 
+                                      metainfo.title.replace('&', '&&'))
         else:
-            self.title_sizer.add_pair(_("Torrent name:"), metainfo.name.replace('&', '&&'))
+            self.title_sizer.add_pair(_("Torrent name:"),
+                                      metainfo.name.replace('&', '&&'))
 
         self.Add(self.title_sizer, flag=wx.GROW|wx.ALL, border=SPACING)
 
@@ -1456,7 +1459,14 @@ class TorrentInfoPanel(BTPanel):
 
         self.Add(self.dynamic_sizer, flag=wx.GROW|wx.ALL^wx.TOP, border=SPACING)
 
-        self.piece_bar = FancyDownloadGauge(self, border=False, size=wx.Size(-1, -1), style=wx.SUNKEN_BORDER)
+        style = wx.SUNKEN_BORDER
+        border = False
+        if sys.platform == "darwin":
+            style = 0
+            border = True
+        self.piece_bar = FancyDownloadGauge(self, border=border,
+                                            size=wx.Size(-1, 20),
+                                            style=style)
         self.Add(self.piece_bar, flag=wx.GROW|wx.ALL^wx.TOP, border=SPACING)
 
         # static info
@@ -1615,6 +1625,8 @@ class TorrentPanel(BTPanel):
         self.peer_tab_sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.peer_list = PeerListView(self.torrent, self.peer_tab_panel)
         self.peer_tab_sizer.Add(self.peer_list, proportion=1, flag=wx.GROW)
+        if sys.platform == 'darwin':
+            self.peer_list.SetMinSize((1, 1))
         self.peer_tab_panel.SetSizerAndFit(self.peer_tab_sizer)
         self.peer_list.SortListItems(col='ip', ascending=1)
         self.notebook.AddPage(self.peer_tab_panel, _("Peer List"))
@@ -1661,6 +1673,8 @@ class TorrentPanel(BTPanel):
             self.sizer.AddGrowableRow(0)
             self.notebook.Hide()
             self.sizer.Detach(self.notebook)
+            if sys.platform == 'darwin':
+                self.parent.sizer.SetItemMinSize(self, (-1, -1))
             self.sizer.Layout()
             self.details_button.SetLabel(_("Show &Details"))
             self.parent.Fit()
@@ -1669,6 +1683,8 @@ class TorrentPanel(BTPanel):
             self.sizer.RemoveGrowableRow(0)
             self.notebook.Show()
             self.sizer.Add(self.notebook, flag=wx.GROW, proportion=1)
+            if sys.platform == 'darwin':
+                self.parent.sizer.SetItemMinSize(self, (100, 420))
             self.sizer.Layout()
             self.details_button.SetLabel(_("Hide &Details"))
             self.parent.Fit()
@@ -1754,6 +1770,8 @@ class TorrentWindow(BTFrameWithSizer):
         self.Bind(wx.EVT_CLOSE, self.close)
         self.Bind(wx.EVT_CHAR, self.key)
         self.panel.BindChildren(wx.EVT_CHAR, self.key)
+        if sys.platform == 'darwin':
+            self.sizer.AddSpacer((0, 14))
         self.sizer.Layout()
         self.Fit()
         self.SetMinSize(self.GetSize())
@@ -2180,6 +2198,7 @@ class EventProperties(object):
 class MainWindow(BTFrame):
 
     def __init__(self, *a, **k):
+        k['metal'] = True
         BTFrame.__init__(self, *a, **k)
 
         app = wx.the_app
@@ -2270,9 +2289,11 @@ class MainWindow(BTFrame):
         # this for you - just name the item "Exit" and wxMac will change
         # it for you.
         if '__WXGTK__' in wx.PlatformInfo:
-            self.add_menu_item(self.file_menu, _("&Quit\tCtrl+Q"), wx.the_app.quit)
+	    name = _("&Quit\tCtrl+Q")
         else:
-            self.add_menu_item(self.file_menu, _("E&xit"), wx.the_app.quit)
+	    name = _("E&xit")
+	quit_id = self.add_menu_item(self.file_menu, name, wx.the_app.quit)
+	wx.the_app.SetMacExitMenuItemId(quit_id)
 
         self.menu_bar.Append(self.file_menu, _("&File"))
         # End file menu
@@ -2281,7 +2302,7 @@ class MainWindow(BTFrame):
         self.view_menu = BTMenu()
         settings_id = self.add_menu_item(self.view_menu, _("&Settings\tCtrl+S"),
                                          lambda e: wx.the_app.settings_window.MagicShow())
-        wx.the_app.s_macPreferencesMenuItemId = settings_id
+        wx.the_app.SetMacPreferencesMenuItemId(settings_id)
 
         self.add_menu_item(self.view_menu, _("&Log\tCtrl+L"),
                            lambda e: wx.the_app.log.MagicShow())
@@ -2311,10 +2332,11 @@ class MainWindow(BTFrame):
                            lambda e: wx.the_app.visit_url(
             FAQ_URL % {'client':make_id()}))
 
-        wx.the_app.s_macAboutMenuItemId = about_id
-        wx.the_app.s_macHelpMenuTitleName = _("&Help")
+        wx.the_app.SetMacAboutMenuItemId(about_id)
+        title = _("&Help")
+        wx.the_app.SetMacHelpMenuTitleName(title)
 
-        self.menu_bar.Append(self.help_menu, wx.the_app.s_macHelpMenuTitleName)
+        self.menu_bar.Append(self.help_menu, title)
         # End Help menu
 
         self.SetMenuBar(self.menu_bar)
@@ -2353,9 +2375,13 @@ class MainWindow(BTFrame):
         w = wx.the_app.config['column_widths']
         self.torrentlist.set_column_widths(w)
 
-
         dt = FileDropTarget(self, lambda p : wx.the_app.open_torrent_arg_with_callbacks(p))
         self.SetDropTarget(dt)
+
+	# for mac
+        dt = FileDropTarget(self.torrentlist,
+			    lambda p : wx.the_app.open_torrent_arg_with_callbacks(p))
+        self.torrentlist.SetDropTarget(dt)
 
         self.torrent_context_menu = TorrentMenu(self.torrent_ops)
         self.torrentlist.SetContextMenu(self.torrent_context_menu)
@@ -2439,8 +2465,12 @@ class MainWindow(BTFrame):
 
         self.Bind(wx.EVT_TOOL, self.search_field.search, id=tid)
 
-        self.tool_sizer.Add(self.tool_bar, flag=wx.GROW)
-        self.tool_sizer.Add(self.search_bar, flag=wx.ALIGN_CENTER_VERTICAL)
+        if '__WXMAC__' in wx.PlatformInfo:
+            self.tool_sizer.Add(self.tool_bar)
+        else:
+            self.tool_sizer.Add(self.tool_bar, flag=wx.GROW)
+            self.tool_sizer.Add(self.search_bar, flag=wx.ALIGN_CENTER_VERTICAL)
+
         s = self.search_bar.GetClientSize()
         if '__WXMSW__' in wx.PlatformInfo:
             # this makes the first toolbar size correct (on win2k, etc). icon
@@ -2458,7 +2488,15 @@ class MainWindow(BTFrame):
             if wx.the_app.config['toolbar_text']:
                 w += 25
             self.tool_sizer.SetItemMinSize(self.search_bar, w, s.height)
-
+        elif '__WXMAC__' in wx.PlatformInfo:            
+            self.tool_sizer.SetItemMinSize(self.search_bar, 186, s.height)
+            def OnSize(event):
+                x = event.GetSize().GetWidth() - 185
+                x2 = self.tool_bar.GetSize().GetWidth()
+                x = max(x, x2)
+                self.search_bar.SetPosition((x, 0))
+                event.Skip()
+            self.Bind(wx.EVT_SIZE, OnSize)
 
     def reset_toolbar_style(self):
         # Keep the old bars around just in case they get a callback
@@ -3006,7 +3044,7 @@ class MainLoop(BasicApp, BTApp):
 
     # this function must be thread-safe!
     def attach_multitorrent(self, multitorrent, doneflag):
-        if not self.IsMainLoopRunning():
+        if not self.running:
             # the app is dead, tell the multitorrent to die too
             doneflag.set()
             return
@@ -3170,7 +3208,7 @@ class MainLoop(BasicApp, BTApp):
 
         self.rize_up()
 
-        assert not self.torrents.has_key(metainfo.infohash)
+        assert not self.torrents.has_key(metainfo.infohash), "torrent already running"
 
         ask_for_save = self.config['ask_for_save'] or not self.config['save_in']
         save_in = self.config['save_in']

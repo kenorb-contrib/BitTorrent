@@ -20,7 +20,7 @@ import logging
 import traceback
 if os.name == 'nt':
     from BitTorrent import pykill
-    import win32api
+    import BTL.likewin32api as win32api
     import win32event
     import winerror
     import win32ui # needed for dde

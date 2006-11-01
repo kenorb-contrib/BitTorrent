@@ -124,11 +124,11 @@ from BitTorrent import version
 if os.name == 'nt':
     import pywintypes
     import _winreg
-    import win32api
+    import BTL.likewin32api as win32api
     import win32file
-    from win32com.shell import shellcon, shell
+    from win32com.shell import shellcon
     import win32con
-    import win32com.client
+    from twisted.python.shortcut import Shortcut
     import ctypes
     import struct
     FILE_ATTRIBUTE_SPARSE_FILE = 0x00000200
@@ -141,11 +141,11 @@ elif os.name == 'posix' and os.uname()[0] == 'Darwin':
         has_pyobjc = True
     except ImportError:
         pass
-else:
-    try:
-        import statvfs
-    except ImportError:
-        pass
+
+try:
+    import statvfs
+except ImportError:
+    statvfs = None
 
 def get_dir_root(shellvars, default_to_home=True):
     def check_sysvars(x):
@@ -377,7 +377,7 @@ def get_free_space(path):
         while not os.path.exists(path):
             path, top = os.path.split(path)
         free_to_user, total, total_free = GetDiskFreeSpaceEx(path)
-    elif hasattr(os, "statvfs"):
+    elif hasattr(os, "statvfs") and statvfs:
         s = os.statvfs(path)
         free_to_user = s[statvfs.F_BAVAIL] * long(s[statvfs.F_BSIZE])
 
@@ -539,19 +539,28 @@ def get_startup_dir():
 
 def create_shortcut(source, dest, *args):
     if os.name == 'nt':
-        shell = win32com.client.Dispatch("WScript.Shell")
-        shortcut = shell.CreateShortCut(dest + ".lnk")
-        shortcut.Targetpath = source
-        shortcut.Arguments = ' '.join(args)
-        path, file = os.path.split(source)
-        shortcut.WorkingDirectory = path
-        shortcut.save()
+        if len(args) == 0:
+            args = None
+        path, file = os.path.split(source)        
+        sc = Shortcut(source,
+                      arguments=args,
+                      workingdir=path)
+        sc.save(dest)                  
     else:
         # some other os may not support this, but throwing an error is good since
         # the function couldn't do what was requested
         os.symlink(source, dest)
         # linux also can't do args... maybe we should spit out a shell script?
         assert not args
+
+def resolve_shortcut(path):
+    if os.name == 'nt':
+        sc = Shortcut()
+        sc.load(path)
+        return sc.GetPath(0)[0]
+    else:
+        # boy, I don't know
+        return path
 
 def remove_shortcut(dest):
     if os.name == 'nt':
@@ -789,6 +798,8 @@ def blocking_smart_gettext_and_install(domain, localedir, languages,
         for lang in languages:
             # HACK
             if lang.startswith('en'):
+                continue
+            if lang.startswith('C'):
                 continue
             try:
                 get_language(lang)

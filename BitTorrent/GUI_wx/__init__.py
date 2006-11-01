@@ -13,6 +13,7 @@
 from __future__ import division
 
 import os
+import sys
 
 try:
     import wxversion
@@ -657,7 +658,10 @@ class BTFrame(wx.Frame, MagicShow):
     """Base class for all BitTorrent window frames"""
 
     def __init__(self, *a, **k):
+        metal = k.pop('metal', False)
         wx.Frame.__init__(self, *a, **k)
+        if sys.platform == 'darwin' and metal:
+            self.SetExtraStyle(wx.FRAME_EX_METAL)
         self.SetIcon(wx.the_app.icon)
 
 
@@ -753,6 +757,7 @@ class BTApp(wx.App):
         wx.App.__init__(self, *a, **k)
 
     def OnInit(self):
+        self.running = True
         if profile:
             try:
                 os.unlink(prof_file_name)
@@ -777,6 +782,7 @@ class BTApp(wx.App):
         return True
 
     def OnExit(self):
+        self.running = False
         if profile:
             self.prof.disable()
             st = Stats(self.prof.getstats())

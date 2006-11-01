@@ -47,6 +47,7 @@ matches = (
            ('346------.+$'                   , "TorrentTopia 1.70"    ),
            ('OP(?P<strver>\d{4}).+$'         , "Opera"                ),
            ('-KT(?P<version>\d+)(?P<rc>R\d+)-+.+$', "KTorrent"        ),
+           ('-KT(?P<version>\d+)-+.+$'       , "KTorrent"             ),
 # Unknown but seen in peer lists:
            ('-S(?P<version>10059)-+.+$'      , "S (unknown)"          ),
            ('-TR(?P<version>\d+)-+.+$'       , "transmission"         ),

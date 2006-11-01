@@ -1,6 +1,7 @@
 # by Greg Hazel
 
-from BitTorrent.GUI_wx import BTDialog, ElectroStaticText, SPACING
+from BitTorrent.GUI_wx import BTDialog, ElectroStaticText
+from BitTorrent.GUI_wx import SPACING
 import wx
 
 class CheckBoxDialog(BTDialog):
@@ -13,11 +14,19 @@ class CheckBoxDialog(BTDialog):
         self.checkbox = wx.CheckBox(self, label=checkbox_label)
         self.checkbox.SetValue(checkbox_value)
 
-        bmp = wx.StaticBitmap(self, wx.ID_ANY,
-                              wx.ArtProvider.GetBitmap(wx.ART_QUESTION,
-                                                       wx.ART_MESSAGE_BOX,
-                                                       (32, 32)))
-
+        try:
+            bmp = wx.ArtProvider.GetBitmap(wx.ART_QUESTION,
+                                           wx.ART_MESSAGE_BOX, (32, 32))
+        except:
+            bmp = wx.EmptyBitmap(32, 32)
+            dc = wx.MemoryDC()
+            dc.SelectObject(bmp)
+            dc.SetBackground(wx.Brush(self.GetBackgroundColour()))
+            dc.Clear()
+            dc.SelectObject(wx.NullBitmap)
+        
+        bmp = wx.StaticBitmap(self, wx.ID_ANY, bmp)
+        
         # sizers
         self.button_sizer = self.CreateStdDialogButtonSizer(flags=wx.OK|wx.CANCEL)
 
