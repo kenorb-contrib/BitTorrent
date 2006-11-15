@@ -234,7 +234,7 @@ class HTTPConnector(Connector):
                 message = ""
 
             if not version == "HTTP/1.1":
-                self.protocol_violation('Not HTTP/1.1: %s' % self._message)
+                self.protocol_violation('Not HTTP/1.1: %r' % self._message)
                 return
                 
             if status not in ('301', '302', '303', '206'):
@@ -351,6 +351,7 @@ class HTTPConnector(Connector):
             except StopIteration:
                 self.close()
                 return
+
     def _optional_restart(self):            
         if self.got_anything and not self.manual_close:
 

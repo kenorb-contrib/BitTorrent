@@ -13,6 +13,7 @@ class InternetSubscriber(object):
         pass
 
 class InternetWatcher(object):
+    
     def __init__(self, rawserver):
 
         self.rawserver = rawserver
@@ -21,8 +22,6 @@ class InternetWatcher(object):
             if rawserver.connections == 0:
                 self._first_connection()
             old_connectionMade(s)
-        assert not hasattr(rawserver, "internet_watcher"), \
-                "rawserver already has conncetion rate limiter installed"
         rawserver.connectionMade = connectionMade
         rawserver.internet_watcher = self
 
@@ -48,3 +47,10 @@ class InternetWatcher(object):
     def _first_connection(self):
         for s in self.subscribers:
             s.internet_active()
+
+
+def get_internet_watcher(rawserver):
+    if not hasattr(rawserver, "internet_watcher"):
+        InternetWatcher(rawserver)    
+    return rawserver.internet_watcher
+

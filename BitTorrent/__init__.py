@@ -9,7 +9,7 @@
 # for the specific language governing rights and limitations under the
 # License.
 
-version = '5.0.0'
+version = '5.0.1'
 
 URL = 'http://www.bittorrent.com/'
 DONATE_URL = URL + 'donate.html?client=%(client)s'
@@ -40,7 +40,8 @@ class UserFailure(BTFailure):
 
 branch = None
 p = os.path.realpath(os.path.split(sys.argv[0])[0])
-if os.path.exists(os.path.join(p, '.cdv')):
+if (os.path.exists(os.path.join(p, '.cdv')) or
+    os.path.exists(os.path.join(p, '.svn'))):
     branch = os.path.split(p)[1]
 del p
 

@@ -12,6 +12,12 @@ class FileDropTarget(wx.FileDropTarget):
         self.window.SetCursor(wx.StockCursor(wx.CURSOR_COPY_ARROW))
         return wx.DragCopy
 
+    def OnEnter(self, x, y, d):
+        self.window.SetCursor(wx.StockCursor(wx.CURSOR_COPY_ARROW))
+
+    def OnLeave(self):
+        self.window.SetCursor(wx.StockCursor(wx.CURSOR_ARROW))
+
     def OnDropFiles(self, x, y, filenames):
         self.window.SetCursor(wx.StockCursor(wx.CURSOR_ARROW))
         for file in filenames:

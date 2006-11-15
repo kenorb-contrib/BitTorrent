@@ -29,7 +29,7 @@ from BTL.exceptions import str_exc
 from BitTorrent.prefs import Preferences
 from BitTorrent.NatTraversal import NatTraverser
 from BitTorrent.BandwidthManager import BandwidthManager
-from BitTorrent.InternetWatcher import InternetWatcher
+from BitTorrent.InternetWatcher import get_internet_watcher
 from BitTorrent.NewRateLimiter import MultiRateLimiter as RateLimiter
 from BitTorrent.DownloadRateLimiter import DownloadRateLimiter
 from BitTorrent.ConnectionManager import SingleportListener
@@ -140,7 +140,7 @@ class MultiTorrent(Feedback):
         self.dht = None
         self.rawserver = rawserver
         nattraverser = NatTraverser(self.rawserver)
-        self.internet_watcher = InternetWatcher(self.rawserver)
+        self.internet_watcher = get_internet_watcher(self.rawserver)
         self.singleport_listener = SingleportListener(self.rawserver,
                                                       nattraverser,
                                                       self.log_root)
@@ -297,6 +297,13 @@ class MultiTorrent(Feedback):
 
     def global_error(self, severity, message, exc_info=None):
         self.logger.log(severity, message, exc_info=exc_info)
+
+    def create_torrent_non_suck(self, torrent_filename, path_to_data,
+                                hidden=False, feedback=None):
+        data = open(torrent_filename, 'rb').read()
+        metainfo = ConvertedMetainfo(bdecode(data))
+        return self.create_torrent(metainfo, path_to_data, path_to_data,
+                                   hidden=hidden, feedback=feedback)
 
     def create_torrent(self, metainfo, save_incomplete_as, save_as,
                        hidden=False, is_auto_update=False, feedback=None):

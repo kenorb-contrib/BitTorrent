@@ -21,7 +21,8 @@ import os
 if os.name == 'nt':
     import win32file
     import win32event
-    import BTL.likewin32api as win32api
+    #import BTL.likewin32api as win32api
+    import win32api
     import winerror
     import pywintypes
 

@@ -8,6 +8,11 @@ import BTL.stackthreading as threading
 from twisted.internet.protocol import ClientFactory, Protocol
 from twisted.protocols.policies import TimeoutMixin
 from twisted.internet import reactor
+try:
+    from BTL.iphelp import get_route_ip
+except:
+    get_route_ip = None
+    
 
 import thread
 
@@ -93,6 +98,13 @@ def get_deferred_host_ip():
     if _host_ip is not 'unknown' and _host_ip_cachetime + CACHE_TIME > bttime():
         return defer.succeed(_host_ip)
 
+    if get_route_ip:
+        ip = get_route_ip()
+        if ip:
+            _host_ip = ip
+            _host_ip_cachetime = bttime()
+            return defer.succeed(_host_ip)            
+
     df = defer.Deferred()
     
     if not _host_ip_callbacks:
@@ -121,6 +133,13 @@ def get_host_ip():
 
     if _host_ip is not 'unknown' and _host_ip_cachetime + CACHE_TIME > bttime():
         return _host_ip
+
+    if get_route_ip:
+        ip = get_route_ip()
+        if ip:
+            _host_ip = ip
+            _host_ip_cachetime = bttime()
+            return _host_ip
 
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

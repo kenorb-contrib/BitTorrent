@@ -42,7 +42,8 @@ from BitTorrent import configfile
 from BitTorrent import BTFailure, UserFailure
 from BitTorrent import version
 from BTL import GetTorrent
-from BitTorrent.RawServer_twisted import RawServer, task
+from BitTorrent.RawServer_twisted import RawServer
+from twisted.internet import task
 from BTL.ConvertedMetainfo import ConvertedMetainfo
 from BTL.yielddefer import launch_coroutine, _wrap_task
 from BitTorrent import inject_main_logfile

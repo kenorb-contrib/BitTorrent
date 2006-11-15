@@ -33,7 +33,7 @@ class StatusLight(object):
                        _("Checking for firewall..."),
                        _("Online, checking for firewall")),
         'running'   : ('running',
-                       _("Online"),
+                       _("Online, ports open"),
                        _("Online, running normally")),
         'natted'    : ('natted',
                        _("Online, maybe firewalled"),

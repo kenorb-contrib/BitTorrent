@@ -17,6 +17,9 @@ from stat import S_IMODE, S_IRUSR, S_IXUSR, S_IRGRP, S_IXGRP, S_IROTH, S_IXOTH
 from daemon import getuid_from_username, getgid_from_username
 from daemon import getgid_from_groupname
 
+months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul',
+              'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+
 class SetupException(Exception):
     pass
 
@@ -32,9 +35,28 @@ def seteugid_to_login():
     os.setegid(gid)
     os.seteuid(uid)                       # Is there a better way? --Dave
 
+def get_svn_change_code():
+    """Returns the svn repository's date and revision number for the current
+       working directory.  The returned string has the format 'YYYY_MM_DD_revXXXX'
+       where XXXX is the revision number."""
+    def to_dict(lines):
+        # FRAGILE XXX
+        splitted = [l.split(':') for l in lines]
+        pairs = [(s[0].strip(), ':'.join(s[1:]).strip()) for s in splitted]
+        d = dict(pairs)
+        return d
+        
+    # returns date and revision number
+    d = to_dict(os.popen("svn info").readlines())
+    url = d["URL"]
+    revision = int(d["Last Changed Rev"])
+    date = d["Last Changed Date"]
+    date = date.split(' ')[0]         # keep only "YYYY-MM-DD"
+    date = "_".join(date.split('-'))  # replace dash with underscore 
+    date_rev = "%s_rev%.4d" % (date,revision)
+    return date_rev
+ 
 def get_cdv_change_code():
-    months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul',
-              'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
     # cdv won't run on the dev machines as root.  nfs does not allow
     # root access to mounted drives.  --Dave
@@ -55,18 +77,19 @@ def get_cdv_change_code():
     return y+"_"+month+"_"+dom+"_"+t+"_"+code
 
 def get_install_prefix( appname ):
-    """Generates directory name /opt/appname_YYYY_MM_DD_HH_MM_SS_CODE"""
+    """Generates directory name /opt/appname_YYYY_MM_DD_revXXXX"""
 
     # fragile. XXXX
-    change = get_cdv_change_code()
+    #change = get_cdv_change_code()
+    change = get_svn_change_code()
     path = os.path.join("/opt", appname+"_"+change)
     return os.path.normpath(path)
 
 def get_unique_install_prefix( appname ):
-    """Generates a directory name /opt/appname_YYYY_MM_DD_HH_SS_CODE or
-       /opt/appname_YYYY_MM_DD_HH_SS_CODE_vXXX if the prior exists.
-       XXX is a counter that is incremented with each install of
-       the distribution with the same cdv change code.
+    """Generates a directory name /opt/appname_YYYY_MM_DD_revXX or
+       /opt/appname_YYYY_MM_DD_revXX_vVVV if the prior exists.
+       VVV is a counter that is incremented with each install of
+       the distribution with the same svn change code.
 
        Unlike get_install_prefix, this does not assume that cdv exists
        on the system, but instead assumes there is a version.txt
@@ -105,8 +128,8 @@ def setup( **kwargs ):
        /opt/BTL_2006_08_01_20:47:59_dfb3
 
        Replace BTL with kwargs['name'], the date and time with
-       the commit time for this revision in the cdv repository
-       and dfb3 with the code for the revision in cdv.
+       the commit time for this revision in the svn repository
+       and dfb3 with the code for the revision in svn.
 
        Also creates a symbolic link like /opt/BTL pointing to
        /opt/BTL_2006_08_01_20:47:59_dfb3/BTL.
@@ -158,7 +181,7 @@ def setup( **kwargs ):
         sys.argv[1] = "install"
 
         # create change code file.
-        code = get_cdv_change_code()
+        code = get_svn_change_code()
         if code:
             # may fail if root and destination is nfs mounted.
             try:
@@ -229,6 +252,7 @@ def setup( **kwargs ):
         for f in os.listdir('.'):
             if f == "build": continue
             if f == ".cdv": continue
+            if f == ".svn": continue
             if f == "lib": continue
             if not os.path.exists( os.path.join(sys.prefix,f)):
                 if os.path.isdir(f):

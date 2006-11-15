@@ -533,7 +533,6 @@ Function ${UN}MagicUninstall
   RMDir /r "$R0\locale"
   Delete "$R0\redirdonate.html"
   Delete "$R0\credits.txt"
-  Delete "$R0\credits-l10n.txt"
   Delete "$R0\LICENSE.txt"
   Delete "$R0\README.txt"
   Delete "$R0\TRACKERLESS.txt"
@@ -686,8 +685,6 @@ Section "Install" SecInstall
   File redirdonate.html
   IfErrors files
   File credits.txt
-  IfErrors files
-  File credits-l10n.txt
   IfErrors files
   File LICENSE.txt
   IfErrors files

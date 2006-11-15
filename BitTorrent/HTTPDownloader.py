@@ -63,11 +63,17 @@ class HTTPPageUnGzip(client.HTTPPageGetter):
                 s.write(response)
                 s.seek(-1)
                 g = GzipFile(fileobj=s, mode='rb')
-                response = g.read()
-                g.close()                
+                try:
+                    response = g.read()
+                except IOError:
+                    self.factory.noPage(failure.Failure(
+                        client.PartialDownloadError(self.status, self.message, response)))
+                    self.transport.loseConnection()
+                    return
+                g.close()
             self.factory.page(response)
         # server might be stupid and not close connection.
-        self.transport.loseConnection()    
+        self.transport.loseConnection()
 
     def lineReceived(self, line):
         return client.HTTPPageGetter.lineReceived(self, line.rstrip('\r'))

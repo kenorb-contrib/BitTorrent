@@ -12,6 +12,14 @@ try:
     base_list_class = deque
     popleft = deque.popleft
     clear = deque.clear
+    appendleft = deque.appendleft
+    def insert(q, n, item):
+        if n == len(q):
+            deque.append(q, item)
+        else:
+            q.rotate(-(n + 1))
+            q.appendleft(item)
+            q.rotate(n + 1)
     def pop(q, n):
         q.rotate(-n)
         q.popleft()
@@ -30,19 +38,24 @@ except ImportError:
         return l.pop(0)
     def clear(l):
         l[:] = []
+    def appendleft(l, item):
+        l.insert(0, item)
+    insert = UserList.insert
     pop = UserList.pop
     remove = UserList.remove
     
 
 class QList(base_list_class):
 
+    clear = clear
+    pop = pop
+    popleft = popleft
+    remove = remove
+    appendleft = appendleft
+    insert = insert
+
     def __init__(self, *a, **kw):
         base_list_class.__init__(self, *a, **kw)
-
-    def clear(self): return clear(self)
-    def pop(self, n): return pop(self, n)
-    def popleft(self): return popleft(self)    
-    def remove(self, item): return remove(self, item)
 
     # dequeu doesn't have __add__ ?
     # overload anyway to get a base_list_class
@@ -84,3 +97,5 @@ if __name__ == '__main__':
     for i in xrange(50):
         l.append(i)
     assert list(l) == range(40, 50)
+    l.appendleft(39)
+    assert list(l) == range(39, 50)

@@ -39,6 +39,11 @@ if os.name == 'nt':
     # -15 for a buffer
     MAX_FILES_OPEN = ctypes.cdll.msvcrt._getmaxstdio() - 3 - 15
 
+if os.name == 'nt':
+    CONFIRM_QUIT_DEFAULT = True
+else:
+    CONFIRM_QUIT_DEFAULT = False
+
 from BTL.language import languages
 from BTL.platform import app_name
 
@@ -313,7 +318,7 @@ def get_defaults(ui):
              _("Start %s minimized")%app_name),
             ('force_start_minimized', False,
              _("Start %s minimized (but do not save that preference)")%app_name),
-            ('confirm_quit', True,
+            ('confirm_quit', CONFIRM_QUIT_DEFAULT,
              _("Confirm before quitting %s")%app_name),
             ('new_version', '',
              _("override the version provided by the http version check "

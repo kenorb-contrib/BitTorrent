@@ -17,7 +17,8 @@ user_agent = None
 _pycurl_compression = 'zlib' in pycurl.version
 use_compression = True
 use_cert_authority = False
-
+timeout = 30
+connect_timeout = 30
 
 class StringIO2(object):
     def __init__(self):
@@ -55,6 +56,14 @@ def set_use_compression(use):
     global use_compression
     use_compression = use
 
+def set_timeout(t):
+    global timeout
+    timeout = t
+
+def set_connect_timeout(t):
+    global connect_timeout
+    connect_timeout = t
+
 def urlopen(req, close=True):
     if isinstance(req, str):
         req = Request(req)
@@ -72,7 +81,7 @@ def urlopen(req, close=True):
     req.c.perform()
     response.seek(-1)
 
-    #print repr(response.getvalue())    
+    #print repr(response.getvalue())
 
     response.code = req.c.getinfo(pycurl.RESPONSE_CODE)
     response.code = int(response.code)
@@ -117,11 +126,20 @@ class Request(object):
             #else:
             #    self.add_header("Accept-Encoding", "gzip")
 
+        if timeout:
+            self.c.setopt(self.c.TIMEOUT, timeout)
+        if connect_timeout:
+            self.c.setopt(self.c.CONNECTTIMEOUT, timeout)
+
+
     def set_url(self, url):
         self.c.setopt(self.c.URL, url)
 
     def set_timeout(self, timeout):
         self.c.setopt(self.c.TIMEOUT, timeout)
+
+    def set_connect_timeout(self, timeout):
+        self.c.setopt(self.c.CONNECTTIMEOUT, timeout)
 
     def add_header(self, var, val):
         self.headers[var] = val

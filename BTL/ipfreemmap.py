@@ -11,7 +11,12 @@ import bisect
 root, file = os.path.split(__file__)
 addrmap = os.path.join(root, "addrmap.dat")
 if not os.path.exists(addrmap):
-    addrmap = os.path.abspath("addrmap.dat")
+    from BTL.platform import get_module_filename
+    root, file = os.path.split(get_module_filename())
+    addrmap = os.path.join(root, "addrmap.dat")
+    if not os.path.exists(addrmap):
+        addrmap = os.path.abspath("addrmap.dat")
+
 
 ### generates the addrmap file
 ##import ipfree

@@ -6,11 +6,13 @@
 #
 # by Greg Hazel
 
+import random
 import threading
 from twisted.python import failure
 from twisted.python import threadable
 from twisted.internet import error, address, abstract
 from BTL.decorate import decorate_func
+from BTL.Lists import QList
 
 debug = False
 
@@ -108,12 +110,30 @@ class IRobotConnector(object):
     def getDestination(self):
         return address.IPv4Address('TCP', self.host, self.port, self.protocol)
 
+# maintain urgent > not urgent
+class Postponed(QList):
+
+    def append(self, k):
+        # figure out preempted spot
+        i = 0
+        for i, c in enumerate(self):
+            if not c.urgent:
+                break
+
+        # insert in random place after preempts
+        i += 1
+        if len(self) - i > 0:
+            i += random.randrange(len(self) - i)
+        else:
+            i = 1
+        self.insert(i, k)
+        
 
 class ConnectionRateLimiter(object):
     
     def __init__(self, reactor, max_incomplete):
         self.reactor = reactor
-        self.postponed = []
+        self.postponed = Postponed()
         self.max_incomplete = max_incomplete
         # this can go away when urllib does
         self.halfopen_hosts_lock = threading.RLock()
@@ -155,7 +175,7 @@ class ConnectionRateLimiter(object):
     def _push_new_connections(self):
         if not self.postponed:
             return
-        c = self.postponed.pop(0)
+        c = self.postponed.popleft()
         self._connect(c)
 
     def drop_postponed(self, c):
@@ -163,7 +183,7 @@ class ConnectionRateLimiter(object):
 
     def _preempt_for(self, c):
         if debug: print 'preempting for', c.host, c.port
-        self.postponed.insert(0, c)
+        self.postponed.appendleft(c)
             
         sorted = []
 

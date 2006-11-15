@@ -15,4 +15,10 @@ def str_exc(e):
             s = repr(e)
     return s    
 
+def str_fault(e):
+    if hasattr(e, 'faultString'):
+        msg = e.faultString
+    else:
+        msg = str_exc(e)
+    return msg
 

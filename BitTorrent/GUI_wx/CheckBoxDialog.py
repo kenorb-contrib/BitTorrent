@@ -1,5 +1,7 @@
 # by Greg Hazel
 
+import sys
+
 from BitTorrent.GUI_wx import BTDialog, ElectroStaticText
 from BitTorrent.GUI_wx import SPACING
 import wx
@@ -7,8 +9,11 @@ import wx
 class CheckBoxDialog(BTDialog):
 
     def __init__(self, parent, title, label, checkbox_label, checkbox_value):
-        BTDialog.__init__(self, parent=parent, id=wx.ID_ANY, title=title,
-                          style=wx.DEFAULT_DIALOG_STYLE)
+	style=wx.DEFAULT_DIALOG_STYLE
+	if sys.platform == 'darwin':
+	    # no system menu or close box on the mac
+	    style = wx.CAPTION|wx.CLOSE_BOX
+        BTDialog.__init__(self, parent=parent, id=wx.ID_ANY, title=title, style=style)
         self.text = ElectroStaticText(self, label=label)
 
         self.checkbox = wx.CheckBox(self, label=checkbox_label)

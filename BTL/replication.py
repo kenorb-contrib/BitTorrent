@@ -28,14 +28,17 @@ def EBRPC_ReplicationServer(port, ebrpc):
                 child.transport.write(ebencode.make_int(len(c)))
                 child.transport.write(c)
         else:
+            c = buffer.Buffer()
             while True:
-                c = request.content.read(100000)
-                if len(c) == 0:
+                b = request.content.read(100000)
+                if len(b) == 0:
                     break
-                for child in factory.children:
-                    # don't worry, write is non-blocking
-                    child.transport.write(ebencode.make_int(len(c)))
-                    child.transport.write(c)
+                c.write(b)
+            c = str(c)
+            for child in factory.children:
+                # don't worry, write is non-blocking
+                child.transport.write(ebencode.make_int(len(c)))
+                child.transport.write(c)
             request.content.seek(0, 0)                    
     ebrpc.render = decorate_func(render, ebrpc.render)
     reactor.listenTCP(port, factory)

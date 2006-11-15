@@ -91,7 +91,9 @@ class LocalDiscovery(object):
             discovery_logger.info("Got peer: %s:%d %s", host, port, infohash)
 
             # BUG: BitTorrent is so broken!
-            t = random.random() * 3
+            #t = random.random() * 3
+            # But I fixed it.
+            t = 0
 
             self.rawserver.external_add_task(t, self._got_peer, addr, infohash)
 

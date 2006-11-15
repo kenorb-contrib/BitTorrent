@@ -15,6 +15,7 @@ import codecs
 import BTL.zurllib as urllib
 
 if os.name == 'nt':
+    #import BTL.likewin32api as win32api
     import win32api
     from win32com.shell import shellcon, shell
 
@@ -29,14 +30,9 @@ def get_module_filename():
 try:
     from __main__ import app_name
 except:
-    # ok, I'm sick of this. Everyone gets BitTorrent if they don't
+    # ok, I'm sick of this. Everyone gets BTL if they don't
     # specify otherwise.
-    app_name = "BitTorrent"
-##    app_name = os.path.split(get_module_filename())[-1]
-##    if app_name.count('.py') > 0:
-##        app_name = app_name.rsplit('.', 1)[0]
-##    print ( "app_name not defined in __main__, defaulting to sys.argv[0]=='%s'."
-##            % app_name )
+    app_name = "BTL"
 
 
 if sys.platform.startswith('win'):

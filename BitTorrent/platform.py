@@ -124,7 +124,8 @@ from BitTorrent import version
 if os.name == 'nt':
     import pywintypes
     import _winreg
-    import BTL.likewin32api as win32api
+    #import BTL.likewin32api as win32api
+    import win32api
     import win32file
     from win32com.shell import shellcon
     import win32con
@@ -181,10 +182,16 @@ def get_old_dot_dir():
     return os.path.join(get_config_dir(), efs2(u'.bittorrent'))
 
 def get_dot_dir():
-    """So called because on Unix platforms this returns ~/.bittorrent."""
+    # So called because on Unix platforms (but not OS X) this returns ~/.bittorrent.
     dot_dir = get_old_dot_dir()
-    if os.name == 'nt':
+
+    new_dot_dir = None
+    if sys.platform == 'darwin':
+	new_dot_dir = os.path.join(get_config_dir(), 'Library', 'Application Support', app_name)
+    elif os.name == 'nt':
         new_dot_dir = os.path.join(get_config_dir(), app_name)
+
+    if new_dot_dir:
         if os.path.exists(dot_dir):
             if os.path.exists(new_dot_dir):
                 count = 0
@@ -197,6 +204,7 @@ def get_dot_dir():
             else:
                 shutil.move(dot_dir, new_dot_dir)
         dot_dir = new_dot_dir
+	
     return dot_dir
 
 old_broken_config_subencoding = 'utf8'

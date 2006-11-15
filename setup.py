@@ -76,7 +76,7 @@ img_root, doc_root, locale_root = calc_unix_dirs()
 
 data_files = [
     (img_root, ['images/bittorrent.ico',]),
-    (doc_root, ['credits.txt', 'credits-l10n.txt', 'LICENSE.txt', 'README.txt',
+    (doc_root, ['credits.txt', 'LICENSE.txt', 'README.txt',
                 'TRACKERLESS.txt', 'redirdonate.html', 'public.key',
                 'INSTALL.unix.txt', ] + extra_docs),
     ]

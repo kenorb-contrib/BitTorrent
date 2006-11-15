@@ -17,7 +17,7 @@ from twisted.python import failure
 debug = False
 
 tp_Failure = failure.Failure
-    
+
 # used to emulate sys.exc_info()
 def exc_info(self):
     return self.type, self.value, self.tb
@@ -59,12 +59,15 @@ def getResult(self):
 Deferred.getResult = getResult
 
 Deferred_errback = Deferred.errback
-def errback(self, failure):
-    # The following assertion raises the following on some types of
-    # objects (e.g., a pair):
-    #   exceptions.TypeError: not all arguments converted during string formatting
-    assert isinstance(failure, tp_Failure) or isinstance(failure, Exception), repr(failure) 
-    Deferred_errback(self, failure)
+def errback(self, fail):
+    assert isinstance(fail, (tp_Failure, Exception)), repr(fail)
+    # this can check the wrong failure type if the imports occur in the
+    # wrong order.
+    #Deferred_errback(self, fail)
+    if not isinstance(fail, tp_Failure):
+        fail = Failure(fail)
+    self._startRunCallbacks(fail)
+errback.__doc__ = Deferred_errback.__doc__
 Deferred.errback = errback
 
 def addLogback(self, logger, logmsg):

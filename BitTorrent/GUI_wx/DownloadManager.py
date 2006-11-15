@@ -47,6 +47,9 @@ from BitTorrent import LaunchPath
 
 from BTL.yielddefer import launch_coroutine
 
+from BitTorrent import configfile
+from BitTorrent.defaultargs import get_defaults
+
 from BitTorrent.UI import BasicApp, BasicTorrentObject, Size, Rate, Duration
 from BitTorrent.UI import smart_dir, ip_sort, disk_term, state_dict, percentify
 
@@ -60,6 +63,7 @@ from BitTorrent.GUI_wx import LabelValueFlexGridSizer
 from BitTorrent.GUI_wx import MagicShow, MagicShow_func
 from BitTorrent.GUI_wx import ElectroStaticText, ElectroStaticBitmap
 
+from BitTorrent.GUI_wx.MakeTorrent import MakeTorrentWindow
 from BitTorrent.GUI_wx.SettingsWindow import SettingsWindow
 
 from BitTorrent.GUI_wx.CheckBoxDialog import LaunchCheckBoxDialog, CheckBoxDialog
@@ -395,8 +399,8 @@ class TorrentListView(HashableListView):
 
         self.set_default_widths()
 
-	if pbstyle != 0:
-	    self.SetColumnWidth(self.columns['progress'].GetColumn(), 200)
+        if pbstyle != 0:
+            self.SetColumnWidth(self.columns['progress'].GetColumn(), 200)
 
 
     def SortItems(self, sorter=None):
@@ -642,7 +646,7 @@ class PeerListView(HashableListView):
                 f = f[:f.rindex('.')] # grab everything before the last '.'
             except:
                 pass # unless there is no last '.'
-                
+
             if len(f) == 2 or f in ('unknown',):
                 name = ('flags', f)
                 i = self.add_image(image_library.get(name))
@@ -653,7 +657,10 @@ class PeerListView(HashableListView):
                         raise OSError("Only works on Windows")
                     # I found this by hand.
                     path = r'%SystemRoot%\system32\netshell.dll'
-                    loc = wx.IconLocation(wx.ExpandEnvVars(path), 59)
+                    path = wx.ExpandEnvVars(path)
+                    if not os.path.exists(path):
+                        raise Exception("Path not found: %s" % path)
+                    loc = wx.IconLocation(path, 59)
                     i = wx.IconFromLocation(loc)
                     if not i.Ok():
                         raise Exception("broken icon")
@@ -669,7 +676,7 @@ class PeerListView(HashableListView):
                     name = ('flags', f)
                     i = self.add_image(image_library.get(name))
                 self.cc_index[f] = i
-                
+
         self.set_default_widths()
 
         self.Bind(wx.EVT_CONTEXT_MENU, self.OnContextMenu)
@@ -794,7 +801,7 @@ class PeerListView(HashableListView):
            63 < int(ip_address[11:]) < 128:
             return self.image_list_offset - 1
         elif ip_address.startswith('38.99.5'):
-            return self.image_list_offset - 1            
+            return self.image_list_offset - 1
 
         cc = lookup(ip_address)
         if cc == '--':
@@ -1436,7 +1443,7 @@ class TorrentInfoPanel(BTPanel):
         self.title_sizer.AddGrowableCol(1)
 
         if metainfo.title is not None:
-            self.title_sizer.add_pair(_("Torrent title:"), 
+            self.title_sizer.add_pair(_("Torrent title:"),
                                       metainfo.title.replace('&', '&&'))
         else:
             self.title_sizer.add_pair(_("Torrent name:"),
@@ -1877,42 +1884,42 @@ class AboutWindow(BTDialog):
         if int(version_str[2]) % 2:
             version_str = version_str + ' ' + _("Beta")
 
-        version_label = ElectroStaticText(self, label=_("Version %s")%version_str)
+        if '__WXGTK__' in wx.PlatformInfo:
+            # wtf, "Version" forces a line break before the
+            # version_str on WXGTK only -- most other strings work
+            # fine.
+            version_text = _("version %s") % version_str
+        else:
+            version_text = _("Version %s") % version_str
+        version_label = ElectroStaticText(self, label=version_text)
         self.sizer.Add(version_label, flag=wx.ALIGN_CENTER_HORIZONTAL)
 
         if branch is not None:
-            blabel = ElectroStaticText(self, label='cdv client dir: %s' % branch)
+            blabel = ElectroStaticText(self, label='working dir: %s' % branch)
             self.sizer.Add(blabel, flag=wx.ALIGN_CENTER_HORIZONTAL)
 
-        self.credits_scroll     = CreditsScroll(self, 'credits', style=wx.TE_CENTRE)
-        self.translators_scroll = CreditsScroll(self, 'credits-l10n')
 
-        self.sizer.Add(self.credits_scroll    , flag=wx.GROW, proportion=1)
-        self.sizer.Add(self.translators_scroll, flag=wx.GROW, proportion=1)
+        self.credits_scroll = CreditsScroll(self, 'credits', style=wx.TE_CENTRE)
+        self.lic_scroll = CreditsScroll(self, 'LICENSE', style=wx.TE_CENTRE)
 
-        self.credits_scroll.Hide()
-        self.translators_scroll.Hide()
+        self.sizer.Add(self.lic_scroll, flag=wx.GROW, proportion=1)
+        self.sizer.Add(self.credits_scroll, flag=wx.GROW, proportion=1)
+
+        self.lic_scroll.Hide()
 
         self.button_sizer = HSizer()
-        self.credits_button = wx.Button(parent=self, id=wx.ID_ANY, label=_("&Credits"))
+        self.credits_button = wx.Button(parent=self, id=wx.ID_ANY, label=_("Li&cense"))
         self.credits_button.Bind(wx.EVT_BUTTON, self.toggle_credits)
 
-        self.translators_button = wx.Button(parent=self, id=wx.ID_ANY, label=_("&Translators"))
-        self.translators_button.Bind(wx.EVT_BUTTON, self.toggle_translators)
-
         self.button_sizer.AddFirst(self.credits_button)
-        self.button_sizer.Add(self.translators_button)
-
-        self.translators_button.Hide()
 
         self.sizer.Add(self.button_sizer, flag=wx.ALIGN_CENTER_HORIZONTAL, proportion=0, border=0)
 
-        self.SetSizer(self.sizer)
-        self.Fit()
+        self.SetSizerAndFit(self.sizer)
 
         for w in (self, self.bitmap,
-                  self.credits_scroll, self.translators_scroll,
-                  self.credits_button, self.translators_button, ):
+                  self.credits_scroll,
+                  self.credits_button):
             w.Bind(wx.EVT_CHAR, self.key)
 
         self.SetFocus()
@@ -1930,35 +1937,17 @@ class AboutWindow(BTDialog):
 
 
     def toggle_credits(self, event):
-
-        if self.credits_scroll.IsShown() or self.translators_scroll.IsShown():
-            if self.translators_scroll.IsShown():
-                self.toggle_translators(event)
+        if self.credits_scroll.IsShown():
             self.credits_scroll.Hide()
+            self.lic_scroll.Show()
             self.credits_button.SetLabel(_("&Credits"))
-            self.translators_button.Hide()
         else:
+            self.lic_scroll.Hide()
             self.credits_scroll.Show()
-            self.credits_button.SetLabel(_("Hide &credits"))
-            self.translators_button.Show()
+            self.credits_button.SetLabel(_("Li&cense"))
 
         self.sizer.Layout()
-        self.Fit()
 
-
-    def toggle_translators(self, event):
-
-        if self.translators_scroll.IsShown():
-            self.translators_scroll.Hide()
-            self.credits_scroll.Show()
-            self.translators_button.SetLabel(_("&Translators"))
-        else:
-            self.credits_scroll.Hide()
-            self.translators_scroll.Show()
-            self.translators_button.SetLabel(_("Hide &translators"))
-
-        self.sizer.Layout()
-        self.Fit()
 
 
 
@@ -2280,8 +2269,8 @@ class MainWindow(BTFrame):
         self.add_menu_item(self.file_menu, _("Add torrent &URL\tCtrl+U"),
                            wx.the_app.enter_torrent_url)
         self.file_menu.AppendSeparator()
-        self.add_menu_item(self.file_menu, _("Make &new torrent\tCtrl+N" ),
-                           wx.the_app.launch_maketorrent)
+        self.add_menu_item(self.file_menu, _("Make &new torrent\tCtrl+N"),
+                           lambda e: wx.the_app.make_torrent_window.MagicShow())
         self.file_menu.AppendSeparator()
 
         # On the Mac, the name of the item which exits the program is
@@ -2289,11 +2278,11 @@ class MainWindow(BTFrame):
         # this for you - just name the item "Exit" and wxMac will change
         # it for you.
         if '__WXGTK__' in wx.PlatformInfo:
-	    name = _("&Quit\tCtrl+Q")
+            name = _("&Quit\tCtrl+Q")
         else:
-	    name = _("E&xit")
-	quit_id = self.add_menu_item(self.file_menu, name, wx.the_app.quit)
-	wx.the_app.SetMacExitMenuItemId(quit_id)
+            name = _("E&xit")
+        quit_id = self.add_menu_item(self.file_menu, name, wx.the_app.quit)
+        wx.the_app.SetMacExitMenuItemId(quit_id)
 
         self.menu_bar.Append(self.file_menu, _("&File"))
         # End file menu
@@ -2378,9 +2367,9 @@ class MainWindow(BTFrame):
         dt = FileDropTarget(self, lambda p : wx.the_app.open_torrent_arg_with_callbacks(p))
         self.SetDropTarget(dt)
 
-	# for mac
+        # for mac
         dt = FileDropTarget(self.torrentlist,
-			    lambda p : wx.the_app.open_torrent_arg_with_callbacks(p))
+                            lambda p : wx.the_app.open_torrent_arg_with_callbacks(p))
         self.torrentlist.SetDropTarget(dt)
 
         self.torrent_context_menu = TorrentMenu(self.torrent_ops)
@@ -2469,7 +2458,7 @@ class MainWindow(BTFrame):
             self.tool_sizer.Add(self.tool_bar)
         else:
             self.tool_sizer.Add(self.tool_bar, flag=wx.GROW)
-            self.tool_sizer.Add(self.search_bar, flag=wx.ALIGN_CENTER_VERTICAL)
+        self.tool_sizer.Add(self.search_bar, flag=wx.ALIGN_CENTER_VERTICAL)
 
         s = self.search_bar.GetClientSize()
         if '__WXMSW__' in wx.PlatformInfo:
@@ -2488,7 +2477,7 @@ class MainWindow(BTFrame):
             if wx.the_app.config['toolbar_text']:
                 w += 25
             self.tool_sizer.SetItemMinSize(self.search_bar, w, s.height)
-        elif '__WXMAC__' in wx.PlatformInfo:            
+        elif '__WXMAC__' in wx.PlatformInfo:
             self.tool_sizer.SetItemMinSize(self.search_bar, 186, s.height)
             def OnSize(event):
                 x = event.GetSize().GetWidth() - 185
@@ -2960,7 +2949,12 @@ class MainLoop(BasicApp, BTApp):
         self.theme_library = ThemeLibrary(image_root, self.config['theme'])
 
         # Main window
-        self.main_window = MainWindow(None, wx.ID_ANY, app_name)
+        style = wx.DEFAULT_FRAME_STYLE
+        if sys.platform == 'darwin':
+            # no close box on the mac
+            style = (wx.MINIMIZE_BOX|wx.MAXIMIZE_BOX|wx.RESIZE_BORDER|wx.SYSTEM_MENU|wx.CAPTION|
+                     wx.CLIP_CHILDREN)
+        self.main_window = MainWindow(None, wx.ID_ANY, app_name, style=style)
 
         self.main_window.Hide()
 
@@ -2989,9 +2983,9 @@ class MainLoop(BasicApp, BTApp):
         wx.Log_SetActiveTarget(wx.LogGui())
 
         self.log = LogWindow(self.main_window, _("%s Log")%app_name, False)
-        s = wx.Display().GetGeometry()        
+        s = wx.Display().GetGeometry()
         self.log.GetFrame().SetSize((s.width * 0.80, s.height * 0.40))
-        
+
         wx.Log_SetActiveTarget(LogProxy(self.log))
         wx.Log_SetVerbose(True) # otherwise INFOs are not logged
 
@@ -3122,9 +3116,8 @@ class MainLoop(BasicApp, BTApp):
         BasicApp.quit(self)
 
 
-    def launch_maketorrent(self, event):
-        btspawn('maketorrent')
-
+    def MacOpenFile(self, path):
+        self.open_torrent_arg_with_callbacks(path)
 
     def enter_torrent_url(self, widget):
         s = ''
@@ -3462,6 +3455,21 @@ class MainLoop(BasicApp, BTApp):
 
     about_window = property(_get_about_window)
 
+    # MakeTorrent window
+    def _get_make_torrent_window(self):
+        try:
+            return self._make_torrent_window
+        except AttributeError:
+            defaults = get_defaults('maketorrent')
+            config, args = configfile.parse_configuration_and_args(defaults,
+                                                                   'maketorrent', [], 0, None)
+            # BUG: hack to make verbose mode be the default
+            config['verbose'] = not config['verbose']
+            self._make_torrent_window = MakeTorrentWindow(self.main_window, config)
+            return self._make_torrent_window
+
+    make_torrent_window = property(_get_make_torrent_window)
+
     def _remove_infohash(self, infohash, del_files):
         df = launch_coroutine(gui_wrap, self.remove_infohash, infohash, del_files=del_files)
         def error(f):
@@ -3537,7 +3545,7 @@ class MainLoop(BasicApp, BTApp):
         inco = ((not t.completed) and
                 (t.working_path != t.destination_path) and
                 t.working_path.startswith(fs_save_incomplete_in))
-        
+
         del_files = inco
         if not wx.GetKeyState(wx.WXK_SHIFT):
             title=_("Really remove torrent?")

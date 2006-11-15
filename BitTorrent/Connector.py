@@ -19,7 +19,7 @@ disable_fast_extension = False
 # END DEBUG
 
 noisy = False
-log_data = False 
+log_data = False
 
 # for crypto
 from random import randrange
@@ -37,6 +37,8 @@ from BTL.bitfield import Bitfield
 from BTL import IPTools
 from BTL.obsoletepythonsupport import *
 from BitTorrent.ClientIdentifier import identify_client
+from BTL.platform import app_name
+from BitTorrent import version
 import logging
 
 def toint(s):
@@ -149,9 +151,6 @@ def numtobyte(x):
     x = '0'*(192 - len(x)) + x
     return x.decode('hex')
   
-if log_data:
-    noisy = True
-
 if noisy:
     connection_logger = logging.getLogger("BitTorrent.Connector")
     connection_logger.setLevel(logging.DEBUG)
@@ -406,9 +405,6 @@ class Connector(Handler):
             self.connection.write(buffer(self._partial_message, 0, bytes))
             self._partial_message = buffer(self._partial_message, bytes)
             return bytes
-        buf = StringIO()
-        buf.write(self._partial_message)
-        self._partial_message = None
         if self.choke_sent != self.upload.choked:
             if self.upload.choked:
                 self._outqueue.write(pack("!ic", 1, CHOKE))
@@ -416,6 +412,9 @@ class Connector(Handler):
             else:
                 self._outqueue.write(pack("!ic", 1, UNCHOKE))
             self.choke_sent = self.upload.choked
+        buf = StringIO()
+        buf.write(self._partial_message)
+        self._partial_message = None
         buf.write(self._outqueue.getvalue())
         #self._outqueue.truncate(0)
         self._outqueue.close()
@@ -581,8 +580,10 @@ class Connector(Handler):
             # modifies self.parent if successful
             self.parent.select_torrent(self, self._message)
             if self.parent.infohash is None:
-                self.protocol_violation("no infohash from parent (peer from a "
-                                        "torrent you're not running)")
+                # could be turned away due to connection limits
+                #self.protocol_violation("no infohash from parent (peer from a "
+                #                        "torrent you're not running: %s)" %
+                #                        self._message.encode('hex'))
                 return
         elif self._message != self.parent.infohash:
             self.protocol_violation("incorrect infohash from parent")
@@ -604,12 +605,13 @@ class Connector(Handler):
             self.logger = logging.getLogger(ns)
 
             if self.id == self.parent.my_id:
-                self.protocol_violation("talking to self")
+                #self.protocol_violation("talking to self")
                 return
 
             if self.id in self.parent.connector_ids:
-                self.protocol_violation("duplicate connection (id collision)")
-                return
+                if self.parent.my_id > self.id:
+                    #self.protocol_violation("duplicate connection (id collision)")
+                    return
             if (self.parent.config['one_connection_per_ip'] and
                 self.ip in self.parent.connector_ips):
                 self.protocol_violation("duplicate connection (ip collision)")
@@ -628,8 +630,8 @@ class Connector(Handler):
         self.parent.connection_handshake_completed(self)
 
         if self.uses_utorrent_extension:
-            response = {'m':{'ut_pex':1},
-                        'v': '\xb5Torrent 1.5',
+            response = {'m': {'ut_pex':1},
+                        'v': ('%s %s' % (app_name, version)).encode('utf8'),
                         'e': 0,
                         'p': self.parent.reported_port,
                         }

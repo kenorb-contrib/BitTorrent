@@ -20,18 +20,18 @@ from BTL.reactor_magic import reactor
 from BTL.exceptions import str_exc
 from BTL.protocol import SmartReconnectingClientFactory
 
-# Sibling Imports
+import twisted.web
+if twisted.web.__version__ < '0.6.0':
+    raise ImportError("BTL.twisted_ebrpc requires twisted.web 0.6.0 or greater,"
+                      " from Twisted 2.4.0.\nYou appear to have twisted.web "
+                      "version %s installed at:\n%s" % (twisted.web.__version__,
+                                                        twisted.web.__file__))
+
 from twisted.web import resource, server
 from twisted.internet import protocol
 from twisted.python import log, reflect, failure
 from twisted.web import http
 from twisted.internet import defer
-
-
-# These are deprecated, use the class level definitions
-NOT_FOUND = 8001
-FAILURE = 8002
-
 
 # Useful so people don't need to import ebrpc directly
 Fault = ebrpc.Fault

@@ -35,12 +35,13 @@ def remove(s,c):
 # printing it.  This is not meant for canonicalization.  It is far more
 # restrictive since it removes many things that might be representable.
 # It is appropriate for generating debug output binary strings that might
-# contain ascii substrings, like peer-id's.
+# contain ascii substrings, like peer-id's.  It explicitly excludes quotes
+# and double quotes so that the string can be enclosed in quotes.
 def printable(s):
     """If hex then non-printable characters are replaced wi..."""
     l = []
     for c in s:
-        if ord(c) >= 0x20 and ord(c) < 0xF7:
+        if ord(c) >= 0x20 and ord(c) < 0x7F and c != '"' and c != "'":
             l.append(c)
         else:
             l.append('.')

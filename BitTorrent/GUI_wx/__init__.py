@@ -651,7 +651,13 @@ class BTDialog(wx.Dialog, MagicShow):
     def __init__(self, *a, **k):
         wx.Dialog.__init__(self, *a, **k)
         self.SetIcon(wx.the_app.icon)
+        self.Bind(wx.EVT_KEY_DOWN, self.key)
 
+    def key(self, event):
+        c = event.GetKeyCode()
+        if c == wx.WXK_ESCAPE:
+            self.EndModal(wx.ID_CANCEL)
+        event.Skip()
 
 
 class BTFrame(wx.Frame, MagicShow):

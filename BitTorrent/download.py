@@ -71,6 +71,7 @@ class Download(object):
         self.interested = False
         self.prefer_full = False
         self.active_requests = set()
+        self.expecting_reject = set()
         self.intro_size = self.multidownload.chunksize * 4 # just a guess
         self.measure = Measure(multidownload.config['max_rate_period'])
         self.peermeasure = Measure(
@@ -201,8 +202,9 @@ class Download(object):
                 if d.interested:
                     if not d.choked and req in d.active_requests:
                         d.connection.send_cancel(*req)
-                        if not self.connection.uses_fast_extension:
-                            d.active_requests.remove(req)
+                        d.active_requests.remove(req)
+                        if d.connection.uses_fast_extension:
+                            d.expecting_reject.add(req)
                     d.fix_download_endgame()
         else:
             self._request_more()
@@ -487,10 +489,13 @@ class Download(object):
         assert self.connection.uses_fast_extension
         req = (piece, begin, length) 
 
-        if req not in self.active_requests:
-            self.connection.close()
-            return
-        self.active_requests.remove(req)
+        if req not in self.expecting_reject:
+            if req not in self.active_requests:
+                self.connection.close()
+                return
+            self.active_requests.remove(req)
+        else:
+            self.expecting_reject.remove(req)
 
         if self.multidownload.rm.endgame:
             return

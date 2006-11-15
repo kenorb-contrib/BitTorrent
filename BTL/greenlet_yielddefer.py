@@ -20,7 +20,7 @@ class GreenletWithDeferred(greenlet.greenlet):
         except:
             self.deferred.errback(defer.Failure())
         else:
-            self.deferred.callback(r)        
+            self.deferred.callback(r)
 
     def _recall(self, r=None):
         self.switch()
