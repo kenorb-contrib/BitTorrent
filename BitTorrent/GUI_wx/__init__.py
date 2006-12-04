@@ -256,21 +256,35 @@ class ElectroStaticText(wx.StaticText):
 
 
 class ElectroStaticBitmap(wx.Window):
-    def __init__(self, parent, bitmap, *a, **k):
+    def __init__(self, parent, bitmap=None, *a, **k):
         wx.Window.__init__(self, parent, *a, **k)
-        self.bitmap = bitmap
-        self.SetMinSize((self.bitmap.GetWidth(), self.bitmap.GetHeight()))
         self.Bind(wx.EVT_PAINT, self.OnPaint)
+        self.bitmap = None
+        if bitmap:
+            self.SetBitmap(bitmap)
+        else:
+            self.SetSize((0, 0))
+            
+
+    def SetBitmap(self, bitmap):
+        self.bitmap = bitmap
+        w, h = self.bitmap.GetWidth(), self.bitmap.GetHeight()
+        self.SetSize((w, h))
+        self.SetMinSize((w, h))
 
 
     def OnPaint(self, event):
         dc = wx.PaintDC(self)
         dc.SetBackground(wx.Brush(self.GetBackgroundColour()))
-        dc.DrawBitmap(self.bitmap, 0, 0, True)
+        if self.bitmap:
+            dc.DrawBitmap(self.bitmap, 0, 0, True)
 
 
     def GetSize(self):
-        return wx.Size(self.bitmap.GetWidth(), self.bitmap.GetHeight())
+        if self.bitmap:
+            return wx.Size(self.bitmap.GetWidth(), self.bitmap.GetHeight())
+        else:
+            return 0, 0
 
 
 
@@ -650,6 +664,8 @@ class BTDialog(wx.Dialog, MagicShow):
 
     def __init__(self, *a, **k):
         wx.Dialog.__init__(self, *a, **k)
+	if sys.platform == 'darwin':
+	    self.CenterOnParent()
         self.SetIcon(wx.the_app.icon)
         self.Bind(wx.EVT_KEY_DOWN, self.key)
 
@@ -693,11 +709,14 @@ class BTFrame(wx.Frame, MagicShow):
         x = min(x, x2-64)
         y = min(y, y2-64)
 
-        if (w,h) <= (0,0) and default_size is not None:
+        if (w, h) <= (0, 0) and default_size is not None:
             w = default_size.width
             h = default_size.height
 
         self.SetDimensions(x, y, w, h, sizeFlags=wx.SIZE_USE_EXISTING)
+
+	if (x, y) == (-1, -1):
+	    self.CenterOnScreen()	    
 
 
     def _geometry_string(self):

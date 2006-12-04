@@ -114,7 +114,7 @@ if "--use_factory_defaults" in sys.argv or "-u" in sys.argv:
     temp_dir = get_temp_subdir()
     set_config_dir(temp_dir)
 
-import BTL.zurllib as urllib
+import BitTorrent.zurllib as urllib
 from BTL import language
 from BTL.sparse_set import SparseSet
 from BTL.defer import ThreadedDeferred

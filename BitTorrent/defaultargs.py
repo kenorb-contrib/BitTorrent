@@ -351,6 +351,8 @@ def get_defaults(ui):
              _("Size in pixels of toolbar icons")),
             ('show_details', False,
              _("Show details panel on startup")),
+            ('settings_tab', 0,
+             _("Which tab in the settings window to show by default")),
             ('details_tab', 0,
              _("Which tab in the details panel to show by default")),
             ('splitter_height', 300,

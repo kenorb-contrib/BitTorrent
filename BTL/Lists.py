@@ -30,7 +30,7 @@ try:
                 q.pop(i)
                 break
         else:
-            raise ValueError(q.__class__ + ".remove(x): x not in list")
+            raise ValueError(q.__class__.__name__ + ".remove(x): x not in list")
 except ImportError:
     from UserList import UserList
     base_list_class = UserList

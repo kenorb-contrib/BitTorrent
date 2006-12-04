@@ -23,7 +23,6 @@ from BTL.translation import _
 from BTL.obsoletepythonsupport import set
 from BTL.defer import DeferredEvent, Failure
 from BTL.SaneThreadedResolver import SaneThreadedResolver
-from BTL.FlushEvent import FlushEventBuffer
 
 ##############################################################
 profile = False
@@ -101,12 +100,12 @@ class ConnectionWrapper(object):
         self.dying = False
         self.paused = False
         self.encrypt = None
+        self.flushed = False
         self.connector = None
         self.transport = None
+        self.write_open = True
         self.reset_timeout = None
         self.callback_connection = None
-
-        self.buffer = FlushEventBuffer(self._flushed)
 
         self.post_init(rawserver, handler, context)
 
@@ -165,7 +164,10 @@ class ConnectionWrapper(object):
         self.callback_connection = callback_connection
         self.reset_timeout = reset_timeout
 
-        self.buffer.attachConsumer(self.transport)
+        if hasattr(self.transport, 'registerProducer'):
+            # Multicast uses sendto, which does not buffer.
+            # It has no producer api
+            self.transport.registerProducer(self, False)
 
         try:
             addr = self.transport.getPeer()
@@ -199,22 +201,32 @@ class ConnectionWrapper(object):
         return ret
 
     def write(self, b):
+        self.flushed = False
+        if not self.write_open:
+            return            
         if self.encrypt is not None:
             b = self.encrypt(b)
         # bleh
         if isinstance(b, buffer):
             b = str(b)
-        self.buffer.write(b)
+        self.transport.write(b)
 
-    def _flushed(self):
-        s = self
+    def resumeProducing(self):
+        self.flushed = True
         # why do you tease me so?
-        if s.handler is not None:
+        if self.handler is not None:
             # calling flushed from the write is bad form
-            self.rawserver.add_task(0, s.handler.connection_flushed, s)
+            self.rawserver.add_task(0, self.handler.connection_flushed, self)
 
+    def pauseProducing(self):
+        # auto pause by not resuming
+        pass
+    
+    def stopProducing(self):
+        self.write_open = False
+        
     def is_flushed(self):
-        return self.buffer.isFlushed()
+        return self.flushed
 
     def shutdown(self, how):
         if how == SHUT_WR:
@@ -226,7 +238,6 @@ class ConnectionWrapper(object):
                     self.transport.socket.shutdown(how)
                 except:
                     pass
-            self.buffer.stopWriting()
         elif how == SHUT_RD:
             self.transport.stopListening()
         else:
@@ -236,9 +247,8 @@ class ConnectionWrapper(object):
         return self.connector.stopConnecting()
 
     def close(self):
-        if self.buffer:
-            self.buffer.stopWriting()
-
+        self.stopProducing()
+        
         if self.rawserver.config.get('close_with_rst', True):
             try:
                 s = self.get_socket()
@@ -247,6 +257,11 @@ class ConnectionWrapper(object):
                 pass
 
         if self.transport:
+            try:
+                self.transport.unregisterProducer()
+            except KeyError:
+                # bug in iocpreactor: http://twistedmatrix.com/trac/ticket/1657
+                pass
             if (hasattr(self.transport, 'protocol') and
                 isinstance(self.transport.protocol, CallbackDatagramProtocol)):
                 # udp connections should only call stopListening
@@ -257,10 +272,6 @@ class ConnectionWrapper(object):
             self.connector.disconnect()
 
     def _cleanup(self):
-
-        if self.buffer:
-            self.buffer.cleanup()
-            del self.buffer
 
         self.handler = None
 
@@ -518,7 +529,9 @@ class RawServer(RawServerMixin):
             self.prof = Profiler()
         ##############################################################
 
-        connectionRateLimitReactor(reactor, self.config.get('max_incomplete', 10))
+        self.connection_limit = self.config.get('max_incomplete', 10)
+	connectionRateLimitReactor(reactor, self.connection_limit)
+
         # bleh
         self.add_pending_connection = reactor.add_pending_connection
         self.remove_pending_connection = reactor.remove_pending_connection
@@ -709,9 +722,15 @@ class RawServer(RawServerMixin):
         factory = ConnectionFactory(self, outgoing=True)
         factory.add_connection_data(c)
 
-        connector = reactor.connectTCP(addr, port, factory,
-                                       bindAddress=bindaddr, timeout=timeout,
-                                       urgent=urgent)
+        if self.connection_limit:
+            connector = reactor.connectTCP(addr, port, factory,
+                                           owner=context,
+                                           bindAddress=bindaddr, timeout=timeout,
+                                           urgent=urgent)
+        else:
+            connector = reactor.connectTCP(addr, port, factory,
+                                           bindAddress=bindaddr, timeout=timeout)
+            
         c.attach_connector(connector)
 
         self.single_sockets.add(c)

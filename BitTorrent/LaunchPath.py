@@ -26,6 +26,7 @@ def launchpath_nt(path):
     os.startfile(path)
 
 def launchfile_nt(path):
+    do_launchdir = True
     if can_launch_files and not os.path.isdir(path):
         f, ext = os.path.splitext(path)
         ext = ext.upper()

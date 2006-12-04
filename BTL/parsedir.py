@@ -14,14 +14,18 @@ import os
 import sys #DEBUG
 from BTL.translation import _
 from BTL.hash import sha
-from BTL import GetTorrent
-
-# Why was this here?
-#_ = _ # put _ into the module namespace so the console doesn't override it
 
 from BTL.bencode import bencode, bdecode
 from BTL.btformats import check_message
+from BTL.ConvertedMetainfo import ConvertedMetainfo
 
+
+def like_gettorrent(path):
+    data = open(path, 'rb').read()
+    b = bdecode(data)
+    metainfo = ConvertedMetainfo(b)
+    return metainfo
+    
 
 NOISY = False
 
@@ -118,7 +122,7 @@ def parsedir(directory, parsed, files, blocked, errfunc,
         if NOISY:
             errfunc('adding '+p)
         try:
-            metainfo = GetTorrent.get(p)
+            metainfo = like_gettorrent(p)
             new_file[1] = metainfo.infohash
 
             if new_parsed.has_key(metainfo.infohash):

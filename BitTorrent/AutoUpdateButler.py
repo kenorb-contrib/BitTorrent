@@ -16,23 +16,22 @@ import logging
 from BTL.translation import _
 
 from BTL import infohash_short
-from BTL import zurllib
-from BTL import GetTorrent
 from BTL.platform import app_name
 from BTL.exceptions import str_exc
-from BitTorrent import version, BTFailure
-
-
 from BTL.ConvertedMetainfo import ConvertedMetainfo
 from BTL.bencode import bdecode
-from BitTorrent.platform import osx, get_temp_dir, doc_root, os_version
 from BTL.platform import encode_for_filesystem
 from BTL.defer import ThreadedDeferred
 from BTL.yielddefer import launch_coroutine, _wrap_task
-from BitTorrent.MultiTorrent import TorrentAlreadyRunning
-from BitTorrent.MultiTorrent import TorrentAlreadyInQueue, UnknownInfohash
 from BTL.obsoletepythonsupport import set
 from BTL.hash import sha
+
+from BitTorrent import version, BTFailure
+from BitTorrent import zurllib
+from BitTorrent import GetTorrent
+from BitTorrent.platform import osx, get_temp_dir, doc_root, os_version
+from BitTorrent.MultiTorrent import TorrentAlreadyRunning
+from BitTorrent.MultiTorrent import TorrentAlreadyInQueue, UnknownInfohash
 # needed for py2exe to include the public key lib
 from Crypto.PublicKey import DSA
 

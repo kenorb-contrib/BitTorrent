@@ -14,6 +14,8 @@ import urlparse
 from cStringIO import StringIO
 from gzip import GzipFile
 
+pipeline_debug = False
+
 version = "1.0"
 from BTL.platform import app_name
 from BTL.reactor_magic import reactor
@@ -298,8 +300,6 @@ class Query(object):
         self.deferred = defer.Deferred()
         self.decode = False
 
-pipeline_debug = False
-
 class QueryProtocol(http.HTTPClient):
 
     timeout = 300
@@ -416,21 +416,27 @@ class QueryFactory(object):
 
     def connectionLost(self, instance):
         assert self.instance == instance
+        if pipeline_debug: print 'connection lost %s' % str(instance.peer)
         self.instance = None
 
     def addQuery(self, query):
         self.queries.append(query)
+        if pipeline_debug: print 'addQuery: %s %s' % (self.instance, self.queries)
         if self.instance:
             self.instance.sendQuery()
             
 
 class PersistantSingletonFactory(QueryFactory, SmartReconnectingClientFactory):
-    pass
+
+    def clientConnectionFailed(self, connector, reason):
+        if pipeline_debug: print 'clientConnectionFailed %s' % str(connector)
+        return SmartReconnectingClientFactory.clientConnectionFailed(self, connector, reason)
 
 
 class SingletonFactory(QueryFactory, protocol.ClientFactory):
 
     def clientConnectionFailed(self, connector, reason):
+        if pipeline_debug: print 'clientConnectionFailed %s' % str(connector)
         queries = list(self.queries)
         del self.queries[:]
         for query in queries:
@@ -503,20 +509,24 @@ class Proxy:
         self.factory.protocol = QueryProtocol
 
     def callRemote(self, method, *args, **kwargs):
+        if pipeline_debug: print 'callRemote to %s : %s' % (self.host, method)
         args = (args, kwargs)
         query = Query(self.path, self.host, method, self.user,
                       self.password, *args)
         self.factory.addQuery(query)
 
+        if pipeline_debug: print 'factory started: %s' % self.factory.started
         if not self.factory.started:
             self.factory.started = True
             def connect(host):
                 if self.secure:
+                    if pipeline_debug: print 'connecting to %s' % str((host, self.port or 443))
                     from twisted.internet import ssl
                     reactor.connectSSL(host, self.port or 443,
                                        self.factory, ssl.ClientContextFactory(),
                                        timeout=60)
                 else:
+                    if pipeline_debug: print 'connecting to %s' % str((host, self.port or 80))
                     reactor.connectTCP(host, self.port or 80, self.factory,
                                        timeout=60)
             df = reactor.resolve(self.host)

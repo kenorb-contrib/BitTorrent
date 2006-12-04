@@ -3,11 +3,11 @@
 import socket
 from BTL.platform import bttime
 from BTL.obsoletepythonsupport import set
+from BTL.reactor_magic import reactor
 from BTL import defer
 import BTL.stackthreading as threading
 from twisted.internet.protocol import ClientFactory, Protocol
 from twisted.protocols.policies import TimeoutMixin
-from twisted.internet import reactor
 try:
     from BTL.iphelp import get_route_ip
 except:
@@ -67,7 +67,8 @@ def _got_result(ip):
     global _host_ip_callbacks
     global _host_ip_cachetime
     global _thread_running
-    assert reactor.ident == thread.get_ident()
+    if hasattr(reactor, 'ident'):
+        assert reactor.ident == thread.get_ident()
 
     if _thread_running:
         return
@@ -93,7 +94,8 @@ def get_deferred_host_ip():
     global _host_ip
     global _host_ip_callbacks
     global _host_ip_cachetime
-    assert reactor.ident == thread.get_ident()
+    if hasattr(reactor, 'ident'):
+        assert reactor.ident == thread.get_ident()
 
     if _host_ip is not 'unknown' and _host_ip_cachetime + CACHE_TIME > bttime():
         return defer.succeed(_host_ip)
@@ -129,7 +131,8 @@ def get_host_ip():
     global _host_ip
     global _host_ip_callbacks
     global _host_ip_cachetime
-    assert reactor.ident != thread.get_ident()
+    if hasattr(reactor, 'ident'):
+        assert reactor.ident != thread.get_ident()
 
     if _host_ip is not 'unknown' and _host_ip_cachetime + CACHE_TIME > bttime():
         return _host_ip
@@ -171,7 +174,8 @@ def get_host_ip():
 def get_deferred_host_ips():
     global _host_ips
     global _host_ips_cachetime
-    assert reactor.ident == thread.get_ident()
+    if hasattr(reactor, 'ident'):
+        assert reactor.ident == thread.get_ident()
 
     if _host_ips is not None and _host_ips_cachetime + CACHE_TIME > bttime():
         return defer.succeed(_host_ips)
@@ -183,7 +187,8 @@ def get_deferred_host_ips():
 
 
 def _get_deferred_host_ips2(host_ip, finaldf):
-    assert reactor.ident == thread.get_ident()
+    if hasattr(reactor, 'ident'):
+        assert reactor.ident == thread.get_ident()
     df = defer.ThreadedDeferred(wrap_task, _get_deferred_host_ips3,
                                 host_ip, daemon=True)
     df.chainDeferred(finaldf)
@@ -192,7 +197,8 @@ def _get_deferred_host_ips2(host_ip, finaldf):
 def _get_deferred_host_ips3(host_ip):
     global _host_ips
     global _host_ips_cachetime
-    assert reactor.ident != thread.get_ident()
+    if hasattr(reactor, 'ident'):
+        assert reactor.ident != thread.get_ident()
     
     l = set()
 

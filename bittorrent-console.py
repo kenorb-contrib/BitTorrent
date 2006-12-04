@@ -31,12 +31,11 @@ from BitTorrent import inject_main_logfile
 from BitTorrent.MultiTorrent import Feedback, MultiTorrent
 from BitTorrent.defaultargs import get_defaults
 from BitTorrent.parseargs import printHelp
-from BTL.zurllib import urlopen
 from BitTorrent.prefs import Preferences
 from BitTorrent import configfile
 from BitTorrent import BTFailure, UserFailure
 from BitTorrent import version
-from BTL import GetTorrent
+from BitTorrent import GetTorrent
 from BTL.ConvertedMetainfo import ConvertedMetainfo
 from BitTorrent.MultiTorrent import TorrentNotInitialized
 from BitTorrent.RawServer_twisted import RawServer

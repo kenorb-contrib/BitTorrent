@@ -17,6 +17,7 @@ class LogLogObserver(log.FileLogObserver):
         else:
             system = 'twisted.' + system
         logger = logging.getLogger(system)
+        logger.setLevel(logging.DEBUG)
         edm = eventDict['message'] or ''
         if eventDict['isError'] and eventDict.has_key('failure'):
             if not edm:

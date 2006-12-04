@@ -11,8 +11,9 @@ import threading
 from twisted.python import failure
 from twisted.python import threadable
 from twisted.internet import error, address, abstract
-from BTL.decorate import decorate_func
+from BTL.circular_list import CircularList
 from BTL.Lists import QList
+from BTL.decorate import decorate_func
 
 debug = False
 
@@ -42,12 +43,14 @@ class IRobotConnector(object):
     # I did this to be nice, but zope sucks.
     ##implements(interfaces.IConnector)
 
-    def __init__(self, reactor, protocol, host, port, factory, urgent, *a, **kw):
+    def __init__(self, reactor, protocol, host, port, factory, owner, urgent,
+                 *a, **kw):
         self.reactor = reactor
         self.protocol = protocol
         assert self.protocol in ('INET', 'SSL')
         self.host = host
         self.port = port
+        self.owner = owner
         self.urgent = urgent
         self.a = a
         self.kw = kw
@@ -110,24 +113,47 @@ class IRobotConnector(object):
     def getDestination(self):
         return address.IPv4Address('TCP', self.host, self.port, self.protocol)
 
-# maintain urgent > not urgent
-class Postponed(QList):
 
-    def append(self, k):
-        # figure out preempted spot
-        i = 0
-        for i, c in enumerate(self):
-            if not c.urgent:
-                break
+class Postponed(CircularList):
 
-        # insert in random place after preempts
-        i += 1
-        if len(self) - i > 0:
-            i += random.randrange(len(self) - i)
-        else:
-            i = 1
-        self.insert(i, k)
-        
+    def __init__(self):
+        CircularList.__init__(self)
+        self.it = iter(self)
+        self.preempt = QList()
+        self.cm_to_list = {}
+
+    def append_preempt(self, c):
+        return self.preempt.append(c)
+    
+    def add_connection(self, keyable, c):
+        if debug: print 'adding', keyable, c
+        if keyable not in self.cm_to_list:
+            self.cm_to_list[keyable] = QList()
+            self.prepend(keyable)
+        self.cm_to_list[keyable].append(c)
+
+    def pop_connection(self):
+        if self.preempt:
+            return self.preempt.popleft()
+        keyable = self.it.next()
+        l = self.cm_to_list[keyable]
+        c = l.popleft()
+        if len(l) == 0:
+            self.remove(keyable)
+            del self.cm_to_list[keyable]
+        return c
+
+    def remove_connection(self, keyable, c):
+        # hmmm
+        if c.urgent:
+            self.preempt.remove(c)
+            return
+        l = self.cm_to_list[keyable]
+        l.remove(c)
+        if len(l) == 0:
+            self.remove(keyable)
+            del self.cm_to_list[keyable]
+
 
 class ConnectionRateLimiter(object):
     
@@ -175,15 +201,15 @@ class ConnectionRateLimiter(object):
     def _push_new_connections(self):
         if not self.postponed:
             return
-        c = self.postponed.popleft()
+        c = self.postponed.pop_connection()
         self._connect(c)
 
     def drop_postponed(self, c):
-        self.postponed.remove(c)
+        self.postponed.remove_connection(c.owner, c)
 
     def _preempt_for(self, c):
-        if debug: print 'preempting for', c.host, c.port
-        self.postponed.appendleft(c)
+        if debug: print '\npreempting for', c.host, c.port, '\n'
+        self.postponed.append_preempt(c)
             
         sorted = []
 
@@ -238,21 +264,21 @@ class ConnectionRateLimiter(object):
             if c.urgent:
                 self._preempt_for(c)
             else:
-                self.postponed.append(c)
+                self.postponed.add_connection(c.owner, c)
         else:
             c.connect()
         return c
 
     def connectTCP(self, host, port, factory,
-                   timeout=30, bindAddress=None, urgent=True):
-        c = IRobotConnector(self, 'INET', host, port, factory, urgent,
+                   timeout=30, bindAddress=None, owner=None, urgent=True):
+        c = IRobotConnector(self, 'INET', host, port, factory, owner, urgent,
                             timeout, bindAddress)
         self._resolve_then_connect(c)
         return c
 
     def connectSSL(self, host, port, factory, contextFactory,
-                   timeout=30, bindAddress=None, urgent=True):
-        c = IRobotConnector(self, 'SSL', host, port, factory, urgent,
+                   timeout=30, bindAddress=None, owner=None, urgent=True):
+        c = IRobotConnector(self, 'SSL', host, port, factory, owner, urgent,
                             contextFactory, timeout, bindAddress)
         self._resolve_then_connect(c)
         return c

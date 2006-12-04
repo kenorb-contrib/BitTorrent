@@ -44,7 +44,7 @@ def injectLogger(use_syslog = True, log_file = None, verbose = False,
                                                           backupCount=10)
 
         lf_handler.setFormatter(formatter)
-        logger.setLevel(logging.DEBUG)
+        lf_handler.setLevel(logging.DEBUG)
         logger.addHandler(lf_handler)
 
     if use_syslog:
@@ -55,13 +55,13 @@ def injectLogger(use_syslog = True, log_file = None, verbose = False,
         # namespace - pid - level - message
         sl_handler.setFormatter(BTLFormatter("%(name)s - %(process)d - "
                                              "%(levelname)s - %(message)s"))
-        logger.setLevel(logging.DEBUG)
+        sl_handler.setLevel(logging.DEBUG)
         logger.addHandler(sl_handler)
 
     if verbose:
         so_handler = logging.StreamHandler(sys.stdout)
         so_handler.setFormatter(formatter)
-        logger.setLevel(logging.DEBUG)
+        so_handler.setLevel(logging.DEBUG)
         logger.addHandler(so_handler)
 
     twisted_logger.start(capture_output = capture_output,

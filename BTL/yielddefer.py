@@ -157,3 +157,7 @@ def launch_coroutine(queue_task, f, *args, **kwargs):
 def wrap_task(add_task):
     return lambda _f, *args, **kwargs : add_task(0, _f, *args, **kwargs)
 _wrap_task = wrap_task   
+
+from BTL.reactor_magic import reactor
+def coro(f, *args, **kwargs):
+    return launch_coroutine(_wrap_task(reactor.callLater), f, *args, **kwargs)

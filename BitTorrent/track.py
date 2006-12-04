@@ -41,7 +41,7 @@ from BitTorrent.HTTPHandler import HTTPHandler
 from BTL.parsedir import parsedir
 from BitTorrent.NatCheck import NatCheck
 from BTL.bencode import bencode, bdecode, Bencached
-from BTL.zurllib import quote, unquote
+from urllib import quote, unquote
 from BTL.exceptions import str_exc
 from BitTorrent import version
 from BitTorrent.prefs import Preferences

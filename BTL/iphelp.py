@@ -1,3 +1,8 @@
+# Windows IP Helper API function wrappers.
+# http://msdn2.microsoft.com/en-gb/library/aa366073.aspx
+#
+# by Greg Hazel
+
 import ctypes
 from BTL.iptypes import inet_addr, IPAddr, DWORD, ULONG
 

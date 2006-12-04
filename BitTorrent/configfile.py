@@ -33,7 +33,7 @@ from BitTorrent.platform import smart_gettext_and_install
 from BitTorrent.platform import get_old_incomplete_data_dir
 from BitTorrent.platform import get_temp_subdir
 from BitTorrent.platform import old_broken_config_subencoding
-from BTL.zurllib import bind_tracker_connection
+from BitTorrent.zurllib import bind_tracker_connection
 from BTL.exceptions import str_exc
 from BitTorrent.shortargs import convert_from_shortforms
 
@@ -72,6 +72,7 @@ downloader_save_options = [
     'sort_column'           ,
     'sort_ascending'        ,
     'show_details'          ,
+    'settings_tab'          ,
     'details_tab'           ,
     'splitter_height'       ,
     'theme'                 ,

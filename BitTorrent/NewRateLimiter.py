@@ -9,7 +9,7 @@
 import time
 import traceback
 from BTL.platform import bttime
-from BTL.DictWithLists import DictWithLists
+from BTL.DictWithLists import OrderedDictWithLists
 
 
 # these are for logging and such
@@ -71,7 +71,7 @@ class DeltaTokens(object):
 
 class Classifer(object):
     def __init__(self):
-        self.channels = DictWithLists()
+        self.channels = OrderedDictWithLists()
 
     def add_data(self, keyable, func):
         # hmm, this should rotate every 10 seconds or so, but moving over the

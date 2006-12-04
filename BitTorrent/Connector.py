@@ -113,6 +113,7 @@ locals().update(message_dict.message_to_chr)
 AZUREUS_SUCKS = CHOKE
 
 UTORRENT_MSG_INFO = chr(0)
+# in reality this could be variable
 UTORRENT_MSG_PEX = chr(1)
                           
 # reserved flags:
@@ -206,6 +207,7 @@ class Connector(Handler):
         
         self.uses_utorrent_extension = False
         self.uses_utorrent_pex = False
+        self.utorrent_pex_id = None
         self.uses_azureus_extension = False
         self.uses_azureus_pex = False
         self.uses_dht = False
@@ -630,7 +632,7 @@ class Connector(Handler):
         self.parent.connection_handshake_completed(self)
 
         if self.uses_utorrent_extension:
-            response = {'m': {'ut_pex':1},
+            response = {'m': {'ut_pex': UTORRENT_MSG_PEX},
                         'v': ('%s %s' % (app_name, version)).encode('utf8'),
                         'e': 0,
                         'p': self.parent.reported_port,
@@ -664,8 +666,10 @@ class Connector(Handler):
                 self.listening_port = int(port)
             encryption = d.get('e')
             messages = d.get('m')
-            self.uses_utorrent_pex = bool(messages.get('ut_pex', 0))
-        elif msg_type == UTORRENT_MSG_PEX:
+            if 'ut_pex' in messages:
+                self.uses_utorrent_pex = True
+                self.utorrent_pex_id = messages['ut_pex']
+        elif msg_type == self.utorrent_pex_id:
             for addr in IPTools.uncompact_sequence(d['added']):
                 self.remote_pex_set.add(addr)
                 self.parent.start_connection(addr)

@@ -35,13 +35,12 @@ from BitTorrent.MultiTorrent import MultiTorrent, TorrentAlreadyRunning
 from BitTorrent.Torrent import Feedback
 from BitTorrent.defaultargs import get_defaults
 from BitTorrent.parseargs import printHelp
-from BTL.zurllib import urlopen
 from BitTorrent.prefs import Preferences
 from BTL.obsoletepythonsupport import import_curses
 from BitTorrent import configfile
 from BitTorrent import BTFailure, UserFailure
 from BitTorrent import version
-from BTL import GetTorrent
+from BitTorrent import GetTorrent
 from BitTorrent.RawServer_twisted import RawServer
 from twisted.internet import task
 from BTL.ConvertedMetainfo import ConvertedMetainfo
@@ -499,12 +498,12 @@ class CursesTorrentApp(object):
             if config['save_in']:
                 raise BTFailure(_("You cannot specify both --save_as and "
                                   "--save_in."))
-            saveas,bad = platform.encode_for_filesystem(config['save_as'])
+            saveas,bad = encode_for_filesystem(config['save_as'])
             if bad:
                 raise BTFailure(_("Invalid path encoding."))
             savein = os.path.dirname(os.path.abspath(saveas))
         elif config['save_in']:
-            savein,bad = platform.encode_for_filesystem(config['save_in'])
+            savein,bad = encode_for_filesystem(config['save_in'])
             if bad:
                 raise BTFailure(_("Invalid path encoding."))
             saveas = os.path.join(savein,torrent_name)
@@ -512,14 +511,14 @@ class CursesTorrentApp(object):
             saveas = torrent_name
         if config['save_incomplete_in']:
             save_incomplete_in,bad = \
-                platform.encode_for_filesystem(config['save_incomplete_in'])
+                encode_for_filesystem(config['save_incomplete_in'])
             if bad:
                 raise BTFailure(_("Invalid path encoding."))
             save_incomplete_as = os.path.join(save_incomplete_in,torrent_name)
         else:
             save_incomplete_as = os.path.join(savein,torrent_name)
     
-        data_dir,bad = platform.encode_for_filesystem(config['data_dir'])
+        data_dir,bad = encode_for_filesystem(config['data_dir'])
         if bad:
             raise BTFailure(_("Invalid path encoding."))
 

@@ -24,18 +24,19 @@ import logging.handlers
 from BTL.translation import _
 
 import BTL.stackthreading as threading
-from BTL import GetTorrent
 from BTL.platform import bttime
-from BitTorrent import LaunchPath
-from BitTorrent.MultiTorrent import UnknownInfohash, TorrentAlreadyInQueue, TorrentAlreadyRunning, TorrentNotRunning
 from BTL.obsoletepythonsupport import set
 from BTL.yielddefer import launch_coroutine, _wrap_task
 from BTL.defer import ThreadedDeferred
-from BitTorrent.platform import desktop
-from BitTorrent.Torrent import *
 from BTL.ThreadProxy import ThreadProxy
 from BTL.exceptions import str_exc
 from BTL.formatters import percentify, Size, Rate, Duration
+
+from BitTorrent import GetTorrent
+from BitTorrent import LaunchPath
+from BitTorrent.MultiTorrent import UnknownInfohash, TorrentAlreadyInQueue, TorrentAlreadyRunning, TorrentNotRunning
+from BitTorrent.platform import desktop
+from BitTorrent.Torrent import *
 
 state_dict = {("created", "stop", False): _("Paused"),
               ("created", "stop", True): _("Paused"),

@@ -9,19 +9,24 @@ from twisted.web import xmlrpc
 from twisted.internet.ssl import SSL
 from twisted.internet import ssl
 
+debug = False
+
 ## Keep these next two commented out classes.  They can be useful for
 ## spying on calls.
 class AuthQueryProtocol(xmlrpc.QueryProtocol):
     def connectionMade(self):
-        print "connectionMade"
+        if debug:
+            print "connectionMade"
         xmlrpc.QueryProtocol.connectionMade(self)
 
     def handleStatus(self, version, status, message):
-        print "version=%s\nstats=%s\nmessage=%s" % (version,status,message)
+        if debug:
+            print "version=%s\nstats=%s\nmessage=%s" % (version,status,message)
         xmlrpc.QueryProtocol.handleStatus(self,version,status,message)
 
     def handleResponse(self, contents):
-        print "contents=%s" % str(contents)
+        if debug:
+            print "contents=%s" % str(contents)
         xmlrpc.QueryProtocol.handleResponse(self, contents)
 
 class AuthQueryFactory(xmlrpc.QueryFactory):

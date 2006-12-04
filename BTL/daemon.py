@@ -10,7 +10,11 @@
  
 # by David Harrison
 
-import sys, os, stat, pwd, grp
+import os
+import sys
+import pwd
+import grp
+import stat
 import logging
 from twisted.scripts import twistd
 import atexit
@@ -72,6 +76,7 @@ def daemon(**kwargs):
         os.mkdir(pid_dir)
         os.chown(pid_dir,uid,gid)
     twistd.checkPID(pidfile)
+    config['use_syslog'] = sys.platform != 'darwin'
     use_syslog = config.get('use_syslog',True)
     if config.has_key('logfile') and config['logfile']:
         injectLogger(use_syslog=use_syslog, log_file=config['logfile'])

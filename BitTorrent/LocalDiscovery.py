@@ -7,6 +7,7 @@ import random
 import socket
 import logging
 import Zeroconf
+from BTL import stackthreading as threading
 from BTL.HostIP import get_deferred_host_ip, get_host_ip
 
 discovery_logger = logging.getLogger('LocalDiscovery')
@@ -56,6 +57,10 @@ class LocalDiscovery(object):
             return 
         service.registered = True
         service.address = socket.inet_aton(ip)
+        #t = threading.Thread(target=self.server.registerService, args=(service,))
+        #t.setDaemon(False)
+        #t.start()
+        # blocks!
         self.server.registerService(service)
 
     def unannounce(self, service):

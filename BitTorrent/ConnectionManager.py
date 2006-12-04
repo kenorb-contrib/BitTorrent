@@ -34,7 +34,7 @@ ONLY_LOCAL = False
 # header, reserved, download id, my id, [length, message]
 
 LOWER_BOUND = 1
-UPPER_BOUND = 300
+UPPER_BOUND = 120
 BUFFER = 1.2
 timeout_order = [3, 15, 30]
 
@@ -51,7 +51,7 @@ def set_timeout_metrics(delta):
 
 class GaurdedInitialConnection(Handler):
     def __init__(self, parent, id, encrypt=False, log_prefix="", lan=False,
-                 timeout=None):
+                 urgent=False, timeout=None):
         self.parent = parent
         self.id = id
         self.lan = lan
@@ -249,7 +249,7 @@ class ConnectionManager(InternetSubscriber):
             port = 80
         df = self.rawserver.gethostbyname(host)
         def _connect_http(ip):
-            self._start_connection((ip, port), url, HTTPInitialConnection)
+            self._start_connection((ip, port), url, HTTPInitialConnection, urgent=True)
         df.addCallback(_connect_http)
         df.addLogback(self.logger.warning, "Resolve failed")
 
@@ -305,10 +305,12 @@ class ConnectionManager(InternetSubscriber):
         kw.setdefault('timeout', timeout_order[0])
         h = handler(self, id, *a, **kw)
         self.pending_connections[addr] = (h, (addr, id, handler, a, kw))
+        urgent = kw.pop('urgent', False)
         connector = self.rawserver.start_connection(addr, h, self.context,
                                                     # we'll handle timeouts.
                                                     # not so fond of this.
-                                                    timeout=None)
+                                                    timeout=None,
+                                                    urgent=urgent)
         h.connector = connector
 
         return True

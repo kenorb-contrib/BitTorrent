@@ -77,7 +77,7 @@ from BTL.yielddefer import _wrap_task
 from BitTorrent.RawServer_twisted import RawServer
 if os.name == 'nt':
     from BitTorrent.platform import win_version_num
-from BTL import zurllib
+from BitTorrent import zurllib
 
 defaults = get_defaults('bittorrent')
 defaults.extend((('donated' , '', ''), # the version that the user last donated for

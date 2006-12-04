@@ -495,11 +495,6 @@ class ManualUPnP(NATBase, Handler):
 
     def begin_discovery(self):
         # bind to an available port, and join the multicast group
-        # HEREDAVE! Trying 5000 is excessive especially if there is a
-        # reason for the failure.  For example, what if the network interface
-        # is down?  The appropriate behavior should be to report the
-        # failure to the user rather than sucking up resources.  --Dave
-        #for p in xrange(self.upnp_addr[1], self.upnp_addr[1]+5000):
         df = get_deferred_host_ip()
         yield df
         hostip = df.getResult()

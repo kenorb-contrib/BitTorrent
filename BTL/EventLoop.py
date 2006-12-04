@@ -4,7 +4,9 @@ import BTL.stackthreading as threading
 from BTL import defer
 from BTL.yielddefer import launch_coroutine, wrap_task
 
+
 class EventLoop(object):
+    
     def __init__(self):
         self.thread = threading.Thread(target=self.run)
         self.queue = Queue.Queue()
@@ -33,7 +35,8 @@ class EventLoop(object):
                     return
                 exc_type, value, tb = sys.exc_info()
                 threading._print_traceback(sys.stderr, self.stack,
-                                           "thread %s" % self.getName(), 1,
+                                           "thread %s" % self.thread.getName(),
+                                           1,
                                            exc_type, value, tb)
                 del tb
 
@@ -71,8 +74,9 @@ class RoutineLoop(object):
                 if not sys:
                     return
                 exc_type, value, tb = sys.exc_info()
-                threading._print_traceback(sys.stderr, self.stack,
-                                           "thread %s" % self.getName(), 1,
+                # no base_stack, unless we wan't to keep stack from the add_task
+                threading._print_traceback(sys.stderr, [],
+                                           "RoutineLoop", 1,
                                            exc_type, value, tb)
                 del tb
         

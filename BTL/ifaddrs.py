@@ -4,7 +4,7 @@
 """
 routines for getting network interface addresses
 """
-# by Benjamin C. Wiley Sittler
+# by Benjamin C. Wiley Sittler, BSD/OSX support by Greg Hazel
 __all__ = [
     'getifaddrs',
     'getaddrs',
@@ -144,14 +144,21 @@ from BTL.obsoletepythonsupport import set
 
 _libc = None
 
+BSD = sys.platform.startswith('darwin') or sys.platform.startswith('freebsd')
+
 def libc():
     global _libc
     if _libc is None:
         uname = os.uname()
-        assert uname[0] == 'Linux' and [ int(x) for x in uname[2].split('.')[:2] ] >= [ 2, 2 ]
         assert sizeof(c_ushort) == 2
         assert sizeof(c_uint) == 4
-        _libc = CDLL('libc.so.6')
+        if sys.platform.startswith('darwin'):
+            _libc = CDLL('libc.dylib')
+        elif sys.platform.startswith('freebsd'):
+            _libc = CDLL('libc.so.6')
+        else:
+            assert uname[0] == 'Linux' and [ int(x) for x in uname[2].split('.')[:2] ] >= [ 2, 2 ]
+            _libc = CDLL('libc.so.6')
     return _libc
 
 def errno():
@@ -161,13 +168,23 @@ uint16_t = c_ushort
 uint32_t = c_uint
 uint8_t = c_ubyte
 
-sa_family_t = c_ushort 
+if BSD:
+    sa_family_t = c_uint8
 
-def SOCKADDR_COMMON(prefix):
-    """
-    Common data: address family and length.
-    """
-    return [ (prefix + 'family', sa_family_t) ]
+    def SOCKADDR_COMMON(prefix):
+        """
+        Common data: address family and length.
+        """
+        return [ (prefix + 'len', c_uint8),
+                 (prefix + 'family', sa_family_t) ]
+else:
+    sa_family_t = c_ushort 
+
+    def SOCKADDR_COMMON(prefix):
+        """
+        Common data: address family and length.
+        """
+        return [ (prefix + 'family', sa_family_t) ]
 
 SOCKADDR_COMMON_SIZE = sum([ sizeof(t) for n, t in SOCKADDR_COMMON('') ])
 
@@ -178,7 +195,7 @@ class sockaddr(Structure):
     pass
 
 sockaddr._fields_ = SOCKADDR_COMMON('sa_') + [ # Common data: address family and length.
-        ('sa_data', ARRAY(c_byte, 14)), # Address data.
+        ('sa_data', ARRAY(c_ubyte, 14)), # Address data.
         ]
 
 class sockaddr_storage(Structure):
@@ -608,7 +625,10 @@ def getifaddrs(name = None):
                 d['dstaddr'] = sockaddr2addr(d['name'], ifa[0].ifa_ifu.ifu_dstaddr)
             #d['data'] = ifa[0].ifa_data or None
             if ifa[0].ifa_data:
-                if d.get('addr') is not None and d['addr'].get('family') == socket.AF_PACKET:
+                if (d.get('addr') is not None and
+                    hasattr(socket, 'AF_PACKET') and
+                    d['addr'].get('family') == socket.AF_PACKET):
+                    
                     nds = cast(ifa[0].ifa_data, POINTER(net_device_stats))[0]
                     d['data'] = {
                         'rx_packets': nds.rx_packets,

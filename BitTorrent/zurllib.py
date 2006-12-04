@@ -12,11 +12,9 @@
 import sys
 import threading
 import thread
-
-user_agent = "BitTorrent zurllib"
-
-def set_user_agent(nagent):
-    user_agent = nagent
+from BitTorrent import PeerID
+user_agent = PeerID.make_id()
+del PeerID
     
 import urllib2
 OldOpenerDirector = urllib2.OpenerDirector

@@ -12,9 +12,13 @@
 
 from array import array
 
-from BTL.obsoletepythonsupport import *
-
-counts = [chr(sum([(i >> j) & 1 for j in xrange(8)])) for i in xrange(256)]
+#counts = [chr(sum([(i >> j) & 1 for j in xrange(8)])) for i in xrange(256)]
+counts = []
+for i in xrange(256):
+    t = 0
+    for j in xrange(8):
+        t = t + ((i >> j) & 1)
+    counts.append(chr(t))
 counts = ''.join(counts)
 
 class Bitfield:
@@ -51,8 +55,8 @@ class Bitfield:
         mask = 128 >> (index & 7)
         if self.bits[pos] & mask:
             return
-        self.bits[pos] |= mask
-        self.numfalse -= 1
+        self.bits[pos] = self.bits[pos] | mask
+        self.numfalse = self.numfalse - 1
         if self.numfalse == 0:
             self.bits = None
 
@@ -70,7 +74,7 @@ class Bitfield:
             rlen, extra = divmod(self.length, 8)
             r = chr(0xFF) * rlen
             if extra:
-                r += chr((0xFF << (8 - extra)) & 0xFF)
+                r = r + chr((0xFF << (8 - extra)) & 0xFF)
             return r
         else:
             return self.bits.tostring()
@@ -83,3 +87,10 @@ class Bitfield:
 
     def __setstate__(self, d):
         Bitfield.__init__(self, d['length'], d['s'])
+
+old_Bitfield = Bitfield
+try:
+    import BTL.cBitfield
+    Bitfield = BTL.cBitfield.Bitfield
+except ImportError:
+    pass

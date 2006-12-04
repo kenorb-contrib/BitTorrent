@@ -12,7 +12,7 @@ import os
 import sys
 import time
 import codecs
-import BTL.zurllib as urllib
+import urllib
 
 if os.name == 'nt':
     #import BTL.likewin32api as win32api

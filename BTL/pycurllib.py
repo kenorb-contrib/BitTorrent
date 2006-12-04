@@ -6,6 +6,7 @@ import sys
 import pycurl
 from cStringIO import StringIO
 from BaseHTTPServer import BaseHTTPRequestHandler
+from urllib import urlencode
 
 DEBUG = False
 

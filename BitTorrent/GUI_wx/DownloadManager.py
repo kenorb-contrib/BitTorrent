@@ -17,7 +17,6 @@ import sys
 import time
 import inspect
 import itertools
-import sha
 from BTL.translation import _
 
 import wx
@@ -32,8 +31,9 @@ from cStringIO import StringIO
 from BitTorrent import version, branch, URL, SEARCH_URL, FAQ_URL, bt_log_fmt
 from BTL.platform import app_name
 from BitTorrent import ClientIdentifier
-from BTL import zurllib
+import urllib
 
+from BTL.hash import sha
 from BTL.obsoletepythonsupport import set
 from BitTorrent.platform import doc_root, image_root, btspawn
 from BitTorrent.platform import get_max_filesize, get_free_space
@@ -275,7 +275,7 @@ class SearchField(wx.TextCtrl):
     def search(self, *args):
         search_term = self.GetValue()
         if search_term and search_term != self.default_text:
-            search_url = SEARCH_URL % {'search' :zurllib.quote(search_term),
+            search_url = SEARCH_URL % {'search' :urllib.quote(search_term),
                                        'client':make_id(),
                                        }
             self._task.start(2000, self.resensitize)
@@ -306,7 +306,7 @@ class SearchField(wx.TextCtrl):
 class CreditsScroll(wx.TextCtrl):
 
     def __init__(self, parent, credits_file_name, style=0):
-        filename = os.path.join(doc_root, credits_file_name+'.txt')
+        filename = os.path.join(doc_root, credits_file_name + u'.txt')
         l = ''
         if not os.access(filename, os.F_OK|os.R_OK):
             l = _("Couldn't open %s") % filename
@@ -525,8 +525,6 @@ class TorrentListView(HashableListView):
         down_rate = torrent_object.statistics.get('downRate', None)
         peers = torrent_object.statistics.get('numPeers', None)
 
-        row = self.GetRowFromKey(torrent_object.infohash)
-
         ur = Rate(up_rate)
 
         if (torrent_object.completion < 1.0) or (down_rate > 0):
@@ -538,7 +536,7 @@ class TorrentListView(HashableListView):
         priority = frontend_priority[torrent_object.priority]
 
         lr = BTListRow(None, {'state': state,
-                              'name': row['name'],
+                              'name': torrent_object.metainfo.name,
                               'progress': percentify(torrent_object.completion,
                                                      torrent_object.completed),
                               'eta': eta,
@@ -550,6 +548,8 @@ class TorrentListView(HashableListView):
 
         if not self.columns['progress'].enabled:
             return
+
+        row = self.GetRowFromKey(torrent_object.infohash)        
 
         # FIXME -- holy crap, re-factor so we don't have to repaint gauges here
         if row.index >= len(self.gauges):
@@ -1228,6 +1228,7 @@ class FileListPanel(BTPanel):
 
     def set_file_priority(self, priority):
         files = self.file_list.get_selected_files(priority=priority)
+        files = [ encode_for_filesystem(f)[0] for f in files ]
         wx.the_app.set_file_priority(self.torrent.infohash, files, priority)
 
 
@@ -2409,8 +2410,8 @@ class MainWindow(BTFrame):
         pos -= self.GetPosition()
         # add window border width on either side
         size.width += pos.x * 2
-        size.width = max(size.width, 500)
-        size.height = max(size.height, 340)
+        size.width = max(size.width, 720)
+        size.height = max(size.height, 400)
         self.load_geometry(geometry, default_size=size)
 
         if config['start_maximized']:
@@ -2713,6 +2714,11 @@ class MainWindow(BTFrame):
         app.send_config('enabled_columns', enabled_columns)
         w = self.torrentlist.get_column_widths()
         app.send_config('column_widths', w)
+
+        sw = getattr(app, '_settings_window', None)
+        if sw:
+            settings_tab = sw.notebook.GetSelection()
+            app.send_config('settings_tab', settings_tab)
 
         if self.IsMaximized():
             app.send_config('start_maximized', True)
@@ -3217,7 +3223,7 @@ class MainLoop(BasicApp, BTApp):
 
         # Choose an incomplete filename which is likely to be both short and
         # unique.  Just for kicks, also foil multi-user birthday attacks.
-        foil = sha.sha(save_incomplete_in.encode('utf-8'))
+        foil = sha(save_incomplete_in.encode('utf-8'))
         foil.update(metainfo.infohash)
         incomplete_name = metainfo.infohash.encode('hex')[:8]
         incomplete_name += '-'
@@ -3440,6 +3446,7 @@ class MainLoop(BasicApp, BTApp):
         except AttributeError:
             self._settings_window = SettingsWindow(self.main_window,
                                                    self.config, self.send_config)
+            self._settings_window.notebook.SetSelection(self.config['settings_tab'])
             return self._settings_window
 
     settings_window = property(_get_settings_window)

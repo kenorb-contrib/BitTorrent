@@ -15,7 +15,7 @@
 
 import os
 import re
-from BTL import zurllib
+from BitTorrent import zurllib
 from BTL.translation import _
 
 from BTL.bencode import bdecode, bencode

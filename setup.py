@@ -14,6 +14,9 @@
 
 import os
 
+# thanks Drue!
+app_name = "BitTorrent"
+
 from BitTorrent.platform import install_translation
 install_translation()
 
