@@ -205,11 +205,14 @@ class CursesDisplayer:
             line = "%3d %s%s%s%s" % (ii+1, name, size, dnrate, uprate)
             self._display_line(line, True)
             if peers + seeds:
-                datastr = '    (%s) %s - %s peers %s seeds %.3f dist copies - %s up %s dn' % (
-                                progress, status, peers, seeds, dist,
-                                fmtsize(upamt), fmtsize(dnamt) )
+                datastr = '    (%s) %s - %s up %s dn - %s peers %s seeds %.3f dist copies' % (
+                                progress, status,
+                                fmtsize(upamt), fmtsize(dnamt),
+                                peers, seeds, dist )
             else:
-                datastr = '    '+status+' ('+progress+')'
+                datastr = '    (%s) %s - %s up %s dn' % (
+                                progress, status,
+                                fmtsize(upamt), fmtsize(dnamt) )
             self._display_line(datastr)
             self._display_line('    '+ljust(msg,self.mainwinw-4))
             i += 1

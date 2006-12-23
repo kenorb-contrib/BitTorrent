@@ -312,7 +312,7 @@ class SocketHandler:
                 if (event & POLLIN):
                     try:
                         s.last_hit = clock()
-                        data = s.socket.recv(100000)
+                        data = s.socket.recv(self.readsize)
                         if not data:
                             self._close_socket(s)
                         else:

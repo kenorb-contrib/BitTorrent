@@ -189,7 +189,7 @@ class LaunchMany:
                                            config['upload_unit_size'])
             self.ratelimiter.set_upload_rate(config['max_upload_rate'])
 
-            self.handler = MultiHandler(self.rawserver, self.doneflag)
+            self.handler = MultiHandler(self.rawserver, self.doneflag, config)
             seed(createPeerID())
             self.rawserver.add_task(self.scan, 0)
             self.rawserver.add_task(self.stats, 0)

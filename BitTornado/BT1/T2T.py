@@ -20,6 +20,9 @@ DEBUG = True
 def excfunc(x):
     print x
 
+R_0 = lambda: 0
+R_1 = lambda: 1
+
 class T2TConnection:
     def __init__(self, myid, tracker, hash, interval, peers, timeout,
                      rawserver, disallow, isdisallowed):
@@ -37,12 +40,14 @@ class T2TConnection:
         self.rejected = 0
         self.trackererror = False
         self.peerlists = []
-
-        self.rerequester = Rerequester([[tracker]], interval,
-            rawserver.add_task, lambda: 0, peers, self.addtolist, 
-            rawserver.add_task, lambda: 1, 0, 0, 0, '',
-            myid, hash, timeout, self.errorfunc, excfunc, peers, Event(),
-            lambda: 0, lambda: 0)
+        cfg = { 'min_peers': peers,
+                'max_initiate': peers,
+                'rerequest_interval': interval,
+                'http_timeout': timeout }
+        self.rerequester = Rerequester( 0, myid, hash, [[tracker]], cfg,
+            rawserver.add_task, rawserver.add_task, self.errorfunc, excfunc,
+            self.addtolist, R_0, R_1, R_0, R_0, R_0, R_0,
+            Event() )
 
         if self.isactive():
             rawserver.add_task(self.refresh, randrange(int(self.interval/10), self.interval))

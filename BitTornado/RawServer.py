@@ -40,7 +40,7 @@ def autodetect_socket_style():
 			return 0
 
 
-READSIZE = 100000
+READSIZE = 32768
 
 class RawServer:
     def __init__(self, doneflag, timeout_check_interval, timeout, noisy = True,

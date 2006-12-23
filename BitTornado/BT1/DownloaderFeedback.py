@@ -11,6 +11,8 @@ except:
     True = 1
     False = 0
 
+INIT_STATE = (('R','R+'),('L','L+'))
+
 class DownloaderFeedback:
     def __init__(self, choker, httpdl, add_task, upfunc, downfunc,
             ratemeasure, leftfunc, file_length, finflag, sp, statistics,
@@ -51,10 +53,7 @@ class DownloaderFeedback:
             a['id'] = c.get_readable_id()
             a['ip'] = c.get_ip()
             a['optimistic'] = (c is self.choker.connections[0])
-            if c.is_locally_initiated():
-                a['direction'] = 'L'
-            else:
-                a['direction'] = 'R'
+            a['direction'] = INIT_STATE[c.is_locally_initiated()][c.is_encrypted()]
             u = c.get_upload()
             a['uprate'] = int(u.measure.get_rate())
             a['uinterested'] = u.is_interested()

@@ -31,6 +31,7 @@ from socket import error as socketerror
 from random import seed
 from threading import Thread, Event
 from clock import clock
+from BTcrypto import CRYPTO_OK
 from __init__ import createPeerID
 
 try:
@@ -62,6 +63,13 @@ defaults = [
         'file the server response was stored in, alternative to url'),
     ('url', '',
         'url to get file from, alternative to responsefile'),
+    ('crypto_allowed', int(CRYPTO_OK),
+        'whether to allow the client to accept encrypted connections'),
+    ('crypto_only', 0,
+        'whether to only create or allow encrypted connections'),
+    ('crypto_stealth', 0,
+        'whether to prevent all non-encrypted connection attempts; ' +
+        'will result in an effectively firewalled state on older trackers'),
     ('selector_enabled', 1,
         'whether to enable the file selector and fast resume function'),
     ('expire_cache_data', 10,
@@ -343,7 +351,7 @@ class BT1Download:
         self.finflag = Event()
         self.rerequest = None
         self.tcp_ack_fudge = config['tcp_ack_fudge']
-        
+
         self.selector_enabled = config['selector_enabled']
         if appdataobj:
             self.appdataobj = appdataobj
@@ -564,7 +572,6 @@ class BT1Download:
         if self.tcp_ack_fudge:
             x = int(x*self.tcp_ack_fudge)
             self.ratelimiter.adjust_sent(x)
-#            self.upmeasure.update_rate(x)
 
     def _received_data(self, x):
         self.downmeasure.update_rate(x)
@@ -588,6 +595,13 @@ class BT1Download:
             statusfunc = self.statusfunc
 
         self.checking = False
+
+        if not CRYPTO_OK:
+            if self.config['crypto_allowed']:
+                self.errorfunc('warning - crypto library not installed')
+            self.config['crypto_allowed'] = 0
+            self.config['crypto_only'] = 0
+            self.config['crypto_stealth'] = 0
 
         for i in xrange(self.len_pieces):
             if self.storagewrapper.do_I_have(i):
@@ -668,16 +682,16 @@ class BT1Download:
         else:
             trackerlist = [[self.response['announce']]]
 
-        self.rerequest = Rerequester(trackerlist, self.config['rerequest_interval'], 
-            self.rawserver.add_task, self.connecter.how_many_connections, 
-            self.config['min_peers'], self.encoder.start_connections,
-            self.rawserver.add_task, self.storagewrapper.get_amount_left, 
-            self.upmeasure.get_total, self.downmeasure.get_total, self.port, self.config['ip'],
-            self.myid, self.infohash, self.config['http_timeout'],
-            self.errorfunc, self.excfunc, self.config['max_initiate'],
-            self.doneflag, self.upmeasure.get_rate, self.downmeasure.get_rate,
-            self.unpauseflag, self.config['dedicated_seed_id'],
-            seededfunc, force_rapid_update )
+        self.rerequest = Rerequester(self.port, self.myid, self.infohash, 
+            trackerlist, self.config, 
+            self.rawserver.add_task, self.rawserver.add_task,
+            self.errorfunc, self.excfunc,
+            self.encoder.start_connections,
+            self.connecter.how_many_connections, 
+            self.storagewrapper.get_amount_left, 
+            self.upmeasure.get_total, self.downmeasure.get_total,
+            self.upmeasure.get_rate, self.downmeasure.get_rate,
+            self.doneflag, self.unpauseflag, seededfunc, force_rapid_update )
 
         self.rerequest.start()
 
@@ -803,26 +817,6 @@ class BT1Download:
         except:
             return None
 
-#    def Pause(self):
-#        try:
-#            if self.storagewrapper:
-#                self.rawserver.add_task(self._pausemaker, 0)
-#        except:
-#            return False
-#        self.unpauseflag.clear()
-#        return True
-#
-#    def _pausemaker(self):
-#        self.whenpaused = clock()
-#        self.unpauseflag.wait()   # sticks a monkey wrench in the main thread
-#
-#    def Unpause(self):
-#        self.unpauseflag.set()
-#        if self.whenpaused and clock()-self.whenpaused > 60:
-#            def r(self = self):
-#                self.rerequest.announce(3)      # rerequest automatically if paused for >60 seconds
-#            self.rawserver.add_task(r)
-
     def Pause(self):
         if not self.storagewrapper:
             return False
@@ -880,3 +874,4 @@ class BT1Download:
 
     def get_transfer_stats(self):
         return self.upmeasure.get_total(), self.downmeasure.get_total()
+    

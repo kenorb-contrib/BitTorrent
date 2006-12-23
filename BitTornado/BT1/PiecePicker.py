@@ -282,8 +282,10 @@ class PiecePicker:
         if olddl is None:
             ip = connection.get_ip()
             olddl = self.past_ips.get(ip)
-            if olddl is not None:                               # peer reconnected
+            if olddl is not None:                           # peer reconnected
                 self.seed_connections[connection] = olddl
+                if not looser_upload:
+                    self.seed_got_haves[olddl] -= 1         # penalize
         if olddl is not None:
             if looser_upload:
                 num = 1     # send a new have even if it hasn't spread that piece elsewhere

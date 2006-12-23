@@ -1,24 +1,33 @@
-install Python, version 2.0 or later - http://python.org/
+install Python, version 2.0 or later -
+            http://python.org/
 
-install wxPython - http://wxpython.org/
+install wxPython -
+            http://wxpython.org/
 
 install Python for Windows extensions -
-                            http://python.net/crew/mhammond/win32/
+            http://sourceforge.net/projects/pywin32/
 
-install py2exe - http://py2exe.org
+install py2exe -
+            http://py2exe.org
 
-install the nullsoft installer - http://nsis.sourceforge.net
+install the Python Cryptography Toolkit, if available -
+            http://www.amk.ca/python/code/crypto
+            http://www.voidspace.org.uk/python/modules.shtml#pycrypto
 
-in a shell, go to the root BitTorrent directory and run this command
+install the nullsoft installer -
+            http://nsis.sourceforge.net
+
+copy icon_bt and icon_done from the icons directory to the root
+BitTornado directory.  Then, in a shell, go to the root BitTornado
+directory and run this command
 
 python winsetup.py py2exe
 
 change to the newly created subdirectory dist, copy bittorrent.nsi
-and the gifs and icons into that directory, and run nsis on it.
+and the icons into that directory, and run nsis on it.
 
 cd dist
 copy ..\bittorrent.nsi .
-copy ..\*.gif .
 copy ..\icon*.ico .
 c:\progra~1\nsis\makensis.exe bittorrent.nsi
 

@@ -8,6 +8,7 @@ from ConfigDir import ConfigDir
 import sys,os
 import socket
 from parseargs import defaultargs
+from BTcrypto import CRYPTO_OK
 
 try:
     True
@@ -91,6 +92,7 @@ class configReader:
         self.configfile = wxConfig("BitTorrent",style=wxCONFIG_USE_LOCAL_FILE)
         self.configMenuBox = None
         self.advancedMenuBox = None
+        self.cryptoMenuBox = None
         self._configReset = True         # run reset for the first time
 
         setwxconfigfiledefaults()
@@ -229,7 +231,7 @@ class configReader:
             except wxPyDeadObjectError, e:
                 self.configMenuBox = None
 
-        self.configMenuBox = wxFrame(None, -1, 'BitTorrent Preferences', size = (1,1),
+        self.configMenuBox = wxFrame(None, -1, 'BitTornado Preferences', size = (1,1),
                             style = wxDEFAULT_FRAME_STYLE|wxFULL_REPAINT_ON_RESIZE)
         if (sys.platform == 'win32'):
             self.icon = self.parent.icon
@@ -259,14 +261,6 @@ class configReader:
         self.gui_displaymiscstats_checkbox.SetFont(self.default_font)
         self.gui_displaymiscstats_checkbox.SetValue(self.config['gui_displaymiscstats'])
 
-        self.security_checkbox = wxCheckBox(panel, -1, "Don't allow multiple connections from the same IP")
-        self.security_checkbox.SetFont(self.default_font)
-        self.security_checkbox.SetValue(self.config['security'])
-
-        self.autokick_checkbox = wxCheckBox(panel, -1, "Kick/ban clients that send you bad data *")
-        self.autokick_checkbox.SetFont(self.default_font)
-        self.autokick_checkbox.SetValue(self.config['auto_kick'])
-
         self.buffering_checkbox = wxCheckBox(panel, -1, "Enable read/write buffering *")
         self.buffering_checkbox.SetFont(self.default_font)
         self.buffering_checkbox.SetValue(self.config['buffer_reads'])
@@ -289,6 +283,7 @@ class configReader:
         self.gui_forcegreenonfirewall_checkbox.SetFont(self.default_font)
         self.gui_forcegreenonfirewall_checkbox.SetValue(self.config['gui_forcegreenonfirewall'])
 
+        cryptoButton = wxButton(panel, -1, 'Encryption/Security Settings...')
 
         self.minport_data = wxSpinCtrl(panel, -1, '', (-1,-1), (self.FONT*8, -1))
         self.minport_data.SetFont(self.default_font)
@@ -328,9 +323,6 @@ class configReader:
             self.win32_taskbar_icon_checkbox.SetFont(self.default_font)
             self.win32_taskbar_icon_checkbox.SetValue(self.config['win32_taskbar_icon'])
             
-#            self.upnp_checkbox = wxCheckBox(panel, -1, "Enable automatic UPnP port forwarding")
-#            self.upnp_checkbox.SetFont(self.default_font)
-#            self.upnp_checkbox.SetValue(self.config['upnp_nat_access'])
             self.upnp_data=wxChoice(panel, -1,
                         choices = ['disabled', 'type 1 (fast)', 'type 2 (slow)'])
             self.upnp_data.SetFont(self.default_font)
@@ -360,25 +352,22 @@ class configReader:
         
         rowsizer = wxFlexGridSizer(cols = 2, hgap = 20)
 
-        block12sizer = wxFlexGridSizer(cols = 1, vgap = 7)
+        block12sizer = wxFlexGridSizer(cols = 1, vgap = 12)
 
         block1sizer = wxFlexGridSizer(cols = 1, vgap = 2)
         if (sys.platform == 'win32'):
             block1sizer.Add(self.win32_taskbar_icon_checkbox)
-#            block1sizer.Add(self.upnp_checkbox)
         block1sizer.Add(self.gui_stretchwindow_checkbox)
         block1sizer.Add(self.gui_displaystats_checkbox)
         block1sizer.Add(self.gui_displaymiscstats_checkbox)
-        block1sizer.Add(self.security_checkbox)
-        block1sizer.Add(self.autokick_checkbox)
         block1sizer.Add(self.buffering_checkbox)
         block1sizer.Add(self.breakup_checkbox)
         block1sizer.Add(self.autoflush_checkbox)
         if sys.version_info >= (2,3) and socket.has_ipv6:
             block1sizer.Add(self.ipv6enabled_checkbox)
         block1sizer.Add(self.gui_forcegreenonfirewall_checkbox)
-
         block12sizer.Add(block1sizer)
+        block12sizer.Add(cryptoButton, 0, wxALIGN_CENTER)
 
         colorsizer = wxStaticBoxSizer(wxStaticBox(panel, -1, "Gauge Colors:"), wxVERTICAL)
         colorsizer1 = wxFlexGridSizer(cols = 7)
@@ -453,7 +442,6 @@ class configReader:
         block4sizer.Add(dratesettingsSizer, 1, wxALIGN_CENTER_VERTICAL)
 
         colsizer.Add(block4sizer, 0, wxALIGN_CENTER)
-#        colsizer.Add(StaticText(' '))
 
         savesizer = wxGridSizer(cols = 4, hgap = 10)
         saveButton = wxButton(panel, -1, 'Save')
@@ -483,6 +471,7 @@ class configReader:
         panel.SetAutoLayout(True)
 
         self.advancedConfig = {}
+        self.cryptoConfig = {}
 
         def setDefaults(evt, self = self):
           try:
@@ -492,8 +481,6 @@ class configReader:
             self.gui_stretchwindow_checkbox.SetValue(self.defaults['gui_stretchwindow'])
             self.gui_displaystats_checkbox.SetValue(self.defaults['gui_displaystats'])
             self.gui_displaymiscstats_checkbox.SetValue(self.defaults['gui_displaymiscstats'])
-            self.security_checkbox.SetValue(self.defaults['security'])
-            self.autokick_checkbox.SetValue(self.defaults['auto_kick'])
             self.buffering_checkbox.SetValue(self.defaults['buffer_reads'])
             self.breakup_checkbox.SetValue(self.defaults['breakup_seed_bitfield'])
             self.autoflush_checkbox.SetValue(self.defaults['auto_flush'])
@@ -516,16 +503,19 @@ class configReader:
 
             if (sys.platform == 'win32'):
                 self.win32_taskbar_icon_checkbox.SetValue(self.defaults['win32_taskbar_icon'])
-#                self.upnp_checkbox.SetValue(self.defaults['upnp_nat_access'])
                 self.upnp_data.SetSelection(self.defaults['upnp_nat_access'])
 
-            # reset advanced too
+            # reset advanced and crypto windows too
             self.advancedConfig = {}
             for key in ['ip', 'bind', 'min_peers', 'max_initiate', 'display_interval',
         'alloc_type', 'alloc_rate', 'max_files_open', 'max_connections', 'super_seeder',
         'ipv6_binds_v4', 'double_check', 'triple_check', 'lock_files', 'lock_while_reading',
         'expire_cache_data']:
                 self.advancedConfig[key] = self.defaults[key]
+            self.cryptoConfig = {}
+            for key in ['security', 'auto_kick',
+        'crypto_allowed', 'crypto_only', 'crypto_stealth']:
+                self.cryptoConfig[key] = self.config[key]
             self.CloseAdvanced()
           except:
             self.parent.exception()
@@ -536,8 +526,6 @@ class configReader:
             self.config['gui_stretchwindow']=int(self.gui_stretchwindow_checkbox.GetValue())
             self.config['gui_displaystats']=int(self.gui_displaystats_checkbox.GetValue())
             self.config['gui_displaymiscstats']=int(self.gui_displaymiscstats_checkbox.GetValue())
-            self.config['security']=int(self.security_checkbox.GetValue())
-            self.config['auto_kick']=int(self.autokick_checkbox.GetValue())
             buffering=int(self.buffering_checkbox.GetValue())
             self.config['buffer_reads']=buffering
             if buffering:
@@ -567,11 +555,13 @@ class configReader:
             
             if (sys.platform == 'win32'):
                 self.config['win32_taskbar_icon']=int(self.win32_taskbar_icon_checkbox.GetValue())
-#                self.config['upnp_nat_access']=int(self.upnp_checkbox.GetValue())
                 self.config['upnp_nat_access']=self.upnp_data.GetSelection()
 
             if self.advancedConfig:
                 for key,val in self.advancedConfig.items():
+                    self.config[key] = val
+            if self.cryptoConfig:
+                for key,val in self.cryptoConfig.items():
                     self.config[key] = val
 
             self.writeConfigFile()
@@ -623,6 +613,7 @@ class configReader:
         EVT_BUTTON(self.configMenuBox, cancelButton.GetId(), cancelConfigs)
         EVT_BUTTON(self.configMenuBox, defaultsButton.GetId(), setDefaults)
         EVT_BUTTON(self.configMenuBox, advancedButton.GetId(), self.advancedMenu)
+        EVT_BUTTON(self.configMenuBox, cryptoButton.GetId(), self.cryptoMenu)
         EVT_BUTTON(self.configMenuBox, savepathButton.GetId(), savepath_set)
         EVT_LEFT_DOWN(self.checkingcolor_iconptr, checkingcoloricon_set)
         EVT_LEFT_DOWN(self.downloadcolor_iconptr, downloadcoloricon_set)
@@ -659,13 +650,12 @@ class configReader:
             except wxPyDeadObjectError, e:
                 self.advancedMenuBox = None
 
-        self.advancedMenuBox = wxFrame(None, -1, 'BitTorrent Advanced Preferences', size = (1,1),
+        self.advancedMenuBox = wxFrame(None, -1, 'BitTornado Advanced Preferences', size = (1,1),
                             style = wxDEFAULT_FRAME_STYLE|wxFULL_REPAINT_ON_RESIZE)
         if (sys.platform == 'win32'):
             self.advancedMenuBox.SetIcon(self.icon)
 
         panel = wxPanel(self.advancedMenuBox, -1)
-#        self.panel = panel
 
         def StaticText(text, font = self.FONT, underline = False, color = None, panel = panel):
             x = wxStaticText(panel, -1, text, style = wxALIGN_LEFT)
@@ -1065,4 +1055,141 @@ class configReader:
                 self.advancedMenuBox.Close()
             except wxPyDeadObjectError, e:
                 self.advancedMenuBox = None
+
+
+    def cryptoMenu(self, event = None):
+      try:
+        if not self.cryptoConfig:
+            for key in ['security', 'auto_kick',
+        'crypto_allowed', 'crypto_only', 'crypto_stealth']:
+                self.cryptoConfig[key] = self.config[key]
+
+        if (self.cryptoMenuBox is not None):
+            try:
+                self.cryptoMenuBox.Close ()
+            except wxPyDeadObjectError, e:
+                self.cryptoMenuBox = None
+
+        self.cryptoMenuBox = wxFrame(None, -1, 'BitTornado Encryption/Security Preferences', size = (1,1),
+                            style = wxDEFAULT_FRAME_STYLE|wxFULL_REPAINT_ON_RESIZE)
+        if (sys.platform == 'win32'):
+            self.cryptoMenuBox.SetIcon(self.icon)
+
+        panel = wxPanel(self.cryptoMenuBox, -1)
+#        self.panel = panel
+
+        def StaticText(text, font = self.FONT, underline = False, color = None, panel = panel):
+            x = wxStaticText(panel, -1, text, style = wxALIGN_LEFT)
+            x.SetFont(wxFont(font, wxDEFAULT, wxNORMAL, wxNORMAL, underline))
+            if color is not None:
+                x.SetForegroundColour(color)
+            return x
+
+        colsizer = wxFlexGridSizer(cols = 1, hgap = 13, vgap = 13)
+
+        self.cryptomode_data=wxRadioBox(panel, -1, 'Encryption',
+                style = wxRA_SPECIFY_COLS, majorDimension = 1,
+                choices = [
+                    'no encryption permitted',
+                    'encryption enabled (default)',
+                    'encrypted connections only',
+                    'full stealth encryption'+
+                    ' (may cause effective firewalling)' ] )
+        self.cryptomode_data.SetFont(self.default_font)
+        if self.cryptoConfig['crypto_stealth']:
+            m = 3
+        elif self.cryptoConfig['crypto_only']:
+            m = 2
+        elif self.cryptoConfig['crypto_allowed']:
+            m = 1
+        else:
+            m = 0
+        self.cryptomode_data.SetSelection(m)
+        if not CRYPTO_OK:   # no crypto library in place
+            self.cryptomode_data.Enable(False)
+
+        self.security_checkbox = wxCheckBox(panel, -1, "Don't allow multiple connections from the same IP")
+        self.security_checkbox.SetFont(self.default_font)
+        self.security_checkbox.SetValue(self.cryptoConfig['security'])
+
+        self.autokick_checkbox = wxCheckBox(panel, -1, "Kick/ban clients that send you bad data")
+        self.autokick_checkbox.SetFont(self.default_font)
+        self.autokick_checkbox.SetValue(self.cryptoConfig['auto_kick'])
+
+        colsizer.Add(self.cryptomode_data)
+
+        block2sizer = wxFlexGridSizer(cols = 1, vgap = 2)
+        block2sizer.Add(self.security_checkbox)
+        block2sizer.Add(self.autokick_checkbox)
+        colsizer.Add(block2sizer)
+
+        savesizer = wxGridSizer(cols = 3, hgap = 20)
+        okButton = wxButton(panel, -1, 'OK')
+        savesizer.Add(okButton, 0, wxALIGN_CENTER)
+
+        cancelButton = wxButton(panel, -1, 'Cancel')
+        savesizer.Add(cancelButton, 0, wxALIGN_CENTER)
+
+        defaultsButton = wxButton(panel, -1, 'Revert to Defaults')
+        savesizer.Add(defaultsButton, 0, wxALIGN_CENTER)
+        colsizer.Add(savesizer, 1, wxALIGN_CENTER)
+
+        resizewarningtext=StaticText('None of these settings will take effect until the next time you start BitTorrent', self.FONT-2)
+        colsizer.Add(resizewarningtext, 1, wxALIGN_CENTER)
+
+        border = wxBoxSizer(wxHORIZONTAL)
+        border.Add(colsizer, 1, wxEXPAND | wxALL, 4)
+        
+        panel.SetSizer(border)
+        panel.SetAutoLayout(True)
+
+        def setDefaults(evt, self = self):
+          try:
+            if self.defaults['crypto_stealth']:
+                m = 3
+            elif self.defaults['crypto_only']:
+                m = 2
+            elif self.defaults['crypto_allowed']:
+                m = 1
+            else:
+                m = 0
+            self.cryptomode_data.SetSelection(m)
+            self.security_checkbox.SetValue(self.defaults['security'])
+            self.autokick_checkbox.SetValue(self.defaults['auto_kick'])
+          except:
+            self.parent.exception()
+
+        def saveConfigs(evt, self = self):
+          try:
+            m = self.cryptomode_data.GetSelection()
+            self.cryptoConfig['crypto_stealth'] = int(m==3)
+            self.cryptoConfig['crypto_only'] = int(m>=2)
+            self.cryptoConfig['crypto_allowed'] = int(m>=1)
+            self.cryptoConfig['security']=int(self.security_checkbox.GetValue())
+            self.cryptoConfig['auto_kick']=int(self.autokick_checkbox.GetValue())
+            self.cryptoMenuBox.Close()
+          except:
+            self.parent.exception()
+
+        def cancelConfigs(evt, self = self):            
+            self.cryptoMenuBox.Close()
+
+        EVT_BUTTON(self.cryptoMenuBox, okButton.GetId(), saveConfigs)
+        EVT_BUTTON(self.cryptoMenuBox, cancelButton.GetId(), cancelConfigs)
+        EVT_BUTTON(self.cryptoMenuBox, defaultsButton.GetId(), setDefaults)
+
+        self.cryptoMenuBox.Show ()
+        border.Fit(panel)
+        self.cryptoMenuBox.Fit()
+      except:
+        self.parent.exception()
+
+
+    def CloseCrypt(self):
+        if self.cryptMenuBox is not None:
+            try:
+                self.cryptMenuBox.Close()
+            except wxPyDeadObjectError, e:
+                self.cryptMenuBox = None
+
 

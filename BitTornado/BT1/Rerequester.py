@@ -52,51 +52,69 @@ class fakeflag:
         return self.state
 
 class Rerequester:
-    def __init__(self, trackerlist, interval, sched, howmany, minpeers, 
-            connect, externalsched, amount_left, up, down,
-            port, ip, myid, infohash, timeout, errorfunc, excfunc,
-            maxpeers, doneflag, upratefunc, downratefunc,
-            unpauseflag = fakeflag(True),
-            seed_id = '', seededfunc = None, force_rapid_update = False ):
+    def __init__( self, port, myid, infohash, trackerlist, config,
+                  sched, externalsched, errorfunc, excfunc, connect,
+                  howmany, amount_left, up, down, upratefunc, downratefunc,
+                  doneflag, unpauseflag = fakeflag(True),
+                  seededfunc = None, force_rapid_update = False ):
 
+        self.sched = sched
+        self.externalsched = externalsched
+        self.errorfunc = errorfunc
         self.excfunc = excfunc
+        self.connect = connect
+        self.howmany = howmany
+        self.amount_left = amount_left
+        self.up = up
+        self.down = down
+        self.upratefunc = upratefunc
+        self.downratefunc = downratefunc
+        self.doneflag = doneflag
+        self.unpauseflag = unpauseflag
+        self.seededfunc = seededfunc
+        self.force_rapid_update = force_rapid_update
+
+        self.ip = config.get('ip','')
+        self.minpeers = config['min_peers']
+        self.maxpeers = config['max_initiate']
+        self.interval = config['rerequest_interval']
+        self.timeout = config['http_timeout']
+
         newtrackerlist = []        
         for tier in trackerlist:
             if len(tier)>1:
                 shuffle(tier)
             newtrackerlist += [tier]
         self.trackerlist = newtrackerlist
+
         self.lastsuccessful = ''
         self.rejectedmessage = 'rejected by tracker - '
-        
-        self.url = ('?info_hash=%s&peer_id=%s&port=%s' %
-            (quote(infohash), quote(myid), str(port)))
-        self.ip = ip
-        self.interval = interval
+
+        self.url = ('info_hash=%s&peer_id=%s' %
+            (quote(infohash), quote(myid)))
+        if not config.get('crypto_allowed'):
+            self.url += "&port="
+        else:
+            self.url += "&supportcrypto=1"
+            if not config.get('crypto_only'):
+                    self.url += "&port="
+            else:
+                self.url += "&requirecrypto=1"            
+                if not config.get('crypto_stealth'):
+                    self.url += "&port="
+                else:
+                    self.url += "&port=0&cryptoport="
+        self.url += str(port)
+
+        seed_id = config.get('dedicated_seed_id')
+        if seed_id:
+            self.url += '&seed_id='+quote(seed_id)
+        if self.seededfunc:
+            self.url += '&check_seeded=1'
+
         self.last = None
         self.trackerid = None
         self.announce_interval = 30 * 60
-        self.sched = sched
-        self.howmany = howmany
-        self.minpeers = minpeers
-        self.connect = connect
-        self.externalsched = externalsched
-        self.amount_left = amount_left
-        self.up = up
-        self.down = down
-        self.timeout = timeout
-        self.errorfunc = errorfunc
-        self.maxpeers = maxpeers
-        self.doneflag = doneflag
-        self.upratefunc = upratefunc
-        self.downratefunc = downratefunc
-        self.unpauseflag = unpauseflag
-        if seed_id:
-            self.url += '&seed_id='+quote(seed_id)
-        self.seededfunc = seededfunc
-        if seededfunc:
-            self.url += '&check_seeded=1'
-        self.force_rapid_update = force_rapid_update
         self.last_failed = True
         self.never_succeeded = True
         self.errorcodes = {}
@@ -275,7 +293,13 @@ class Rerequester:
 
             err = None
             try:
-                h = urlopen(t+s)
+                url,q = t.split('?',1)
+                q += '&'+s
+            except:
+                url = t
+                q = s
+            try:
+                h = urlopen(url+'?'+q)
                 closer[0] = h.close
                 data = h.read()
             except (IOError, error), e:
@@ -337,13 +361,26 @@ class Rerequester:
         p = r['peers']
         peers = []
         if type(p) == type(''):
+            lenpeers = len(p)/6
+        else:
+            lenpeers = len(p)
+        cflags = r.get('crypto_flags')
+        if type(cflags) != type('') or len(cflags) != lenpeers:
+            cflags = None
+        if cflags is None:
+            cflags = [None for i in xrange(lenpeers)]
+        else:
+            cflags = [ord(x) for x in cflags]
+        if type(p) == type(''):
             for x in xrange(0, len(p), 6):
                 ip = '.'.join([str(ord(i)) for i in p[x:x+4]])
                 port = (ord(p[x+4]) << 8) | ord(p[x+5])
-                peers.append(((ip, port), 0))
+                peers.append(((ip, port), 0, cflags[int(x/6)]))
         else:
-            for x in p:
-                peers.append(((x['ip'].strip(), x['port']), x.get('peer id',0)))
+            for i in xrange(len(p)):
+                x = p[i]
+                peers.append(((x['ip'].strip(), x['port']),
+                              x.get('peer id',0), cflags[i]))
         ps = len(peers) + self.howmany()
         if ps < self.maxpeers:
             if self.doneflag.isSet():

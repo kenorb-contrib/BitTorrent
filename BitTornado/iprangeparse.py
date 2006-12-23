@@ -68,11 +68,33 @@ def to_long_ipv6(ip):
 ipv4addrmask = 65535L*256*256*256*256
 
 class IP_List:
-    def __init__(self):
+    def __init__(self, entrylist=None):
         self.ipv4list = []  # starts of ranges
         self.ipv4dict = {}  # start: end of ranges
         self.ipv6list = []  # "
         self.ipv6dict = {}  # "
+
+        if entrylist:
+            l4 = []
+            l6 = []
+            for b,e in entrylist:
+                assert b <= e
+                if b.find(':') < 0:        # IPv4
+                    b = to_long_ipv4(b)
+                    e = to_long_ipv4(e)
+                    l4.append((b,e))
+                else:
+                    b = to_long_ipv6(b)
+                    e = to_long_ipv6(e)
+                    bb = b % (256*256*256*256)
+                    if bb == ipv4addrmask:
+                        b -= bb
+                        e -= bb
+                        l4.append((b,e))
+                    else:
+                        l6.append((b,e))
+            self._import_ipv4(l4)
+            self._import_ipv6(l6)
 
     def __nonzero__(self):
         return bool(self.ipv4list or self.ipv6list)
@@ -101,10 +123,8 @@ class IP_List:
                 l = self.ipv6list
                 d = self.ipv6dict
 
-        pos = bisect(l,ip_beg)-1
-        done = pos < 0
-        while not done:
-            p = pos
+        p = bisect(l,ip_beg)-1
+        if p >= 0:
             while p < len(l):
                 range_beg = l[p]
                 if range_beg > ip_end+1:
@@ -126,6 +146,45 @@ class IP_List:
 
         insort(l,ip_beg)
         d[ip_beg] = ip_end
+
+
+    def _import_ipv4(self, entrylist):  #entrylist = sorted list of pairs of ipv4s converted to longs
+        assert not self.ipv4list
+        if not entrylist:
+            return
+        entrylist.sort()
+        l = []
+        b1,e1 = entrylist[0]
+        for b2,e2 in entrylist:
+            if e1+1 >= b2:
+                e1 = max(e1,e2)
+            else:
+                l.append((b1,e1))
+                b1 = b2
+                e1 = e2
+        l.append((b1,e1))
+        self.ipv4list = [b for b,e in l]
+        for b,e in l:
+            self.ipv4dict[b] = e
+
+    def _import_ipv6(self, entrylist):  #entrylist = sorted list of pairs of ipv6s converted to longs
+        assert not self.ipv6list
+        if not entrylist:
+            return
+        entrylist.sort()
+        l = []
+        b1,e1 = entrylist[0]
+        for b2,e2 in entrylist:
+            if e1+1 >= b2:
+                e1 = max(e1,e2)
+            else:
+                l.append((b1,e1))
+                b1 = b2
+                e1 = e2
+        l.append((b1,e1))
+        self.ipv6list = [b for b,e in l]
+        for b,e in l:
+            self.ipv6dict[b] = e
 
 
     def includes(self, ip):
@@ -157,6 +216,7 @@ class IP_List:
     # reads a list from a file in the format 'whatever:whatever:ip-ip'
     # (not IPv6 compatible at all)
     def read_rangelist(self, file):
+        l = []
         f = open(file, 'r')
         while True:
             line = f.readline()
@@ -172,10 +232,15 @@ class IP_List:
                 ip1 = line
                 ip2 = line
             try:
-                self.append(ip1.strip(),ip2.strip())
+                ip1 = to_long_ipv4(ip1)
+                ip2 = to_long_ipv4(ip2)
+                assert ip1 <= ip2
             except:
                 print '*** WARNING *** could not parse IP range: '+line
+            l.append((ip1,ip2))
         f.close()
+        self._import_ipv4(l)
+
 
 def is_ipv4(ip):
     return ip.find(':') < 0

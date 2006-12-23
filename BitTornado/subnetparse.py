@@ -92,13 +92,29 @@ def to_bitfield_ipv6(ip):
 ipv4addrmask = to_bitfield_ipv6('::ffff:0:0')[:96]
 
 class IP_List:
-    def __init__(self):
+    def __init__(self, entrylist=None):
         self.ipv4list = []
         self.ipv6list = []
+        if entrylist:
+            for ip, depth in entrylist:
+                self._append(ip,depth)
+            self.ipv4list.sort()
+            self.ipv6list.sort()
+
 
     def __nonzero__(self):
         return bool(self.ipv4list or self.ipv6list)
 
+
+    def _append(self, ip, depth = 256):
+        if ip.find(':') < 0:        # IPv4
+            self.ipv4list.append(to_bitfield_ipv4(ip)[:depth])
+        else:
+            b = to_bitfield_ipv6(ip)
+            if b.startswith(ipv4addrmask):
+                self.ipv4list.append(b[96:][:depth-96])
+            else:
+                self.ipv6list.append(b[:depth])
 
     def append(self, ip, depth = 256):
         if ip.find(':') < 0:        # IPv4
@@ -157,10 +173,12 @@ class IP_List:
             try:
                 if depth is not None:                
                     depth = int(depth)
-                self.append(ip,depth)
+                self._append(ip,depth)
             except:
                 print '*** WARNING *** could not parse IP range: '+line
         f.close()
+        self.ipv4list.sort()
+        self.ipv6list.sort()
 
 
     def set_intranet_addresses(self):
