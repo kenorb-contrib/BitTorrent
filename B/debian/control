@@ -1,0 +1,22 @@
+Package: bittorrent
+Version: PACKAGEVERSION
+Section: net
+Priority: optional
+Architecture: all
+Depends: python (>= PYTHONVERSION), python-wxgtk2.6, python-twisted (>= 2.0), python-crypto (>= 2.0), python-psyco, python-zopeinterface
+Conflicts: bittorrent (<< PACKAGEVERSION), bittorrent-gui (<< PACKAGEVERSION)
+Replaces: bittorrent, bittorrent-gui, bittorrent-3.9.0.linux, bittorrent-3.9.1.linux, bittorrent-3.9.2.linux, bittorrent-4.0.0.linux, bittorrent-4.0.1.linux, bittorrent-4.0.2.linux, bittorrent-4.0.3.linux, bittorrent-4.0.4.linux, bittorrent-4.1.0.linux, bittorrent-4.1.1.linux, bittorrent-4.1.2.linux, bittorrent-4.1.3.linux, bittorrent-4.1.4.linux, bittorrent-4.1.5.linux, bittorrent-4.1.6.linux, bittorrent-4.1.7.linux, bittorrent-4.1.8.linux, bittorrent-4.2.0.linux, bittorrent-4.2.1.linux, bittorrent-4.2.2.linux, bittorrent-4.3.0.linux, bittorrent-4.3.1.linux, bittorrent-4.3.2.linux, bittorrent-4.3.3.linux, bittorrent-4.3.4.linux, bittorrent-4.3.5.linux, bittorrent-4.3.6.linux, bittorrent-4.4.0.linux, bittorrent-4.4.1.linux, bittorrent-4.9.0.linux, bittorrent-4.9.2.linux, bittorrent-4.9.3.linux
+Installed-Size: INSTALLEDSIZE
+Maintainer: BitTorrent, Inc. <bugs@bittorrent.com>
+Source: bittorrent
+Description: Scatter-gather network file transfer
+ BitTorrent is a tool for distributing files. It's extremely
+ easy to use - downloads are started by clicking on hyperlinks.
+ Whenever more than one person is downloading at once
+ they send pieces of the file(s) to each other, thus relieving
+ the central server's bandwidth burden. Even with many
+ simultaneous downloads, the upload burden on the central server
+ remains quite small, since each new downloader introduces new
+ upload capacity.
+ .
+  Homepage: http://bittorrent.com/
