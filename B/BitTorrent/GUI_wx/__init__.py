@@ -54,8 +54,8 @@ def gui_wrap(_f, *args, **kwargs):
 SPACING = 8  # default pixels between widgets
 PORT_RANGE = 5 # how many ports to try
 
-WILDCARD = "Torrent files (*.torrent)|*.torrent|"\
-           "All files (*.*)|*.*"
+WILDCARD = _("Torrent files (*.torrent)|*.torrent|"\
+             "All files (*.*)|*.*")
 
 def get_theme_root(theme_name):
     for t in (theme_name, 'default'):

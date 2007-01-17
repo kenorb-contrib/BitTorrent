@@ -34,9 +34,11 @@ class ICMP_ECHO_REPLY(ctypes.Structure):
 def IcmpSendEcho(handle, addr, data, options, timeout):
     reply = ICMP_ECHO_REPLY()
     data = data or ''
+    if options:
+        options = ctypes.byref(options)
     r = icmp.IcmpSendEcho(handle, inet_addr(addr),
                           data, len(data),
-                          ctypes.byref(options),
+                          options,
                           ctypes.byref(reply),
                           ctypes.sizeof(ICMP_ECHO_REPLY) + len(data),
                           timeout)
@@ -67,4 +69,4 @@ IP_BAD_DESTINATION          = (IP_STATUS_BASE + 18)
 status = {}
 for k, v in dict(globals()).iteritems():
     if k.startswith("IP_"):
-        status[k] = v
+        status[v] = k

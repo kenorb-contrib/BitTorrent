@@ -183,6 +183,8 @@ class Torrent(object):
         self._rerequest = None
         self._dht_rerequest = None
         self._statuscollector = None
+        self._rm = None
+        self.multidownload = None
 
     def update_config(self, config):
         self.config.update(config)
@@ -708,8 +710,6 @@ class Torrent(object):
             self._connection_manager.cleanup()
         self.context_valid = False
 
-        del self._rm
-        del self.multidownload
         self._init()
 
         self.state = "created"
@@ -1060,7 +1060,7 @@ class Torrent(object):
 
         total = 0.0
         for c in cs:
-            total += c.download.connection.download.peermeasure.get_rate()
+            total += c.download.connector.download.peermeasure.get_rate()
 
         return total / len(cs)
 

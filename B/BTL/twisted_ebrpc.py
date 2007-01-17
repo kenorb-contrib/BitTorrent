@@ -21,6 +21,7 @@ from BTL.platform import app_name
 from BTL.reactor_magic import reactor
 from BTL.exceptions import str_exc
 from BTL.protocol import SmartReconnectingClientFactory
+from BTL.ebrpclib import ServerProxy
 
 import twisted.web
 if twisted.web.__version__ < '0.6.0':
@@ -560,5 +561,42 @@ class AsyncServerProxy(object):
         df = self.proxy.callRemote(methodname, *a, **kw)
         return df
 
+class EitherServerProxy(object):
+    """Server Proxy that supports both asynchronous and synchronous calls."""
+    
+    def __init__(self, base_url, username = None, password = None, debug = False,
+            async = True ):
+        """
+           The EitherServerProxy can make either synchronous or asynchronous calls.
+           The default is specified by the async parameter to __init__, but each
+           individual call can override the default behavior by passing 'async' as 
+           a boolean keyword argument to any method call.  The async keyword
+           argument can also be set to None.  However, passing async as 
+           None means simply 'use default behavior'.  When calling with async=False, 
+           you should not be in the same thread as the reactor or you risk 
+           blocking the reactor.
 
-__all__ = ["EBRPC", "Handler", "NoSuchFunction", "Fault", "Proxy", "AsyncServerProxy"]
+           @param async: determines whether the default is asynchronous or blocking calls."""
+        self.async = async 
+        self.async_proxy = AsyncServerProxy( base_url, username, password, debug )
+        self.sync_proxy = ServerProxy( base_url )
+
+    def __getattr__(self, attr):
+        return self._make_call(attr)
+
+    def _make_call(self, methodname):
+        return lambda *a, **kw : self._method(methodname, *a, **kw)
+
+    def _method(self, methodname, *a, **kw ):
+        async = kw.pop('async', self.async)
+        if async is None:
+            async = self.async
+        if async:
+            df = self.async_proxy._method(methodname, *a, **kw)
+            return df
+        else:
+            result = self.sync_proxy.__getattr__(methodname)(*a, **kw)
+            return defer.succeed(result)
+
+
+__all__ = ["EBRPC", "Handler", "NoSuchFunction", "Fault", "Proxy", "AsyncServerProxy", "EitherServerProxy"]

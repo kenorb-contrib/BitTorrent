@@ -314,7 +314,7 @@ class RTTMonitorWin32(RTTMonitorBase):
         rtt = None
 
         try:
-            o = None
+            o = None            
             if ttl is not None:
                 o = win32icmp.Options()
                 o.Ttl = ttl
@@ -327,7 +327,9 @@ class RTTMonitorWin32(RTTMonitorBase):
                     print "Ping ttl expired %d: from %s time=%s" %(
                           status, str(addr), str(rtt))
                 else:
-                    print "Ping failed", status
+                    print "Ping failed", win32icmp.status[status]
+        except KeyboardInterrupt:
+            raise
         except Exception, e:
             if debug:
                 print "Ping failed:", str_exc(e)

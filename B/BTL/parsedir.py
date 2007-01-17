@@ -25,14 +25,14 @@ def like_gettorrent(path):
     b = bdecode(data)
     metainfo = ConvertedMetainfo(b)
     return metainfo
-    
+
 
 NOISY = False
 
 def parsedir(directory, parsed, files, blocked, errfunc,
              include_metainfo=True):
     """Recurses breadth-first starting from the passed 'directory'
-       looking for .torrrent files.  
+       looking for .torrrent files.
 
        The directory, parsed, files, and blocked arguments are passed
        from the previous iteration of parsedir.
@@ -45,7 +45,7 @@ def parsedir(directory, parsed, files, blocked, errfunc,
           Valid reasons are that the .torrent file is unparseable or that a
           torrent with a matching infohash is alread in the parsed set.
        @param errfunc: error-reporting callback.
-       @param include_metainfo:
+       @param include_metainfo: deprecated?
        @return: The tuple (new parsed, new files, new blocked, added, removed)
           where 'new parsed', 'new files', and 'new blocked' are updated
           versions of 'parsed', 'files', and 'blocked' respectively. 'added'
@@ -54,7 +54,7 @@ def parsedir(directory, parsed, files, blocked, errfunc,
           infohash on to the same torrent-specific info dict that is in
           or was in parsed.
        """
-    
+
     if NOISY:
         errfunc('checking dir')
     dirs_to_check = [directory]
@@ -130,7 +130,7 @@ def parsedir(directory, parsed, files, blocked, errfunc,
                         (p, new_parsed[metainfo.infohash][0]))
                 new_blocked[p] = None
                 continue
-            
+
         except Exception ,e:
             errfunc(_("**warning** %s has errors") % p)
             new_blocked[p] = None

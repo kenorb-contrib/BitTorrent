@@ -135,7 +135,7 @@ if not disable_fast_extension:
     LAST_BYTE |= FAST_EXTENSION
 LAST_BYTE |= NAT_TRAVERSAL
 FLAGS = ['\0'] * 8
-FLAGS[0] = chr( AZUREUS )
+#FLAGS[0] = chr( AZUREUS )
 FLAGS[5] = chr( UTORRENT )
 FLAGS[7] = chr( LAST_BYTE )
 FLAGS = ''.join(FLAGS)
@@ -635,7 +635,7 @@ class Connector(Handler):
         self.parent.connection_handshake_completed(self)
 
         if self.uses_utorrent_extension:
-            response = {'m': {'ut_pex': UTORRENT_MSG_PEX},
+            response = {'m': {'ut_pex': 1},
                         'v': ('%s %s' % (app_name, version)).encode('utf8'),
                         'e': 0,
                         'p': self.parent.reported_port,
@@ -974,6 +974,7 @@ class Connector(Handler):
                 self.close()
                 return
             except:
+                self.protocol_violation("Message parsing failed")
                 self.logger.exception("Message parsing failed")
                 self.close()
                 return

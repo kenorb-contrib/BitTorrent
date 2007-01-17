@@ -199,7 +199,7 @@ class Download(object):
             if req not in self.multidownload.all_requests:
                 self.multidownload.discarded_bytes += len(piece)
                 return
-            
+
             self.multidownload.all_requests.remove(req)
 
             for d in self.multidownload.downloads:
@@ -286,12 +286,7 @@ class Download(object):
             self.interested = False
             self.connector.send_not_interested()
         self._check_lost_interests(lost_interests)
-        if self.multidownload.rm.endgame:
-            self.multidownload.all_requests = set()
-            for d in self.multidownload.downloads:
-                self.multidownload.all_requests.update(d.active_requests)
-            for d in self.multidownload.downloads:
-                d.fix_download_endgame()
+        self.multidownload.check_enter_endgame()
 
     def _check_lost_interests(self, lost_interests):
         """
@@ -351,12 +346,7 @@ class Download(object):
                     lost_interests.append(piece)
                     break
         self._check_lost_interests(lost_interests)
-        if self.multidownload.rm.endgame:
-            self.multidownload.all_requests = set()
-            for d in self.multidownload.downloads:
-                self.multidownload.all_requests.update(d.active_requests)
-            for d in self.multidownload.downloads:
-                d.fix_download_endgame()
+        self.multidownload.check_enter_endgame()
                 
     def fix_download_endgame(self):
         want = []

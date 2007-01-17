@@ -45,6 +45,7 @@ class MultiDownload(object):
         self.picker = picker
         self.errorfunc = errorfunc
         self.rerequester = None
+        self.entered_endgame = False
         self.connection_manager = None
         self.chunksize = config['download_chunk_size']
         self.numpieces = numpieces
@@ -140,6 +141,16 @@ class MultiDownload(object):
         self.picker.lost_have_all()
         self.last_update += 1
         self.piece_states.popleft_bucket()
+
+    def check_enter_endgame(self):
+        if not self.entered_endgame:
+            if self.rm.endgame:
+                self.entered_endgame = True
+                self.all_requests = set()
+                for d in self.downloads:
+                    self.all_requests.update(d.active_requests)
+        for d in self.downloads:
+            d.fix_download_endgame()
 
     def hashchecked(self, index):
         if not self.storage.do_I_have(index):

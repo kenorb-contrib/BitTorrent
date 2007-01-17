@@ -3363,7 +3363,7 @@ class MainLoop(BasicApp, BTApp):
                             # sizes and count match exactly.
                             pass
 
-                fs_type, max_filesize = get_max_filesize(save_as)
+                fs_type, max_filesize = get_max_filesize(encode_for_filesystem(save_as)[0])
                 if max_filesize < biggest_file:
                     # warn the user that the filesystem doesn't
                     # support large enough files.

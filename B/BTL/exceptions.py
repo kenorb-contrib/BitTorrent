@@ -8,9 +8,9 @@ def str_exc(e):
             s = unicode(e.args[0])
         except:
             s = str(e)
-    if len(s) == 0:
+    if ' : ' not in s:
         try:
-            s = '%s : ' % e.__class__
+            s = '%s : %s' % (e.__class__, s)
         except Exception, f:
             s = repr(e)
     return s    

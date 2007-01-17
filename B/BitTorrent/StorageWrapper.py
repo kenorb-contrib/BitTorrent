@@ -654,11 +654,11 @@ class StorageWrapper(object):
         df = self._storage_write(self.places[index], piece, offset=begin)
         yield df
         df.getResult()
+
         self.rm.request_received(index, begin, len(piece))
 
-        hashcheck = False
-        if self.rm.is_piece_received(index):
-            hashcheck = True
+        hashcheck = self.rm.is_piece_received(index)
+        if hashcheck:
             df = self.hashcheck_piece(self.places[index])
             yield df
             passed = df.getResult()
