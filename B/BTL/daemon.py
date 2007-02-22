@@ -45,6 +45,8 @@ def daemon(**kwargs):
          - capture_stdout_log_level
          - capture_stderr_name
          - capture_stderr_log_level
+         - twisted_info_log_level  # log level for non-errors coming from twisted logging.
+         - twisted_error_log_level # log level for errors coming from twisted logging.
          - log_level          # log only things ith level >= log_level.
          - use_syslog, and    # output to syslog.
          - anything defined by twistd.ServerOptions.
@@ -92,6 +94,12 @@ def daemon(**kwargs):
     log_level = kwargs.get("log_level", logging.INFO)
     if kwargs.has_key("log_level"):
         del kwargs["log_level"]
+    twisted_info_log_level = kwargs.get("twisted_info_log_level", logging.INFO )
+    if kwargs.has_key("twisted_info_log_level"):
+        del kwargs["twisted_info_log_level"]
+    twisted_error_log_level = kwargs.get("twisted_error_log_level", logging.ERROR )
+    if kwargs.has_key("twisted_error_log_level"):
+        del kwargs["twisted_error_log_level"]
 
     pid_dir = os.path.join("/var/run/", app_name )
     pidfile = os.path.join( pid_dir, app_name + ".pid")
@@ -109,23 +117,28 @@ def daemon(**kwargs):
         os.mkdir(pid_dir)
         os.chown(pid_dir,uid,gid)
     twistd.checkPID(pidfile)
-    use_syslog = config.get('use_syslog', sys.platform != 'darwin')
+    logfile = config.get('log_file', None )
+    use_syslog = config.get('use_syslog', sys.platform != 'darwin' and not logfile)
     if config.has_key('logfile') and config['logfile']:
-        if use_syslog:
+        if 'use_syslog' in config and config['use_syslog']:
             raise Exception( "You have specified both a logfile and "
                 "that the daemon should use_syslog.  Specify one or "
                 "the other." )
-        injectLogger(use_syslog=use_syslog, log_file=config['logfile'], log_level = log_level,
+        injectLogger(use_syslog=False, log_file=config['logfile'], log_level = log_level,
                      capture_output = capture_output,
                      capture_stdout_name = capture_stdout_name,
                      capture_stderr_name = capture_stderr_name,
+                     twisted_info_log_level = twisted_info_log_level,
+                     twisted_error_log_level = twisted_error_log_level,
                      capture_stdout_log_level = capture_stdout_log_level,
-                     capture_log_level = capture_log_level )
+                     capture_stderr_log_level = capture_stderr_log_level )
     elif use_syslog:
         injectLogger(use_syslog=True, log_level = log_level,
                      capture_output = capture_output,
                      capture_stdout_name = capture_stdout_name,
                      capture_stderr_name = capture_stderr_name,
+                     twisted_info_log_level = twisted_info_log_level,
+                     twisted_error_log_level = twisted_error_log_level,
                      capture_stdout_log_level = capture_stdout_log_level,
                      capture_stderr_log_level = capture_stderr_log_level )
     else:

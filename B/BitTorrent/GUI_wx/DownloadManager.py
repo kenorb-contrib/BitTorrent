@@ -3005,7 +3005,7 @@ class MainLoop(BasicApp, BTApp):
         s = wx.Display().GetGeometry()
         self.log.GetFrame().SetSize((s.width * 0.80, s.height * 0.40))
 
-        wx.Log_SetActiveTarget(LogProxy(self.log))
+        wx.Log_SetActiveTarget(self.log)
         wx.Log_SetVerbose(True) # otherwise INFOs are not logged
 
         self.console = None

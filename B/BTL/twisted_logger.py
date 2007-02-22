@@ -18,7 +18,7 @@ class LogLogObserver(log.FileLogObserver):
             system = 'twisted.' + system
         logger = logging.getLogger(system)
         # This next line is obnoxious.   --Dave
-        logger.setLevel(logging.DEBUG)
+        #logger.setLevel(logging.DEBUG)
         edm = eventDict['message'] or ''
         if eventDict['isError'] and eventDict.has_key('failure'):
             if not edm:
@@ -38,8 +38,8 @@ def start(error_log_level = logging.ERROR,
     """Writes twisted output to a logger using 'twisted' as the
        logger name (i.e., 'twisted' is passed as name arg to logging.getLogger(name)).
        """
-
     o = LogLogObserver(error_log_level, info_log_level)
+
     # We do not use twisted setStdout logging because it is not clear to me
     # how to differentiate twisted-generated log entries and
     # redirected output.  It is possible that all stdout and stderr

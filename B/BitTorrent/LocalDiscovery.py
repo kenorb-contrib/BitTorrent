@@ -32,12 +32,18 @@ class LocalDiscovery(object):
 
     def announce(self, infohash, peerid):
         discovery_logger.info("announcing: %s", infohash)
-        service_name = "_BitTorrent-%s._tcp.local." % infohash
-        
-        browser = Zeroconf.ServiceBrowser(self.server, service_name, self)
 
-        service = Zeroconf.ServiceInfo(service_name,
-                                       '%s.%s' % (peerid, service_name),
+        # old
+        #service_name = "_BitTorrent-%s._tcp.local." % infohash
+        #service_type = service_name
+        
+        service_name = "%s._%s" % (peerid, infohash)
+        service_type = "_bittorrent._tcp.local."
+        
+        browser = Zeroconf.ServiceBrowser(self.server, service_type, self)
+
+        service = Zeroconf.ServiceInfo(service_type,
+                                       "%s.%s" % (service_name, service_type),
                                        address = None, # to be filled in later
                                        port = self.port,
                                        weight = 0, priority = 0,
@@ -83,7 +89,7 @@ class LocalDiscovery(object):
                 discovery_logger.exception("Invalid Service (port not an int): "
                                            "%r" % info.__dict__)
                 return
-
+        
             addr = (host, port)
             ip = get_host_ip()
 
@@ -91,7 +97,11 @@ class LocalDiscovery(object):
                 # talking to self
                 return
 
-            infohash = name.split("_BitTorrent-")[1][:-len("._tcp.local.")]
+            # old
+            #infohash = name.split("_BitTorrent-")[1][:-len("._tcp.local.")]
+
+            peerid, infohash, service_type = name.split('.', 2)
+            infohash = infohash[1:] # _
 
             discovery_logger.info("Got peer: %s:%d %s", host, port, infohash)
 
@@ -119,6 +129,7 @@ class LocalDiscovery(object):
 if __name__ == '__main__':
     import string
     from BitTorrent.RawServer_twisted import RawServer
+    from BitTorrent.PeerID import make_id
 
     rawserver = RawServer()
 
@@ -126,7 +137,7 @@ if __name__ == '__main__':
         l = LocalDiscovery(rawserver, 6881,
                            lambda *a:sys.stdout.write("GOT: %s\n" % str(a)))
         l.announce("63f27f5023d7e49840ce89fc1ff988336c514b64",
-                   ''.join(random.sample(string.letters, 5)))
+                   make_id().encode('hex'))
     
     rawserver.add_task(0, run_task_and_exit)
 

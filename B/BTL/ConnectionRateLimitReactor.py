@@ -4,6 +4,16 @@
 # from ConnectionRateLimitReactor import connectionRateLimitReactor
 # connectionRateLimitReactor(reactor, max_incomplete=10)
 #
+# The contents of this file are subject to the Python Software Foundation
+# License Version 2.3 (the License).  You may not copy or use this file, in
+# either source code or executable form, except in compliance with the License.
+# You may obtain a copy of the License at http://www.python.org/license.
+#
+# Software distributed under the License is distributed on an AS IS basis,
+# WITHOUT WARRANTY OF ANY KIND, either express or implied.  See the License
+# for the specific language governing rights and limitations under the
+# License.
+#
 # by Greg Hazel
 
 import random
@@ -85,7 +95,7 @@ class IRobotConnector(object):
         self.reactor.drop_postponed(self)
         # for accuracy
         self.factory.startedConnecting(self)
-        abort = failure.Failure(error.UserError())
+        abort = failure.Failure(error.UserError(string="Connection preempted"))
         self.factory.clientConnectionFailed(self, abort)
         self._cleanup()
             

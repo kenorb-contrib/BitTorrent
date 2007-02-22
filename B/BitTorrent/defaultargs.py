@@ -95,7 +95,7 @@ common_options = [
      _("maximum B/s to upload at")),
     ('max_download_rate', 125000000, # 1 GBit local net = 125MB/s
      _("average maximum B/s to download at")),
-    ("download_rate_limiter_interval", 0.5,
+    ("download_rate_limiter_interval", 0.25,
     _("download rate limiter's leaky bucket update interval.")),
     ('bandwidth_management', os.name == 'nt',
      _("automatic bandwidth management (Windows only)")),

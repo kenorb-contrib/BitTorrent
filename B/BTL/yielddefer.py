@@ -1,5 +1,15 @@
 # yielddefer is an async programming mechanism with a blocking look-alike syntax
 #
+# The contents of this file are subject to the Python Software Foundation
+# License Version 2.3 (the License).  You may not copy or use this file, in
+# either source code or executable form, except in compliance with the License.
+# You may obtain a copy of the License at http://www.python.org/license.
+#
+# Software distributed under the License is distributed on an AS IS basis,
+# WITHOUT WARRANTY OF ANY KIND, either express or implied.  See the License
+# for the specific language governing rights and limitations under the
+# License.
+#
 # launch_coroutine maintains the illusion that the passed function
 # (a generator) runs from beginning to end yielding when necessary
 # for some job to complete and then continuing where it left off.
@@ -31,8 +41,7 @@ from __future__ import generators
 import sys
 import types
 import traceback
-# (half) CRUFT - remove when bittorrent uses twisted deferreds
-from BTL.defer import Deferred, Failure
+from BTL.defer import Deferred, Failure, wrap_task
 from BTL.stackthreading import _print_traceback
 
 debug = False
@@ -154,10 +163,17 @@ def launch_coroutine(queue_task, f, *args, **kwargs):
             main_df.callback(g)
     return main_df
 
-def wrap_task(add_task):
-    return lambda _f, *args, **kwargs : add_task(0, _f, *args, **kwargs)
-_wrap_task = wrap_task   
 
+## BUG!
+# This module should not depend on the reactor.
+# Put this convenience function somewhere else.
+import warnings
+warned = False
 from BTL.reactor_magic import reactor
 def coro(f, *args, **kwargs):
-    return launch_coroutine(_wrap_task(reactor.callLater), f, *args, **kwargs)
+    global warned
+    if not warned:
+        warnings.warn("This module should not depend on the reactor.\n"
+                      "Put this convenience function somewhere else.")
+        warned = True
+    return launch_coroutine(wrap_task(reactor.callLater), f, *args, **kwargs)

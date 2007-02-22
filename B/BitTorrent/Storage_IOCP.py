@@ -18,8 +18,8 @@ from bisect import bisect_right
 from BTL.translation import _
 
 from BTL import BTFailure
-from BTL.defer import Deferred, ThreadedDeferred, Failure
-from BTL.yielddefer import launch_coroutine, _wrap_task
+from BTL.defer import Deferred, ThreadedDeferred, Failure, wrap_task
+from BTL.yielddefer import launch_coroutine
 from BitTorrent.platform import get_allocated_regions
 from BTL.sparse_set import SparseSet
 from BTL.DictWithLists import DictWithLists, DictWithSets
@@ -301,7 +301,7 @@ class Storage(object):
             bad_libc_workaround()
 
         self.initialized = False
-        self.startup_df = ThreadedDeferred(_wrap_task(self.external_add_task),
+        self.startup_df = ThreadedDeferred(wrap_task(self.external_add_task),
                                            self._build_file_structs,
                                            self.filepool, files)
         return self.startup_df
@@ -418,7 +418,7 @@ class Storage(object):
         yield r
 
     def read(self, pos, amount):
-        df = launch_coroutine(_wrap_task(self.add_task),
+        df = launch_coroutine(wrap_task(self.add_task),
                               self._batch_read, pos, amount)
         return df
 
@@ -454,7 +454,7 @@ class Storage(object):
         yield total
 
     def write(self, pos, s):
-        df = launch_coroutine(_wrap_task(self.add_task),
+        df = launch_coroutine(wrap_task(self.add_task),
                               self._batch_write, pos, s)
         return df
 

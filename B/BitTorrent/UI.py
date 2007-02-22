@@ -26,8 +26,8 @@ from BTL.translation import _
 import BTL.stackthreading as threading
 from BTL.platform import bttime, efs2
 from BTL.obsoletepythonsupport import set
-from BTL.yielddefer import launch_coroutine, _wrap_task
-from BTL.defer import ThreadedDeferred
+from BTL.yielddefer import launch_coroutine
+from BTL.defer import ThreadedDeferred, wrap_task
 from BTL.ThreadProxy import ThreadProxy
 from BTL.exceptions import str_exc
 from BTL.formatters import percentify, Size, Rate, Duration
@@ -404,7 +404,7 @@ class BasicApp(object):
     def _thread_proxy(self, obj):
         return ThreadProxy(obj,
                            self.gui_wrap,
-                           _wrap_task(self.rawserver.external_add_task))
+                           wrap_task(self.rawserver.external_add_task))
 
     def update_single_torrent(self, infohash):
         torrent = self.torrents[infohash]
@@ -442,7 +442,7 @@ class BasicApp(object):
             torrent = self._thread_proxy(torrent)
             infohashes.add(torrent.metainfo.infohash)
             if torrent.metainfo.infohash not in self.torrents:
-                if self.config.get('skip_hidden_flag') or not torrent.hidden:
+                if self.config.get('show_hidden_torrents') or not torrent.hidden:
                     # create new torrent widget
                     to = self.new_displayed_torrent(torrent)
 

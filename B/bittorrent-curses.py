@@ -44,7 +44,6 @@ from BitTorrent import GetTorrent
 from BitTorrent.RawServer_twisted import RawServer
 from twisted.internet import task
 from BTL.ConvertedMetainfo import ConvertedMetainfo
-from BTL.yielddefer import launch_coroutine, _wrap_task
 from BitTorrent import inject_main_logfile
 debug = False
 #debug = True

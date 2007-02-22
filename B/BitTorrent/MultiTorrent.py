@@ -35,8 +35,8 @@ from BitTorrent.DownloadRateLimiter import DownloadRateLimiter
 from BitTorrent.ConnectionManager import SingleportListener
 from BitTorrent.CurrentRateMeasure import Measure
 from BitTorrent.Storage import FilePool
-from BTL.yielddefer import launch_coroutine, _wrap_task
-from BTL.defer import Deferred, DeferredEvent
+from BTL.yielddefer import launch_coroutine
+from BTL.defer import Deferred, DeferredEvent, wrap_task
 from BitTorrent import BTFailure, InfoHashType
 from BitTorrent import configfile
 from khashmir.utkhashmir import UTKhashmir
@@ -234,7 +234,7 @@ class MultiTorrent(Feedback):
                               exc_info=exc_info)
 
     def shutdown(self):
-        df = launch_coroutine(_wrap_task(self.rawserver.add_task), self._shutdown)
+        df = launch_coroutine(wrap_task(self.rawserver.add_task), self._shutdown)
         df.addErrback(lambda f : self.logger.error('shutdown failed!',
                                                    exc_info=f.exc_info()))
         return df
@@ -685,7 +685,7 @@ class MultiTorrent(Feedback):
         return df
 
     def initialize_torrents(self):
-        df = launch_coroutine(_wrap_task(self.rawserver.add_task), self._initialize_torrents)
+        df = launch_coroutine(wrap_task(self.rawserver.add_task), self._initialize_torrents)
         df.addErrback(lambda f : self.logger.error('initialize_torrents failed!',
                                                    exc_info=f.exc_info()))
         return df

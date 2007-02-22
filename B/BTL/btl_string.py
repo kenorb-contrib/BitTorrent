@@ -3,14 +3,14 @@
 
 def split( s, delimiter = ' ', quote=['"',"'"], keep_quote = True):
     """analogous to str.split() except it supports quoted strings.
-    
+
        Delimiter can be any positive length string.
 
        A quote begins on any character in 'quote', and ends on that
        same character.  A quoted string is not split even if it
        contains character c or other quote characters in the quote
        argument.
-       
+
        Iff keep_quote is true then quote's leading and trailing
        quote characters are left in the strings in the returned list."""
     assert type(s) == str
@@ -49,15 +49,15 @@ def remove(s,c):
   l = [i for i in s if i != c]
   return "".join(l)
 
-# make a string printable.  Converts all non-printable ascii characters and all
-# non-space whitespace to periods.  This keeps a string to a fixed width when
-# printing it.  This is not meant for canonicalization.  It is far more
-# restrictive since it removes many things that might be representable.
-# It is appropriate for generating debug output binary strings that might
-# contain ascii substrings, like peer-id's.  It explicitly excludes quotes
-# and double quotes so that the string can be enclosed in quotes.
 def printable(s):
-    """If hex then non-printable characters are replaced wi..."""
+    """make a string printable.  Converts all non-printable ascii characters and all
+       non-space whitespace to periods.  This keeps a string to a fixed width when
+       printing it.  This is not meant for canonicalization.  It is far more
+       restrictive since it removes many things that might be representable.
+       It is appropriate for generating debug output binary strings that might
+       contain ascii substrings, like peer-id's.  It explicitly excludes quotes
+       and double quotes so that the string can be enclosed in quotes.
+       """
     l = []
     for c in s:
         if ord(c) >= 0x20 and ord(c) < 0x7F and c != '"' and c != "'":
@@ -71,7 +71,7 @@ def printable(s):
 if __name__ == "__main__":
     assert split( "" ) == [''], split( "" )
     assert split( "a b c" ) == ['a','b','c'], split( "a b c" )
-    assert split( "a" ) == ['a'], split( "a" ) 
+    assert split( "a" ) == ['a'], split( "a" )
     assert split( " a", ',' ) == [' a'], split( " a", ',')
     assert split( "a,b,c", ',' ) == ['a','b','c'], split( "a,b,c", ',' )
     assert split( "a,b,", ',' ) == ['a','b',''], split( "a,b,", ',' )

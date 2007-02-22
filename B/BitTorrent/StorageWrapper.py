@@ -25,7 +25,8 @@ from BTL.obsoletepythonsupport import set
 from BTL.sparse_set import SparseSet
 from BTL.bitfield import Bitfield
 from BTL import defer
-from BTL.yielddefer import launch_coroutine, _wrap_task
+from BTL.defer import wrap_task
+from BTL.yielddefer import launch_coroutine
 from BitTorrent import BTFailure
 from BTL.exceptions import str_exc
 
@@ -51,7 +52,7 @@ class DataPig(object):
 
     def got_piece(self, index, begin, length, source):
         if index in self.failed_pieces:
-            df = launch_coroutine(_wrap_task(self.add_task),
+            df = launch_coroutine(wrap_task(self.add_task),
                                   self._got_piece,
                                   index, begin, length, source)
             return df
@@ -235,7 +236,7 @@ class StorageWrapper(object):
         df.addCallback(self._initialized)
 
     def checkPieces_v1(self):
-        df = launch_coroutine(_wrap_task(self.add_task),
+        df = launch_coroutine(wrap_task(self.add_task),
                               self._checkPieces_v1)
         return df
         
@@ -439,7 +440,7 @@ class StorageWrapper(object):
         if i in self._pieces_in_buf:
             p = i - self._pieces_in_buf[0]
             return buffer(self._piece_buf, p * self.piece_size, self._piecelen(i))
-        df = launch_coroutine(_wrap_task(self.add_task),
+        df = launch_coroutine(wrap_task(self.add_task),
                               self._get_data_gen, i)
         return df
 
@@ -461,7 +462,7 @@ class StorageWrapper(object):
         yield buffer(self._piece_buf, p * self.piece_size, self._piecelen(i))
         
     def hashcheck_pieces(self, begin=0, end=None):
-        df = launch_coroutine(_wrap_task(self.add_task),
+        df = launch_coroutine(wrap_task(self.add_task),
                               self._hashcheck_pieces,
                               begin, end)
         return df
@@ -530,7 +531,7 @@ class StorageWrapper(object):
         yield True
 
     def hashcheck_piece(self, index, data = None):
-        df = launch_coroutine(_wrap_task(self.add_task),
+        df = launch_coroutine(wrap_task(self.add_task),
                               self._hashcheck_piece,
                               index, data = data)
         return df
@@ -621,7 +622,7 @@ class StorageWrapper(object):
         return df
 
     def write(self, index, begin, piece, source):
-        df = launch_coroutine(_wrap_task(self.add_task),
+        df = launch_coroutine(wrap_task(self.add_task),
                               self._write,
                               index, begin, piece, source)
         return df
@@ -639,7 +640,7 @@ class StorageWrapper(object):
             # correct place.
             if self.rplaces[index] >= 0:
                 new_pos = self.rplaces[index]
-                df = launch_coroutine(_wrap_task(self.add_task),
+                df = launch_coroutine(wrap_task(self.add_task),
                                       self._move_piece, index, new_pos)
                 yield self._block_piece(index, df)
                 df.getResult()
@@ -699,7 +700,7 @@ class StorageWrapper(object):
         if not self.have[index]:
             raise IndexError("Do not have piece %d of %d" %
                              (index, self.numpieces))
-        df = launch_coroutine(_wrap_task(self.add_task),
+        df = launch_coroutine(wrap_task(self.add_task),
                               self._read, index, begin, length)
         return df
 

@@ -70,11 +70,10 @@ assert sys.version_info >= (2, 3), _("Install Python %s or greater") % '2.3'
 from BitTorrent import BTFailure, inject_main_logfile
 from BitTorrent import configfile
 
-from BTL.defer import DeferredEvent
+from BTL.defer import DeferredEvent, wrap_task
 from BitTorrent.defaultargs import get_defaults
 from BitTorrent.IPC import ipc_interface
 from BitTorrent.prefs import Preferences
-from BTL.yielddefer import _wrap_task
 from BitTorrent.RawServer_twisted import RawServer
 if os.name == 'nt':
     from BitTorrent.platform import win_version_num
@@ -225,7 +224,7 @@ if __name__ == '__main__':
             # attach to the UI
             tpm = ThreadProxy(multitorrent,
                               gui_wrap,
-                              _wrap_task(rawserver.external_add_task))
+                              wrap_task(rawserver.external_add_task))
             mainloop.attach_multitorrent(tpm, core_doneflag)
             ipc.start(mainloop.external_command)
             #rawserver.associate_thread()

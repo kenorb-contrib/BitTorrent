@@ -26,7 +26,6 @@ from BTL.parsedir import parsedir
 from BitTorrent.MultiTorrent import MultiTorrent, Feedback
 from BitTorrent import BTFailure, UserFailure
 from BitTorrent.RawServer_twisted import RawServer
-from BTL.yielddefer import launch_coroutine, _wrap_task
 from BTL.ConvertedMetainfo import ConvertedMetainfo
 from BTL.defer import DeferredEvent
 from BTL.exceptions import str_exc

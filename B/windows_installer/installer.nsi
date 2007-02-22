@@ -43,6 +43,64 @@ InstallDir "$PROGRAMFILES\${APPNAME}\"
 !define EXENAME "bittorrent.exe"
 VAR KILLEXENAME
 VAR UPGRADE
+VAR TORRENTURL
+
+
+Function RunBitTorrent
+  # chdir
+  SetOutPath $INSTDIR
+  StrCmp $TORRENTURL "" notorrent
+  Exec '"$INSTDIR\${EXENAME}" "$TORRENTURL"'
+  Goto end
+  notorrent:
+  Exec '"$INSTDIR\${EXENAME}"'
+  end:
+FunctionEnd
+
+
+# ACHTUNG: Fancy!
+# Pull the magic torrent URL out of the end of the installer exe.  If
+# it's non-empty, don't offer the option to not run BT on FINISHPAGE,
+# and set $TORRENTURL so that RunBitTorrent will pass it on to BT
+Function FinishPre
+  Call GetExeName
+  IfFileExists "$R0" ok
+
+  StrCpy $R0 $CMDLINE
+  IfFileExists "$R0" ok
+  
+  StrCpy $R0 "$EXEDIR\${APPNAME}-${VERSION}.exe"
+  IfFileExists "$R0" ok
+
+  Goto notfound
+
+ok:
+  ClearErrors
+  FileOpen $0 "$R0" r
+  IfErrors notfound
+  FileSeek $0 -2048 END
+  StrCpy $3 ""
+
+loop:
+  FileReadByte $0 $1
+  StrCmp $1 "" done
+  ; space padded
+  StrCmp $1 "32" done
+  IntFmt $2 "%c" $1
+  StrCpy $3 "$3$2"
+  goto loop
+done:
+  StrCpy $TORRENTURL "$3"
+
+  StrCmp $TORRENTURL "" notfound
+  
+!insertmacro MUI_INSTALLOPTIONS_WRITE "ioSpecial.ini" "Field 4" "State" "1"
+!insertmacro MUI_INSTALLOPTIONS_WRITE "ioSpecial.ini" "Field 4" "Type" "Label"
+!insertmacro MUI_INSTALLOPTIONS_WRITE "ioSpecial.ini" "Field 4" "Text" "BitTorrent will run automatically when you click 'Finish'."
+
+notfound:
+FunctionEnd
+
 
 !define MUI_ICON "images\bittorrent.ico"
 !define MUI_UNICON "images\bittorrent.ico"
@@ -72,16 +130,18 @@ VAR UPGRADE
   !insertmacro MUI_PAGE_INSTFILES
 
 !define MUI_FINISHPAGE_TITLE  "${APPNAME} Setup Complete"
-!define MUI_FINISHPAGE_RUN "$INSTDIR\bittorrent.exe"
+!define MUI_FINISHPAGE_RUN
+!define MUI_FINISHPAGE_RUN_FUNCTION "RunBitTorrent"
 ; this is an opt-in url, we want to make it opt-out
 !define MUI_FINISHPAGE_LINK "&Visit BitTorrent.com to search for torrents!"
-!define MUI_FINISHPAGE_LINK_LOCATION http://www.bittorrent.com
+!define MUI_FINISHPGE_LINK_LOCATION http://www.bittorrent.com
 ; so we hi-jack the readme option
 !define MUI_FINISHPAGE_SHOWREADME
 !define MUI_FINISHPAGE_SHOWREADME_TEXT "Create a &shortcut to BitTorrent on the Desktop"
 !define MUI_FINISHPAGE_SHOWREADME_FUNCTION "desktop_shortcut"
 
 !define MUI_FINISHPAGE_NOREBOOTSUPPORT
+!define MUI_PAGE_CUSTOMFUNCTION_PRE "FinishPre"
   !insertmacro MUI_PAGE_FINISH  
 
   !insertmacro MUI_UNPAGE_CONFIRM
@@ -485,6 +545,37 @@ Function ${UN}QuitIt
 FunctionEnd
 !macroend
 
+!macro MozillaPluginDir
+ 
+  Push $R0
+  Push $R1
+  Push $R2
+ 
+  !define Index 'Line${__LINE__}'
+  StrCpy $R1 "0"
+  StrCpy $R2 "no mozilla"
+ 
+  "${Index}-Loop:"
+ 
+  ; Check for Key
+  EnumRegKey $R0 HKLM "SOFTWARE\Mozilla" "$R1"
+  StrCmp $R0 "" "${Index}-End"
+  IntOp $R1 $R1 + 1
+  ReadRegStr $R2 HKLM "SOFTWARE\Mozilla\$R0\Extensions" "Plugins"
+  StrCmp $R2 "" "${Index}-Loop" "${Index}-End"
+ 
+  "${Index}-End:"
+ 
+  !undef Index
+ 
+  Push $R2
+  Exch 3
+  Pop $R2
+  Pop $R1
+  Pop $R0
+ 
+!macroend
+
 !macro MagicUninstall UN
 Function ${UN}MagicUninstall
   ;; this would remove other associations / context menu items too
@@ -517,7 +608,17 @@ Function ${UN}MagicUninstall
   StrCmp $R0 "" 0 remove
   StrCpy $R0 $INSTDIR
  remove:
-     
+  
+  ; unregister the MSIE plugin
+  UnRegDLL "$R0\BitTorrentIE.1.dll"
+  UnRegDLL "$R0\BitTorrentIE.2.dll"
+
+  ; remove the mozilla plugin
+  !insertmacro MozillaPluginDir
+  Pop $R1
+  StrCmp $R1 "no mozilla" no_mozilla
+      Delete "$R1\npbittorrent.dll"
+  no_mozilla:
 
   ; some users like to store important data in our directory
   ; be nice to them
@@ -605,36 +706,32 @@ Function .onInit
   done:
 FunctionEnd
 
-!macro MozillaPluginDir
- 
-  Push $R0
-  Push $R1
-  Push $R2
- 
-  !define Index 'Line${__LINE__}'
-  StrCpy $R1 "0"
-  StrCpy $R2 "no mozilla"
- 
-  "${Index}-Loop:"
- 
-  ; Check for Key
-  EnumRegKey $R0 HKLM "SOFTWARE\Mozilla" "$R1"
-  StrCmp $R0 "" "${Index}-End"
-  IntOp $R1 $R1 + 1
-  ReadRegStr $R2 HKLM "SOFTWARE\Mozilla\$R0\Extensions" "Plugins"
-  StrCmp $R2 "" "${Index}-Loop" "${Index}-End"
- 
-  "${Index}-End:"
- 
-  !undef Index
- 
-  Push $R2
-  Exch 3
-  Pop $R2
-  Pop $R1
-  Pop $R0
- 
-!macroend
+Function GetExeName
+   StrLen $R3 $CMDLINE
+   
+   ;Check for quote or space
+   StrCpy $R0 $CMDLINE 1
+   StrCmp $R0 '"' 0 +3
+     StrCpy $R1 '"'
+     Goto loop
+   StrCpy $R1 " "
+
+   StrCpy $R2 0
+
+  
+   loop:
+     IntOp $R2 $R2 + 1
+     StrCpy $R0 $CMDLINE 1 $R2
+     StrCmp $R0 $R1 get
+     StrCmp $R2 $R3 get
+     Goto loop
+   
+   get:   
+     IntOp $R1 $R3 - $R2
+     IntOp $R1 $R1 - 1
+     StrCpy $R0 $CMDLINE $R2 $R1
+FunctionEnd
+
 
 Section "Install" SecInstall
   SectionIn 1 2
@@ -656,6 +753,10 @@ Section "Install" SecInstall
 
   IntFmt $0 "%u" 0
 
+  ; unregister any existing MSIE plugins, just in case
+  UnRegDLL "$INSTDIR\BitTorrentIE.1.dll"
+  UnRegDLL "$INSTDIR\BitTorrentIE.2.dll"
+
   goto skip
  files:     
   IntOp $0 $0 + 1
@@ -663,11 +764,14 @@ Section "Install" SecInstall
   Sleep 1000
  skip:
 
+  ; just in case
+  ClearErrors
+
   File plugins\IE\plugin.inf
   IfErrors files
 
   ; this one could fail. who cares.
-  File plugins\BitTorrentIE.1.dll
+  File plugins\BitTorrentIE.2.dll
   ClearErrors
 
   File dist\*.exe
@@ -676,8 +780,33 @@ Section "Install" SecInstall
   IfErrors files
   File dist\*.pyd
   IfErrors files
-  File dist\*.dll
+
+  ; can't do this anymore due to a fucked MSIE plugin version that could be
+  ; using mfc71.dll or in some rare cases MSVCR71.dll (see below)
+  ;File dist\*.dll
+  ;IfErrors files
+  
+  ; these could fail. who cares.
+  File dist\mfc71.dll
+  ClearErrors
+  File dist\MSVCR71.dll
+  ClearErrors
+
+  File dist\pythoncom24.dll
   IfErrors files
+  File dist\wxmsw26uh_gizmos_vc.dll
+  IfErrors files
+  File dist\pywintypes24.dll
+  IfErrors files
+  File dist\wxmsw26uh_stc_vc.dll
+  IfErrors files
+  File dist\python24.dll
+  IfErrors files
+  File dist\unicows.dll
+  IfErrors files
+  File dist\wxmsw26uh_vc.dll
+  IfErrors files
+
   File dist\library.zip
   IfErrors files
   File /r dist\images
@@ -769,6 +898,9 @@ continue:
   ;; Automagically register with the Windows Firewall
   WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\SharedAccess\Parameters\FirewallPolicy\StandardProfile\AuthorizedApplications\List" "$INSTDIR\${EXENAME}" `$INSTDIR\${EXENAME}:*:Enabled:${APPNAME}`
 
+  ;; Tell MSIE 7+ that it's okay to run the Microsoft DRM ActiveX control
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Ext\PreApproved\{760C4B83-E211-11D2-BF3E-00805FBE84A6}" "" ""
+
   ;; Info about install/uninstall 
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APPNAME}" "DisplayName" "${APPNAME} ${VERSION}"
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APPNAME}" "UninstallString" '"$INSTDIR\uninstall.exe"'
@@ -834,12 +966,15 @@ continue:
   didntfindit:
   no_mozilla:
 
-  RegDLL "$INSTDIR\BitTorrentIE.1.dll"
+  RegDLL "$INSTDIR\BitTorrentIE.2.dll"
   ExecWait '$SYSDIR\rundll32.exe setupapi,InstallHinfSection DefaultInstall 132 $INSTDIR\plugin.inf'
   
-  SetOutPath $INSTDIR
   BringToFront
+
   endofinstall:
+
+  # chdir
+  SetOutPath $INSTDIR
 SectionEnd
 
 Function un.onInit

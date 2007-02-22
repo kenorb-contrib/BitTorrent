@@ -664,8 +664,8 @@ class BTDialog(wx.Dialog, MagicShow):
 
     def __init__(self, *a, **k):
         wx.Dialog.__init__(self, *a, **k)
-	if sys.platform == 'darwin':
-	    self.CenterOnParent()
+        if sys.platform == 'darwin':
+            self.CenterOnParent()
         self.SetIcon(wx.the_app.icon)
         self.Bind(wx.EVT_KEY_DOWN, self.key)
 
@@ -715,8 +715,8 @@ class BTFrame(wx.Frame, MagicShow):
 
         self.SetDimensions(x, y, w, h, sizeFlags=wx.SIZE_USE_EXISTING)
 
-	if (x, y) == (-1, -1):
-	    self.CenterOnScreen()	    
+        if (x, y) == (-1, -1):
+            self.CenterOnScreen()
 
 
     def _geometry_string(self):

@@ -45,30 +45,30 @@ def get_svn_change_code():
         pairs = [(s[0].strip(), ':'.join(s[1:]).strip()) for s in splitted]
         d = dict(pairs)
         return d
-        
+
     # returns date and revision number
     d = to_dict(os.popen("svn info").readlines())
     url = d["URL"]
     revision = int(d["Last Changed Rev"])
     date = d["Last Changed Date"]
     date = date.split(' ')[0]         # keep only "YYYY-MM-DD"
-    date = "_".join(date.split('-'))  # replace dash with underscore 
+    date = "_".join(date.split('-'))  # replace dash with underscore
     date_rev = "%s_rev%.4d" % (date,revision)
     return date_rev
- 
+
 def get_cdv_change_code():
 
     # cdv won't run on the dev machines as root.  nfs does not allow
     # root access to mounted drives.  --Dave
     if os.getuid() == 0 and getuid_for_path(".") != 0:
-        seteugid_to_login()        
+        seteugid_to_login()
 
     # fragile. XXXX
     l = os.popen("cdv history -c 1").readlines()[0].split(" ")
     if os.getuid() == 0:
         os.seteuid(0)
         #os.setegid(oldgid)
-        
+
     l = [x.strip() for x in l if x.strip() != '']  # remove empty strings.
     x,code,x,x,x,x,dow,mo,dom,t,y = l
     month = "%.2d" % (months.index(mo)+1)
@@ -118,65 +118,52 @@ def get_unique_install_prefix( appname ):
 
 def setup( **kwargs ):
     """site-specific setup.
-    
+
        If sys.argv[1] is not installdev then this behaves
        as python's distutils.core.setup.
 
        If sys.argv[1] is installdev then this installs into a
        directory like:
-       
-       /opt/BTL_2006_08_01_20:47:59_dfb3
 
-       Replace BTL with kwargs['name'], the date and time with
-       the commit time for this revision in the svn repository
-       and dfb3 with the code for the revision in svn.
+       /opt/Mitte_2006_10_16_14_39_51_78a5
 
-       Also creates a symbolic link like /opt/BTL pointing to
-       /opt/BTL_2006_08_01_20:47:59_dfb3/BTL.
+       The date and time is the commit time for this version in the svn repository
+       and 78a5 is the code for the version in svn.
 
-       If kwargs['symlinks'] is defined and is a list
-       then this creates a set of symlinks in the directory
-       package directory.  For example,
-       
-          setup( symlinks=['/opt/BTL','/opt/Mitte'], ...)
-          
-       creates
-       
-          /opt/hypertracker_2006_08_01_20:47:59_dfb3/hypetracker/BTL
-          --> /opt/BTL
-          /opt/hypertracker_2006_08_01_20:47:59_dfb3/hypetracker/Mitte
-          --> /opt/Mitte
-
+       Also creates a symbolic link like /opt/mitte pointing to
+       /opt/Mitte_2006_10_16_14_39_51_78a5.
        """
-       
+
     name = kwargs['name']
 
     # setup doesn't like kwargs it doesn't know.
+    destname = kwargs.get('destname', name)
+    if kwargs.has_key('destname'): del kwargs['destname']
     username = kwargs.get('username',None)
-    if kwargs.has_key('username'): del kwargs['username']  
+    if kwargs.has_key('username'): del kwargs['username']
     groupname = kwargs.get('groupname',None)
-    if kwargs.has_key('groupname'): del kwargs['groupname']  
+    if kwargs.has_key('groupname'): del kwargs['groupname']
     symlinks = kwargs.get('symlinks',None)
-    if kwargs.has_key('symlinks'): del kwargs['symlinks']  
-    
+    if kwargs.has_key('symlinks'): del kwargs['symlinks']
+
     installdev=False
     installprod = False
     old_prefix = None
-                 
+
     if len(sys.argv)>1 and sys.argv[1] == "force-installdev":
         # force install simply installs in a new directory.
-        sys.prefix = get_unique_install_prefix(name)
+        sys.prefix = get_unique_install_prefix(destname)
         distutils.sysconfig.PREFIX=sys.prefix
         print "get_unique_install_prefix returned sys.prefix=", sys.prefix
         installdev = True
         sys.argv[1] = "install"
-        
+
         # determine old install directory.
-        if os.path.exists( os.path.join("/opt/",name) ):
-            old_prefix = os.path.realpath(os.path.join("/opt/", name))
+        if os.path.exists( os.path.join("/opt/",destname) ):
+            old_prefix = os.path.realpath(os.path.join("/opt/", destname))
             old_prefix = os.path.split(old_prefix)[0]
 
-    elif len(sys.argv)>1 and sys.argv[1] == "installdev": 
+    elif len(sys.argv)>1 and sys.argv[1] == "installdev":
         installdev=True
         sys.argv[1] = "install"
 
@@ -190,7 +177,7 @@ def setup( **kwargs ):
                 cfp.close()
             except IOError:
                 # try again as login username.
-                old_uid = os.geteuid() 
+                old_uid = os.geteuid()
                 seteugid_to_login()
                 cfp = open(os.path.join(sys.path[0],"version.txt"), 'w')
                 cfp.write( code )
@@ -198,7 +185,7 @@ def setup( **kwargs ):
                 os.seteuid(old_uid)  # require root access to install into /opt or python site-packages.
 
         # determine install directory
-        sys.prefix = get_install_prefix(name)
+        sys.prefix = get_install_prefix(destname)
         distutils.sysconfig.PREFIX=sys.prefix
         if os.path.exists(sys.prefix):
             raise SetupException( "This code revision has already been installed %s."
@@ -206,10 +193,10 @@ def setup( **kwargs ):
                              "existing directory or use force-installdev." % sys.prefix )
 
         # determine old install directory.
-        if os.path.exists( os.path.join("/opt/",name) ):
-            old_prefix = os.path.realpath(os.path.join("/opt/", name))
+        if os.path.exists( os.path.join("/opt/",destname) ):
+            old_prefix = os.path.realpath(os.path.join("/opt/", destname))
             old_prefix = os.path.split(old_prefix)[0]
-    
+
     if len(sys.argv)>1 and sys.argv[1] == "install":
         # building with root privilege can fail if the destination of the
         # build is nfs mounted.
@@ -219,17 +206,17 @@ def setup( **kwargs ):
             core.setup(**kwargs)
         except:
             # try using login username
-            old_uid = os.geteuid() 
+            old_uid = os.geteuid()
             seteugid_to_login()
             core.setup(**kwargs)
             os.seteuid(old_uid)
         sys.argv[1] = "install"
-  
-    try: 
+
+    try:
         core.setup(**kwargs)
     except:
         # try using login username
-        old_uid = os.geteuid() 
+        old_uid = os.geteuid()
         seteugid_to_login()
         core.setup(**kwargs)
         os.seteuid(old_uid)
@@ -260,9 +247,9 @@ def setup( **kwargs ):
                 else:
                     shutil.copyfile(f,os.path.join(sys.prefix,f))
 
-        # create symlink from /opt/blah to /opt/blah_YYYY_MM_DD_HH:MM:SS_code/blah
-        link_to = os.path.join(sys.prefix, name)
-        symlnk = os.path.join( '/opt', name )
+        # create symlink from /opt/blah to /opt/blah_YYYY_MM_DD_HH:MM:SS_code
+        link_to = sys.prefix
+        symlnk = os.path.join( '/opt', destname )
         print "removing symlink from", symlnk
         if os.path.islink(symlnk):
             print "removing", symlnk
@@ -280,11 +267,11 @@ def setup( **kwargs ):
             gid = getgid_from_username(username)
         else:
             gid = -1
-            
+
         # recursively change owner and group name of install directory.
         ## Turns out that this is a bad idea.  The account in which the
         ## service runs should not own its own install directory, because
-        ## it could modify its own code. 
+        ## it could modify its own code.
         #if uid != -1 or gid != -1:
         #    os.chown(sys.prefix,uid,gid)
         #    dirs = os.walk(sys.prefix)
@@ -306,18 +293,8 @@ def setup( **kwargs ):
             for fname in filenames:
                 fname = os.path.join(path, fname)
                 mode = os.stat(fname).st_mode
-                mode |= S_IRUSR | S_IRGRP | S_IROTH 
+                mode |= S_IRUSR | S_IRGRP | S_IROTH
                 os.chmod(fname, mode)
-
-        # create symbolic links between /opt packages.
-        if symlinks:
-            pkg_path = os.path.join(sys.prefix, name)
-            for src in symlinks:
-                lnk_name = os.path.split(src)[1]
-                lnk_path = os.path.join(pkg_path,lnk_name)
-                if os.path.islink(lnk_path):
-                   os.remove(lnk_path)
-                os.symlink(src,lnk_path)
 
         # create pid dir.
         pid_dir = os.path.join("/var/run/", name )

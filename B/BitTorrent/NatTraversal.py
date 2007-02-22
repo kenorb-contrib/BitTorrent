@@ -30,7 +30,7 @@ from httplib import BadStatusLine, HTTPResponse
 import BTL.stackthreading as threading
 
 nat_logger = logging.getLogger('NatTraversal')
-nat_logger.setLevel(logging.DEBUG)
+nat_logger.setLevel(logging.WARNING)
 
 def UnsupportedWarning(s):
     nat_logger.warning("NAT Traversal warning " + ("(%s: %s)."  % (os_version, s)))

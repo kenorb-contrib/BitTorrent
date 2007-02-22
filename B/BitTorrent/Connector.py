@@ -60,7 +60,7 @@ class BTMessages(object):
 
     def __getitem__(self, key):
         return self.chr_to_message.get(key, "UNKNOWN: %r" % key)
-        
+
 message_dict = BTMessages({
 0:'CHOKE',
 1:'UNCHOKE',
@@ -115,7 +115,7 @@ AZUREUS_SUCKS = CHOKE
 UTORRENT_MSG_INFO = chr(0)
 # in reality this could be variable
 UTORRENT_MSG_PEX = chr(1)
-                          
+
 # reserved flags:
 #  reserved[0]
 #   0x80 Azureus Messaging Protocol
@@ -128,7 +128,7 @@ UTORRENT = 0x10
 DHT = 0x01
 FAST_EXTENSION = 0x04   # suggest, haveall, havenone, reject request,
                         # and allow fast extensions.
-NAT_TRAVERSAL = 0x08 # holepunch                        
+NAT_TRAVERSAL = 0x08 # holepunch
 
 LAST_BYTE = DHT
 if not disable_fast_extension:
@@ -151,7 +151,7 @@ def numtobyte(x):
     x = hex(x).lstrip('0x').rstrip('Ll')
     x = '0'*(192 - len(x)) + x
     return x.decode('hex')
-  
+
 if noisy:
     connection_logger = logging.getLogger("BitTorrent.Connector")
     connection_logger.setLevel(logging.DEBUG)
@@ -170,8 +170,8 @@ if noisy:
 
 
 class Connector(Handler):
-    """Implements the syntax of the BitTorrent protocol. 
-       See Upload.py and Download.py for the connection-level 
+    """Implements the syntax of the BitTorrent protocol.
+       See Upload.py and Download.py for the connection-level
        semantics."""
 
     def __init__(self, parent, connection, id, is_local,
@@ -203,9 +203,9 @@ class Connector(Handler):
         self._partial_message = None
         self._outqueue = StringIO()
         self._decrypt = None
-        self._privkey = None        
+        self._privkey = None
         self.choke_sent = True
-        
+
         self.uses_utorrent_extension = False
         self.uses_utorrent_pex = False
         self.utorrent_pex_id = None
@@ -234,7 +234,7 @@ class Connector(Handler):
 
         if noisy:
             self.logger.addHandler(stream_handler)
-            
+
         if self.locally_initiated:
             self.send_handshake()
         # Greg's comments: ow ow ow
@@ -259,7 +259,7 @@ class Connector(Handler):
             if noisy:
                 l = [ c.encode('hex') for c in list(FLAGS) ]
                 log("sending reserved: %s" % ' '.join(l))
-            
+
             self.connection.write(''.join((chr(len(protocol_name)),
                                            protocol_name,
                                            FLAGS,
@@ -308,7 +308,7 @@ class Connector(Handler):
         if noisy:
             log("SEND %s" % message_dict[PORT])
         self._send_message(PORT, pack('!H', port))
-        
+
     def send_request(self, index, begin, length):
         if noisy:
             log("SEND %s %d %d %d" % (message_dict[REQUEST], index, begin, length))
@@ -353,7 +353,7 @@ class Connector(Handler):
     def send_holepunch_request(self, addr):
         # disabled, for now.
         return
-    
+
         if not self.uses_nat_traversal:
             # maybe close?
             return
@@ -424,7 +424,7 @@ class Connector(Handler):
         # optimize for memory (free buffer memory)
         self._outqueue.close()
         self._outqueue = StringIO()
-        queue = buf.getvalue()        
+        queue = buf.getvalue()
         self.fire_sent_listeners(len(queue))
         self.connection.write(queue)
         return len(queue)
@@ -432,9 +432,9 @@ class Connector(Handler):
     # yields the number of bytes it wants next, gets those in self._message
     def _read_messages(self):
 
-        # be compatible with encrypted clients. Thanks Uoti        
+        # be compatible with encrypted clients. Thanks Uoti
         yield 1 + len(protocol_name)
-        if (self._privkey is not None or 
+        if (self._privkey is not None or
             self._message != chr(len(protocol_name)) + protocol_name):
             if self.locally_initiated:
                 if self._privkey is None:
@@ -578,8 +578,8 @@ class Connector(Handler):
             if noisy: log("Implements NAT_TRAVERSAL")
             if ord(FLAGS[7]) & NAT_TRAVERSAL:
                 self.uses_nat_traversal = True
-            
-        
+
+
         yield 20 # download id (i.e., infohash)
         if self.parent.infohash is None:  # incoming connection
             # modifies self.parent if successful
@@ -599,7 +599,7 @@ class Connector(Handler):
                                            protocol_name, FLAGS,
                                            self.parent.infohash,
                                            self.parent.my_id)))
-            
+
         yield 20  # peer id
         if noisy: log("peer id: %r" % self._message)
         # if we don't already have the peer's id, send ours
@@ -630,7 +630,9 @@ class Connector(Handler):
             # assert the id we have and the one we got are the same
             if self._message != self.id:
                 self.protocol_violation("incorrect id have:%r got:%r" % (self.id, self._message))
-                return
+                # this is not critical enough to disconnect. some clients have
+                # an option to do this on purpose
+                #return
         self.complete = True
         self.parent.connection_handshake_completed(self)
 
@@ -677,7 +679,7 @@ class Connector(Handler):
                 self.remote_pex_set.add(addr)
                 self.parent.start_connection(addr)
             dropped_gen = IPTools.uncompact_sequence(d['dropped'])
-            self.remote_pex_set.difference_update(dropped_gen)        
+            self.remote_pex_set.difference_update(dropped_gen)
 
     def _got_azureus_msg(self, msg_type, d):
         port = d.get('tcp_port')
@@ -702,7 +704,7 @@ class Connector(Handler):
         else:
             self.protocol_violation("unknown hole punch msg type: %r" %
                                     msg_type)
-        
+
     def _got_message(self, message):
         t = message[0]
         if t in [BITFIELD, HAVE_ALL, HAVE_NONE] and self.got_anything:
@@ -727,7 +729,7 @@ class Connector(Handler):
             if noisy: log("HOLE_PUNCH: %r" % d)
             self._got_holepunch_msg(d)
             return
-            
+
         self.got_anything = True
         if (t in (CHOKE, UNCHOKE, INTERESTED, NOT_INTERESTED,
                   HAVE_ALL, HAVE_NONE) and
@@ -792,7 +794,7 @@ class Connector(Handler):
                      "(b:%d + l:%d == %d) > %d" %
                      (a, b, a + b, self.parent.piece_size))
                 self.close()
-                return                
+                return
             if self.download.have[i]:
                 self.protocol_violation(
                      "Requested piece index %d which the peer already has" %
@@ -918,7 +920,7 @@ class Connector(Handler):
             self._outqueue.write(s)
         else:
             self.connection.write(s)
-        
+
     def _send_message(self, *msg_a):
         if self.closed:
             return
@@ -938,11 +940,12 @@ class Connector(Handler):
         else:
             l = self.sloppy_pre_connection_counter + len(s)
             self.sloppy_pre_connection_counter = 0
+            self.download.fire_raw_received_listeners(l)
 
         if log_data:
             assert self.addr == (conn.ip, conn.port)
             open('%s_%d.log' % self.addr, 'ab').write(s)
-            
+
         while True:
             if self.closed:
                 return
@@ -1006,7 +1009,7 @@ class Connector(Handler):
         self.local_pex_set.clear()
 
     def connection_flushed(self, connection):
-        if (self.complete and self.next_upload is None and 
+        if (self.complete and self.next_upload is None and
             (self._partial_message is not None
              or (self.upload and self.upload.buffer))):
             if self.lan:

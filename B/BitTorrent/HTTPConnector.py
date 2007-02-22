@@ -303,6 +303,7 @@ class HTTPConnector(Connector):
 
 
     def data_came_in(self, conn, s):
+        #self.logger.info( "HTTPConnector self=%s received string len(s): %d" % (self,len(s)))
         self.received_data = True
         
         if not self.download:
@@ -311,9 +312,13 @@ class HTTPConnector(Connector):
         else:
             l = self.sloppy_pre_connection_counter + len(s)
             self.sloppy_pre_connection_counter = 0
+            self.download.fire_raw_received_listeners(l)
 
         self._buffer.append(s)
         self._buffer_len += len(s)
+        #self.logger.info( "_buffer now has length: %s, _next_len=%s" % 
+        #    (self._buffer_len, self._next_len ) )
+
         # not my favorite loop.
         # the goal is: read self._next_len bytes, or if it's None return all
         # data up to a \r\n

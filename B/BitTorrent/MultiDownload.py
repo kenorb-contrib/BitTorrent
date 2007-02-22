@@ -59,6 +59,7 @@ class MultiDownload(object):
         self.bad_peers = {}
         self.discarded_bytes = 0
         self.useful_received_listeners = set()
+        self.raw_received_listeners = set()
         
         if SPARSE_SET:
             self.piece_states = PieceSetBuckets()
@@ -185,6 +186,7 @@ class MultiDownload(object):
         perip.numconnections += 1
         d = Download(self, connector)
         d.add_useful_received_listener(self.fire_useful_received_listeners) 
+        d.add_raw_received_listener(self.fire_raw_received_listeners)
         perip.lastdownload = d
         perip.peerid = connector.id
         self.downloads.append(d)
@@ -197,6 +199,11 @@ class MultiDownload(object):
            called for bytes received by that particular Download."""
         self.useful_received_listeners.add(listener)
 
+    def add_raw_received_listener(self, listener):
+        """Listers are called whenever bytes arrive (i.e., to Connector.data_came_in)
+           regardless of whether those bytes are useful."""
+        self.raw_received_listeners.add(listener)
+
     def remove_useful_received_listener(self,listener):
         self.useful_received_listeners.remove(listener)
 
@@ -204,6 +211,13 @@ class MultiDownload(object):
         for f in self.useful_received_listeners:
             f(bytes)
             
+    def remove_raw_received_listener(self, listener):
+        self.raw_received_listeners.remove(listener)
+
+    def fire_raw_received_listeners(self,bytes):
+        for f in self.raw_received_listeners:
+            f(bytes)
+
     def lost_peer(self, download):
         if download.have.numfalse == 0:
             # lost seed...

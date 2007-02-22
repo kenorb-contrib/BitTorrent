@@ -309,17 +309,21 @@ class QueryProtocol(http.HTTPClient):
         print "%s: %s: %r" % (self.peer, msg, a)
 
     def connectionMade(self):
+        http.HTTPClient.connectionMade(self)
         self.current_queries = []
         self.timeout_call = None
         if pipeline_debug: self.peer = (id(self.transport), self.transport.getPeer())
         self.factory.connectionMade(self)
 
     def connectionLost(self, reason):
+        http.HTTPClient.connectionLost(self, reason)
         if pipeline_debug: self.log('connectionLost', reason.getErrorMessage())
+        if self.timeout_call:
+            self.timeout_call.cancel()
         if self.current_queries:
             # queries failed, put them back
             if pipeline_debug: self.log('putting back', [q.method for q in self.current_queries])
-            self.factory.queries = self.current_queries + self.factory.queries
+            self.factory.prependQueries(self.current_queries)
         self.factory.connectionLost(self)
 
     def sendCommand(self, command, path):
@@ -331,7 +335,7 @@ class QueryProtocol(http.HTTPClient):
         return http.HTTPClient.setLineMode(self, rest)
     
     def sendQuery(self):
-        if not (self.factory.queries or self.current_queries):
+        if not (self.factory.anyQueries() or self.current_queries):
             assert not self.timeout_call
             self.timeout_call = reactor.callLater(self.timeout,
                                                   self.transport.loseConnection)
@@ -341,10 +345,10 @@ class QueryProtocol(http.HTTPClient):
             self.timeout_call.cancel()
             self.timeout_call = None
 
-        if not self.factory.queries:
+        if not self.factory.anyQueries():
             return
             
-        query = self.factory.queries.pop(0)
+        query = self.factory.popQuery()
         if pipeline_debug: self.log('sending', query.method)
         self.current_queries.append(query)
         self.sendCommand('POST', query.path)
@@ -420,12 +424,28 @@ class QueryFactory(object):
         if pipeline_debug: print 'connection lost %s' % str(instance.peer)
         self.instance = None
 
+    def prependQueries(self, queries):
+        self.queries = queries + self.queries
+
+    def popQuery(self):
+        return self.queries.pop(0)
+
+    def anyQueries(self):
+        return bool(self.queries)
+
     def addQuery(self, query):
         self.queries.append(query)
         if pipeline_debug: print 'addQuery: %s %s' % (self.instance, self.queries)
         if self.instance:
             self.instance.sendQuery()
-            
+
+    def disconnect(self):
+        if not self.instance:
+            return
+        if not hasattr(self.instance, 'transport'):
+            return
+        self.instance.transport.loseConnection()        
+        
 
 class PersistantSingletonFactory(QueryFactory, SmartReconnectingClientFactory):
 
@@ -562,21 +582,26 @@ class AsyncServerProxy(object):
         return df
 
 class EitherServerProxy(object):
+    SYNC = 0
+    ASYNC = 1
+    SYNC_DEFERRED = 2   # BE CAREFUL to call getResult() on the returned Deferred!
+
     """Server Proxy that supports both asynchronous and synchronous calls."""
     
     def __init__(self, base_url, username = None, password = None, debug = False,
-            async = True ):
+            async = ASYNC ):
         """
            The EitherServerProxy can make either synchronous or asynchronous calls.
            The default is specified by the async parameter to __init__, but each
            individual call can override the default behavior by passing 'async' as 
            a boolean keyword argument to any method call.  The async keyword
            argument can also be set to None.  However, passing async as 
-           None means simply 'use default behavior'.  When calling with async=False, 
+           None means simply 'use default behavior'.  When calling with async=SYNC, 
            you should not be in the same thread as the reactor or you risk 
            blocking the reactor.
 
            @param async: determines whether the default is asynchronous or blocking calls."""
+	assert async in [SYNC, ASYNC, SYNC_DEFERRED]
         self.async = async 
         self.async_proxy = AsyncServerProxy( base_url, username, password, debug )
         self.sync_proxy = ServerProxy( base_url )
@@ -591,12 +616,16 @@ class EitherServerProxy(object):
         async = kw.pop('async', self.async)
         if async is None:
             async = self.async
-        if async:
+        if async == ASYNC:
             df = self.async_proxy._method(methodname, *a, **kw)
-            return df
-        else:
-            result = self.sync_proxy.__getattr__(methodname)(*a, **kw)
-            return defer.succeed(result)
+        elif async == SYNC_DEFERRED:
+            df = defer.execute(getattr(self.sync_proxy, methodname), *a, **kw)
+	else:
+	    return self.sync_proxy.__getattr__(methodname)(*a, **kw)
+        return df
 
+SYNC = EitherServerProxy.SYNC
+ASYNC = EitherServerProxy.ASYNC
+SYNC_DEFERRED = EitherServerProxy.SYNC_DEFERRED 
 
 __all__ = ["EBRPC", "Handler", "NoSuchFunction", "Fault", "Proxy", "AsyncServerProxy", "EitherServerProxy"]

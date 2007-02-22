@@ -32,8 +32,8 @@ from BTL.platform import bttime, get_filesystem_encoding
 from BitTorrent.ConnectionManager import ConnectionManager
 from BitTorrent import PeerID
 from BTL.exceptions import str_exc
-from BTL.defer import ThreadedDeferred, Failure
-from BTL.yielddefer import launch_coroutine, _wrap_task
+from BTL.defer import ThreadedDeferred, Failure, wrap_task
+from BTL.yielddefer import launch_coroutine
 from BitTorrent.TorrentStats import TorrentStats
 from BitTorrent.RateMeasure import RateMeasure
 from BitTorrent.PiecePicker import PiecePicker
@@ -361,7 +361,7 @@ class Torrent(object):
         self.context_valid = True
         assert self.state in ["created", "failed", "finishing"], "state not in set"
         self.state = "initializing"
-        df = launch_coroutine(_wrap_task(self.add_task), self._initialize)
+        df = launch_coroutine(wrap_task(self.add_task), self._initialize)
         df.addErrback(self.got_exception)
         return df
 
@@ -503,7 +503,7 @@ class Torrent(object):
         md.add_useful_received_listener(self._total_downmeasure.update_rate)
         md.add_useful_received_listener(self._downmeasure.update_rate)
         md.add_useful_received_listener(self._ratemeasure.data_came_in)
-        md.add_useful_received_listener(self._down_ratelimiter.update_rate)
+        md.add_raw_received_listener(self._down_ratelimiter.update_rate)
         self.multidownload = md
 
         # HERE. Yipee! Uploads are created by callback while Download
@@ -522,7 +522,7 @@ class Torrent(object):
         else:
             addContact = None
 
-        df = self.metainfo.get_tracker_ips(_wrap_task(self.external_add_task))
+        df = self.metainfo.get_tracker_ips(wrap_task(self.external_add_task))
         yield df
         tracker_ips = df.getResult()
         self._connection_manager = \
@@ -681,7 +681,7 @@ class Torrent(object):
         # use _rawserver.add_task directly here, because we want the callbacks
         # to happen even though _shutdown is about to invalidate this torrent's
         # context
-        df = launch_coroutine(_wrap_task(self._rawserver.add_task), self._shutdown)
+        df = launch_coroutine(wrap_task(self._rawserver.add_task), self._shutdown)
         df.addErrback(self.got_exception, cannot_shutdown=True)
         return df
 
@@ -810,13 +810,15 @@ class Torrent(object):
 
     def finished(self, policy="auto", finished_this_session=True):
         assert self.state == "running", "state not running"
+        self.logger.debug("done downloading, preparing to wrap up")
         # because _finished() calls shutdown(), which invalidates the torrent
         # context, we need to use _rawserver.add_task directly here
-        df = launch_coroutine(_wrap_task(self._rawserver.add_task), self._finished, policy=policy, finished_this_session=finished_this_session)
+        df = launch_coroutine(wrap_task(self._rawserver.add_task), self._finished, policy=policy, finished_this_session=finished_this_session)
         df.addErrback(self.got_exception)
         return df
 
     def _finished(self, policy="auto", finished_this_session=True):
+        self.logger.debug("wrapping up")
         if self.state != "running":
             return
 
@@ -891,7 +893,7 @@ class Torrent(object):
             self.logger.debug("successfully paused torrent, moving file")
 
             self.state = "finishing"
-            df = ThreadedDeferred(_wrap_task(self._rawserver.external_add_task),
+            df = ThreadedDeferred(wrap_task(self._rawserver.external_add_task),
                                   move, self.working_path, self.destination_path)
             yield df
             df.getResult()

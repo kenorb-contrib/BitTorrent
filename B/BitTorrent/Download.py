@@ -82,7 +82,9 @@ class Download(object):
         self.guard = BadDataGuard(self)
         self.suggested_pieces = []
         self.allowed_fast_pieces = []
-        self._received_listeners = set()
+        self._useful_received_listeners = set()
+        self._raw_received_listeners = set()
+        
         self.add_useful_received_listener(self.measure.update_rate)
         self.total_bytes = 0
         self.add_useful_received_listener(self.accumulate_total)
@@ -92,15 +94,25 @@ class Download(object):
 
     def add_useful_received_listener(self, listener):
         # "useful received bytes are used in measuring goodput.
-        self._received_listeners.add(listener)
+        self._useful_received_listeners.add(listener)
 
     def remove_useful_received_listener(self, listener):
-        self._received_listeners.remove(listener)
+        self._useful_received_listeners.remove(listener)
 
     def fire_useful_received_listeners(self, bytes):
-        for f in self._received_listeners:
+        for f in self._useful_received_listeners:
             f(bytes)
-       
+
+    def add_raw_received_listener(self, listener):
+        self._raw_received_listeners.add(listener)
+
+    def remove_raw_received_listener(self, listener):
+        self._raw_received_listeners.remove(listener)
+
+    def fire_raw_received_listeners(self, bytes):
+        for f in self._raw_received_listeners:
+            f(bytes)
+
     def _backlog(self):
         # Dave's suggestion:
         # backlog = 2 + thruput delay product in chunks.

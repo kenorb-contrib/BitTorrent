@@ -1,6 +1,16 @@
 # SparseSet is meant to act just like a set object, but without actually
 # storing discrete values for every item in the set
 #
+# The contents of this file are subject to the Python Software Foundation
+# License Version 2.3 (the License).  You may not copy or use this file, in
+# either source code or executable form, except in compliance with the License.
+# You may obtain a copy of the License at http://www.python.org/license.
+#
+# Software distributed under the License is distributed on an AS IS basis,
+# WITHOUT WARRANTY OF ANY KIND, either express or implied.  See the License
+# for the specific language governing rights and limitations under the
+# License.
+#
 # by Greg Hazel
 
 from __future__ import generators
@@ -53,50 +63,58 @@ class SparseSet(object):
     def add(self, begin, end=None):
         if end is None:
             end = begin + 1
-        else:
-            assert end > begin
+        elif begin >= end:
+            raise ValueError("begin(%d) >= end(%d)" % (begin, end))
 
         if len(self._begins) == 0:
             b_i = 0
-        else:
-            b_i = bisect_left(self._begins, begin)
+            self._begins.append(begin)
+            self._ends.append(end)
+            return
 
-            if b_i == 0:
-                if begin >= self._begins[b_i]:
-                    begin = self._begins[b_i]
-            elif begin <= self._ends[b_i - 1]:
-                b_i -= 1
+        b_i = bisect_left(self._begins, begin)
+
+        if b_i == 0:
+            if begin >= self._begins[b_i]:
                 begin = self._begins[b_i]
+        elif begin <= self._ends[b_i - 1]:
+            b_i -= 1
+            begin = self._begins[b_i]
 
-            e_i = bisect_left(self._ends, end, b_i)
+        e_i = bisect_left(self._ends, end, b_i)
 
-            if e_i < len(self._ends):
-                if end >= self._begins[e_i]:
-                    end = self._ends[e_i]
-                else:
-                    e_i -= 1
+        if e_i < len(self._ends):
+            if end >= self._begins[e_i]:
+                end = self._ends[e_i]
+            else:
+                e_i -= 1
 
-            # small optimization
-            if b_i == e_i:
-                if b_i == len(self._begins):
-                    self._begins.append(begin)
-                    self._ends.append(end)
-                else:
-                    self._begins[b_i] = begin
-                    self._ends[b_i] = end
-                return
-            
-            del self._begins[b_i:e_i + 1]
-            del self._ends[b_i:e_i + 1]
-                
-        self._begins.insert(b_i, begin)
-        self._ends.insert(b_i, end)
+        # small optimization
+        if b_i == e_i:
+            if b_i == len(self._begins):
+                self._begins.append(begin)
+                self._ends.append(end)
+            else:
+                self._begins[b_i] = begin
+                self._ends[b_i] = end
+            return
 
-    def subtract(self, begin, end=None):
+        # small optimization
+        if b_i == e_i + 1:
+            self._begins.insert(b_i, begin)
+            self._ends.insert(b_i, end)
+            return
+        
+        del self._begins[b_i + 1:e_i + 1]
+        del self._ends[b_i + 1:e_i + 1]
+        self._begins[b_i] = begin
+        self._ends[b_i] = end
+
+    def discard(self, begin, end=None):
         if end is None:
             end = begin + 1
-        else:
-            assert end > begin
+        elif begin >= end:
+            raise ValueError("begin(%d) >= end(%d)" % (begin, end))
 
         b_i = bisect_left(self._begins, begin)
         s_b_i = max(b_i - 1, 0)
@@ -128,7 +146,8 @@ class SparseSet(object):
 
         if end_is_an_end:
             self._begins[b_i] = end
-    remove = subtract
+    remove = discard
+    subtract = discard
 
     def is_range_in(self, x, y):
         assert y > x

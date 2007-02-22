@@ -37,7 +37,9 @@ ONLY_LOCAL = False
 LOWER_BOUND = 1
 UPPER_BOUND = 120
 BUFFER = 1.2
+use_timeout_order = False
 timeout_order = [3, 15, 30]
+debug = False
 
 def set_timeout_metrics(delta):
     delta = max(delta, 0.0001)
@@ -86,10 +88,14 @@ class GaurdedInitialConnection(Handler):
         self.t = None        
         
     def connection_made(self, s):
-        set_timeout_metrics(bttime() - self.start)
-
+        t = bttime() - self.start
+        set_timeout_metrics(t)
         addr = (s.ip, s.port)
-        #print 'connection made', addr
+
+        if debug:        
+            self.parent.logger.warning('connection made: %s %s' %
+                                       (addr, t))
+
         del self.parent.pending_connections[addr]
 
         self._abort_timeout()        
@@ -102,8 +108,10 @@ class GaurdedInitialConnection(Handler):
         self.parent.replace_connection()
         
     def connection_failed(self, s, exception):
-        #print 'connection failed', addr, exception.getErrorMessage()
         addr = (s.ip, s.port)
+        if debug:
+            self.parent.logger.warning('connection failed: %s %s' %
+                                       (addr, exception.getErrorMessage()))
 
         if s.connector.wasPreempted():
             self.parent._resubmit_connection(addr)
@@ -141,6 +149,7 @@ class ConnectionManager(InternetSubscriber):
                  rawserver, config, private, my_id, add_task, infohash, context,
                  addcontactfunc, reported_port, tracker_ips, log_prefix):
         """
+            @param downloader: MultiDownload for this torrent.
             @param my_id: my peer id.
             @param tracker_ips: list of tracker ip addresses.
                ConnectionManager does not drop connections from the tracker.
@@ -362,7 +371,10 @@ class ConnectionManager(InternetSubscriber):
             return True
 
         kw['log_prefix'] = self.log_prefix
-        kw.setdefault('timeout', timeout_order[0])
+        timeout = 30
+        if use_timeout_order:
+            timeout = timeout_order[0]
+        kw.setdefault('timeout', timeout)
         h = handler(self, pid, *a, **kw)
         self.pending_connections[addr] = (h, (addr, pid, handler, a, kw))
         urgent = kw.pop('urgent', False)
@@ -393,7 +405,7 @@ class ConnectionManager(InternetSubscriber):
         h, info = self.pending_connections[addr]
         addr, pid, handler, a, kw = info
 
-        if h.timeout < timeout_order[-1]:
+        if use_timeout_order and h.timeout < timeout_order[-1]:
             for t in timeout_order:
                 if t > h.timeout:
                     h.timeout = t
@@ -506,6 +518,8 @@ class ConnectionManager(InternetSubscriber):
             connector.ip not in self.tracker_ips):
             return False
         self._add_connection(connector)
+        if self.closed:
+            return False
         connector.set_parent(self)
         connector.connection.context = self.context
         return True
