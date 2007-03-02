@@ -22,7 +22,7 @@ from cStringIO import StringIO
 from traceback import print_exc
 import logging
 from BitTorrent import configfile
-from BTL.parsedir import parsedir
+from BTL.parsedir import async_parsedir
 from BitTorrent.MultiTorrent import MultiTorrent, Feedback
 from BitTorrent import BTFailure, UserFailure
 from BitTorrent.RawServer_twisted import RawServer
@@ -31,7 +31,18 @@ from BTL.defer import DeferredEvent
 from BTL.exceptions import str_exc
 from BitTorrent.platform import efs2
 from time import time
+from BTL.yielddefer import launch_coroutine
+from BTL.defer import wrap_task, ThreadedDeferred
+from twisted.internet import reactor
+### PROFILER
+#from BTL.profile import Profiler, Stats
+#prof = Profiler()
+#prof.enable()
+### END PROFILER
 
+
+def coro(f, *args, **kwargs):
+    return launch_coroutine(wrap_task(reactor.callLater), f, *args, **kwargs)
 
 class LaunchMany(object):
 
@@ -86,15 +97,30 @@ class LaunchMany(object):
             # can throw exceptions.
             def shutdown():
                 self.logger.critical(_("shutting down"))
-                for t in self.multitorrent.get_torrents():
-                    self.logger.info(_('dropped "%s"') %
-                                    self.torrent_cache[t.infohash][0])
                 if self.multitorrent:
+                    if len(self.multitorrent.get_torrents()) > 0:
+                        for t in self.multitorrent.get_torrents():
+                            self.logger.info(_('dropped "%s"') % self.torrent_cache[t.infohash][0])
+                    def after_mt(r):
+                        self.logger.critical("multitorrent shutdown completed. Calling rawserver.stop")
+                        self.rawserver.stop()
+                    self.logger.critical( "calling multitorrent shutdown" )
                     df = self.multitorrent.shutdown()
-                    set_flag = lambda *a : self.rawserver.stop()
-                    df.addCallbacks(set_flag, set_flag)
+                    #set_flag = lambda *a : self.rawserver.stop()
+                    df.addCallbacks(after_mt, after_mt)
                 else:
                     self.rawserver.stop()
+
+                ### PROFILER POSTPROCESSING.
+                #self.logger.critical( "Disabling profiles" )
+                #prof.disable()
+                #self.logger.critical( "Running profiler post-processing" )
+                #stats = Stats(prof.getstats())
+                #stats.sort("inlinetime")
+                #self.logger.info( "Calling stats.pprint")
+                #stats.pprint()
+                #self.logger.info( "After stats.pprint")
+                ### PROFILER POSTPROCESSING
 
             # It is safe to addCallback here, because there is only one thread,
             # but even if the code were multi-threaded, core_doneflag has not
@@ -109,7 +135,9 @@ class LaunchMany(object):
             self.multitorrent = MultiTorrent(config, self.rawserver, data_dir,
                                              resume_from_torrent_config=False)
 
-            self.rawserver.add_task(0, self.scan)
+            # first time sleep_time is 0 so that it will startup fast.  On
+            # subsequent scans, the scan is slowed down to not affect performance.
+            self.rawserver.add_task(0, self.scan, sleep_time = 0)
             self.rawserver.add_task(0.5, self.periodic_check_hashcheck_queue)
             self.rawserver.add_task(self.config['display_interval'],
                                     self.periodic_stats)
@@ -129,45 +157,80 @@ class LaunchMany(object):
             self.logger.error(str_exc(e))
             self.rawserver.add_task(0, self.core_doneflag.set)
         except:
-            data = StringIO()
-            print_exc(file = data)
-            self.logger.error(data.getvalue())
+            #data = StringIO()
+            #print_exc(file = data)
+            #self.logger.error(data.getvalue())
+            self.logger.exception("Exception raised while initializing LaunchMany")
             self.rawserver.add_task(0, self.core_doneflag.set)
 
         # always make sure events get processed even if only for
         # shutting down.
         self.rawserver.listen_forever()
+        self.logger.info( "After rawserver.listen_forever" )
 
       except:
-        data = StringIO()
-        print_exc(file = data)
-        self.logger.error(data.getvalue())
+        self.logger.exception("Exception raised early in LaunchMany intialization")
 
-    def scan(self):
+    def scan(self, sleep_time = 0.5):
+        return coro(self._scan, sleep_time )
+
+    def _scan(self, sleep_time ):
+        try:
+            # asynchronous parse.
+            df = async_parsedir(self.torrent_dir, self.torrent_cache,
+                                 self.file_cache, self.blocked_files)
+            #df = ThreadedDeferred(wrap_task(self.rawserver.external_add_task),
+            #                      self._parse_dir_in_thread, sleep_time = sleep_time,
+            #                      daemon = True)
+            #df = defer_to_thread(reactor.callFromThread, reactor.callInThread,
+            #                     self._parse_dir_in_thread)
+            yield df
+            r = df.getResult()
+            ( self.torrent_cache, self.file_cache, self.blocked_files,
+                added, removed ) = r
+            for infohash, (path, metainfo) in removed.items():
+                self.logger.info(_('dropped "%s"') % path)
+                self.remove(infohash)
+            for infohash, (path, metainfo) in added.items():
+                self.logger.info(_('added "%s"'  ) % path)
+                if self.config['launch_delay'] > 0:
+                    self.rawserver.add_task(self.config['launch_delay'],
+                                            self.add, metainfo)
+
+                # torrent may have been known from resume state.
+                else:
+                    self.add(metainfo)
+
+        except:
+            self.logger.exception("scan threw exception")
+
+        # register the call to parse a dir.
         self.rawserver.add_task(self.config['parse_dir_interval'], self.scan)
 
-        r = parsedir(self.torrent_dir, self.torrent_cache,
-                     self.file_cache, self.blocked_files,
-                     self.logger.error)
+    #def _parse_dir_in_thread(self, sleep_time ):
+    #    def lg(message):
+    #        if message.find( "**warning**") != -1:  # HACK!!
+    #           self.logger.warning(message)
+    #        else:
+    #           self.logger.error(message)
+    #
+    #    def log_in_thread(message):
+    #        # is logging thread-safe?
+    #        self.rawserver.external_add_task(0, lg, message)
+    #        #reactor.callFromThread(lg, message)
+    #
+    #    self.logger.info("Parsing torrent directory tree: %s sleep_time=%s" %
+    #                     (self.torrent_dir, sleep_time ) )
+    #    r = parsedir(self.torrent_dir, self.torrent_cache,
+    #                 self.file_cache, self.blocked_files, log_in_thread, sleep_time = sleep_time )
+    #    return r
 
-        ( self.torrent_cache, self.file_cache, self.blocked_files,
-            added, removed ) = r
-        for infohash, (path, metainfo) in removed.items():
-            self.logger.info(_('dropped "%s"') % path)
-            self.remove(infohash)
-        for infohash, (path, metainfo) in added.items():
-            self.logger.info(_('added "%s"'  ) % path)
-            if self.config['launch_delay'] > 0:
-                self.rawserver.add_task(self.config['launch_delay'],
-                                        self.add, metainfo)
-            # torrent may have been known from resume state.
-            else:
-                self.add(metainfo)
 
     def periodic_stats(self):
-        self.stats()
-        self.rawserver.add_task(self.config['display_interval'],
-                                self.periodic_stats)
+        df = ThreadedDeferred(wrap_task(self.rawserver.external_add_task),
+                              self.stats, daemon = True)
+        df.addCallback( self.rawserver.add_task, self.periodic_stats, self.config['display_interval'],
+                        self.periodic_stats )
 
     def stats(self):
         data = []
@@ -275,12 +338,11 @@ class LaunchMany(object):
             df.addCallback(create_finished)
 
     def determine_filename(self, infohash):
+        # THIS FUNCTION IS PARTICULARLY CONVOLUTED. BLECH! --Dave
         path, metainfo = self.torrent_cache[infohash]
         path = efs2(path)
         name = metainfo.name_fs
         savein = efs2(self.config['save_in'])
-        # From here save_in is /home/dave/Desktop/...
-        # rather than /home/dave/testlaunch
         isdir = metainfo.is_batch
         style = self.config['saveas_style']
         if style == 4:
@@ -317,7 +379,7 @@ class LaunchMany(object):
         if self.hashcheck_current == infohash:
             self.hashcheck_current = None
 
-    # Exceptions are now reported via loggers.<
+    # Exceptions are now reported via loggers.
     #def global_error(self, level, text):
     #    self.output.message(text)
 
@@ -346,19 +408,24 @@ class LaunchMany(object):
 
     # rest are callbacks from torrent instances
     def started(self, torrent):
-        self.stats()
+        path, metainfo = self.torrent_cache[torrent.infohash]
+        self.logger.info( "started %s (num torrents=%d)" % (path, len(self.torrent_cache) ))
         self.check_hashcheck_queue()
 
     def failed(self, torrent):
-        self.stats()
+        path, metainfo = self.torrent_cache[torrent.infohash]
+        self.logger.info( "failed %s (num torrents=%d)" % (path, len(self.torrent_cache) ))
         self.check_hashcheck_queue()
 
     def finished(self, torrent):
-        self.stats()
+        path, metainfo = self.torrent_cache[torrent.infohash]
+        self.logger.info( "finished %s (num torrents=%d)" % (path, len(self.torrent_cache) ))
         self.check_hashcheck_queue()
         pass
 
     def finishing(self, torrent):
+        #path, metainfo = self.torrent_cache[torrent.infohash]
+        #self.logger.info( "finishing %s" % path )
         pass
 
     # error handling reported via logging.

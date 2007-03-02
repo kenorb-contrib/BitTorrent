@@ -21,6 +21,7 @@ import atexit
 from BTL.log import injectLogger
 from BTL.platform import app_name
 
+noisy = False
 def getuid_from_username(username):
     return pwd.getpwnam(username)[2]
 
@@ -54,6 +55,8 @@ def daemon(**kwargs):
     if os.name == 'mac':
         raise NotImplementedError( "Daemonization doesn't work on macs." )
 
+    if noisy:
+        print "in daemon"
     uid = os.getuid()
     gid = os.getgid()
     if uid == 0 and not kwargs.has_key("username"):
@@ -63,7 +66,8 @@ def daemon(**kwargs):
     if kwargs.has_key("username") and kwargs["username"]:
         username = kwargs["username"]
         uid = getuid_from_username(username)
-        print "setting username to uid of '%s', which is %d." % ( username, uid )
+        if noisy:
+            print "setting username to uid of '%s', which is %d." % ( username, uid )
         if uid != os.getuid() and os.getuid() != 0:
             raise Exception( "When specifying a uid other than your own "
                "you must be running as root for setuid to work. "
@@ -73,7 +77,8 @@ def daemon(**kwargs):
         del kwargs["username"]
     if kwargs.has_key("groupname") and kwargs["groupname"]:
         groupname = kwargs["groupname"]
-        print "setting groupname to gid of '%s', which is %d." % (groupname,gid)
+        if noisy:
+            print "setting groupname to gid of '%s', which is %d." % (groupname,gid)
         gid = getgid_from_groupname(groupname)
         del kwargs["groupname"]
     capture_output = kwargs.get("capture_output", False)

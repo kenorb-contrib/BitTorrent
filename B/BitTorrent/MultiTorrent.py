@@ -143,7 +143,8 @@ class MultiTorrent(Feedback):
         self.internet_watcher = get_internet_watcher(self.rawserver)
         self.singleport_listener = SingleportListener(self.rawserver,
                                                       nattraverser,
-                                                      self.log_root)
+                                                      self.log_root,
+                                                      config['use_local_discovery'])
         self.choker = Choker(self.config, self.rawserver.add_task)
         self.up_ratelimiter = RateLimiter(self.rawserver.add_task)
         self.up_ratelimiter.set_parameters(config['max_upload_rate'],
@@ -178,7 +179,6 @@ class MultiTorrent(Feedback):
             get_rates=self.get_total_rates )
 
         self.rawserver.add_task(0, self.butle)
-        #raise Exception("blah")
 
 
     def butle(self):

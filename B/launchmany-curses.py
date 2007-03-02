@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 
+# This file has not been maintained after 4.20 and maybe earlier.
+#  --David Harrison
+
 # The contents of this file are subject to the BitTorrent Open Source License
 # Version 1.1 (the License).  You may not copy or use this file, in either
 # source code or executable form, except in compliance with the License.  You

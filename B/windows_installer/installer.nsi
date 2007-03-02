@@ -177,9 +177,10 @@ FunctionEnd
 
 Function uninstall
 
-    ;; IMPORTANT: We cannot ever run any old installers, because they might delete the
-    ;; old installation directory, including any data the user might have stored there.
-    ;; Newer uninstallers play nice, but we cannot tell them apart.
+    ;; IMPORTANT: We cannot ever run any old installers, because they
+    ;; might delete the old installation directory, including any data
+    ;; the user might have stored there.  Newer uninstallers play
+    ;; nice, but we cannot tell them apart.
 
     ; check here too, since this page is run either way
     ;Call GetUninstallString
@@ -569,9 +570,11 @@ FunctionEnd
   !undef Index
  
   Push $R2
-  Exch 3
+  Exch 1
   Pop $R2
+  Exch 1
   Pop $R1
+  Exch 1
   Pop $R0
  
 !macroend

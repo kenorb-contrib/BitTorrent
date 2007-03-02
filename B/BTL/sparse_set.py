@@ -67,7 +67,6 @@ class SparseSet(object):
             raise ValueError("begin(%d) >= end(%d)" % (begin, end))
 
         if len(self._begins) == 0:
-            b_i = 0
             self._begins.append(begin)
             self._ends.append(end)
             return

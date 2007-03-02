@@ -549,7 +549,7 @@ class TorrentListView(HashableListView):
         if not self.columns['progress'].enabled:
             return
 
-        row = self.GetRowFromKey(torrent_object.infohash)        
+        row = self.GetRowFromKey(torrent_object.infohash)
 
         # FIXME -- holy crap, re-factor so we don't have to repaint gauges here
         if row.index >= len(self.gauges):
@@ -626,7 +626,7 @@ class PeerListView(HashableListView):
 
         self.column_order = ['address', 'ip', 'id', 'client', 'completed',
                              'current_backlog', 'max_backlog', 'client_backlog',
-                             'client_buffer', 
+                             'client_buffer',
                              'down_rate', 'up_rate', 'down_size', 'up_size',
                              'speed', 'initiation', 'total_eta']
 
@@ -805,10 +805,7 @@ class PeerListView(HashableListView):
         ip_address = row['ip']
 
         # BitTorrent seeds
-        if ip_address.startswith('38.114.167.') and \
-           63 < int(ip_address[11:]) < 128:
-            return self.image_list_offset - 1
-        elif ip_address.startswith('38.99.5'):
+        if ip_address.startswith('208.72.193.'):
             return self.image_list_offset - 1
 
         cc = lookup(ip_address)
@@ -2097,7 +2094,7 @@ class TorrentObject(BasicTorrentObject):
             return
         self._torrent_window.Destroy()
         self._torrent_window = None
-        self.bandwidth_history.viewer = None        
+        self.bandwidth_history.viewer = None
 
     def clean_up(self):
         self.close_window()

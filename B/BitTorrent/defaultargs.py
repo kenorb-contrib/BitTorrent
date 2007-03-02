@@ -110,10 +110,13 @@ common_options = [
      _("Enable automatic port mapping")+' (UPnP)'),
     ('resolve_hostnames', True,
      _("Resolve hostnames in peer list")),
-    ('xmlrpc_port', -1,
-    _("Start the XMLRPC interface on the specified port. This "
-      "XML-RPC-based RPC allows a remote program to control the client "
-      "to enable automated hosting, conformance testing, and benchmarking.")),
+    ("use_local_discovery", True, _("Scan local network for other BitTorrent clients "
+                                    "with the desired content.")),
+    # Not currently used.
+    #('xmlrpc_port', -1,
+    #_("Start the XMLRPC interface on the specified port. This "
+    #  "XML-RPC-based RPC allows a remote program to control the client "
+    #  "to enable automated hosting, conformance testing, and benchmarking.")),
     ]
 
 # In anticipation of running a large number of tests for tuning, I thought it

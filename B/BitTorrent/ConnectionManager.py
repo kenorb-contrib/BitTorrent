@@ -54,7 +54,7 @@ def set_timeout_metrics(delta):
 
 class GaurdedInitialConnection(Handler):
     def __init__(self, parent, id, encrypt=False, log_prefix="", lan=False,
-                 urgent=False, timeout=None):
+                 urgent=False, timeout=None ):
         self.t = None
         self.id = id
         self.lan = lan
@@ -147,7 +147,7 @@ class ConnectionManager(InternetSubscriber):
     def __init__(self, make_upload, downloader, choker,
                  numpieces, ratelimiter,
                  rawserver, config, private, my_id, add_task, infohash, context,
-                 addcontactfunc, reported_port, tracker_ips, log_prefix):
+                 addcontactfunc, reported_port, tracker_ips, log_prefix ): 
         """
             @param downloader: MultiDownload for this torrent.
             @param my_id: my peer id.
@@ -572,7 +572,8 @@ class SingleportListener(Handler):
 
        See Connector which upcalls to select_torrent after the infohash is 
        received in the opening handshake."""
-    def __init__(self, rawserver, nattraverser, log_prefix):
+    def __init__(self, rawserver, nattraverser, log_prefix, 
+                 use_local_discovery):
         self.rawserver = rawserver
         self.nattraverser = nattraverser
         self.port = 0
@@ -584,6 +585,7 @@ class SingleportListener(Handler):
         self.obfuscated_torrents = {}
         self.local_discovery = None
         self.ld_services = {}
+	self.use_local_discovery = use_local_discovery
         self._creating_local_discorvery = False
         self.log_prefix = log_prefix
         self.logger = logging.getLogger(self.log_prefix)
@@ -638,9 +640,11 @@ class SingleportListener(Handler):
 
         if self.local_discovery:
             self.local_discovery.stop()
-        self._create_local_discovery()
+	if self.use_local_discovery:
+            self._create_local_discovery()
 
     def _create_local_discovery(self):
+        assert self.use_local_discovery
         self._creating_local_discorvery = True
         try:
             self.local_discovery = LocalDiscovery(self.rawserver, self.port,
