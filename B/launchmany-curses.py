@@ -322,8 +322,7 @@ if __name__ == '__main__':
 
         if args:
             torrent_dir = args[0]
-            config['torrent_dir'] = \
-                decode_from_filesystem(torrent_dir)
+            config['torrent_dir'] = decode_from_filesystem(torrent_dir)
         else:
             torrent_dir = config['torrent_dir']
             torrent_dir,bad = encode_for_filesystem(torrent_dir)

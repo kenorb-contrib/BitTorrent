@@ -156,8 +156,7 @@ class Choker(object):
         for c in to_choke:
             u = c.upload
             if c.download.have.numfalse == 0:
-                # keep seeds choked, out of superstition
-                u.unchoke(self.count)
+                u.choke()
             elif count >= optimistics:
                 u.choke()
             else:

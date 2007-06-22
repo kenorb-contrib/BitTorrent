@@ -1,6 +1,6 @@
-"""A generic resource for publishing objects via EBRPC.
+"""A generic resource for publishing objects via BRPC.
 
-Requires EBRPC
+Requires BRPC
 
 API Stability: semi-stable
 """
@@ -9,7 +9,7 @@ from __future__ import nested_scopes
 __version__ = "$Revision: 1.32 $"[11:-2]
 
 # System Imports
-import ebrpc
+import brpc
 import urlparse
 from cStringIO import StringIO
 from gzip import GzipFile
@@ -21,11 +21,11 @@ from BTL.platform import app_name
 from BTL.reactor_magic import reactor
 from BTL.exceptions import str_exc
 from BTL.protocol import SmartReconnectingClientFactory
-from BTL.ebrpclib import ServerProxy
+from BTL.brpclib import ServerProxy
 
 import twisted.web
 if twisted.web.__version__ < '0.6.0':
-    raise ImportError("BTL.twisted_ebrpc requires twisted.web 0.6.0 or greater,"
+    raise ImportError("BTL.twisted_brpc requires twisted.web 0.6.0 or greater,"
                       " from Twisted 2.4.0.\nYou appear to have twisted.web "
                       "version %s installed at:\n%s" % (twisted.web.__version__,
                                                         twisted.web.__file__))
@@ -36,8 +36,8 @@ from twisted.python import log, reflect, failure
 from twisted.web import http
 from twisted.internet import defer
 
-# Useful so people don't need to import ebrpc directly
-Fault = ebrpc.Fault
+# Useful so people don't need to import brpc directly
+Fault = brpc.Fault
 
 class NoSuchFunction(Fault):
     """There is no function by the given name."""
@@ -45,7 +45,7 @@ class NoSuchFunction(Fault):
 
 
 class Handler:
-    """Handle a EBRPC request and store the state for a request in progress.
+    """Handle a BRPC request and store the state for a request in progress.
 
     Override the run() method and return result using self.result,
     a Deferred.
@@ -56,12 +56,12 @@ class Handler:
 
     For example, lets say we want to authenticate against twisted.cred,
     run a LDAP query and then pass its result to a database query, all
-    as a result of a single EBRPC command. We'd use a Handler instance
+    as a result of a single BRPC command. We'd use a Handler instance
     to store the state of the running command.
     """
 
     def __init__(self, resource, *args):
-        self.resource = resource # the EBRPC resource we are connected to
+        self.resource = resource # the BRPC resource we are connected to
         self.result = defer.Deferred()
         self.run(*args)
 
@@ -96,15 +96,15 @@ def parse_accept_encoding(header):
 
 
 
-class EBRPC(resource.Resource):
-    """A resource that implements EBRPC.
+class BRPC(resource.Resource):
+    """A resource that implements BRPC.
 
     You probably want to connect this to '/RPC2'.
 
-    Methods published can return EBRPC serializable results, Faults,
+    Methods published can return BRPC serializable results, Faults,
     Binary, Boolean, DateTime, Deferreds, or Handler instances.
 
-    By default methods beginning with 'ebrpc_' are published.
+    By default methods beginning with 'brpc_' are published.
 
     Sub-handlers for prefixed methods (e.g., system.listMethods)
     can be added with putSubHandler. By default, prefixes are
@@ -138,7 +138,7 @@ class EBRPC(resource.Resource):
     def render(self, request):
         request.setHeader('server', "%s/%s" % (app_name, version))
         request.content.seek(0, 0)
-        args, functionPath = ebrpc.loads(request.content.read())
+        args, functionPath = brpc.loads(request.content.read())
         args, kwargs = args
         request.functionPath = functionPath
         try:
@@ -161,13 +161,13 @@ class EBRPC(resource.Resource):
             result = (result,)
 
         try:
-            s = ebrpc.dumps(result, methodresponse=1)
+            s = brpc.dumps(result, methodresponse=1)
         except Exception, e:
             f = Fault(self.FAILURE,
                       "function:%s can't serialize output: %s" %
                       (request.functionPath, str_exc(e)))
             self._err(f)
-            s = ebrpc.dumps(f, methodresponse=1)
+            s = brpc.dumps(f, methodresponse=1)
 
         encoding = request.getHeader("accept-encoding")
         if encoding:
@@ -199,7 +199,7 @@ class EBRPC(resource.Resource):
 
         Override in subclasses if you want your own policy. The default
         policy is that given functionPath 'foo', return the method at
-        self.ebrpc_foo, i.e. getattr(self, "ebrpc_" + functionPath).
+        self.brpc_foo, i.e. getattr(self, "brpc_" + functionPath).
         If functionPath contains self.separator, the sub-handler for
         the initial prefix is used to search for the remaining path.
         """
@@ -209,7 +209,7 @@ class EBRPC(resource.Resource):
             if handler is None: raise NoSuchFunction(self.NOT_FOUND, "no such subHandler %s" % prefix)
             return handler._getFunction(functionPath)
 
-        f = getattr(self, "ebrpc_%s" % functionPath, None)
+        f = getattr(self, "brpc_%s" % functionPath, None)
         if not f:
             raise NoSuchFunction(self.NOT_FOUND, "function %s not found" % functionPath)
         elif not callable(f):
@@ -218,12 +218,12 @@ class EBRPC(resource.Resource):
             return f
 
     def _listFunctions(self):
-        """Return a list of the names of all ebrpc methods."""
-        return reflect.prefixedMethodNames(self.__class__, 'ebrpc_')
+        """Return a list of the names of all brpc methods."""
+        return reflect.prefixedMethodNames(self.__class__, 'brpc_')
 
 
-class EBRPCIntrospection(EBRPC):
-    """Implement the EBRPC Introspection API.
+class BRPCIntrospection(BRPC):
+    """Implement the BRPC Introspection API.
 
     By default, the methodHelp method returns the 'help' method attribute,
     if it exists, otherwise the __doc__ method attribute, if it exists,
@@ -231,22 +231,22 @@ class EBRPCIntrospection(EBRPC):
 
     To enable the methodSignature method, add a 'signature' method attribute
     containing a list of lists. See methodSignature's documentation for the
-    format. Note the type strings should be EBRPC types, not Python types.
+    format. Note the type strings should be BRPC types, not Python types.
     """
 
     def __init__(self, parent):
-        """Implement Introspection support for an EBRPC server.
+        """Implement Introspection support for an BRPC server.
 
-        @param parent: the EBRPC server to add Introspection support to.
+        @param parent: the BRPC server to add Introspection support to.
         """
 
-        EBRPC.__init__(self)
-        self._ebrpc_parent = parent
+        BRPC.__init__(self)
+        self._brpc_parent = parent
 
-    def ebrpc_listMethods(self):
+    def brpc_listMethods(self):
         """Return a list of the method names implemented by this server."""
         functions = []
-        todo = [(self._ebrpc_parent, '')]
+        todo = [(self._brpc_parent, '')]
         while todo:
             obj, prefix = todo.pop(0)
             functions.extend([ prefix + name for name in obj._listFunctions() ])
@@ -255,18 +255,18 @@ class EBRPCIntrospection(EBRPC):
                           for name in obj.getSubHandlerPrefixes() ])
         return functions
 
-    ebrpc_listMethods.signature = [['array']]
+    brpc_listMethods.signature = [['array']]
 
-    def ebrpc_methodHelp(self, method):
+    def brpc_methodHelp(self, method):
         """Return a documentation string describing the use of the given method.
         """
-        method = self._ebrpc_parent._getFunction(method)
+        method = self._brpc_parent._getFunction(method)
         return (getattr(method, 'help', None)
                 or getattr(method, '__doc__', None) or '')
 
-    ebrpc_methodHelp.signature = [['string', 'string']]
+    brpc_methodHelp.signature = [['string', 'string']]
 
-    def ebrpc_methodSignature(self, method):
+    def brpc_methodSignature(self, method):
         """Return a list of type signatures.
 
         Each type signature is a list of the form [rtype, type1, type2, ...]
@@ -274,19 +274,19 @@ class EBRPCIntrospection(EBRPC):
         argument. If no signature information is available, the empty
         string is returned.
         """
-        method = self._ebrpc_parent._getFunction(method)
+        method = self._brpc_parent._getFunction(method)
         return getattr(method, 'signature', None) or ''
 
-    ebrpc_methodSignature.signature = [['array', 'string'],
+    brpc_methodSignature.signature = [['array', 'string'],
                                         ['string', 'string']]
 
 
-def addIntrospection(ebrpc):
-    """Add Introspection support to an EBRPC server.
+def addIntrospection(brpc):
+    """Add Introspection support to an BRPC server.
 
-    @param ebrpc: The ebrpc server to add Introspection support to.
+    @param brpc: The brpc server to add Introspection support to.
     """
-    ebrpc.putSubHandler('system', EBRPCIntrospection(ebrpc))
+    brpc.putSubHandler('system', BRPCIntrospection(brpc))
 
 
 class Query(object):
@@ -297,7 +297,7 @@ class Query(object):
         self.user = user
         self.password = password
         self.method = method
-        self.payload = ebrpc.dumps(args, method)
+        self.payload = brpc.dumps(args, method)
         self.deferred = defer.Deferred()
         self.decode = False
 
@@ -311,7 +311,7 @@ class QueryProtocol(http.HTTPClient):
     # more queries then an idle timeout gets sets.
     # The QueryFactory reopens the connection if another query occurs.
     #
-    # twisted_ebrpc does currently provide a mechanism for 
+    # twisted_brpc does currently provide a mechanism for 
     # per-query timeouts.   This could be added with another
     # timeout_call mechanism that calls loseConnection and pops the
     # current query with an errback.
@@ -360,7 +360,7 @@ class QueryProtocol(http.HTTPClient):
         if pipeline_debug: self.log('sending', query.method)
         self.current_queries.append(query)
         self.sendCommand('POST', query.path)
-        self.sendHeader('User-Agent', 'BTL/EBRPC 1.0')
+        self.sendHeader('User-Agent', 'BTL/BRPC 1.0')
         self.sendHeader('Host', query.host)
         self.sendHeader('Accept-encoding', 'gzip')
         self.sendHeader('Connection', 'Keep-Alive')
@@ -384,7 +384,7 @@ class QueryProtocol(http.HTTPClient):
                                                   self.transport.loseConnection)
 
         try:
-            response = ebrpc.loads(contents)
+            response = brpc.loads(contents)
         except Exception, e:
             query.deferred.errback(failure.Failure())
             del query.deferred
@@ -481,9 +481,9 @@ class SingletonFactory(QueryFactory, protocol.ClientFactory):
 
 
 class Proxy:
-    """A Proxy for making remote EBRPC calls.
+    """A Proxy for making remote BRPC calls.
 
-    Pass the URL of the remote EBRPC server to the constructor.
+    Pass the URL of the remote BRPC server to the constructor.
 
     Use proxy.callRemote('foobar', *args) to call remote method
     'foobar' with *args.
@@ -647,4 +647,4 @@ SYNC = EitherServerProxy.SYNC
 ASYNC = EitherServerProxy.ASYNC
 SYNC_DEFERRED = EitherServerProxy.SYNC_DEFERRED 
 
-__all__ = ["EBRPC", "Handler", "NoSuchFunction", "Fault", "Proxy", "AsyncServerProxy", "EitherServerProxy"]
+__all__ = ["BRPC", "Handler", "NoSuchFunction", "Fault", "Proxy", "AsyncServerProxy", "EitherServerProxy"]

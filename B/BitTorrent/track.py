@@ -361,7 +361,7 @@ class Tracker(object):
                     nf = nf + 1
                     if self.allowed is not None and self.show_names:
                         if self.allowed.has_key(infohash):
-                            sz = self.allowed[infohash]['length']  # size
+                            sz = self.allowed[infohash][1].total_bytes # size
                             ts = ts + sz
                             szt = sz * n   # Transferred for this torrent
                             tt = tt + szt
@@ -735,7 +735,7 @@ class Tracker(object):
 
     def natchecklog(self, peerid, ip, port, result):
         print isotime(), '"!natcheck-%s:%i" %s %i 0 - -' % (
-            ip, quote(peerid), port, result)
+            ip, port, quote(peerid), result)
 
     def connectback_result(self, result, downloadid, peerid, ip, port):
         record = self.downloads.get(downloadid, {}).get(peerid)

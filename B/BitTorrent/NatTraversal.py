@@ -209,7 +209,7 @@ class NATBase(object):
                     mapping.internal_port == new_mapping.internal_port):
                     # the service name could not match, that's ok.
                     new_mapping.d.callback(mapping.external_port)
-                    nat_logger.info("Already effectively mapped: " + str(new_mapping))
+                    nat_logger.info("Already effectively mapped: " + str(mapping))
                     return 
                 # otherwise, add it to the list of used external ports
                 used_ports.append(mapping.external_port)

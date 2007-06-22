@@ -1,6 +1,9 @@
 import os
 from BitTorrent.platform import get_sparse_files_support
 
+class UnregisteredFileException(Exception):
+    pass
+
 # Make this a separate function because having this code in Storage.__init__()
 # would make python print a SyntaxWarning (uses builtin 'file' before 'global')
 def bad_libc_workaround():

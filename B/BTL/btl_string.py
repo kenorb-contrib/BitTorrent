@@ -66,6 +66,17 @@ def printable(s):
             l.append('.')
     return "".join(l)
 
+def str2(s, default = "<not str convertable>" ):
+    """converts passed object to a printable string, to repr, or
+       returns provided default in that order of precendence."""
+    try:
+        return printable(str(s))
+    except:
+        try:
+            return repr(s)
+        except:
+            return default
+
 
 
 if __name__ == "__main__":
@@ -80,9 +91,13 @@ if __name__ == "__main__":
     assert split( "a,'b,\"cd\",e',f", ',', keep_quote=False) == ['a', 'b,"cd",e', 'f']
     assert split( 'a,"b,\'cd\',e",f', ',', keep_quote=False) == ['a', "b,'cd',e", 'f']
     assert split( "a - b - c", " - " ) == ['a','b','c'], split( "a - b - c", " - " )
-    s = "Aug 19 06:26:29 trGacker-01 hypertracker.event - 6140 - INFO - ihash=ed25f"
+    s = "Aug 19 06:26:29 tracker-01 hypertracker.event - 6140 - INFO - ihash=ed25f"
     assert split( s, ' - ' ) == ['Aug 19 06:26:29 tracker-01 hypertracker.event',
                                  '6140', 'INFO', 'ihash=ed25f'], split( s, ' - ')
+
+    assert str2('foo') == 'foo'
+    assert str2(u'foo') == 'foo'
+    assert str2(None) == "None"
 
     print "passed all tests"
 

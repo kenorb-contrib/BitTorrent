@@ -55,8 +55,8 @@ class CMap(object,DictMixin):
          Memory:          O(n)
 
        n = number of elements in map.  k = number of iterators pointing
-       into map.  The assumption here is that there are few iterators
-       in existence at any given time. 
+       into map.  CMap assumes there are few iterators in existence at 
+       any given time. 
        
        Iterators are not invalidated by insertions.  Iterators are
        invalidated by deletions only when the key-value pair
@@ -967,13 +967,21 @@ class CIndexedMap(CMap):
        provides a cross-index allowing average O(1) searches based on value.
        This adds  the constraint that values must be unique.
 
-         Item insertion:  O(log n)       append, __setitem__
-         Item deletion:   O(log n)    
-         Key search:      O(log n)       __getitem__, get, find, __contains__
+         Operation:       Time                 Applicable
+                          Complexity:          Methods:
+         ---------------------------------------------------
+         Item insertion:  O(log n)             append, __setitem__
+         Item deletion:   O(log n + k)         __delitem__, erase   
+         Key search:      O(log n)             __getitem__, get, find, 
+                                               __contains__
          Value search:    average O(1)  as per dict
-         Iteration step:  amortized O(1), worst-case O(log n)
+         Iteration step:  amortized O(1),      next, prev
+                          worst-case O(log n)
          Memory:          O(n)
 
+       n = number of elements in map.  k = number of iterators pointing
+       into map.  CIndexedMap assumes there are few iterators in existence 
+       at any given time. 
 
        The hash table increases the factor in the
        O(n) memory cost of the Map by a constant

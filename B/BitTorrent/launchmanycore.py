@@ -29,7 +29,7 @@ from BitTorrent.RawServer_twisted import RawServer
 from BTL.ConvertedMetainfo import ConvertedMetainfo
 from BTL.defer import DeferredEvent
 from BTL.exceptions import str_exc
-from BitTorrent.platform import efs2
+from BTL.platform import efs2
 from time import time
 from BTL.yielddefer import launch_coroutine
 from BTL.defer import wrap_task, ThreadedDeferred
@@ -69,7 +69,7 @@ class LaunchMany(object):
         self.configfile_key = configfile_key
         self.display = display
 
-        self.torrent_dir = config['torrent_dir']
+        self.torrent_dir = efs2(config['torrent_dir'])
 
         # Ex: torrent_cache = infohash -> (path,metainfo)
         self.torrent_cache = {}
@@ -135,9 +135,7 @@ class LaunchMany(object):
             self.multitorrent = MultiTorrent(config, self.rawserver, data_dir,
                                              resume_from_torrent_config=False)
 
-            # first time sleep_time is 0 so that it will startup fast.  On
-            # subsequent scans, the scan is slowed down to not affect performance.
-            self.rawserver.add_task(0, self.scan, sleep_time = 0)
+            self.rawserver.add_task(0, self.scan)
             self.rawserver.add_task(0.5, self.periodic_check_hashcheck_queue)
             self.rawserver.add_task(self.config['display_interval'],
                                     self.periodic_stats)
@@ -171,19 +169,14 @@ class LaunchMany(object):
       except:
         self.logger.exception("Exception raised early in LaunchMany intialization")
 
-    def scan(self, sleep_time = 0.5):
-        return coro(self._scan, sleep_time )
+    def scan(self):
+        return coro(self._scan)
 
-    def _scan(self, sleep_time ):
+    def _scan(self):
         try:
             # asynchronous parse.
             df = async_parsedir(self.torrent_dir, self.torrent_cache,
                                  self.file_cache, self.blocked_files)
-            #df = ThreadedDeferred(wrap_task(self.rawserver.external_add_task),
-            #                      self._parse_dir_in_thread, sleep_time = sleep_time,
-            #                      daemon = True)
-            #df = defer_to_thread(reactor.callFromThread, reactor.callInThread,
-            #                     self._parse_dir_in_thread)
             yield df
             r = df.getResult()
             ( self.torrent_cache, self.file_cache, self.blocked_files,
@@ -206,25 +199,6 @@ class LaunchMany(object):
 
         # register the call to parse a dir.
         self.rawserver.add_task(self.config['parse_dir_interval'], self.scan)
-
-    #def _parse_dir_in_thread(self, sleep_time ):
-    #    def lg(message):
-    #        if message.find( "**warning**") != -1:  # HACK!!
-    #           self.logger.warning(message)
-    #        else:
-    #           self.logger.error(message)
-    #
-    #    def log_in_thread(message):
-    #        # is logging thread-safe?
-    #        self.rawserver.external_add_task(0, lg, message)
-    #        #reactor.callFromThread(lg, message)
-    #
-    #    self.logger.info("Parsing torrent directory tree: %s sleep_time=%s" %
-    #                     (self.torrent_dir, sleep_time ) )
-    #    r = parsedir(self.torrent_dir, self.torrent_cache,
-    #                 self.file_cache, self.blocked_files, log_in_thread, sleep_time = sleep_time )
-    #    return r
-
 
     def periodic_stats(self):
         df = ThreadedDeferred(wrap_task(self.rawserver.external_add_task),
@@ -340,7 +314,7 @@ class LaunchMany(object):
     def determine_filename(self, infohash):
         # THIS FUNCTION IS PARTICULARLY CONVOLUTED. BLECH! --Dave
         path, metainfo = self.torrent_cache[infohash]
-        path = efs2(path)
+        #path = efs2(path)
         name = metainfo.name_fs
         savein = efs2(self.config['save_in'])
         isdir = metainfo.is_batch

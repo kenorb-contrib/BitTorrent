@@ -34,6 +34,28 @@ def is_valid_infohash(x):
         return False
     return (parse_infohash(x) != None)
 
+
+def parse_uuid(uuid):
+    """takes a hex-encoded uuid and returns an uuid or None
+       if the uuid is invalid."""
+    try:
+        # Remove the '-'s at specific points
+        uuidhash = uuid[:8] + uuid[9:13] + uuid[14:18] + uuid[19:23] + uuid[24:]
+        if len(uuidhash) != 32:
+            return None
+        x = uuidhash.decode('hex')
+        return uuid
+    except:
+        return None
+
+
+def is_valid_uuid(x):
+    """Determine whether this is a valid hex-encoded uuid."""
+    if not x or len(x) != 36:
+        return False
+    return (parse_uuid(x) != None)
+
+
 def infohash_from_infohash_or_path(x):
     """Expects a valid path to a .torrent file or a hex-encoded infohash.
        Returns a binary infohash."""

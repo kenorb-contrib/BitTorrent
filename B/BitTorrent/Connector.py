@@ -370,10 +370,11 @@ class Connector(Handler):
         if added or dropped:
             d = {}
             d['added'] = IPTools.compact_sequence(added)
+            # TODO: set seeds bytes
             d['added.f'] = chr(0) * len(added) # hmm..
             d['dropped'] = IPTools.compact_sequence(dropped)
             self._send_message(UTORRENT_MSG,
-                               UTORRENT_MSG_PEX, bencode(d))
+                               chr(self.utorrent_pex_id), bencode(d))
 
     def add_sent_listener(self, listener):
         """Passed a function/functor that accepts a single byte argument,
@@ -637,7 +638,7 @@ class Connector(Handler):
         self.parent.connection_handshake_completed(self)
 
         if self.uses_utorrent_extension:
-            response = {'m': {'ut_pex': 1},
+            response = {'m': {'ut_pex': ord(UTORRENT_MSG_PEX)},
                         'v': ('%s %s' % (app_name, version)).encode('utf8'),
                         'e': 0,
                         'p': self.parent.reported_port,
@@ -674,9 +675,15 @@ class Connector(Handler):
             if 'ut_pex' in messages:
                 self.uses_utorrent_pex = True
                 self.utorrent_pex_id = messages['ut_pex']
-        elif msg_type == self.utorrent_pex_id:
-            for addr in IPTools.uncompact_sequence(d['added']):
+        elif msg_type == UTORRENT_MSG_PEX:
+            for i, addr in enumerate(IPTools.uncompact_sequence(d['added'])):
                 self.remote_pex_set.add(addr)
+                if len(d['added.f']) > i:
+                    # OW
+                    if (d['added.f'][i] & 2 and
+                        self.parent.downloader.storage.get_amount_left() == 0):
+                        # don't connect to seeds if we're done
+                        continue
                 self.parent.start_connection(addr)
             dropped_gen = IPTools.uncompact_sequence(d['dropped'])
             self.remote_pex_set.difference_update(dropped_gen)

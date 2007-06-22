@@ -32,6 +32,12 @@ import urlparse
 
 ONLY_LOCAL = False
 
+GLOBAL_FILTER = None
+def GLOBAL_FILTER(ip, port, direction=""):
+    #print ip, direction
+    return False
+GLOBAL_FILTER = None
+
 # header, reserved, download id, my id, [length, message]
 
 LOWER_BOUND = 1
@@ -361,6 +367,9 @@ class ConnectionManager(InternetSubscriber):
         if ONLY_LOCAL and addr[0] != "127.0.0.1" and not addr[0].startswith("192.168") and addr[1] != 80:
             return True
 
+        if GLOBAL_FILTER and not GLOBAL_FILTER(addr[0], addr[1], "out"):
+            return True
+
         if addr not in self.cached_peers:
             self.cache_incomplete_peer(addr, pid, handler, *a, **kw)
 
@@ -585,8 +594,8 @@ class SingleportListener(Handler):
         self.obfuscated_torrents = {}
         self.local_discovery = None
         self.ld_services = {}
-	self.use_local_discovery = use_local_discovery
-        self._creating_local_discorvery = False
+        self.use_local_discovery = use_local_discovery
+        self._creating_local_discovery = False
         self.log_prefix = log_prefix
         self.logger = logging.getLogger(self.log_prefix)
 
@@ -640,16 +649,16 @@ class SingleportListener(Handler):
 
         if self.local_discovery:
             self.local_discovery.stop()
-	if self.use_local_discovery:
+        if self.use_local_discovery:
             self._create_local_discovery()
 
     def _create_local_discovery(self):
         assert self.use_local_discovery
-        self._creating_local_discorvery = True
+        self._creating_local_discovery = True
         try:
             self.local_discovery = LocalDiscovery(self.rawserver, self.port,
                                                   self._start_connection)
-            self._creating_local_discorvery = False
+            self._creating_local_discovery = False
         except:
             self.rawserver.add_task(5, self._create_local_discovery)
 
@@ -713,6 +722,10 @@ class SingleportListener(Handler):
     def connection_made(self, connection):
         """Called when TCP connection has finished opening, but before
            BitTorrent protocol has begun."""
+        if ONLY_LOCAL and connection.ip != '127.0.0.1' and not connection.ip.startswith("192.168") :
+            return
+        if GLOBAL_FILTER and not GLOBAL_FILTER(connection.ip, connection.port, "in"):
+            return
         connector = Connector(self, connection, None, False,
                               log_prefix=self.log_prefix)
         self.connectors.add(connector)
@@ -720,8 +733,6 @@ class SingleportListener(Handler):
     def select_torrent(self, connector, infohash):
         """Called when infohash has been received allowing us to map
            the connection on to a given Torrent's ConnectionManager."""
-        if ONLY_LOCAL and connector.connection.ip != '127.0.0.1' and not connector.connection.ip.startswith("192.168") :
-            return
         # call-up from Connector.
         if infohash in self.torrents:
             accepted = self.torrents[infohash].singleport_connection(connector)

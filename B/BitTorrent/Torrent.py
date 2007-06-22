@@ -39,7 +39,7 @@ from BitTorrent.RateMeasure import RateMeasure
 from BitTorrent.PiecePicker import PiecePicker
 from BitTorrent.Rerequester import Rerequester, DHTRerequester
 from BitTorrent.CurrentRateMeasure import Measure
-from BitTorrent.Storage import Storage
+from BitTorrent.Storage import Storage, UnregisteredFileException
 from BitTorrent.HTTPConnector import URLage
 from BitTorrent.StorageWrapper import StorageWrapper
 from BitTorrent.RequestManager import RequestManager
@@ -237,10 +237,17 @@ class Torrent(object):
 
     def _set_completed(self, val):
         self._completed = val
-        self.config['finishtime'] = bttime()
+        if val:
+            self.config['finishtime'] = bttime()
     def _get_completed(self):
         return self._completed
     completed = property(_get_completed, _set_completed)
+
+    def _set_sent_completed(self, value):
+        self.config['sent_completed'] = value
+    def _get_sent_completed(self):
+        return self.config['sent_completed']
+    sent_completed = property(_get_sent_completed, _set_sent_completed)
 
     def _get_finishtime(self):
         return self.config['finishtime']
@@ -756,6 +763,10 @@ class Torrent(object):
         severity = logging.CRITICAL
         msg = "Torrent got exception: %s" % type
         e_str = str_exc(e)
+        if isinstance(e, UnregisteredFileException):
+            # not an error, a pending disk op was aborted because the torrent
+            # has unregistered files.
+            return
         if isinstance(e, BTFailure):
             self._activity = ( _("download failed: ") + e_str, 0)
         elif isinstance(e, IOError):
@@ -834,8 +845,11 @@ class Torrent(object):
 
         # If we haven't announced yet, normal first announce done later will
         # tell the tracker about seed status.
-        if self._announced:
+        # Only send completed the first time! Torrents transition to finished
+        # everytime.
+        if self._announced and not self.sent_completed:
             self._rerequest_op().announce_finish()
+        self.sent_completed = True
         self._activity = (_("seeding"), 1)
         if self.config['check_hashes']:
             self._save_fastresume()

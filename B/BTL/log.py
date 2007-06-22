@@ -7,6 +7,7 @@ import logging
 import logging.handlers
 from BTL.reactor_magic import reactor
 from BTL.defer import Deferred
+from BTL.btl_string import printable
 
 from BTL import twisted_logger
 
@@ -73,7 +74,7 @@ class RateLimitedLogger:
         self.tokens -= 1
         if self.tokens < 0:
             self.tokens = 0
-            if level >= self.log_all_level:
+            if level >= self.log_all_above_level:
                 return False
             elif not self.logged_discard:
                 self.logger.error( "Discarding '%s' logger entries because they are arriving "
@@ -176,20 +177,28 @@ class SysLogHandler(logging.handlers.SysLogHandler):
     # This is a hack to get around log entry size limits imposed by syslog.
     def __init__(self, address=('localhost', logging.handlers.SYSLOG_UDP_PORT),
                  facility=logging.handlers.SysLogHandler.LOG_USER,
-                 max_msg_len = 4096, fragment_len = 900 ):
+                 max_msg_len = 4096, fragment_len = 900, make_printable = True ):
         """@param max_msg_len: maximum message length before truncation.
            @param fragment_len: when message length exceeds 900 it is truncated
                                 and broken into multiple consecutive log entries.
+           @param make_printable: runs each message through
+                                BTL.btl_string.printable in emit.  For example,
+                                this is useful if the messages are being sent
+                                through a UNIX socket to syslogd and the
+                                message might contain non-ascii characters.
         """
         logging.handlers.SysLogHandler.__init__( self, address, facility )
         self.max_msg_len = max_msg_len
         self.fragment_len = fragment_len
+        self.make_printable = make_printable
 
     def emit(self, record):
         """Differs from the override emit in that it
            fragments the message to allow for much longer
            syslog messages."""
         msg = self.format(record)
+        if self.make_printable:
+            msg = printable(msg)
         msg = msg[:self.max_msg_len]
         i = 0
         while msg:
@@ -325,13 +334,23 @@ if __name__ == '__main__':
         from twisted.python import failure
         def foo():
             reactor.stop()
-            zul = dana
+            zuul = dana
 
         reactor.callLater(0, foo)
 
-    #test_injectLogger()
+    def test_injectLogger2():
+        injectLogger(log_file = "your.log", verbose=False, capture_output=True)
+	print "hello world"
+        def foo():
+            reactor.stop()
+            zuul = dana
 
-    reactor.callLater(0, test_rate_limited_logger)
+	reactor.callLater(0, foo)
+
+    #test_injectLogger()
+    test_injectLogger2()
+
+    #reactor.callLater(0, test_rate_limited_logger)
     reactor.run()
 
 

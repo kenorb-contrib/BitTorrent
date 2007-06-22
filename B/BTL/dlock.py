@@ -14,8 +14,9 @@ from twisted.internet import reactor, task
 
 class dlock(object):
 
-    def __init__(self, deadlockfile, update_period=300, debug=None):
-        self.host  = socket.gethostname()
+    def __init__(self, deadlockfile, update_period=300, myhost=None, debug=None):
+        if myhost == None: myhost = socket.gethostname()
+        self.host = myhost
         self.pid   = os.getpid()
         self.deadlockfile  = deadlockfile
         self.refresher = task.LoopingCall(self.refresh)
@@ -89,6 +90,7 @@ class dlock(object):
             fh = open(self.deadlockfile, 'w')
             fh.write(self._lockstr(ts))
             fh.close()
+            os.chmod(self.deadlockfile, 0644)
         except:
             if self.debug:
                 print 'File Lock Error: %s@%s could not write %s' % (self.pid, self.host, self.deadlockfile)
@@ -142,6 +144,12 @@ class dlock(object):
             if self.debug:
                 print 'File Lock Error: %s@%s reading %s' % (self.pid, self.host, self.deadlockfile)
             raise
+
+    # Public method to read a lockfile.
+    @classmethod
+    def readlock(cls, lockfile):
+        lock = cls(deadlockfile=lockfile, myhost='dummy')
+        return lock._readlock()
 
     def _lockdict2string(self, lock):
         return '%s@%s at %s' % (lock['pid'], lock['host'], asctime(gmtime(lock['timestamp'])))

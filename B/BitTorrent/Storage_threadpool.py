@@ -25,7 +25,9 @@ from BitTorrent.platform import get_allocated_regions
 from BTL.sparse_set import SparseSet
 from BTL.DictWithLists import DictWithLists, DictWithSets
 import BTL.stackthreading as threading
-from BitTorrent.Storage_base import open_sparse_file, make_file_sparse, bad_libc_workaround, is_open_for_write
+from BitTorrent.Storage_base import open_sparse_file, make_file_sparse
+from BitTorrent.Storage_base import bad_libc_workaround, is_open_for_write
+from BitTorrent.Storage_base import UnregisteredFileException
 
 
 class FilePool(object):
@@ -140,10 +142,9 @@ class FilePool(object):
         # this will block until a new file handle can be made
         self.free_handle_condition.acquire()
 
-        # abort disk ops on unregistered files
         if filename not in self.file_to_torrent:
             self.free_handle_condition.release()
-            return None
+            raise UnregisteredFileException()
 
         while self.active_file_to_handles.total_length() == self.max_files_open:
             self.free_handle_condition.wait()

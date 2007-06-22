@@ -25,6 +25,7 @@ from BTL.sparse_set import SparseSet
 from BTL.DictWithLists import DictWithLists, DictWithSets
 from BitTorrent.Storage_base import make_file_sparse, bad_libc_workaround, is_open_for_write
 from BitTorrent.Storage_base import open_sparse_file as open_sparse_file_base
+from BitTorrent.Storage_base import UnregisteredFileException
 
 # not needed, but it raises errors for platforms that don't support iocp
 from twisted.internet.iocpreactor import _iocp
@@ -231,10 +232,8 @@ class FilePool(object):
     def acquire_handle(self, filename, for_write, length=0):
         df = Deferred()
 
-        # abort disk ops on unregistered files
         if filename not in self.file_to_torrent:
-            df.callback(None)
-            return df
+            raise UnregisteredFileException()
         
         if self.active_file_to_handles.total_length() == self.max_files_open:
             self.waiting_ops.append((df, filename, for_write, length))

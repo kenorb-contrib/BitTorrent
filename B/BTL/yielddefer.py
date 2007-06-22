@@ -13,7 +13,7 @@
 # launch_coroutine maintains the illusion that the passed function
 # (a generator) runs from beginning to end yielding when necessary
 # for some job to complete and then continuing where it left off.
-# 
+#
 # def f():
 #    ...
 #    df = some_thing_that_takes_time()
@@ -24,8 +24,8 @@
 #    yield df
 #    result = df.getResult()
 #    ...
-# 
-# Upon resuming from a yield point, the generator should 
+#
+# Upon resuming from a yield point, the generator should
 # call getResult() even if no result is expected, so that
 # exceptions generated while yielding are raised.
 #
@@ -129,7 +129,7 @@ class GenWithDeferred(object):
             t.addCallback(self._queue_task_chain)
             t.addErrback(self._queue_task_chain)
             del t
-        
+
 class FakeTb(object):
     __slots__ = ['tb_frame', 'tb_lineno', 'tb_orig', 'tb_next']
     def __init__(self, frame, tb):
@@ -155,25 +155,10 @@ def launch_coroutine(queue_task, f, *args, **kwargs):
         if debug:
             traceback.print_exc()
         main_df.errback(Failure())
-    else:        
+    else:
         if isinstance(g, types.GeneratorType):
             _launch_generator(queue_task, g, main_df)
         else:
             # we got a non-generator, just callback with the return value
             main_df.callback(g)
     return main_df
-
-
-## BUG!
-# This module should not depend on the reactor.
-# Put this convenience function somewhere else.
-import warnings
-warned = False
-from BTL.reactor_magic import reactor
-def coro(f, *args, **kwargs):
-    global warned
-    if not warned:
-        warnings.warn("This module should not depend on the reactor.\n"
-                      "Put this convenience function somewhere else.")
-        warned = True
-    return launch_coroutine(wrap_task(reactor.callLater), f, *args, **kwargs)

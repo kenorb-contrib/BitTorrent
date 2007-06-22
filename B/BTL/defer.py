@@ -46,6 +46,7 @@ fail = defer.fail
 succeed = defer.succeed
 execute = defer.execute
 maybeDeferred = defer.maybeDeferred
+timeout = defer.timeout
 
 DeferredQueue = defer.DeferredQueue
 Deferred = defer.Deferred

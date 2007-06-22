@@ -32,16 +32,21 @@ from weakref import WeakKeyDictionary
 LEAK_TEST = False
 
 class CMultiMap(object, DictMixin):  
-    """In-order mapping. Provides same operations and behavior as a dict,
-       but provides in-order iteration.  Additionally provides operations to
-       find the nearest key <= or >= a given key.
+    """In-order mapping.  Similar to a dict, except that it provides in-order
+       iteration and searches for the nearest key <= or >= a given key.  
+       Distinguishes itself from CMap in that CMultiMap instances allows 
+       multiple entries with the same key, thus __getitem__ and get always
+       return a list.  If there are no matching keys then __getitem__
+       or get returns an empty list, one match a single-element list, etc.
+       Values with the same key have arbitrary order.
 
        LIMITATION: The key must be a double.  The value can be anything.
 
-         Item insertion:  O(log n)        append, __setitem__
-         Item deletion:   O(log n + k)    
-         Key search:      O(log n)        find, __contains__
-                          O(log n + m)    __getitem__, get
+         Item insertion:  O(log n)          append, __setitem__
+         Item deletion:   O(log n + k)      erase    
+                          O(log n + k + m)  __delitem__
+         Key search:      O(log n)          find, __contains__
+                          O(log n + m)      __getitem__, get
          Value search:    n/a
          Iteration step:  amortized O(1), worst-case O(log n)
          Memory:          O(n)
@@ -53,7 +58,7 @@ class CMultiMap(object, DictMixin):
        
        Iterators are not invalidated by insertions.  Iterators are invalidated
        by deletions only when the key-value pair referenced is deleted.
-       Deletion has a '+k' because the __delitem__ searches linearly
+       Deletion has a '+k' because __delitem__ searches linearly
        through the set of iterators to find any iterator pointing at the
        deleted item and then invalidates the iterator.
 
@@ -257,7 +262,7 @@ class CMultiMap(object, DictMixin):
 
         def __del__(self):
             # Python note: "del x" merely eliminates one reference to an
-            # object. __del__ isn't get called until the ref count goes to 0.
+            # object. __del__ isn't called until the ref count goes to 0.
             # Only when the last reference is gone is __del__ called.
             self._invalidate()
             
@@ -438,7 +443,7 @@ class CMultiMap(object, DictMixin):
                                    # for any iterator that becomes invalid.
 
     def __contains__(self,x):
-        return self.get(x) != None
+        return self.has_key(x)
 
     def __iter__(self):
         """@return: KeyIterator positioned one before the beginning of the
@@ -651,18 +656,31 @@ class CMultiMap(object, DictMixin):
         mmap_delete(self._smmap)
 
     def get(self, key, default=None):
-        """@return list containing values corresponding to specified key or
+        """
+           @return list containing values corresponding to specified key or
                return a single-element list containing 'default'
                if the key is not found.  If 'default' is None then the
                empty list is returned when the key is not found.
-           """
-        try:
-            return self[key]
 
-        except KeyError:
-            if default is None:
-                return []
-            return [default]
+           >>> from CMultiMap import *
+           >>> m = CMultiMap()
+           >>> m[5] = 'a'
+           >>> m.get(5)
+           ['a']
+           >>> m[5] = 'b'
+           >>> m.get(5)
+           ['a', 'b']
+           >>> m.get(6)
+           []
+           >>> m.get(6,'c')
+           ['c']
+ 
+           """
+        if self.has_key(key):
+            return self[key]
+        if default is None:
+            return []
+        return [default]
 
     def keys(self):
         """
@@ -842,7 +860,7 @@ class CMultiMap(object, DictMixin):
 
     def find(self,key):
         """
-          Finds the item with matching key and returns a KeyIterator
+          Finds the first item with matching key and returns a KeyIterator
           pointing at the item.  If no match is found then returns end().
      
           Takes O(log n) time.
@@ -871,7 +889,8 @@ class CMultiMap(object, DictMixin):
           this takes O(log n).
 
           WARNING!!! The passed iterator MUST be assumed to be invalid
-          upon return and should be deallocated.
+          upon return.  Any further operation on the passed iterator other than 
+          deallocation results in a RuntimeError exception.
 
           Typical use:
             >>> from CMultiMap import CMultiMap

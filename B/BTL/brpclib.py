@@ -2,25 +2,25 @@
 
 import xmlrpclib
 from xmlrpclib2 import *
-from BTL import ebrpc
+from BTL import brpc
 
 old_PyCurlTransport = PyCurlTransport
 class PyCurlTransport(old_PyCurlTransport):
 
     def set_connection_params(self, h):
-        h.add_header('User-Agent', "ebrpclib.py/1.0")
+        h.add_header('User-Agent', "brpclib.py/1.0")
         h.add_header('Connection', "Keep-Alive")
         h.add_header('Content-Type', "application/octet-stream")
     
     def _parse_response(self, response):
         # read response from input file/socket, and parse it
-        return ebrpc.loads(response.getvalue())[0]
+        return brpc.loads(response.getvalue())[0]
 
 # --------------------------------------------------------------------
 # request dispatcher
 
 class _Method:
-    # some magic to bind an EB-RPC method to an RPC server.
+    # some magic to bind an B-RPC method to an RPC server.
     # supports "nested" methods (e.g. examples.getStateName)
     def __init__(self, send, name):
         self.__send = send
@@ -36,8 +36,8 @@ class _Method:
 
 
 # Double underscore is BAD!
-class EBRPC_ServerProxy(xmlrpclib.ServerProxy):
-    """uri [,options] -> a logical connection to an EB-RPC server
+class BRPC_ServerProxy(xmlrpclib.ServerProxy):
+    """uri [,options] -> a logical connection to an B-RPC server
 
     uri is the connection point on the server, given as
     scheme://host/target.
@@ -66,7 +66,7 @@ class EBRPC_ServerProxy(xmlrpclib.ServerProxy):
         import urllib
         type, uri = urllib.splittype(uri)
         if type not in ("http", "https"):
-            raise IOError, "unsupported EB-RPC protocol"
+            raise IOError, "unsupported B-RPC protocol"
         self.__host, self.__handler = urllib.splithost(uri)
         if not self.__handler:
             self.__handler = "/RPC2"
@@ -85,7 +85,7 @@ class EBRPC_ServerProxy(xmlrpclib.ServerProxy):
     def __request(self, methodname, params):
         # call a method on the remote server
 
-        request = ebrpc.dumps(params, methodname, encoding=self.__encoding,
+        request = brpc.dumps(params, methodname, encoding=self.__encoding,
                               allow_none=self.__allow_none)
 
         response = self.__transport.request(
@@ -115,7 +115,7 @@ class EBRPC_ServerProxy(xmlrpclib.ServerProxy):
 def new_server_proxy(url):
     c = cache_set.get_cache(PyCURL_Cache, url)
     t = PyCurlTransport(c)
-    return EBRPC_ServerProxy(url, transport=t)
+    return BRPC_ServerProxy(url, transport=t)
 
 ServerProxy = new_server_proxy
 

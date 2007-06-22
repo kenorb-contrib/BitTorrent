@@ -104,10 +104,8 @@ class SparseSet(object):
             self._ends.insert(b_i, end)
             return
         
-        del self._begins[b_i + 1:e_i + 1]
-        del self._ends[b_i + 1:e_i + 1]
-        self._begins[b_i] = begin
-        self._ends[b_i] = end
+        self._begins[b_i:e_i + 1] = (begin,)
+        self._ends[b_i:e_i + 1] = (end,)
 
     def discard(self, begin, end=None):
         if end is None:
@@ -138,12 +136,10 @@ class SparseSet(object):
             old_end = self._ends[b_i - 1]
             self._ends[b_i - 1] = begin
     
-        if beginning_is_an_end and end_is_an_end:
-            if b_i > e_i:
+        if end_is_an_end:
+            if beginning_is_an_end and b_i > e_i:
                 self._begins.insert(b_i, end)
                 self._ends.insert(b_i, old_end)
-
-        if end_is_an_end:
             self._begins[b_i] = end
     remove = discard
     subtract = discard

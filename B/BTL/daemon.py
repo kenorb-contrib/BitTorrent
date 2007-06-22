@@ -16,10 +16,11 @@ import pwd
 import grp
 import stat
 import logging
+from twisted.python.util import switchUID
 from twisted.scripts import twistd
-import atexit
-from BTL.log import injectLogger
+from BTL.log import injectLogger, ERROR, INFO, DEBUG
 from BTL.platform import app_name
+log = logging.getLogger("daemon")
 
 noisy = False
 def getuid_from_username(username):
@@ -31,160 +32,136 @@ def getgid_from_username(username):
 def getgid_from_groupname(groupname):
     return grp.getgrnam(groupname)[2]
 
-def daemon(**kwargs):
+def daemon(
+    username = None, groupname = None,
+    use_syslog = None, log_file = None, logfile = None, # HACK for backwards compat.
+    verbose = False,
+    capture_output = True,
+    twisted_error_log_level = ERROR,
+    twisted_info_log_level = INFO,
+    capture_stderr_log_level = ERROR,
+    capture_stdout_log_level = INFO,
+    capture_stderr_name = 'stderr',
+    capture_stdout_name = 'stdout',
+    log_level = DEBUG,
+    log_twisted = True,
+    pidfile = None):
     """When this function returns, you are a daemon.
-       If use_syslog is specified then this installs a logger.
+
+       If use_syslog or a log_file is specified then this installs a logger.
+
        Iff capture_output is specified then stdout and stderr
        are also directed to syslog.
 
-       valid kwargs:
+       If use_syslog is None then it defaults to True if no log_file
+       is provided and the platform is not Darwin.
 
-         - pidfile,
-         - logfile,
-         - capture_output,    # log stdout and stderr?
-         - capture_stdout_name   # getLogger(capture_name) for captured stdout stderr
-         - capture_stdout_log_level
-         - capture_stderr_name
-         - capture_stderr_log_level
-         - twisted_info_log_level  # log level for non-errors coming from twisted logging.
-         - twisted_error_log_level # log level for errors coming from twisted logging.
-         - log_level          # log only things ith level >= log_level.
-         - use_syslog, and    # output to syslog.
-         - anything defined by twistd.ServerOptions.
+       The following arguments are passed through to BTL.log.injectLogger.
+
+        use_syslog, log_file, verbose,
+        capture_output, twisted_error_log_level,
+        twisted_info_log_level, capture_stderr_log_level,
+        capture_stdout_log_level, capture_stderr_name,
+        capture_stdout_name, log_level, log_twisted
+
+       daemon no longer removes pid file.  Ex: If
+       a monitor sees that a pidfile exists and the process is not
+       running then the monitor restarts the process.
+       If you want the process to REALLY die then the
+       pid file should be removed external to the program,
+       e.g., by an init.d script that is passed "stop".
     """
-    if os.name == 'mac':
-        raise NotImplementedError( "Daemonization doesn't work on macs." )
+    assert log_file is None or logfile is None, "logfile was provided for backwards " \
+           "compatibility.  You cannot specify both log_file and logfile."
+    if log_file is None:
+        log_file = logfile
 
-    if noisy:
-        print "in daemon"
-    uid = os.getuid()
-    gid = os.getgid()
-    if uid == 0 and not kwargs.has_key("username"):
-        raise Exception( "If you start with root privileges you need to "
-            "provide a username argument so that daemon() can shed those "
-            "privileges before returning." )
-    if kwargs.has_key("username") and kwargs["username"]:
-        username = kwargs["username"]
-        uid = getuid_from_username(username)
+    try:
+        if os.name == 'mac':
+            raise NotImplementedError( "Daemonization doesn't work on macs." )
+
         if noisy:
-            print "setting username to uid of '%s', which is %d." % ( username, uid )
-        if uid != os.getuid() and os.getuid() != 0:
-            raise Exception( "When specifying a uid other than your own "
-               "you must be running as root for setuid to work. "
-               "Your uid is %d, while the specified user '%s' has uid %d."
-               % ( os.getuid(), username, uid ) )
-        gid = getgid_from_username(username) # uses this user's group
-        del kwargs["username"]
-    if kwargs.has_key("groupname") and kwargs["groupname"]:
-        groupname = kwargs["groupname"]
-        if noisy:
-            print "setting groupname to gid of '%s', which is %d." % (groupname,gid)
-        gid = getgid_from_groupname(groupname)
-        del kwargs["groupname"]
-    capture_output = kwargs.get("capture_output", False)
-    if kwargs.has_key("capture_output"):
-        del kwargs["capture_output"]
-    capture_stdout_name = kwargs.get("capture_stdout_name", "stdout" )
-    if kwargs.has_key("capture_stdout_name"):
-        del kwargs["capture_stdout_name"]
-    capture_stderr_name = kwargs.get("capture_stderr_name", "stderr" )
-    if kwargs.has_key("capture_stderr_name"):
-        del kwargs["capture_stderr_name"]
-    capture_stdout_log_level = kwargs.get("capture_stdout_log_level", logging.INFO )
-    if kwargs.has_key("capture_stdout_log_level"):
-        del kwargs["capture_stdout_log_level"]
-    capture_stderr_log_level = kwargs.get("capture_stderr_log_level", logging.INFO )
-    if kwargs.has_key("capture_stderr_log_level"):
-        del kwargs["capture_stderr_log_level"]
-    log_level = kwargs.get("log_level", logging.INFO)
-    if kwargs.has_key("log_level"):
-        del kwargs["log_level"]
-    twisted_info_log_level = kwargs.get("twisted_info_log_level", logging.INFO )
-    if kwargs.has_key("twisted_info_log_level"):
-        del kwargs["twisted_info_log_level"]
-    twisted_error_log_level = kwargs.get("twisted_error_log_level", logging.ERROR )
-    if kwargs.has_key("twisted_error_log_level"):
-        del kwargs["twisted_error_log_level"]
+            print "in daemon"
 
-    pid_dir = os.path.join("/var/run/", app_name )
-    pidfile = os.path.join( pid_dir, app_name + ".pid")
-    if not isinstance(kwargs,twistd.ServerOptions):
-        config = twistd.ServerOptions()
-        for k in kwargs:
-            config[k]=kwargs[k]
-    config['daemon'] = True
-    if config.has_key("pidfile"):
-      pidfile = config['pidfile']
-    else:
-      config['pidfile'] = pidfile
-    pid_dir = os.path.split(pidfile)[0]
-    if pid_dir and not os.path.exists(pid_dir):
-        os.mkdir(pid_dir)
-        os.chown(pid_dir,uid,gid)
-    twistd.checkPID(pidfile)
-    logfile = config.get('log_file', None )
-    use_syslog = config.get('use_syslog', sys.platform != 'darwin' and not logfile)
-    if config.has_key('logfile') and config['logfile']:
-        if 'use_syslog' in config and config['use_syslog']:
-            raise Exception( "You have specified both a logfile and "
-                "that the daemon should use_syslog.  Specify one or "
-                "the other." )
-        injectLogger(use_syslog=False, log_file=config['logfile'], log_level = log_level,
-                     capture_output = capture_output,
-                     capture_stdout_name = capture_stdout_name,
-                     capture_stderr_name = capture_stderr_name,
-                     twisted_info_log_level = twisted_info_log_level,
-                     twisted_error_log_level = twisted_error_log_level,
-                     capture_stdout_log_level = capture_stdout_log_level,
-                     capture_stderr_log_level = capture_stderr_log_level )
-    elif use_syslog:
-        injectLogger(use_syslog=True, log_level = log_level,
-                     capture_output = capture_output,
-                     capture_stdout_name = capture_stdout_name,
-                     capture_stderr_name = capture_stderr_name,
-                     twisted_info_log_level = twisted_info_log_level,
-                     twisted_error_log_level = twisted_error_log_level,
-                     capture_stdout_log_level = capture_stdout_log_level,
-                     capture_stderr_log_level = capture_stderr_log_level )
-    else:
-        raise Exception( "You are attempting to daemonize without a log file,"
-                         "and with use_syslog set to false.  A daemon must "
-                         "output to syslog, a logfile, or both." )
-    twistd.setupEnvironment(config)  # forks, moves into its own process
-                                     # group, forks again, middle process
-                                     # exits with status 0.  Creates pid
-                                     # file. Also redirects stdout, stderr
-                                     # to /dev/null.
-    # I should now be a daemon.
+        uid = os.getuid()
+        gid = os.getgid()
+        if uid == 0 and username is None:
+            raise Exception( "If you start with root privileges you need to "
+                "provide a username argument so that daemon() can shed those "
+                "privileges before returning." )
+        if username:
+            uid = getuid_from_username(username)
+            if noisy:
+                print "setting username to uid of '%s', which is %d." % ( username, uid )
+            if uid != os.getuid() and os.getuid() != 0:
+                raise Exception( "When specifying a uid other than your own "
+                   "you must be running as root for setuid to work. "
+                   "Your uid is %d, while the specified user '%s' has uid %d."
+                   % ( os.getuid(), username, uid ) )
+            gid = getgid_from_username(username) # uses this user's group
+        if groupname:
+            if noisy:
+                print "setting groupname to gid of '%s', which is %d." % (groupname,gid)
+            gid = getgid_from_groupname(groupname)
 
-    # pid file can be removed because it is in a subdirectory
-    # of /var/run that is owned by the user id running
-    # the service and not by root.
-    #
-    # Dave says, "daemon no longer removes pid file.  If
-    # monitors see a pidfile exists and the process is not
-    # running then the monitor will restart the process.
-    # If you want the process to REALLY die then the
-    # pid file should be removed external to the program,
-    # e.g., by an init.d script that is passed "stop".
-    #
-    #def rmpid():
-    #    if os.path.exists(pidfile):
-    #        try:
-    #            os.unlink(pidfile)
-    #        except Exception,e:
-    #            log.error( str(e), exc_info = sys.exc_info())
-    #atexit.register(rmpid)
+        pid_dir = os.path.split(pidfile)[0]
+        if pid_dir and not os.path.exists(pid_dir):
+            os.mkdir(pid_dir)
+            os.chown(pid_dir,uid,gid)
+        twistd.checkPID(pidfile)
+        if use_syslog is None:
+            use_syslog = sys.platform != 'darwin' and not log_file
+        if log_file:
+            if use_syslog:
+                raise Exception( "You have specified both a log_file and "
+                    "that the daemon should use_syslog.  Specify one or "
+                    "the other." )
+            print "Calling injectLogger"
+            injectLogger(use_syslog=False, log_file = log_file, log_level = log_level,
+                         capture_output = capture_output, verbose = verbose,
+                         capture_stdout_name = capture_stdout_name,
+                         capture_stderr_name = capture_stderr_name,
+                         twisted_info_log_level = twisted_info_log_level,
+                         twisted_error_log_level = twisted_error_log_level,
+                         capture_stdout_log_level = capture_stdout_log_level,
+                         capture_stderr_log_level = capture_stderr_log_level )
+        elif use_syslog:
+            injectLogger(use_syslog=True, log_level = log_level, verbose = verbose,
+                         capture_output = capture_output,
+                         capture_stdout_name = capture_stdout_name,
+                         capture_stderr_name = capture_stderr_name,
+                         twisted_info_log_level = twisted_info_log_level,
+                         twisted_error_log_level = twisted_error_log_level,
+                         capture_stdout_log_level = capture_stdout_log_level,
+                         capture_stderr_log_level = capture_stderr_log_level )
+        else:
+            raise Exception( "You are attempting to daemonize without a log file,"
+                             "and with use_syslog set to false.  A daemon must "
+                             "output to syslog, a logfile, or both." )
+        if pidfile is None:
+            pid_dir = os.path.join("/var/run/", app_name )
+            pidfile = os.path.join( pid_dir, app_name + ".pid")
+        twistd.daemonize()  # forks, moves into its own process group, forks again,
+                            # middle process exits with status 0.  Redirects stdout,
+                            # stderr to /dev/null.
 
-    if not os.path.exists(pidfile):
-        raise Exception( "pidfile %s does not exist" % pidfile )
+        # I should now be a daemon.
 
-    os.chown(pidfile, uid, gid)
-    os.chmod(pidfile, stat.S_IRUSR|stat.S_IWUSR|stat.S_IROTH|stat.S_IRGRP)
+        open(pidfile,'wb').write(str(os.getpid()))
+        if not os.path.exists(pidfile):
+            raise Exception( "pidfile %s does not exist" % pidfile )
+        os.chmod(pidfile, stat.S_IRUSR|stat.S_IWUSR|stat.S_IROTH|stat.S_IRGRP)
 
-    if os.getuid() == 0:
-        twistd.shedPrivileges(False, uid, gid)
-    if os.getuid() != uid:
-        raise Exception( "twistd failed to setuid to uid %d" % uid )
-    if os.getgid() != gid:
-        raise Exception( "twistd failed to setgid to gid %d" % gid )
+        if os.getuid() == 0:
+            if uid is not None or gid is not None:
+                switchUID(uid, gid)
+        if os.getuid() != uid:
+            raise Exception( "twistd failed to setuid to uid %d" % uid )
+        if os.getgid() != gid:
+            raise Exception( "twistd failed to setgid to gid %d" % gid )
+    except:
+        log.exception("daemonizing may have failed")
+        import traceback
+        traceback.print_exc()
+        raise
+

@@ -805,6 +805,10 @@ Section "Install" SecInstall
   IfErrors files
   File dist\python24.dll
   IfErrors files
+  File dist\ssleay32.dll
+  IfErrors files
+  File dist\libeay32.dll
+  IfErrors files
   File dist\unicows.dll
   IfErrors files
   File dist\wxmsw26uh_vc.dll
@@ -813,8 +817,6 @@ Section "Install" SecInstall
   File dist\library.zip
   IfErrors files
   File /r dist\images
-  IfErrors files
-  File redirdonate.html
   IfErrors files
   File credits.txt
   IfErrors files
@@ -924,7 +926,6 @@ continue:
   CreateDirectory "$SMPROGRAMS\${APPNAME}"
   CreateShortCut "$SMPROGRAMS\${APPNAME}\BitTorrent.lnk"      "$INSTDIR\${EXENAME}"
   CreateShortCut "$SMPROGRAMS\${APPNAME}\Make Torrent.lnk"    "$INSTDIR\maketorrent.exe"
-  CreateShortCut "$SMPROGRAMS\${APPNAME}\Donate.lnk"          "$INSTDIR\redirdonate.html"
   CreateShortCut "$SMPROGRAMS\${APPNAME}\Choose Language.lnk" "$INSTDIR\choose_language.exe"
 
   IfSilent launch_anyway not_silent

@@ -19,10 +19,8 @@ from BTL.bencode import bencode, bdecode
 from BTL.btformats import check_message
 from BTL.ConvertedMetainfo import ConvertedMetainfo
 from BTL.defer import defer_to_thread, wrap_task
-from BTL.yielddefer import launch_coroutine
+from BTL.coro import coroutine
 from twisted.internet import reactor
-def coro(f, *args, **kwargs):
-    return launch_coroutine(wrap_task(reactor.callLater), f, *args, **kwargs)
 
 def dtt(f, *a, **k):
     return defer_to_thread(reactor.callFromThread, reactor.callInThread, f, *a, **k )
@@ -37,7 +35,7 @@ def like_gettorrent(path):
 
 
 
-NOISY = True
+NOISY = False
 
 def parsedir(directory, parsed, files, blocked, errfunc,
              include_metainfo=True):
@@ -45,7 +43,7 @@ def parsedir(directory, parsed, files, blocked, errfunc,
        looking for .torrrent files.
 
        THIS IS BLOCKING. Run this in a thread if you don't want it to block
-       the program.
+       the program.  Or better yet, use async_parsedir.
 
        The directory, parsed, files, and blocked arguments are passed
        from the previous iteration of parsedir.
@@ -167,6 +165,7 @@ def parsedir(directory, parsed, files, blocked, errfunc,
         errfunc(_("done checking"))
     return (new_parsed, new_files, new_blocked, added, removed)
 
+@coroutine
 def async_parsedir(directory, parsed, files, blocked,
              include_metainfo=True):
     """Recurses breadth-first starting from the passed 'directory'
@@ -194,17 +193,14 @@ def async_parsedir(directory, parsed, files, blocked,
           infohash on to the same torrent-specific info dict that is in
           or was in parsed.
        """
-    return coro(_async_parsedir,directory, parsed, files, blocked)
-
-def _async_parsedir(directory, parsed, files, blocked):
-    if NOISY:
-        log.info('checking dir')
+    log.info('async_parsedir %s' % directory )
     dirs_to_check = [directory]
     new_files = {}          # maps path -> [(modification time, size),infohash]
     new_blocked = {}        # used as a set.
     while dirs_to_check:    # first, recurse directories and gather torrents
         directory = dirs_to_check.pop()
-        log.info( "parsing directory %s" % directory )
+        if NOISY:
+            log.info( "parsing directory %s" % directory )
         try:
             df = dtt(os.listdir,directory)
             yield df
@@ -232,6 +228,8 @@ def _async_parsedir(directory, parsed, files, blocked):
             is_dir = df.getResult()
             if is_dir:
                 dirs_to_check.append(p)
+    if NOISY:
+        log.info( "Finished parsing directories." )
     new_parsed = {}
     to_add = []
     added = {}

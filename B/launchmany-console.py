@@ -36,7 +36,6 @@ from logging import ERROR, WARNING, INFO
 from BitTorrent import console, old_stderr, STDERR
 
 exceptions = []
-
 log = logging.getLogger('launchmany-console')
 
 class HeadlessDisplayer:
@@ -84,7 +83,7 @@ if __name__ == '__main__':
         # returned from here config['save_in'] is /home/dave/Desktop/...
         if args:
             torrent_dir = args[0]
-            config['torrent_dir'] = torrent_dir
+            config['torrent_dir'] = decode_from_filesystem(torrent_dir)
         else:
             torrent_dir = config['torrent_dir']
             torrent_dir,bad = encode_for_filesystem(torrent_dir)
