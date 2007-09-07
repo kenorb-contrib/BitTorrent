@@ -36,8 +36,9 @@ class UTNode(knode.KNodeBase):
         except:
             token = None
         if token:
-            assert type(token) == type("")
-            assert len(token) == 20
+            assert type(token) == type(""), repr(token)
+            # not true
+            #assert len(token) == 20, repr(token)
             df = self.conn().sendRequest('announce_peer', {'info_hash':info_hash,
                                                          'port':port,
                                                          'id':khashmir_id,
@@ -57,7 +58,11 @@ class UTNode(knode.KNodeBase):
     def checkSender(self, dict):
         d = knode.KNodeBase.checkSender(self, dict)
         try:
-            self.table.tcache[d['rsp']['id']] = d['rsp']['token']
+            token = d['rsp']['token']
+            assert type(token) == type(""), repr(token)
+            # not true
+            #assert len(token) == 20, repr(token)
+            self.table.tcache[d['rsp']['id']] = token
         except KeyError:
             pass
         return d

@@ -203,8 +203,8 @@ class LaunchMany(object):
     def periodic_stats(self):
         df = ThreadedDeferred(wrap_task(self.rawserver.external_add_task),
                               self.stats, daemon = True)
-        df.addCallback( self.rawserver.add_task, self.periodic_stats, self.config['display_interval'],
-                        self.periodic_stats )
+        df.addCallback(lambda r : self.rawserver.add_task(self.config['display_interval'],
+                                                          self.periodic_stats))
 
     def stats(self):
         data = []

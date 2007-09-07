@@ -44,6 +44,7 @@ class ActionBase(object):
         self.queried = {}
         self.queriedip = {}
         self.answered = {}
+        self.answeredq = []
         self.callback = callback
         self.outstanding = 0
         self.finished = 0
@@ -92,6 +93,7 @@ class FindNode(ActionBase):
             l = unpackNodes(dict.get("nodes", []))
             if not self.answered.has_key(sender.id):
                 self.answered[sender.id] = sender
+            insort(self.answeredq, NodeWrap(sender, self.num))
         except:
             l = []
             self.table.invalidateNode(sender)
@@ -102,11 +104,16 @@ class FindNode(ActionBase):
         self.outstanding = self.outstanding - 1
         for node in l:
             n = self.table.Node().initWithDict(node)
-            if not self.found.has_key(n.id):
+            if not self.found.has_key(n.id) and not self.queried.has_key(n.id):
                 self.found[n.id] = n
                 insort(self.foundq, NodeWrap(n, self.num))
                 self.table.insertNode(n, contacted=0)
         self.schedule()
+
+    def finish(self, result):
+        self.finished=1
+        self._cleanup()
+        self.callLater(0, self.callback, result)        
         
     def schedule(self):
         """
@@ -114,12 +121,11 @@ class FindNode(ActionBase):
         """
         if self.finished:
             return
-        l = [wrapper.node for wrapper in self.foundq[:K]]
-        for node in l:
-            if node.id == self.target:
-                self.finished=1
-                return self.callback([node])
+        for wrapper in self.foundq:
+            node = wrapper.node
             if self.shouldQuery(node):
+                if len(self.answeredq) >= K and self.answeredq[K-1] < wrapper:
+                    break
                 #xxxx t.timeout = time.time() + FIND_NODE_TIMEOUT
                 try:
                     df = node.findNode(self.target, self.table.node.id)
@@ -132,15 +138,12 @@ class FindNode(ActionBase):
                 break
         assert(self.outstanding) >=0
         if self.outstanding == 0:
-            ## all done!!
-            self.finished=1
-            self._cleanup()
-            self.callLater(0, self.callback, l[:K])
+            self.finish(self.answeredq[:K])
 
     def makeMsgFailed(self, node):
-        return self._defaultGotNodes
+        return lambda err : self._defaultGotNodes(err, node)
 
-    def _defaultGotNodes(self, err):
+    def _defaultGotNodes(self, err, node):
         self.outstanding = self.outstanding - 1
         self.schedule()
 
@@ -178,15 +181,17 @@ class GetValue(FindNode):
             return
         self.outstanding = self.outstanding - 1
 
-        self.answered[sender.id] = sender
+        answered = True
+        
         # go through nodes
         # if we have any closer than what we already got, query them
         if dict.has_key('nodes'):
             try:
                 l = unpackNodes(dict.get('nodes',[]))
             except:
+                # considered an incorrect answer
+                answered = False
                 l = []
-                del(self.answered[sender.id])
             
             for node in l:
                 n = self.table.Node().initWithDict(node)
@@ -205,14 +210,23 @@ class GetValue(FindNode):
             v = filter(None, map(x, dict.get('values',[])))
             if(len(v)):
                 self.callLater(0, self.callback, v)
+
+        if answered:
+            self.answered[sender.id] = sender
+            insort(self.answeredq, NodeWrap(sender, self.num))
+            
         self.schedule()
         
     ## get value
     def schedule(self):
         if self.finished:
             return
-        for node in [wrapper.node for wrapper in self.foundq[:K]]:
+        for wrapper in self.foundq:
+            node = wrapper.node
             if self.shouldQuery(node):
+                if len(self.answeredq) >= K and self.answeredq[K-1] < wrapper:
+                    # done searching
+                    break
                 #xxx t.timeout = time.time() + GET_VALUE_TIMEOUT
                 try:
                     f = getattr(node, self.findValue)
@@ -231,10 +245,8 @@ class GetValue(FindNode):
                 break
         assert(self.outstanding) >=0
         if self.outstanding == 0:
-            ## all done, didn't find it!!
-            self.finished=1
-            self._cleanup()
-            self.callLater(0, self.callback, [])
+            ## all done
+            self.finish([])
 
     ## get value
     def goWithNodes(self, nodes, found=None):

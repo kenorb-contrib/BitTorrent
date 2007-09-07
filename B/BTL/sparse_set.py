@@ -18,23 +18,30 @@ from __future__ import generators
 from bisect import bisect_left
 from itertools import izip
 
+try:
+    from blist import blist
+except ImportError:
+    list_base = list
+else:
+    list_base = blist
+
 class SparseSet(object):
 
     def __init__(self, s = None):
-        self._begins = []
+        self._begins = list_base()
         # ends are non-inclusive
-        self._ends = []
+        self._ends = list_base()
         if s is not None:
             if isinstance(s, SparseSet):
-                self._begins = list(s._begins)
-                self._ends = list(s._ends)
+                self._begins = list_base(s._begins)
+                self._ends = list_base(s._ends)
             else:                
                 self.add_range(s)
 
     def _collapse_range(self, l):
         last = None
-        begins = []
-        ends = []
+        begins = list_base()
+        ends = list_base()
         if len(l) == 0:
             return begins, ends
         
@@ -179,7 +186,7 @@ class SparseSet(object):
                 yield i
 
     def iterneg(self, begin, end):
-        ranges = []
+        ranges = list_base()
         b_i = bisect_left(self._begins, begin)
         for b, e in izip(self._begins[b_i:], self._ends[b_i:]):
             for i in xrange(begin, b):
@@ -232,7 +239,7 @@ class SparseSet(object):
             for b, e in izip(s._begins, s._ends):
                 n.subtract(b, e)
         else:
-            n.subtract_range(list(s))
+            n.subtract_range(list_base(s))
         return n
 
     def __add__(self, s):
@@ -241,7 +248,7 @@ class SparseSet(object):
             for b, e in izip(s._begins, s._ends):
                 n.add(b, e)
         else:
-            n.add_range(list(s))
+            n.add_range(list_base(s))
         return n
 
     def __repr__(self):

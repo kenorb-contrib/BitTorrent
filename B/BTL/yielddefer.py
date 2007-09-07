@@ -162,3 +162,10 @@ def launch_coroutine(queue_task, f, *args, **kwargs):
             # we got a non-generator, just callback with the return value
             main_df.callback(g)
     return main_df
+
+def coroutine(queue_task):
+    def make_coroutine(_f):
+        def replacement(*a, **kw):
+            return launch_coroutine(queue_task, _f, *a, **kw)
+        return replacement
+    return make_coroutine

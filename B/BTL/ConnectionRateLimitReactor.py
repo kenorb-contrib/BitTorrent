@@ -82,10 +82,14 @@ class IRobotConnector(object):
         return self.stopConnecting()
 
     def _cleanup(self):
-        del self.a
-        del self.kw
-        del self.factory
-        del self.connector
+        if hasattr(self, 'a'):
+            del self.a
+        if hasattr(self, 'kw'):
+            del self.kw
+        if hasattr(self, 'factory'):
+            del self.factory
+        if hasattr(self, 'connector'):
+            del self.connector
         
     def stopConnecting(self):
         if self._started:

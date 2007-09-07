@@ -12,12 +12,18 @@
 
 import os
 import sys
+import errno
 import pwd
 import grp
 import stat
 import logging
 from twisted.python.util import switchUID
-from twisted.scripts import twistd
+#from twisted.scripts import twistd
+#try:
+#  from twisted.scripts.twistd import checkPID
+#except:
+#  from twisted.scripts._twistd_unix import checkPID
+
 from BTL.log import injectLogger, ERROR, INFO, DEBUG
 from BTL.platform import app_name
 log = logging.getLogger("daemon")
@@ -108,7 +114,7 @@ def daemon(
         if pid_dir and not os.path.exists(pid_dir):
             os.mkdir(pid_dir)
             os.chown(pid_dir,uid,gid)
-        twistd.checkPID(pidfile)
+        checkPID(pidfile)
         if use_syslog is None:
             use_syslog = sys.platform != 'darwin' and not log_file
         if log_file:
@@ -141,9 +147,9 @@ def daemon(
         if pidfile is None:
             pid_dir = os.path.join("/var/run/", app_name )
             pidfile = os.path.join( pid_dir, app_name + ".pid")
-        twistd.daemonize()  # forks, moves into its own process group, forks again,
-                            # middle process exits with status 0.  Redirects stdout,
-                            # stderr to /dev/null.
+        daemonize()  # forks, moves into its own process group, forks again,
+                     # middle process exits with status 0.  Redirects stdout,
+                     # stderr to /dev/null.
 
         # I should now be a daemon.
 
@@ -156,12 +162,58 @@ def daemon(
             if uid is not None or gid is not None:
                 switchUID(uid, gid)
         if os.getuid() != uid:
-            raise Exception( "twistd failed to setuid to uid %d" % uid )
+            raise Exception( "failed to setuid to uid %d" % uid )
         if os.getgid() != gid:
-            raise Exception( "twistd failed to setgid to gid %d" % gid )
+            raise Exception( "failed to setgid to gid %d" % gid )
     except:
         log.exception("daemonizing may have failed")
         import traceback
         traceback.print_exc()
         raise
 
+# Copied from twistd.... see daemonize for reason.
+def checkPID(pidfile):
+    if not pidfile:
+        return
+    if os.path.exists(pidfile):
+        try:
+            pid = int(open(pidfile).read())
+        except ValueError:
+            sys.exit('Pidfile %s contains non-numeric value' % pidfile)
+        try:
+            os.kill(pid, 0)
+        except OSError, why:
+            if why[0] == errno.ESRCH:
+                # The pid doesnt exists.
+                log.info('Removing stale pidfile %s' % pidfile, isError=True)
+                os.remove(pidfile)
+            else:
+                sys.exit("Can't check status of PID %s from pidfile %s: %s" %
+                         (pid, pidfile, why[1]))
+        else:
+            sys.exit("""\
+Another twistd server is running, PID %s\n
+This could either be a previously started instance of your application or a
+different application entirely. To start a new one, either run it in some other
+directory, or use the --pidfile and --logfile parameters to avoid clashes.
+""" %  pid)
+
+# Copied from twistd.  twistd considers this an internal function
+# and across versions it got moved.  To prevent future breakage,
+# I just assume incorporate daemonize directly.
+def daemonize():
+    # See http://www.erlenstar.demon.co.uk/unix/faq_toc.html#TOC16
+    if os.fork():   # launch child and...
+        os._exit(0) # kill off parent
+    os.setsid()
+    if os.fork():   # launch child and...
+        os._exit(0) # kill off parent again.
+    os.umask(077)
+    null=os.open('/dev/null', os.O_RDWR)
+    for i in range(3):
+        try:
+            os.dup2(null, i)
+        except OSError, e:
+            if e.errno != errno.EBADF:
+                raise
+    os.close(null)

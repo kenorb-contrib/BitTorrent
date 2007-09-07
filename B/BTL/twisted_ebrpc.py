@@ -468,6 +468,12 @@ class PersistantSingletonFactory(QueryFactory, SmartReconnectingClientFactory):
         if pipeline_debug: print 'clientConnectionFailed %s' % str(connector)
         return SmartReconnectingClientFactory.clientConnectionFailed(self, connector, reason)
 
+    def clientConnectionLost(self, connector, unused_reason):
+        self.started = False
+        if not self.anyQueries():
+            self.continueTrying = False
+        return SmartReconnectingClientFactory.clientConnectionLost(self, connector, unused_reason)
+    
 
 class SingletonFactory(QueryFactory, protocol.ClientFactory):
 

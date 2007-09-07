@@ -217,6 +217,8 @@ class ConnectionManager(InternetSubscriber):
         self.reopen(reported_port)        
 
     def cleanup(self):
+        if not self.closed:
+            self.close_connections()
         del self.context
         self.cached_peers.clear()
         if self._ka_task.active():

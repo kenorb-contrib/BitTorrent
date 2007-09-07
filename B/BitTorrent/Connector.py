@@ -675,12 +675,17 @@ class Connector(Handler):
             if 'ut_pex' in messages:
                 self.uses_utorrent_pex = True
                 self.utorrent_pex_id = messages['ut_pex']
+                if not isinstance(self.utorrent_pex_id, (int, long)):
+                    try:
+                        raise TypeError("LTEX message ids must be int not %r" % self.utorrent_pex_id)
+                    except:
+                        self.logger.exception("ut_pex support failed")
+                        self.uses_utorrent_pex = False
         elif msg_type == UTORRENT_MSG_PEX:
             for i, addr in enumerate(IPTools.uncompact_sequence(d['added'])):
                 self.remote_pex_set.add(addr)
                 if len(d['added.f']) > i:
-                    # OW
-                    if (d['added.f'][i] & 2 and
+                    if (ord(d['added.f'][i]) & 2 and
                         self.parent.downloader.storage.get_amount_left() == 0):
                         # don't connect to seeds if we're done
                         continue

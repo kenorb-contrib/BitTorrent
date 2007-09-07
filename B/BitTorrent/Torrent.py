@@ -577,8 +577,8 @@ class Torrent(object):
         self._listening = True
 
         # the DHT is broken
-        #if self.metainfo.is_trackerless or not self.metainfo.is_private:
-        if self.metainfo.is_trackerless:
+        if self.metainfo.is_trackerless or not self.metainfo.is_private:
+        #if self.metainfo.is_trackerless:
             if not self._dht and self.metainfo.is_trackerless:
                 self._error(self, logging.CRITICAL,
                    _("Attempt to download a trackerless torrent "
