@@ -32,14 +32,14 @@ from BTL.platform import bttime, get_filesystem_encoding
 from BitTorrent.ConnectionManager import ConnectionManager
 from BitTorrent import PeerID
 from BTL.exceptions import str_exc
-from BTL.defer import ThreadedDeferred, Failure
-from BTL.yielddefer import launch_coroutine, _wrap_task
+from BTL.defer import ThreadedDeferred, Failure, wrap_task
+from BTL.yielddefer import launch_coroutine
 from BitTorrent.TorrentStats import TorrentStats
 from BitTorrent.RateMeasure import RateMeasure
 from BitTorrent.PiecePicker import PiecePicker
 from BitTorrent.Rerequester import Rerequester, DHTRerequester
 from BitTorrent.CurrentRateMeasure import Measure
-from BitTorrent.Storage import Storage
+from BitTorrent.Storage import Storage, UnregisteredFileException
 from BitTorrent.HTTPConnector import URLage
 from BitTorrent.StorageWrapper import StorageWrapper
 from BitTorrent.RequestManager import RequestManager
@@ -105,10 +105,14 @@ class Torrent(object):
         # The passed working path and destination_path should be filesystem
         # encoded or should be unicode if the filesystem supports unicode.
         fs_encoding = get_filesystem_encoding()
-        assert fs_encoding == None and isinstance(working_path,unicode) \
-               or isinstance(working_path,str), "working path encoding problem"
-        assert fs_encoding == None and isinstance(destination_path,unicode) \
-               or isinstance(destination_path,str), "dest path encoding problem"
+        assert (
+            (fs_encoding == None and isinstance(working_path, unicode)) or
+            (fs_encoding != None and isinstance(working_path, str))
+            ), "working path encoding problem"
+        assert (
+            (fs_encoding == None and isinstance(destination_path, unicode)) or
+            (fs_encoding != None and isinstance(destination_path, str))
+            ), "destination path encoding problem"
 
         self.state = "created"
         self.data_dir = data_dir
@@ -120,18 +124,9 @@ class Torrent(object):
         self._down_ratelimiter = down_ratelimiter
         self._filepool = filepool
         self._dht = dht
-        self._picker = None
         self._choker = choker
-        self._storage = None
-        self._storagewrapper = None
-        self._ratemeasure = None
-        self._upmeasure = None
-        self._downmeasure = None
         self._total_downmeasure = total_downmeasure
-        self._connection_manager = None
-        self._rerequest = None
-        self._dht_rerequest = None
-        self._statuscollector = None
+        self._init()
         self._announced = False
         self._listening = False
         self.reserved_ports = []
@@ -176,6 +171,20 @@ class Torrent(object):
         self.downtotal = 0
         self.downtotal_old = 0
         self.context_valid = True
+
+    def _init(self):
+        self._picker = None
+        self._storage = None
+        self._storagewrapper = None
+        self._ratemeasure = None
+        self._upmeasure = None
+        self._downmeasure = None
+        self._connection_manager = None
+        self._rerequest = None
+        self._dht_rerequest = None
+        self._statuscollector = None
+        self._rm = None
+        self.multidownload = None
 
     def update_config(self, config):
         self.config.update(config)
@@ -228,10 +237,17 @@ class Torrent(object):
 
     def _set_completed(self, val):
         self._completed = val
-        self.config['finishtime'] = bttime()
+        if val:
+            self.config['finishtime'] = bttime()
     def _get_completed(self):
         return self._completed
     completed = property(_get_completed, _set_completed)
+
+    def _set_sent_completed(self, value):
+        self.config['sent_completed'] = value
+    def _get_sent_completed(self):
+        return self.config['sent_completed']
+    sent_completed = property(_get_sent_completed, _set_sent_completed)
 
     def _get_finishtime(self):
         return self.config['finishtime']
@@ -262,6 +278,9 @@ class Torrent(object):
     working_path = property(_get_working_path, _set_working_path)
 
     def __cmp__(self, other):
+        if not isinstance(other, Torrent):
+            raise TypeError("Torrent.__cmp__(x,y) requires y to be a 'Torrent',"
+                            " not a '%s'" % type(other))
         return cmp(self.metainfo.infohash, other.metainfo.infohash)
 
     def is_initialized(self):
@@ -289,11 +308,11 @@ class Torrent(object):
     # these wrappers add _context_wrap to the chain, so that calls on a dying
     # object are filtered, and errors on a valid call are logged.
     def add_task(self, delay, func, *a, **kw):
-        self._rawserver.add_task(delay, self._context_wrap,
-                                 func, *a, **kw)
+        return self._rawserver.add_task(delay, self._context_wrap,
+                                        func, *a, **kw)
     def external_add_task(self, delay, func, *a, **kw):
-        self._rawserver.external_add_task(delay, self._context_wrap,
-                                          func, *a, **kw)
+        return self._rawserver.external_add_task(delay, self._context_wrap,
+                                                 func, *a, **kw)
 
     def _register_files(self):
         if self.metainfo.is_batch:
@@ -349,7 +368,7 @@ class Torrent(object):
         self.context_valid = True
         assert self.state in ["created", "failed", "finishing"], "state not in set"
         self.state = "initializing"
-        df = launch_coroutine(_wrap_task(self.add_task), self._initialize)
+        df = launch_coroutine(wrap_task(self.add_task), self._initialize)
         df.addErrback(self.got_exception)
         return df
 
@@ -491,13 +510,14 @@ class Torrent(object):
         md.add_useful_received_listener(self._total_downmeasure.update_rate)
         md.add_useful_received_listener(self._downmeasure.update_rate)
         md.add_useful_received_listener(self._ratemeasure.data_came_in)
-        md.add_useful_received_listener(self._down_ratelimiter.update_rate)
+        md.add_raw_received_listener(self._down_ratelimiter.update_rate)
         self.multidownload = md
 
         # HERE. Yipee! Uploads are created by callback while Download
         # objects are created by MultiDownload.   --Dave
         def make_upload(connector):
-            up = Upload(connector, self._ratelimiter, self._choker,
+            up = Upload(self.multidownload, connector, self._ratelimiter,
+                        self._choker,
                         self._storagewrapper, self.config['max_chunk_length'],
                         self.config['max_rate_period'],
                         self.config['num_fast'], self.infohash)
@@ -509,14 +529,14 @@ class Torrent(object):
         else:
             addContact = None
 
-        df = self.metainfo.get_tracker_ips(_wrap_task(self.external_add_task))
+        df = self.metainfo.get_tracker_ips(wrap_task(self.external_add_task))
         yield df
         tracker_ips = df.getResult()
         self._connection_manager = \
             ConnectionManager(make_upload, self.multidownload, self._choker,
                      numpieces, self._ratelimiter,
-                     self._rawserver, self.config, self._myid,
-                     self.add_task, self.infohash, self, addContact,
+                     self._rawserver, self.config, self.metainfo.is_private,
+                     self._myid, self.add_task, self.infohash, self, addContact,
                      0, tracker_ips, self.log_root)
         self.multidownload.attach_connection_manager(self._connection_manager)
 
@@ -540,7 +560,7 @@ class Torrent(object):
                         f(*a, **kw)
                     if self._dht_rerequest:
                         f = getattr(self._dht_rerequest, attr)
-                        f(*a, **kw)                        
+                        f(*a, **kw)
                 return rerequest_function
         return Caller()
 
@@ -555,8 +575,10 @@ class Torrent(object):
         self._singleport_listener.add_torrent(self.infohash,
                                               self._connection_manager)
         self._listening = True
-        
+
+        # the DHT is broken
         if self.metainfo.is_trackerless or not self.metainfo.is_private:
+        #if self.metainfo.is_trackerless:
             if not self._dht and self.metainfo.is_trackerless:
                 self._error(self, logging.CRITICAL,
                    _("Attempt to download a trackerless torrent "
@@ -587,7 +609,7 @@ class Torrent(object):
                         self._connection_manager.ever_got_incoming,
                         self._no_announce_shutdown, self._announce_done,
                         self._dht)
-                
+
         if not self.metainfo.is_trackerless:
             self._rerequest = Rerequester(self.metainfo.announce,
                 self.metainfo.announce_list, self.config,
@@ -613,7 +635,7 @@ class Torrent(object):
         self._rerequest_op().begin()
 
         for url_prefix in self.metainfo.url_list:
-            self._connection_manager.start_http_connection(url_prefix)   
+            self._connection_manager.start_http_connection(url_prefix)
 
         self.state = "running"
         if not self.finflag.isSet():
@@ -666,7 +688,7 @@ class Torrent(object):
         # use _rawserver.add_task directly here, because we want the callbacks
         # to happen even though _shutdown is about to invalidate this torrent's
         # context
-        df = launch_coroutine(_wrap_task(self._rawserver.add_task), self._shutdown)
+        df = launch_coroutine(wrap_task(self._rawserver.add_task), self._shutdown)
         df.addErrback(self.got_exception, cannot_shutdown=True)
         return df
 
@@ -692,7 +714,10 @@ class Torrent(object):
         if self._connection_manager is not None:
             self._down_ratelimiter.remove_throttle_listener(
                 self._connection_manager )
+            self._connection_manager.cleanup()
         self.context_valid = False
+
+        self._init()
 
         self.state = "created"
 
@@ -731,13 +756,17 @@ class Torrent(object):
         self.feedback.chain.append(feedback)
 
     def remove_feedback(self, feedback):
-        self.feedback.chain.remove(feedback)        
+        self.feedback.chain.remove(feedback)
 
     def got_exception(self, failure, cannot_shutdown=False):
-        type, e, stack = failure.exc_info()
+        type, e = failure.exc_info()[0:2]
         severity = logging.CRITICAL
         msg = "Torrent got exception: %s" % type
         e_str = str_exc(e)
+        if isinstance(e, UnregisteredFileException):
+            # not an error, a pending disk op was aborted because the torrent
+            # has unregistered files.
+            return
         if isinstance(e, BTFailure):
             self._activity = ( _("download failed: ") + e_str, 0)
         elif isinstance(e, IOError):
@@ -753,9 +782,10 @@ class Torrent(object):
         if isinstance(e, UserFailure):
             self.logger.log(severity, e_str )
         else:
-            self.logger.log(severity, msg, exc_info=(type, e, stack))
+            self.logger.log(severity, msg, exc_info=failure.exc_info())
         # steve wanted this too
         # Dave doesn't want it.
+        #type, e, stack = failure.exc_info()
         #traceback.print_exception(type, e, stack, file=sys.stdout)
 
         self.failed(cannot_shutdown)
@@ -764,7 +794,7 @@ class Torrent(object):
         if cannot_shutdown:
             self.state = "failed"
             self.feedback.failed(self)
-            return 
+            return
 
         try:
             # this could complete later. sorry that's just the way it is.
@@ -777,7 +807,7 @@ class Torrent(object):
             self.logger.exception(_("Additional error when closing down due"
                                     " to error: "))
             self.feedback.failed(self)
-        
+
 
     def _error(self, level, text, exception=False, exc_info=None):
         if level > logging.WARNING:
@@ -791,13 +821,15 @@ class Torrent(object):
 
     def finished(self, policy="auto", finished_this_session=True):
         assert self.state == "running", "state not running"
+        self.logger.debug("done downloading, preparing to wrap up")
         # because _finished() calls shutdown(), which invalidates the torrent
         # context, we need to use _rawserver.add_task directly here
-        df = launch_coroutine(_wrap_task(self._rawserver.add_task), self._finished, policy=policy, finished_this_session=finished_this_session)
+        df = launch_coroutine(wrap_task(self._rawserver.add_task), self._finished, policy=policy, finished_this_session=finished_this_session)
         df.addErrback(self.got_exception)
         return df
 
     def _finished(self, policy="auto", finished_this_session=True):
+        self.logger.debug("wrapping up")
         if self.state != "running":
             return
 
@@ -813,8 +845,11 @@ class Torrent(object):
 
         # If we haven't announced yet, normal first announce done later will
         # tell the tracker about seed status.
-        if self._announced:
+        # Only send completed the first time! Torrents transition to finished
+        # everytime.
+        if self._announced and not self.sent_completed:
             self._rerequest_op().announce_finish()
+        self.sent_completed = True
         self._activity = (_("seeding"), 1)
         if self.config['check_hashes']:
             self._save_fastresume()
@@ -872,7 +907,7 @@ class Torrent(object):
             self.logger.debug("successfully paused torrent, moving file")
 
             self.state = "finishing"
-            df = ThreadedDeferred(_wrap_task(self._rawserver.external_add_task),
+            df = ThreadedDeferred(wrap_task(self._rawserver.external_add_task),
                                   move, self.working_path, self.destination_path)
             yield df
             df.getResult()
@@ -1041,7 +1076,7 @@ class Torrent(object):
 
         total = 0.0
         for c in cs:
-            total += c.download.connection.download.peermeasure.get_rate()
+            total += c.download.connector.download.peermeasure.get_rate()
 
         return total / len(cs)
 

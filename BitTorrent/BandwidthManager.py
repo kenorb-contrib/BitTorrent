@@ -9,6 +9,7 @@
 # License.
 
 # By Greg Hazel
+from __future__ import division
 
 debug = False
 stats = False    # collect statistics and dump to files.
@@ -127,12 +128,13 @@ class BandwidthManager(object):
         self.max_samples = 10 # hmm...
         self.u = SizedList(self.max_samples)
         self.d = SizedList(self.max_samples)
-        self.t = SizedList(self.max_samples * 10)
+        self.t = SizedList(self.max_samples * 2)
         self.ur = SizedList(self.max_samples)
         self.dr = SizedList(self.max_samples)
 
         self.current_std = 0.001        
         self.max_std = 0.001
+        self.last_max = bttime()
 
         self.max_rates = {}
         self.max_rates["upload"] = 1.0
@@ -235,14 +237,21 @@ class BandwidthManager(object):
 
 
     def _method_stddev(self, type, std, max_std, rate):
-        if std > (max_std * 0.80): # FUDGE
-            rate *= 0.80 # FUDGE
+        top = 0.80 # FUDGE
+        if std > (max_std * top):
+            center = 1.0 + top - ((1.0 - top) * 0.5)
+            s = min(std/max(0.0001, max_std), center)
+            s = center - s
+            rate *= s 
             if debug:
-                print type.upper(), "DOWN to", rate
+                print type.upper(), "DOWN *", s, "to", rate
         else:
-            rate += 1000 # FUDGE
+            s = 1000.0 # FUDGE
+            s *= min(max_std/max(0.0001, std), 4) / 4.0
+            s = int(s)
+            rate += s
             if debug:
-                print type.upper(), "UP to", rate
+                print type.upper(), "UP +", s, "to", rate
 
         return max(rate, 1000) # FUDGE
     
@@ -362,7 +371,13 @@ class BandwidthManager(object):
         #                  self.config['max_download_rate'],
         #                  lambda r : self.set_option('max_download_rate', r))
 
-        self.max_std = max(self.max_std, self.current_std)
+        if self.current_std > self.max_std:
+            self.max_std = self.current_std
+            self.last_max = bttime()
+        elif bttime() - self.last_max > 10:
+            # decay old maximums, to recover from flakey connections
+            self.max_std *= 0.90 # FUDGE
+            self.last_max = bttime()
 
         #self.last_cu = cu
         #self.last_cd = cd

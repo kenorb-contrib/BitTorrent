@@ -30,6 +30,9 @@ class _Method:
     def __call__(self, *args, **kwargs):
         args = (args, kwargs)
         return self.__send(self.__name, args)
+    # ARG! prevent repr(_Method()) from submiting an RPC call!
+    def __repr__(self):
+        return "<%s instance at 0x%08X>" % (self.__class__, id(self))
 
 
 # Double underscore is BAD!

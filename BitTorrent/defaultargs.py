@@ -18,7 +18,7 @@ from BTL.translation import _
 ### add your favorite here
 BAD_LIBC_WORKAROUND_DEFAULT = False
 if os.name == 'posix':
-    if os.uname()[0] in ['Darwin']:
+    if os.uname()[0] in ['Darwin', 'FreeBSD']:
         BAD_LIBC_WORKAROUND_DEFAULT = True
 
 MAX_INCOMPLETE = 100
@@ -95,7 +95,7 @@ common_options = [
      _("maximum B/s to upload at")),
     ('max_download_rate', 125000000, # 1 GBit local net = 125MB/s
      _("average maximum B/s to download at")),
-    ("download_rate_limiter_interval", 0.5, 
+    ("download_rate_limiter_interval", 0.25,
     _("download rate limiter's leaky bucket update interval.")),
     ('bandwidth_management', os.name == 'nt',
      _("automatic bandwidth management (Windows only)")),
@@ -110,10 +110,13 @@ common_options = [
      _("Enable automatic port mapping")+' (UPnP)'),
     ('resolve_hostnames', True,
      _("Resolve hostnames in peer list")),
-    ('xmlrpc_port', -1,
-    _("Start the XMLRPC interface on the specified port. This "
-      "XML-RPC-based RPC allows a remote program to control the client "
-      "to enable automated hosting, conformance testing, and benchmarking.")),
+    ("use_local_discovery", True, _("Scan local network for other BitTorrent clients "
+                                    "with the desired content.")),
+    # Not currently used.
+    #('xmlrpc_port', -1,
+    #_("Start the XMLRPC interface on the specified port. This "
+    #  "XML-RPC-based RPC allows a remote program to control the client "
+    #  "to enable automated hosting, conformance testing, and benchmarking.")),
     ]
 
 # In anticipation of running a large number of tests for tuning, I thought it
@@ -376,20 +379,20 @@ def get_defaults(ui):
                  _("Enforce .torrent file associations on startup")),
             ])
 
-	progress_bar = ['progressbar_style', 3,
-			_("The style of progressbar to show.  0 means no progress "
-			  "bar.  1 is an ordinary progress bar.  2 is a progress "
-			  "bar that shows transferring, available and missing "
-			  "percentages as well.  3 is a piece bar which "
-			  "color-codes each piece in the torrent based on its "
-			  "availability.")]
+        progress_bar = ['progressbar_style', 3,
+                        _("The style of progressbar to show.  0 means no progress "
+                          "bar.  1 is an ordinary progress bar.  2 is a progress "
+                          "bar that shows transferring, available and missing "
+                          "percentages as well.  3 is a piece bar which "
+                          "color-codes each piece in the torrent based on its "
+                          "availability.")]
 
-	if sys.platform == "darwin":
-	    # listctrl placement of the progress bars does not work on Carbon
-	    progress_bar[1] = 0
-	    
-	r.extend([ progress_bar,		    
-		   ])
+        if sys.platform == "darwin":
+            # listctrl placement of the progress bars does not work on Carbon
+            progress_bar[1] = 0
+
+        r.extend([ progress_bar,
+                   ])
 
 
     if ui in ('bittorrent', 'maketorrent'):
@@ -429,6 +432,10 @@ def get_defaults(ui):
                "name determined by --saveas_style. If this is left empty "
                "each torrent will be saved under the directory of the "
                "corresponding .torrent file")),
+            ('save_incomplete_in', u'',
+             _("local directory where the incomplete torrent downloads will be "
+               "stored until completion.  Upon completion, downloads will be "
+               "moved to the directory specified by --save_in.")),
             ('parse_dir_interval', 60,
               _("how often to rescan the torrent directory, in seconds") ),
             ('launch_delay', 0,

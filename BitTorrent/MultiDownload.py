@@ -45,6 +45,7 @@ class MultiDownload(object):
         self.picker = picker
         self.errorfunc = errorfunc
         self.rerequester = None
+        self.entered_endgame = False
         self.connection_manager = None
         self.chunksize = config['download_chunk_size']
         self.numpieces = numpieces
@@ -58,10 +59,12 @@ class MultiDownload(object):
         self.bad_peers = {}
         self.discarded_bytes = 0
         self.useful_received_listeners = set()
+        self.raw_received_listeners = set()
         
         if SPARSE_SET:
             self.piece_states = PieceSetBuckets()
-            nothing = SparseSet(xrange(self.numpieces))
+            nothing = SparseSet()
+            nothing.add(0, self.numpieces)
             self.piece_states.buckets.append(nothing)
 
             # I hate this
@@ -140,6 +143,16 @@ class MultiDownload(object):
         self.last_update += 1
         self.piece_states.popleft_bucket()
 
+    def check_enter_endgame(self):
+        if not self.entered_endgame:
+            if self.rm.endgame:
+                self.entered_endgame = True
+                self.all_requests = set()
+                for d in self.downloads:
+                    self.all_requests.update(d.active_requests)
+        for d in self.downloads:
+            d.fix_download_endgame()
+
     def hashchecked(self, index):
         if not self.storage.do_I_have(index):
             if self.rm.endgame:
@@ -163,18 +176,19 @@ class MultiDownload(object):
         if self.storage.have.numfalse == 0:
             for d in self.downloads:
                 if d.have.numfalse == 0:
-                    d.connection.close()
+                    d.connector.close()
 
             self.finished()
 
-    def make_download(self, connection):
-        ip = connection.ip
+    def make_download(self, connector):
+        ip = connector.ip
         perip = self.perip.setdefault(ip, PerIPStats())
         perip.numconnections += 1
-        d = Download(self, connection)
+        d = Download(self, connector)
         d.add_useful_received_listener(self.fire_useful_received_listeners) 
+        d.add_raw_received_listener(self.fire_raw_received_listeners)
         perip.lastdownload = d
-        perip.peerid = connection.id
+        perip.peerid = connector.id
         self.downloads.append(d)
         return d
 
@@ -185,6 +199,11 @@ class MultiDownload(object):
            called for bytes received by that particular Download."""
         self.useful_received_listeners.add(listener)
 
+    def add_raw_received_listener(self, listener):
+        """Listers are called whenever bytes arrive (i.e., to Connector.data_came_in)
+           regardless of whether those bytes are useful."""
+        self.raw_received_listeners.add(listener)
+
     def remove_useful_received_listener(self,listener):
         self.useful_received_listeners.remove(listener)
 
@@ -192,26 +211,34 @@ class MultiDownload(object):
         for f in self.useful_received_listeners:
             f(bytes)
             
+    def remove_raw_received_listener(self, listener):
+        self.raw_received_listeners.remove(listener)
+
+    def fire_raw_received_listeners(self,bytes):
+        for f in self.raw_received_listeners:
+            f(bytes)
+
     def lost_peer(self, download):
         if download.have.numfalse == 0:
             # lost seed...
             pass
         self.downloads.remove(download)
-        ip = download.connection.ip
+        ip = download.connector.ip
         self.perip[ip].numconnections -= 1
         if self.perip[ip].lastdownload == download:
             self.perip[ip].lastdownload = None
 
     def kick(self, download):
+        download.connector.protocol_violation("peer sent bad data")
         if not self.config['retaliate_to_garbled_data']:
             return
-        ip = download.connection.ip
-        peerid = download.connection.id
+        ip = download.connector.ip
+        peerid = download.connector.id
         # kickfunc will schedule connection.close() to be executed later; we
         # might now be inside RawServer event loop with events from that
         # connection already queued, and trying to handle them after doing
         # close() now could cause problems.
-        self.kickfunc(download.connection)
+        self.kickfunc(download.connector)
 
     def ban(self, ip):
         if not self.config['retaliate_to_garbled_data']:

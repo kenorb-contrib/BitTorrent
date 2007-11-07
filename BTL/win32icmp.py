@@ -2,6 +2,16 @@
 # so I don't have to recompile for future versions of python.
 # you're welcome.
 #
+# The contents of this file are subject to the Python Software Foundation
+# License Version 2.3 (the License).  You may not copy or use this file, in
+# either source code or executable form, except in compliance with the License.
+# You may obtain a copy of the License at http://www.python.org/license.
+#
+# Software distributed under the License is distributed on an AS IS basis,
+# WITHOUT WARRANTY OF ANY KIND, either express or implied.  See the License
+# for the specific language governing rights and limitations under the
+# License.
+#
 # by Greg Hazel
 
 import ctypes
@@ -34,9 +44,11 @@ class ICMP_ECHO_REPLY(ctypes.Structure):
 def IcmpSendEcho(handle, addr, data, options, timeout):
     reply = ICMP_ECHO_REPLY()
     data = data or ''
+    if options:
+        options = ctypes.byref(options)
     r = icmp.IcmpSendEcho(handle, inet_addr(addr),
                           data, len(data),
-                          ctypes.byref(options),
+                          options,
                           ctypes.byref(reply),
                           ctypes.sizeof(ICMP_ECHO_REPLY) + len(data),
                           timeout)
@@ -67,4 +79,4 @@ IP_BAD_DESTINATION          = (IP_STATUS_BASE + 18)
 status = {}
 for k, v in dict(globals()).iteritems():
     if k.startswith("IP_"):
-        status[k] = v
+        status[v] = k

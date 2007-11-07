@@ -1,6 +1,7 @@
 # Written by David Harrison
 
 from BTL.platform import bttime as time
+from BTL.rand_tools import iter_rand_pos
 import logging
 logger = logging.getLogger( "DownloadRateLimiter" )
 log = logger.debug
@@ -11,7 +12,7 @@ class ThrottleListener(object):
         pass
     def unthrottle_connections(self):
         pass
-    
+
 class DownloadRateLimiter( object ):
     """DownloadRateLimiter implements a leaky bucket.
        """
@@ -30,9 +31,10 @@ class DownloadRateLimiter( object ):
         self._token_bucket = 0    # number of bytes that can be sent.
         self._prev_time = None
 
-        # ensure enough to allow continuous transmission at max rate.
         token_size = max_download_rate * interval 
-        self._max_token_bytes = 2 * token_size
+        self._max_token_bytes = 2 * token_size # > 1.*token_size ensures enough for 
+                                               # continuous transmission except for really 
+                                               # bursty sources.
 
         # start update interval timer.
         self._timer = task.LoopingCall(self.end_of_interval)
@@ -52,12 +54,12 @@ class DownloadRateLimiter( object ):
 
     def throttle(self):
         #log( "throttle" )
-        for l in self._throttle_listeners:
+        for l in iter_rand_pos(self._throttle_listeners):
             l.throttle_connections()
 
     def unthrottle(self):
         #log( "unthrottle" )
-        for l in self._throttle_listeners:
+        for l in iter_rand_pos(self._throttle_listeners):
             l.unthrottle_connections()
             # arg. resume actually flushes the buffers in iocpreactor, so we
             # have to check the state constantly
@@ -69,6 +71,9 @@ class DownloadRateLimiter( object ):
         #     (bytes,self._token_bucket))
         old = self._token_bucket
         self._token_bucket -= bytes
+
+        # Here we throttle the connections whenver the token bucket
+        # becomes less than empty. 
         if self._token_bucket - bytes <= 0 and old > 0:
             self.throttle()
 
@@ -80,7 +85,6 @@ class DownloadRateLimiter( object ):
         # size becomes smaller than zero due to a burst of packet
         # arrivals.  This is okay.  The observed rate will sawtooth around
         # the correct rate.
-
         # compute token size based on the time that really elapsed.
         now = time()
         if self._prev_time is None:

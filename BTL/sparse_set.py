@@ -1,6 +1,16 @@
 # SparseSet is meant to act just like a set object, but without actually
 # storing discrete values for every item in the set
 #
+# The contents of this file are subject to the Python Software Foundation
+# License Version 2.3 (the License).  You may not copy or use this file, in
+# either source code or executable form, except in compliance with the License.
+# You may obtain a copy of the License at http://www.python.org/license.
+#
+# Software distributed under the License is distributed on an AS IS basis,
+# WITHOUT WARRANTY OF ANY KIND, either express or implied.  See the License
+# for the specific language governing rights and limitations under the
+# License.
+#
 # by Greg Hazel
 
 from __future__ import generators
@@ -8,23 +18,30 @@ from __future__ import generators
 from bisect import bisect_left
 from itertools import izip
 
+try:
+    from blist import blist
+except ImportError:
+    list_base = list
+else:
+    list_base = blist
+
 class SparseSet(object):
 
     def __init__(self, s = None):
-        self._begins = []
+        self._begins = list_base()
         # ends are non-inclusive
-        self._ends = []
+        self._ends = list_base()
         if s is not None:
             if isinstance(s, SparseSet):
-                self._begins = list(s._begins)
-                self._ends = list(s._ends)
+                self._begins = list_base(s._begins)
+                self._ends = list_base(s._ends)
             else:                
                 self.add_range(s)
 
     def _collapse_range(self, l):
         last = None
-        begins = []
-        ends = []
+        begins = list_base()
+        ends = list_base()
         if len(l) == 0:
             return begins, ends
         
@@ -53,50 +70,55 @@ class SparseSet(object):
     def add(self, begin, end=None):
         if end is None:
             end = begin + 1
-        else:
-            assert end > begin
+        elif begin >= end:
+            raise ValueError("begin(%d) >= end(%d)" % (begin, end))
 
         if len(self._begins) == 0:
-            b_i = 0
-        else:
-            b_i = bisect_left(self._begins, begin)
+            self._begins.append(begin)
+            self._ends.append(end)
+            return
 
-            if b_i == 0:
-                if begin >= self._begins[b_i]:
-                    begin = self._begins[b_i]
-            elif begin <= self._ends[b_i - 1]:
-                b_i -= 1
+        b_i = bisect_left(self._begins, begin)
+
+        if b_i == 0:
+            if begin >= self._begins[b_i]:
                 begin = self._begins[b_i]
+        elif begin <= self._ends[b_i - 1]:
+            b_i -= 1
+            begin = self._begins[b_i]
 
-            e_i = bisect_left(self._ends, end, b_i)
+        e_i = bisect_left(self._ends, end, b_i)
 
-            if e_i < len(self._ends):
-                if end >= self._begins[e_i]:
-                    end = self._ends[e_i]
-                else:
-                    e_i -= 1
+        if e_i < len(self._ends):
+            if end >= self._begins[e_i]:
+                end = self._ends[e_i]
+            else:
+                e_i -= 1
 
-            # small optimization
-            if b_i == e_i:
-                if b_i == len(self._begins):
-                    self._begins.append(begin)
-                    self._ends.append(end)
-                else:
-                    self._begins[b_i] = begin
-                    self._ends[b_i] = end
-                return
-            
-            del self._begins[b_i:e_i + 1]
-            del self._ends[b_i:e_i + 1]
-                
-        self._begins.insert(b_i, begin)
-        self._ends.insert(b_i, end)
+        # small optimization
+        if b_i == e_i:
+            if b_i == len(self._begins):
+                self._begins.append(begin)
+                self._ends.append(end)
+            else:
+                self._begins[b_i] = begin
+                self._ends[b_i] = end
+            return
 
-    def subtract(self, begin, end=None):
+        # small optimization
+        if b_i == e_i + 1:
+            self._begins.insert(b_i, begin)
+            self._ends.insert(b_i, end)
+            return
+        
+        self._begins[b_i:e_i + 1] = (begin,)
+        self._ends[b_i:e_i + 1] = (end,)
+
+    def discard(self, begin, end=None):
         if end is None:
             end = begin + 1
-        else:
-            assert end > begin
+        elif begin >= end:
+            raise ValueError("begin(%d) >= end(%d)" % (begin, end))
 
         b_i = bisect_left(self._begins, begin)
         s_b_i = max(b_i - 1, 0)
@@ -121,14 +143,13 @@ class SparseSet(object):
             old_end = self._ends[b_i - 1]
             self._ends[b_i - 1] = begin
     
-        if beginning_is_an_end and end_is_an_end:
-            if b_i > e_i:
+        if end_is_an_end:
+            if beginning_is_an_end and b_i > e_i:
                 self._begins.insert(b_i, end)
                 self._ends.insert(b_i, old_end)
-
-        if end_is_an_end:
             self._begins[b_i] = end
-    remove = subtract
+    remove = discard
+    subtract = discard
 
     def is_range_in(self, x, y):
         assert y > x
@@ -165,7 +186,7 @@ class SparseSet(object):
                 yield i
 
     def iterneg(self, begin, end):
-        ranges = []
+        ranges = list_base()
         b_i = bisect_left(self._begins, begin)
         for b, e in izip(self._begins[b_i:], self._ends[b_i:]):
             for i in xrange(begin, b):
@@ -218,7 +239,7 @@ class SparseSet(object):
             for b, e in izip(s._begins, s._ends):
                 n.subtract(b, e)
         else:
-            n.subtract_range(list(s))
+            n.subtract_range(list_base(s))
         return n
 
     def __add__(self, s):
@@ -227,7 +248,7 @@ class SparseSet(object):
             for b, e in izip(s._begins, s._ends):
                 n.add(b, e)
         else:
-            n.add_range(list(s))
+            n.add_range(list_base(s))
         return n
 
     def __repr__(self):

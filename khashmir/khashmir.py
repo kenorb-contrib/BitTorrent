@@ -209,7 +209,7 @@ class KhashmirBase:
                 self.checkOldNode(old, n, contacted)
             else:
                 l = self.pingcache.get(old.id, [])
-                if len(l) < 10 or contacted:
+                if (len(l) < 10 or contacted) and len(l) < 15:
                     l.append((n, contacted))
                     self.pingcache[old.id] = l
 
@@ -249,6 +249,7 @@ class KhashmirBase:
                     if l:
                         del(self.pingcache[old.id])
                         l.sort(cmp)
+                        l = l[:5]
                         for node in l:
                             self.insertNode(node[0], node[1])
             else:
@@ -256,6 +257,7 @@ class KhashmirBase:
                 if l:
                     del(self.pingcache[old.id])
                 self.insertNode(new, contacted)
+                l = l[:5]
                 for node in l:
                     self.insertNode(node[0], node[1])
                     
@@ -265,6 +267,7 @@ class KhashmirBase:
             self.insertNode(new, contacted)
             l = self.pingcache.get(old.id, [])
             l.sort(cmp)
+            l = l[:5]
             for node in l:
                 self.insertNode(node[0], node[1])
             try:

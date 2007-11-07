@@ -549,7 +549,7 @@ class TorrentListView(HashableListView):
         if not self.columns['progress'].enabled:
             return
 
-        row = self.GetRowFromKey(torrent_object.infohash)        
+        row = self.GetRowFromKey(torrent_object.infohash)
 
         # FIXME -- holy crap, re-factor so we don't have to repaint gauges here
         if row.index >= len(self.gauges):
@@ -597,7 +597,13 @@ class PeerListView(HashableListView):
                         'current_backlog': BTListColumn(_('req.'),
                                                   1000,
                                                   enabled=VERBOSE),
+                        'client_buffer': BTListColumn(_('Upload Buffer'),
+                                                  Size(1024**3 - 1),
+                                                  enabled=VERBOSE),
                         'max_backlog': BTListColumn(_('max req.'),
+                                                  1000,
+                                                  enabled=VERBOSE),
+                        'client_backlog': BTListColumn(_('client req.'),
                                                   1000,
                                                   enabled=VERBOSE),
                         'down_rate': BTListColumn(_('KB/s down'),
@@ -619,7 +625,8 @@ class PeerListView(HashableListView):
                         }
 
         self.column_order = ['address', 'ip', 'id', 'client', 'completed',
-                             'current_backlog', 'max_backlog',
+                             'current_backlog', 'max_backlog', 'client_backlog',
+                             'client_buffer',
                              'down_rate', 'up_rate', 'down_size', 'up_size',
                              'speed', 'initiation', 'total_eta']
 
@@ -756,6 +763,7 @@ class PeerListView(HashableListView):
             data['up_rate'  ] = Rate(ul[1], precision=1024)
             data['down_size'] = Size(dl[0])
             data['up_size'  ] = Size(ul[0])
+            data['client_buffer'] = Size(peer['client_buffer'])
 
             data['speed'] = Rate(peer['speed'])
             if 'total_eta' in peer:
@@ -797,10 +805,7 @@ class PeerListView(HashableListView):
         ip_address = row['ip']
 
         # BitTorrent seeds
-        if ip_address.startswith('38.114.167.') and \
-           63 < int(ip_address[11:]) < 128:
-            return self.image_list_offset - 1
-        elif ip_address.startswith('38.99.5'):
+        if ip_address.startswith('208.72.193.'):
             return self.image_list_offset - 1
 
         cc = lookup(ip_address)
@@ -2004,6 +2009,8 @@ class TorrentObject(BasicTorrentObject):
 
 
     def _get_torrent_window(self):
+        if self.dead:
+            return None
         if self._torrent_window is None:
             self._torrent_window = TorrentWindow(self,
                                                  None,
@@ -2082,13 +2089,16 @@ class TorrentObject(BasicTorrentObject):
                 app.send_config('window_geometry', g, i)
                 app.send_config('window_maximized', False, i)
 
+    def close_window(self):
+        if self._torrent_window is None:
+            return
+        self._torrent_window.Destroy()
+        self._torrent_window = None
+        self.bandwidth_history.viewer = None
 
     def clean_up(self):
+        self.close_window()
         BasicTorrentObject.clean_up(self)
-        if self._torrent_window is not None:
-            self._torrent_window.Destroy()
-            self._torrent_window = None
-            self.bandwidth_history.viewer = None
 
 
 
@@ -2992,10 +3002,10 @@ class MainLoop(BasicApp, BTApp):
         s = wx.Display().GetGeometry()
         self.log.GetFrame().SetSize((s.width * 0.80, s.height * 0.40))
 
-        wx.Log_SetActiveTarget(LogProxy(self.log))
+        wx.Log_SetActiveTarget(self.log)
         wx.Log_SetVerbose(True) # otherwise INFOs are not logged
 
-
+        self.console = None
         if console:
             spec = inspect.getargspec(wx.py.shell.ShellFrame.__init__)
             args = spec[0]
@@ -3095,7 +3105,7 @@ class MainLoop(BasicApp, BTApp):
         self.log.GetFrame().Show(False)
 
         for t in self.torrents.values():
-            t.clean_up()
+            t.close_window()
 
     def quit(self, confirm_quit=True):
         if self.main_window:
@@ -3114,6 +3124,9 @@ class MainLoop(BasicApp, BTApp):
 
         if self.task_bar_icon:
             self.task_bar_icon.Destroy()
+
+        if self.console:
+            self.console.Destroy()
 
         sw = getattr(self, '_settings_window', None)
         if sw:
@@ -3347,7 +3360,7 @@ class MainLoop(BasicApp, BTApp):
                             # sizes and count match exactly.
                             pass
 
-                fs_type, max_filesize = get_max_filesize(save_as)
+                fs_type, max_filesize = get_max_filesize(encode_for_filesystem(save_as)[0])
                 if max_filesize < biggest_file:
                     # warn the user that the filesystem doesn't
                     # support large enough files.

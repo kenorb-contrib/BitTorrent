@@ -30,25 +30,29 @@ from BitTorrent import version
 from BTL.platform import encode_for_filesystem, decode_from_filesystem
 from BitTorrent import BTFailure
 from BitTorrent import bt_log_fmt
+from BTL.log import injectLogger
 import logging
 from logging import ERROR, WARNING, INFO
 from BitTorrent import console, old_stderr, STDERR
 
 exceptions = []
+log = logging.getLogger('launchmany-console')
 
 class HeadlessDisplayer:
     def display(self, data):
         # formats the data and dumps it to the root logger.
-        #print ''
         if not data:
-            logging.getLogger('launchmany-console').info( _("no torrents"))
-        for x in data:
-            ( name, status, progress, peers, seeds, seedsmsg, 
-              uprate, dnrate, upamt, dnamt, size, t, msg ) = x
-            logging.getLogger('launchmany-console').info(
-                '"%s": "%s" (%s) - %sP%s%s u%0.1fK/s-d%0.1fK/s u%dK-d%dK "%s"' % (
-                name, status, progress, peers, seeds, seedsmsg,
-                uprate/1000, dnrate/1000, upamt/1024, dnamt/1024, msg))
+            log.info( _("no torrents"))
+        elif type(data) == str:
+            log.info(data)
+        else:
+            for x in data:
+                ( name, status, progress, peers, seeds, seedsmsg,
+                  uprate, dnrate, upamt, dnamt, size, t, msg ) = x
+                logging.getLogger('launchmany-console').info(
+                    '"%s": "%s" (%s) - %sP%s%s u%0.1fK/s-d%0.1fK/s u%dK-d%dK "%s"' % (
+                    name, status, progress, peers, seeds, seedsmsg,
+                    uprate/1000, dnrate/1000, upamt/1024, dnamt/1024, msg))
         return False
 
 def modify_default( defaults_tuplelist, key, newvalue ):
@@ -57,7 +61,7 @@ def modify_default( defaults_tuplelist, key, newvalue ):
                     if not n == key]
     defaults_tuplelist.append( (key,newvalue,doc) )
     return defaults_tuplelist
-    
+
 
 if __name__ == '__main__':
     uiname = 'launchmany-console'
@@ -79,24 +83,37 @@ if __name__ == '__main__':
         # returned from here config['save_in'] is /home/dave/Desktop/...
         if args:
             torrent_dir = args[0]
-            config['torrent_dir'] = \
-                decode_from_filesystem(torrent_dir)
+            config['torrent_dir'] = decode_from_filesystem(torrent_dir)
         else:
             torrent_dir = config['torrent_dir']
             torrent_dir,bad = encode_for_filesystem(torrent_dir)
             if bad:
               raise BTFailure(_("Warning: ")+config['torrent_dir']+
                               _(" is not a directory"))
-            
+
         if not os.path.isdir(torrent_dir):
             raise BTFailure(_("Warning: ")+torrent_dir+
                             _(" is not a directory"))
 
         # the default behavior is to save_in files to the platform
-        # get_save_dir.  For launchmany, if no command-line argument 
+        # get_save_dir.  For launchmany, if no command-line argument
         # changed the save directory then use the torrent directory.
-        if config['save_in'] == platform.get_save_dir():
-            config['save_in'] = config['torrent_dir']
+        #if config['save_in'] == platform.get_save_dir():
+        #    config['save_in'] = config['torrent_dir']
+        if '--save_in' in sys.argv:
+            print "Don't use --save_in for launchmany-console.  Saving files from " \
+                  "many torrents in the same directory can result in filename collisions."
+            sys.exit(1)
+        # The default 'save_in' is likely to be something like /home/myname/BitTorrent Downloads
+        # but we would prefer that the 'save_in' be an empty string so that
+        # LaunchMany will save the file in the same location as the destination for the file.
+        # When downloading or seeding a large number of files we want to be sure there are
+        # no file name collisions which can occur when the same save_in directory is used for
+        # all torrents.  When 'save in' is empty, the destination of the filename is used, which
+        # for save_as style 4 (the default) will be in the same directory as the .torrent file.
+        # If each .torrent file is in its own directory then filename collisions cannot occur.
+        config['save_in'] = u""
+
     except BTFailure, e:
         print _("error: ") + unicode(e.args[0]) + \
               _("\nrun with no args for parameter explanations")
@@ -105,24 +122,24 @@ if __name__ == '__main__':
         sys.exit(1)
 
     d = HeadlessDisplayer()
-    
-    # BitTorrent.__init__ installs a StderrProxy that replaces sys.stderr
-    # and outputs all stderr output to the logger.  Output error log to
-    # original stderr to avoid infinite loop.
-    stderr_console = logging.StreamHandler(old_stderr)
-    stderr_console.setLevel(STDERR)
-    stderr_console.setFormatter(bt_log_fmt)
-    logging.getLogger('').addHandler(stderr_console)
-    logging.getLogger().setLevel(STDERR)
-    logging.getLogger().removeHandler(console)
-
-    # more liberal with logging launchmany-console specific output.
-    lmany_logger = logging.getLogger('launchmany-console')
-    lmany_handler = logging.StreamHandler(old_stderr)
-    lmany_handler.setFormatter(bt_log_fmt)
-    lmany_handler.setLevel(INFO)
-    lmany_logger.setLevel(INFO)
-    lmany_logger.addHandler(lmany_handler)
-    
     config = Preferences().initWithDict(config)
+    injectLogger(use_syslog = False, capture_output = True, verbose = True,
+                 log_level = logging.INFO, log_twisted = False )
+    logging.getLogger('').removeHandler(console)  # remove handler installed by BitTorrent.__init__.
     LaunchMany(config, d.display, 'launchmany-console')
+
+    logging.getLogger("").critical( "After return from LaunchMany" )
+
+    # Uncomment the following if it looks like threads are hanging around.
+    # monitor_thread can be found in cdv://cdv.bittorrent.com:6602/python-scripts
+    #import threading
+    #nondaemons = [d for d in threading.enumerate() if not d.isDaemon()]
+    #if len(nondaemons) > 1:
+    #    import time
+    #    from monitor_thread import print_stacks
+    #    time.sleep(4)
+    #    nondaemons = [d for d in threading.enumerate() if not d.isDaemon()]
+    #    if len(nondaemons) > 1:
+    #        print_stacks()
+
+

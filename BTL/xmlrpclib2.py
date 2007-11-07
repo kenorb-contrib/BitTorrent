@@ -35,29 +35,30 @@ class PyCurlTransport(xmlrpclib.Transport):
 
         h = self.cache.get_connection()
 
-        self.set_connection_params(h)
-        
-        h.add_data(request_body)
+        try:
+            self.set_connection_params(h)
+            
+            h.add_data(request_body)
 
-        response = pycurllib.urlopen(h, close=False)
+            response = pycurllib.urlopen(h, close=False)
 
-        #errcode, errmsg, headers = h.getreply()
-        errcode = response.code
-        errmsg = response.msg
-        headers = "N/A"
+            #errcode, errmsg, headers = h.getreply()
+            errcode = response.code
+            errmsg = response.msg
+            headers = "N/A"
 
-        if errcode != 200:
-            raise xmlrpclib.ProtocolError(
-                host + handler,
-                errcode, errmsg,
-                headers
-                )
+            if errcode != 200:
+                raise xmlrpclib.ProtocolError(
+                    host + handler,
+                    errcode, errmsg,
+                    headers
+                    )
 
-        self.verbose = verbose
+            self.verbose = verbose
 
-        r = self._parse_response(response)
-
-        self.cache.put_connection(h)
+            r = self._parse_response(response)
+        finally:
+            self.cache.put_connection(h)
 
         return r
 

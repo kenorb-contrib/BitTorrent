@@ -24,8 +24,9 @@ from BTL.translation import _
 from BTL.obsoletepythonsupport import set
 from BTL.sparse_set import SparseSet
 from BTL.bitfield import Bitfield
-from BTL.defer import Deferred
-from BTL.yielddefer import launch_coroutine, _wrap_task
+from BTL import defer
+from BTL.defer import wrap_task
+from BTL.yielddefer import launch_coroutine
 from BitTorrent import BTFailure
 from BTL.exceptions import str_exc
 
@@ -51,7 +52,7 @@ class DataPig(object):
 
     def got_piece(self, index, begin, length, source):
         if index in self.failed_pieces:
-            df = launch_coroutine(_wrap_task(self.add_task),
+            df = launch_coroutine(wrap_task(self.add_task),
                                   self._got_piece,
                                   index, begin, length, source)
             return df
@@ -159,12 +160,19 @@ class StorageWrapper(object):
         self.places = array(self.typecode, [NO_PLACE] * self.numpieces)
         check_hashes = self.config['check_hashes']
 
-        self.done_checking_df = Deferred()
+        self.done_checking_df = defer.Deferred()
         self.lastlen = self._piecelen(self.numpieces - 1)
 
         global_logger.debug("Loading fastresume...")
         if not check_hashes:
             self.rplaces = array(self.typecode, range(self.numpieces))
+            self.places = self.rplaces
+            self.amount_left = 0
+            self.rm.amount_inactive = self.amount_left
+            self.amount_left_with_partials = self.rm.amount_inactive
+            self.have.numfalse = 0
+            self.have.bits = None
+            self.have_set.add(0, self.numpieces)
             self._initialized(True)
         else:
             try:
@@ -228,7 +236,7 @@ class StorageWrapper(object):
         df.addCallback(self._initialized)
 
     def checkPieces_v1(self):
-        df = launch_coroutine(_wrap_task(self.add_task),
+        df = launch_coroutine(wrap_task(self.add_task),
                               self._checkPieces_v1)
         return df
         
@@ -432,7 +440,7 @@ class StorageWrapper(object):
         if i in self._pieces_in_buf:
             p = i - self._pieces_in_buf[0]
             return buffer(self._piece_buf, p * self.piece_size, self._piecelen(i))
-        df = launch_coroutine(_wrap_task(self.add_task),
+        df = launch_coroutine(wrap_task(self.add_task),
                               self._get_data_gen, i)
         return df
 
@@ -454,7 +462,7 @@ class StorageWrapper(object):
         yield buffer(self._piece_buf, p * self.piece_size, self._piecelen(i))
         
     def hashcheck_pieces(self, begin=0, end=None):
-        df = launch_coroutine(_wrap_task(self.add_task),
+        df = launch_coroutine(wrap_task(self.add_task),
                               self._hashcheck_pieces,
                               begin, end)
         return df
@@ -486,7 +494,7 @@ class StorageWrapper(object):
                 continue
 
             r = self._get_data(i)
-            if isinstance(r, Deferred):
+            if isinstance(r, defer.Deferred):
                 yield r
                 data = r.getResult()
             else:
@@ -523,7 +531,7 @@ class StorageWrapper(object):
         yield True
 
     def hashcheck_piece(self, index, data = None):
-        df = launch_coroutine(_wrap_task(self.add_task),
+        df = launch_coroutine(wrap_task(self.add_task),
                               self._hashcheck_piece,
                               index, data = data)
         return df
@@ -614,7 +622,7 @@ class StorageWrapper(object):
         return df
 
     def write(self, index, begin, piece, source):
-        df = launch_coroutine(_wrap_task(self.add_task),
+        df = launch_coroutine(wrap_task(self.add_task),
                               self._write,
                               index, begin, piece, source)
         return df
@@ -632,7 +640,7 @@ class StorageWrapper(object):
             # correct place.
             if self.rplaces[index] >= 0:
                 new_pos = self.rplaces[index]
-                df = launch_coroutine(_wrap_task(self.add_task),
+                df = launch_coroutine(wrap_task(self.add_task),
                                       self._move_piece, index, new_pos)
                 yield self._block_piece(index, df)
                 df.getResult()
@@ -647,11 +655,11 @@ class StorageWrapper(object):
         df = self._storage_write(self.places[index], piece, offset=begin)
         yield df
         df.getResult()
+
         self.rm.request_received(index, begin, len(piece))
 
-        hashcheck = False
-        if self.rm.is_piece_received(index):
-            hashcheck = True
+        hashcheck = self.rm.is_piece_received(index)
+        if hashcheck:
             df = self.hashcheck_piece(self.places[index])
             yield df
             passed = df.getResult()
@@ -678,7 +686,7 @@ class StorageWrapper(object):
 
     def get_piece(self, index):
         if not self.have[index]:
-            df = Deferred()
+            df = defer.Deferred()
             self.have_callbacks.setdefault(index, []).append(df)
             yield df
             df.getResult()
@@ -689,15 +697,14 @@ class StorageWrapper(object):
         yield r
 
     def read(self, index, begin, length):
-        df = launch_coroutine(_wrap_task(self.add_task),
+        if not self.have[index]:
+            raise IndexError("Do not have piece %d of %d" %
+                             (index, self.numpieces))
+        df = launch_coroutine(wrap_task(self.add_task),
                               self._read, index, begin, length)
         return df
 
     def _read(self, index, begin, length):
-        if not self.have[index]:
-            #yield None
-            raise IndexError("do not have piece %d" % index)
-
         if index in self.blocking_pieces:
             df = self.blocking_pieces[index]
             yield df
@@ -723,6 +730,7 @@ class StorageWrapper(object):
         yield data
 
     def _storage_read(self, index, amount, offset=0):
+        assert index >= 0
         return self.storage.read(index * self.piece_size + offset, amount)
 
     def _storage_write(self, index, data, offset=0):

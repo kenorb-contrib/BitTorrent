@@ -120,8 +120,8 @@ def isotime():
 http_via_filter = re.compile(' for ([0-9.]+)\Z')
 
 def _get_forwarded_ip(headers):
-    if headers.has_key('http_x_forwarded_for'):
-        header = headers['http_x_forwarded_for']
+    if headers.has_key('x_forwarded_for'):
+        header = headers['x_forwarded_for']
         try:
             x,y = header.split(',')
         except:
@@ -129,16 +129,16 @@ def _get_forwarded_ip(headers):
         if not is_local_ip(x):
             return x
         return y
-    if headers.has_key('http_client_ip'):
-        return headers['http_client_ip']
-    if headers.has_key('http_via'):
-        x = http_via_filter.search(headers['http_via'])
+    if headers.has_key('client_ip'):
+        return headers['client_ip']
+    if headers.has_key('via'):
+        x = http_via_filter.search(headers['via'])
         try:
             return x.group(1)
         except:
             pass
-    if headers.has_key('http_from'):
-        return headers['http_from']
+    if headers.has_key('from'):
+        return headers['from']
     return None
 
 def get_forwarded_ip(headers):
@@ -361,7 +361,7 @@ class Tracker(object):
                     nf = nf + 1
                     if self.allowed is not None and self.show_names:
                         if self.allowed.has_key(infohash):
-                            sz = self.allowed[infohash]['length']  # size
+                            sz = self.allowed[infohash][1].total_bytes # size
                             ts = ts + sz
                             szt = sz * n   # Transferred for this torrent
                             tt = tt + szt
@@ -735,7 +735,7 @@ class Tracker(object):
 
     def natchecklog(self, peerid, ip, port, result):
         print isotime(), '"!natcheck-%s:%i" %s %i 0 - -' % (
-            ip, quote(peerid), port, result)
+            ip, port, quote(peerid), result)
 
     def connectback_result(self, result, downloadid, peerid, ip, port):
         record = self.downloads.get(downloadid, {}).get(peerid)

@@ -54,8 +54,8 @@ def gui_wrap(_f, *args, **kwargs):
 SPACING = 8  # default pixels between widgets
 PORT_RANGE = 5 # how many ports to try
 
-WILDCARD = "Torrent files (*.torrent)|*.torrent|"\
-           "All files (*.*)|*.*"
+WILDCARD = _("Torrent files (*.torrent)|*.torrent|"\
+             "All files (*.*)|*.*")
 
 def get_theme_root(theme_name):
     for t in (theme_name, 'default'):
@@ -664,8 +664,8 @@ class BTDialog(wx.Dialog, MagicShow):
 
     def __init__(self, *a, **k):
         wx.Dialog.__init__(self, *a, **k)
-	if sys.platform == 'darwin':
-	    self.CenterOnParent()
+        if sys.platform == 'darwin':
+            self.CenterOnParent()
         self.SetIcon(wx.the_app.icon)
         self.Bind(wx.EVT_KEY_DOWN, self.key)
 
@@ -715,8 +715,8 @@ class BTFrame(wx.Frame, MagicShow):
 
         self.SetDimensions(x, y, w, h, sizeFlags=wx.SIZE_USE_EXISTING)
 
-	if (x, y) == (-1, -1):
-	    self.CenterOnScreen()	    
+        if (x, y) == (-1, -1):
+            self.CenterOnScreen()
 
 
     def _geometry_string(self):

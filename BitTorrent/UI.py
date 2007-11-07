@@ -24,10 +24,10 @@ import logging.handlers
 from BTL.translation import _
 
 import BTL.stackthreading as threading
-from BTL.platform import bttime
+from BTL.platform import bttime, efs2
 from BTL.obsoletepythonsupport import set
-from BTL.yielddefer import launch_coroutine, _wrap_task
-from BTL.defer import ThreadedDeferred
+from BTL.yielddefer import launch_coroutine
+from BTL.defer import ThreadedDeferred, wrap_task
 from BTL.ThreadProxy import ThreadProxy
 from BTL.exceptions import str_exc
 from BTL.formatters import percentify, Size, Rate, Duration
@@ -118,10 +118,10 @@ class BasicTorrentObject(object):
     def __init__(self, torrent):
         self.torrent = torrent
         self.pending = None
-        self.infohash   = torrent.metainfo.infohash
-        self.metainfo   = torrent.metainfo
+        self.infohash = torrent.metainfo.infohash
+        self.metainfo = torrent.metainfo
         self.destination_path = torrent.destination_path
-        self.working_path     = torrent.working_path
+        self.working_path = torrent.working_path
 
         self.state = torrent.state
         self.policy = torrent.policy
@@ -134,6 +134,8 @@ class BasicTorrentObject(object):
         self.downtotal  = 0
         self.up_down_ratio = 0
         self.peers = 0
+
+        self.dead = False        
 
         self.statistics = {}
 
@@ -175,6 +177,11 @@ class BasicTorrentObject(object):
 
 
     def clean_up(self):
+        if self.dead:
+            return
+        self.dead = True
+        del self.torrent
+        del self.metainfo
         logging.getLogger("core.MultiTorrent." + repr(self.infohash)).removeHandler(self.handler)
 
 
@@ -233,7 +240,7 @@ class BasicApp(object):
         except GetTorrent.GetTorrentException:
             self.logger.exception("publish_torrent failed")
             return
-        df = self.multitorrent.create_torrent(metainfo, publish_path, publish_path)
+        df = self.multitorrent.create_torrent(metainfo, efs2(publish_path), efs2(publish_path))
         yield df
         df.getResult()
 
@@ -347,7 +354,7 @@ class BasicApp(object):
 
     def launch_torrent(self, infohash):
         """Launch the torrent contents according to operating system."""
-        if self.torrents.has_key(infohash):
+        if infohash in self.torrents:
             torrent = self.torrents[infohash]
             if torrent.metainfo.is_batch:
                 LaunchPath.launchdir(torrent.working_path)
@@ -357,7 +364,7 @@ class BasicApp(object):
 
     def launch_torrent_folder(self, infohash):
         """Launch the torrent location according to operating system."""
-        if self.torrents.has_key(infohash):
+        if infohash in self.torrents:
             torrent = self.torrents[infohash]
             if torrent.metainfo.is_batch:
                 LaunchPath.launchdir(torrent.working_path)
@@ -397,7 +404,7 @@ class BasicApp(object):
     def _thread_proxy(self, obj):
         return ThreadProxy(obj,
                            self.gui_wrap,
-                           _wrap_task(self.rawserver.external_add_task))
+                           wrap_task(self.rawserver.external_add_task))
 
     def update_single_torrent(self, infohash):
         torrent = self.torrents[infohash]
@@ -411,8 +418,7 @@ class BasicApp(object):
         except UnknownInfohash:
             # looks like it's gone now
             if infohash in self.torrents:
-                self.torrents.pop(infohash)
-                self.torrent_removed(infohash)
+                self._do_remove_torrent(infohash)
         else:
             # the infohash might have been removed from torrents
             # while we were yielding above, so we need to check
@@ -436,7 +442,7 @@ class BasicApp(object):
             torrent = self._thread_proxy(torrent)
             infohashes.add(torrent.metainfo.infohash)
             if torrent.metainfo.infohash not in self.torrents:
-                if self.config.get('skip_hidden_flag') or not torrent.hidden:
+                if self.config.get('show_hidden_torrents') or not torrent.hidden:
                     # create new torrent widget
                     to = self.new_displayed_torrent(torrent)
 
@@ -446,8 +452,7 @@ class BasicApp(object):
         for infohash, torrent in copy(self.torrents).iteritems():
             # remove nonexistent torrents
             if infohash not in infohashes:
-                self.torrents.pop(infohash)
-                self.torrent_removed(infohash)
+                self._do_remove_torrent(infohash)
 
         total_completion = 0
         total_bytes = 0
@@ -464,8 +469,7 @@ class BasicApp(object):
             except UnknownInfohash:
                 # looks like it's gone now
                 if infohash in self.torrents:
-                    self.torrents.pop(infohash)
-                    self.torrent_removed(infohash)
+                    self._do_remove_torrent(infohash)
             else:
                 # the infohash might have been removed from torrents
                 # while we were yielding above, so we need to check
@@ -589,10 +593,12 @@ class BasicApp(object):
             pass # it was already gone, who cares
 
         if infohash in self.torrents:
-            self.torrent_removed(infohash)
-            tw = self.torrents.pop(infohash)
-            tw.clean_up()
+            self._do_remove_torrent(infohash)
 
+    def _do_remove_torrent(self, infohash):
+        self.torrent_removed(infohash)
+        torrent_object = self.torrents.pop(infohash)
+        torrent_object.clean_up()        
 
     def set_file_priority(self, infohash, filenames, dowhat):
         """Tell multitorrent to set file priorities."""

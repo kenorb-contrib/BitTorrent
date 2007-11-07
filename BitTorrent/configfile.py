@@ -371,8 +371,7 @@ def parse_configuration_and_args(defaults, uiname, arglist=[], minargs=None,
 
     config = args = None
     try:
-        d = defaults + [('skip_hidden_flag', False, '')]
-        config, args = parseargs.parseargs(arglist, d, minargs, maxargs,
+        config, args = parseargs.parseargs(arglist, defaults, minargs, maxargs,
                                            presets)
     except parseargs.UsageException, e:
         print e
@@ -417,8 +416,7 @@ def parse_configuration_and_args(defaults, uiname, arglist=[], minargs=None,
                             found_4x_config = True
             parseargs.parse_options(defconfig, values, encoding)
             presets.update(values)
-            d = defaults + [('skip_hidden_flag', False, '')]
-            config, args = parseargs.parseargs(arglist, d, minargs,
+            config, args = parseargs.parseargs(arglist, defaults, minargs,
                                                maxargs, presets)
 
         for d in ('', 'resume', 'metainfo', 'torrents'):

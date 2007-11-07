@@ -21,8 +21,8 @@ from BTL.exceptions import str_exc
 from BTL.ConvertedMetainfo import ConvertedMetainfo
 from BTL.bencode import bdecode
 from BTL.platform import encode_for_filesystem
-from BTL.defer import ThreadedDeferred
-from BTL.yielddefer import launch_coroutine, _wrap_task
+from BTL.defer import ThreadedDeferred, wrap_task
+from BTL.yielddefer import launch_coroutine
 from BTL.obsoletepythonsupport import set
 from BTL.hash import sha
 
@@ -311,7 +311,7 @@ class AutoUpdateButler(TorrentButler):
         """Launch the actual version check code in a coroutine since
         it needs to make three (or four, in beta) http requests, one
         disk read, and one decryption."""
-        df = launch_coroutine(_wrap_task(self.rawserver.external_add_task),
+        df = launch_coroutine(wrap_task(self.rawserver.external_add_task),
                               self._check_version)
         def errback(e):
             self.logger.error('check_version() run #%d: ' % self.runs,
@@ -345,7 +345,7 @@ class AutoUpdateButler(TorrentButler):
 
         url = self.version_site + self.current_version.name()
 
-        df = ThreadedDeferred(_wrap_task(self.rawserver.external_add_task),
+        df = ThreadedDeferred(wrap_task(self.rawserver.external_add_task),
                               self._get_available, url, daemon=True)
         yield df
         try:
@@ -360,7 +360,7 @@ class AutoUpdateButler(TorrentButler):
                 available_version = self.current_version
         if self.current_version.is_beta():
             stable_url = self.version_site + 'stable'
-            df = ThreadedDeferred(_wrap_task(self.rawserver.external_add_task),
+            df = ThreadedDeferred(wrap_task(self.rawserver.external_add_task),
                                   self._get_available, stable_url)
             yield df
             try:
@@ -393,18 +393,18 @@ class AutoUpdateButler(TorrentButler):
         fs_name = encode_for_filesystem(installer_name.decode('ascii'))[0]
         installer_path = os.path.join(self.installer_dir, fs_name)
 
-        df = ThreadedDeferred(_wrap_task(self.rawserver.external_add_task),
+        df = ThreadedDeferred(wrap_task(self.rawserver.external_add_task),
                               self._get_torrent, installer_url)
         yield df
         torrentfile = df.getResult()
 
-        df = ThreadedDeferred(_wrap_task(self.rawserver.external_add_task),
+        df = ThreadedDeferred(wrap_task(self.rawserver.external_add_task),
                               self._get_signature, installer_url)
         yield df
         signature = df.getResult()
 
         if torrentfile and signature:
-            df = ThreadedDeferred(_wrap_task(self.rawserver.external_add_task),
+            df = ThreadedDeferred(wrap_task(self.rawserver.external_add_task),
                                   self._check_signature, torrentfile, signature)
             yield df
             checked = df.getResult()

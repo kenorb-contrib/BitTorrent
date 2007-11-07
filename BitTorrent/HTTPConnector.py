@@ -11,11 +11,14 @@ from bisect import bisect_right
 from urlparse import urlparse
 from BitTorrent.HTTPDownloader import parseContentRange
 
-
-def log(s):
-    print repr(s)
 noisy = False
 
+#if noisy:
+connection_logger = logging.getLogger("BitTorrent.HTTPConnector")
+connection_logger.setLevel(logging.DEBUG)
+stream_handler = logging.StreamHandler()
+connection_logger.addHandler(stream_handler)
+log = connection_logger.debug
 
 class BatchRequests(object):
 
@@ -124,7 +127,7 @@ class HTTPConnector(Connector):
     UNCHOKED_SEED_COUNT = 5
     RATE_PERCENTAGE = 10
 
-    def __init__(self, parent, piece_size, urlage, connection, id, outgoing):
+    def __init__(self, parent, piece_size, urlage, connection, id, outgoing, log_prefix):
         self.piece_size = piece_size
         self._header_lines = []
         self.manual_close = False
@@ -140,7 +143,7 @@ class HTTPConnector(Connector):
         self.host = host
         self.prefix = path
         self.append = not(len(self.urlage.ranges) == 1 and path and path[-1] != '/')
-        Connector.__init__(self, parent, connection, id, outgoing)
+        Connector.__init__(self, parent, connection, id, outgoing, log_prefix=log_prefix)
         # blarg
         self._buffer = []
         self._buffer_len = 0
@@ -150,7 +153,7 @@ class HTTPConnector(Connector):
         Connector.close(self)
 
     def send_handshake(self):
-        if noisy: log('connection made: %s' % self.id)
+        if noisy: self.logger.info('connection made: %s' % self.id)
         self.complete = True
         self.parent.connection_handshake_completed(self)
 
@@ -166,7 +169,7 @@ class HTTPConnector(Connector):
             for b, l in a:
                 self.download.active_requests.add((index, b, l))
             self.request_blocks[(index, begin, length)] = a
-            assert self == self.download.connection
+            assert self == self.download.connector
             self.send_request(index, begin, length)
         self.download.send_request = _download_send_request
 
@@ -177,16 +180,13 @@ class HTTPConnector(Connector):
 
     def send_request(self, index, begin, length):
         if noisy:
-            log( "SEND %s %d %d %d" % ('GET', index, begin, length) )
+            self.logger.info("SEND %s %d %d %d" % ('GET', index, begin, length))
         b = (index * self.piece_size) + begin
         r = self.urlage.build_requests(self.batch_requests, self.host, b,
                                        length, self.prefix, self.append)
         for filename, s in r:
             self.request_paths.append(filename)
-            if self._partial_message is not None:
-                self._outqueue.append(s)
-            else:
-                self.connection.write(s)
+            self._write(s)
 
     def send_interested(self):
         pass
@@ -223,7 +223,7 @@ class HTTPConnector(Connector):
             yield None
 
             line = self._message.upper()
-            if noisy: log(line)
+            if noisy: self.logger.info(line)
             l = line.split(None, 2)
             version = l[0]
             status = l[1]
@@ -253,7 +253,7 @@ class HTTPConnector(Connector):
                 header, value = self._message.split(':', 1)
                 header = header.lower()
                 headers[header] = value.strip()
-            if noisy: log(headers)
+            if noisy: self.logger.info("incoming headers: %s"  % (headers, ))
             # reset the header buffer so we can loop
             self._header_lines = []
 
@@ -271,15 +271,15 @@ class HTTPConnector(Connector):
             start, end, realLength = parseContentRange(headers['content-range'])
             length = (end - start) + 1
             cl = int(headers.get('content-length', length))
-            assert (cl == length,
-                    'Got c-l:%d bytes instead of l:%d' % (cl, length))
+            if cl != length:
+                raise ValueError('Got c-l:%d bytes instead of l:%d' % (cl, length))
             yield length
-            assert (len(self._message) == length,
-                    'Got m:%d bytes instead of l:%d' % (len(self._message),
-                                                        length))
+            if len(self._message) != length:
+                raise ValueError('Got m:%d bytes instead of l:%d' %
+                                 (len(self._message), length))
             
             if noisy:
-                log( "GOT %s %d %d" % ('GET', start, len(self._message)) )
+                self.logger.info("GOT %s %d %d" % ('GET', start, len(self._message)))
             self.got_anything = True
             br = self.batch_requests.got_request(filename, start, self._message)
             data = br.get_result()
@@ -290,7 +290,7 @@ class HTTPConnector(Connector):
                 begin = br.start - (index * self.piece_size)
             
                 if noisy:
-                    log( "GOT %s %d %d %d" % ('GET', index, begin, length) )
+                    self.logger.info("GOT %s %d %d %d" % ('GET', index, begin, length))
 
                 r = (index, begin, length)
                 a = self.request_blocks.pop(r)
@@ -299,10 +299,11 @@ class HTTPConnector(Connector):
                     self.download.got_piece(index, b, d)
 
             if noisy:
-                log( "REMAINING: %d" % len(self.request_blocks))
+                self.logger.info("REMAINING: %d" % len(self.request_blocks))
 
 
     def data_came_in(self, conn, s):
+        #self.logger.info( "HTTPConnector self=%s received string len(s): %d" % (self,len(s)))
         self.received_data = True
         
         if not self.download:
@@ -311,9 +312,13 @@ class HTTPConnector(Connector):
         else:
             l = self.sloppy_pre_connection_counter + len(s)
             self.sloppy_pre_connection_counter = 0
+            self.download.fire_raw_received_listeners(l)
 
         self._buffer.append(s)
         self._buffer_len += len(s)
+        #self.logger.info( "_buffer now has length: %s, _next_len=%s" % 
+        #    (self._buffer_len, self._next_len ) )
+
         # not my favorite loop.
         # the goal is: read self._next_len bytes, or if it's None return all
         # data up to a \r\n
@@ -353,25 +358,34 @@ class HTTPConnector(Connector):
                 return
 
     def _optional_restart(self):            
-        if self.got_anything and not self.manual_close:
+        if noisy: self.logger.info("_optional_restart: got_anything:%s manual_close:%s" % (self.got_anything, self.manual_close))
 
-            # we disconnect from the http seed in cases where we're getting
-            # plenty of bandwidth elsewhere. the first measure is the number
-            # of unchoked seeds we're connected to. the second is the
-            # percentage of the total rate that the seed makes up.
-            md = self.download.multidownload
-            seed_count = md.get_unchoked_seed_count()
-            # -1 because this http seed it counted still
-            seed_count -= 1
-            if seed_count > self.UNCHOKED_SEED_COUNT:
-                torrent_rate = md.get_downrate()
-                scale = (self.RATE_PERCENTAGE / 100.0)
-                if self.download.get_rate() < (torrent_rate * scale):
-                    return
-            
-            # http keep-alive has a per-connection limit on the number of
-            # requests also, it times out. both result it a dropped connection,
-            # so re-make it. idealistically, the connection would hang around
-            # even if dropped, and reconnect if we needed to make a new request
-            # (that way we don't thrash the piece picker everytime we reconnect)
-            self.parent.start_http_connection(self.id)
+        if self.manual_close:
+            return
+
+        # we disconnect from the http seed in cases where we're getting
+        # plenty of bandwidth elsewhere. the first measure is the number
+        # of unchoked seeds we're connected to. the second is the
+        # percentage of the total rate that the seed makes up.
+        md = self.download.multidownload
+        seed_count = md.get_unchoked_seed_count()
+        # -1 because this http seed it counted still
+        seed_count -= 1
+        if seed_count > self.UNCHOKED_SEED_COUNT:
+            torrent_rate = md.get_downrate()
+            scale = (self.RATE_PERCENTAGE / 100.0)
+            if self.download.get_rate() < (torrent_rate * scale):
+                a = seed_count
+                b = self.UNCHOKED_SEED_COUNT
+                c = self.download.get_rate()
+                d = torrent_rate * scale
+                self.logger.info("Swarm performance: %s > %s && %s < %s" % (a, b, c, d))
+                return
+        
+        if noisy: self.logger.info("restarting: %s" % self.id)
+        # http keep-alive has a per-connection limit on the number of
+        # requests also, it times out. both result it a dropped connection,
+        # so re-make it. idealistically, the connection would hang around
+        # even if dropped, and reconnect if we needed to make a new request
+        # (that way we don't thrash the piece picker everytime we reconnect)
+        self.parent.start_http_connection(self.id)

@@ -1,9 +1,19 @@
 # yielddefer is an async programming mechanism with a blocking look-alike syntax
 #
+# The contents of this file are subject to the Python Software Foundation
+# License Version 2.3 (the License).  You may not copy or use this file, in
+# either source code or executable form, except in compliance with the License.
+# You may obtain a copy of the License at http://www.python.org/license.
+#
+# Software distributed under the License is distributed on an AS IS basis,
+# WITHOUT WARRANTY OF ANY KIND, either express or implied.  See the License
+# for the specific language governing rights and limitations under the
+# License.
+#
 # launch_coroutine maintains the illusion that the passed function
 # (a generator) runs from beginning to end yielding when necessary
 # for some job to complete and then continuing where it left off.
-# 
+#
 # def f():
 #    ...
 #    df = some_thing_that_takes_time()
@@ -14,8 +24,8 @@
 #    yield df
 #    result = df.getResult()
 #    ...
-# 
-# Upon resuming from a yield point, the generator should 
+#
+# Upon resuming from a yield point, the generator should
 # call getResult() even if no result is expected, so that
 # exceptions generated while yielding are raised.
 #
@@ -31,8 +41,7 @@ from __future__ import generators
 import sys
 import types
 import traceback
-# (half) CRUFT - remove when bittorrent uses twisted deferreds
-from BTL.defer import Deferred, Failure
+from BTL.defer import Deferred, Failure, wrap_task
 from BTL.stackthreading import _print_traceback
 
 debug = False
@@ -120,7 +129,7 @@ class GenWithDeferred(object):
             t.addCallback(self._queue_task_chain)
             t.addErrback(self._queue_task_chain)
             del t
-        
+
 class FakeTb(object):
     __slots__ = ['tb_frame', 'tb_lineno', 'tb_orig', 'tb_next']
     def __init__(self, frame, tb):
@@ -146,7 +155,7 @@ def launch_coroutine(queue_task, f, *args, **kwargs):
         if debug:
             traceback.print_exc()
         main_df.errback(Failure())
-    else:        
+    else:
         if isinstance(g, types.GeneratorType):
             _launch_generator(queue_task, g, main_df)
         else:
@@ -154,10 +163,9 @@ def launch_coroutine(queue_task, f, *args, **kwargs):
             main_df.callback(g)
     return main_df
 
-def wrap_task(add_task):
-    return lambda _f, *args, **kwargs : add_task(0, _f, *args, **kwargs)
-_wrap_task = wrap_task   
-
-from BTL.reactor_magic import reactor
-def coro(f, *args, **kwargs):
-    return launch_coroutine(_wrap_task(reactor.callLater), f, *args, **kwargs)
+def coroutine(queue_task):
+    def make_coroutine(_f):
+        def replacement(*a, **kw):
+            return launch_coroutine(queue_task, _f, *a, **kw)
+        return replacement
+    return make_coroutine

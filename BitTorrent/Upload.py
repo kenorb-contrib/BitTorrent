@@ -23,6 +23,9 @@ import logging
 logger = logging.getLogger("BitTorrent.Upload")
 log = logger.debug
 
+# Maximum number of outstanding requests from a peer
+MAX_REQUESTS = 256
+
 def _compute_allowed_fast_list(infohash, ip, num_fast, num_pieces):
     
     # if ipv4 then  (for now assume IPv4)
@@ -52,9 +55,10 @@ def _compute_allowed_fast_list(infohash, ip, num_fast, num_pieces):
 class Upload(object):
     """Upload over a single connection."""
     
-    def __init__(self, connector, ratelimiter, choker, storage, 
+    def __init__(self, multidownload, connector, ratelimiter, choker, storage, 
                  max_chunk_length, max_rate_period, num_fast, infohash):
         assert isinstance(connector, BitTorrent.Connector.Connector)
+        self.multidownload = multidownload
         self.connector = connector
         self.ratelimiter = ratelimiter
         self.infohash = infohash 
@@ -65,17 +69,19 @@ class Upload(object):
         self.choked = True
         self.unchoke_time = None
         self.interested = False
+        self.had_length_error = False
+        self.had_max_requests_error = False
         self.buffer = []    # contains piece data about to be sent.
         self.measure = Measure(max_rate_period)
         connector.add_sent_listener(self.measure.update_rate) 
         self.allowed_fast_pieces = []
         if connector.uses_fast_extension:
             if storage.get_amount_left() == 0:
-                connector.send_have_all();
+                connector.send_have_all()
             elif storage.do_I_have_anything():
                 connector.send_bitfield(storage.get_have_list())
             else:
-                connector.send_have_none();
+                connector.send_have_none()
             self._send_allowed_fast_list()
         elif storage.do_I_have_anything():
             connector.send_bitfield(storage.get_have_list())
@@ -109,7 +115,7 @@ class Upload(object):
             return range(num_pieces) # <---- this would be bizarre
         while True:
             h = sha(h).digest() # rehash hash to generate new random string.
-            #log( "infohash=%s" % h.encode('hex' ) )
+            #log("infohash=%s" % h.encode('hex'))
             for i in xrange(5):
                 j = i*4
                 y = [ord(x) for x in h[j:j+4]]
@@ -133,44 +139,60 @@ class Upload(object):
 
     def get_upload_chunk(self, index, begin, length):
         df = self.storage.read(index, begin, length)
-        def fail(f):
-            log( "get_upload_chunk failed", exc_info=f.exc_info() )
-            self.connector.close()
-            return f
-        def update_rate(piece):
-            return (index, begin, piece)
-        df.addCallback(update_rate)
-        df.addErrback(fail)
+        df.addCallback(lambda piece: (index, begin, piece))
+        df.addErrback(self._failed_get_upload_chunk)
         return df
+
+    def _failed_get_upload_chunk(self, f):
+        log("get_upload_chunk failed", exc_info=f.exc_info())
+        self.connector.close()
+        return f
 
     def got_request(self, index, begin, length):
         if not self.interested:
+            self.connector.protocol_violation("request when not interested")
             self.connector.close()
             return
         if length > self.max_chunk_length:
-            self.connector.close()
+            if not self.had_length_error:
+                m = ("request length %r exceeds max %r" %
+                     (length, self.max_chunk_length))
+                self.connector.protocol_violation(m)
+                self.had_length_error = True
+            #self.connector.close()
+            # we could still download...
+            if self.connector.uses_fast_extension:
+                self.connector.send_reject_request(index, begin, length)
+            return
+        if len(self.buffer) > MAX_REQUESTS:
+            if not self.had_max_requests_error:
+                m = ("max request limit %d" % MAX_REQUESTS)
+                self.connector.protocol_violation(m)
+                self.had_max_requests_error = True
+            if self.connector.uses_fast_extension:
+                self.connector.send_reject_request(index, begin, length)
             return
         if index in self.allowed_fast_pieces or not self.connector.choke_sent:
             df = self.get_upload_chunk(index, begin, length)
-            def got_piece(piece_info):
-                index, begin, piece = piece_info
-                if self.connector.closed:
-                    return
-                if self.choked:
-                    if not self.connector.uses_fast_extension:
-                        return
-                    if index not in self.allowed_fast_pieces:
-                        self.connector.send_reject_request(
-                            index, begin, len(piece))
-                        return
-                self.buffer.append(((index, begin, len(piece)), piece))
-                if self.connector.next_upload is None and \
-                       self.connector.connection.is_flushed():
-                    self.ratelimiter.queue(self.connector)
-            df.addCallback(got_piece)
-            df.addErrback(lambda fuckoff : None)
+            df.addCallback(self._got_piece)
+            df.addErrback(self.multidownload.errorfunc)
         elif self.connector.uses_fast_extension:
-            self.connector.send_reject_request( index, begin, length )
+            self.connector.send_reject_request(index, begin, length)
+
+    def _got_piece(self, piece_info):
+        index, begin, piece = piece_info
+        if self.connector.closed:
+            return
+        if self.choked:
+            if not self.connector.uses_fast_extension:
+                return
+            if index not in self.allowed_fast_pieces:
+                self.connector.send_reject_request(index, begin, len(piece))
+                return
+        self.buffer.append(((index, begin, len(piece)), piece))
+        if self.connector.next_upload is None and \
+               self.connector.connection.is_flushed():
+            self.ratelimiter.queue(self.connector)
             
     def got_cancel(self, index, begin, length):
         req = (index, begin, length)
@@ -193,7 +215,7 @@ class Upload(object):
             for r in self.buffer:
                 ((index,begin,length),piecedata) = r
                 if index not in self.allowed_fast_pieces:
-                    self.connector.send_reject_request( index, begin, length )
+                    self.connector.send_reject_request(index, begin, length)
                 else:
                     b2.append(r)
             self.buffer = b2

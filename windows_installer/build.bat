@@ -24,6 +24,7 @@ copy installer.directory.ini ..
 copy installer.upgrade.ini ..
 copy installer.warning.rtf ..
 copy winprepnsi.py ..
+copy win-append-url.py ..
 
 cd ..
 
@@ -43,6 +44,8 @@ copy c:\%PYTHON%\python.exe.manifest dist\choose_language.exe.manifest
 @if errorlevel 1 goto error
 del installer.temp.nsi
 @if errorlevel 1 goto error
+
+c:\%PYTHON%\python.exe win-append-url.py
 
 @rem cleanup
 del winsetup.py

@@ -25,18 +25,27 @@ from BitTorrent.LocalDiscovery import LocalDiscovery
 from BitTorrent.InternetWatcher import InternetSubscriber
 from BTL.DictWithLists import DictWithInts, OrderedDict
 from BTL.platform import bttime
+from BTL.rand_tools import iter_rand_pos
 import random
 import logging
 import urlparse
 
 ONLY_LOCAL = False
 
+GLOBAL_FILTER = None
+def GLOBAL_FILTER(ip, port, direction=""):
+    #print ip, direction
+    return False
+GLOBAL_FILTER = None
+
 # header, reserved, download id, my id, [length, message]
 
 LOWER_BOUND = 1
 UPPER_BOUND = 120
 BUFFER = 1.2
+use_timeout_order = False
 timeout_order = [3, 15, 30]
+debug = False
 
 def set_timeout_metrics(delta):
     delta = max(delta, 0.0001)
@@ -51,16 +60,23 @@ def set_timeout_metrics(delta):
 
 class GaurdedInitialConnection(Handler):
     def __init__(self, parent, id, encrypt=False, log_prefix="", lan=False,
-                 urgent=False, timeout=None):
-        self.parent = parent
+                 urgent=False, timeout=None ):
+        self.t = None
         self.id = id
         self.lan = lan
-        self.log_prefix = log_prefix
+        self.parent = parent
+        self.urgent = urgent
+        self.timeout = timeout
         self.encrypt = encrypt
         self.connector = None
-        self.timeout = timeout
+        self.log_prefix = log_prefix
 
     def _make_connector(self, s):
+        addr = (s.ip, s.port)
+        self.parent.cache_complete_peer(addr, self.id, type(self),
+                                        encrypt=self.encrypt,
+                                        urgent=self.urgent,
+                                        lan=self.lan)
         return Connector(self.parent, s, self.id, True,
                          obfuscate_outgoing=self.encrypt,
                          log_prefix=self.log_prefix,
@@ -69,14 +85,26 @@ class GaurdedInitialConnection(Handler):
 
     def connection_starting(self, addr):
         self.start = bttime()
-        self.parent.add_task(self.timeout, self.parent._cancel_connection, addr)
+        self.t = self.parent.add_task(self.timeout,
+                                      self.parent._cancel_connection, addr)
+
+    def _abort_timeout(self):
+        if self.t and self.t.active():
+            self.t.cancel()
+        self.t = None        
         
     def connection_made(self, s):
-        set_timeout_metrics(bttime() - self.start)
-
+        t = bttime() - self.start
+        set_timeout_metrics(t)
         addr = (s.ip, s.port)
-        #print 'connection made', addr
+
+        if debug:        
+            self.parent.logger.warning('connection made: %s %s' %
+                                       (addr, t))
+
         del self.parent.pending_connections[addr]
+
+        self._abort_timeout()        
 
         con = self._make_connector(s)
         self.parent._add_connection(con)
@@ -86,13 +114,17 @@ class GaurdedInitialConnection(Handler):
         self.parent.replace_connection()
         
     def connection_failed(self, s, exception):
-        #print 'connection failed', addr, exception.getErrorMessage()
         addr = (s.ip, s.port)
+        if debug:
+            self.parent.logger.warning('connection failed: %s %s' %
+                                       (addr, exception.getErrorMessage()))
 
         if s.connector.wasPreempted():
             self.parent._resubmit_connection(addr)
-        
+
         del self.parent.pending_connections[addr]
+
+        self._abort_timeout()        
 
         # only holepunch if this connection timed out entirely
         if self.timeout >= timeout_order[-1]:        
@@ -106,19 +138,24 @@ class GaurdedInitialConnection(Handler):
 class HTTPInitialConnection(GaurdedInitialConnection):
 
     def _make_connector(self, s):
+        addr = (s.ip, s.port)
+        self.parent.cache_complete_peer(addr, self.id, type(self),
+                                        urgent=self.urgent)
         # ow!
         piece_size = self.parent.downloader.storage.piece_size
         urlage = self.parent.downloader.urlage
-        return HTTPConnector(self.parent, piece_size, urlage, s, self.id, True)
+        return HTTPConnector(self.parent, piece_size, urlage, s, self.id, True,
+                             log_prefix=self.log_prefix)
     
 
 class ConnectionManager(InternetSubscriber):
 
     def __init__(self, make_upload, downloader, choker,
                  numpieces, ratelimiter,
-                 rawserver, config, my_id, add_task, infohash, context,
-                 addcontactfunc, reported_port, tracker_ips, log_prefix):
+                 rawserver, config, private, my_id, add_task, infohash, context,
+                 addcontactfunc, reported_port, tracker_ips, log_prefix ): 
         """
+            @param downloader: MultiDownload for this torrent.
             @param my_id: my peer id.
             @param tracker_ips: list of tracker ip addresses.
                ConnectionManager does not drop connections from the tracker.
@@ -137,6 +174,7 @@ class ConnectionManager(InternetSubscriber):
         self.ratelimiter = ratelimiter
         self.rawserver = rawserver
         self.my_id = my_id
+        self.private = private
         self.config = config
         self.add_task = add_task
         self.infohash = infohash
@@ -167,19 +205,33 @@ class ConnectionManager(InternetSubscriber):
         self.connector_ips = DictWithInts()
         self.connector_ids = DictWithInts()
 
-        self.reopen(reported_port)        
         self.banned = set()
-        self.add_task(config['keepalive_interval'], self.send_keepalives)
-        self.add_task(config['pex_interval'], self.send_pex)
 
-        self.throttled = False
+        self._ka_task = self.add_task(config['keepalive_interval'],
+                                      self.send_keepalives)
+        self._pex_task = None
+        if not self.private:
+            self._pex_task = self.add_task(config['pex_interval'],
+                                           self.send_pex)
+
+        self.reopen(reported_port)        
+
+    def cleanup(self):
+        if not self.closed:
+            self.close_connections()
+        del self.context
+        self.cached_peers.clear()
+        if self._ka_task.active():
+            self._ka_task.cancel()
+        if self._pex_task and self._pex_task.active():
+            self._pex_task.cancel()
 
     def reopen(self, port):
         self.closed = False
         self.reported_port = port
         self.unthrottle_connections()
-        for addr, (id, handler, a, kw) in self.cached_peers.iteritems():
-            self._start_connection(addr, id, handler, *a, **kw)
+        for addr in self.cached_peers:
+            self._fire_cached_connection(addr)
         self.rawserver.internet_watcher.add_subscriber(self)
 
     def internet_active(self):
@@ -201,16 +253,45 @@ class ConnectionManager(InternetSubscriber):
         return True
 
     def _fire_cached_connection(self, addr):
-        (id, handler, a, kw) = self.cached_peers[addr]
-        return self._start_connection(addr, id, handler, *a, **kw)        
+        v = self.cached_peers[addr]
+        complete, (id, handler, a, kw) = v
+        return self._start_connection(addr, id, handler, *a, **kw)
+
+    def cache_complete_peer(self, addr, pid, handler, *a, **kw):
+        self.cache_peer(addr, pid, handler, 1, *a, **kw)
+
+    def cache_incomplete_peer(self, addr, pid, handler, *a, **kw):
+        self.cache_peer(addr, pid, handler, 0, *a, **kw)
+
+    def cache_peer(self, addr, pid, handler, complete, *a, **kw):
+        # obey the cache size limit
+        if (addr not in self.cached_peers and
+            len(self.cached_peers) >= self.cache_limit):
+            for k, v in self.cached_peers.iteritems():
+                if not v[0]:
+                    del self.cached_peers[k]
+                    break
+            else:
+                # cache full of completes, delete a random peer.
+                # yes, this can cache an incomplete when the cache is full of
+                # completes, but only 1 because of the filter above.
+                oldaddr = self.cached_peers.keys()[0]
+                del self.cached_peers[oldaddr]
+        elif not complete:
+            if addr in self.cached_peers and self.cached_peers[addr][0]:
+                # don't overwrite a complete with an incomplete.
+                return
+        self.cached_peers[addr] = (complete, (pid, handler, a, kw))
 
     def send_keepalives(self):
-        self.add_task(self.config['keepalive_interval'], self.send_keepalives)
+        self._ka_task = self.add_task(self.config['keepalive_interval'],
+                                      self.send_keepalives)
         for c in self.complete_connectors:
             c.send_keepalive()
 
     def send_pex(self):
-        self.add_task(self.config['pex_interval'], self.send_pex)
+        self._pex_task = self.add_task(self.config['pex_interval'],
+                                       self.send_pex)
         pex_set = set()
         for c in self.complete_connectors:
             if c.listening_port:
@@ -248,33 +329,26 @@ class ConnectionManager(InternetSubscriber):
         else:
             port = 80
         df = self.rawserver.gethostbyname(host)
-        def _connect_http(ip):
-            self._start_connection((ip, port), url, HTTPInitialConnection, urgent=True)
-        df.addCallback(_connect_http)
+        df.addCallback(self._connect_http, port, url)
         df.addLogback(self.logger.warning, "Resolve failed")
 
-    def _start_connection(self, addr, id, handler, *a, **kw):
+    def _connect_http(self, ip, port, url):
+        self._start_connection((ip, port), url,
+                               HTTPInitialConnection, urgent=True)
+
+    def _start_connection(self, addr, pid, handler, *a, **kw):
         """@param addr: domain name/ip address and port pair.
-           @param id: peer id.
+           @param pid: peer id.
            """
         if self.closed:
             return True 
         if addr[0] in self.banned:
             return True
-        if id == self.my_id:
+        if pid == self.my_id:
             return True
 
-        # store the first instance only
-        # BUG: this should log successful connections only
-        if addr not in self.cached_peers:
-            # obey the cache size limit
-            if len(self.cached_peers) >= self.cache_limit:
-                oldaddr = self.cached_peers.keys()[0]
-                self.remove_addr_from_cache(oldaddr)
-            self.cached_peers[addr] = (id, handler, a, kw)
-
         for v in self.connectors:
-            if id and v.id == id:
+            if pid and v.id == pid:
                 return True
             if self.config['one_connection_per_ip'] and v.ip == addr[0]:
                 return True
@@ -285,15 +359,21 @@ class ConnectionManager(InternetSubscriber):
         total_outstanding += len(self.pending_connections)
         
         if total_outstanding >= self.config['max_initiate']:
-            self.spares[(addr, id)] = (handler, a, kw)
+            self.spares[(addr, pid)] = (handler, a, kw)
             return False
 
         # if these fail, I'm getting a very weird addr object        
         assert isinstance(addr, tuple)
         assert isinstance(addr[0], str)
         assert isinstance(addr[1], int)
-        if ONLY_LOCAL and addr[0] != "127.0.0.1":
+        if ONLY_LOCAL and addr[0] != "127.0.0.1" and not addr[0].startswith("192.168") and addr[1] != 80:
             return True
+
+        if GLOBAL_FILTER and not GLOBAL_FILTER(addr[0], addr[1], "out"):
+            return True
+
+        if addr not in self.cached_peers:
+            self.cache_incomplete_peer(addr, pid, handler, *a, **kw)
 
         # sometimes we try to connect to a peer we're already trying to 
         # connect to 
@@ -302,9 +382,12 @@ class ConnectionManager(InternetSubscriber):
             return True
 
         kw['log_prefix'] = self.log_prefix
-        kw.setdefault('timeout', timeout_order[0])
-        h = handler(self, id, *a, **kw)
-        self.pending_connections[addr] = (h, (addr, id, handler, a, kw))
+        timeout = 30
+        if use_timeout_order:
+            timeout = timeout_order[0]
+        kw.setdefault('timeout', timeout)
+        h = handler(self, pid, *a, **kw)
+        self.pending_connections[addr] = (h, (addr, pid, handler, a, kw))
         urgent = kw.pop('urgent', False)
         connector = self.rawserver.start_connection(addr, h, self.context,
                                                     # we'll handle timeouts.
@@ -319,9 +402,9 @@ class ConnectionManager(InternetSubscriber):
         # we leave it on pending_connections.
         # so the standard connection_failed handling occurs.
         h, info = self.pending_connections[addr]
-        addr, id, handler, a, kw = info
+        addr, pid, handler, a, kw = info
 
-        self.spares[(addr, id)] = (handler, a, kw)
+        self.spares[(addr, pid)] = (handler, a, kw)
 
     def _cancel_connection(self, addr):
         if addr not in self.pending_connections:
@@ -331,9 +414,9 @@ class ConnectionManager(InternetSubscriber):
         # we leave it on pending_connections.
         # so the standard connection_failed handling occurs.
         h, info = self.pending_connections[addr]
-        addr, id, handler, a, kw = info
+        addr, pid, handler, a, kw = info
 
-        if h.timeout < timeout_order[-1]:
+        if use_timeout_order and h.timeout < timeout_order[-1]:
             for t in timeout_order:
                 if t > h.timeout:
                     h.timeout = t
@@ -342,7 +425,7 @@ class ConnectionManager(InternetSubscriber):
                 h.timeout = timeout_order[-1]
             # this feels odd
             kw['timeout'] = h.timeout
-            self.spares[(addr, id)] = (handler, a, kw)
+            self.spares[(addr, pid)] = (handler, a, kw)
 
         # do this last, since twisted might fire the event handler from inside
         # the function
@@ -403,12 +486,12 @@ class ConnectionManager(InternetSubscriber):
 
     def throttle_connections(self):
         self.throttled = True
-        for c in self.connectors:
+        for c in iter_rand_pos(self.connectors):
             c.connection.pause_reading()
 
     def unthrottle_connections(self):
         self.throttled = False
-        for c in self.connectors:
+        for c in iter_rand_pos(self.connectors):
             c.connection.resume_reading()
             # arg. resume actually flushes the buffers in iocpreactor, so
             # we have to check the state constantly
@@ -446,6 +529,8 @@ class ConnectionManager(InternetSubscriber):
             connector.ip not in self.tracker_ips):
             return False
         self._add_connection(connector)
+        if self.closed:
+            return False
         connector.set_parent(self)
         connector.connection.context = self.context
         return True
@@ -498,7 +583,8 @@ class SingleportListener(Handler):
 
        See Connector which upcalls to select_torrent after the infohash is 
        received in the opening handshake."""
-    def __init__(self, rawserver, nattraverser, log_prefix):
+    def __init__(self, rawserver, nattraverser, log_prefix, 
+                 use_local_discovery):
         self.rawserver = rawserver
         self.nattraverser = nattraverser
         self.port = 0
@@ -510,7 +596,8 @@ class SingleportListener(Handler):
         self.obfuscated_torrents = {}
         self.local_discovery = None
         self.ld_services = {}
-        self._creating_local_discorvery = False
+        self.use_local_discovery = use_local_discovery
+        self._creating_local_discovery = False
         self.log_prefix = log_prefix
         self.logger = logging.getLogger(self.log_prefix)
 
@@ -564,14 +651,16 @@ class SingleportListener(Handler):
 
         if self.local_discovery:
             self.local_discovery.stop()
-        self._create_local_discovery()
+        if self.use_local_discovery:
+            self._create_local_discovery()
 
     def _create_local_discovery(self):
-        self._creating_local_discorvery = True
+        assert self.use_local_discovery
+        self._creating_local_discovery = True
         try:
             self.local_discovery = LocalDiscovery(self.rawserver, self.port,
                                                   self._start_connection)
-            self._creating_local_discorvery = False
+            self._creating_local_discovery = False
         except:
             self.rawserver.add_task(5, self._create_local_discovery)
 
@@ -635,6 +724,10 @@ class SingleportListener(Handler):
     def connection_made(self, connection):
         """Called when TCP connection has finished opening, but before
            BitTorrent protocol has begun."""
+        if ONLY_LOCAL and connection.ip != '127.0.0.1' and not connection.ip.startswith("192.168") :
+            return
+        if GLOBAL_FILTER and not GLOBAL_FILTER(connection.ip, connection.port, "in"):
+            return
         connector = Connector(self, connection, None, False,
                               log_prefix=self.log_prefix)
         self.connectors.add(connector)
@@ -642,8 +735,6 @@ class SingleportListener(Handler):
     def select_torrent(self, connector, infohash):
         """Called when infohash has been received allowing us to map
            the connection on to a given Torrent's ConnectionManager."""
-        if ONLY_LOCAL and connector.connection.ip != '127.0.0.1':
-            return
         # call-up from Connector.
         if infohash in self.torrents:
             accepted = self.torrents[infohash].singleport_connection(connector)
@@ -656,6 +747,8 @@ class SingleportListener(Handler):
                 self.connectors.remove(connector)
 
     def select_torrent_obfuscated(self, connector, streamid):
+        if ONLY_LOCAL and connector.connection.ip != '127.0.0.1':
+            return
         if streamid not in self.obfuscated_torrents:
             return
         self.obfuscated_torrents[streamid].singleport_connection(connector)

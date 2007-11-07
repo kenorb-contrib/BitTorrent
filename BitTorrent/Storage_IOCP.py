@@ -18,13 +18,14 @@ from bisect import bisect_right
 from BTL.translation import _
 
 from BTL import BTFailure
-from BTL.defer import Deferred, ThreadedDeferred, Failure
-from BTL.yielddefer import launch_coroutine, _wrap_task
+from BTL.defer import Deferred, ThreadedDeferred, Failure, wrap_task
+from BTL.yielddefer import launch_coroutine
 from BitTorrent.platform import get_allocated_regions
 from BTL.sparse_set import SparseSet
 from BTL.DictWithLists import DictWithLists, DictWithSets
 from BitTorrent.Storage_base import make_file_sparse, bad_libc_workaround, is_open_for_write
 from BitTorrent.Storage_base import open_sparse_file as open_sparse_file_base
+from BitTorrent.Storage_base import UnregisteredFileException
 
 # not needed, but it raises errors for platforms that don't support iocp
 from twisted.internet.iocpreactor import _iocp
@@ -85,7 +86,7 @@ class WriteFileOp(OverlappedOp):
 class IOCPFile(object):
 
     # standard block size by default
-    buffer_size = 16384    
+    buffer_size = 16384
     
     def __init__(self, handle):
         from twisted.internet import reactor
@@ -231,10 +232,8 @@ class FilePool(object):
     def acquire_handle(self, filename, for_write, length=0):
         df = Deferred()
 
-        # abort disk ops on unregistered files
         if filename not in self.file_to_torrent:
-            df.callback(None)
-            return df
+            raise UnregisteredFileException()
         
         if self.active_file_to_handles.total_length() == self.max_files_open:
             self.waiting_ops.append((df, filename, for_write, length))
@@ -301,7 +300,7 @@ class Storage(object):
             bad_libc_workaround()
 
         self.initialized = False
-        self.startup_df = ThreadedDeferred(_wrap_task(self.external_add_task),
+        self.startup_df = ThreadedDeferred(wrap_task(self.external_add_task),
                                            self._build_file_structs,
                                            self.filepool, files)
         return self.startup_df
@@ -418,7 +417,7 @@ class Storage(object):
         yield r
 
     def read(self, pos, amount):
-        df = launch_coroutine(_wrap_task(self.add_task),
+        df = launch_coroutine(wrap_task(self.add_task),
                               self._batch_read, pos, amount)
         return df
 
@@ -454,7 +453,7 @@ class Storage(object):
         yield total
 
     def write(self, pos, s):
-        df = launch_coroutine(_wrap_task(self.add_task),
+        df = launch_coroutine(wrap_task(self.add_task),
                               self._batch_write, pos, s)
         return df
 

@@ -95,6 +95,8 @@ class Handler(object):
 class ConnectionWrapper(object):
 
     def __init__(self, rawserver, handler, context):
+        if handler is None:
+            raise ValueError("Handler should not be None")
         self.ip = None             # peer ip
         self.port = None           # peer port
         self.dying = False
@@ -110,6 +112,8 @@ class ConnectionWrapper(object):
         self.post_init(rawserver, handler, context)
 
     def post_init(self, rawserver, handler, context):
+        if handler is None:
+            raise ValueError("Handler should not be None")
         self.rawserver = rawserver
         self.handler = handler
         self.context = context
@@ -276,6 +280,8 @@ class ConnectionWrapper(object):
         self.handler = None
 
         del self.transport
+        del self.connector
+        del self.context
 
         if self.callback_connection:
             if self.callback_connection.can_timeout:
@@ -370,7 +376,8 @@ class ConnectionFactory(ClientFactory):
         peer = connector.getDestination()
         addr = (peer.host, peer.port)
         wrapper = self.get_wrapper()
-        wrapper.handler.connection_starting(addr)
+        if wrapper.handler is not None:
+            wrapper.handler.connection_starting(addr)
 
     def buildProtocol(self, addr):
         protocol = ClientFactory.buildProtocol(self, addr)
@@ -530,7 +537,7 @@ class RawServer(RawServerMixin):
         ##############################################################
 
         self.connection_limit = self.config.get('max_incomplete', 10)
-	connectionRateLimitReactor(reactor, self.connection_limit)
+        connectionRateLimitReactor(reactor, self.connection_limit)
 
         # bleh
         self.add_pending_connection = reactor.add_pending_connection
@@ -637,7 +644,7 @@ class RawServer(RawServerMixin):
 
         protocol = CallbackDatagramProtocol()
 
-        c = ConnectionWrapper(self, None, None)
+        c = ConnectionWrapper(self, Handler(), None)
         s.connection = c
         protocol.connection = c
 
@@ -717,6 +724,9 @@ class RawServer(RawServerMixin):
             else:
                 bindaddr = None
 
+        if handler is None:
+            raise ValueError("Handler should not be None")
+        
         c = ConnectionWrapper(self, handler, context)
 
         factory = ConnectionFactory(self, outgoing=True)
@@ -724,7 +734,7 @@ class RawServer(RawServerMixin):
 
         if self.connection_limit:
             connector = reactor.connectTCP(addr, port, factory,
-                                           owner=context,
+                                           owner=id(context),
                                            bindAddress=bindaddr, timeout=timeout,
                                            urgent=urgent)
         else:

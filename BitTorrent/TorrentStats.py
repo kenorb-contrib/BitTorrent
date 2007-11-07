@@ -63,18 +63,22 @@ class TorrentStats(object):
                                d.interested, d.choked, d.is_snubbed())
             rec['max_backlog'] = d._backlog()
             rec['current_backlog'] = len(d.active_requests)
+
+            rec['client_backlog'] = len(u.buffer)
+            rec['client_buffer'] = sum([ i[0][2] for i in u.buffer ])
+
             rec['total_downloaded'] = d.total_bytes
             rec['completed'] = 1 - d.have.numfalse / numpieces
-            rec['speed'] = d.connection.download.peermeasure.get_rate()
+            rec['speed'] = d.connector.download.peermeasure.get_rate()
             if d.have.numfalse > 0:
-                rec['total_eta'] = self.storage.total_length / max(1, d.connection.download.peermeasure.get_rate())
+                rec['total_eta'] = self.storage.total_length / max(1, d.connector.download.peermeasure.get_rate())
             l.append(rec)
         return l
 
     def get_swarm_speed(self):
         speed = 0
         for c in self.connection_manager.complete_connectors:
-            speed += c.download.connection.download.peermeasure.get_rate()
+            speed += c.download.connector.download.peermeasure.get_rate()
         return speed
 
     def get_statistics(self, spewflag=False, fileflag=False):

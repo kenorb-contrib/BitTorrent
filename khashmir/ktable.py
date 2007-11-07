@@ -182,6 +182,8 @@ class KTable(object):
         except IndexError:
             return None
         else:
+            if n.id != id:
+                return None
             tstamp = n.lastSeen
             n.updateLastSeen()
             bucket = self.bucketForInt(n.num)
@@ -203,6 +205,8 @@ class KTable(object):
         except IndexError:
             return None
         else:
+            if n.id != node.id:
+                return None
             if n.msgFailed() >= const.MAX_FAILURES:
                 self.invalidateNode(n)
 
@@ -257,7 +261,6 @@ class KBucket(object):
             del(self.invalid[node.num])
         except KeyError:
             pass
-        self.touch()
 
     def invalidateNode(self, node):
         self.invalid[node.num] = node

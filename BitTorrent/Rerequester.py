@@ -365,7 +365,7 @@ class Rerequester(object):
             if failure.type == twisted.internet.error.TimeoutError:
                 m = _("Timeout while contacting server.")
             else:
-                m = failure.getErrorMessage()                
+                m = failure.getErrorMessage()
             self.errorfunc(logging.WARNING, self._make_errormsg(m))
             self._fail(failure.exc_info())
             return

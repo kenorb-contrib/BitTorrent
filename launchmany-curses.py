@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 
+# This file has not been maintained after 4.20 and maybe earlier.
+#  --David Harrison
+
 # The contents of this file are subject to the BitTorrent Open Source License
 # Version 1.1 (the License).  You may not copy or use this file, in either
 # source code or executable form, except in compliance with the License.  You
@@ -36,7 +39,7 @@ from BitTorrent import bt_log_fmt
 import logging
 import traceback
 from logging import ERROR, WARNING, INFO
-from BitTorrent import console, STDERR #, inject_main_logfile
+from BitTorrent import console, STDERR, inject_main_logfile
 
 
 
@@ -53,7 +56,7 @@ except:
             "Windows port of Python. It is however available for the Cygwin "
             "port of Python, running on all Win32 systems (www.cygwin.com).")
     print
-    print _("You may still use \"btdownloadheadless.py\" to download.")
+    print _("You may still use \"launchmany-console.py\" to download.")
     sys.exit(1)
 
 exceptions = []
@@ -109,7 +112,7 @@ class CursesDisplayer(object):
     def winch_handler(self, signum, stackframe):
         self.changeflag.set()
         curses.endwin()
-        self.scrwin.refresh()
+        self.scrwin.noutrefresh()
         self.scrwin = curses.newwin(0, 0, 0, 0)
         self._remake_window()
         self._display_messages()
@@ -128,29 +131,33 @@ class CursesDisplayer(object):
         self.mainpan = curses.panel.new_panel(self.mainwin)
         self.mainwin.scrollok(0)
         self.mainwin.nodelay(1)
+        self.mainwin.clearok(1)
 
         self.headerwin = curses.newwin(1, self.mainwinw+1,
                                        1, self.mainwinx)
         self.headerpan = curses.panel.new_panel(self.headerwin)
         self.headerwin.scrollok(0)
+        self.headerwin.clearok(0)
 
         self.totalwin = curses.newwin(1, self.mainwinw+1,
                                       self.mainwinh+1, self.mainwinx)
         self.totalpan = curses.panel.new_panel(self.totalwin)
         self.totalwin.scrollok(0)
+        self.totalwin.clearok(0)
 
         self.statuswinh = self.scrh-4-self.mainwinh
         self.statuswin = curses.newwin(self.statuswinh, self.mainwinw+1,
                                        self.mainwinh+3, self.mainwinx)
         self.statuspan = curses.panel.new_panel(self.statuswin)
         self.statuswin.scrollok(0)
+        self.statuswin.clearok(1)
 
         try:
             self.scrwin.border(ord('|'),ord('|'),ord('-'),ord('-'),ord(' '),ord(' '),ord(' '),ord(' '))
         except:
             pass
         rcols = (_("Size"),_("Download"),_("Upload"))
-        rwids = (8, 10, 10)
+        rwids = (9, 11, 11)
         rwid = sum(rwids)
         start = self.mainwinw - rwid
         self.headerwin.addnstr(0, 2, '#', start, curses.A_BOLD)
@@ -161,7 +168,7 @@ class CursesDisplayer(object):
             self.headerwin.addnstr(0, st, s[:w], len(s[:w]), curses.A_BOLD)
             start += w
 
-        self.totalwin.addnstr(0, self.mainwinw - 27, _("Totals:"), 7, curses.A_BOLD)
+        self.totalwin.addnstr(0, self.mainwinw - 29, _("Totals:"), 7, curses.A_BOLD)
 
         self._display_messages()
 
@@ -213,10 +220,10 @@ class CursesDisplayer(object):
             t = fmttime(t)
             if t:
                 status = t
-            name = ljust(name,self.mainwinw-32)
-            size = rjust(fmtsize(size),8)
-            uprate = rjust('%s/s' % fmtsize(uprate),10)
-            dnrate = rjust('%s/s' % fmtsize(dnrate),10)
+            name = ljust(name,self.mainwinw-35)
+            size = rjust(fmtsize(size), 9)
+            dnrate = rjust('%s/s' % fmtsize(dnrate), 11)
+            uprate = rjust('%s/s' % fmtsize(uprate), 11)
             line = "%3d %s%s%s%s" % (ii+1, name, size, dnrate, uprate)
             self._display_line(line, True)
             if peers + seeds:
@@ -255,11 +262,11 @@ class CursesDisplayer(object):
         totaldn = '%s/s' % fmtsize(totaldn)
 
         self.totalwin.erase()
-        self.totalwin.addnstr(0, self.mainwinw-27, _("Totals:"), 7, curses.A_BOLD)
-        self.totalwin.addnstr(0, self.mainwinw-20 + (10-len(totaldn)),
-                              totaldn, 10, curses.A_BOLD)
-        self.totalwin.addnstr(0, self.mainwinw-10 + (10-len(totalup)),
-                              totalup, 10, curses.A_BOLD)
+        self.totalwin.addnstr(0, self.mainwinw-29, _("Totals:"), 7, curses.A_BOLD)
+        self.totalwin.addnstr(0, self.mainwinw-22 + (11-len(totaldn)),
+                              totaldn, 11, curses.A_BOLD)
+        self.totalwin.addnstr(0, self.mainwinw-11 + (11-len(totalup)),
+                              totalup, 11, curses.A_BOLD)
 
         curses.panel.update_panels()
         curses.doupdate()
@@ -312,28 +319,27 @@ if __name__ == '__main__':
         modify_default(defaults, 'data_dir', ddir)
         config, args = configfile.parse_configuration_and_args(defaults,
                                       uiname, sys.argv[1:], 0, 1)
-        
+
         if args:
             torrent_dir = args[0]
-            config['torrent_dir'] = \
-                decode_from_filesystem(torrent_dir)    
+            config['torrent_dir'] = decode_from_filesystem(torrent_dir)
         else:
             torrent_dir = config['torrent_dir']
             torrent_dir,bad = encode_for_filesystem(torrent_dir)
             if bad:
               raise BTFailure(_("Warning: ")+config['torrent_dir']+
                               _(" is not a directory"))
-            
+
         if not os.path.isdir(torrent_dir):
             raise BTFailure(_("Warning: ")+torrent_dir+
                             _(" is not a directory"))
 
         # the default behavior is to save_in files to the platform
-        # get_save_dir.  For launchmany, if no command-line argument 
+        # get_save_dir.  For launchmany, if no command-line argument
         # changed the save directory then use the torrent directory.
         if config['save_in'] == platform.get_save_dir():
             config['save_in'] = config['torrent_dir']
-        
+
     except BTFailure, e:
         print _("error: ") + unicode(e.args[0]) + \
               _("\nrun with no args for parameter explanations")
@@ -341,7 +347,7 @@ if __name__ == '__main__':
     except KeyboardInterrupt:
         sys.exit(1)
 
-    #inject_main_logfile()
+    inject_main_logfile()
 
     class LaunchManyApp(object):
         class LogHandler(logging.Handler):
@@ -350,7 +356,7 @@ if __name__ == '__main__':
                 self.displayer = displayer
             def emit(self, record):
                 if len(record.getMessage()) > 0:
-                    self.displayer.message(record.getMessage() ) 
+                    self.displayer.message(record.getMessage() )
                 if record.exc_info is not None:
                     self.displayer.message(
                         "Traceback (most recent call last):" )
@@ -364,16 +370,16 @@ if __name__ == '__main__':
 
         def __init__(self):
             pass
-        
+
         def run(self,scrwin, config):
             self.displayer = CursesDisplayer(scrwin)
-            
+
             log_handler = LaunchManyApp.LogHandler(STDERR, self.displayer)
             log_handler.setFormatter(bt_log_fmt)
             logging.getLogger('').addHandler(log_handler)
             logging.getLogger().setLevel(STDERR)
             logging.getLogger('').removeHandler(console)
-            
+
             # more liberal with logging launchmany-curses specific output.
             lmany_logger = logging.getLogger('launchmany-curses')
             lmany_handler = LaunchManyApp.LogHandler(INFO, self.displayer)

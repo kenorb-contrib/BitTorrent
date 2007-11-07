@@ -15,7 +15,6 @@ debug = False
 import os
 import Queue
 import socket
-import itertools
 import random
 from pprint import pprint
 from BTL.platform import bttime
@@ -31,11 +30,21 @@ def daemon_thread(target, args=()):
     t.setDaemon(True)
     return t
 
+def izip_some(p, *a):
+    for i in a:
+        if len(i) > p:
+            yield i[p]
+
+def izip_any(*a):
+    m = max([len(i) for i in a])
+    for x in xrange(m):
+        yield izip_some(x, *a)
+    
 def in_common(routes):
     """routes is a list of lists, each containing a route to a peer."""
     r = []
     branch = False
-    for n in itertools.izip(*routes):
+    for n in izip_any(*routes): #itertools.izip(*routes):
 
         # strip dead nodes
         f = [i for i in n if i != '*']
@@ -43,6 +52,15 @@ def in_common(routes):
         # ignore all dead nodes
         if len(f) == 0:
             continue
+
+        c = [ (f.count(x), x) for x in f ]
+        c.sort()
+        if debug:
+            pprint(c)
+        top = c[-1][0]
+        # majority wins
+        if top > 2 and top > (len(f) * 0.50):
+            f = [c[-1][1]]
         
         if len(set(f)) == 1:
             r.append(f[0])
@@ -106,8 +124,8 @@ class RTTMonitorWin32(RTTMonitorBase):
         RTTMonitorBase.__init__(self, new_rtt)
 
     def set_nodes_restart(self, nodes):
-        if len(nodes) > 60:
-            nodes = random.sample(nodes, 60)
+        if len(nodes) > 10:
+            nodes = random.sample(nodes, 10)
         else:
             nodes = list(nodes)
         t = threading.Thread(target=self.run, args=(nodes,))
@@ -184,7 +202,8 @@ class RTTMonitorWin32(RTTMonitorBase):
             if len(common) == 0:
                 # this should be inspected, it's not a simple debug message
                 if debug:
-                    print "No common node", routes
+                    print "No common node"
+                    pprint(routes)
                 return
 
             del routes
@@ -210,7 +229,7 @@ class RTTMonitorWin32(RTTMonitorBase):
         # common path so that the farthest common hop responds with
         # ICMP time exceeded.  (Some routers will send time exceeded 
         # messages, but they won't respond to ICMP pings directly)  
-        representative = random.sample(nodes, 1)
+        representative = random.sample(nodes, 1)[0]
         if debug: 
             print ("pinging representative %s ttl=%d" %
                    (representative, len(common)))
@@ -295,7 +314,7 @@ class RTTMonitorWin32(RTTMonitorBase):
         rtt = None
 
         try:
-            o = None
+            o = None            
             if ttl is not None:
                 o = win32icmp.Options()
                 o.Ttl = ttl
@@ -308,7 +327,9 @@ class RTTMonitorWin32(RTTMonitorBase):
                     print "Ping ttl expired %d: from %s time=%s" %(
                           status, str(addr), str(rtt))
                 else:
-                    print "Ping failed", status
+                    print "Ping failed", win32icmp.status[status]
+        except KeyboardInterrupt:
+            raise
         except Exception, e:
             if debug:
                 print "Ping failed:", str_exc(e)

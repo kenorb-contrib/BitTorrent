@@ -359,10 +359,15 @@ class AppearanceSettingsPanel(SettingsPanel):
     pb_config_key = 'progressbar_style'
     # sample data
     sample_value = 0.4
+    
 
-    sample_data = {'h': SparseSet(xrange(0, 80)),
-                   't': SparseSet(xrange(80, 100)),
+    sample_data = {'h': SparseSet(),
+                   't': SparseSet(),
                    }
+
+    sample_data['h'].add(0, 80)
+    sample_data['t'].add(80, 100)
+    
     for i in range(20,0,-1):
         s = SparseSet()
         s.add(200-i*5, 200-(i-1)*5)

@@ -35,8 +35,8 @@ from BitTorrent.DownloadRateLimiter import DownloadRateLimiter
 from BitTorrent.ConnectionManager import SingleportListener
 from BitTorrent.CurrentRateMeasure import Measure
 from BitTorrent.Storage import FilePool
-from BTL.yielddefer import launch_coroutine, _wrap_task
-from BTL.defer import Deferred, DeferredEvent
+from BTL.yielddefer import launch_coroutine
+from BTL.defer import Deferred, DeferredEvent, wrap_task
 from BitTorrent import BTFailure, InfoHashType
 from BitTorrent import configfile
 from khashmir.utkhashmir import UTKhashmir
@@ -73,7 +73,7 @@ class MultiTorrent(Feedback):
 
        If you wish to instantiate MultiTorrent to download only a single
        torrent then pass is_single_torrent=True.
-       
+
        If you want to avoid resuming from prior torrent config state then
        pass resume_from_torrent_config = False.
        It will still use fast resume if available.
@@ -95,7 +95,7 @@ class MultiTorrent(Feedback):
          @param init_torrents: restore fast resume state from prior
            instantiations of MultiTorrent.
          @param is_single_torrent: if true then allow only one torrent
-           at a time in this MultiTorrent. 
+           at a time in this MultiTorrent.
          @param resume_from_torrent_config: resume from ui_state files.
         """
         # is_single_torrent will go away when we move MultiTorrent into
@@ -120,7 +120,7 @@ class MultiTorrent(Feedback):
         # .bittorrent/launchmany-*/ui_state directory.  This is highly
         # counterintuitive.  Best to simply ignore the ui_state
         # directory altogether.  --Dave
-        
+
         assert isinstance(config, Preferences)
         #assert isinstance(data_dir, unicode)  # temporarily commented -Dave
         assert isinstance(listen_fail_ok, bool)
@@ -143,7 +143,8 @@ class MultiTorrent(Feedback):
         self.internet_watcher = get_internet_watcher(self.rawserver)
         self.singleport_listener = SingleportListener(self.rawserver,
                                                       nattraverser,
-                                                      self.log_root)
+                                                      self.log_root,
+                                                      config['use_local_discovery'])
         self.choker = Choker(self.config, self.rawserver.add_task)
         self.up_ratelimiter = RateLimiter(self.rawserver.add_task)
         self.up_ratelimiter.set_parameters(config['max_upload_rate'],
@@ -178,7 +179,6 @@ class MultiTorrent(Feedback):
             get_rates=self.get_total_rates )
 
         self.rawserver.add_task(0, self.butle)
-        #raise Exception("blah")
 
 
     def butle(self):
@@ -234,7 +234,7 @@ class MultiTorrent(Feedback):
                               exc_info=exc_info)
 
     def shutdown(self):
-        df = launch_coroutine(_wrap_task(self.rawserver.add_task), self._shutdown)
+        df = launch_coroutine(wrap_task(self.rawserver.add_task), self._shutdown)
         df.addErrback(lambda f : self.logger.error('shutdown failed!',
                                                    exc_info=f.exc_info()))
         return df
@@ -311,8 +311,6 @@ class MultiTorrent(Feedback):
             raise TooManyTorrents(_("MultiTorrent is set to download only "
                  "a single torrent, but tried to create more than one."))
 
-        #save_as, junk = encode_for_filesystem(save_as)
-        #save_incomplete_as, junk = encode_for_filesystem(save_incomplete_as)
         infohash = metainfo.infohash
         if self.torrent_known(infohash):
             if self.torrent_running(infohash):
@@ -335,11 +333,12 @@ class MultiTorrent(Feedback):
                     self.data_dir, self.rawserver, self.choker,
                     self.singleport_listener, self.up_ratelimiter,
                     self.down_ratelimiter, self.total_downmeasure,
-                    self.filepool, self.dht, self, 
-                    self.log_root, hidden=hidden, is_auto_update=is_auto_update)
+                    self.filepool, self.dht, self,
+                    self.log_root, hidden=hidden,
+                    is_auto_update=is_auto_update)
         if feedback:
             t.add_feedback(feedback)
-            
+
         retdf = Deferred()
 
         def torrent_started(*args):
@@ -650,7 +649,7 @@ class MultiTorrent(Feedback):
                                       lambda *e : self.logger.error(*e))
 
     def _dump_torrents(self):
-        assert self.resume_from_torrent_config 
+        assert self.resume_from_torrent_config
 
         self.last_save_time = bttime()
         r = []
@@ -686,7 +685,7 @@ class MultiTorrent(Feedback):
         return df
 
     def initialize_torrents(self):
-        df = launch_coroutine(_wrap_task(self.rawserver.add_task), self._initialize_torrents)
+        df = launch_coroutine(wrap_task(self.rawserver.add_task), self._initialize_torrents)
         df.addErrback(lambda f : self.logger.error('initialize_torrents failed!',
                                                    exc_info=f.exc_info()))
         return df
@@ -729,7 +728,8 @@ class MultiTorrent(Feedback):
                                   '('+str_exc(e)+')')
                 return None
 
-            t = Torrent(metainfo, "",  "", self.config, self.data_dir,
+            b = encode_for_filesystem(u'')[0]
+            t = Torrent(metainfo, b, b, self.config, self.data_dir,
                         self.rawserver, self.choker,
                         self.singleport_listener, self.up_ratelimiter,
                         self.down_ratelimiter,

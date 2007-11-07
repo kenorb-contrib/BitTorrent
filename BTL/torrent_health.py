@@ -22,7 +22,7 @@ def reciprocity( downloaders ):
     return gamma
 
     
-def download_rate_health( seeders, downloaders ):
+def download_rate_health( seeders, downloaders, nats = 0 ):
     """
      This health metric preserves order based on expected download rates.
      It is not necessarily proportional to expected download rate.
@@ -120,14 +120,19 @@ def download_rate_health( seeders, downloaders ):
 
       Thus the effectivness of reciprocity increases linearly until it hits a threshold
       and reciprocation becomes perfect above that threshold.
+
+      @param seeds: number of non-natted peers that have the entire file
+          and are still in the torrent swarm.
+      @param downloaders: number of non-natted downloaders in the swarm
+      @param nats: number of natted downloaders in the swarm. 
     """
     assert downloaders >= 0
     assert seeders >= 0
     gamma = reciprocity(downloaders)
-    Hr = health = gamma + seeders / (downloaders + 1.)
+    Hr = health = gamma + seeders / (downloaders + nats + 1.)
     return health
 
-def download_time_health( seeders, downloaders, filesize ):
+def download_time_health( seeders, downloaders, nats, filesize ):
     """
       Health metric that perserves order based on download times.
       Smaller is better.  (Confusing.  I couldn't decide whether
@@ -164,12 +169,17 @@ def download_time_health( seeders, downloaders, filesize ):
                           filesize_i                
          Ht_i = --------------------------------------     
                 gamma_i + seeders_i / (downloaders_i+1)
+
+      @param seeds: number of non-natted peers that have the entire file
+          and are still in the torrent swarm.
+      @param downloaders: number of non-natted downloaders in the swarm.
+      @param nats: number of natted downloaders in the swarm. 
     """
     assert downloaders >= 0
     assert seeders >= 0
     assert filesize >= 0
     gamma = reciprocity(downloaders)
-    Hr = gamma + seeders / (downloaders+1)
+    Hr = gamma + seeders / (downloaders+nats+1)
     Ht = filesize / Hr
     return Ht
                                         

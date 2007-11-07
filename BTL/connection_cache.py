@@ -7,7 +7,8 @@ from LIFOQueue import LIFOQueue
 import pycurllib
 
 max_wait = 5
-max_connections = 1000
+max_connections = 1
+inf_wait_max_connections = 1000
 
 class ConnectionCache(object):
     def __init__(self, max=15):
@@ -44,7 +45,7 @@ class ConnectionCache(object):
             #                 (max_wait, self.size))
             pass
 
-        if self.size > max_connections:
+        if self.size > inf_wait_max_connections:
             return self.cache.get()
 
         self.size += 1
@@ -66,7 +67,7 @@ class PyCURL_Cache(ConnectionCache):
         return r
 
 class CacheSet(object):
-    def __init__(self, max_per_cache = 1):
+    def __init__(self, max_per_cache = max_connections):
         self.cache = {}
         self.max_per_cache = max_per_cache
 

@@ -187,7 +187,7 @@ def get_dot_dir():
 
     new_dot_dir = None
     if sys.platform == 'darwin':
-	new_dot_dir = os.path.join(get_config_dir(), 'Library', 'Application Support', app_name)
+        new_dot_dir = os.path.join(get_config_dir(), 'Library', 'Application Support', app_name)
     elif os.name == 'nt':
         new_dot_dir = os.path.join(get_config_dir(), app_name)
 
@@ -204,7 +204,7 @@ def get_dot_dir():
             else:
                 shutil.move(dot_dir, new_dot_dir)
         dot_dir = new_dot_dir
-	
+
     return dot_dir
 
 old_broken_config_subencoding = 'utf8'

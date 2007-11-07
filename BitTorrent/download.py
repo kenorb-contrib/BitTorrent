@@ -25,7 +25,7 @@ class BadDataGuard(object):
 
     def __init__(self, download):
         self.download = download
-        self.ip = download.connection.ip
+        self.ip = download.connector.ip
         self.multidownload = download.multidownload
         self.stats = self.multidownload.perip[self.ip]
         self.lastindex = None
@@ -64,9 +64,9 @@ class Download(object):
        connection.  See Upload for the protocol semantics in the upload
        direction.  See Connector for the protocol syntax implementation."""
 
-    def __init__(self, multidownload, connection):
+    def __init__(self, multidownload, connector):
         self.multidownload = multidownload
-        self.connection = connection
+        self.connector = connector
         self.choked = True
         self.interested = False
         self.prefer_full = False
@@ -82,23 +82,37 @@ class Download(object):
         self.guard = BadDataGuard(self)
         self.suggested_pieces = []
         self.allowed_fast_pieces = []
-        self._received_listeners = set()
+        self._useful_received_listeners = set()
+        self._raw_received_listeners = set()
+        
         self.add_useful_received_listener(self.measure.update_rate)
         self.total_bytes = 0
-        def lambda_sucks(x): self.total_bytes += x
-        self.add_useful_received_listener(lambda_sucks)
+        self.add_useful_received_listener(self.accumulate_total)
+
+    def accumulate_total(self, x):
+        self.total_bytes += x        
 
     def add_useful_received_listener(self, listener):
         # "useful received bytes are used in measuring goodput.
-        self._received_listeners.add(listener)
+        self._useful_received_listeners.add(listener)
 
     def remove_useful_received_listener(self, listener):
-        self._received_listeners.remove(listener)
+        self._useful_received_listeners.remove(listener)
 
     def fire_useful_received_listeners(self, bytes):
-        for f in self._received_listeners:
+        for f in self._useful_received_listeners:
             f(bytes)
-       
+
+    def add_raw_received_listener(self, listener):
+        self._raw_received_listeners.add(listener)
+
+    def remove_raw_received_listener(self, listener):
+        self._raw_received_listeners.remove(listener)
+
+    def fire_raw_received_listeners(self, bytes):
+        for f in self._raw_received_listeners:
+            f(bytes)
+
     def _backlog(self):
         # Dave's suggestion:
         # backlog = 2 + thruput delay product in chunks.
@@ -161,13 +175,14 @@ class Download(object):
                 for l in lost:
                     if d._want(l):
                         d.interested = True
-                        d.connection.send_interested()
+                        d.connector.send_interested()
                         break
         
     def got_choke(self):
         if not self.choked:
             self.choked = True
-            if not self.connection.uses_fast_extension:
+            # ugly. instead, it should move all the requests to expecting_reject
+            if not self.connector.uses_fast_extension:
                 self._letgo()
         
     def got_unchoke(self):
@@ -181,8 +196,10 @@ class Download(object):
 
         if req not in self.active_requests:
             self.multidownload.discarded_bytes += len(piece)
-            if self.connection.uses_fast_extension:
-                self.connection.close()
+            if self.connector.uses_fast_extension:
+                # getting a piece we sent a cancel for
+                # is just like receiving a reject
+                self.got_reject_request(*req)
             return
 
         self.active_requests.remove(req)
@@ -195,15 +212,15 @@ class Download(object):
             if req not in self.multidownload.all_requests:
                 self.multidownload.discarded_bytes += len(piece)
                 return
-            
+
             self.multidownload.all_requests.remove(req)
 
             for d in self.multidownload.downloads:
                 if d.interested:
                     if not d.choked and req in d.active_requests:
-                        d.connection.send_cancel(*req)
+                        d.connector.send_cancel(*req)
                         d.active_requests.remove(req)
-                        if d.connection.uses_fast_extension:
+                        if d.connector.uses_fast_extension:
                             d.expecting_reject.add(req)
                     d.fix_download_endgame()
         else:
@@ -230,7 +247,7 @@ class Download(object):
                              (begin, length, begin + length, piece_size))
         self.multidownload.active_requests_add(index)
         self.active_requests.add((index, begin, length))
-        self.connection.send_request(index, begin, length)
+        self.connector.send_request(index, begin, length)
 
     def _request_more(self, indices = []):
         
@@ -264,7 +281,7 @@ class Download(object):
                 break
             if not self.interested:
                 self.interested = True
-                self.connection.send_interested()
+                self.connector.send_interested()
             # an example interest created by from_behind is preferable
             if self.example_interest is None:
                 self.example_interest = interest
@@ -280,14 +297,9 @@ class Download(object):
                     break
         if not self.active_requests and self.interested:
             self.interested = False
-            self.connection.send_not_interested()
+            self.connector.send_not_interested()
         self._check_lost_interests(lost_interests)
-        if self.multidownload.rm.endgame:
-            self.multidownload.all_requests = set()
-            for d in self.multidownload.downloads:
-                self.multidownload.all_requests.update(d.active_requests)
-            for d in self.multidownload.downloads:
-                d.fix_download_endgame()
+        self.multidownload.check_enter_endgame()
 
     def _check_lost_interests(self, lost_interests):
         """
@@ -316,7 +328,7 @@ class Download(object):
                             self.multidownload.rm.fully_active)
             if interest is None:
                 d.interested = False
-                d.connection.send_not_interested()
+                d.connector.send_not_interested()
             else:
                 d.example_interest = interest
 
@@ -347,12 +359,7 @@ class Download(object):
                     lost_interests.append(piece)
                     break
         self._check_lost_interests(lost_interests)
-        if self.multidownload.rm.endgame:
-            self.multidownload.all_requests = set()
-            for d in self.multidownload.downloads:
-                self.multidownload.all_requests.update(d.active_requests)
-            for d in self.multidownload.downloads:
-                d.fix_download_endgame()
+        self.multidownload.check_enter_endgame()
                 
     def fix_download_endgame(self):
         want = []
@@ -365,11 +372,11 @@ class Download(object):
 
         if self.interested and not self.active_requests and not want:
             self.interested = False
-            self.connection.send_not_interested()
+            self.connector.send_not_interested()
             return
         if not self.interested and want:
             self.interested = True
-            self.connection.send_interested()
+            self.connector.send_interested()
         if self.choked:
             return
         random.shuffle(want)
@@ -388,7 +395,7 @@ class Download(object):
         self.multidownload.got_have(index)
         if (self.multidownload.storage.get_amount_left() == 0 and
             self.have.numfalse == 0):
-            self.connection.close()
+            self.connector.close()
             return
         if self.multidownload.rm.endgame:
             self.fix_download_endgame()
@@ -396,7 +403,7 @@ class Download(object):
             self._request_more([index]) # call _request_more whether choked.
             if self.choked and not self.interested:
                 self.interested = True
-                self.connection.send_interested()
+                self.connector.send_interested()
         
     def got_have_bitfield(self, have):
         if have.numfalse == 0:
@@ -416,17 +423,17 @@ class Download(object):
             for piece, begin, length in self.multidownload.all_requests:
                 if self.have[piece]:
                     self.interested = True
-                    self.connection.send_interested()
+                    self.connector.send_interested()
                     return
         for piece in self.multidownload.rm.iter_want():
             if self.have[piece]:
                 self.interested = True
-                self.connection.send_interested()
+                self.connector.send_interested()
                 return
 
     def _got_have_all(self, have=None):
         if self.multidownload.storage.get_amount_left() == 0:
-            self.connection.close()
+            self.connector.close()
             return
         if have is None:
             # bleh
@@ -443,11 +450,11 @@ class Download(object):
         if self.multidownload.rm.endgame:
             for piece, begin, length in self.multidownload.all_requests:
                 self.interested = True
-                self.connection.send_interested()
+                self.connector.send_interested()
                 return
         for i in self.multidownload.rm.iter_want():
             self.interested = True
-            self.connection.send_interested()
+            self.connector.send_interested()
             return
         
 
@@ -463,11 +470,11 @@ class Download(object):
               # pieces until got_have is called.
 
     def got_have_all(self):
-        assert self.connection.uses_fast_extension
+        assert self.connector.uses_fast_extension
         self._got_have_all()
 
     def got_suggest_piece(self, piece):
-        assert self.connection.uses_fast_extension
+        assert self.connector.uses_fast_extension
         if not self.multidownload.storage.do_I_have(piece): 
           self.suggested_pieces.append(piece)
         self._request_more() # try to request more. Just returns if choked.
@@ -476,7 +483,7 @@ class Download(object):
         """Upon receiving this message, the multidownload knows that it is
            allowed to download the specified piece even when choked."""
         #log( "got_allowed_fast %d" % piece )
-        assert self.connection.uses_fast_extension
+        assert self.connector.uses_fast_extension
 
         if not self.multidownload.storage.do_I_have(piece): 
             if piece not in self.allowed_fast_pieces:
@@ -486,12 +493,14 @@ class Download(object):
                               # whether neighbor has "allowed fast" piece.
 
     def got_reject_request(self, piece, begin, length):
-        assert self.connection.uses_fast_extension
+        assert self.connector.uses_fast_extension
         req = (piece, begin, length) 
 
         if req not in self.expecting_reject:
             if req not in self.active_requests:
-                self.connection.close()
+                self.connector.protocol_violation("Reject received for "
+                                                  "piece not pending")
+                self.connector.close()
                 return
             self.active_requests.remove(req)
         else:
@@ -512,6 +521,6 @@ class Download(object):
             if d.choked and not d.interested:
                 if d._want(piece):
                     d.interested = True
-                    d.connection.send_interested()
+                    d.connector.send_interested()
                     break
 

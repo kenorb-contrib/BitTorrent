@@ -10,6 +10,7 @@
 
 from binascii import a2b_hex, b2a_hex
 import types
+import decimal
 
 class EBError(ValueError):
     pass
@@ -107,6 +108,11 @@ def decode_int(s, pos):
     i, pos = read_int(s, pos)
     return i, pos
 
+def decode_decimal(s, pos):
+    i, pos = read_int(s, pos)
+    r = s[pos:pos + i]
+    return decimal.Decimal(r), pos + i
+
 def decode_bool(s, pos):
     i, pos = read_int(s, pos)
     return bool(i), pos
@@ -152,6 +158,8 @@ def decode_obj(s, pos):
         return decode_none(s, pos)
     elif c == 'i':
         return decode_int(s, pos)
+    elif c == 'd':
+        return decode_decimal(s, pos)
     elif c == 'b':
         return decode_bool(s, pos)
     elif c == '-':
@@ -211,11 +219,12 @@ def encode_int(i, r):
     else:
         r.extend(('-', make_int(-i)))
 
+def encode_decimal(d, r):
+    s = str(d)
+    r.extend(('d', make_int(len(s)), str(s)))
+
 def encode_bool(b, r):
-    if b:
-        r.extend(('b', make_int(1)))
-    else:
-        r.extend(('b', make_int(0)))
+    r.extend(('b', make_int(int(bool(b)))))
 
 def encode_float(f, r):
     s = repr(f)
@@ -248,6 +257,7 @@ encode_func[EBencached] = encode_bencached
 encode_func[types.NoneType] = encode_none
 encode_func[int] = encode_int
 encode_func[long] = encode_int
+encode_func[decimal.Decimal] = encode_decimal
 encode_func[bool] = encode_bool
 encode_func[float] = encode_float
 encode_func[str] = encode_string
@@ -295,6 +305,7 @@ c(4.0)
 c(-4.0)
 c(2 ** 5000 + 27)
 c('abc')
+c(decimal.Decimal('4.5'))
 c(u'pqr')
 c([1, 2])
 c([2, 'abc', u'pqr'])
