@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 
-# The contents of this file are subject to the BitTorrent Open Source License
-# Version 1.1 (the License).  You may not copy or use this file, in either
-# source code or executable form, except in compliance with the License.  You
-# may obtain a copy of the License at http://www.bittorrent.com/license/.
+# The contents of this file are subject to the Python Software Foundation
+# License Version 2.3 (the License).  You may not copy or use this file, in
+# either source code or executable form, except in compliance with the License.
+# You may obtain a copy of the License at http://www.python.org/license.
 #
 # Software distributed under the License is distributed on an AS IS basis,
 # WITHOUT WARRANTY OF ANY KIND, either express or implied.  See the License
@@ -29,7 +29,7 @@
 
 from BTL.translation import _
 
-from bisect import bisect_left, bisect_right, insort_left
+from bisect import bisect_left, bisect_right  #, insort_left
 from copy import copy
 
 # by David Harrison
@@ -382,7 +382,16 @@ class PMap(object):
             'bar'
             >>>            
             """
-        insort_left(self._olist, PMap.Item(k,v))
+	item = PMap.Item(k,v)
+        if len(self._olist) == 0 or k > self._olist[len(self._olist)-1].k:
+            self._olist.append(item)
+        else:
+	    index = bisect_left(self._olist, item)
+            if self._olist[index].k != k:
+                self._olist.insert(index, item)
+            else:
+                self._olist[index].v = v
+
         self._index[k] = v
 
     def __delitem__(self, k):
@@ -741,10 +750,16 @@ class PMap(object):
             raise KeyError(_("Key is already in the map.  "
                              "Keys must be unique."))
                         
+	item = PMap.Item(k,v)
         if len(self._olist) == 0 or k > self._olist[len(self._olist)-1].k:
-            self._olist.append(PMap.Item(k,v))
+            self._olist.append(item)
         else:
-            insort_left(self._olist, PMap.Item(k,v))
+	    index = bisect_left(self._olist, item)
+            if self._olist[index].k != k:
+                self._olist.insert(index, item)
+            else:
+                self._olist[index].v = v
+
         self._index[k] = v
 
 class PIndexedMap(PMap):
@@ -827,7 +842,17 @@ class PIndexedMap(PMap):
             # key is not already in the map.
             pass
             
-        insort_left(self._olist, PIndexedMap.Item(k,v))
+	item = PIndexedMap.Item(k,v)
+        if len(self._olist) == 0 or k > self._olist[len(self._olist)-1].k:
+            self._olist.append(item)
+        else:
+	    index = bisect_left(self._olist, item)
+            if self._olist[index].k != k:
+                self._olist.insert(index, item)
+            else:
+                self._olist[index].v = v
+
+        #insort_left(self._olist, PIndexedMap.Item(k,v))
         self._value_index[v] = k
         self._index[k] = v
 
@@ -1041,10 +1066,16 @@ class PIndexedMap(PMap):
             raise KeyError( _("Key is already in the map.  Both values and "
                             "keys must be unique.") )
                         
+	item = PIndexedMap.Item(k,v)
         if len(self._olist) == 0 or k > self._olist[len(self._olist)-1].k:
-            self._olist.append(PIndexedMap.Item(k,v))
+            self._olist.append(item)
         else:
-            insort_left(self._olist, PIndexedMap.Item(k,v))
+	    index = bisect_left(self._olist, item)
+            if self._olist[index].k != k:
+                self._olist.insert(index, item)
+            else:
+                self._olist[index].v = v
+            #insort_left(self._olist, PIndexedMap.Item(k,v))
 
         self._value_index[v] = k
         self._index[k] = v

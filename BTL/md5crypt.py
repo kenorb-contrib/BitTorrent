@@ -11,6 +11,8 @@
 # This port adds no further stipulations.  I forfeit any copyright interest.
 
 import md5
+import string
+from os import urandom
 
 def _md5crypt(password, the_hash):
     magic, salt = the_hash[1:].split('$')[:2]
@@ -73,6 +75,10 @@ def _md5crypt(password, the_hash):
 
     return magic + salt + '$' + rearranged
 
+_plus_to_dot = string.maketrans('+', '.')
+def md5salt():
+    return '$1$' + urandom(6).encode('base64').translate(_plus_to_dot).rstrip()
+
 word = "joefoo1234"
 magicsalt = "$1$kBmmDTGr"
 magic, salt = magicsalt[1:].split('$')[:2]
@@ -80,9 +86,11 @@ magic = '$' + magic + '$'
 
 hashword = _md5crypt(word, magic + salt)
 
-from crypt import crypt as _crypt
-if _crypt(word, hashword) == '$1$kBmmDTGr$FngxLa03zfySCR3dZTdXS1':
-    md5crypt = _crypt
+md5crypt = _md5crypt
+try:
+    from crypt import crypt as _crypt
+except ImportError:
+    pass
 else:
-    md5crypt = _md5crypt
-
+    if _crypt(word, hashword) == '$1$kBmmDTGr$FngxLa03zfySCR3dZTdXS1':
+        md5crypt = _crypt

@@ -112,22 +112,9 @@ class EBRPC_ServerProxy(xmlrpclib.ServerProxy):
         # magic method dispatcher
         return _Method(self.__request, name)
     
-def new_server_proxy(url):
-    c = cache_set.get_cache(PyCURL_Cache, url)
-    t = PyCurlTransport(c)
+def new_server_proxy(url, max_connects=None, timeout=None):
+    c = cache_set.get_cache(PyCURL_Cache, url, max_per_cache=max_connects)
+    t = PyCurlTransport(c, max_connects=max_connects, timeout=timeout)
     return EBRPC_ServerProxy(url, transport=t)
 
 ServerProxy = new_server_proxy
-
-
-if __name__ == '__main__':
-    s = ServerProxy('https://greg.mitte.bittorrent.com:7080/')
-    def ping(*a, **kw):
-        (a2, kw2) = s.ping(*a, **kw)
-        assert a2 == list(a), '%s list is not %s' % (r, list(a))
-        assert kw2 == dict(kw), '%s dict is not %s' % (kw2, dict(kw))
-    ping(0, 1, 1, name="potato")
-    ping(0, 1, 1, name="anime")
-    ping("phish", 0, 1, 1)
-    ping("games", 0, 1, 1)
-    

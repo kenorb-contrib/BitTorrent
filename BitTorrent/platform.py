@@ -123,6 +123,7 @@ from BitTorrent import version
 
 if os.name == 'nt':
     import pywintypes
+    import winerror
     import _winreg
     #import BTL.likewin32api as win32api
     import win32api
@@ -434,24 +435,29 @@ def get_allocated_regions(path, f=None, begin=0, length=None):
         if length is None:
             length = os.path.getsize(path) - begin
         a = SparseSet()
-        interval = 10000000
+        run = 128
         i = begin
         end = begin + length
         while i < end:
-            d = struct.pack("<QQ", i, interval)
+            d = struct.pack("<QQ", i, length)
             try:
                 r = win32file.DeviceIoControl(handle, FSCTL_QUERY_ALLOCATED_RANGES,
-                                              d, interval, None)
+                                              d, struct.calcsize("<QQ")*run, None)
             except pywintypes.error, e:
-                # I've seen:
+                if e.args[0] == winerror.ERROR_MORE_DATA:
+                    run *= 2
+                    continue
+                # I've also seen:
                 # error: (1784, 'DeviceIoControl', 'The supplied user buffer is not valid for the requested operation.')
                 return
+            if not r:
+                break
             for c in xrange(0, len(r), 16):
                 qq = struct.unpack("<QQ", r[c:c+16])
                 b = qq[0]
                 e = b + qq[1]
                 a.add(b, e)
-            i += interval
+                i = max(i, e)
 
         return a
     return

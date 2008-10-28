@@ -13,7 +13,6 @@
 import greenlet
 from BTL import defer
 
-
 class GreenletWithDeferred(greenlet.greenlet):
 
     __slots__ = ['root', 'yielded_once', 'finished']
@@ -33,6 +32,8 @@ class GreenletWithDeferred(greenlet.greenlet):
             df.errback(defer.Failure())
         else:
             self.finished = True
+            # trigger the deferred that had been returned from launch_coroutine
+            # to the caller of the coroutine.
             df.callback(v)
         return df
 
@@ -61,6 +62,32 @@ def coroutine(_f):
     def replacement(*a, **kw):
         return launch_coroutine(_f, *a, **kw)
     return replacement
+
+# like_yield may be called multiple times in a function.
+# 
+# @coroutine 
+# def f():
+#    like_yield(a())
+#    ...
+#    like_yield(b())
+#    ...
+#    x = like_yield(c())
+#    return x
+#
+#
+# The first like_yield in f, switches to the parent.  This allows the
+# parent (i.e., the caller of the coroutine) to set up deferreds or
+# perform other operations that should take place while waiting for a
+# result.
+#
+# Subsequent yields to the parent would serve no useful purpose since
+# the parent cannot progress until f() provides a result.  Thus
+# subsequent like_yields switch to the root greenlet, i.e., the
+# reactor's greenlet.  The reactor reenters its main event loop and
+# the program progresses until a deferred is triggered which allows f
+# to complete.  When f completes, it returns to the outermost
+# function in its greenlet, which is GreenletWithDeferred.body().
+# body() calls the deferred that had been returned from launch_coroutine.
 
 def like_yield(df):
     assert isinstance(df, defer.Deferred)

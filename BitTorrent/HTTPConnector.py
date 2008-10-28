@@ -237,7 +237,7 @@ class HTTPConnector(Connector):
                 self.protocol_violation('Not HTTP: %r' % self._message)
                 return
                 
-            if status not in ('301', '302', '303', '206'):
+            if status not in ('301', '302', '303', '307', '206'):
                 self.protocol_violation('Bad status message: %s' %
                                         self._message)
                 return
@@ -257,7 +257,7 @@ class HTTPConnector(Connector):
             # reset the header buffer so we can loop
             self._header_lines = []
 
-            if status in ('301', '302', '303'):
+            if status in ('301', '302', '303', '307'):
                 url = headers.get('location')
                 if not url:
                     self.protocol_violation('No location: %s' % self._message)

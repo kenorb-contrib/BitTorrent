@@ -12,6 +12,7 @@
 # based on code by Bram Cohen, Uoti Urpala
 
 import sys
+import urllib
 import random
 import logging
 from binascii import b2a_hex
@@ -19,7 +20,6 @@ from BTL.translation import _
 
 from BitTorrent import version
 from BTL.platform import bttime
-from urllib import quote
 from BitTorrent.btformats import check_peers
 from BTL.bencode import bencode, bdecode
 from BTL.exceptions import str_exc
@@ -31,6 +31,9 @@ from BitTorrent.HTTPDownloader import getPageFactory
 import twisted.internet.error
 
 LOG_RESPONSE = False
+
+def quote(x):
+    return urllib.quote(x, safe='')
 
 class Rerequester(object):
 

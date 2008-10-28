@@ -37,9 +37,12 @@ class Failure(tp_Failure):
         tp_Failure.__init__(self, *a, **kw)
         # magic to allow re-raise of failures to do proper stack appending
         if hasattr(self.value, 'failure'):
-            self.stack = self.stack[:-2] + self.value.failure.stack
-            self.frames = self.frames[:-2] + self.value.failure.frames
-        self.value.failure = self
+            f = self.value.failure()
+            if f:
+                self.stack = self.stack[:-2] + f.stack
+                self.frames = self.frames[:-2] + f.frames
+                del f
+        self.value.failure = weakref.ref(self)
 failure.Failure = Failure
 
 fail = defer.fail

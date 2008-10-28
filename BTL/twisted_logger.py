@@ -26,7 +26,13 @@ class LogLogObserver(log.FileLogObserver):
             logger.log(self.error_log_level,
                        edm, exc_info=eventDict['failure'].exc_info())
         elif eventDict.has_key('format'):
-            text = self._safeFormat(eventDict['format'], eventDict)
+            try:
+                text = self._safeFormat(eventDict['format'], eventDict)
+            except:
+                try:
+                    text = eventDict['format']%eventDict;
+                except:
+                    text = repr(eventDict);
             logger.log(self.info_log_level, text)
         else:
             text = ' '.join(map(reflect.safe_str, edm))

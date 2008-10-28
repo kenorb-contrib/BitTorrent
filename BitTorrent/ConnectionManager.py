@@ -754,6 +754,8 @@ class SingleportListener(Handler):
         self.obfuscated_torrents[streamid].singleport_connection(connector)
 
     def connection_lost(self, connector):
+        if (ONLY_LOCAL or GLOBAL_FILTER) and connector not in self.connectors:
+            return
         assert isinstance(connector, Connector)
         self.connectors.remove(connector)
 

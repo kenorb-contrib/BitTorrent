@@ -150,6 +150,7 @@ class Choker(object):
 
         # step 4:
         # enforce choke states and handle optimistics
+        count = 0
         optimistics = max(self.config['min_uploads'],
                           max_uploads - len(preferred))
         #print 'optimistics', optimistics

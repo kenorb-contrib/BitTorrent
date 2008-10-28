@@ -10,10 +10,11 @@
 
 # Written by Bram Cohen and John Hoffman
 
-import sys
 import os
-import signal
 import re
+import sys
+import signal
+import urllib
 import cPickle
 import logging
 import datetime
@@ -41,7 +42,7 @@ from BitTorrent.HTTPHandler import HTTPHandler
 from BTL.parsedir import parsedir
 from BitTorrent.NatCheck import NatCheck
 from BTL.bencode import bencode, bdecode, Bencached
-from urllib import quote, unquote
+from urllib import unquote
 from BTL.exceptions import str_exc
 from BitTorrent import version
 from BitTorrent.prefs import Preferences
@@ -53,6 +54,9 @@ import threading
 import traceback
 
 NOISY = False
+
+def quote(x):
+    return urllib.quote(x, safe='')
 
 # code duplication because ow.
 MAX_INCOMPLETE = 100
