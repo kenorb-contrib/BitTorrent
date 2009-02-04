@@ -1,0 +1,51 @@
+How to use the BitTorrent auto-update feature:
+==============================================
+
+Each minor point release should probably have a new key pair
+generated, which means that auto-update will work for each mini
+version, but that users will have to manually download and install
+each new minor point release.
+
+All keys are generated and stored in the auto-update directory inside
+the BitTorrent source directory.
+
+To generate a new key pair:
+---------------------------
+
+(If you already have a key pair and are rolling a mini version
+release, go to step 5)
+
+1. Using generate_key.py, generate a public/private key pair on a
+secure machine.  
+
+2. Test that generating and checking the signature is working:
+$ sign_file.py file.ext
+$ check_signature.py file.ext
+
+3. Make a backup of private.key on a secure medium.  DO NOT check the
+private key into any source code repository.
+
+4. Check public.key into the BitTorrent repository.
+
+To roll a new release suitable for auto-update:
+-----------------------------------------------
+
+5. Build the installation package for all operating systems that will
+support auto-update (currently limited to Windows).  Ensure that the
+public.key file is included in the installation package.
+
+6. Generate a torrent file for all installation packages generated in
+step 5, and begin seeding them.
+
+7. Use sign_file.py to generate .sign files for each torrent file,
+like this:
+sign_file.py BitTorrent-X.Y.Z.ext.torrent
+
+8. Copy the .sign and .torrent files to the correct directory on
+version.bittorrent.com
+
+9. Change the version file on version.bittorrent.com to reflect the
+newly available version.
+
+
+

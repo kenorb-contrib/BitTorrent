@@ -1,0 +1,99 @@
+<HTML><HEAD>
+<TITLE>BitTorrent Plugin</TITLE>
+<STYLE TYPE="text/css">
+<!--
+BODY { font-family:Verdana,Ariel,Helvetica; color: black; }
+A { color: black; }
+-->
+</STYLE>
+</HEAD>
+<BODY BGCOLOR="#FFFFFF">
+<TABLE WIDTH=100% HEIGHT=100% CELLPADDING=1><TR>
+<TD COLSPAN=2 VALIGN=top ALIGN=center WIDTH=100% BGCOLOR="">
+<A HREF="/"></B></FONT></A></TD>
+</TR><TR><TD WIDTH=100% HEIGHT=90% ALIGN=left VALIGN=top>
+<SCRIPT LANGUAGE="Javascript">
+<!--
+
+var bittorrent_installed = 0;
+var bittorrent_version = 0;
+MSDetect = "false";
+if (navigator.plugins && navigator.plugins.length)
+{
+
+
+	x = navigator.plugins["BitTorrent"];
+	if (x)
+	{
+		bittorrent_installed = 2;
+		if (x.description)
+		{
+			y = x.description;
+			document.write("<p>navigator.plugins[\"BitTorrent\"].description: [" + y + "]</p>");
+			bittorrent_version = y.charAt(y.indexOf('.')-1);
+		}
+	}
+	else
+		bittorrent_installed = 1;
+	if (navigator.plugins["BitTorrent 2.0"])
+	{
+		document.write("<p>BitTorrent 2.0 detected in navigator.plugins</p>");
+		bittorrent_installed = 2;
+		bittorrent_version = 2;
+	}
+}
+else if (navigator.mimeTypes && navigator.mimeTypes.length)
+{
+	x = navigator.mimeTypes['application/x-bittorrent'];
+	if (x && x.enabledPlugin)
+		bittorrent_installed = 2;
+	else
+		bittorrent_installed = 1;
+}
+else
+{
+	MSDetect = "true";
+}
+
+// -->
+</SCRIPT>
+
+<SCRIPT LANGUAGE="VBScript">
+
+on error resume next
+
+If MSDetect = "true" Then
+
+	For i = 1 to 6
+
+		If Not(IsObject(CreateObject("BitTorrent.BitTorrentCtrl." & i))) Then
+
+
+		Else
+			bittorrent_installed = 2
+			bittorrent_version = i
+		End If
+	Next
+End If
+
+If bittorrent_installed = 0 Then
+	bittorrent_installed = 1
+End If
+
+</SCRIPT>
+
+<script language="javascript" type="text/javascript">
+<!--
+if (bittorrent_installed == 2)
+{
+	if (bittorrent_version)
+		document.write("You have BitTorrent version " + bittorrent_version + " installed.");
+	else
+		document.write("You have BitTorrent installed, but I can't detect the version.");
+}
+else if (bittorrent_installed == 1) document.write("You don't have BitTorrent installed.");
+else document.write("I can't find out if you have BitTorrent installed.");
+// -->
+</script></TD></TR><TR><TD COLSPAN=2 VALIGN=bottom>
+<CENTER>Questions or comments?  Email <A HREF="mailto:rivets@gmail.com">rivets@gmail.com</A></CENTER></TD></TR></TABLE>
+</BODY></HTML>

@@ -1,0 +1,9 @@
+; BitTorrent.def : Declares the module parameters.
+
+LIBRARY      "BitTorrentIE.2.dll"
+
+EXPORTS
+	DllCanUnloadNow     PRIVATE
+	DllGetClassObject   PRIVATE
+	DllRegisterServer   PRIVATE
+	DllUnregisterServer PRIVATE

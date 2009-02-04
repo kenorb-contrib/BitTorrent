@@ -1,0 +1,673 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
+<head>
+<meta http-equiv="Content-Type" content="application/xhtml+xml; charset=UTF-8" />
+<meta http-equiv="Content-Language" content="en" />
+<title>Metadata for Audiovisual Content</title>
+<style type="text/css">
+/*<![CDATA[*/
+body, th, td { color: black; background: white; font-family: sans; line-height: 10pt; font-size: 8pt; }
+var { color: green; }
+samp, .samp { border: 1px dotted #ccccff; font-family: monospace; }
+.samp samp { border: none; }
+samp:hover, .samp:hover { background: #ffffcc; border-color: grey; }
+.class { color: navy; }
+.element, .attribute { color: navy; border: 1px solid transparent; }
+.attribute-value, .element-value { color: black; border: 1px solid transparent; }
+.element:hover, .entity-reference:hover, .attribute:hover { background: #ffff88; border: 1px solid #ffffaa; }
+.element .element .element:hover, .element .element .entity-reference:hover, .element .element .attribute:hover { background: #ffff88; border: 1px solid #ffffaa; }
+.element .element:hover, .element .entity-reference:hover, .element .attribute:hover { background: #ff88ff; border: 1px solid #ffaaff; }
+.attribute-value:hover, .element-value:hover { background: #9999ff; border: 1px solid #bbbbff; }
+.element-value { color: black; }
+.element-name, .attribute-name { font-weight: bold; color: purple; }
+.entity-reference-value { color: #ff6000; }
+table, td, th { border: 1pt solid silver; vertical-align: top; }
+a, a:link, a:hover, a:active { text-decoration: none; color: navy; }
+a:visited { color: purple; }
+a:hover { text-decoration: underline; }
+a[rel~="nofollow"] { text-decoration: none; border: 1px solid yellow; }
+a[rel~="nofollow"]:after { font-weight: bold; color: #6666ff; content: "\00A0\2197\00A0 "; }
+a[rel~="nofollow"]:hover { color: maroon; background: yellow; }
+a[rel~="nofollow"]:active { border: 1px dotted black; }
+/*]]>*/
+</style>
+</head>
+<body>
+<h1>Metadata for Audiovisual Content</h1>
+<p>Metadata is specified using an XML document using the XHTML vocabulary. The <code>class</code> attribute is used for all metadata
+markup. Nested elements are used for grouping, and the optional syntax <code><span class="element">&lt;<span class="element-name">abbr</span>
+<span class="attribute"><span class="attribute-name">title</span>="<span class="attribute-value"><var>actual value in prescribed format</var></span>"</span>&gt;<span class="element-value"><var>ignored text for illustrative purposes</var></span>&lt;/<span class="element-name">abbr</span>&gt;</span></code> is used to include
+<code>text</code> values formatted for display and automatic extraction. Values of type
+<code>text</code> may occur multiple times with different explicit or inherited values of
+xml:lang to specify translations; they <strong>must not</strong> have multiple values in a single instance separated by commas or other delimiters.</p>
+<h2>File Names</h2>
+<p>All metadata files must have names ending in one of <code>.xml</code>, <code>.xhtml</code>, <code>.html</code>, <code>.xht</code>, or <code>.htm</code> (case distinctions are ignored.) All such files will be scanned for metadata, and URIs referenced by these files will be resolved relative to the location of these files at the time they are discovered. This behavior can be overridden using the <code>xml:base</code> attribute on XML elements in the metadata file. Note that the case of filenames referred to in URI references <strong>must</strong> match their actual case, including the case of the file extension. All file and folder names must be unambiguous when converted to lower case, and must consist entirely of printable US-ASCII letters, digits, hyphens, underscores, and full stop/period (U+002E, U+002D, U+0030 - U+0039, U+0041 - U+005A, U+005F, and U+0061 - U+007A in Unicode notation.) There must be exactly one full-stop/period in the filename, and it must appear between the non-empty base filename and the non-empty file extension. No folder should contain more than 1000 files. Files violating these constraints may be ignored or processed incorrectly.</p>
+<h3>Recommendation for File Names</h3>
+<p>It is our recommendation that you organize files as follows:</p>
+<ul>
+<li>Create a top-level folder named according to the identifier (user/company name) assigned to you by the retailer converted to lower case, for example <samp>foo-corp</samp>.</li>
+<li>Create a second-level folder for each set of files you will send us. Name it based on the estimated date of delivery, in the form <var>yyyymmdd</var>, e.g. <samp>20060601</samp> for a release on June 1st, 2006.</li>
+<li>Choose an identifier scheme to consistently refer to each of your products. We recommend ISAN, but GTIN (including EAN, UPC, or ISBN-13 bar-code numbers), or even a company-internal product identifier scheme would work, so long as the identifier is stable over time and file format changes and unambiguously identifies exactly one of your products. Remove all spaces, identifier-independant prefices and punctuation and convert the identifier to upper case. Use this as the third-level folder name.</li>
+<li>Each file inside the third-level directory has an lower-case base name consisting of a lower-case copy of the third-level folder name optionally followed by an underscore and a disambiguating suffix chosen by you to avoid collision; we recommend no such suffix for the first file, then incrementing decimal digits starting at 2 for subsequent filtes. Each file has a lower-case file extension separated from the base name with a full-stop/period. The extension should be the most commonly used extension for files of the appropriate type.</li>
+<li><em>Optional Rule:</em> Prefix each level of folder name with intermediate folder names that are prefices of that name, starting with the shortest prefix that divides the potential name space into 256 or fewer sub-spaces and choosing successively longer prefices by the same algorithm and using the part of the prefix not in common with the previous prefix as the folder name, until there are 256 or fewer identifiers in the sub-space at which point the actial third-level identifier is present as a folder name. ISAN check characters and GTIN check digits are not considered to divide the potential name space, since they are calculated based on preceding characters.</li>
+</ul>
+<h4>Example File Paths</h4>
+<table>
+<thead>
+<tr>
+<th>Scheme</th>
+<th>Identifier</th>
+<th>Path (without optional rule)</th>
+<th>Path (with optional rule)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ISAN</td>
+<td><samp>ISAN 1881-66C7-3420-0000-1</samp></td>
+<td><samp>foo-corp/20060601/188166C7342000001/188166c7342000001.wmv</samp></td>
+<td><samp>foo-corp/20/06/06/20060601/18/81/66/C7/34/20/00/188166C7342000001/188166c7342000001.wmv</samp></td>
+</tr>
+<tr>
+<td>ISAN</td>
+<td><samp>ISAN 1881-66C7-3420-0000-1-FF3A-0245-N</samp></td>
+<td><samp>foo-corp/20060601/188166C7342000001FF3A0245N/188166c7342000001ff3a0245n.wmv</samp></td>
+<td><samp>foo-corp/20/06/06/01/20060601/18/81/66/C7/34/20/00/001/FF/3A/02/45/188166C7342000001FF3A0245N/188166c7342000001ff3a0245n.wmv</samp></td>
+</tr>
+</tbody>
+</table>
+<h2>Example</h2>
+<ul>
+<li><a href="metadata_example.html">XHTML Example</a></li>
+<li><a href="metadata_source.html">Rendered Source</a></li>
+</ul>
+<h2>Class Names</h2>
+<table>
+<thead>
+<tr>
+<th>Class Name</th>
+<th>Contains</th>
+<th>Description</th>
+<th>Examples (XHTML)</th>
+</tr>
+</thead>
+<tbody>
+<tr id="avcontent">
+<td><a href="#avcontent"><code class="class">avcontent</code></a></td>
+<td>
+<code class="class">avcontent</code>
+<br />
+<code class="class">avcontent-<var>*</var></code>
+</td>
+<td>Describes one item of audiovisual content, which may contain other parts. When multiple elements with this class are nested, the other classes apply only to the inner-most containing <a href="#avcontent"><code class="class">avcontent</code></a> element, and the inner elements are considered to be parts of the outer one.</td>
+<td></td>
+</tr>
+<tr id="avcontent-title">
+<td><a href="#avcontent-title"><code class="class">avcontent-title</code></a></td>
+<td><code>text</code></td>
+<td>Item title, unabbreviated, mixed-case and in standard order</td>
+<td><samp>The Fictional Item, Part 3: Purely Fictional</samp></td>
+</tr>
+<tr id="avcontent-type">
+<td><a href="#avcontent-type"><code class="class">avcontent-type</code></a></td>
+<td><code>text</code></td>
+<td>Type classification for content (use <a href="#avcontent-tags"><code class="class">avcontent-tags</code></a> for other types)</td>
+<td>
+<samp>Full Album</samp>
+<br />
+<samp>Live Album</samp>
+<br />
+<samp>Music Tracks</samp>
+<br />
+<samp>Full-Length Movie</samp>
+<br />
+<samp>Short Movie</samp>
+<br />
+<samp>Movie Trailer</samp>
+<br />
+<samp>TV Show</samp>
+<br />
+<samp>Full Game</samp>
+<br />
+<samp>Game Demo</samp>
+<br />
+<samp>Game Trailer</samp>
+<br />
+<samp>Full Software</samp>
+<br />
+<samp>Trial Software</samp>
+<br />
+<samp>Movie Poster</samp>
+<br />
+<samp>Cover Art</samp>
+<br />
+<em>or</em>
+<br />
+<samp>Other</samp>
+</td>
+</tr>
+<tr id="avcontent-keytitle">
+<td><a href="#avcontent-keytitle"><code class="class">avcontent-keytitle</code></a></td>
+<td><code>text</code></td>
+<td>Key form of title. Used in some citations; usually shorter, possibly abbreviated and possibly with article removed. May include date or other information for disambiguation purposes. If omitted, this defaults to the value of <a href="#avcontent-title"><code class="class">avcontent-title</code></a></td>
+<td><samp>Fictional Item Three (2038)</samp></td>
+</tr>
+<tr id="avcontent-date">
+<td><a href="#avcontent-date"><code class="class">avcontent-date</code></a></td>
+<td><code>text</code></td>
+<td>ISO 8601 datetime for original release date (acceptable format is four-digit year)</td>
+<td><div class="samp"><samp><span class="element">&lt;<span class="element-name">abbr</span> <span class="attribute"><span class="attribute-name">title</span>="<span class="attribute-value">2038</span>"</span>&gt;<span class="element-value">MMXXXVIII</span>&lt;/<span class="element-name">abbr</span>&gt;</span></samp></div></td>
+</tr>
+<tr id="avcontent-rating">
+<td><a href="#avcontent-rating"><code class="class">avcontent-rating</code></a></td>
+<td><code class="class">avcontent-rating-<var>*</var></code></td>
+<td>Rating metadata</td>
+<td></td>
+</tr>
+<tr id="avcontent-rating-mpaa">
+<td><a href="#avcontent-rating-mpaa"><code class="class">avcontent-rating-mpaa</code></a></td>
+<td><code>text</code></td>
+<td>MPAA rating for the associated content</td>
+<td><samp>PG-13</samp></td>
+</tr>
+<tr id="avcontent-rating-esrb">
+<td><a href="#avcontent-rating-esrb"><code class="class">avcontent-rating-esrb</code></a></td>
+<td><code>text</code></td>
+<td>ESRB rating for the associated content</td>
+<td><samp>E10+</samp></td>
+</tr>
+<tr id="avcontent-rating-riaa">
+<td><a href="#avcontent-rating-riaa"><code class="class">avcontent-rating-riaa</code></a></td>
+<td><code>text</code></td>
+<td>If absent, or if present with a value other than <samp>No</samp> (case-insensitive), the content is assumed to have an RIAA parental advisory.</td>
+<td>
+<samp>Yes</samp>
+<br />
+<em>or</em>
+<br />
+<samp>No</samp>
+</td>
+</tr>
+<tr id="avcontent-rating-producer">
+<td><a href="#avcontent-rating-producer"><code class="class">avcontent-rating-producer</code></a></td>
+<td><code>text</code></td>
+<td>Producer's content rating (use MPAA or ESRB rating code you believe most accurately describes your non-MPAA-rated, non-ESRB-rated content)</td>
+<td><samp>R</samp></td>
+</tr>
+<tr id="avcontent-language">
+<td><a href="#avcontent-language"><code class="class">avcontent-language</code></a></td>
+<td><code>text</code></td>
+<td>RFC 3066 language tag (ISO 639-1 or ISO 639-2 language code optionally followed by a hyphen and ISO 3166-1 Alpha-2 country code or IANA-assigned variation tag) corresponding to a primary spoken, written, signed or otherwise communicated human language expressed in this work; see <a rel="nofollow" href="http://www.ietf.org/rfc/rfc3066.txt">http://www.ietf.org/rfc/rfc3066.txt</a></td>
+<td>
+<div class="samp"><samp><span class="element">&lt;<span class="element-name">abbr</span> <span class="attribute"><span class="attribute-name">title</span>="<span class="attribute-value">MSA</span>"</span> <span class="attribute"><span class="attribute-name">xml:lang</span>="<span class="attribute-value">de</span>"</span>&gt;<span class="element-value">Malaiisch</span>&lt;/<span class="element-name">abbr</span>&gt;</span></samp></div>
+<em>or</em>
+<br />
+<samp>EN-US</samp>
+</td>
+</tr>
+<tr id="avcontent-subtitled">
+<td><a href="#avcontent-subtitled"><code class="class">avcontent-subtitled</code></a></td>
+<td><code>text</code></td>
+<td>RFC 3066 language tag (ISO 639-1 or ISO 639-2 language code optionally followed by a hyphen and ISO 3166-1 Alpha-2 country code or IANA-assigned variation tag) corresponding to a primary human language expressed in subtitles in this work; see <a rel="nofollow" href="http://www.ietf.org/rfc/rfc3066.txt">http://www.ietf.org/rfc/rfc3066.txt</a></td>
+<td>
+<div class="samp"><samp><span class="element">&lt;<span class="element-name">abbr</span> <span class="attribute"><span class="attribute-name">title</span>="<span class="attribute-value">MSA</span>"</span> <span class="attribute"><span class="attribute-name">xml:lang</span>="<span class="attribute-value">de</span>"</span>&gt;<span class="element-value">Malaiisch</span>&lt;/<span class="element-name">abbr</span>&gt;</span></samp></div>
+<em>or</em>
+<br />
+<samp>EN-US</samp>
+</td>
+</tr>
+<tr id="avcontent-summary">
+<td><a href="#avcontent-summary"><code class="class">avcontent-summary</code></a></td>
+<td><code>text</code></td>
+<td>Short summary text or tag line suitable for display in a catalog (XHTML markup is allowed but may be removed before use)</td>
+<td><div class="samp"><samp>In this sequel to the brilliant but underappreciated <span class="element">&lt;<span class="element-name">cite</span>&gt;<span class="element-value">Two Fictional Items <span class="entity-reference">&amp;<span class="entity-reference-value"><span class="entity-reference-name">amp</span>;</span></span> I (2034)</span>&lt;/<span class="element-name">cite</span>&gt;</span>, Fictional Item Three, the <span class="element">&lt;<span class="element-name">b</span>&gt;<span class="element-value">Fictional Hero</span>&lt;/<span class="element-name">b</span>&gt;</span> (Andy Actor) and Unlikely Heroine (Anna Actress) are back to save their planet from a takeover by the Brick-and-Mortar <span class="element">&lt;<span class="element-name">b</span>&gt;<span class="element-value">Behemoth</span>&lt;/<span class="element-name">b</span>&gt;</span> (Ron Rote). However, an unexpected <span class="element">&lt;<span class="element-name">abbr</span> <span class="attribute"><span class="attribute-name">title</span>="<span class="attribute-value">Routine Plot Element</span>"</span>&gt;<span class="element-value">RPE</span>&lt;/<span class="element-name">abbr</span>&gt;</span> threatens to tear their fragile plot to shreds...</samp></div></td>
+</tr>
+<tr id="avcontent-description">
+<td><a href="#avcontent-description"><code class="class">avcontent-description</code></a></td>
+<td><code>text</code></td>
+<td>Longer descriptive text suitable for display in a detailed view (XHTML markup is allowed but may be removed before use)</td>
+<td></td>
+</tr>
+<tr id="avcontent-plot">
+<td><a href="#avcontent-plot"><code class="class">avcontent-plot</code></a></td>
+<td><code>text</code></td>
+<td>Plot synopsis suitable for display in a detailed view (XHTML markup is allowed but may be removed before use)</td>
+<td></td>
+</tr>
+<tr id="avcontent-review">
+<td><a href="#avcontent-review"><code class="class">avcontent-review</code></a></td>
+<td><code>text</code></td>
+<td>Review suitable for display in a detailed view (XHTML markup is allowed but may be removed before use)</td>
+<td></td>
+</tr>
+<tr id="avcontent-grid">
+<td><a href="#avcontent-grid"><code class="class">avcontent-grid</code></a></td>
+<td><code>text</code></td>
+<td>Global Release Identifier (GRid) registered for this item; see <a
+rel="nofollow" href="http://www.mi3p-standard.org/">http://www.mi3p-standard.org/</a> (<strong>required</strong> for selling music or music video content without any <a href="#avcontent-gtin"><code class="class">avcontent-gtin</code></a>)</td>
+<td><samp>MI3P:A1-2425G-ABC1234002-L</samp></td>
+</tr>
+<tr id="avcontent-gtin">
+<td><a href="#avcontent-gtin"><code class="class">avcontent-gtin</code></a></td>
+<td><code>text</code></td>
+<td>Global Trade Item Number (GTIN) registered for this item; see <a
+rel="nofollow" href="http://www.gs1.org/">http://www.gs1.org/</a>
+(acceptable formats are 14-digit GTIN, 13-digit or 8-digit EAN, or
+12-digit UPC; <strong>required</strong> for selling all audiovisual content other than music or music videos, and for selling music or music video content without any <a href="#avcontent-grid"><code class="class">avcontent-grid</code></a>; note that Bookland (ISBN) EANs work here too; just omit the optional two- or five-digit extension and write them in 13-digit Bookland EAN/ISBN-13 format rather than 10-digit ISBN-10 format)</td>
+<td>
+<samp>EAN 2345678901234</samp>
+<br />
+<em>or</em>
+<br />
+<samp>UPC 0-01234-56789-5</samp>
+</td>
+</tr>
+<tr id="avcontent-iswc">
+<td><a href="#avcontent-iswc"><code class="class">avcontent-iswc</code></a></td>
+<td><code>text</code></td>
+<td>International Standard Musical Work Code (ISWC) registered for this item, described by ISO 15707; see <a
+rel="nofollow" href="http://www.iswc.org/">http://www.iswc.org/</a> (for grouping multi-part musical and music-video works, and for correlating musical works across multiple perfomances and/or instantiations)</td>
+<td><samp>T-001.872.939-3</samp></td>
+</tr>
+<tr id="avcontent-isan">
+<td><a href="#avcontent-isan"><code class="class">avcontent-isan</code></a></td>
+<td><code>text</code></td>
+<td>International Standard Audiovisual Number (ISAN) registered for this item, described by ISO 15706; see <a rel="nofollow" href="http://www.isan.org/">http://www.isan.org/</a> (<strong>required</strong> for a particular piece of a larger audiovisual work (other than music video or musical works) to be commercially exploitable independent of the whole; note that different language editions of the content may have different ISANs, in which case each language edition should have a separate <a href="#avcontent"><code class="class">avcontent</code></a> element, possibly nested inside a common parent element)</td>
+<td>
+<samp>ISAN 1881-66C7-3420-0000-1</samp>
+<br />
+<em>or</em>
+<br />
+<samp>ISAN 1881-66C7-3420-0000-1-FF3A-0245-N</samp>
+</td>
+</tr>
+<tr id="avcontent-isrc">
+<td><a href="#avcontent-isrc"><code class="class">avcontent-isrc</code></a></td>
+<td><code>text</code></td>
+<td>International Standard Recording Code (ISRC) registered for this item, described by ISO 3901; see <a rel="nofollow" href="http://www.ifpi.org/isrc/">http://www.ifpi.org/isrc/</a> (<strong>required</strong> for a particular piece of a larger music video or musical work to be exploitable independent of the whole)</td>
+<td><samp>ISRC XX-XXX-38-00013</samp></td>
+</tr>
+<tr id="avcontent-genre">
+<td><a href="#avcontent-genre"><code class="class">avcontent-genre</code></a></td>
+<td><code>text</code></td>
+<td>Genre label (use <a href="#avcontent-tags"><code class="class">avcontent-tags</code></a> for other categories)</td>
+<td>
+<samp>Action</samp>
+<br />
+<samp>Adventure</samp>
+<br />
+<samp>Animation</samp>
+<br />
+<samp>Biopics</samp>
+<br />
+<samp>Comedy</samp>
+<br />
+<samp>Documentaries</samp>
+<br />
+<samp>Drama</samp>
+<br />
+<samp>Family</samp>
+<br />
+<samp>Foreign</samp>
+<br />
+<samp>Horror</samp>
+<br />
+<samp>Musicals</samp>
+<br />
+<samp>Music Videos</samp>
+<br />
+<samp>Sci Fi</samp>
+<br />
+<samp>Shorts</samp>
+<br />
+<samp>Westerns</samp>
+<br />
+<em>or</em>
+<br />
+<samp>Other</samp>
+</td>
+</tr>
+<tr id="avcontent-tags">
+<td><a href="#avcontent-tags"><code class="class">avcontent-tags</code></a></td>
+<td><code>text</code></td>
+<td>Tags (using the rel="tag" format)</td>
+<td><div class="samp"><samp><span class="element">&lt;<span class="element-name">a</span> <span class="attribute"><span class="attribute-name">rel</span>="<span class="attribute-value">tag</span>"</span> <span class="attribute"><span class="attribute-name">href</span>="<span class="attribute-value">http://tags.tempuri.org/tag/Dark%20Future</span>"</span>&gt;<span class="element-value">Dark Future</span>&lt;/<span class="element-name">a</span>&gt;</span></samp></div></td>
+</tr>
+<tr id="avcontent-wholesale">
+<td><a href="#avcontent-wholesale"><code class="class">avcontent-wholesale</code></a></td>
+<td><code class="class">avcontent-wholesale-<var>*</var></code></td>
+<td>Wholesale price for this content (in the case of multiple applicable wholesale price entries, one may be chosen arbitrarily or at random)</td>
+<td></td>
+</tr>
+<tr id="avcontent-wholesale-country">
+<td><a href="#avcontent-wholesale-country"><code class="class">avcontent-wholesale-country</code></a></td>
+<td><code>text</code></td>
+<td>ISO 3166-1 Alpha-2 country code for the country in which this wholesale price applies; see <a rel="nofollow" href="http://en.wikipedia.org/wiki/ISO_3166-1_alpha-2">http://en.wikipedia.org/wiki/ISO_3166-1_alpha-2</a> (without this, the associated wholesale price will apply to sales in all countries)</td>
+<td>
+<samp>US</samp>
+<br />
+<em>or</em>
+<br />
+<div class="samp"><samp><span class="element">&lt;<span class="element-name">abbr</span> <span class="attribute"><span class="attribute-name">title</span>="<span class="attribute-value">GB</span>"</span>&gt;<span class="element-value">United Kingdom [including Isle of Man and Channel Islands (Guernsey and Jersey)]</span>&lt;/<span class="element-name">abbr</span>&gt;</span></samp></div>
+</td>
+</tr>
+<tr id="avcontent-wholesale-currency">
+<td><a href="#avcontent-wholesale-currency"><code class="class">avcontent-wholesale-currency</code></a></td>
+<td><code>text</code></td>
+<td>ISO 4217 three-letter currency code for the currency in which this wholesale price applies; see <a rel="nofollow" href="http://en.wikipedia.org/wiki/ISO_4217">http://en.wikipedia.org/wiki/ISO_4217</a></td>
+<td>
+<samp>USD</samp>
+<br />
+<em>or</em>
+<br />
+<div class="samp"><samp><span class="element">&lt;<span class="element-name">abbr</span> <span class="attribute"><span class="attribute-name">title</span>="<span class="attribute-value">GBP</span>"</span>&gt;<span class="element-value">&#163;</span>&lt;/<span class="element-name">abbr</span>&gt;</span></samp></div>
+</td>
+</tr>
+<tr id="avcontent-wholesale-amount">
+<td><a href="#avcontent-wholesale-amount"><code class="class">avcontent-wholesale-amount</code></a></td>
+<td><code>text</code></td>
+<td>Integer number of currency units with optional decimal fraction; no punctuation other than the full stop decimal separator (.) is allowed.</td>
+<td><div class="samp"><samp><span class="element">&lt;<span class="element-name">abbr</span> <span class="attribute"><span class="attribute-name">title</span>="<span class="attribute-value">4.25</span>"</span>&gt;<span class="element-value">4,25</span>&lt;/<span class="element-name">abbr</span>&gt;</span></samp></div></td>
+</tr>
+<tr id="avcontent-wholesale-token">
+<td><a href="#avcontent-wholesale-token"><code class="class">avcontent-wholesale-token</code></a></td>
+<td><code>text</code></td>
+<td>Wholesale pricing token (must be contractually arranged.)</td>
+<td>
+<samp>53bebfe4-7400-70c6-7305-1f0d48cc3093</samp>
+<br />
+<em>or</em>
+<br />
+<div class="samp"><samp><span class="element">&lt;<span class="element-name">abbr</span> <span class="attribute"><span class="attribute-name">title</span>="<span class="attribute-value">4797fa96-dbfb-33d7-0c4a-fbbc8f9aa35c</span>"</span>&gt;<span class="element-value">Subscription-service content with 60% profit-per-view proportional compensation and USD 0.01 minimum payment per viewer per subscription billing cycle</span>&lt;/<span class="element-name">abbr</span>&gt;</span></samp></div>
+</td>
+</tr>
+<tr id="avcontent-release">
+<td><a href="#avcontent-release"><code class="class">avcontent-release</code></a></td>
+<td><code class="class">avcontent-release-<var>*</var></code></td>
+<td>Release conditions for this content (in the case of multiple instances, the first applicable one for each country is used)</td>
+<td></td>
+</tr>
+<tr id="avcontent-release-license">
+<td><a href="#avcontent-release-license"><code class="class">avcontent-release-license</code></a></td>
+<td><code>text</code></td>
+<td>Contains a hyperlink with rel="license" referring to full license text; the linked-to full license text is considered to be authoritative. Multiple such links inside a single <a href="#avcontent-release-license"><code class="class">avcontent-release-license</code></a> block indicate cumulative licensing conditions; multiple <a href="#avcontent-release-license"><code class="class">avcontent-release-license</code></a> blocks indicate multiple licenses from which the end user may choose one or more.</td>
+<td>
+<div class="samp"><samp>licensed under a <span class="element">&lt;<span class="element-name">a</span> <span class="attribute"><span class="attribute-name">href</span>=<span class="attribute-value">"http://creativecommons.org/licenses/by/2.5/"</span></span> <span class="attribute"><span class="attribute-name">rel</span>=<span class="attribute-value">"license"</span></span>&gt;<span class="element-value">Creative Commons Attribution 2.5 License</span>&lt;/<span class="element-name">a</span>&gt;</span></samp></div>
+<br />
+<div class="samp"><samp>This video game is free software; you can redistribute it and/or modify it under the terms of the <span class="element">&lt;<span class="element-name">a</span> <span class="attribute"><span class="attribute-name">href</span>=<span class="attribute-value">"http://www.fsf.org/licensing/licenses/lgpl.html"</span></span> <span class="attribute"><span class="attribute-name">rel</span>=<span class="attribute-value">"license"</span></span>&gt;<span class="element-value">GNU Lesser General Public License as published by the Free Software Foundation</span>&lt;/<span class="element-name">a</span>&gt;</span>; either version 2.1 of the License, or (at your option) any later version.</samp></div>
+<br />
+<em>or</em>
+<br />
+<div class="samp"><samp><span class="element">&lt;<span class="element-name">a</span> <span class="attribute"><span class="attribute-name">href</span>=<span class="attribute-value">"http://creativecommons.org/licenses/publicdomain/"</span></span> <span class="attribute"><span class="attribute-name">rel</span>=<span class="attribute-value">"license"</span></span>&gt;<span class="element-value">Creative Commons Public Domain</span>&lt;/<span class="element-name">a</span>&gt;</span></samp></div>
+</td>
+</tr>
+<tr id="avcontent-release-country">
+<td><a href="#avcontent-release-country"><code class="class">avcontent-release-country</code></a></td>
+<td><code>text</code></td>
+<td>ISO 3166-1 Alpha-2 country code for the country in which this release applies; see <a rel="nofollow" href="http://en.wikipedia.org/wiki/ISO_3166-1_alpha-2">http://en.wikipedia.org/wiki/ISO_3166-1_alpha-2</a> (without this, the associated release will be in all countries; repeat for a multi-country simultaneous release)</td>
+<td>
+<samp>US</samp>
+<br />
+<em>or</em>
+<br />
+<div class="samp"><samp><span class="element">&lt;<span class="element-name">abbr</span> <span class="attribute"><span class="attribute-name">title</span>="<span class="attribute-value">GB</span>"</span>&gt;<span class="element-value">United Kingdom [including Isle of Man and Channel Islands (Guernsey and Jersey)]</span>&lt;/<span class="element-name">abbr</span>&gt;</span></samp></div>
+</td>
+</tr>
+<tr id="avcontent-release-date">
+<td><a href="#avcontent-release-date"><code class="class">avcontent-release-date</code></a></td>
+<td><code>text</code></td>
+<td>ISO 8601 datetime for release date (without this the release is assumed to be effective immediately)</td>
+<td><samp>2038-04-01</samp></td>
+</tr>
+<tr id="avcontent-release-adult">
+<td><a href="#avcontent-release-adult"><code class="class">avcontent-release-adult</code></a></td>
+<td><code>text</code></td>
+<td>If absent, or if present with a value other than <samp>Yes</samp> (case-insensitive), this release is assumed to be suitable for all-ages viewers.</td>
+<td>
+<samp>Yes</samp>
+<br />
+<em>or</em>
+<br />
+<samp>No</samp>
+</td>
+</tr>
+<tr id="avcontent-release-drm">
+<td><a href="#avcontent-release-drm"><code class="class">avcontent-release-drm</code></a></td>
+<td><code>text</code></td>
+<td>If present with the value <samp>Yes</samp> (case-insensitive), this release is allowed only with software-enforced usage restrictions (a.k.a. "DRM").</td>
+<td>
+<samp>Yes</samp>
+<br />
+<em>or</em>
+<br />
+<samp>No</samp>
+</td>
+</tr>
+<tr id="avcontent-copyright">
+<td><a href="#avcontent-copyright"><code class="class">avcontent-copyright</code></a></td>
+<td><code class="class">avcontent-copyright-<var>*</var></code></td>
+<td>Copyright information (include multiple instances for multiple holders)</td>
+<td></td>
+</tr>
+<tr id="avcontent-copyright-country">
+<td><a href="#avcontent-copyright-country"><code class="class">avcontent-copyright-country</code></a></td>
+<td><code>text</code></td>
+<td>ISO 3166-1 Alpha-2 country code for the country in which this copyright applies; see <a rel="nofollow" href="http://en.wikipedia.org/wiki/ISO_3166-1_alpha-2">http://en.wikipedia.org/wiki/ISO_3166-1_alpha-2</a> (without this, the associated copyright information will be displayed in all countries)</td>
+<td>
+<samp>US</samp>
+<br />
+<em>or</em>
+<br />
+<div class="samp"><samp><span class="element">&lt;<span class="element-name">abbr</span> <span class="attribute"><span class="attribute-name">title</span>="<span class="attribute-value">GB</span>"</span>&gt;<span class="element-value">United Kingdom [including Isle of Man and Channel Islands (Guernsey and Jersey)]</span>&lt;/<span class="element-name">abbr</span>&gt;</span></samp></div>
+</td>
+</tr>
+<tr id="avcontent-copyright-date">
+<td><a href="#avcontent-copyright-date"><code class="class">avcontent-copyright-date</code></a></td>
+<td><code>text</code></td>
+<td>ISO 8601 datetime or range for copyright year of reference (acceptable format is four-digit year; include multiple instances for multiple years)</td>
+<td>
+<div class="samp"><samp><span class="element">&lt;<span class="element-name">abbr</span> <span class="attribute"><span class="attribute-name">title</span>="<span class="attribute-value">2038</span>"</span>&gt;<span class="element-value">MMXXXVIII</span>&lt;/<span class="element-name">abbr</span>&gt;</span></samp></div>
+<em>or</em>
+<br />
+<div class="samp"><samp><span class="element">&lt;<span class="element-name">abbr</span> <span class="attribute"><span class="attribute-name">title</span>="<span class="attribute-value">2034/2038</span>"</span>&gt;<span class="element-value">2034-2038</span>&lt;/<span class="element-name">abbr</span>&gt;</span></samp></div>
+</td>
+</tr>
+<tr id="avcontent-copyright-owner">
+<td><a href="#avcontent-copyright-owner"><code class="class">avcontent-copyright-owner</code></a></td>
+<td><code>text</code></td>
+<td>Copyright owner</td>
+<td><samp>Fictional Pictures, Inc.</samp></td>
+</tr>
+<tr id="avcontent-duration">
+<td><a href="#avcontent-duration"><code class="class">avcontent-duration</code></a></td>
+<td><code>text</code></td>
+<td>Integer number of seconds with optional decimal fraction; no punctuation other than the full stop decimal separator (.) is allowed.</td>
+<td><div class="samp"><samp><span class="element">&lt;<span class="element-name">abbr</span> <span class="attribute"><span class="attribute-name">title</span>="<span class="attribute-value">4801.250</span>"</span>&gt;<span class="element-value">1h 20m 1&#188;s</span>&lt;/<span class="element-name">abbr</span>&gt;</span></samp></div></td>
+</tr>
+<tr id="avcontent-contributor">
+<td><a href="#avcontent-contributor"><code class="class">avcontent-contributor</code></a></td>
+<td><code class="class">avcontent-contributor-<var>*</var></code></td>
+<td>Contributor, including actors, writers, directors, software developers and other contributors (list contributors in credited order, followed by uncredited contributors)</td>
+<td></td>
+</tr>
+<tr id="avcontent-contributor-name">
+<td><a href="#avcontent-contributor-name"><code class="class">avcontent-contributor-name</code></a></td>
+<td><code>text</code></td>
+<td>Contributor name (as it appears in credits)</td>
+<td></td>
+</tr>
+<tr id="avcontent-contributor-role">
+<td><a href="#avcontent-contributor-role"><code class="class">avcontent-contributor-role</code></a></td>
+<td><code>text</code></td>
+<td>Contributor role (as it appears in credits)</td>
+<td></td>
+</tr>
+<tr id="avcontent-producer">
+<td><a href="#avcontent-producer"><code class="class">avcontent-producer</code></a></td>
+<td><code class="class">avcontent-producer-<var>*</var></code></td>
+<td>Producer (list producers in credited order, followed by uncredited producers)</td>
+<td></td>
+</tr>
+<tr id="avcontent-producer-name">
+<td><a href="#avcontent-producer-name"><code class="class">avcontent-producer-name</code></a></td>
+<td><code>text</code></td>
+<td>Producer name (as it appears in credits)</td>
+<td></td>
+</tr>
+<tr id="avcontent-producer-role">
+<td><a href="#avcontent-producer-role"><code class="class">avcontent-producer-role</code></a></td>
+<td><code>text</code></td>
+<td>Producer role (as it appears in credits)</td>
+<td></td>
+</tr>
+<tr id="avcontent-file">
+<td><a href="#avcontent-file"><code class="class">avcontent-file</code></a></td>
+<td><code class="class">avcontent-file-<var>*</var></code></td>
+<td>Metadata for a file containing the audiovisual content (repeat for multiple formats)</td>
+<td></td>
+</tr>
+<tr id="avcontent-file-uri">
+<td><a href="#avcontent-file-uri"><code class="class">avcontent-file-uri</code></a></td>
+<td><code>text</code></td>
+<td>File name or URI</td>
+<td><samp>fictional.mp4</samp>
+<br />
+<em>or</em>
+<br />
+<samp>https://user:pass@example.com/2038/04/01/fictional.mp4</samp>
+</td>
+</tr>
+<tr id="avcontent-file-type">
+<td><a href="#avcontent-file-type"><code class="class">avcontent-file-type</code></a></td>
+<td><code>text</code></td>
+<td>MIME Content-Type value for associated content; see RFC 4281 for details on some "bucket" audiovisual formats and codec specification (<a rel="nofollow" href="http://www.ietf.org/rfc/rfc4281.txt">http://www.ietf.org/rfc/rfc4281.txt</a>)</td>
+<td>
+<div class="samp"><samp><span class="element">&lt;<span class="element-name">abbr</span> <span class="attribute"><span class="attribute-name">title</span>="<span class="attribute-value">video/3gpp2; codecs=<span class="entity-reference">&amp;<span class="entity-reference-value"><span class="entity-reference-name">quot</span>;</span></span>sevc, s263<span class="entity-reference">&amp;<span class="entity-reference-value"><span class="entity-reference-name">quot</span>;</span></span></span>"</span>&gt;<span class="element-value">EVRC audio plus H.263 video</span>&lt;/<span class="element-name">abbr</span>&gt;</span></samp></div>
+<samp>video/x-ms-wmv</samp>
+<br />
+<samp>application/ogg</samp>
+<br />
+<samp>video/quicktime</samp>
+<br />
+<samp>audio/3gpp; codecs=samr</samp>
+<br />
+<samp>video/mp4</samp>
+<br />
+<em>or</em>
+<br />
+<samp>video/mpeg4-generic</samp>
+</td>
+</tr>
+<tr id="avcontent-file-sha1">
+<td><a href="#avcontent-file-sha1"><code class="class">avcontent-file-sha1</code></a></td>
+<td><code>text</code></td>
+<td>File digest/hash computed using SHA1 algorithm (hexadecimal format, case unimportant)</td>
+<td><samp>6cb3aa27029e75ce93342837962188e239cd31fe</samp></td>
+</tr>
+<tr id="avcontent-file-md5">
+<td><a href="#avcontent-file-md5"><code class="class">avcontent-file-md5</code></a></td>
+<td><code>text</code></td>
+<td>File digest/hash computed using MD5 algorithm (hexadecimal format, case unimportant)</td>
+<td><samp>9d6f3b10e0700df7ca82125607f6ea50</samp></td>
+</tr>
+<tr id="avcontent-file-size">
+<td><a href="#avcontent-file-size"><code class="class">avcontent-file-size</code></a></td>
+<td><code>text</code></td>
+<td>File size in bytes as a decimal integer; no punctuation allowed</td>
+<td><samp>530579456</samp></td>
+</tr>
+<tr id="avcontent-file-visual">
+<td><a href="#avcontent-file-visual"><code class="class">avcontent-file-visual</code></a></td>
+<td><code class="class">avcontent-file-visual-<var>*</var></code></td>
+<td>Metadata for visual information in this file</td>
+<td></td>
+</tr>
+<tr id="avcontent-file-visual-width">
+<td><a href="#avcontent-file-visual-width"><code class="class">avcontent-file-visual-width</code></a></td>
+<td><code>text</code></td>
+<td>Integer number of pixels corresponding to frame width.</td>
+<td><samp>1920</samp></td>
+</tr>
+<tr id="avcontent-file-visual-height">
+<td><a href="#avcontent-file-visual-height"><code class="class">avcontent-file-visual-height</code></a></td>
+<td><code>text</code></td>
+<td>Integer number of pixels corresponding to frame height.</td>
+<td><samp>1080</samp></td>
+</tr>
+<tr id="avcontent-file-visual-conversion">
+<td><a href="#avcontent-file-visual-conversion"><code class="class">avcontent-file-visual-conversion</code></a></td>
+<td><code>text</code></td>
+<td>Visual format aspect conversion technique.</td>
+<td>
+<samp>Letterboxing</samp>
+<br />
+<samp>Pan and Scan</samp>
+<br />
+<em>or</em>
+<br />
+<samp>Other</samp>
+</td>
+</tr>
+<tr id="avcontent-file-audio">
+<td><a href="#avcontent-file-audio"><code class="class">avcontent-file-audio</code></a></td>
+<td><code class="class">avcontent-file-audio-<var>*</var></code></td>
+<td>Metadata for audio information in this file</td>
+<td></td>
+</tr>
+<tr id="avcontent-file-audio-channels">
+<td><a href="#avcontent-file-audio-channels"><code class="class">avcontent-file-audio-channels</code></a></td>
+<td><code>text</code></td>
+<td>Integer number of audio channels with optional "." followed by decimal fraction.</td>
+<td><samp>5.1</samp></td>
+</tr>
+<tr id="avcontent-file-bitrate">
+<td><a href="#avcontent-file-bitrate"><code class="class">avcontent-file-bitrate</code></a></td>
+<td><code>text</code></td>
+<td>Integer number of bits per second (peak) decoded during playback of associated file with optional "." followed by decimal fraction.</td>
+<td><samp>124531200</samp></td>
+</tr>
+<tr id="avcontent-file-torrent">
+<td><a href="#avcontent-file-torrent"><code class="class">avcontent-file-torrent</code></a></td>
+<td><code class="class">avcontent-file-torrent-<var>*</var></code></td>
+<td>Metadata for a torrent to use when fetching this file</td>
+<td></td>
+</tr>
+<tr id="avcontent-file-torrent-uri">
+<td><a href="#avcontent-file-torrent-uri"><code class="class">avcontent-file-torrent-uri</code></a></td>
+<td><code>text</code></td>
+<td>Torrent file name or URI</td>
+<td><samp>fictional.mp4</samp>
+<br />
+<em>or</em>
+<br />
+<samp>https://user:pass@example.com/2038/04/01/fictional.mp4</samp>
+</td>
+</tr>
+<tr id="avcontent-file-torrent-infohash">
+<td><a href="#avcontent-file-torrent-infohash"><code class="class">avcontent-file-torrent-infohash</code></a></td>
+<td><code>text</code></td>
+<td>Torrent file info hash (hexadecimal format, case unimportant)</td>
+<td><samp>d18111bd43d462cd588c79bedc14e7cdd16c9e54</samp></td>
+</tr>
+<tr id="avcontent-file-torrent-sha1">
+<td><a href="#avcontent-file-torrent-sha1"><code class="class">avcontent-file-torrent-sha1</code></a></td>
+<td><code>text</code></td>
+<td>Torrent file digest/hash computed using SHA1 algorithm (hexadecimal format, case unimportant)</td>
+<td><samp>ef13dc932e88126973824339ec57e92072aa3bc6</samp></td>
+</tr>
+<tr id="avcontent-file-torrent-md5">
+<td><a href="#avcontent-file-torrent-md5"><code class="class">avcontent-file-torrent-md5</code></a></td>
+<td><code>text</code></td>
+<td>Torrent file digest/hash computed using MD5 algorithm (hexadecimal format, case unimportant)</td>
+<td><samp>05ae6f70652128ac7fd0070e01b3f6d9</samp></td>
+</tr>
+<tr id="avcontent-file-torrent-size">
+<td><a href="#avcontent-file-torrent-size"><code class="class">avcontent-file-torrent-size</code></a></td>
+<td><code>text</code></td>
+<td>Torrent file size in bytes as a decimal integer; no punctuation allowed</td>
+<td><samp>420864</samp></td>
+</tr>
+</tbody>
+</table>
+</body>
+</html>

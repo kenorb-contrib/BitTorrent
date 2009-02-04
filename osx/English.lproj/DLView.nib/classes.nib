@@ -1,0 +1,53 @@
+{
+    IBClasses = (
+        {
+            CLASS = DLCell; 
+            LANGUAGE = ObjC; 
+            OUTLETS = {
+                cbutton = id; 
+                cview = id; 
+                downfield = id; 
+                filefield = id; 
+                peerfield = id; 
+                progressbar = id; 
+                rbutton = id; 
+                sizefield = id; 
+                timefield = id; 
+                upfield = id; 
+            }; 
+            SUPERCLASS = NSCell; 
+        }, 
+        {
+            ACTIONS = {
+                closeTorrent = id; 
+                cycleTorrent = id; 
+                inspectTorrent = id; 
+                revealTorrent = id; 
+            }; 
+            CLASS = DLController; 
+            LANGUAGE = ObjC; 
+            OUTLETS = {
+                downArrow = id; 
+                downfield = id; 
+                downratefield = id; 
+                fileView = id; 
+                filefield = id; 
+                owindow = id; 
+                progressbar = id; 
+                remainingfield = id; 
+                statefield = id; 
+                statusfield = id; 
+                timeView = id; 
+                timefield = id; 
+                upArrow = id; 
+                upfield = id; 
+                upratefield = id; 
+                xferView = id; 
+            }; 
+            SUPERCLASS = NSObject; 
+        }, 
+        {CLASS = FirstResponder; LANGUAGE = ObjC; SUPERCLASS = NSObject; }, 
+        {CLASS = LameProgressBar; LANGUAGE = ObjC; SUPERCLASS = NSView; }
+    ); 
+    IBVersion = 1; 
+}

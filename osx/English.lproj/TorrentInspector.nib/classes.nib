@@ -1,0 +1,31 @@
+{
+    IBClasses = (
+        {CLASS = FirstResponder; LANGUAGE = ObjC; SUPERCLASS = NSObject; }, 
+        {
+            ACTIONS = {revert = id; save = id; }; 
+            CLASS = TorrentInspector; 
+            LANGUAGE = ObjC; 
+            OUTLETS = {
+                announce = id; 
+                announceTitle = id; 
+                comment = id; 
+                files = id; 
+                infohash = id; 
+                name = id; 
+                revertButton = id; 
+                saveButton = id; 
+                size = id; 
+                win = id; 
+            }; 
+            SUPERCLASS = NSWindowController; 
+        }, 
+        {
+            ACTIONS = {revert = id; save = id; }; 
+            CLASS = "TorrentInspector_"; 
+            LANGUAGE = ObjC; 
+            OUTLETS = {announce = id; comment = id; files = id; infohash = id; name = id; }; 
+            SUPERCLASS = NSObject; 
+        }
+    ); 
+    IBVersion = 1; 
+}

@@ -1,0 +1,50 @@
+// BitTorrent.idl : type library source for ActiveX Control project.
+
+// This file will be processed by the MIDL compiler tool to
+// produce the type library (BitTorrent.tlb) that will become a resource in
+// BitTorrent.ocx.
+
+#include <olectl.h>
+#include <idispids.h>
+
+[ uuid(9F2ED8F3-441F-482D-985D-7E5BA0DF2747), version(1.0),
+  helpfile("BitTorrent.hlp"),
+  helpstring("BitTorrent ActiveX Control module"),
+  control ]
+library BitTorrentLib
+{
+	importlib(STDOLE_TLB);
+
+	//  Primary dispatch interface for CBitTorrentCtrl
+
+	[ uuid(128CBD7F-0BF9-45BC-961A-F82B83BE1F3E),
+	  helpstring("Dispatch interface for BitTorrent Control")]
+	dispinterface _DBitTorrent
+	{
+		properties:
+		methods:
+	};
+
+	//  Event dispatch interface for CBitTorrentCtrl
+
+	[ uuid(A6D2FDB2-9F28-4574-8349-D4CD06E32D86),
+	  helpstring("Event interface for BitTorrent Control") ]
+	dispinterface _DBitTorrentEvents
+	{
+		properties:
+			//  Event interface has no properties
+
+		methods:
+	};
+
+	//  Class information for CBitTorrentCtrl
+
+	[ uuid(21C4E4B2-40F7-4E77-BF19-8BED7187BB55),
+	  helpstring("BitTorrent Control"), control ]
+	coclass BitTorrent
+	{
+		[default] dispinterface _DBitTorrent;
+		[default, source] dispinterface _DBitTorrentEvents;
+	};
+
+};

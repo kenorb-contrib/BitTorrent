@@ -1,0 +1,58 @@
+{
+    IBClasses = (
+        {
+            ACTIONS = {
+                cancelUrl = id; 
+                clearAll = id; 
+                closeTorrent = id; 
+                cycleTorrent = id; 
+                inspectFile = id; 
+                inspectTorrent = id; 
+                loadConsole = id; 
+                openAbout = id; 
+                openGenerator = id; 
+                openHomePage = id; 
+                openPage = id; 
+                openPrefs = id; 
+                openTrackerResponse = id; 
+                openURL = id; 
+                revealTorrent = id; 
+                showDetail = id; 
+                takeUrl = id; 
+                terminate = id; 
+                toggleDetail = id; 
+                toggleToolbar = id; 
+            }; 
+            CLASS = BTAppController; 
+            LANGUAGE = ObjC; 
+            OUTLETS = {
+                aboutWindow = NSWindow; 
+                cycleMenu = id; 
+                downField = id; 
+                drawerMenu = id; 
+                logDrawer = id; 
+                torrentMenu = id; 
+                torrentTable = id; 
+                upField = id; 
+                url = NSTextField; 
+                urlWindow = NSWindow; 
+                versField = NSTextField; 
+            }; 
+            SUPERCLASS = NSObject; 
+        }, 
+        {CLASS = FirstResponder; LANGUAGE = ObjC; SUPERCLASS = NSObject; }, 
+        {
+            CLASS = LogController; 
+            LANGUAGE = ObjC; 
+            OUTLETS = {delegate = id; logView = id; menu = id; }; 
+            SUPERCLASS = NSObject; 
+        }, 
+        {
+            CLASS = ToolbarDelegate; 
+            LANGUAGE = ObjC; 
+            OUTLETS = {"max_upload_rate" = id; "max_uploads" = id; window = id; }; 
+            SUPERCLASS = NSObject; 
+        }
+    ); 
+    IBVersion = 1; 
+}

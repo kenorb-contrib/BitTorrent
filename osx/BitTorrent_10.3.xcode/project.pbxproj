@@ -1,0 +1,1737 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 39;
+	objects = {
+		080E96DDFE201D6D7F000001 = {
+			children = (
+				73800F6A0906CAF5007FED4C,
+				730C317F082413C70015C403,
+				738FBC2F07BB4BB80058C7AF,
+				7318C98005DEFCAE00676317,
+				7318C9CB05DF041900676317,
+				73EA79360627227400AEE705,
+				73D060C6062337B600D2CA2F,
+				7374372906166C6C0014621A,
+				73A5C6410641B55A00C9FFC7,
+				7318C9D905DF0E0F00676317,
+				73C3A7D605E085D50068E454,
+				735947720770A7A100F80B8A,
+				73A6DA04075126B900C4CEF0,
+			);
+			isa = PBXGroup;
+			name = Classes;
+			refType = 4;
+			sourceTree = "<group>";
+		};
+		089C165CFE840E0CC02AAC07 = {
+			children = (
+				089C165DFE840E0CC02AAC07,
+			);
+			isa = PBXVariantGroup;
+			name = InfoPlist.strings;
+			path = "";
+			refType = 4;
+			sourceTree = "<group>";
+		};
+		089C165DFE840E0CC02AAC07 = {
+			fileEncoding = 10;
+			isa = PBXFileReference;
+			lastKnownFileType = text.plist.strings;
+			name = English;
+			path = English.lproj/InfoPlist.strings;
+			refType = 4;
+			sourceTree = "<group>";
+		};
+//080
+//081
+//082
+//083
+//084
+//100
+//101
+//102
+//103
+//104
+		1058C7A1FEA54F0111CA2CBB = {
+			isa = PBXFileReference;
+			lastKnownFileType = wrapper.framework;
+			name = Cocoa.framework;
+			path = /System/Library/Frameworks/Cocoa.framework;
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+//100
+//101
+//102
+//103
+//104
+//190
+//191
+//192
+//193
+//194
+		19C28FACFE9D520D11CA2CBB = {
+			children = (
+				73F9827A07866756008364F6,
+			);
+			isa = PBXGroup;
+			name = Products;
+			refType = 4;
+			sourceTree = "<group>";
+		};
+//190
+//191
+//192
+//193
+//194
+//1B0
+//1B1
+//1B2
+//1B3
+//1B4
+		1BFB7DBF04CEE17C00DEF731 = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.c.objc;
+			path = "main-embedded-interpreter.m";
+			refType = 2;
+			sourceTree = SOURCE_ROOT;
+		};
+		1BFB7DD504CEE24900DEF731 = {
+			isa = PBXFileReference;
+			lastKnownFileType = wrapper.framework;
+			name = Python.framework;
+			path = /System/Library/Frameworks/Python.framework;
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		1BFB7F6D04CEE27700DEF731 = {
+			buildPhases = (
+				1BFB7F6E04CEE27700DEF731,
+				1BFB7F6F04CEE27700DEF731,
+				1BFB801004CEE27700DEF731,
+				1BFB801204CEE27700DEF731,
+				77A8F17D04D6B2470033F030,
+				73CE38980953B2B600080220,
+				73247AEE06455B5A00A8E294,
+			);
+			buildRules = (
+			);
+			buildSettings = {
+				CURRENT_PROJECT_VERSION = 4.3.5;
+				FRAMEWORK_SEARCH_PATHS = "";
+				GCC_ENABLE_TRIGRAPHS = NO;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREFIX_HEADER = BitTorrent_Prefix.pch;
+				GCC_WARN_ABOUT_MISSING_PROTOTYPES = NO;
+				GCC_WARN_FOUR_CHARACTER_CONSTANTS = NO;
+				GCC_WARN_UNKNOWN_PRAGMAS = NO;
+				HEADER_SEARCH_PATHS = "";
+				INFOPLIST_FILE = Info.plist;
+				INSTALL_PATH = "$(HOME)/Applications";
+				LIBRARY_SEARCH_PATHS = "";
+				OBJROOT = "/tmp/$(PROJECT_NAME)";
+				OTHER_CFLAGS = "";
+				OTHER_LDFLAGS = "";
+				PRODUCT_NAME = BitTorrent;
+				SECTORDER_FLAGS = "";
+				SYMROOT = "/tmp/$(PROJECT_NAME)";
+				WARNING_CFLAGS = "-Wmost -Wno-four-char-constants -Wno-unknown-pragmas";
+				WRAPPER_EXTENSION = app;
+			};
+			dependencies = (
+			);
+			isa = PBXNativeTarget;
+			name = BitTorrent;
+			productInstallPath = "$(HOME)/Applications";
+			productName = BitTorrent;
+			productReference = 73F9827A07866756008364F6;
+			productType = "com.apple.product-type.application";
+		};
+		1BFB7F6E04CEE27700DEF731 = {
+			buildActionMask = 2147483647;
+			files = (
+				73A7208406179D0B00DC7522,
+				73D06028062212CE00D2CA2F,
+			);
+			isa = PBXHeadersBuildPhase;
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		1BFB7F6F04CEE27700DEF731 = {
+			buildActionMask = 2147483647;
+			files = (
+				1BFB7F7004CEE27700DEF731,
+				1BFB7F7104CEE27700DEF731,
+				1BFB7F7204CEE27700DEF731,
+				777C19C904D6B9D800FBF432,
+				77A9B0E204D6BD1E00EC1630,
+				529BAE1E05DCECA500CC5BD4,
+				529BAE1F05DCECA500CC5BD4,
+				529BAE2005DCECA500CC5BD4,
+				7318C97C05DEFC6400676317,
+				7318C97D05DEFC6400676317,
+				7318C9C105DF024500676317,
+				7318C9CC05DF041900676317,
+				7318C9DA05DF0E0F00676317,
+				73C3A7D705E085D50068E454,
+				73194FB205F1C00C0053854B,
+				7374372A06166C6C0014621A,
+				73D0608F0623193500D2CA2F,
+				73D060C7062337B600D2CA2F,
+				7316943E06261AAF0091B5AF,
+				7316943F06261AAF0091B5AF,
+				7316944006261AAF0091B5AF,
+				73EA79370627227400AEE705,
+				73EA79E506273EEB00AEE705,
+				732470410641B17C00A8E294,
+				73A5C6420641B55A00C9FFC7,
+				7377E7A80653568700E1BE20,
+				735947670770A0E900F80B8A,
+				735947730770A7A100F80B8A,
+				736278010789C18300281E3E,
+				73627A1307933FDE00281E3E,
+				7396EEAC07B6D2230020F890,
+				7396EEB507B6D40C0020F890,
+				7396EEC007B6D6470020F890,
+				7396EECD07B6D8BB0020F890,
+				7396EF4607B7D58B0020F890,
+				7396EF4707B7D58B0020F890,
+				7396EF9007B7FD250020F890,
+				7396EF9107B7FD260020F890,
+				738FBC3007BB4BB80058C7AF,
+				73DFDE9F07BCACA800257998,
+				73DFDEA007BCACA800257998,
+				73A3A3FF07E5182E008CD73D,
+				7358988307E6656200E7D321,
+				7358988407E6656800E7D321,
+				739D716207ECF7B900E8D4DD,
+				730C31730824103E0015C403,
+				730C3180082413C70015C403,
+				73CCE5FE082EF74A00A9E6F4,
+				73CF44FD083BDF3200DE5623,
+				73800F6B0906CAF5007FED4C,
+				73B33A05092CF4DC00CEE398,
+				7394BACB0985CC6500C8D039,
+			);
+			isa = PBXResourcesBuildPhase;
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		1BFB7F7004CEE27700DEF731 = {
+			fileRef = 29B97318FDCFA39411CA2CEA;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		1BFB7F7104CEE27700DEF731 = {
+			fileRef = 089C165CFE840E0CC02AAC07;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		1BFB7F7204CEE27700DEF731 = {
+			fileRef = F60DD8BC0358A22201C8ED3C;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		1BFB801004CEE27700DEF731 = {
+			buildActionMask = 2147483647;
+			files = (
+				1BFB801104CEE27700DEF731,
+				73A7208506179D0B00DC7522,
+				73D06029062212CE00D2CA2F,
+			);
+			isa = PBXSourcesBuildPhase;
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		1BFB801104CEE27700DEF731 = {
+			fileRef = 1BFB7DBF04CEE17C00DEF731;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		1BFB801204CEE27700DEF731 = {
+			buildActionMask = 2147483647;
+			files = (
+				1BFB801304CEE27700DEF731,
+				1BFB80F904CEE38B00DEF731,
+				1BFB801404CEE27700DEF731,
+			);
+			isa = PBXFrameworksBuildPhase;
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		1BFB801304CEE27700DEF731 = {
+			fileRef = 29B97325FDCFA39411CA2CEA;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		1BFB801404CEE27700DEF731 = {
+			fileRef = 1BFB7DD504CEE24900DEF731;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		1BFB80F904CEE38B00DEF731 = {
+			fileRef = 1058C7A1FEA54F0111CA2CBB;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+//1B0
+//1B1
+//1B2
+//1B3
+//1B4
+//290
+//291
+//292
+//293
+//294
+		29B97313FDCFA39411CA2CEA = {
+			buildSettings = {
+			};
+			buildStyles = (
+				4A9504CCFFE6A4B311CA0CBA,
+				4A9504CDFFE6A4B311CA0CBA,
+			);
+			hasScannedForEncodings = 1;
+			isa = PBXProject;
+			knownRegions = (
+				English,
+				Japanese,
+				French,
+				German,
+				Dutch,
+				Swedish,
+				zh_TW,
+			);
+			mainGroup = 29B97314FDCFA39411CA2CEA;
+			projectDirPath = "";
+			targets = (
+				1BFB7F6D04CEE27700DEF731,
+			);
+		};
+		29B97314FDCFA39411CA2CEA = {
+			children = (
+				7394BACA0985CC6500C8D039,
+				73B33A04092CF4DC00CEE398,
+				73CF44FC083BDF3200DE5623,
+				739D716007ECF7B900E8D4DD,
+				73DFDE9D07BCACA800257998,
+				73DFDE9E07BCACA800257998,
+				089C165CFE840E0CC02AAC07,
+				7318C98C05DF024500676317,
+				73CCE5FD082EF74A00A9E6F4,
+				735CBE0007FA02E300A0C139,
+				738FB94A07B9C6B50058C7AF,
+				73D0601A0622128C00D2CA2F,
+				080E96DDFE201D6D7F000001,
+				29B97315FDCFA39411CA2CEA,
+				29B97317FDCFA39411CA2CEA,
+				29B97323FDCFA39411CA2CEA,
+				19C28FACFE9D520D11CA2CBB,
+			);
+			isa = PBXGroup;
+			name = BitTorrent;
+			path = "";
+			refType = 4;
+			sourceTree = "<group>";
+		};
+		29B97315FDCFA39411CA2CEA = {
+			children = (
+				73D0608E0623193500D2CA2F,
+				F60DD8BC0358A22201C8ED3C,
+				1BFB7DBF04CEE17C00DEF731,
+				777C19C804D6B9D800FBF432,
+				77A9B0E104D6BD1E00EC1630,
+			);
+			isa = PBXGroup;
+			name = "Other Sources";
+			path = "";
+			refType = 4;
+			sourceTree = "<group>";
+		};
+		29B97317FDCFA39411CA2CEA = {
+			children = (
+				73A3A3FE07E5182E008CD73D,
+				7396EF4407B7D58B0020F890,
+				7396EF8E07B7FD250020F890,
+				7396EF8F07B7FD250020F890,
+				7396EF4507B7D58B0020F890,
+				73627A1207933FDE00281E3E,
+				7396EEAB07B6D2230020F890,
+				7396EECC07B6D8BB0020F890,
+				7396EEB407B6D40C0020F890,
+				7396EEBF07B6D6470020F890,
+			);
+			isa = PBXGroup;
+			name = Resources;
+			path = "";
+			refType = 4;
+			sourceTree = "<group>";
+		};
+		29B97318FDCFA39411CA2CEA = {
+			children = (
+				29B97319FDCFA39411CA2CEA,
+				734DFA4A07C5245300BB2C8B,
+				73BE059E07ECE8ED002F4004,
+				73BE05B307ECEB5B002F4004,
+				73BE05B907ECED86002F4004,
+				73BE05C507ECF1FA002F4004,
+				739D718207ED2D7100E8D4DD,
+			);
+			isa = PBXVariantGroup;
+			name = MainMenu.nib;
+			path = "";
+			refType = 4;
+			sourceTree = "<group>";
+		};
+		29B97319FDCFA39411CA2CEA = {
+			isa = PBXFileReference;
+			lastKnownFileType = wrapper.nib;
+			name = English;
+			path = English.lproj/MainMenu.nib;
+			refType = 4;
+			sourceTree = "<group>";
+		};
+		29B97323FDCFA39411CA2CEA = {
+			children = (
+				29B97324FDCFA39411CA2CEA,
+				1058C7A1FEA54F0111CA2CBB,
+				29B97325FDCFA39411CA2CEA,
+				1BFB7DD504CEE24900DEF731,
+			);
+			isa = PBXGroup;
+			name = "Frameworks & Modules";
+			path = "";
+			refType = 4;
+			sourceTree = "<group>";
+		};
+		29B97324FDCFA39411CA2CEA = {
+			isa = PBXFileReference;
+			lastKnownFileType = wrapper.framework;
+			name = AppKit.framework;
+			path = /System/Library/Frameworks/AppKit.framework;
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		29B97325FDCFA39411CA2CEA = {
+			isa = PBXFileReference;
+			lastKnownFileType = wrapper.framework;
+			name = Foundation.framework;
+			path = /System/Library/Frameworks/Foundation.framework;
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+//290
+//291
+//292
+//293
+//294
+//4A0
+//4A1
+//4A2
+//4A3
+//4A4
+		4A9504CCFFE6A4B311CA0CBA = {
+			buildSettings = {
+				COPY_PHASE_STRIP = NO;
+				GCC_DYNAMIC_NO_PIC = YES;
+				GCC_ENABLE_FIX_AND_CONTINUE = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				OPTIMIZATION_CFLAGS = "-O0";
+				ZERO_LINK = YES;
+			};
+			isa = PBXBuildStyle;
+			name = Development;
+		};
+		4A9504CDFFE6A4B311CA0CBA = {
+			buildSettings = {
+				COPY_PHASE_STRIP = YES;
+				CURRENT_PROJECT_VERSION = 4.3.5;
+				DEPLOYMENT_LOCATION = YES;
+				DEPLOYMENT_POSTPROCESSING = YES;
+				GCC_ENABLE_FIX_AND_CONTINUE = NO;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				ZERO_LINK = NO;
+			};
+			isa = PBXBuildStyle;
+			name = Deployment;
+		};
+//4A0
+//4A1
+//4A2
+//4A3
+//4A4
+//520
+//521
+//522
+//523
+//524
+		529BAD2F05DCECA400CC5BD4 = {
+			isa = PBXFileReference;
+			lastKnownFileType = "compiled.mach-o.bundle";
+			name = _AppKit.so;
+			path = /Library/Python/2.3/PyObjC/AppKit/_AppKit.so;
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		529BAD3005DCECA400CC5BD4 = {
+			isa = PBXFileReference;
+			lastKnownFileType = "compiled.mach-o.bundle";
+			name = _Foundation.so;
+			path = /Library/Python/2.3/PyObjC/Foundation/_Foundation.so;
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		529BAD3105DCECA400CC5BD4 = {
+			isa = PBXFileReference;
+			lastKnownFileType = "compiled.mach-o.bundle";
+			name = _objc.so;
+			path = /Library/Python/2.3/PyObjC/objc/_objc.so;
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		529BAE1E05DCECA500CC5BD4 = {
+			fileRef = 529BAD2F05DCECA400CC5BD4;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		529BAE1F05DCECA500CC5BD4 = {
+			fileRef = 529BAD3005DCECA400CC5BD4;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		529BAE2005DCECA500CC5BD4 = {
+			fileRef = 529BAD3105DCECA400CC5BD4;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+//520
+//521
+//522
+//523
+//524
+//730
+//731
+//732
+//733
+//734
+		730C31710824103E0015C403 = {
+			children = (
+				730C31720824103E0015C403,
+			);
+			isa = PBXVariantGroup;
+			name = ChoosePort.nib;
+			path = "";
+			refType = 4;
+			sourceTree = "<group>";
+		};
+		730C31720824103E0015C403 = {
+			isa = PBXFileReference;
+			lastKnownFileType = wrapper.nib;
+			name = English;
+			path = English.lproj/ChoosePort.nib;
+			refType = 4;
+			sourceTree = "<group>";
+		};
+		730C31730824103E0015C403 = {
+			fileRef = 730C31710824103E0015C403;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		730C317F082413C70015C403 = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = text.script.python;
+			path = PortChanger.py;
+			refType = 4;
+			sourceTree = "<group>";
+		};
+		730C3180082413C70015C403 = {
+			fileRef = 730C317F082413C70015C403;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		7316939E06261AAE0091B5AF = {
+			isa = PBXFileReference;
+			lastKnownFileType = folder;
+			name = AppKit;
+			path = /Library/Python/2.3/PyObjC/AppKit;
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		731693C406261AAE0091B5AF = {
+			isa = PBXFileReference;
+			lastKnownFileType = folder;
+			name = Foundation;
+			path = /Library/Python/2.3/PyObjC/Foundation;
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		7316940206261AAE0091B5AF = {
+			isa = PBXFileReference;
+			lastKnownFileType = folder;
+			name = objc;
+			path = /Library/Python/2.3/PyObjC/objc;
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		7316943E06261AAF0091B5AF = {
+			fileRef = 7316939E06261AAE0091B5AF;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		7316943F06261AAF0091B5AF = {
+			fileRef = 731693C406261AAE0091B5AF;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		7316944006261AAF0091B5AF = {
+			fileRef = 7316940206261AAE0091B5AF;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		7318C97705DEFC6400676317 = {
+			children = (
+				7318C97805DEFC6400676317,
+				734DFA6807C524FF00BB2C8B,
+				73BE05AE07ECE9E4002F4004,
+				73BE05B607ECEC3B002F4004,
+				73BE05BB07ECEE66002F4004,
+				739D714607ECF3CE00E8D4DD,
+				739D718407ED2E7A00E8D4DD,
+			);
+			isa = PBXVariantGroup;
+			name = Metainfo.nib;
+			path = "";
+			refType = 4;
+			sourceTree = "<group>";
+		};
+		7318C97805DEFC6400676317 = {
+			isa = PBXFileReference;
+			lastKnownFileType = wrapper.nib;
+			name = English;
+			path = English.lproj/Metainfo.nib;
+			refType = 4;
+			sourceTree = "<group>";
+		};
+		7318C97905DEFC6400676317 = {
+			children = (
+				7318C97A05DEFC6400676317,
+				734DFA6707C524EA00BB2C8B,
+				73BE05B107ECEAB7002F4004,
+				73BE05BD07ECEF66002F4004,
+				739D714E07ECF45800E8D4DD,
+				739D718607ED2F5D00E8D4DD,
+			);
+			isa = PBXVariantGroup;
+			name = Preferences.nib;
+			path = "";
+			refType = 4;
+			sourceTree = "<group>";
+		};
+		7318C97A05DEFC6400676317 = {
+			isa = PBXFileReference;
+			lastKnownFileType = wrapper.nib;
+			name = English;
+			path = English.lproj/Preferences.nib;
+			refType = 4;
+			sourceTree = "<group>";
+		};
+		7318C97C05DEFC6400676317 = {
+			fileRef = 7318C97705DEFC6400676317;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		7318C97D05DEFC6400676317 = {
+			fileRef = 7318C97905DEFC6400676317;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		7318C98005DEFCAE00676317 = {
+			fileEncoding = 4;
+			isa = PBXFileReference;
+			lastKnownFileType = text.script.python;
+			path = BTAppController.py;
+			refType = 4;
+			sourceTree = "<group>";
+		};
+		7318C98C05DF024500676317 = {
+			isa = PBXFileReference;
+			lastKnownFileType = folder;
+			name = BitTorrent;
+			path = ../BitTorrent;
+			refType = 2;
+			sourceTree = SOURCE_ROOT;
+		};
+		7318C9C105DF024500676317 = {
+			fileRef = 7318C98C05DF024500676317;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		7318C9CB05DF041900676317 = {
+			fileEncoding = 4;
+			isa = PBXFileReference;
+			lastKnownFileType = text.script.python;
+			path = DLController.py;
+			refType = 4;
+			sourceTree = "<group>";
+		};
+		7318C9CC05DF041900676317 = {
+			fileRef = 7318C9CB05DF041900676317;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		7318C9D905DF0E0F00676317 = {
+			fileEncoding = 4;
+			isa = PBXFileReference;
+			lastKnownFileType = text.script.python;
+			path = Preferences.py;
+			refType = 4;
+			sourceTree = "<group>";
+		};
+		7318C9DA05DF0E0F00676317 = {
+			fileRef = 7318C9D905DF0E0F00676317;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		73194FB005F1C00C0053854B = {
+			children = (
+				73194FB105F1C00C0053854B,
+				734DFA6B07C5259500BB2C8B,
+				73B8D77E07F78843009404B2,
+				73B8D78807F78B3E009404B2,
+			);
+			isa = PBXVariantGroup;
+			name = DLView.nib;
+			path = "";
+			refType = 4;
+			sourceTree = "<group>";
+		};
+		73194FB105F1C00C0053854B = {
+			isa = PBXFileReference;
+			lastKnownFileType = wrapper.nib;
+			name = English;
+			path = English.lproj/DLView.nib;
+			refType = 4;
+			sourceTree = "<group>";
+		};
+		73194FB205F1C00C0053854B = {
+			fileRef = 73194FB005F1C00C0053854B;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		7324703F0641B17C00A8E294 = {
+			children = (
+				732470400641B17C00A8E294,
+				739D715007ECF4FE00E8D4DD,
+				739D718D07ED316C00E8D4DD,
+				73B8D77F07F7884A009404B2,
+			);
+			isa = PBXVariantGroup;
+			name = DetailView.nib;
+			path = "";
+			refType = 4;
+			sourceTree = "<group>";
+		};
+		732470400641B17C00A8E294 = {
+			isa = PBXFileReference;
+			lastKnownFileType = wrapper.nib;
+			name = English;
+			path = English.lproj/DetailView.nib;
+			refType = 4;
+			sourceTree = "<group>";
+		};
+		732470410641B17C00A8E294 = {
+			fileRef = 7324703F0641B17C00A8E294;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		73247AEE06455B5A00A8E294 = {
+			buildActionMask = 8;
+			files = (
+			);
+			inputPaths = (
+			);
+			isa = PBXShellScriptBuildPhase;
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 1;
+			shellPath = /usr/bin/python;
+			shellScript = "import compileall, os\n\n# create disk image\nos.chdir(os.environ['INSTALL_DIR'])\nd = 'BitTorrent_OSX_%s' % os.environ['CURRENT_PROJECT_VERSION']\ntry:\n\tos.mkdir(d)\nexcept OSError, e:\n\tif e.errno == 17:\n\t\tos.system('chmod -R u+w ' + d)\n\t\tos.system('rm -rf %s/*' % d)\n\telse:\n\t\traise OSError, e\n\nos.system('cp -R \"%s\" \"%s\"' % (os.path.join(os.environ['INSTALL_DIR'], \"BitTorrent.app\"), d))\nos.system('cp \"%s\" \"%s\"' % (os.path.join(os.environ['SOURCE_ROOT'], 'README_OSX.txt'), d))\nos.system('cp -R \"%s\" \"%s\"' % (os.path.join(os.environ['SOURCE_ROOT'], 'Help'), d))\n\nos.system('chmod -R u+w ' + d)\n\nos.chdir(os.path.join(os.environ['INSTALL_DIR'], d, \"BitTorrent.app/Contents/Resources\"))\nos.system('rm -r Foundation/test')\nos.system('rm -r objc/test')\nos.system('rm -r PyObjCTools/test')\n\ncompileall.compile_dir(\".\")\nos.system(\"mv __main__.py /tmp\")\nos.system('find . -name \"*.py\" | xargs rm')\nos.system('find . -name \"*~\" | xargs rm')\nos.system('find . -name \"test_*\" | xargs rm')\nos.system(\"mv /tmp/__main__.py .\")\n\n\nvers = os.environ['CURRENT_PROJECT_VERSION']\nx = vers.split('.')\nif int(x[1]) % 2 == 1:\n\tvers = vers + \"-Beta\"\n\nos.chdir(os.environ['INSTALL_DIR'])\nt = \"BitTorrent-%s.dmg\" % vers\nos.system('rm ' + t)\nos.system('hdiutil create -imagekey zlib-level=9  -srcfolder \"%s\" \"%s\"' % (d, t))\nos.system('rm -rf \"%s\"' % d)\n";
+		};
+		734DFA4A07C5245300BB2C8B = {
+			isa = PBXFileReference;
+			lastKnownFileType = wrapper.nib;
+			name = German;
+			path = German.lproj/MainMenu.nib;
+			refType = 4;
+			sourceTree = "<group>";
+		};
+		734DFA6407C524D300BB2C8B = {
+			children = (
+				73A6DA03075126B900C4CEF0,
+				73B8D77C07F7882A009404B2,
+				73B8D78407F78A75009404B2,
+			);
+			isa = PBXVariantGroup;
+			name = PyInterpreter.nib;
+			refType = 4;
+			sourceTree = "<group>";
+		};
+		734DFA6707C524EA00BB2C8B = {
+			isa = PBXFileReference;
+			lastKnownFileType = wrapper.nib;
+			name = German;
+			path = German.lproj/Preferences.nib;
+			refType = 4;
+			sourceTree = "<group>";
+		};
+		734DFA6807C524FF00BB2C8B = {
+			isa = PBXFileReference;
+			lastKnownFileType = wrapper.nib;
+			name = German;
+			path = German.lproj/Metainfo.nib;
+			refType = 4;
+			sourceTree = "<group>";
+		};
+		734DFA6B07C5259500BB2C8B = {
+			isa = PBXFileReference;
+			lastKnownFileType = wrapper.nib;
+			name = German;
+			path = German.lproj/DLView.nib;
+			refType = 4;
+			sourceTree = "<group>";
+		};
+		7358988307E6656200E7D321 = {
+			fileRef = 73A6DA04075126B900C4CEF0;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		7358988407E6656800E7D321 = {
+			fileRef = 734DFA6407C524D300BB2C8B;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		735947650770A0E900F80B8A = {
+			children = (
+				735947660770A0E900F80B8A,
+				73B8D78007F78853009404B2,
+				73B8D78B07F78B95009404B2,
+			);
+			isa = PBXVariantGroup;
+			name = TorrentInspector.nib;
+			path = "";
+			refType = 4;
+			sourceTree = "<group>";
+		};
+		735947660770A0E900F80B8A = {
+			isa = PBXFileReference;
+			lastKnownFileType = wrapper.nib;
+			name = English;
+			path = English.lproj/TorrentInspector.nib;
+			refType = 4;
+			sourceTree = "<group>";
+		};
+		735947670770A0E900F80B8A = {
+			fileRef = 735947650770A0E900F80B8A;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		735947720770A7A100F80B8A = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = text.script.python;
+			path = TorrentInspector.py;
+			refType = 4;
+			sourceTree = "<group>";
+		};
+		735947730770A7A100F80B8A = {
+			fileRef = 735947720770A7A100F80B8A;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		735CBE0007FA02E300A0C139 = {
+			children = (
+				736277E60789C18300281E3E,
+				77A8EFE904D6B2200033F030,
+			);
+			isa = PBXGroup;
+			name = "Third Party";
+			refType = 4;
+			sourceTree = "<group>";
+		};
+		736277E60789C18300281E3E = {
+			isa = PBXFileReference;
+			lastKnownFileType = folder;
+			name = PyObjCTools;
+			path = /Library/Python/2.3/PyObjC/PyObjCTools;
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		736278010789C18300281E3E = {
+			fileRef = 736277E60789C18300281E3E;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		73627A1207933FDE00281E3E = {
+			isa = PBXFileReference;
+			lastKnownFileType = image.icns;
+			path = dlstart2.icns;
+			refType = 4;
+			sourceTree = "<group>";
+		};
+		73627A1307933FDE00281E3E = {
+			fileRef = 73627A1207933FDE00281E3E;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		7374372906166C6C0014621A = {
+			fileEncoding = 4;
+			isa = PBXFileReference;
+			lastKnownFileType = text.script.python;
+			path = ServiceDelegate.py;
+			refType = 4;
+			sourceTree = "<group>";
+		};
+		7374372A06166C6C0014621A = {
+			fileRef = 7374372906166C6C0014621A;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		7377E7A80653568700E1BE20 = {
+			fileRef = 7318C98005DEFCAE00676317;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		73800F6A0906CAF5007FED4C = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = text.script.python;
+			path = LameProgressBar.py;
+			refType = 4;
+			sourceTree = "<group>";
+		};
+		73800F6B0906CAF5007FED4C = {
+			fileRef = 73800F6A0906CAF5007FED4C;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		738FB94A07B9C6B50058C7AF = {
+			children = (
+				29B97318FDCFA39411CA2CEA,
+				734DFA6407C524D300BB2C8B,
+				7318C97905DEFC6400676317,
+				7318C97705DEFC6400676317,
+				73EA79E306273EEB00AEE705,
+				73194FB005F1C00C0053854B,
+				7324703F0641B17C00A8E294,
+				735947650770A0E900F80B8A,
+				730C31710824103E0015C403,
+			);
+			isa = PBXGroup;
+			name = NIBS;
+			refType = 4;
+			sourceTree = "<group>";
+		};
+		738FBC2F07BB4BB80058C7AF = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = text.script.python;
+			path = DLCell.py;
+			refType = 4;
+			sourceTree = "<group>";
+		};
+		738FBC3007BB4BB80058C7AF = {
+			fileRef = 738FBC2F07BB4BB80058C7AF;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		7394BACA0985CC6500C8D039 = {
+			isa = PBXFileReference;
+			lastKnownFileType = "compiled.mach-o.bundle";
+			name = kqsyscallmodule.so;
+			path = "/Library/Python/2.3/site-packages/kqsyscallmodule.so";
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		7394BACB0985CC6500C8D039 = {
+			fileRef = 7394BACA0985CC6500C8D039;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		7396EEAB07B6D2230020F890 = {
+			isa = PBXFileReference;
+			lastKnownFileType = image.icns;
+			path = dlstop2.icns;
+			refType = 4;
+			sourceTree = "<group>";
+		};
+		7396EEAC07B6D2230020F890 = {
+			fileRef = 7396EEAB07B6D2230020F890;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		7396EEB407B6D40C0020F890 = {
+			isa = PBXFileReference;
+			lastKnownFileType = image.icns;
+			path = dlclear2.icns;
+			refType = 4;
+			sourceTree = "<group>";
+		};
+		7396EEB507B6D40C0020F890 = {
+			fileRef = 7396EEB407B6D40C0020F890;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		7396EEBF07B6D6470020F890 = {
+			isa = PBXFileReference;
+			lastKnownFileType = image.icns;
+			path = dlinfo2.icns;
+			refType = 4;
+			sourceTree = "<group>";
+		};
+		7396EEC007B6D6470020F890 = {
+			fileRef = 7396EEBF07B6D6470020F890;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		7396EECC07B6D8BB0020F890 = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = image.icns;
+			path = dlreveal2.icns;
+			refType = 4;
+			sourceTree = "<group>";
+		};
+		7396EECD07B6D8BB0020F890 = {
+			fileRef = 7396EECC07B6D8BB0020F890;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		7396EF4407B7D58B0020F890 = {
+			isa = PBXFileReference;
+			lastKnownFileType = image.icns;
+			path = dn.icns;
+			refType = 4;
+			sourceTree = "<group>";
+		};
+		7396EF4507B7D58B0020F890 = {
+			isa = PBXFileReference;
+			lastKnownFileType = image.icns;
+			path = up.icns;
+			refType = 4;
+			sourceTree = "<group>";
+		};
+		7396EF4607B7D58B0020F890 = {
+			fileRef = 7396EF4407B7D58B0020F890;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		7396EF4707B7D58B0020F890 = {
+			fileRef = 7396EF4507B7D58B0020F890;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		7396EF8E07B7FD250020F890 = {
+			isa = PBXFileReference;
+			lastKnownFileType = image.icns;
+			path = log.icns;
+			refType = 4;
+			sourceTree = "<group>";
+		};
+		7396EF8F07B7FD250020F890 = {
+			isa = PBXFileReference;
+			lastKnownFileType = image.icns;
+			path = peers.icns;
+			refType = 4;
+			sourceTree = "<group>";
+		};
+		7396EF9007B7FD250020F890 = {
+			fileRef = 7396EF8E07B7FD250020F890;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		7396EF9107B7FD260020F890 = {
+			fileRef = 7396EF8F07B7FD250020F890;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		739D714607ECF3CE00E8D4DD = {
+			isa = PBXFileReference;
+			lastKnownFileType = wrapper.nib;
+			name = zh_TW;
+			path = zh_TW.lproj/Metainfo.nib;
+			refType = 4;
+			sourceTree = "<group>";
+		};
+		739D714E07ECF45800E8D4DD = {
+			isa = PBXFileReference;
+			lastKnownFileType = wrapper.nib;
+			name = zh_TW;
+			path = zh_TW.lproj/Preferences.nib;
+			refType = 4;
+			sourceTree = "<group>";
+		};
+		739D715007ECF4FE00E8D4DD = {
+			isa = PBXFileReference;
+			lastKnownFileType = wrapper.nib;
+			name = zh_TW;
+			path = zh_TW.lproj/DetailView.nib;
+			refType = 4;
+			sourceTree = "<group>";
+		};
+		739D716007ECF7B900E8D4DD = {
+			children = (
+				739D716107ECF7B900E8D4DD,
+				739D716507ECF7CB00E8D4DD,
+				739D716807ECF7E000E8D4DD,
+				739D716907ECF7EA00E8D4DD,
+				739D716B07ECF82F00E8D4DD,
+				739D719107ED31D200E8D4DD,
+			);
+			isa = PBXVariantGroup;
+			name = Localizable.strings;
+			path = "";
+			refType = 4;
+			sourceTree = "<group>";
+		};
+		739D716107ECF7B900E8D4DD = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = text.plist.strings;
+			name = English;
+			path = English.lproj/Localizable.strings;
+			refType = 4;
+			sourceTree = "<group>";
+		};
+		739D716207ECF7B900E8D4DD = {
+			fileRef = 739D716007ECF7B900E8D4DD;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		739D716507ECF7CB00E8D4DD = {
+			isa = PBXFileReference;
+			lastKnownFileType = text.plist.strings;
+			name = German;
+			path = German.lproj/Localizable.strings;
+			refType = 4;
+			sourceTree = "<group>";
+		};
+		739D716807ECF7E000E8D4DD = {
+			isa = PBXFileReference;
+			lastKnownFileType = text.plist.strings;
+			name = Swedish;
+			path = Swedish.lproj/Localizable.strings;
+			refType = 4;
+			sourceTree = "<group>";
+		};
+		739D716907ECF7EA00E8D4DD = {
+			isa = PBXFileReference;
+			lastKnownFileType = text.plist.strings;
+			name = zh_TW;
+			path = zh_TW.lproj/Localizable.strings;
+			refType = 4;
+			sourceTree = "<group>";
+		};
+		739D716B07ECF82F00E8D4DD = {
+			isa = PBXFileReference;
+			lastKnownFileType = text.plist.strings;
+			name = Dutch;
+			path = Dutch.lproj/Localizable.strings;
+			refType = 4;
+			sourceTree = "<group>";
+		};
+		739D718207ED2D7100E8D4DD = {
+			isa = PBXFileReference;
+			lastKnownFileType = wrapper.nib;
+			name = Japanese;
+			path = Japanese.lproj/MainMenu.nib;
+			refType = 4;
+			sourceTree = "<group>";
+		};
+		739D718407ED2E7A00E8D4DD = {
+			isa = PBXFileReference;
+			lastKnownFileType = wrapper.nib;
+			name = Japanese;
+			path = Japanese.lproj/Metainfo.nib;
+			refType = 4;
+			sourceTree = "<group>";
+		};
+		739D718607ED2F5D00E8D4DD = {
+			isa = PBXFileReference;
+			lastKnownFileType = wrapper.nib;
+			name = Japanese;
+			path = Japanese.lproj/Preferences.nib;
+			refType = 4;
+			sourceTree = "<group>";
+		};
+		739D718D07ED316C00E8D4DD = {
+			isa = PBXFileReference;
+			lastKnownFileType = wrapper.nib;
+			name = Japanese;
+			path = Japanese.lproj/DetailView.nib;
+			refType = 4;
+			sourceTree = "<group>";
+		};
+		739D719107ED31D200E8D4DD = {
+			isa = PBXFileReference;
+			lastKnownFileType = text.plist.strings;
+			name = Japanese;
+			path = Japanese.lproj/Localizable.strings;
+			refType = 4;
+			sourceTree = "<group>";
+		};
+		73A3A3FE07E5182E008CD73D = {
+			isa = PBXFileReference;
+			lastKnownFileType = image.png;
+			name = bittorrent_96.png;
+			path = ../images/logo/bittorrent_96.png;
+			refType = 2;
+			sourceTree = SOURCE_ROOT;
+		};
+		73A3A3FF07E5182E008CD73D = {
+			fileRef = 73A3A3FE07E5182E008CD73D;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		73A5C6410641B55A00C9FFC7 = {
+			fileEncoding = 4;
+			isa = PBXFileReference;
+			lastKnownFileType = text.script.python;
+			path = SpewController.py;
+			refType = 4;
+			sourceTree = "<group>";
+		};
+		73A5C6420641B55A00C9FFC7 = {
+			fileRef = 73A5C6410641B55A00C9FFC7;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		73A6DA03075126B900C4CEF0 = {
+			isa = PBXFileReference;
+			lastKnownFileType = wrapper.nib;
+			name = English;
+			path = English.lproj/PyInterpreter.nib;
+			refType = 4;
+			sourceTree = "<group>";
+		};
+		73A6DA04075126B900C4CEF0 = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = text.script.python;
+			path = PyInterpreter.py;
+			refType = 4;
+			sourceTree = "<group>";
+		};
+		73A7208206179D0B00DC7522 = {
+			fileEncoding = 4;
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.c.h;
+			path = CCell.h;
+			refType = 4;
+			sourceTree = "<group>";
+		};
+		73A7208306179D0B00DC7522 = {
+			fileEncoding = 4;
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.c.objc;
+			path = CCell.m;
+			refType = 4;
+			sourceTree = "<group>";
+		};
+		73A7208406179D0B00DC7522 = {
+			fileRef = 73A7208206179D0B00DC7522;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		73A7208506179D0B00DC7522 = {
+			fileRef = 73A7208306179D0B00DC7522;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		73B33A04092CF4DC00CEE398 = {
+			isa = PBXFileReference;
+			lastKnownFileType = file;
+			name = public.key;
+			path = ../public.key;
+			refType = 2;
+			sourceTree = SOURCE_ROOT;
+		};
+		73B33A05092CF4DC00CEE398 = {
+			fileRef = 73B33A04092CF4DC00CEE398;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		73B8D77C07F7882A009404B2 = {
+			isa = PBXFileReference;
+			lastKnownFileType = wrapper.nib;
+			name = Swedish;
+			path = Swedish.lproj/PyInterpreter.nib;
+			refType = 4;
+			sourceTree = "<group>";
+		};
+		73B8D77D07F78839009404B2 = {
+			isa = PBXFileReference;
+			lastKnownFileType = wrapper.nib;
+			name = Swedish;
+			path = Swedish.lproj/TorrentWindow.nib;
+			refType = 4;
+			sourceTree = "<group>";
+		};
+		73B8D77E07F78843009404B2 = {
+			isa = PBXFileReference;
+			lastKnownFileType = wrapper.nib;
+			name = Swedish;
+			path = Swedish.lproj/DLView.nib;
+			refType = 4;
+			sourceTree = "<group>";
+		};
+		73B8D77F07F7884A009404B2 = {
+			isa = PBXFileReference;
+			lastKnownFileType = wrapper.nib;
+			name = Swedish;
+			path = Swedish.lproj/DetailView.nib;
+			refType = 4;
+			sourceTree = "<group>";
+		};
+		73B8D78007F78853009404B2 = {
+			isa = PBXFileReference;
+			lastKnownFileType = wrapper.nib;
+			name = Swedish;
+			path = Swedish.lproj/TorrentInspector.nib;
+			refType = 4;
+			sourceTree = "<group>";
+		};
+		73B8D78407F78A75009404B2 = {
+			isa = PBXFileReference;
+			lastKnownFileType = wrapper.nib;
+			name = Japanese;
+			path = Japanese.lproj/PyInterpreter.nib;
+			refType = 4;
+			sourceTree = "<group>";
+		};
+		73B8D78607F78A92009404B2 = {
+			isa = PBXFileReference;
+			lastKnownFileType = wrapper.nib;
+			name = Japanese;
+			path = Japanese.lproj/TorrentWindow.nib;
+			refType = 4;
+			sourceTree = "<group>";
+		};
+		73B8D78807F78B3E009404B2 = {
+			isa = PBXFileReference;
+			lastKnownFileType = wrapper.nib;
+			name = Japanese;
+			path = Japanese.lproj/DLView.nib;
+			refType = 4;
+			sourceTree = "<group>";
+		};
+		73B8D78B07F78B95009404B2 = {
+			isa = PBXFileReference;
+			lastKnownFileType = wrapper.nib;
+			name = Japanese;
+			path = Japanese.lproj/TorrentInspector.nib;
+			refType = 4;
+			sourceTree = "<group>";
+		};
+		73BE059E07ECE8ED002F4004 = {
+			isa = PBXFileReference;
+			lastKnownFileType = wrapper.nib;
+			name = Dutch;
+			path = Dutch.lproj/MainMenu.nib;
+			refType = 4;
+			sourceTree = "<group>";
+		};
+		73BE05AE07ECE9E4002F4004 = {
+			isa = PBXFileReference;
+			lastKnownFileType = wrapper.nib;
+			name = Dutch;
+			path = Dutch.lproj/Metainfo.nib;
+			refType = 4;
+			sourceTree = "<group>";
+		};
+		73BE05B107ECEAB7002F4004 = {
+			isa = PBXFileReference;
+			lastKnownFileType = wrapper.nib;
+			name = Dutch;
+			path = Dutch.lproj/Preferences.nib;
+			refType = 4;
+			sourceTree = "<group>";
+		};
+		73BE05B307ECEB5B002F4004 = {
+			isa = PBXFileReference;
+			lastKnownFileType = wrapper.nib;
+			name = French;
+			path = French.lproj/MainMenu.nib;
+			refType = 4;
+			sourceTree = "<group>";
+		};
+		73BE05B607ECEC3B002F4004 = {
+			isa = PBXFileReference;
+			lastKnownFileType = wrapper.nib;
+			name = French;
+			path = French.lproj/Metainfo.nib;
+			refType = 4;
+			sourceTree = "<group>";
+		};
+		73BE05B907ECED86002F4004 = {
+			isa = PBXFileReference;
+			lastKnownFileType = wrapper.nib;
+			name = Swedish;
+			path = Swedish.lproj/MainMenu.nib;
+			refType = 4;
+			sourceTree = "<group>";
+		};
+		73BE05BB07ECEE66002F4004 = {
+			isa = PBXFileReference;
+			lastKnownFileType = wrapper.nib;
+			name = Swedish;
+			path = Swedish.lproj/Metainfo.nib;
+			refType = 4;
+			sourceTree = "<group>";
+		};
+		73BE05BD07ECEF66002F4004 = {
+			isa = PBXFileReference;
+			lastKnownFileType = wrapper.nib;
+			name = Swedish;
+			path = Swedish.lproj/Preferences.nib;
+			refType = 4;
+			sourceTree = "<group>";
+		};
+		73BE05C507ECF1FA002F4004 = {
+			isa = PBXFileReference;
+			lastKnownFileType = wrapper.nib;
+			name = zh_TW;
+			path = zh_TW.lproj/MainMenu.nib;
+			refType = 4;
+			sourceTree = "<group>";
+		};
+		73C3A7D605E085D50068E454 = {
+			fileEncoding = 4;
+			isa = PBXFileReference;
+			lastKnownFileType = text.script.python;
+			path = Generate.py;
+			refType = 4;
+			sourceTree = "<group>";
+		};
+		73C3A7D705E085D50068E454 = {
+			fileRef = 73C3A7D605E085D50068E454;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		73CCE5FD082EF74A00A9E6F4 = {
+			isa = PBXFileReference;
+			lastKnownFileType = folder;
+			name = khashmir;
+			path = ../khashmir;
+			refType = 2;
+			sourceTree = SOURCE_ROOT;
+		};
+		73CCE5FE082EF74A00A9E6F4 = {
+			fileRef = 73CCE5FD082EF74A00A9E6F4;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		73CE38980953B2B600080220 = {
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			isa = PBXShellScriptBuildPhase;
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /usr/bin/python;
+			shellScript = "import os\n\n## copy twisted dependencies\nmodules = ['__init__.py', 'copyright.py', 'internet/__init__.py', 'internet/abstract.py', 'internet/address.py', 'internet/base.py', 'internet/defer.py', 'internet/error.py', 'internet/fdesc.py', 'internet/interfaces.py', 'internet/iocpreactor/__init__.py', 'internet/iocpreactor/abstract.py', 'internet/iocpreactor/client.py', 'internet/iocpreactor/iocpdebug.py', 'internet/iocpreactor/ops.py', 'internet/iocpreactor/proactor.py', 'internet/iocpreactor/server.py', 'internet/iocpreactor/tcp.py', 'internet/iocpreactor/udp.py', 'internet/iocpreactor/util.py', 'internet/kqreactor.py', 'internet/main.py', 'internet/pollreactor.py', 'internet/posixbase.py', 'internet/process.py', 'internet/protocol.py', 'internet/reactor.py', 'internet/selectreactor.py', 'internet/ssl.py', 'internet/task.py', 'internet/tcp.py', 'internet/threads.py', 'internet/udp.py', 'internet/unix.py', 'persisted/__init__.py', 'persisted/styles.py', 'protocols/__init__.py', 'protocols/policies.py', 'python/__init__.py', 'python/compat.py', 'python/components.py', 'python/context.py', 'python/failure.py', 'python/hook.py', 'python/lockfile.py', 'python/log.py', 'python/pymodules/__init__.py', 'python/pymodules/UserDictExtras.py', 'python/pymodules/heapq.py', 'python/reflect.py', 'python/runtime.py', 'python/threadable.py', 'python/threadpool.py', 'python/util.py']\n\ntwisted = '/System/Library/Frameworks/Python.framework/Versions/Current/lib/python2.3/site-packages/twisted'\nresources = os.path.join(os.environ['INSTALL_DIR'], os.environ['UNLOCALIZED_RESOURCES_FOLDER_PATH'])\nos.chdir(resources)\n\ntry:\n\tos.system('mkdir twisted')\nexcept OSError, e:\n\tif e.oserr == 17:\n\t\tpass\ntry:\n\tos.system('mkdir twisted/internet')\nexcept OSError, e:\n\tif e.oserr == 17:\n\t\tpass\ntry:\n\tos.system('mkdir twisted/internet/iocpreactor')\nexcept OSError, e:\n\tif e.oserr == 17:\n\t\tpass\ntry:\n\tos.system('mkdir twisted/persisted')\nexcept OSError, e:\n\tif e.oserr == 17:\n\t\tpass\ntry:\n\tos.system('mkdir twisted/protocols')\nexcept OSError, e:\n\tif e.oserr == 17:\n\t\tpass\ntry:\n\tos.system('mkdir twisted/python')\nexcept OSError, e:\n\tif e.oserr == 17:\n\t\tpass\ntry:\n\tos.system('mkdir twisted/python/pymodules')\nexcept OSError, e:\n\tif e.oserr == 17:\n\t\tpass\n\n\nos.chdir(os.path.join(resources, 'twisted'))\nfor p in modules:\n\tos.system('cp %s %s' % (os.path.join(twisted, p), p))\n\n\n## copy zope dependencies\n\nmodules = ['__init__.py', 'interface/__init__.py', 'interface/_zope_interface_coptimizations.so', 'interface/adapter.py', 'interface/advice.py', 'interface/declarations.py', 'interface/exceptions.py', 'interface/interface.py', 'interface/interfaces.py', 'interface/ro.py']\n\nzope = '/System/Library/Frameworks/Python.framework/Versions/Current/lib/python2.3/site-packages/zope'\n\nos.chdir(resources)\ntry:\n\tos.system('mkdir zope')\nexcept OSError, e:\n\tif e.oserr == 17:\n\t\tpass\ntry:\n\tos.system('mkdir zope/interface')\nexcept OSError, e:\n\tif e.oserr == 17:\n\t\tpass\n\nos.chdir(os.path.join(resources, 'zope'))\nfor p in modules:\n\tos.system('cp %s %s' % (os.path.join(zope, p), p))\n\tprint 'cp %s %s' % (os.path.join(zope, p), p)\n\n\n###  copy crypto resources\nmodules = ['__init__.py', 'Hash/__init__.py', 'Hash/SHA.py', 'PublicKey/__init__.py', 'PublicKey/DSA.py', 'PublicKey/pubkey.py', 'Util/__init__.py', 'Util/number.py']\ncrypto = '/System/Library/Frameworks/Python.framework/Versions/Current/lib/python2.3/site-packages/Crypto'\n\nos.chdir(resources)\ntry:\n\tos.system('mkdir Crypto')\nexcept OSError, e:\n\tif e.oserr == 17:\n\t\tpass\ntry:\n\tos.system('mkdir Crypto/Hash')\nexcept OSError, e:\n\tif e.oserr == 17:\n\t\tpass\ntry:\n\tos.system('mkdir Crypto/PublicKey')\nexcept OSError, e:\n\tif e.oserr == 17:\n\t\tpass\ntry:\n\tos.system('mkdir Crypto/Util')\nexcept OSError, e:\n\tif e.oserr == 17:\n\t\tpass\n\nos.chdir(os.path.join(resources, 'Crypto'))\nfor p in modules:\n\tos.system('cp %s %s' % (os.path.join(crypto, p), p))\n\n";
+		};
+		73CF44FC083BDF3200DE5623 = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = text.script.python;
+			path = hacking.py;
+			refType = 4;
+			sourceTree = "<group>";
+		};
+		73CF44FD083BDF3200DE5623 = {
+			fileRef = 73CF44FC083BDF3200DE5623;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		73D0601A0622128C00D2CA2F = {
+			children = (
+				73D06026062212CE00D2CA2F,
+				73D06027062212CE00D2CA2F,
+				73A7208206179D0B00DC7522,
+				73A7208306179D0B00DC7522,
+			);
+			isa = PBXGroup;
+			name = "ObjC Classes";
+			path = "";
+			refType = 4;
+			sourceTree = "<group>";
+		};
+		73D06026062212CE00D2CA2F = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.c.h;
+			path = ICHelper.h;
+			refType = 4;
+			sourceTree = "<group>";
+		};
+		73D06027062212CE00D2CA2F = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.c.objc;
+			path = ICHelper.m;
+			refType = 4;
+			sourceTree = "<group>";
+		};
+		73D06028062212CE00D2CA2F = {
+			fileRef = 73D06026062212CE00D2CA2F;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		73D06029062212CE00D2CA2F = {
+			fileRef = 73D06027062212CE00D2CA2F;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		73D0608E0623193500D2CA2F = {
+			fileEncoding = 4;
+			isa = PBXFileReference;
+			lastKnownFileType = text.script.python;
+			path = utils.py;
+			refType = 4;
+			sourceTree = "<group>";
+		};
+		73D0608F0623193500D2CA2F = {
+			fileRef = 73D0608E0623193500D2CA2F;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		73D060C6062337B600D2CA2F = {
+			fileEncoding = 4;
+			isa = PBXFileReference;
+			lastKnownFileType = text.script.python;
+			path = LogController.py;
+			refType = 4;
+			sourceTree = "<group>";
+		};
+		73D060C7062337B600D2CA2F = {
+			fileRef = 73D060C6062337B600D2CA2F;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		73DFDE9D07BCACA800257998 = {
+			isa = PBXFileReference;
+			lastKnownFileType = image.icns;
+			path = BT_doc.icns;
+			refType = 4;
+			sourceTree = "<group>";
+		};
+		73DFDE9E07BCACA800257998 = {
+			isa = PBXFileReference;
+			lastKnownFileType = image.icns;
+			path = BT.icns;
+			refType = 4;
+			sourceTree = "<group>";
+		};
+		73DFDE9F07BCACA800257998 = {
+			fileRef = 73DFDE9D07BCACA800257998;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		73DFDEA007BCACA800257998 = {
+			fileRef = 73DFDE9E07BCACA800257998;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		73EA79360627227400AEE705 = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = text.script.python;
+			path = ToolbarDelegate.py;
+			refType = 4;
+			sourceTree = "<group>";
+		};
+		73EA79370627227400AEE705 = {
+			fileRef = 73EA79360627227400AEE705;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		73EA79E306273EEB00AEE705 = {
+			children = (
+				73EA79E406273EEB00AEE705,
+				73B8D77D07F78839009404B2,
+				73B8D78607F78A92009404B2,
+			);
+			isa = PBXVariantGroup;
+			name = TorrentWindow.nib;
+			path = "";
+			refType = 4;
+			sourceTree = "<group>";
+		};
+		73EA79E406273EEB00AEE705 = {
+			isa = PBXFileReference;
+			lastKnownFileType = wrapper.nib;
+			name = English;
+			path = English.lproj/TorrentWindow.nib;
+			refType = 4;
+			sourceTree = "<group>";
+		};
+		73EA79E506273EEB00AEE705 = {
+			fileRef = 73EA79E306273EEB00AEE705;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		73F9827A07866756008364F6 = {
+			explicitFileType = wrapper.application;
+			includeInIndex = 0;
+			isa = PBXFileReference;
+			path = BitTorrent.app;
+			refType = 3;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+//730
+//731
+//732
+//733
+//734
+//770
+//771
+//772
+//773
+//774
+		777C19C804D6B9D800FBF432 = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.c.h;
+			path = BitTorrent_Prefix.pch;
+			refType = 4;
+			sourceTree = "<group>";
+		};
+		777C19C904D6B9D800FBF432 = {
+			fileRef = 777C19C804D6B9D800FBF432;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		77A8EFE904D6B2200033F030 = {
+			children = (
+				529BAD2F05DCECA400CC5BD4,
+				529BAD3005DCECA400CC5BD4,
+				529BAD3105DCECA400CC5BD4,
+				7316939E06261AAE0091B5AF,
+				731693C406261AAE0091B5AF,
+				7316940206261AAE0091B5AF,
+			);
+			isa = PBXGroup;
+			name = PyObjC;
+			path = "";
+			refType = 4;
+			sourceTree = "<group>";
+		};
+		77A8F17D04D6B2470033F030 = {
+			buildActionMask = 8;
+			dstPath = "";
+			dstSubfolderSpec = 7;
+			files = (
+			);
+			isa = PBXCopyFilesBuildPhase;
+			runOnlyForDeploymentPostprocessing = 1;
+		};
+		77A9B0E104D6BD1E00EC1630 = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = text.plist;
+			path = Info.plist;
+			refType = 4;
+			sourceTree = "<group>";
+		};
+		77A9B0E204D6BD1E00EC1630 = {
+			fileRef = 77A9B0E104D6BD1E00EC1630;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+//770
+//771
+//772
+//773
+//774
+//F60
+//F61
+//F62
+//F63
+//F64
+		F60DD8BC0358A22201C8ED3C = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			lastKnownFileType = text.script.python;
+			path = __main__.py;
+			refType = 2;
+			sourceTree = SOURCE_ROOT;
+		};
+	};
+	rootObject = 29B97313FDCFA39411CA2CEA;
+}

@@ -1,0 +1,319 @@
+Doing raw test
+Pystone(1.1) time for 50000 passes = 2.00576
+This machine benchmarks at 24928.2 pystones/second
+Doing raw test
+Pystone(1.1) time for 50000 passes = 2.01216
+This machine benchmarks at 24848.9 pystones/second
+Doing raw test
+Pystone(1.1) time for 50000 passes = 2.00275
+This machine benchmarks at 24965.6 pystones/second
+6.06152654109
+Doing new profiler test
+Pystone(1.1) time for 50000 passes = 3.25439
+This machine benchmarks at 15363.9 pystones/second
+   CallCount    Recursive    Total(ms)   Inline(ms) Label
+           1            0   3279.1564      0.0092                            Tester in bench.py at 6
+          +1            0   3279.1472      0.0556  +main in c:\Python2.4.1\lib\test\pystone.py at 60
+           1            0   3279.1472      0.0556   main in c:\Python2.4.1\lib\test\pystone.py at 60
+          +1            0   3279.0916      0.0096 +pystones in c:\Python2.4.1\lib\test\pystone.py at 67
+           1            0   3279.0916      0.0096 pystones in c:\Python2.4.1\lib\test\pystone.py at 67
+          +1            0   3279.0820   1126.1775 +Proc0 in c:\Python2.4.1\lib\test\pystone.py at 79
+           1            0   3279.0820   1126.1775  Proc0 in c:\Python2.4.1\lib\test\pystone.py at 79
+      +50000            0   1254.5465    534.6841 +Proc1 in c:\Python2.4.1\lib\test\pystone.py at 133
+      +50000            0    347.9915    347.9915 +Proc8 in c:\Python2.4.1\lib\test\pystone.py at 208
+      +50000            0    245.9115    204.1231 +Func2 in c:\Python2.4.1\lib\test\pystone.py at 229
+      +50000            0     88.7889     88.7889 +Proc2 in c:\Python2.4.1\lib\test\pystone.py at 149
+     +100000            0     84.3551     84.3551 +Func1 in c:\Python2.4.1\lib\test\pystone.py at 221
+      +50000            0     50.3725     50.3725 +Proc4 in c:\Python2.4.1\lib\test\pystone.py at 170
+      +50000            0     42.8358     42.8358 +Proc5 in c:\Python2.4.1\lib\test\pystone.py at 177
+      +50000            0     38.0925     38.0925 +Proc7 in c:\Python2.4.1\lib\test\pystone.py at 203
+          +2            0      0.0101      0.0101 +__init__ in c:\Python2.4.1\lib\test\pystone.py at 45
+       50000            0   1254.5465    534.6841 Proc1 in c:\Python2.4.1\lib\test\pystone.py at 133
+      +50000            0    311.5886    217.7921  +copy in c:\Python2.4.1\lib\test\pystone.py at 53
+      +50000            0    194.5153    149.6183 +Proc3 in c:\Python2.4.1\lib\test\pystone.py at 160
+      +50000            0    170.3908    136.5227 +Proc6 in c:\Python2.4.1\lib\test\pystone.py at 184
+      +50000            0     43.3676     43.3676 +Proc7 in c:\Python2.4.1\lib\test\pystone.py at 203
+       50000            0    347.9915    347.9915 Proc8 in c:\Python2.4.1\lib\test\pystone.py at 208
+       50000            0    311.5886    217.7921   copy in c:\Python2.4.1\lib\test\pystone.py at 53
+      +50000            0     93.7965     93.7965 +__init__ in c:\Python2.4.1\lib\test\pystone.py at 45
+       50000            0    245.9115    204.1231 Func2 in c:\Python2.4.1\lib\test\pystone.py at 229
+      +50000            0     41.7884     41.7884 +Func1 in c:\Python2.4.1\lib\test\pystone.py at 221
+       50000            0    194.5153    149.6183 Proc3 in c:\Python2.4.1\lib\test\pystone.py at 160
+      +50000            0     44.8970     44.8970 +Proc7 in c:\Python2.4.1\lib\test\pystone.py at 203
+       50000            0    170.3908    136.5227 Proc6 in c:\Python2.4.1\lib\test\pystone.py at 184
+      +50000            0     33.8682     33.8682 +Func3 in c:\Python2.4.1\lib\test\pystone.py at 246
+      150000            0    126.3571    126.3571 Proc7 in c:\Python2.4.1\lib\test\pystone.py at 203
+      150000            0    126.1436    126.1436 Func1 in c:\Python2.4.1\lib\test\pystone.py at 221
+       50002            0     93.8065     93.8065 __init__ in c:\Python2.4.1\lib\test\pystone.py at 45
+       50000            0     88.7889     88.7889 Proc2 in c:\Python2.4.1\lib\test\pystone.py at 149
+       50000            0     50.3725     50.3725 Proc4 in c:\Python2.4.1\lib\test\pystone.py at 170
+       50000            0     42.8358     42.8358 Proc5 in c:\Python2.4.1\lib\test\pystone.py at 177
+       50000            0     33.8682     33.8682 Func3 in c:\Python2.4.1\lib\test\pystone.py at 246
+Doing new profiler test
+Pystone(1.1) time for 50000 passes = 3.24186
+This machine benchmarks at 15423.2 pystones/second
+   CallCount    Recursive    Total(ms)   Inline(ms) Label
+           1            0   3255.8626      0.0101                            Tester in bench.py at 6
+          +1            0   3255.8525      0.0573  +main in c:\Python2.4.1\lib\test\pystone.py at 60
+           1            0   3255.8525      0.0573   main in c:\Python2.4.1\lib\test\pystone.py at 60
+          +1            0   3255.7951      0.0090 +pystones in c:\Python2.4.1\lib\test\pystone.py at 67
+           1            0   3255.7951      0.0090 pystones in c:\Python2.4.1\lib\test\pystone.py at 67
+          +1            0   3255.7861   1116.7059 +Proc0 in c:\Python2.4.1\lib\test\pystone.py at 79
+           1            0   3255.7861   1116.7059  Proc0 in c:\Python2.4.1\lib\test\pystone.py at 79
+      +50000            0   1246.7425    536.6326 +Proc1 in c:\Python2.4.1\lib\test\pystone.py at 133
+      +50000            0    345.3668    345.3668 +Proc8 in c:\Python2.4.1\lib\test\pystone.py at 208
+      +50000            0    246.7070    204.0311 +Func2 in c:\Python2.4.1\lib\test\pystone.py at 229
+      +50000            0     87.2177     87.2177 +Proc2 in c:\Python2.4.1\lib\test\pystone.py at 149
+     +100000            0     83.0983     83.0983 +Func1 in c:\Python2.4.1\lib\test\pystone.py at 221
+      +50000            0     49.7479     49.7479 +Proc4 in c:\Python2.4.1\lib\test\pystone.py at 170
+      +50000            0     42.3952     42.3952 +Proc5 in c:\Python2.4.1\lib\test\pystone.py at 177
+      +50000            0     37.7973     37.7973 +Proc7 in c:\Python2.4.1\lib\test\pystone.py at 203
+          +2            0      0.0074      0.0074 +__init__ in c:\Python2.4.1\lib\test\pystone.py at 45
+       50000            0   1246.7425    536.6326 Proc1 in c:\Python2.4.1\lib\test\pystone.py at 133
+      +50000            0    306.1340    214.5724  +copy in c:\Python2.4.1\lib\test\pystone.py at 53
+      +50000            0    191.8273    147.8028 +Proc3 in c:\Python2.4.1\lib\test\pystone.py at 160
+      +50000            0    168.5923    134.3137 +Proc6 in c:\Python2.4.1\lib\test\pystone.py at 184
+      +50000            0     43.5563     43.5563 +Proc7 in c:\Python2.4.1\lib\test\pystone.py at 203
+       50000            0    345.3668    345.3668 Proc8 in c:\Python2.4.1\lib\test\pystone.py at 208
+       50000            0    306.1340    214.5724   copy in c:\Python2.4.1\lib\test\pystone.py at 53
+      +50000            0     91.5616     91.5616 +__init__ in c:\Python2.4.1\lib\test\pystone.py at 45
+       50000            0    246.7070    204.0311 Func2 in c:\Python2.4.1\lib\test\pystone.py at 229
+      +50000            0     42.6759     42.6759 +Func1 in c:\Python2.4.1\lib\test\pystone.py at 221
+       50000            0    191.8273    147.8028 Proc3 in c:\Python2.4.1\lib\test\pystone.py at 160
+      +50000            0     44.0245     44.0245 +Proc7 in c:\Python2.4.1\lib\test\pystone.py at 203
+       50000            0    168.5923    134.3137 Proc6 in c:\Python2.4.1\lib\test\pystone.py at 184
+      +50000            0     34.2786     34.2786 +Func3 in c:\Python2.4.1\lib\test\pystone.py at 246
+      150000            0    125.7741    125.7741 Func1 in c:\Python2.4.1\lib\test\pystone.py at 221
+      150000            0    125.3782    125.3782 Proc7 in c:\Python2.4.1\lib\test\pystone.py at 203
+       50002            0     91.5690     91.5690 __init__ in c:\Python2.4.1\lib\test\pystone.py at 45
+       50000            0     87.2177     87.2177 Proc2 in c:\Python2.4.1\lib\test\pystone.py at 149
+       50000            0     49.7479     49.7479 Proc4 in c:\Python2.4.1\lib\test\pystone.py at 170
+       50000            0     42.3952     42.3952 Proc5 in c:\Python2.4.1\lib\test\pystone.py at 177
+       50000            0     34.2786     34.2786 Func3 in c:\Python2.4.1\lib\test\pystone.py at 246
+Doing new profiler test
+Pystone(1.1) time for 50000 passes = 3.23012
+This machine benchmarks at 15479.3 pystones/second
+   CallCount    Recursive    Total(ms)   Inline(ms) Label
+           1            0   3243.3898      0.0077                            Tester in bench.py at 6
+          +1            0   3243.3821      0.0804  +main in c:\Python2.4.1\lib\test\pystone.py at 60
+           1            0   3243.3821      0.0804   main in c:\Python2.4.1\lib\test\pystone.py at 60
+          +1            0   3243.3017      0.0106 +pystones in c:\Python2.4.1\lib\test\pystone.py at 67
+           1            0   3243.3017      0.0106 pystones in c:\Python2.4.1\lib\test\pystone.py at 67
+          +1            0   3243.2911   1113.7116 +Proc0 in c:\Python2.4.1\lib\test\pystone.py at 79
+           1            0   3243.2911   1113.7116  Proc0 in c:\Python2.4.1\lib\test\pystone.py at 79
+      +50000            0   1239.8189    531.5394 +Proc1 in c:\Python2.4.1\lib\test\pystone.py at 133
+      +50000            0    346.4734    346.4734 +Proc8 in c:\Python2.4.1\lib\test\pystone.py at 208
+      +50000            0    243.0934    201.6583 +Func2 in c:\Python2.4.1\lib\test\pystone.py at 229
+      +50000            0     87.7707     87.7707 +Proc2 in c:\Python2.4.1\lib\test\pystone.py at 149
+     +100000            0     82.2135     82.2135 +Func1 in c:\Python2.4.1\lib\test\pystone.py at 221
+      +50000            0     49.5023     49.5023 +Proc4 in c:\Python2.4.1\lib\test\pystone.py at 170
+      +50000            0     43.0904     43.0904 +Proc5 in c:\Python2.4.1\lib\test\pystone.py at 177
+      +50000            0     37.6101     37.6101 +Proc7 in c:\Python2.4.1\lib\test\pystone.py at 203
+          +2            0      0.0067      0.0067 +__init__ in c:\Python2.4.1\lib\test\pystone.py at 45
+       50000            0   1239.8189    531.5394 Proc1 in c:\Python2.4.1\lib\test\pystone.py at 133
+      +50000            0    305.6253    213.4145  +copy in c:\Python2.4.1\lib\test\pystone.py at 53
+      +50000            0    192.2847    148.0787 +Proc3 in c:\Python2.4.1\lib\test\pystone.py at 160
+      +50000            0    167.4597    134.1117 +Proc6 in c:\Python2.4.1\lib\test\pystone.py at 184
+      +50000            0     42.9097     42.9097 +Proc7 in c:\Python2.4.1\lib\test\pystone.py at 203
+       50000            0    346.4734    346.4734 Proc8 in c:\Python2.4.1\lib\test\pystone.py at 208
+       50000            0    305.6253    213.4145   copy in c:\Python2.4.1\lib\test\pystone.py at 53
+      +50000            0     92.2108     92.2108 +__init__ in c:\Python2.4.1\lib\test\pystone.py at 45
+       50000            0    243.0934    201.6583 Func2 in c:\Python2.4.1\lib\test\pystone.py at 229
+      +50000            0     41.4350     41.4350 +Func1 in c:\Python2.4.1\lib\test\pystone.py at 221
+       50000            0    192.2847    148.0787 Proc3 in c:\Python2.4.1\lib\test\pystone.py at 160
+      +50000            0     44.2060     44.2060 +Proc7 in c:\Python2.4.1\lib\test\pystone.py at 203
+       50000            0    167.4597    134.1117 Proc6 in c:\Python2.4.1\lib\test\pystone.py at 184
+      +50000            0     33.3481     33.3481 +Func3 in c:\Python2.4.1\lib\test\pystone.py at 246
+      150000            0    124.7258    124.7258 Proc7 in c:\Python2.4.1\lib\test\pystone.py at 203
+      150000            0    123.6485    123.6485 Func1 in c:\Python2.4.1\lib\test\pystone.py at 221
+       50002            0     92.2175     92.2175 __init__ in c:\Python2.4.1\lib\test\pystone.py at 45
+       50000            0     87.7707     87.7707 Proc2 in c:\Python2.4.1\lib\test\pystone.py at 149
+       50000            0     49.5023     49.5023 Proc4 in c:\Python2.4.1\lib\test\pystone.py at 170
+       50000            0     43.0904     43.0904 Proc5 in c:\Python2.4.1\lib\test\pystone.py at 177
+       50000            0     33.3481     33.3481 Func3 in c:\Python2.4.1\lib\test\pystone.py at 246
+9.78244387057
+Doing old profiler test
+Pystone(1.1) time for 50000 passes = 35.99
+This machine benchmarks at 1389.27 pystones/second
+Wed Jun 01 11:04:51 2005    fooprof
+
+         1100015 function calls in 12.715 CPU seconds
+
+   Ordered by: internal time, call count
+   List reduced from 25 to 20 due to restriction <20>
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+        1    3.962    3.962   12.714   12.714 pystone.py:79(Proc0)
+    50000    1.473    0.000    4.066    0.000 pystone.py:133(Proc1)
+    50000    0.827    0.000    1.168    0.000 pystone.py:208(Proc8)
+   150000    0.734    0.000    0.734    0.000 pystone.py:221(Func1)
+   150000    0.687    0.000    0.687    0.000 pystone.py:203(Proc7)
+    50000    0.653    0.000    0.911    0.000 pystone.py:53(copy)
+    50000    0.647    0.000    0.887    0.000 pystone.py:229(Func2)
+   100000    0.624    0.000    0.624    0.000 :0(chr)
+   100000    0.573    0.000    0.573    0.000 :0(ord)
+    50000    0.516    0.000    0.715    0.000 pystone.py:184(Proc6)
+    50000    0.496    0.000    0.730    0.000 pystone.py:160(Proc3)
+    50002    0.344    0.000    0.344    0.000 :0(range)
+    50000    0.291    0.000    0.291    0.000 pystone.py:149(Proc2)
+    50002    0.258    0.000    0.258    0.000 pystone.py:45(__init__)
+    50000    0.241    0.000    0.241    0.000 pystone.py:170(Proc4)
+    50000    0.199    0.000    0.199    0.000 pystone.py:246(Func3)
+    50000    0.189    0.000    0.189    0.000 pystone.py:177(Proc5)
+        1    0.000    0.000    0.000    0.000 :0(setprofile)
+        1    0.000    0.000   12.715   12.715 profile:0(Tester())
+        1    0.000    0.000   12.714   12.714 pystone.py:60(main)
+
+
+Doing old profiler test
+Pystone(1.1) time for 50000 passes = 36.7428
+This machine benchmarks at 1360.81 pystones/second
+Wed Jun 01 11:05:28 2005    fooprof
+
+         1100015 function calls in 12.952 CPU seconds
+
+   Ordered by: internal time, call count
+   List reduced from 25 to 20 due to restriction <20>
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+        1    4.028    4.028   12.952   12.952 pystone.py:79(Proc0)
+    50000    1.503    0.000    4.158    0.000 pystone.py:133(Proc1)
+    50000    0.838    0.000    1.191    0.000 pystone.py:208(Proc8)
+   150000    0.737    0.000    0.737    0.000 pystone.py:221(Func1)
+   150000    0.707    0.000    0.707    0.000 pystone.py:203(Proc7)
+    50000    0.667    0.000    0.930    0.000 pystone.py:53(copy)
+    50000    0.653    0.000    0.894    0.000 pystone.py:229(Func2)
+   100000    0.637    0.000    0.637    0.000 :0(chr)
+   100000    0.586    0.000    0.586    0.000 :0(ord)
+    50000    0.529    0.000    0.735    0.000 pystone.py:184(Proc6)
+    50000    0.505    0.000    0.747    0.000 pystone.py:160(Proc3)
+    50002    0.355    0.000    0.355    0.000 :0(range)
+    50000    0.297    0.000    0.297    0.000 pystone.py:149(Proc2)
+    50002    0.263    0.000    0.263    0.000 pystone.py:45(__init__)
+    50000    0.245    0.000    0.245    0.000 pystone.py:170(Proc4)
+    50000    0.206    0.000    0.206    0.000 pystone.py:246(Func3)
+    50000    0.195    0.000    0.195    0.000 pystone.py:177(Proc5)
+        1    0.000    0.000    0.000    0.000 :0(setprofile)
+        1    0.000    0.000   12.952   12.952 profile:0(Tester())
+        1    0.000    0.000   12.952   12.952 pystone.py:60(main)
+
+
+Doing old profiler test
+Pystone(1.1) time for 50000 passes = 36.7841
+This machine benchmarks at 1359.28 pystones/second
+Wed Jun 01 11:06:04 2005    fooprof
+
+         1100015 function calls in 12.951 CPU seconds
+
+   Ordered by: internal time, call count
+   List reduced from 25 to 20 due to restriction <20>
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+        1    4.028    4.028   12.950   12.950 pystone.py:79(Proc0)
+    50000    1.504    0.000    4.162    0.000 pystone.py:133(Proc1)
+    50000    0.842    0.000    1.189    0.000 pystone.py:208(Proc8)
+   150000    0.737    0.000    0.737    0.000 pystone.py:221(Func1)
+   150000    0.706    0.000    0.706    0.000 pystone.py:203(Proc7)
+    50000    0.678    0.000    0.944    0.000 pystone.py:53(copy)
+    50000    0.654    0.000    0.896    0.000 pystone.py:229(Func2)
+   100000    0.639    0.000    0.639    0.000 :0(chr)
+   100000    0.578    0.000    0.578    0.000 :0(ord)
+    50000    0.524    0.000    0.729    0.000 pystone.py:184(Proc6)
+    50000    0.501    0.000    0.742    0.000 pystone.py:160(Proc3)
+    50002    0.349    0.000    0.349    0.000 :0(range)
+    50000    0.298    0.000    0.298    0.000 pystone.py:149(Proc2)
+    50002    0.266    0.000    0.266    0.000 pystone.py:45(__init__)
+    50000    0.243    0.000    0.243    0.000 pystone.py:170(Proc4)
+    50000    0.205    0.000    0.205    0.000 pystone.py:246(Func3)
+    50000    0.196    0.000    0.196    0.000 pystone.py:177(Proc5)
+        1    0.001    0.001    0.001    0.001 :0(setprofile)
+        1    0.000    0.000   12.951   12.951 profile:0(Tester())
+        1    0.000    0.000   12.950   12.950 pystone.py:60(main)
+
+
+109.659710487
+Doing hotshot test
+Pystone(1.1) time for 50000 passes = 3.26529
+This machine benchmarks at 15312.6 pystones/second
+         850006 function calls in 8303.438 CPU seconds
+
+   Ordered by: internal time, call count
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+        1 1948.112 1948.112 8303.107 8303.107 pystone.py:79(Proc0)
+    50000 1456.652    0.029 3736.377    0.075 pystone.py:133(Proc1)
+   150000  593.343    0.004  593.343    0.004 pystone.py:221(Func1)
+    50000  593.064    0.012  760.778    0.015 pystone.py:229(Func2)
+    50000  588.451    0.012  877.047    0.018 pystone.py:53(copy)
+    50000  530.524    0.011  530.524    0.011 pystone.py:208(Proc8)
+   150000  510.148    0.003  510.148    0.003 pystone.py:203(Proc7)
+    50000  440.753    0.009  606.147    0.012 pystone.py:160(Proc3)
+    50000  412.199    0.008  619.497    0.012 pystone.py:184(Proc6)
+    50000  359.207    0.007  359.207    0.007 pystone.py:149(Proc2)
+    50002  288.637    0.006  288.637    0.006 pystone.py:45(__init__)
+    50000  207.299    0.004  207.299    0.004 pystone.py:246(Func3)
+    50000  196.083    0.004  196.083    0.004 pystone.py:170(Proc4)
+    50000  178.636    0.004  178.636    0.004 pystone.py:177(Proc5)
+        1    0.248    0.248 8303.385 8303.385 pystone.py:60(main)
+        1    0.053    0.053 8303.438 8303.438 bench.py:6(Tester)
+        1    0.030    0.030 8303.137 8303.137 pystone.py:67(pystones)
+        0    0.000             0.000          profile:0(profiler)
+
+
+Doing hotshot test
+Pystone(1.1) time for 50000 passes = 3.30435
+This machine benchmarks at 15131.5 pystones/second
+         850006 function calls in 8408.164 CPU seconds
+
+   Ordered by: internal time, call count
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+        1 1969.969 1969.969 8407.830 8407.830 pystone.py:79(Proc0)
+    50000 1474.840    0.029 3798.692    0.076 pystone.py:133(Proc1)
+   150000  604.755    0.004  604.755    0.004 pystone.py:221(Func1)
+    50000  602.913    0.012  903.824    0.018 pystone.py:53(copy)
+    50000  601.270    0.012  772.870    0.015 pystone.py:229(Func2)
+    50000  539.131    0.011  539.131    0.011 pystone.py:208(Proc8)
+   150000  519.151    0.003  519.151    0.003 pystone.py:203(Proc7)
+    50000  451.406    0.009  616.095    0.012 pystone.py:160(Proc3)
+    50000  415.377    0.008  620.000    0.012 pystone.py:184(Proc6)
+    50000  350.450    0.007  350.450    0.007 pystone.py:149(Proc2)
+    50002  300.944    0.006  300.944    0.006 pystone.py:45(__init__)
+    50000  204.623    0.004  204.623    0.004 pystone.py:246(Func3)
+    50000  196.873    0.004  196.873    0.004 pystone.py:170(Proc4)
+    50000  176.126    0.004  176.126    0.004 pystone.py:177(Proc5)
+        1    0.247    0.247 8408.108 8408.108 pystone.py:60(main)
+        1    0.056    0.056 8408.164 8408.164 bench.py:6(Tester)
+        1    0.031    0.031 8407.861 8407.861 pystone.py:67(pystones)
+        0    0.000             0.000          profile:0(profiler)
+
+
+Doing hotshot test
+Pystone(1.1) time for 50000 passes = 3.57238
+This machine benchmarks at 13996.3 pystones/second
+         850006 function calls in 9083.483 CPU seconds
+
+   Ordered by: internal time, call count
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+        1 2141.266 2141.266 9083.146 9083.146 pystone.py:79(Proc0)
+    50000 1574.346    0.031 4066.838    0.081 pystone.py:133(Proc1)
+   150000  648.270    0.004  648.270    0.004 pystone.py:221(Func1)
+    50000  646.437    0.013  831.800    0.017 pystone.py:229(Func2)
+    50000  637.605    0.013  961.639    0.019 pystone.py:53(copy)
+    50000  587.496    0.012  587.496    0.012 pystone.py:208(Proc8)
+   150000  568.289    0.004  568.289    0.004 pystone.py:203(Proc7)
+    50000  480.728    0.010  660.008    0.013 pystone.py:160(Proc3)
+    50000  455.265    0.009  676.107    0.014 pystone.py:184(Proc6)
+    50000  385.026    0.008  385.026    0.008 pystone.py:149(Proc2)
+    50002  324.074    0.006  324.074    0.006 pystone.py:45(__init__)
+    50000  220.842    0.004  220.842    0.004 pystone.py:246(Func3)
+    50000  216.889    0.004  216.889    0.004 pystone.py:170(Proc4)
+    50000  196.614    0.004  196.614    0.004 pystone.py:177(Proc5)
+        1    0.246    0.246 9083.427 9083.427 pystone.py:60(main)
+        1    0.055    0.055 9083.483 9083.483 bench.py:6(Tester)
+        1    0.035    0.035 9083.181 9083.181 pystone.py:67(pystones)
+        0    0.000             0.000          profile:0(profiler)
+
+
+110.213706012

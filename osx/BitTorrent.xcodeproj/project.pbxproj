@@ -1,0 +1,771 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 42;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		1BFB7F7004CEE27700DEF731 /* MainMenu.nib in Resources */ = {isa = PBXBuildFile; fileRef = 29B97318FDCFA39411CA2CEA /* MainMenu.nib */; };
+		1BFB7F7104CEE27700DEF731 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 089C165CFE840E0CC02AAC07 /* InfoPlist.strings */; };
+		1BFB7F7204CEE27700DEF731 /* __main__.py in Resources */ = {isa = PBXBuildFile; fileRef = F60DD8BC0358A22201C8ED3C /* __main__.py */; };
+		1BFB801104CEE27700DEF731 /* main-embedded-interpreter.m in Sources */ = {isa = PBXBuildFile; fileRef = 1BFB7DBF04CEE17C00DEF731 /* main-embedded-interpreter.m */; };
+		1BFB801304CEE27700DEF731 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 29B97325FDCFA39411CA2CEA /* Foundation.framework */; };
+		1BFB801404CEE27700DEF731 /* Python.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1BFB7DD504CEE24900DEF731 /* Python.framework */; };
+		1BFB80F904CEE38B00DEF731 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1058C7A1FEA54F0111CA2CBB /* Cocoa.framework */; };
+		529BAE1E05DCECA500CC5BD4 /* _AppKit.so in Resources */ = {isa = PBXBuildFile; fileRef = 529BAD2F05DCECA400CC5BD4 /* _AppKit.so */; };
+		529BAE1F05DCECA500CC5BD4 /* _Foundation.so in Resources */ = {isa = PBXBuildFile; fileRef = 529BAD3005DCECA400CC5BD4 /* _Foundation.so */; };
+		529BAE2005DCECA500CC5BD4 /* _objc.so in Resources */ = {isa = PBXBuildFile; fileRef = 529BAD3105DCECA400CC5BD4 /* _objc.so */; };
+		730C31730824103E0015C403 /* ChoosePort.nib in Resources */ = {isa = PBXBuildFile; fileRef = 730C31710824103E0015C403 /* ChoosePort.nib */; };
+		730C3180082413C70015C403 /* PortChanger.py in Resources */ = {isa = PBXBuildFile; fileRef = 730C317F082413C70015C403 /* PortChanger.py */; };
+		7316943E06261AAF0091B5AF /* AppKit in Resources */ = {isa = PBXBuildFile; fileRef = 7316939E06261AAE0091B5AF /* AppKit */; };
+		7316943F06261AAF0091B5AF /* Foundation in Resources */ = {isa = PBXBuildFile; fileRef = 731693C406261AAE0091B5AF /* Foundation */; };
+		7316944006261AAF0091B5AF /* objc in Resources */ = {isa = PBXBuildFile; fileRef = 7316940206261AAE0091B5AF /* objc */; };
+		7318C97C05DEFC6400676317 /* Metainfo.nib in Resources */ = {isa = PBXBuildFile; fileRef = 7318C97705DEFC6400676317 /* Metainfo.nib */; };
+		7318C97D05DEFC6400676317 /* Preferences.nib in Resources */ = {isa = PBXBuildFile; fileRef = 7318C97905DEFC6400676317 /* Preferences.nib */; };
+		7318C9C105DF024500676317 /* BitTorrent in Resources */ = {isa = PBXBuildFile; fileRef = 7318C98C05DF024500676317 /* BitTorrent */; };
+		7318C9CC05DF041900676317 /* DLController.py in Resources */ = {isa = PBXBuildFile; fileRef = 7318C9CB05DF041900676317 /* DLController.py */; };
+		7318C9DA05DF0E0F00676317 /* Preferences.py in Resources */ = {isa = PBXBuildFile; fileRef = 7318C9D905DF0E0F00676317 /* Preferences.py */; };
+		73194FB205F1C00C0053854B /* DLView.nib in Resources */ = {isa = PBXBuildFile; fileRef = 73194FB005F1C00C0053854B /* DLView.nib */; };
+		732470410641B17C00A8E294 /* DetailView.nib in Resources */ = {isa = PBXBuildFile; fileRef = 7324703F0641B17C00A8E294 /* DetailView.nib */; };
+		7358988307E6656200E7D321 /* PyInterpreter.py in Resources */ = {isa = PBXBuildFile; fileRef = 73A6DA04075126B900C4CEF0 /* PyInterpreter.py */; };
+		7358988407E6656800E7D321 /* PyInterpreter.nib in Resources */ = {isa = PBXBuildFile; fileRef = 734DFA6407C524D300BB2C8B /* PyInterpreter.nib */; };
+		735947670770A0E900F80B8A /* TorrentInspector.nib in Resources */ = {isa = PBXBuildFile; fileRef = 735947650770A0E900F80B8A /* TorrentInspector.nib */; };
+		735947730770A7A100F80B8A /* TorrentInspector.py in Resources */ = {isa = PBXBuildFile; fileRef = 735947720770A7A100F80B8A /* TorrentInspector.py */; };
+		736278010789C18300281E3E /* PyObjCTools in Resources */ = {isa = PBXBuildFile; fileRef = 736277E60789C18300281E3E /* PyObjCTools */; };
+		73627A1307933FDE00281E3E /* dlstart2.icns in Resources */ = {isa = PBXBuildFile; fileRef = 73627A1207933FDE00281E3E /* dlstart2.icns */; };
+		73705C640917DD3A00B08C81 /* public.key in Resources */ = {isa = PBXBuildFile; fileRef = 73705C630917DD3A00B08C81 /* public.key */; };
+		7374372A06166C6C0014621A /* ServiceDelegate.py in Resources */ = {isa = PBXBuildFile; fileRef = 7374372906166C6C0014621A /* ServiceDelegate.py */; };
+		7377E7A80653568700E1BE20 /* BTAppController.py in Resources */ = {isa = PBXBuildFile; fileRef = 7318C98005DEFCAE00676317 /* BTAppController.py */; };
+		73800F6B0906CAF5007FED4C /* LameProgressBar.py in Resources */ = {isa = PBXBuildFile; fileRef = 73800F6A0906CAF5007FED4C /* LameProgressBar.py */; };
+		738FBC3007BB4BB80058C7AF /* DLCell.py in Resources */ = {isa = PBXBuildFile; fileRef = 738FBC2F07BB4BB80058C7AF /* DLCell.py */; };
+		7396EEAC07B6D2230020F890 /* dlstop2.icns in Resources */ = {isa = PBXBuildFile; fileRef = 7396EEAB07B6D2230020F890 /* dlstop2.icns */; };
+		7396EEB507B6D40C0020F890 /* dlclear2.icns in Resources */ = {isa = PBXBuildFile; fileRef = 7396EEB407B6D40C0020F890 /* dlclear2.icns */; };
+		7396EEC007B6D6470020F890 /* dlinfo2.icns in Resources */ = {isa = PBXBuildFile; fileRef = 7396EEBF07B6D6470020F890 /* dlinfo2.icns */; };
+		7396EECD07B6D8BB0020F890 /* dlreveal2.icns in Resources */ = {isa = PBXBuildFile; fileRef = 7396EECC07B6D8BB0020F890 /* dlreveal2.icns */; };
+		7396EF4607B7D58B0020F890 /* dn.icns in Resources */ = {isa = PBXBuildFile; fileRef = 7396EF4407B7D58B0020F890 /* dn.icns */; };
+		7396EF4707B7D58B0020F890 /* up.icns in Resources */ = {isa = PBXBuildFile; fileRef = 7396EF4507B7D58B0020F890 /* up.icns */; };
+		7396EF9007B7FD250020F890 /* log.icns in Resources */ = {isa = PBXBuildFile; fileRef = 7396EF8E07B7FD250020F890 /* log.icns */; };
+		7396EF9107B7FD260020F890 /* peers.icns in Resources */ = {isa = PBXBuildFile; fileRef = 7396EF8F07B7FD250020F890 /* peers.icns */; };
+		739D716207ECF7B900E8D4DD /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 739D716007ECF7B900E8D4DD /* Localizable.strings */; };
+		73A3A3FF07E5182E008CD73D /* bittorrent_96.png in Resources */ = {isa = PBXBuildFile; fileRef = 73A3A3FE07E5182E008CD73D /* bittorrent_96.png */; };
+		73A5C6420641B55A00C9FFC7 /* SpewController.py in Resources */ = {isa = PBXBuildFile; fileRef = 73A5C6410641B55A00C9FFC7 /* SpewController.py */; };
+		73A7208406179D0B00DC7522 /* CCell.h in Headers */ = {isa = PBXBuildFile; fileRef = 73A7208206179D0B00DC7522 /* CCell.h */; };
+		73A7208506179D0B00DC7522 /* CCell.m in Sources */ = {isa = PBXBuildFile; fileRef = 73A7208306179D0B00DC7522 /* CCell.m */; };
+		73C3A7D705E085D50068E454 /* Generate.py in Resources */ = {isa = PBXBuildFile; fileRef = 73C3A7D605E085D50068E454 /* Generate.py */; };
+		73CCE5FE082EF74A00A9E6F4 /* khashmir in Resources */ = {isa = PBXBuildFile; fileRef = 73CCE5FD082EF74A00A9E6F4 /* khashmir */; };
+		73CF44FD083BDF3200DE5623 /* hacking.py in Resources */ = {isa = PBXBuildFile; fileRef = 73CF44FC083BDF3200DE5623 /* hacking.py */; };
+		73D06028062212CE00D2CA2F /* ICHelper.h in Headers */ = {isa = PBXBuildFile; fileRef = 73D06026062212CE00D2CA2F /* ICHelper.h */; };
+		73D06029062212CE00D2CA2F /* ICHelper.m in Sources */ = {isa = PBXBuildFile; fileRef = 73D06027062212CE00D2CA2F /* ICHelper.m */; };
+		73D0608F0623193500D2CA2F /* utils.py in Resources */ = {isa = PBXBuildFile; fileRef = 73D0608E0623193500D2CA2F /* utils.py */; };
+		73D060C7062337B600D2CA2F /* LogController.py in Resources */ = {isa = PBXBuildFile; fileRef = 73D060C6062337B600D2CA2F /* LogController.py */; };
+		73DFDE9F07BCACA800257998 /* BT_doc.icns in Resources */ = {isa = PBXBuildFile; fileRef = 73DFDE9D07BCACA800257998 /* BT_doc.icns */; };
+		73DFDEA007BCACA800257998 /* BT.icns in Resources */ = {isa = PBXBuildFile; fileRef = 73DFDE9E07BCACA800257998 /* BT.icns */; };
+		73EA79370627227400AEE705 /* ToolbarDelegate.py in Resources */ = {isa = PBXBuildFile; fileRef = 73EA79360627227400AEE705 /* ToolbarDelegate.py */; };
+		73EA79E506273EEB00AEE705 /* TorrentWindow.nib in Resources */ = {isa = PBXBuildFile; fileRef = 73EA79E306273EEB00AEE705 /* TorrentWindow.nib */; };
+		73ED0552097EDD05001FE225 /* kqsyscallmodule.so in Resources */ = {isa = PBXBuildFile; fileRef = 73ED0551097EDD05001FE225 /* kqsyscallmodule.so */; };
+		777C19C904D6B9D800FBF432 /* BitTorrent_Prefix.pch in Resources */ = {isa = PBXBuildFile; fileRef = 777C19C804D6B9D800FBF432 /* BitTorrent_Prefix.pch */; };
+		77A9B0E204D6BD1E00EC1630 /* Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 77A9B0E104D6BD1E00EC1630 /* Info.plist */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXBuildStyle section */
+		4A9504CCFFE6A4B311CA0CBA /* Development */ = {
+			isa = PBXBuildStyle;
+			buildSettings = {
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 4.1.8;
+				GCC_DYNAMIC_NO_PIC = YES;
+				GCC_ENABLE_FIX_AND_CONTINUE = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				OPTIMIZATION_CFLAGS = "-O0";
+				ZERO_LINK = YES;
+			};
+			name = Development;
+		};
+		4A9504CDFFE6A4B311CA0CBA /* Deployment */ = {
+			isa = PBXBuildStyle;
+			buildSettings = {
+				COPY_PHASE_STRIP = YES;
+				DEPLOYMENT_LOCATION = YES;
+				DEPLOYMENT_POSTPROCESSING = YES;
+				GCC_ENABLE_FIX_AND_CONTINUE = NO;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				ZERO_LINK = NO;
+			};
+			name = Deployment;
+		};
+/* End PBXBuildStyle section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		77A8F17D04D6B2470033F030 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 8;
+			dstPath = "";
+			dstSubfolderSpec = 7;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 1;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		089C165DFE840E0CC02AAC07 /* English */ = {isa = PBXFileReference; fileEncoding = 10; lastKnownFileType = text.plist.strings; name = English; path = English.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		1058C7A1FEA54F0111CA2CBB /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = /System/Library/Frameworks/Cocoa.framework; sourceTree = "<absolute>"; };
+		1BFB7DBF04CEE17C00DEF731 /* main-embedded-interpreter.m */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.objc; path = "main-embedded-interpreter.m"; sourceTree = SOURCE_ROOT; };
+		1BFB7DD504CEE24900DEF731 /* Python.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Python.framework; path = /System/Library/Frameworks/Python.framework; sourceTree = "<absolute>"; };
+		29B97319FDCFA39411CA2CEA /* English */ = {isa = PBXFileReference; lastKnownFileType = wrapper.nib; name = English; path = English.lproj/MainMenu.nib; sourceTree = "<group>"; };
+		29B97324FDCFA39411CA2CEA /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = /System/Library/Frameworks/AppKit.framework; sourceTree = "<absolute>"; };
+		29B97325FDCFA39411CA2CEA /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = /System/Library/Frameworks/Foundation.framework; sourceTree = "<absolute>"; };
+		529BAD2F05DCECA400CC5BD4 /* _AppKit.so */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.bundle"; name = _AppKit.so; path = "/Library/Python/2.3/site-packages/PyObjC/AppKit/_AppKit.so"; sourceTree = "<absolute>"; };
+		529BAD3005DCECA400CC5BD4 /* _Foundation.so */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.bundle"; name = _Foundation.so; path = "/Library/Python/2.3/site-packages/PyObjC/Foundation/_Foundation.so"; sourceTree = "<absolute>"; };
+		529BAD3105DCECA400CC5BD4 /* _objc.so */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.bundle"; name = _objc.so; path = "/Library/Python/2.3/site-packages/PyObjC/objc/_objc.so"; sourceTree = "<absolute>"; };
+		730C31720824103E0015C403 /* English */ = {isa = PBXFileReference; lastKnownFileType = wrapper.nib; name = English; path = English.lproj/ChoosePort.nib; sourceTree = "<group>"; };
+		730C317F082413C70015C403 /* PortChanger.py */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text.script.python; path = PortChanger.py; sourceTree = "<group>"; };
+		7316939E06261AAE0091B5AF /* AppKit */ = {isa = PBXFileReference; lastKnownFileType = folder; name = AppKit; path = "/Library/Python/2.3/site-packages/PyObjC/AppKit"; sourceTree = "<absolute>"; };
+		731693C406261AAE0091B5AF /* Foundation */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Foundation; path = "/Library/Python/2.3/site-packages/PyObjC/Foundation"; sourceTree = "<absolute>"; };
+		7316940206261AAE0091B5AF /* objc */ = {isa = PBXFileReference; lastKnownFileType = folder; name = objc; path = "/Library/Python/2.3/site-packages/PyObjC/objc"; sourceTree = "<absolute>"; };
+		7318C97805DEFC6400676317 /* English */ = {isa = PBXFileReference; lastKnownFileType = wrapper.nib; name = English; path = English.lproj/Metainfo.nib; sourceTree = "<group>"; };
+		7318C97A05DEFC6400676317 /* English */ = {isa = PBXFileReference; lastKnownFileType = wrapper.nib; name = English; path = English.lproj/Preferences.nib; sourceTree = "<group>"; };
+		7318C98005DEFCAE00676317 /* BTAppController.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = BTAppController.py; sourceTree = "<group>"; };
+		7318C98C05DF024500676317 /* BitTorrent */ = {isa = PBXFileReference; lastKnownFileType = folder; name = BitTorrent; path = ../BitTorrent; sourceTree = SOURCE_ROOT; };
+		7318C9CB05DF041900676317 /* DLController.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = DLController.py; sourceTree = "<group>"; };
+		7318C9D905DF0E0F00676317 /* Preferences.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = Preferences.py; sourceTree = "<group>"; };
+		73194FB105F1C00C0053854B /* English */ = {isa = PBXFileReference; lastKnownFileType = wrapper.nib; name = English; path = English.lproj/DLView.nib; sourceTree = "<group>"; };
+		732470400641B17C00A8E294 /* English */ = {isa = PBXFileReference; lastKnownFileType = wrapper.nib; name = English; path = English.lproj/DetailView.nib; sourceTree = "<group>"; };
+		735947660770A0E900F80B8A /* English */ = {isa = PBXFileReference; lastKnownFileType = wrapper.nib; name = English; path = English.lproj/TorrentInspector.nib; sourceTree = "<group>"; };
+		735947720770A7A100F80B8A /* TorrentInspector.py */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text.script.python; path = TorrentInspector.py; sourceTree = "<group>"; };
+		736277E60789C18300281E3E /* PyObjCTools */ = {isa = PBXFileReference; lastKnownFileType = folder; name = PyObjCTools; path = "/Library/Python/2.3/site-packages/PyObjC/PyObjCTools"; sourceTree = "<absolute>"; };
+		73627A1207933FDE00281E3E /* dlstart2.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = dlstart2.icns; sourceTree = "<group>"; };
+		73705C630917DD3A00B08C81 /* public.key */ = {isa = PBXFileReference; lastKnownFileType = file; name = public.key; path = ../public.key; sourceTree = SOURCE_ROOT; };
+		7374372906166C6C0014621A /* ServiceDelegate.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = ServiceDelegate.py; sourceTree = "<group>"; };
+		73800F6A0906CAF5007FED4C /* LameProgressBar.py */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text.script.python; path = LameProgressBar.py; sourceTree = "<group>"; };
+		738FBC2F07BB4BB80058C7AF /* DLCell.py */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text.script.python; path = DLCell.py; sourceTree = "<group>"; };
+		7396EEAB07B6D2230020F890 /* dlstop2.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = dlstop2.icns; sourceTree = "<group>"; };
+		7396EEB407B6D40C0020F890 /* dlclear2.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = dlclear2.icns; sourceTree = "<group>"; };
+		7396EEBF07B6D6470020F890 /* dlinfo2.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = dlinfo2.icns; sourceTree = "<group>"; };
+		7396EECC07B6D8BB0020F890 /* dlreveal2.icns */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = image.icns; path = dlreveal2.icns; sourceTree = "<group>"; };
+		7396EF4407B7D58B0020F890 /* dn.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = dn.icns; sourceTree = "<group>"; };
+		7396EF4507B7D58B0020F890 /* up.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = up.icns; sourceTree = "<group>"; };
+		7396EF8E07B7FD250020F890 /* log.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = log.icns; sourceTree = "<group>"; };
+		7396EF8F07B7FD250020F890 /* peers.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = peers.icns; sourceTree = "<group>"; };
+		739D716107ECF7B900E8D4DD /* English */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text.plist.strings; name = English; path = English.lproj/Localizable.strings; sourceTree = "<group>"; };
+		73A3A3FE07E5182E008CD73D /* bittorrent_96.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = bittorrent_96.png; path = ../images/logo/bittorrent_96.png; sourceTree = SOURCE_ROOT; };
+		73A5C6410641B55A00C9FFC7 /* SpewController.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = SpewController.py; sourceTree = "<group>"; };
+		73A6DA03075126B900C4CEF0 /* English */ = {isa = PBXFileReference; lastKnownFileType = wrapper.nib; name = English; path = English.lproj/PyInterpreter.nib; sourceTree = "<group>"; };
+		73A6DA04075126B900C4CEF0 /* PyInterpreter.py */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text.script.python; path = PyInterpreter.py; sourceTree = "<group>"; };
+		73A7208206179D0B00DC7522 /* CCell.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CCell.h; sourceTree = "<group>"; };
+		73A7208306179D0B00DC7522 /* CCell.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CCell.m; sourceTree = "<group>"; };
+		73C3A7D605E085D50068E454 /* Generate.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = Generate.py; sourceTree = "<group>"; };
+		73CCE5FD082EF74A00A9E6F4 /* khashmir */ = {isa = PBXFileReference; lastKnownFileType = folder; name = khashmir; path = ../khashmir; sourceTree = SOURCE_ROOT; };
+		73CF44FC083BDF3200DE5623 /* hacking.py */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text.script.python; path = hacking.py; sourceTree = "<group>"; };
+		73D06026062212CE00D2CA2F /* ICHelper.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = ICHelper.h; sourceTree = "<group>"; };
+		73D06027062212CE00D2CA2F /* ICHelper.m */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.objc; path = ICHelper.m; sourceTree = "<group>"; };
+		73D0608E0623193500D2CA2F /* utils.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = utils.py; sourceTree = "<group>"; };
+		73D060C6062337B600D2CA2F /* LogController.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = LogController.py; sourceTree = "<group>"; };
+		73DFDE9D07BCACA800257998 /* BT_doc.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = BT_doc.icns; sourceTree = "<group>"; };
+		73DFDE9E07BCACA800257998 /* BT.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = BT.icns; sourceTree = "<group>"; };
+		73EA79360627227400AEE705 /* ToolbarDelegate.py */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text.script.python; path = ToolbarDelegate.py; sourceTree = "<group>"; };
+		73EA79E406273EEB00AEE705 /* English */ = {isa = PBXFileReference; lastKnownFileType = wrapper.nib; name = English; path = English.lproj/TorrentWindow.nib; sourceTree = "<group>"; };
+		73ED0551097EDD05001FE225 /* kqsyscallmodule.so */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.bundle"; name = kqsyscallmodule.so; path = "/Library/Python/2.3/site-packages/kqsyscallmodule.so"; sourceTree = "<absolute>"; };
+		73F9827A07866756008364F6 /* BitTorrent.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = BitTorrent.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		777C19C804D6B9D800FBF432 /* BitTorrent_Prefix.pch */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = BitTorrent_Prefix.pch; sourceTree = "<group>"; };
+		77A9B0E104D6BD1E00EC1630 /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		F60DD8BC0358A22201C8ED3C /* __main__.py */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text.script.python; path = __main__.py; sourceTree = SOURCE_ROOT; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		1BFB801204CEE27700DEF731 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				1BFB801304CEE27700DEF731 /* Foundation.framework in Frameworks */,
+				1BFB80F904CEE38B00DEF731 /* Cocoa.framework in Frameworks */,
+				1BFB801404CEE27700DEF731 /* Python.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		080E96DDFE201D6D7F000001 /* Classes */ = {
+			isa = PBXGroup;
+			children = (
+				73800F6A0906CAF5007FED4C /* LameProgressBar.py */,
+				730C317F082413C70015C403 /* PortChanger.py */,
+				738FBC2F07BB4BB80058C7AF /* DLCell.py */,
+				7318C98005DEFCAE00676317 /* BTAppController.py */,
+				7318C9CB05DF041900676317 /* DLController.py */,
+				73EA79360627227400AEE705 /* ToolbarDelegate.py */,
+				73D060C6062337B600D2CA2F /* LogController.py */,
+				7374372906166C6C0014621A /* ServiceDelegate.py */,
+				73A5C6410641B55A00C9FFC7 /* SpewController.py */,
+				7318C9D905DF0E0F00676317 /* Preferences.py */,
+				73C3A7D605E085D50068E454 /* Generate.py */,
+				735947720770A7A100F80B8A /* TorrentInspector.py */,
+				73A6DA04075126B900C4CEF0 /* PyInterpreter.py */,
+			);
+			name = Classes;
+			sourceTree = "<group>";
+		};
+		19C28FACFE9D520D11CA2CBB /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				73F9827A07866756008364F6 /* BitTorrent.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		29B97314FDCFA39411CA2CEA /* BitTorrent */ = {
+			isa = PBXGroup;
+			children = (
+				73ED0551097EDD05001FE225 /* kqsyscallmodule.so */,
+				73705C630917DD3A00B08C81 /* public.key */,
+				73CF44FC083BDF3200DE5623 /* hacking.py */,
+				739D716007ECF7B900E8D4DD /* Localizable.strings */,
+				73DFDE9D07BCACA800257998 /* BT_doc.icns */,
+				73DFDE9E07BCACA800257998 /* BT.icns */,
+				089C165CFE840E0CC02AAC07 /* InfoPlist.strings */,
+				7318C98C05DF024500676317 /* BitTorrent */,
+				73CCE5FD082EF74A00A9E6F4 /* khashmir */,
+				735CBE0007FA02E300A0C139 /* Third Party */,
+				738FB94A07B9C6B50058C7AF /* NIBS */,
+				73D0601A0622128C00D2CA2F /* ObjC Classes */,
+				080E96DDFE201D6D7F000001 /* Classes */,
+				29B97315FDCFA39411CA2CEA /* Other Sources */,
+				29B97317FDCFA39411CA2CEA /* Resources */,
+				29B97323FDCFA39411CA2CEA /* Frameworks & Modules */,
+				19C28FACFE9D520D11CA2CBB /* Products */,
+			);
+			name = BitTorrent;
+			sourceTree = "<group>";
+		};
+		29B97315FDCFA39411CA2CEA /* Other Sources */ = {
+			isa = PBXGroup;
+			children = (
+				73D0608E0623193500D2CA2F /* utils.py */,
+				F60DD8BC0358A22201C8ED3C /* __main__.py */,
+				1BFB7DBF04CEE17C00DEF731 /* main-embedded-interpreter.m */,
+				777C19C804D6B9D800FBF432 /* BitTorrent_Prefix.pch */,
+				77A9B0E104D6BD1E00EC1630 /* Info.plist */,
+			);
+			name = "Other Sources";
+			sourceTree = "<group>";
+		};
+		29B97317FDCFA39411CA2CEA /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				73A3A3FE07E5182E008CD73D /* bittorrent_96.png */,
+				7396EF4407B7D58B0020F890 /* dn.icns */,
+				7396EF8E07B7FD250020F890 /* log.icns */,
+				7396EF8F07B7FD250020F890 /* peers.icns */,
+				7396EF4507B7D58B0020F890 /* up.icns */,
+				73627A1207933FDE00281E3E /* dlstart2.icns */,
+				7396EEAB07B6D2230020F890 /* dlstop2.icns */,
+				7396EECC07B6D8BB0020F890 /* dlreveal2.icns */,
+				7396EEB407B6D40C0020F890 /* dlclear2.icns */,
+				7396EEBF07B6D6470020F890 /* dlinfo2.icns */,
+			);
+			name = Resources;
+			sourceTree = "<group>";
+		};
+		29B97323FDCFA39411CA2CEA /* Frameworks & Modules */ = {
+			isa = PBXGroup;
+			children = (
+				29B97324FDCFA39411CA2CEA /* AppKit.framework */,
+				1058C7A1FEA54F0111CA2CBB /* Cocoa.framework */,
+				29B97325FDCFA39411CA2CEA /* Foundation.framework */,
+				1BFB7DD504CEE24900DEF731 /* Python.framework */,
+			);
+			name = "Frameworks & Modules";
+			sourceTree = "<group>";
+		};
+		735CBE0007FA02E300A0C139 /* Third Party */ = {
+			isa = PBXGroup;
+			children = (
+				736277E60789C18300281E3E /* PyObjCTools */,
+				77A8EFE904D6B2200033F030 /* PyObjC */,
+			);
+			name = "Third Party";
+			sourceTree = "<group>";
+		};
+		738FB94A07B9C6B50058C7AF /* NIBS */ = {
+			isa = PBXGroup;
+			children = (
+				29B97318FDCFA39411CA2CEA /* MainMenu.nib */,
+				734DFA6407C524D300BB2C8B /* PyInterpreter.nib */,
+				7318C97905DEFC6400676317 /* Preferences.nib */,
+				7318C97705DEFC6400676317 /* Metainfo.nib */,
+				73EA79E306273EEB00AEE705 /* TorrentWindow.nib */,
+				73194FB005F1C00C0053854B /* DLView.nib */,
+				7324703F0641B17C00A8E294 /* DetailView.nib */,
+				735947650770A0E900F80B8A /* TorrentInspector.nib */,
+				730C31710824103E0015C403 /* ChoosePort.nib */,
+			);
+			name = NIBS;
+			sourceTree = "<group>";
+		};
+		73D0601A0622128C00D2CA2F /* ObjC Classes */ = {
+			isa = PBXGroup;
+			children = (
+				73D06026062212CE00D2CA2F /* ICHelper.h */,
+				73D06027062212CE00D2CA2F /* ICHelper.m */,
+				73A7208206179D0B00DC7522 /* CCell.h */,
+				73A7208306179D0B00DC7522 /* CCell.m */,
+			);
+			name = "ObjC Classes";
+			sourceTree = "<group>";
+		};
+		77A8EFE904D6B2200033F030 /* PyObjC */ = {
+			isa = PBXGroup;
+			children = (
+				529BAD2F05DCECA400CC5BD4 /* _AppKit.so */,
+				529BAD3005DCECA400CC5BD4 /* _Foundation.so */,
+				529BAD3105DCECA400CC5BD4 /* _objc.so */,
+				7316939E06261AAE0091B5AF /* AppKit */,
+				731693C406261AAE0091B5AF /* Foundation */,
+				7316940206261AAE0091B5AF /* objc */,
+			);
+			name = PyObjC;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXHeadersBuildPhase section */
+		1BFB7F6E04CEE27700DEF731 /* Headers */ = {
+			isa = PBXHeadersBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				73A7208406179D0B00DC7522 /* CCell.h in Headers */,
+				73D06028062212CE00D2CA2F /* ICHelper.h in Headers */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXHeadersBuildPhase section */
+
+/* Begin PBXNativeTarget section */
+		1BFB7F6D04CEE27700DEF731 /* BitTorrent */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 73006F720996154D009EE662 /* Build configuration list for PBXNativeTarget "BitTorrent" */;
+			buildPhases = (
+				1BFB7F6E04CEE27700DEF731 /* Headers */,
+				1BFB7F6F04CEE27700DEF731 /* Resources */,
+				1BFB801004CEE27700DEF731 /* Sources */,
+				1BFB801204CEE27700DEF731 /* Frameworks */,
+				77A8F17D04D6B2470033F030 /* CopyFiles */,
+				73247AEE06455B5A00A8E294 /* ShellScript */,
+				73AB164C095381030021CEA0 /* ShellScript */,
+			);
+			buildRules = (
+			);
+			buildSettings = {
+				CURRENT_PROJECT_VERSION = 4.1.2;
+				FRAMEWORK_SEARCH_PATHS = "";
+				GCC_ENABLE_TRIGRAPHS = NO;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREFIX_HEADER = BitTorrent_Prefix.pch;
+				GCC_WARN_ABOUT_MISSING_PROTOTYPES = NO;
+				GCC_WARN_FOUR_CHARACTER_CONSTANTS = NO;
+				GCC_WARN_UNKNOWN_PRAGMAS = NO;
+				HEADER_SEARCH_PATHS = "";
+				INFOPLIST_FILE = Info.plist;
+				INSTALL_PATH = "$(HOME)/Applications";
+				LIBRARY_SEARCH_PATHS = "";
+				OBJROOT = "/tmp/$(PROJECT_NAME)";
+				OTHER_CFLAGS = "";
+				OTHER_LDFLAGS = "";
+				PRODUCT_NAME = BitTorrent;
+				SECTORDER_FLAGS = "";
+				SYMROOT = "/tmp/$(PROJECT_NAME)";
+				WARNING_CFLAGS = (
+					"-Wmost",
+					"-Wno-four-char-constants",
+					"-Wno-unknown-pragmas",
+				);
+				WRAPPER_EXTENSION = app;
+			};
+			dependencies = (
+			);
+			name = BitTorrent;
+			productInstallPath = "$(HOME)/Applications";
+			productName = BitTorrent;
+			productReference = 73F9827A07866756008364F6 /* BitTorrent.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		29B97313FDCFA39411CA2CEA /* Project object */ = {
+			isa = PBXProject;
+			buildConfigurationList = 73006F760996154D009EE662 /* Build configuration list for PBXProject "BitTorrent" */;
+			buildSettings = {
+			};
+			buildStyles = (
+				4A9504CCFFE6A4B311CA0CBA /* Development */,
+				4A9504CDFFE6A4B311CA0CBA /* Deployment */,
+			);
+			hasScannedForEncodings = 1;
+			knownRegions = (
+				English,
+				Japanese,
+				French,
+				German,
+				Dutch,
+				Swedish,
+				zh_TW,
+			);
+			mainGroup = 29B97314FDCFA39411CA2CEA /* BitTorrent */;
+			projectDirPath = "";
+			targets = (
+				1BFB7F6D04CEE27700DEF731 /* BitTorrent */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		1BFB7F6F04CEE27700DEF731 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				1BFB7F7004CEE27700DEF731 /* MainMenu.nib in Resources */,
+				1BFB7F7104CEE27700DEF731 /* InfoPlist.strings in Resources */,
+				1BFB7F7204CEE27700DEF731 /* __main__.py in Resources */,
+				777C19C904D6B9D800FBF432 /* BitTorrent_Prefix.pch in Resources */,
+				77A9B0E204D6BD1E00EC1630 /* Info.plist in Resources */,
+				529BAE1E05DCECA500CC5BD4 /* _AppKit.so in Resources */,
+				529BAE1F05DCECA500CC5BD4 /* _Foundation.so in Resources */,
+				529BAE2005DCECA500CC5BD4 /* _objc.so in Resources */,
+				7318C97C05DEFC6400676317 /* Metainfo.nib in Resources */,
+				7318C97D05DEFC6400676317 /* Preferences.nib in Resources */,
+				7318C9C105DF024500676317 /* BitTorrent in Resources */,
+				7318C9CC05DF041900676317 /* DLController.py in Resources */,
+				7318C9DA05DF0E0F00676317 /* Preferences.py in Resources */,
+				73C3A7D705E085D50068E454 /* Generate.py in Resources */,
+				73194FB205F1C00C0053854B /* DLView.nib in Resources */,
+				7374372A06166C6C0014621A /* ServiceDelegate.py in Resources */,
+				73D0608F0623193500D2CA2F /* utils.py in Resources */,
+				73D060C7062337B600D2CA2F /* LogController.py in Resources */,
+				7316943E06261AAF0091B5AF /* AppKit in Resources */,
+				7316943F06261AAF0091B5AF /* Foundation in Resources */,
+				7316944006261AAF0091B5AF /* objc in Resources */,
+				73EA79370627227400AEE705 /* ToolbarDelegate.py in Resources */,
+				73EA79E506273EEB00AEE705 /* TorrentWindow.nib in Resources */,
+				732470410641B17C00A8E294 /* DetailView.nib in Resources */,
+				73A5C6420641B55A00C9FFC7 /* SpewController.py in Resources */,
+				7377E7A80653568700E1BE20 /* BTAppController.py in Resources */,
+				735947670770A0E900F80B8A /* TorrentInspector.nib in Resources */,
+				735947730770A7A100F80B8A /* TorrentInspector.py in Resources */,
+				736278010789C18300281E3E /* PyObjCTools in Resources */,
+				73627A1307933FDE00281E3E /* dlstart2.icns in Resources */,
+				7396EEAC07B6D2230020F890 /* dlstop2.icns in Resources */,
+				7396EEB507B6D40C0020F890 /* dlclear2.icns in Resources */,
+				7396EEC007B6D6470020F890 /* dlinfo2.icns in Resources */,
+				7396EECD07B6D8BB0020F890 /* dlreveal2.icns in Resources */,
+				7396EF4607B7D58B0020F890 /* dn.icns in Resources */,
+				7396EF4707B7D58B0020F890 /* up.icns in Resources */,
+				7396EF9007B7FD250020F890 /* log.icns in Resources */,
+				7396EF9107B7FD260020F890 /* peers.icns in Resources */,
+				738FBC3007BB4BB80058C7AF /* DLCell.py in Resources */,
+				73DFDE9F07BCACA800257998 /* BT_doc.icns in Resources */,
+				73DFDEA007BCACA800257998 /* BT.icns in Resources */,
+				73A3A3FF07E5182E008CD73D /* bittorrent_96.png in Resources */,
+				7358988307E6656200E7D321 /* PyInterpreter.py in Resources */,
+				7358988407E6656800E7D321 /* PyInterpreter.nib in Resources */,
+				739D716207ECF7B900E8D4DD /* Localizable.strings in Resources */,
+				730C31730824103E0015C403 /* ChoosePort.nib in Resources */,
+				730C3180082413C70015C403 /* PortChanger.py in Resources */,
+				73CCE5FE082EF74A00A9E6F4 /* khashmir in Resources */,
+				73CF44FD083BDF3200DE5623 /* hacking.py in Resources */,
+				73800F6B0906CAF5007FED4C /* LameProgressBar.py in Resources */,
+				73705C640917DD3A00B08C81 /* public.key in Resources */,
+				73ED0552097EDD05001FE225 /* kqsyscallmodule.so in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		73247AEE06455B5A00A8E294 /* ShellScript */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 12;
+			files = (
+			);
+			inputPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /usr/bin/python;
+			shellScript = "import os\n\n## copy twisted dependencies\nmodules = ['__init__.py', 'copyright.py', 'internet/__init__.py', 'internet/abstract.py', 'internet/address.py', 'internet/base.py', 'internet/defer.py', 'internet/error.py', 'internet/fdesc.py', 'internet/interfaces.py', 'internet/iocpreactor/__init__.py', 'internet/iocpreactor/abstract.py', 'internet/iocpreactor/client.py', 'internet/iocpreactor/iocpdebug.py', 'internet/iocpreactor/ops.py', 'internet/iocpreactor/proactor.py', 'internet/iocpreactor/server.py', 'internet/iocpreactor/tcp.py', 'internet/iocpreactor/udp.py', 'internet/iocpreactor/util.py', 'internet/kqreactor.py', 'internet/main.py', 'internet/pollreactor.py', 'internet/posixbase.py', 'internet/process.py', 'internet/protocol.py', 'internet/reactor.py', 'internet/selectreactor.py', 'internet/ssl.py', 'internet/task.py', 'internet/tcp.py', 'internet/threads.py', 'internet/udp.py', 'internet/unix.py', 'persisted/__init__.py', 'persisted/styles.py', 'protocols/__init__.py', 'protocols/policies.py', 'python/__init__.py', 'python/compat.py', 'python/components.py', 'python/context.py', 'python/failure.py', 'python/hook.py', 'python/lockfile.py', 'python/log.py', 'python/pymodules/__init__.py', 'python/pymodules/UserDictExtras.py', 'python/pymodules/heapq.py', 'python/reflect.py', 'python/runtime.py', 'python/threadable.py', 'python/threadpool.py', 'python/util.py']\n\ntwisted = '/System/Library/Frameworks/Python.framework/Versions/Current/lib/python2.3/site-packages/_twisted'\nresources = os.path.join(os.environ['BUILT_PRODUCTS_DIR'], os.environ['UNLOCALIZED_RESOURCES_FOLDER_PATH'])\nos.chdir(resources)\n\ntry:\n\tos.system('mkdir twisted')\nexcept OSError, e:\n\tif e.oserr == 17:\n\t\tpass\ntry:\n\tos.system('mkdir twisted/internet')\nexcept OSError, e:\n\tif e.oserr == 17:\n\t\tpass\ntry:\n\tos.system('mkdir twisted/internet/iocpreactor')\nexcept OSError, e:\n\tif e.oserr == 17:\n\t\tpass\ntry:\n\tos.system('mkdir twisted/persisted')\nexcept OSError, e:\n\tif e.oserr == 17:\n\t\tpass\ntry:\n\tos.system('mkdir twisted/protocols')\nexcept OSError, e:\n\tif e.oserr == 17:\n\t\tpass\ntry:\n\tos.system('mkdir twisted/python')\nexcept OSError, e:\n\tif e.oserr == 17:\n\t\tpass\ntry:\n\tos.system('mkdir twisted/python/pymodules')\nexcept OSError, e:\n\tif e.oserr == 17:\n\t\tpass\n\nos.chdir(os.path.join(resources, 'twisted'))\nfor p in modules:\n\tos.system('cp %s %s' % (os.path.join(twisted, p), p))\n\n\n## copy zope dependencies\n\nmodules = ['__init__.py', 'interface/__init__.py', 'interface/_zope_interface_coptimizations.so', 'interface/adapter.py', 'interface/advice.py', 'interface/declarations.py', 'interface/exceptions.py', 'interface/interface.py', 'interface/interfaces.py', 'interface/ro.py']\n\nzope = '/System/Library/Frameworks/Python.framework/Versions/Current/lib/python2.3/site-packages/_zope'\n\nos.chdir(resources)\ntry:\n\tos.system('mkdir zope')\nexcept OSError, e:\n\tif e.oserr == 17:\n\t\tpass\ntry:\n\tos.system('mkdir zope/interface')\nexcept OSError, e:\n\tif e.oserr == 17:\n\t\tpass\n\nos.chdir(os.path.join(resources, 'zope'))\nfor p in modules:\n\tos.system('cp %s %s' % (os.path.join(zope, p), p))\n\n###  copy crypto resources\nmodules = ['__init__.py', 'Hash/__init__.py', 'Hash/SHA.py', 'PublicKey/__init__.py', 'PublicKey/DSA.py', 'PublicKey/pubkey.py', 'Util/__init__.py', 'Util/number.py']\ncrypto = '/System/Library/Frameworks/Python.framework/Versions/Current/lib/python2.3/site-packages/_Crypto'\n\nos.chdir(resources)\ntry:\n\tos.system('mkdir Crypto')\nexcept OSError, e:\n\tif e.oserr == 17:\n\t\tpass\ntry:\n\tos.system('mkdir Crypto/Hash')\nexcept OSError, e:\n\tif e.oserr == 17:\n\t\tpass\ntry:\n\tos.system('mkdir Crypto/PublicKey')\nexcept OSError, e:\n\tif e.oserr == 17:\n\t\tpass\ntry:\n\tos.system('mkdir Crypto/Util')\nexcept OSError, e:\n\tif e.oserr == 17:\n\t\tpass\n\nos.chdir(os.path.join(resources, 'Crypto'))\nfor p in modules:\n\tos.system('cp %s %s' % (os.path.join(crypto, p), p))\n";
+		};
+		73AB164C095381030021CEA0 /* ShellScript */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 8;
+			files = (
+			);
+			inputPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 1;
+			shellPath = /usr/bin/python;
+			shellScript = "import compileall, os\n\n# create disk image\nos.chdir(os.environ['INSTALL_DIR'])\nd = 'BitTorrent_OSX_%s' % os.environ['CURRENT_PROJECT_VERSION']\ntry:\n\tos.mkdir(d)\nexcept OSError, e:\n\tif e.errno == 17:\n\t\tos.system('chmod -R u+w ' + d)\n\t\tos.system('rm -rf %s/*' % d)\n\telse:\n\t\traise OSError, e\n\nos.system('cp -R \"%s\" \"%s\"' % (os.path.join(os.environ['INSTALL_DIR'], \"BitTorrent.app\"), d))\nos.system('cp \"%s\" \"%s\"' % (os.path.join(os.environ['SOURCE_ROOT'], 'README_OSX.txt'), d))\nos.system('cp -R \"%s\" \"%s\"' % (os.path.join(os.environ['SOURCE_ROOT'], 'Help'), d))\n\nos.system('chmod -R u+w ' + d)\n\nos.chdir(os.path.join(os.environ['INSTALL_DIR'], d, \"BitTorrent.app/Contents/Resources\"))\nos.system('rm -r Foundation/test')\nos.system('rm -r objc/test')\nos.system('rm -r PyObjCTools/test')\n\ncompileall.compile_dir(\".\")\nos.system(\"mv __main__.py /tmp\")\nos.system('find . -name \"*.py\" | xargs rm')\nos.system('find . -name \"*~\" | xargs rm')\nos.system('find . -name \"test_*\" | xargs rm')\nos.system(\"mv /tmp/__main__.py .\")\n\n\nvers = os.environ['CURRENT_PROJECT_VERSION']\nx = vers.split('.')\nif int(x[1]) % 2 == 1:\n\tvers = vers + \"-Beta\"\n\nos.chdir(os.environ['INSTALL_DIR'])\nt = \"BitTorrent-%s.dmg\" % vers\nos.system('rm ' + t)\nos.system('hdiutil create -imagekey zlib-level=9  -srcfolder \"%s\" \"%s\"' % (d, t))\nos.system('rm -rf \"%s\"' % d)\n";
+		};
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		1BFB801004CEE27700DEF731 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				1BFB801104CEE27700DEF731 /* main-embedded-interpreter.m in Sources */,
+				73A7208506179D0B00DC7522 /* CCell.m in Sources */,
+				73D06029062212CE00D2CA2F /* ICHelper.m in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXVariantGroup section */
+		089C165CFE840E0CC02AAC07 /* InfoPlist.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				089C165DFE840E0CC02AAC07 /* English */,
+			);
+			name = InfoPlist.strings;
+			sourceTree = "<group>";
+		};
+		29B97318FDCFA39411CA2CEA /* MainMenu.nib */ = {
+			isa = PBXVariantGroup;
+			children = (
+				29B97319FDCFA39411CA2CEA /* English */,
+			);
+			name = MainMenu.nib;
+			sourceTree = "<group>";
+		};
+		730C31710824103E0015C403 /* ChoosePort.nib */ = {
+			isa = PBXVariantGroup;
+			children = (
+				730C31720824103E0015C403 /* English */,
+			);
+			name = ChoosePort.nib;
+			sourceTree = "<group>";
+		};
+		7318C97705DEFC6400676317 /* Metainfo.nib */ = {
+			isa = PBXVariantGroup;
+			children = (
+				7318C97805DEFC6400676317 /* English */,
+			);
+			name = Metainfo.nib;
+			sourceTree = "<group>";
+		};
+		7318C97905DEFC6400676317 /* Preferences.nib */ = {
+			isa = PBXVariantGroup;
+			children = (
+				7318C97A05DEFC6400676317 /* English */,
+			);
+			name = Preferences.nib;
+			sourceTree = "<group>";
+		};
+		73194FB005F1C00C0053854B /* DLView.nib */ = {
+			isa = PBXVariantGroup;
+			children = (
+				73194FB105F1C00C0053854B /* English */,
+			);
+			name = DLView.nib;
+			sourceTree = "<group>";
+		};
+		7324703F0641B17C00A8E294 /* DetailView.nib */ = {
+			isa = PBXVariantGroup;
+			children = (
+				732470400641B17C00A8E294 /* English */,
+			);
+			name = DetailView.nib;
+			sourceTree = "<group>";
+		};
+		734DFA6407C524D300BB2C8B /* PyInterpreter.nib */ = {
+			isa = PBXVariantGroup;
+			children = (
+				73A6DA03075126B900C4CEF0 /* English */,
+			);
+			name = PyInterpreter.nib;
+			sourceTree = "<group>";
+		};
+		735947650770A0E900F80B8A /* TorrentInspector.nib */ = {
+			isa = PBXVariantGroup;
+			children = (
+				735947660770A0E900F80B8A /* English */,
+			);
+			name = TorrentInspector.nib;
+			sourceTree = "<group>";
+		};
+		739D716007ECF7B900E8D4DD /* Localizable.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				739D716107ECF7B900E8D4DD /* English */,
+			);
+			name = Localizable.strings;
+			sourceTree = "<group>";
+		};
+		73EA79E306273EEB00AEE705 /* TorrentWindow.nib */ = {
+			isa = PBXVariantGroup;
+			children = (
+				73EA79E406273EEB00AEE705 /* English */,
+			);
+			name = TorrentWindow.nib;
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
+
+/* Begin XCBuildConfiguration section */
+		73006F730996154D009EE662 /* Development */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 4.1.8;
+				FRAMEWORK_SEARCH_PATHS = "";
+				GCC_DYNAMIC_NO_PIC = YES;
+				GCC_ENABLE_FIX_AND_CONTINUE = YES;
+				GCC_ENABLE_TRIGRAPHS = NO;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREFIX_HEADER = BitTorrent_Prefix.pch;
+				GCC_WARN_ABOUT_MISSING_PROTOTYPES = NO;
+				GCC_WARN_FOUR_CHARACTER_CONSTANTS = NO;
+				GCC_WARN_UNKNOWN_PRAGMAS = NO;
+				HEADER_SEARCH_PATHS = "";
+				INFOPLIST_FILE = Info.plist;
+				INSTALL_PATH = "$(HOME)/Applications";
+				LIBRARY_SEARCH_PATHS = "";
+				OBJROOT = "/tmp/$(PROJECT_NAME)";
+				OPTIMIZATION_CFLAGS = "-O0";
+				OTHER_CFLAGS = "";
+				OTHER_LDFLAGS = "";
+				PRODUCT_NAME = BitTorrent;
+				SECTORDER_FLAGS = "";
+				SYMROOT = "/tmp/$(PROJECT_NAME)";
+				WARNING_CFLAGS = (
+					"-Wmost",
+					"-Wno-four-char-constants",
+					"-Wno-unknown-pragmas",
+				);
+				WRAPPER_EXTENSION = app;
+				ZERO_LINK = YES;
+			};
+			name = Development;
+		};
+		73006F740996154D009EE662 /* Deployment */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = YES;
+				CURRENT_PROJECT_VERSION = 4.1.2;
+				DEPLOYMENT_LOCATION = YES;
+				DEPLOYMENT_POSTPROCESSING = YES;
+				FRAMEWORK_SEARCH_PATHS = "";
+				GCC_ENABLE_FIX_AND_CONTINUE = NO;
+				GCC_ENABLE_TRIGRAPHS = NO;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREFIX_HEADER = BitTorrent_Prefix.pch;
+				GCC_WARN_ABOUT_MISSING_PROTOTYPES = NO;
+				GCC_WARN_FOUR_CHARACTER_CONSTANTS = NO;
+				GCC_WARN_UNKNOWN_PRAGMAS = NO;
+				HEADER_SEARCH_PATHS = "";
+				INFOPLIST_FILE = Info.plist;
+				INSTALL_PATH = "$(HOME)/Applications";
+				LIBRARY_SEARCH_PATHS = "";
+				OBJROOT = "/tmp/$(PROJECT_NAME)";
+				OTHER_CFLAGS = "";
+				OTHER_LDFLAGS = "";
+				PRODUCT_NAME = BitTorrent;
+				SECTORDER_FLAGS = "";
+				SYMROOT = "/tmp/$(PROJECT_NAME)";
+				WARNING_CFLAGS = (
+					"-Wmost",
+					"-Wno-four-char-constants",
+					"-Wno-unknown-pragmas",
+				);
+				WRAPPER_EXTENSION = app;
+				ZERO_LINK = NO;
+			};
+			name = Deployment;
+		};
+		73006F750996154D009EE662 /* Default */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CURRENT_PROJECT_VERSION = 4.1.2;
+				FRAMEWORK_SEARCH_PATHS = "";
+				GCC_ENABLE_TRIGRAPHS = NO;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREFIX_HEADER = BitTorrent_Prefix.pch;
+				GCC_WARN_ABOUT_MISSING_PROTOTYPES = NO;
+				GCC_WARN_FOUR_CHARACTER_CONSTANTS = NO;
+				GCC_WARN_UNKNOWN_PRAGMAS = NO;
+				HEADER_SEARCH_PATHS = "";
+				INFOPLIST_FILE = Info.plist;
+				INSTALL_PATH = "$(HOME)/Applications";
+				LIBRARY_SEARCH_PATHS = "";
+				OBJROOT = "/tmp/$(PROJECT_NAME)";
+				OTHER_CFLAGS = "";
+				OTHER_LDFLAGS = "";
+				PRODUCT_NAME = BitTorrent;
+				SECTORDER_FLAGS = "";
+				SYMROOT = "/tmp/$(PROJECT_NAME)";
+				WARNING_CFLAGS = (
+					"-Wmost",
+					"-Wno-four-char-constants",
+					"-Wno-unknown-pragmas",
+				);
+				WRAPPER_EXTENSION = app;
+			};
+			name = Default;
+		};
+		73006F770996154D009EE662 /* Development */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+			};
+			name = Development;
+		};
+		73006F780996154D009EE662 /* Deployment */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+			};
+			name = Deployment;
+		};
+		73006F790996154D009EE662 /* Default */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+			};
+			name = Default;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		73006F720996154D009EE662 /* Build configuration list for PBXNativeTarget "BitTorrent" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				73006F730996154D009EE662 /* Development */,
+				73006F740996154D009EE662 /* Deployment */,
+				73006F750996154D009EE662 /* Default */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Default;
+		};
+		73006F760996154D009EE662 /* Build configuration list for PBXProject "BitTorrent" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				73006F770996154D009EE662 /* Development */,
+				73006F780996154D009EE662 /* Deployment */,
+				73006F790996154D009EE662 /* Default */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Default;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 29B97313FDCFA39411CA2CEA /* Project object */;
+}

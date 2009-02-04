@@ -1,0 +1,64 @@
+{
+    IBClasses = (
+        {
+            ACTIONS = {
+                cancelUrl = id; 
+                openAbout = id; 
+                openGenerator = id; 
+                openPage = id; 
+                openPrefs = id; 
+                openTrackerResponse = id; 
+                openURL = id; 
+                takeUrl = id; 
+            }; 
+            CLASS = BTAppController; 
+            LANGUAGE = ObjC; 
+            OUTLETS = {
+                aboutWindow = NSWindow; 
+                downRateField = id; 
+                logDrawer = id; 
+                openPage = id; 
+                statusField = id; 
+                torrentTable = id; 
+                upRateField = id; 
+                url = NSTextField; 
+                urlWindow = NSWindow; 
+                versField = NSTextField; 
+            }; 
+            SUPERCLASS = NSObject; 
+        }, 
+        {CLASS = FirstResponder; LANGUAGE = ObjC; SUPERCLASS = NSObject; }, 
+        {
+            CLASS = LogController; 
+            LANGUAGE = ObjC; 
+            OUTLETS = {delegate = id; logView = id; menu = id; }; 
+            SUPERCLASS = NSObject; 
+        }, 
+        {
+            CLASS = ToolbarDelegate; 
+            LANGUAGE = ObjC; 
+            OUTLETS = {
+                appDelegate = id; 
+                closeButton = id; 
+                infoButton = id; 
+                logButton = id; 
+                "max_accept" = id; 
+                "max_initiate" = id; 
+                "max_upload_rate" = id; 
+                "max_uploads" = id; 
+                "min_uploads" = id; 
+                peersButton = id; 
+                ratio = id; 
+                revealButton = id; 
+                startButton = id; 
+                stopButton = id; 
+                stopPop = id; 
+                time = id; 
+                window = id; 
+            }; 
+            SUPERCLASS = NSObject; 
+        }, 
+        {CLASS = TorrentTableView; LANGUAGE = ObjC; SUPERCLASS = NSTableView; }
+    ); 
+    IBVersion = 1; 
+}

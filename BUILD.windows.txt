@@ -1,0 +1,56 @@
+Install Python, version 2.4 or later:
+http://python.org/
+
+Install wxPython 2.6 or greater:
+http://www.wxpython.org/
+
+Install twisted 2.4.0
+http://twistedmatrix.com/projects/core/
+
+Apply our patch to twisted:
+cdv://cdv.bittorrent.com/patches/twisted/
+
+Install pycrypto 2.0 or later:
+http://www.amk.ca/python/code/crypto
+
+Install pywin32:
+https://sourceforge.net/projects/pywin32/
+
+Download mfc71.dll from here 
+http://starship.python.net/crew/mhammond/win32/
+and stick it in your C:\windows\system32\ directory
+
+Download unicows.dll from here
+http://www.microsoft.com/downloads/details.aspx?FamilyId=73BA7BD7-ED06-4F0D-80A4-2A7EEAEE17E2&displaylang=en
+and stick it in your C:\windows\system32\ directory
+
+Install GNUWin32 Gettext (for building only):
+http://gnuwin32.sourceforge.net/packages/gettext.htm
+
+Install py2exe:
+http://starship.python.net/crew/theller/py2exe/
+
+Install ctypes (comes with python 2.5):
+http://starship.python.net/crew/theller/ctypes/
+
+Install the nullsoft (NSIS) installer:
+http://www.nullsoft.com/free/nsis/
+
+Install InstallOptionsEx (extract it in the NSIS folder) - (last known good 2.4.4 beta 2 (PB 1)):
+http://nsis.sourceforge.net/wiki/InstallOptionsEx    
+
+Install the Processes NSIS plugin:
+http://nsis.sourceforge.net/archive/viewpage.php?pageid=542
+http://www.geocities.com/hardwiredteks/files/setup-processes.zip
+
+Install the KillProcDLL NSIS plugin:
+http://nsis.sourceforge.net/archive/viewpage.php?pageid=271
+
+
+The rest of these installation can be abbreviated by just running
+
+windows_installler\build.bat
+
+This will create an installer called BitTorrent-{VERSION}.exe .  The
+installer is completely self-contained and will work on any Windows
+machine, even without the above software having been installed.

@@ -1,0 +1,58 @@
+[Version]
+Signature="$CHICAGO$"
+AdvancedINF=2.0
+
+[DefaultInstall]
+CopyFiles=RootFiles
+AddReg=PluginReg
+
+[strings]
+CLSID = "{21C4E4B2-40F7-4E77-BF19-8BED7187BB55}"
+DESCRIPTION = "BitTorrent Control"
+INSTALL_DIR = "Program Files\BitTorrent"
+
+[DestinationDirs]
+RootFiles=30,"%INSTALL_DIR%"
+
+[RootFiles]
+BitTorrent=BitTorrentIE.2.dll
+
+[piemu]
+file-win32-x86=thiscab
+FileVersion=1,0,0,1
+
+[emupi]
+file-win32-x86=thiscab
+FileVersion=1,0,0,1
+
+[pluginkfs]
+file=thiscab
+FileVersion=1,0,0,1
+
+[emuinit]
+file=thiscab
+FileVersion=1,0,0,1
+
+
+[PluginReg]
+; ActiveX registration
+HKCR,"CLSID\%CLSID%",,,"%DESCRIPTION%"
+HKCR,"CLSID\%CLSID%\Control"
+HKCR,"CLSID\%CLSID%\InprocServer32",,,"%30%\%INSTALL_DIR%\BitTorrentIE.2.dll"
+HKCR,"CLSID\%CLSID%\InprocServer32","ThreadingModel",,"Apartment"
+HKCR,"CLSID\%CLSID%\Implemented Categories\{7DD95801-9882-11CF-9FA9-00AA006C42C4}"
+HKCR,"CLSID\%CLSID%\Implemented Categories\{7DD95802-9882-11CF-9FA9-00AA006C42C4}"
+HKCR,"CLSID\%CLSID%\MiscStatus",,,"0"
+HKCR,"CLSID\%CLSID%\MiscStatus\1",,,"0"
+HKCR,"CLSID\%CLSID%\ProgID",,,"BitTorrent.BitTorrentCtrl.1"
+HKCR,"CLSID\%CLSID%\ToolboxBitmap32",,,%30%\%INSTALL_DIR%\BitTorrentIE.2.dll, 1"
+HKCR,"CLSID\%CLSID%\TypeLib",,,"{9F2ED8F3-441F-482D-985D-7E5BA0DF2747}"
+HKCR,"CLSID\%CLSID%\Version",,,"1.0"
+
+HKCR,"BitTorrent.BitTorrentCtrl.1",,,"%DESCRIPTION%"
+HKCR,"BitTorrent.BitTorrentCtrl.1\CLSID",,,"%CLSID%"
+
+HKLM,"Software\Microsoft\Windows\CurrentVersion\Ext\PreApproved\%CLSID%"
+
+; Installation root for plugin
+HKLM,"Software\BitTorrent\Plugin","rootpath",,"%30%\%INSTALL_DIR%"
