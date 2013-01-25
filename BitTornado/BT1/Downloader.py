@@ -1,15 +1,10 @@
 # Written by Bram Cohen
 # see LICENSE.txt for license information
 
+import random
 from BitTornado.CurrentRateMeasure import Measure
 from BitTornado.bitfield import Bitfield
-from random import shuffle
 from BitTornado.clock import clock
-try:
-    True
-except:
-    True = 1
-    False = 0
 
 EXPIRE_TIME = 60 * 60
 
@@ -105,7 +100,7 @@ class SingleDownload:
         if self.downloader.paused:
             return
         ds = [d for d in self.downloader.downloads if not d.choked]
-        shuffle(ds)
+        random.shuffle(ds)
         for d in ds:
             d._request_more()
         for d in self.downloader.downloads:
@@ -252,7 +247,7 @@ class SingleDownload:
             self.send_interested()
         if self.choked:
             return
-        shuffle(want)
+        random.shuffle(want)
         del want[self.backlog - len(self.active_requests):]
         self.active_requests.extend(want)
         for piece, begin, length in want:
@@ -380,7 +375,7 @@ class Downloader:
         if not self.requeueing and self.queued_out and self.bytes_requested < 0:
             self.requeueing = True
             q = self.queued_out.keys()
-            shuffle(q)
+            random.shuffle(q)
             self.queued_out = {}
             for d in q:
                 d._request_more()
@@ -421,7 +416,7 @@ class Downloader:
             self._reset_endgame()
             return
         ds = [d for d in self.downloads if not d.choked]
-        shuffle(ds)
+        random.shuffle(ds)
         for d in ds:
             d._request_more()
         ds = [d for d in self.downloads if not d.interested and d.have[index]]
@@ -557,7 +552,7 @@ class Downloader:
             self.endgame_queued_pieces = None
            
         ds = [d for d in self.downloads]
-        shuffle(ds)
+        random.shuffle(ds)
         for d in ds:
             if d.choked:
                 d._check_interests()
@@ -588,7 +583,7 @@ class Downloader:
             if self.endgamemode:
                 self._reset_endgame()
         else:
-            shuffle(self.downloads)
+            random.shuffle(self.downloads)
             for d in self.downloads:
                 d._check_interests()
                 if d.interested and not d.choked:
