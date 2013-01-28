@@ -84,7 +84,7 @@ class SingleDownload:
         self.guard.download = None
 
     def _letgo(self):
-        if self.downloader.queued_out.has_key(self):
+        if self in self.downloader.queued_out:
             del self.downloader.queued_out[self]
         if not self.active_requests:
             return
@@ -391,7 +391,7 @@ class Downloader:
 
     def make_download(self, connection):
         ip = connection.get_ip()
-        if self.perip.has_key(ip):
+        if ip in self.perip:
             perip = self.perip[ip]
         else:
             perip = self.perip.setdefault(ip, PerIPStats(ip))
@@ -444,7 +444,7 @@ class Downloader:
 
 
     def add_disconnected_seed(self, id):
-#        if not self.disconnectedseeds.has_key(id):
+#        if id not in self.disconnectedseeds:
 #            self.picker.seed_seen_recently()
         self.disconnectedseeds[id]=clock()
 
@@ -482,7 +482,7 @@ class Downloader:
         if self._check_kicks_ok():
             self.banfunc(ip)
             self.banned[ip] = self.perip[ip].peerid
-            if self.kicked.has_key(ip):
+            if ip in self.kicked:
                 del self.kicked[ip]
 
     def set_super_seed(self):
